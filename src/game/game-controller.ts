@@ -1,20 +1,16 @@
-import { shallowRef } from 'vue';
+import { shallowRef, watch } from 'vue';
 import type { ShallowRef } from 'vue';
 import { capCallsign } from '../../shared/callsign.ts';
 import type { EmoteId } from '../../shared/emotes.ts';
 import type { GameStyle } from '../../shared/game-style.ts';
-import type { MerchantId } from '../../shared/home-protocol.ts';
 import type { WorldMap } from '../../shared/protocol.ts';
 import { generateWorldMap } from '../../shared/world-map.ts';
 import { buildArtBook } from '../art/index.ts';
 import { AudioEngine } from '../audio/audio-engine.ts';
-import { aimAngle } from '../engine/camera.ts';
-import { CHEST_HEIGHT, EMPTY_SCENE } from '../engine/scene.ts';
-import type { QuestMark, SceneView } from '../engine/scene.ts';
+import { EMPTY_SCENE } from '../engine/scene.ts';
 import { WorldRenderer } from '../engine/world-renderer.ts';
 import { LocalSession } from '../network/local-session.ts';
 import { BenchLink } from './bench-link.ts';
-import type { ClientWorld } from './client-world.ts';
 import { todaysNight } from './daily-night.ts';
 import { HomeLink } from './home-link.ts';
 import type { HomeLinkHost } from './home-link.ts';
@@ -22,26 +18,24 @@ import type { HomeActions } from './home-hud.ts';
 import { overrunOn } from './home-mode.ts';
 import { createBrowserHomeStore } from './home/browser-home-store.ts';
 import type { HomeStore } from './home/home-store.ts';
-import { questMarks } from './home/quest-marks.ts';
-import { closedStalls } from './home/shop.ts';
 import type { UiState } from './hud-state.ts';
 import { InputManager } from './input-manager.ts';
 import { InputSender } from './input-sender.ts';
-import { tickRunAudio } from './run-audio.ts';
-import { deathFade, healthFraction, NO_RUN_UI, RunHud } from './run-hud.ts';
+import { RunFrame } from './run-frame.ts';
+import { NO_RUN_UI, RunHud } from './run-hud.ts';
 import { newRunState, RunSession } from './run-session.ts';
 import type { RunHost, RunState } from './run-session.ts';
 import { RunStage } from './run-stage.ts';
 import { SnapshotHandler } from './snapshot-handler.ts';
-import { DEFAULT_PREFS, loadLeaderboard, loadPrefs, savePrefs } from './storage.ts';
+import { browserStore, DEFAULT_PREFS, loadLeaderboard, loadPrefs, savePrefs } from './storage.ts';
+import { motion } from './motion.ts';
 import { loadStyle, saveStyle } from './style-pref.ts';
 import { loadBests } from './trip-record.ts';
 import { isTouchDevice } from './touch-input.ts';
-import { touchMarks } from './touch-marks.ts';
 import { fitWindow, watchDpr } from './view-fit.ts';
+import { applyPalette, loadDisplayPrefs, saveDisplayPrefs, UI_SCALES, type PaletteId, type UiScale } from './display-prefs.ts';
 
 
-const GAME_OVER_BEAT_MS = 1800;
 const MAX_FRAME_DT = 0.05;
 const TITLE_MAP_SEED = 20417;
 const ART_DELAY_MS = 40;
@@ -71,23 +65,20 @@ export class GameController {
   private readonly session: RunSession;
   private readonly snapshots: SnapshotHandler;
   private readonly homeLink: HomeLink;
+  private readonly runFrame: RunFrame;
   private renderer: WorldRenderer | null = null;
   private titleMap: WorldMap | null = null;
   private canvas: HTMLCanvasElement | null = null;
-  private lastScene: SceneView = EMPTY_SCENE;
   private raf = 0;
   private artTimer: ReturnType<typeof setTimeout> | null = null;
   private lastFrameMs = 0;
   private lastSnapshotMs = 0;
-  private aim = 0;
   private titleTime = 0;
-  /** A hit-stop holds the picture until this frame time. */
-  private heldUntilMs = 0;
-  /** Read once, as the solo session reads it: the blast door is drawn only with the overrun on. */
-  private readonly overrunOn = overrunOn(globalThis.location?.search ?? '', import.meta.env.DEV);
 
   constructor(options: GameControllerOptions = {}) {
     const prefs = loadPrefs();
+    const display = loadDisplayPrefs(browserStore());
+    applyPalette(display.palette);
     this.ui = shallowRef<UiState>({
       touch: isTouchDevice(),
       screen: 'title',
@@ -106,7 +97,10 @@ export class GameController {
       serverAddress: prefs.serverAddress,
       onlineRoom: null,
       volume: this.audio.volume,
+      musicVolume: this.audio.musicVolume,
+      sfxVolume: this.audio.sfxVolume,
       muted: this.audio.muted,
+      ...display,
     });
     this.homeLink = new HomeLink({ store: options.homeStore ?? createBrowserHomeStore, host: this.homeHost() });
     this.home = this.homeLink.actions;
@@ -132,6 +126,12 @@ export class GameController {
     const host = this.runHost();
     this.snapshots = new SnapshotHandler(host, () => this.session.beginRun());
     this.session = new RunSession(host, (snapshot) => this.snapshots.onSnapshot(snapshot));
+    this.runFrame = new RunFrame({
+      parts: host,
+      menuUp: () => this.isMenuUp(),
+      playing: () => this.isPlaying(),
+      overrunOn: overrunOn(globalThis.location?.search ?? '', import.meta.env.DEV),
+    });
   }
 
 
@@ -156,6 +156,7 @@ export class GameController {
     this.raf = requestAnimationFrame(this.frame);
     // Baking the art blocks for a moment: let the title paint first.
     this.artTimer = setTimeout(() => this.loadArt(), ART_DELAY_MS);
+    this.stopMotionWatch = watch([motion.reduced, motion.shake], ([reduced, shake]) => this.renderer?.setMotion(reduced, shake));
     this.audio.setScene('menu');
   }
 
@@ -164,6 +165,7 @@ export class GameController {
     if (this.artTimer) clearTimeout(this.artTimer);
     window.removeEventListener('resize', this.onResize);
     this.stopDprWatch();
+    this.stopMotionWatch();
     window.removeEventListener('blur', this.onAway);
     document.removeEventListener('visibilitychange', this.onVisibility);
     this.input.dispose();
@@ -180,9 +182,8 @@ export class GameController {
   private loadArt(): void {
     const canvas = this.canvas;
     if (!canvas) return;
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const art = buildArtBook();
-    this.renderer = new WorldRenderer(canvas, art, reducedMotion);
+    this.renderer = new WorldRenderer(canvas, art, motion.reduced.value, motion.shake.value);
     this.titleMap = generateWorldMap(TITLE_MAP_SEED);
     this.renderer.setMap(this.titleMap);
     this.publish({ art });
@@ -193,9 +194,10 @@ export class GameController {
   }
 
   private stopDprWatch: () => void = () => {};
+  private stopMotionWatch: () => void = () => {};
 
   private readonly onResize = (): void => {
-    fitWindow(this.renderer, this.run.transport?.kind === 'coop', this.ui.value.touch);
+    fitWindow(this.renderer, this.run.transport?.kind === 'coop', this.ui.value.touch, UI_SCALES[this.ui.value.uiScale]);
   };
 
   /** A hidden tab gets no frames, so solo would otherwise be eaten alive unseen. */
@@ -239,6 +241,35 @@ export class GameController {
   setVolume(volume: number): void {
     this.audio.volume = volume;
     this.publish({ volume });
+  }
+
+  setMusicVolume(musicVolume: number): void {
+    this.audio.musicVolume = musicVolume;
+    this.publish({ musicVolume });
+  }
+
+  setSfxVolume(sfxVolume: number): void {
+    this.audio.sfxVolume = sfxVolume;
+    this.publish({ sfxVolume });
+  }
+
+  /** Hit and danger colors: the classic red and green, or a pair that reads for red-green colorblind players. */
+  setPalette(palette: PaletteId): void {
+    applyPalette(palette);
+    this.publish({ palette });
+    this.saveDisplay();
+  }
+
+  /** The HUD and menus, bigger for a small phone screen. */
+  setUiScale(uiScale: UiScale): void {
+    this.publish({ uiScale });
+    this.saveDisplay();
+    this.onResize();
+  }
+
+  private saveDisplay(): void {
+    const { palette, uiScale } = this.ui.value;
+    saveDisplayPrefs(browserStore(), { palette, uiScale });
   }
 
   toggleMute(): void {
@@ -305,17 +336,19 @@ export class GameController {
 
   private flipPause(): void {
     if (!this.isPlaying()) return;
-    if (this.ui.value.logOpen) {
-      this.publish({ logOpen: false });
-      return;
-    }
-    if (this.ui.value.mapOpen) {
-      this.toggleMap();
-      return;
-    }
+    const shutOverlay = this.shutOverlay();
+    if (shutOverlay) return;
     const paused = !this.ui.value.paused;
     this.holdRun(paused);
     this.publish({ paused });
+  }
+
+  /** Esc shuts the log, or else the map, before it reaches the pause menu. True if either was open. */
+  private shutOverlay(): boolean {
+    const { logOpen, mapOpen } = this.ui.value;
+    if (logOpen) this.publish({ logOpen: false });
+    else if (mapOpen) this.toggleMap();
+    return logOpen || mapOpen;
   }
 
   /** An icon over this survivor for the team; the wheel is only offered in co-op. */
@@ -374,6 +407,8 @@ export class GameController {
 
   /** The parts of this controller a run reaches into. */
   private runHost(): RunHost {
+    // Getters read the live renderer and map, so they need the controller itself, not a snapshot.
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const controller = this;
     return {
       state: this.run,
@@ -416,9 +451,10 @@ export class GameController {
   /** Solo only: the sim and the picture stop together, so nothing drifts. In co-op the town carries on, so the picture does too. */
   private hitStop(ms: number): void {
     const transport = this.run.transport;
-    if (transport?.kind !== 'solo' || this.isMenuUp()) return;
+    const skipsHitStop = transport?.kind !== 'solo' || this.isMenuUp();
+    if (skipsHitStop) return;
     transport.hold?.(ms);
-    this.heldUntilMs = Math.max(this.heldUntilMs, performance.now() + ms);
+    this.runFrame.holdFor(ms);
   }
 
   // --- Frame loop ----------------------------------------------------------
@@ -429,7 +465,7 @@ export class GameController {
     this.lastFrameMs = ms;
     const renderer = this.renderer;
     if (!renderer) return;
-    if (this.run.world) this.frameRun(renderer, this.run.world, ms, dt);
+    if (this.run.world) this.runFrame.draw(renderer, this.run.world, ms, dt);
     else this.frameTitle(renderer, dt);
   };
 
@@ -441,87 +477,6 @@ export class GameController {
     const focusX = map.width / 2 + Math.sin(this.titleTime * 0.04) * map.width * 0.3;
     const focusY = map.height / 2 + Math.cos(this.titleTime * 0.031) * map.height * 0.3;
     renderer.render({ ...EMPTY_SCENE, focusX, focusY }, dt);
-  }
-
-  private frameRun(renderer: WorldRenderer, world: ClientWorld, ms: number, dt: number): void {
-    const transport = this.run.transport;
-    const { screen } = this.ui.value;
-    const menuUp = this.isMenuUp();
-    const frozen = menuUp && transport?.kind === 'solo';
-    if (frozen) {
-      renderer.render({ ...this.lastScene, showCrosshair: false }, 0);
-      this.runHud.repaintMap(ms);
-      return;
-    }
-    if (ms < this.heldUntilMs) {
-      renderer.render(this.lastScene, 0);
-      return;
-    }
-    const dirX = this.input.dirX;
-    const dirY = this.input.dirY;
-    const pointerX = renderer.toBufferX(this.input.pointerClientX);
-    const pointerY = renderer.toBufferY(this.input.pointerClientY);
-    const camera = renderer.camera;
-    // Behind a co-op menu the mouse belongs to the menu, not the flashlight.
-    if (!menuUp) {
-      this.aim = this.input.touch.look(this.aim) ?? aimAngle(
-        pointerX,
-        pointerY,
-        camera.screenX(world.predictor.x),
-        camera.screenY(world.predictor.y) - CHEST_HEIGHT,
-      );
-      this.inputs.aimPoint = renderer.toWorld(pointerX, pointerY);
-    }
-    const aim = this.aim;
-    const delay = transport?.interpolationDelayMs ?? 0;
-    world.setStance(menuUp ? 'walk' : this.input.stance);
-    const entities = world.advance(ms, delay, dirX, dirY, aim, dt);
-    if (!entities) return;
-
-    const result = this.run.runResult;
-    const over = result !== null;
-    const touch = touchMarks(this.input.touch, renderer, ms);
-    // A finger picks a spot on the picture, so the picture must not lean toward it and move the spot.
-    const scene: SceneView = {
-      ...entities,
-      closedStalls: this.closedStalls(),
-      questMarks: this.questMarks(world),
-      overrunOn: this.overrunOn,
-      pointerX: over || touch ? null : pointerX,
-      pointerY: over || touch ? null : pointerY,
-      showCrosshair: this.isPlaying() && !menuUp && !this.bench.open,
-      touch,
-    };
-    this.lastScene = scene;
-    const sending = transport !== null && !over;
-    if (sending) this.inputs.send(transport, world, aim, dirX, dirY, dt);
-    tickRunAudio(this.audio, world, scene, dt);
-    renderer.effects.setHealth(healthFraction(world.localPlayer));
-    renderer.effects.setDesaturation(deathFade(world.localPlayer?.status, over));
-    renderer.render(scene, dt);
-
-    const beatOver = over && screen === 'game' && ms - this.run.gameOverAtMs > GAME_OVER_BEAT_MS;
-    if (beatOver) this.publish({ screen: 'gameover', result });
-    this.runHud.tick({
-      world,
-      scene,
-      renderer,
-      ms,
-      networked: transport?.kind === 'coop',
-      lastSnapshotMs: this.run.lastSnapshotMs,
-    });
-  }
-
-  /** The stalls this player's own save has closed. */
-  private closedStalls(): MerchantId[] {
-    const { save } = this.homeLink.facts();
-    return save ? closedStalls(save.shop) : [];
-  }
-
-  /** The bunker's stalls with a quest to take or to be paid for, by this player's own save. Nowhere else has stalls. */
-  private questMarks(world: ClientWorld): QuestMark[] {
-    const { save, highest } = this.homeLink.facts();
-    return questMarks(save, highest, world.bunkerProps());
   }
 
   private sendNeutralInput(): void {

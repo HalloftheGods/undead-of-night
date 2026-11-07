@@ -72,7 +72,8 @@ async function toggle(entry: SoundEntry): Promise<void> {
 function onListKey(event: KeyboardEvent): void {
   const forward = event.code === 'ArrowDown' || event.code === 'ArrowRight';
   const back = event.code === 'ArrowUp' || event.code === 'ArrowLeft';
-  if (!forward && !back) return;
+  const isNotArrow = !forward && !back;
+  if (isNotArrow) return;
   const buttons = [...document.querySelectorAll<HTMLButtonElement>('.sound-item:not(:disabled)')];
   const at = buttons.indexOf(document.activeElement as HTMLButtonElement);
   const onAnItem = at >= 0;

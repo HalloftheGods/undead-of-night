@@ -37,7 +37,8 @@ function transpose(canvas: PixelCanvas): PixelCanvas {
   for (let y = 0; y < canvas.h; y++) {
     for (let x = 0; x < canvas.w; x++) {
       const color = canvas.get(x, y);
-      if (color !== null) out.px(y, x, color);
+      const isPainted = color !== null;
+      if (isPainted) out.px(y, x, color);
     }
   }
   return out;

@@ -89,7 +89,8 @@ export type BreachWatch = 'open' | 'survived' | 'died' | 'none';
 export function watchBreach(save: HomeSave, phase: OverrunPhase | undefined, hasReceipt: boolean): BreachWatch {
   if (hasReceipt) return 'none';
   const onFile = save.openOverrun !== null;
-  if (phase === 'breached') return onFile ? 'none' : 'open';
+  const isBreached = phase === 'breached';
+  if (isBreached) return onFile ? 'none' : 'open';
   if (!onFile) return 'none';
   return phase === 'held' ? 'survived' : 'died';
 }

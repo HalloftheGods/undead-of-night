@@ -7,6 +7,9 @@ import type { TallyCounter } from './quest-data.ts';
 
 const ZOMBIE_TYPES: readonly ZombieType[] = ['walker', 'runner', 'bloater', 'brute', 'screamer'];
 
+type ZombieStatusEvent = Extract<GameEvent, { type: 'zombie_status' }>;
+type ZombieDieEvent = Extract<GameEvent, { type: 'zombie_die' }>;
+
 /** What the quest rules read: counters, kills by kind, and who was in the trip. */
 export interface TripTally {
   readonly counts: Readonly<Record<TallyCounter, number>>;
@@ -58,19 +61,36 @@ export class QuestTally {
   }
 
   private read(event: GameEvent, localId: EntityId): void {
-    if (event.type === 'zombie_status') {
-      if (event.effect === 'incendiary') this.burning.add(event.zombieId);
-      return;
+    switch (event.type) {
+      case 'zombie_status':
+        this.noteBurn(event);
+        break;
+      case 'zombie_die':
+        this.noteKill(event, localId);
+        break;
+      default:
+        this.readOwn(event, localId);
     }
-    if (event.type === 'zombie_die') {
-      const burned = this.burning.delete(event.zombieId);
-      if (event.killerId !== localId) return;
-      this.bump('kills');
-      this.killsBy[event.zombieType] += 1;
-      if (burned) this.bump('burning');
-      return;
-    }
-    if ('playerId' in event && event.playerId !== localId) return;
+  }
+
+  private noteBurn(event: ZombieStatusEvent): void {
+    const isOnFire = event.effect === 'incendiary';
+    if (isOnFire) this.burning.add(event.zombieId);
+  }
+
+  private noteKill(event: ZombieDieEvent, localId: EntityId): void {
+    const burned = this.burning.delete(event.zombieId);
+    const isSomeoneElsesKill = event.killerId !== localId;
+    if (isSomeoneElsesKill) return;
+    this.bump('kills');
+    this.killsBy[event.zombieType] += 1;
+    if (burned) this.bump('burning');
+  }
+
+  /** Everything else, counted only when the local player did it. */
+  private readOwn(event: GameEvent, localId: EntityId): void {
+    const isSomeoneElse = 'playerId' in event && event.playerId !== localId;
+    if (isSomeoneElse) return;
     if (event.type === 'headshot') this.bump('headshots');
     else if (event.type === 'melee' && event.hit) this.bump('shoves');
     else if (event.type === 'container_opened') this.searched(event.found, event.noisy);

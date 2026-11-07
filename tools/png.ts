@@ -14,7 +14,8 @@ function chunk(type: string, body: Buffer): Buffer {
 }
 
 export function encodePng(w: number, h: number, rgba: Uint8Array | Uint8ClampedArray): Buffer {
-  if (rgba.length !== w * h * 4) throw new Error(`encodePng: expected ${w * h * 4} bytes, got ${rgba.length}`);
+  const isWrongSize = rgba.length !== w * h * 4;
+  if (isWrongSize) throw new Error(`encodePng: expected ${w * h * 4} bytes, got ${rgba.length}`);
   const header = Buffer.alloc(13);
   header.writeUInt32BE(w, 0);
   header.writeUInt32BE(h, 4);

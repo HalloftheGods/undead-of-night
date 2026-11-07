@@ -23,6 +23,8 @@ const FACADE_BLEED = 44;
 const HAZE = 0.11;
 
 const FALLBACK_RGB: Rgb = [255, 255, 255];
+/** Furthest the camera can have moved for last frame's light to be laid down again. */
+const MAX_REUSE_SHIFT = 24;
 
 /** Mostly steady with the odd dropout, like a failing ballast. */
 export function flicker(time: number, seed: number): number {
@@ -61,6 +63,14 @@ export class Lighting {
   private readonly rays = new Float32Array(BEAM_RAYS + 1);
   private image: ImageData | null = null;
   private pixels = new Int32Array(0);
+  private width = 0;
+  private height = 0;
+  /** Where the camera stood for the light on the canvas, and how far it has moved since. */
+  private litLeft = 0;
+  private litTop = 0;
+  private composed = false;
+  private shiftX = 0;
+  private shiftY = 0;
 
   constructor() {
     this.ctx = this.canvas.getContext('2d', { alpha: false })!;
@@ -73,6 +83,9 @@ export class Lighting {
   }
 
   resize(width: number, height: number): void {
+    this.width = width;
+    this.height = height;
+    this.composed = false;
     this.canvas.width = width;
     this.canvas.height = height;
     this.field.resize(width, height);
@@ -82,6 +95,25 @@ export class Lighting {
 
   begin(left: number, top: number): void {
     this.field.begin(left, top, this.ambient);
+    this.litLeft = left;
+    this.litTop = top;
+    this.shiftX = 0;
+    this.shiftY = 0;
+  }
+
+  /**
+   * Keeps last frame's light for this one, moved with the camera, instead of working it out again: for a
+   * machine that cannot keep up. Street lamps stay exact; a moving flashlight is a frame behind. Returns
+   * false, keeping nothing, when there is no light to keep or the camera has moved too far.
+   */
+  reuse(left: number, top: number): boolean {
+    const shiftX = this.litLeft - left;
+    const shiftY = this.litTop - top;
+    const usable = this.composed && Math.abs(shiftX) <= MAX_REUSE_SHIFT && Math.abs(shiftY) <= MAX_REUSE_SHIFT;
+    if (!usable) return false;
+    this.shiftX = shiftX;
+    this.shiftY = shiftY;
+    return true;
   }
 
   /** Screen coordinates. Skips anything that cannot reach the view. */
@@ -123,22 +155,39 @@ export class Lighting {
 
   /** How lit a screen point is, for what should only show when a light finds it. */
   brightness(x: number, y: number): number {
-    return this.field.brightness(x, y);
+    return this.field.brightness(x - this.shiftX, y - this.shiftY);
   }
 
   finish(): void {
     if (!this.image) return;
     this.field.write(this.pixels);
     this.ctx.putImageData(this.image, 0, 0);
+    this.composed = true;
   }
 
   apply(target: CanvasRenderingContext2D): void {
+    const { shiftX, shiftY } = this;
     target.globalCompositeOperation = 'multiply';
-    target.drawImage(this.canvas, 0, 0);
+    target.drawImage(this.canvas, shiftX, shiftY);
+    this.darkenUncovered(target);
     target.globalCompositeOperation = 'lighter';
     target.globalAlpha = HAZE;
-    target.drawImage(this.canvas, 0, 0);
+    target.drawImage(this.canvas, shiftX, shiftY);
     target.globalAlpha = 1;
     target.globalCompositeOperation = 'source-over';
+  }
+
+  /** A reused light leaves a strip at the edge the camera moved toward: it gets the plain night. */
+  private darkenUncovered(target: CanvasRenderingContext2D): void {
+    const { shiftX, shiftY, width, height } = this;
+    const inPlace = shiftX === 0 && shiftY === 0;
+    if (inPlace) return;
+    const [r, g, b] = this.ambient;
+    target.fillStyle = `rgb(${r}, ${g}, ${b})`;
+    // A strip as wide as the move, on the side the old light no longer covers; no move, no strip.
+    const stripX = shiftX > 0 ? 0 : width + shiftX;
+    const stripY = shiftY > 0 ? 0 : height + shiftY;
+    target.fillRect(stripX, 0, Math.abs(shiftX), height);
+    target.fillRect(0, stripY, width, Math.abs(shiftY));
   }
 }

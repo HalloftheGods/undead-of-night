@@ -88,7 +88,8 @@ function flyDrops(canvas: PixelCanvas, drops: readonly Drop[], t: number, ax: nu
 
 function bloodFrame(frame: number): PixelCanvas {
   const canvas = new PixelCanvas(BLOOD_W, BLOOD_H);
-  if (frame > 0) flyDrops(canvas, BLOOD_DROPS, frame - 1, BLOOD_AX, BLOOD_AY, BLOOD_GRAVITY, BLOOD);
+  const hasDropsFlying = frame > 0;
+  if (hasDropsFlying) flyDrops(canvas, BLOOD_DROPS, frame - 1, BLOOD_AX, BLOOD_AY, BLOOD_GRAVITY, BLOOD);
   const core = BLOOD_CORES[frame];
   if (core) canvas.grid(BLOOD_AX - Math.floor(core[0].length / 2), BLOOD_AY - Math.floor(core.length / 2), core, BLOOD);
   return canvas.outline({ color: blood[0] });

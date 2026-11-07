@@ -66,7 +66,8 @@ export function startAnalytics(ui: () => TrackedUi): () => void {
   const stopWatching = watch(
     ui,
     (state) => {
-      if (state.screen === 'game') closePrivacy();
+      const isInGame = state.screen === 'game';
+      if (isInGame) closePrivacy();
       own.ui(state);
       const needsFrames = own.inRun && frameRequest === 0;
       if (needsFrames) frameRequest = requestAnimationFrame(onFrame);
@@ -91,7 +92,8 @@ export function startAnalytics(ui: () => TrackedUi): () => void {
     stopWatching();
     listenToGame(null);
     tracker = null;
-    if (frameRequest !== 0) cancelAnimationFrame(frameRequest);
+    const hasFrameQueued = frameRequest !== 0;
+    if (hasFrameQueued) cancelAnimationFrame(frameRequest);
     window.removeEventListener('error', onError);
     window.removeEventListener('unhandledrejection', onRejection);
   };

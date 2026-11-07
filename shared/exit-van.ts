@@ -54,7 +54,8 @@ function pickExitSpot(map: WorldMap): Point | null {
   const walk = new FlowField(map);
   walk.recompute([map.spawn]);
   const candidates = exitCandidates(map, walk);
-  if (candidates.length === 0) return null;
+  const hasNoCandidates = candidates.length === 0;
+  if (hasNoCandidates) return null;
 
   const longestWalk = candidates.reduce((most, spot) => Math.max(most, spot.steps), 0);
   const farOut = candidates.filter((spot) => spot.steps >= longestWalk * FAR_WALK_SHARE);

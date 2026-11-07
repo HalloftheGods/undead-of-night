@@ -3,7 +3,7 @@ import { MAX_PACKET_BYTES } from '../server/limits.ts';
 import { startGameServer } from '../server/server.ts';
 import type { RunningGameServer } from '../server/server.ts';
 import { BOTTLE_CARRY } from '../shared/bottles.ts';
-import { JOIN_TOKEN_MAX_LENGTH, MEDKIT_MAX, TICK_RATE, WEAPONS } from '../shared/constants.ts';
+import { JOIN_TOKEN_MAX_LENGTH, MEDKIT_MAX, REVIVE_RANGE, TICK_RATE, WEAPONS } from '../shared/constants.ts';
 import { DIFFICULTIES } from '../shared/difficulty.ts';
 import { GUN_SLOTS, PART_CARRY_CAP, PART_ORDER, UPGRADE_ORDER, UPGRADES } from '../shared/gun-upgrade-data.ts';
 import type { GunUpgrade } from '../shared/gun-upgrade-data.ts';
@@ -451,6 +451,8 @@ describe('home over sockets', () => {
       const body = bodyOf(unlucky);
       homeOf(body).jewels = { small: 1, large: 0 };
       hurtPlayer(state, body, body.maxHealth * 2);
+      // They set out together at the van, close enough to revive, so the lucky one steps out of reach.
+      bodyOf(lucky).x = body.x + REVIVE_RANGE * 4;
       body.bleedout = 0;
       sim.step();
       expect(body.status).toBe('dead');

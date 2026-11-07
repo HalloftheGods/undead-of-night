@@ -55,7 +55,7 @@ function saveBestTrip(store: Store, run: BestTrip): void {
   try {
     store.setItem(BEST_TRIP_KEY, JSON.stringify(run));
   } catch {
-    // A best that does not persist is not worth interrupting the trip's end for.
+    // chemx-allow: best-effort a best that does not persist is not worth interrupting the trip's end for
   }
 }
 

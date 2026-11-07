@@ -22,7 +22,8 @@ const usable = (token: string | null): token is string =>
 export function tabToken(): string {
   try {
     const kept = sessionStorage.getItem(TOKEN_KEY);
-    if (usable(kept)) return kept;
+    const isUsable = usable(kept);
+    if (isUsable) return kept;
     const token = newToken();
     sessionStorage.setItem(TOKEN_KEY, token);
     return token;

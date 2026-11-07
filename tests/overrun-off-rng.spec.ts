@@ -6,10 +6,14 @@ import { input, SEED } from './helpers/sim-harness.ts';
 
 /**
  * Draws a seeded home run takes from `sim.rng()` with the overrun switched off: a while in the bunker, a trip to the first town
- * with both players moving and shooting, the van home, and a while back in the bunker. Recorded on the code as it stood before
- * the overrun's final-review fixes. A slice that adds or removes a draw on the off path changes this, and must not.
+ * with both players moving and shooting, the van home, and a while back in the bunker. A slice that adds or removes a draw on
+ * the off path changes this, and must not.
+ *
+ * The town itself draws from the same rng, so a change to what a town is built from moves it too: furniture against the side
+ * walls (#14) and rooms behind back doors (#17) took it from 4878 to 5337, and turning the overrun on (#4) left it alone.
+ * Re-record it only for a change like those, after checking the overrun code is not what moved it.
  */
-const OFF_PATH_DRAWS = 5247;
+const OFF_PATH_DRAWS = 5337;
 
 const BUNKER_TICKS = 200;
 const TOWN_TICKS = 600;

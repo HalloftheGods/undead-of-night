@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FootstepTracker, stepSfxFor } from '../src/audio/footsteps.ts';
+import { FootstepTracker, StompTracker, stepSfxFor } from '../src/audio/footsteps.ts';
 import { SFX } from '../src/audio/sfx-registry.ts';
 import type { SfxName } from '../src/audio/sfx-registry.ts';
 import type { PlayOpts } from '../src/audio/mixer.ts';
@@ -109,5 +109,37 @@ describe('FootstepTracker', () => {
     expect(plays).toEqual([]);
     tracker.tick([], 'a', map, 1 / 60, (n) => plays.push(n));
     expect((tracker as unknown as { walkers: Map<string, unknown> }).walkers.size).toBe(0);
+  });
+});
+
+describe('heavy zombie stomps', () => {
+  it('stomps for brutes and bosses as they walk, never for walkers', () => {
+    const tracker = new StompTracker();
+    const played: { name: string; boss: boolean }[] = [];
+    for (let i = 0; i <= 40; i += 1) {
+      const x = i * 4;
+      tracker.tick(
+        [
+          { id: 'w', type: 'walker', x, y: 0 },
+          { id: 'b', type: 'brute', x, y: 20 },
+          { id: 'k', type: 'brute', boss: 'k', x, y: 40 },
+        ],
+        (name, opts) => played.push({ name, boss: opts.pitch !== undefined }),
+      );
+    }
+    expect(played.every((p) => p.name === 'step_stomp')).toBe(true);
+    const brute = played.filter((p) => !p.boss).length;
+    const boss = played.filter((p) => p.boss).length;
+    expect(brute).toBeGreaterThanOrEqual(4);
+    expect(boss).toBeGreaterThan(0);
+    expect(boss).toBeLessThan(brute);
+  });
+
+  it('does not stomp across a jump', () => {
+    const tracker = new StompTracker();
+    let count = 0;
+    tracker.tick([{ id: 'b', type: 'brute', x: 0, y: 0 }], () => (count += 1));
+    tracker.tick([{ id: 'b', type: 'brute', x: 500, y: 0 }], () => (count += 1));
+    expect(count).toBe(0);
   });
 });

@@ -166,3 +166,14 @@ export const sniff: Recipe = (v) => {
     formants: [[550, 5, 1]], vib: { rate: 5, cents: 30 },
   });
 };
+
+/** A boss hitting the ground for good: a long dying bellow, then the body landing, then the street settling. */
+export const bossFall: Recipe = (v) => {
+  tone(v, {
+    type: 'sawtooth', f0: 60, f1: 24, attack: 0.03, decay: 1.1, gain: 0.5, lp: 380,
+    drive: 0.6, vib: { rate: 14, cents: 140 },
+  });
+  tone(v, { at: 0.75, type: 'sine', f0: 58, f1: 22, decay: 0.55, gain: 1 });
+  noise(v, { at: 0.75, filter: 'lowpass', freq: 420, freq1: 120, decay: 0.6, gain: 0.6 });
+  noise(v, { at: 0.8, filter: 'bandpass', freq: 1800, q: 0.8, decay: 0.4, gain: 0.12 });
+};

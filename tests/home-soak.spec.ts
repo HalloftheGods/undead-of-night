@@ -4,7 +4,6 @@ import { MEDKIT_MAX, START_SPARE_ROUNDS, TICK_RATE, WEAPONS } from '../shared/co
 import { townContainers } from '../shared/containers.ts';
 import { PART_CARRY_CAP } from '../shared/gun-upgrade-data.ts';
 import type { TripReceipt } from '../shared/home-protocol.ts';
-import { FIRST_LEVEL } from '../shared/levels.ts';
 import { loadoutOf, validateLoadout } from '../shared/loadout.ts';
 import { spawnPickup } from '../shared/pickups.ts';
 import { hurtPlayer } from '../shared/player-health.ts';

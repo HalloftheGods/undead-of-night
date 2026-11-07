@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TICK_RATE, WEAPONS } from '../shared/constants.ts';
+import { REVIVE_RANGE, TICK_RATE, WEAPONS } from '../shared/constants.ts';
 import { BUNKER_LEVEL, isBunkerMap } from '../shared/home-protocol.ts';
 import type { Jewels } from '../shared/home-protocol.ts';
 import { FIRST_LEVEL } from '../shared/levels.ts';
@@ -41,9 +41,12 @@ function down(state: SimState, p: PlayerState): void {
   expect(p.status).toBe('downed');
 }
 
-/** Downed with nobody coming, through to the end. */
+/** Downed with nobody coming, through to the end. Teammates start out together at the van, close enough to revive, so the rest step out of reach first. */
 function bleedOut(sim: GameSimulation, state: SimState, p: PlayerState): void {
   down(state, p);
+  for (const other of state.players) {
+    if (other !== p) other.x = p.x + REVIVE_RANGE * 4;
+  }
   p.bleedout = 0;
   sim.step();
   expect(p.status).toBe('dead');

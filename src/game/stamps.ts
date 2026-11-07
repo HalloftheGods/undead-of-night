@@ -108,15 +108,21 @@ export function readStamps(book: StampBook, events: readonly GameEvent[], ctx: S
         if (myChain) earn('massacre');
         break;
       }
-      case 'headshot':
-        if (mine(e.playerId)) headshots += 1;
+      case 'headshot': {
+        const isMyHeadshot = mine(e.playerId);
+        if (isMyHeadshot) headshots += 1;
         break;
-      case 'molotov_burst':
-        if (mine(e.playerId)) molotovs += 1;
+      }
+      case 'molotov_burst': {
+        const isMyMolotov = mine(e.playerId);
+        if (isMyMolotov) molotovs += 1;
         break;
-      case 'flare_lit':
-        if (mine(e.playerId)) earn('flare_up');
+      }
+      case 'flare_lit': {
+        const isMyFlare = mine(e.playerId);
+        if (isMyFlare) earn('flare_up');
         break;
+      }
       case 'pickup': {
         const fromDrop = mine(e.playerId) && ctx.drop !== null && Math.hypot(e.x - ctx.drop.x, e.y - ctx.drop.y) <= DROP_REACH;
         if (fromDrop) earn('special_delivery');
@@ -131,19 +137,26 @@ export function readStamps(book: StampBook, events: readonly GameEvent[], ctx: S
       case 'level_complete':
         if (foggy) earn('into_the_fog');
         break;
-      case 'level_start':
-        if (e.level >= HALFWAY_LEVEL) earn('halfway');
+      case 'level_start': {
+        const isPastHalfway = e.level >= HALFWAY_LEVEL;
+        if (isPastHalfway) earn('halfway');
         break;
-      case 'game_over':
-        if (e.stats.outcome === 'victory') earn('last_stop');
+      }
+      case 'game_over': {
+        const isVictory = e.stats.outcome === 'victory';
+        if (isVictory) earn('last_stop');
         break;
+      }
       default:
         break;
     }
   }
-  if (headshots >= HEADSHOTS_FOR_STAMP) earn('headhunter');
-  if (molotovs >= MOLOTOVS_FOR_STAMP) earn('firestarter');
-  if (ctx.kills >= KILLS_FOR_STAMP) earn('crowd_control');
+  const isHeadhunter = headshots >= HEADSHOTS_FOR_STAMP;
+  if (isHeadhunter) earn('headhunter');
+  const isFirestarter = molotovs >= MOLOTOVS_FOR_STAMP;
+  if (isFirestarter) earn('firestarter');
+  const isCrowdControl = ctx.kills >= KILLS_FOR_STAMP;
+  if (isCrowdControl) earn('crowd_control');
   const stamped = Object.fromEntries(earned.map((id) => [id, today]));
   return { book: { earned: { ...book.earned, ...stamped }, headshots, molotovs }, earned };
 }

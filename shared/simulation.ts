@@ -79,7 +79,8 @@ export class GameSimulation {
     const sim = this.sim;
     const roomInUse = sim.players.length > 0;
     const unchanged = sim.difficulty === difficulty;
-    if (roomInUse || unchanged) return;
+    const isLocked = roomInUse || unchanged;
+    if (isLocked) return;
     sim.difficulty = difficulty;
     this.restart();
   }
@@ -94,7 +95,8 @@ export class GameSimulation {
     const { players, homeRun, runSeed, difficulty, rng, workbench } = this.sim;
     const roomInUse = players.length > 0;
     const unchanged = (homeRun !== null) === home;
-    if (roomInUse || unchanged) return;
+    const isLocked = roomInUse || unchanged;
+    if (isLocked) return;
     this.sim = createSimState({ seed: runSeed, random: rng, difficulty, workbench, home, overrun: this.overrun });
   }
 
@@ -149,7 +151,8 @@ export class GameSimulation {
     const sim = this.sim;
     const leaving = sim.players.find((p) => p.id === id);
     const keptForTheTrip = leaving !== undefined && keepsBodyOnLeaving(sim, leaving);
-    if (leaving && keptForTheTrip) {
+    const leavesBodyBehind = leaving && keptForTheTrip;
+    if (leavesBodyBehind) {
       diedOnLeaving(sim, leaving);
       rememberDeparted(sim, leaving);
     }
@@ -210,7 +213,8 @@ export class GameSimulation {
     updateLeftBodies(sim);
     // Before the waves: a horde starting on this tick must not hand the fallen their return.
     checkGameOver(sim);
-    if (sim.phase === 'gameover') return;
+    const isGameOver = sim.phase === 'gameover';
+    if (isGameOver) return;
     const leaving = exitBoarded(sim);
     if (leaving) {
       leaveTown(sim);

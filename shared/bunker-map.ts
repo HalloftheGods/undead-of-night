@@ -114,8 +114,10 @@ function wallRuns(tiles: Uint8Array): Box[] {
     let start = -1;
     for (let col = 0; col <= COLS; col++) {
       const solid = col < COLS && tiles[row * COLS + col] === WALL;
-      if (solid && start < 0) start = col;
-      if (!solid && start >= 0) {
+      const startsWallRun = solid && start < 0;
+      if (startsWallRun) start = col;
+      const endsWallRun = !solid && start >= 0;
+      if (endsWallRun) {
         runs.push({ x0: start * TILE_SIZE, y0: row * TILE_SIZE, x1: col * TILE_SIZE, y1: (row + 1) * TILE_SIZE });
         start = -1;
       }

@@ -30,6 +30,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 import type { ArtBook } from '../art/types.ts';
 import { clipFrameAt, spriteDataUrl } from '../engine/sprite-cache.ts';
+import { motion } from '../game/motion.ts';
 import { noteVanCover, stageCut } from '../game/stage-cut.ts';
 import { nextRun, runOver, skipRun, tripFor, vanCues, vanFrame, vanPixel, vanPuffs, vanTimeline } from '../game/van-transition.ts';
 import type { VanRun, VanTrip } from '../game/van-transition.ts';
@@ -48,7 +49,7 @@ const BEAM_REACH_PX = 60;
 const PUFF_DRIFT_PX = 8;
 const PUFF_RISE_PX = 6;
 
-const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+const reduced = motion.reduced;
 const run = shallowRef<VanRun | null>(null);
 const elapsed = ref(0);
 const view = ref({ w: window.innerWidth, h: window.innerHeight });
@@ -59,7 +60,7 @@ let raf = 0;
 /** Ends the drive on time even where frames stop coming, so the cover can never stick. */
 let deadline: ReturnType<typeof setTimeout> | undefined;
 
-const frame = computed(() => (run.value ? vanFrame(run.value.trip, elapsed.value, reduced) : null));
+const frame = computed(() => (run.value ? vanFrame(run.value.trip, elapsed.value, reduced.value) : null));
 const van = computed(() => props.art?.ui.vanSide ?? null);
 const px = computed(() => (van.value ? vanPixel(view.value.w, view.value.h, van.value.body.w, van.value.body.h) : 2));
 const groundY = computed(() => Math.round(view.value.h * GROUND_SHARE));
@@ -134,7 +135,7 @@ const puffs = computed(() => {
   const size = Math.max(1, Math.round(px.value / 2));
   const tail = f.facing * (body.exhaust.x * px.value - (body.body.w * px.value) / 2);
   const pipeY = groundY.value - (standH.value - body.exhaust.y) * px.value;
-  return vanPuffs(current.trip, elapsed.value, reduced).map((puff) => {
+  return vanPuffs(current.trip, elapsed.value, reduced.value).map((puff) => {
     const sprite = clipFrameAt(clip, puff.age);
     const x = puff.x * view.value.w + tail - f.facing * puff.age * PUFF_DRIFT_PX * px.value;
     const y = pipeY - puff.age * PUFF_RISE_PX * px.value;
@@ -158,7 +159,7 @@ function stop(): void {
 
 function armDeadline(current: VanRun): void {
   clearTimeout(deadline);
-  const left = current.startedMs + vanTimeline(current.trip, reduced).total - performance.now();
+  const left = current.startedMs + vanTimeline(current.trip, reduced.value).total - performance.now();
   deadline = setTimeout(() => {
     stop();
     step();
@@ -171,9 +172,9 @@ function step(): void {
   if (!current) return;
   const now = performance.now();
   const ms = now - current.startedMs;
-  for (const cue of vanCues(current, heard, ms, reduced)) game.audio.playVan(cue);
+  for (const cue of vanCues(current, heard, ms, reduced.value)) game.audio.playVan(cue);
   heard = ms;
-  const over = runOver(current, now, reduced);
+  const over = runOver(current, now, reduced.value);
   if (over) {
     run.value = null;
     return;
@@ -185,7 +186,7 @@ function step(): void {
 function begin(trip: VanTrip | null): void {
   const unseen = trip === null || document.visibilityState === 'hidden';
   if (unseen) return;
-  const next = nextRun(run.value, trip, performance.now(), reduced);
+  const next = nextRun(run.value, trip, performance.now(), reduced.value);
   const same = next === run.value;
   if (same) return;
   stop();
@@ -215,7 +216,7 @@ function skip(event: KeyboardEvent | PointerEvent): void {
   const held = event instanceof KeyboardEvent && event.repeat;
   const nothingToSkip = !current || held;
   if (nothingToSkip) return;
-  const skipped = skipRun(current, performance.now(), reduced);
+  const skipped = skipRun(current, performance.now(), reduced.value);
   run.value = skipped;
   armDeadline(skipped);
 }

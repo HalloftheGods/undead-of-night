@@ -20,7 +20,8 @@ const SURFACE_STEP: Readonly<Partial<Record<TileKind, SfxName>>> = {
 
 /** Slow enough to be sneaking, fast enough to be sprinting, or neither. */
 function stanceBySpeed(ratio: number): Stance {
-  if (ratio < SNEAK_BELOW) return 'sneak';
+  const isSneaking = ratio < SNEAK_BELOW;
+  if (isSneaking) return 'sneak';
   return ratio > SPRINT_ABOVE ? 'sprint' : 'walk';
 }
 
@@ -58,7 +59,8 @@ export class FootstepTracker {
   tick(players: readonly PlayerEntity[], localId: EntityId | null, map: WorldMap, dt: number, play: StepPlayer): void {
     this.frame += 1;
     for (const p of players) this.step(p, p.id === localId, map, dt, play);
-    if (this.walkers.size > players.length) this.drop();
+    const hasGoneWalkers = this.walkers.size > players.length;
+    if (hasGoneWalkers) this.drop();
   }
 
   reset(): void {
@@ -75,26 +77,94 @@ export class FootstepTracker {
     const dist = Math.hypot(p.x - w.x, p.y - w.y);
     w.x = p.x;
     w.y = p.y;
-    if (p.status !== 'alive' || dt <= 0) {
+    const isResting = p.status !== 'alive' || dt <= 0;
+    if (isResting) {
       w.acc = 0;
       return;
     }
-    if (dist === 0) return;
+    const isStandingStill = dist === 0;
+    if (isStandingStill) return;
     const kind = groundAt(map, p.x, p.y);
     const drag = (kind && GROUND_EFFECTS[kind]?.speed) || 1;
     const ratio = dist / dt / (playerSpeed(p.skin) * drag);
-    if (ratio > TELEPORT_RATIO) {
-      w.acc = 0;
-      return;
-    }
     const stance = stanceBySpeed(ratio);
-    w.acc = Math.min(w.acc + dist, STRIDE[stance] * 2);
-    if (w.acc < STRIDE[stance]) return;
+    // A jump (a respawn, a van ride) is no stride: the count starts again and nothing sounds.
+    const isTeleport = ratio > TELEPORT_RATIO;
+    w.acc = isTeleport ? 0 : Math.min(w.acc + dist, STRIDE[stance] * 2);
+    const isMidStride = w.acc < STRIDE[stance];
+    if (isMidStride) return;
     w.acc -= STRIDE[stance];
     play(stepSfxFor(kind), local ? { local: true, gain: STEP_GAIN[stance] } : { x: p.x, y: p.y, gain: STEP_GAIN[stance] });
   }
 
   private drop(): void {
-    for (const [id, w] of this.walkers) if (w.seen !== this.frame) this.walkers.delete(id);
+    for (const [id, w] of this.walkers) {
+      const isGone = w.seen !== this.frame;
+      if (isGone) this.walkers.delete(id);
+    }
+  }
+}
+
+/** The zombies heavy enough to be heard walking. */
+export interface Stomper {
+  readonly id: EntityId;
+  readonly x: number;
+  readonly y: number;
+  readonly type: string;
+  readonly boss?: string;
+}
+
+/** Brutes and bosses: the ones heavy enough to be heard walking. */
+function isHeavy(z: Stomper): boolean {
+  return z.boss !== undefined || z.type === 'brute';
+}
+
+/** World pixels between a heavy zombie's footfalls: a boss's stride is longer. */
+const STOMP_STRIDE = 34;
+const BOSS_STRIDE = 46;
+/** A jump this far in one frame is a respawn or a stairwell, not a stride. */
+const STOMP_JUMP = 60;
+
+/** Footfalls for brutes and bosses, so a big one is heard before it is seen. Others shuffle quietly. */
+export class StompTracker {
+  private readonly walkers = new Map<EntityId, Walker>();
+  private frame = 0;
+
+  tick(zombies: readonly Stomper[], play: StepPlayer): void {
+    this.frame += 1;
+    for (const z of zombies) if (isHeavy(z)) this.step(z, play);
+    for (const [id, w] of this.walkers) this.forgetIfGone(id, w);
+  }
+
+  reset(): void {
+    this.walkers.clear();
+  }
+
+  private forgetIfGone(id: EntityId, w: Walker): void {
+    const gone = w.seen !== this.frame;
+    if (gone) this.walkers.delete(id);
+  }
+
+  private step(z: Stomper, play: StepPlayer): void {
+    const w = this.walkers.get(z.id);
+    if (!w) {
+      this.walkers.set(z.id, { x: z.x, y: z.y, acc: 0, seen: this.frame });
+      return;
+    }
+    w.seen = this.frame;
+    const dist = Math.hypot(z.x - w.x, z.y - w.y);
+    w.x = z.x;
+    w.y = z.y;
+    const jumped = dist > STOMP_JUMP;
+    if (jumped) {
+      w.acc = 0;
+      return;
+    }
+    const stride = z.boss ? BOSS_STRIDE : STOMP_STRIDE;
+    w.acc += dist;
+    const midStride = w.acc < stride;
+    if (midStride) return;
+    w.acc %= stride;
+    play('step_stomp', z.boss ? { x: z.x, y: z.y, gain: 1.5, pitch: 0.7 } : { x: z.x, y: z.y });
   }
 }

@@ -31,12 +31,14 @@ function burst(sim: SimState, z: ZombieState, killerId: EntityId | null): void {
   const sheltered = (target: { x: number; y: number }): boolean => segmentHitsSolid(sim.map, z.x, z.y, target.x, target.y) !== null;
   for (const p of sim.players) {
     const inBlast = Math.hypot(p.x - z.x, p.y - z.y) <= BLOATER_BURST_RADIUS + PLAYER_RADIUS;
-    if (inBlast && !sheltered(p)) hurtPlayer(sim, p, BLOATER_BURST_PLAYER_DAMAGE);
+    const isCaughtInBurst = inBlast && !sheltered(p);
+    if (isCaughtInBurst) hurtPlayer(sim, p, BLOATER_BURST_PLAYER_DAMAGE);
   }
   for (const other of sim.zombies) {
     const distance = Math.hypot(other.x - z.x, other.y - z.y);
     const inBlast = other !== z && distance <= BLOATER_BURST_RADIUS + other.radius;
-    if (inBlast && !sheltered(other)) {
+    const isOtherCaughtInBurst = inBlast && !sheltered(other);
+    if (isOtherCaughtInBurst) {
       const angle = Math.atan2(other.y - z.y, other.x - z.x);
       damageZombie(sim, other, BLOATER_BURST_ZOMBIE_DAMAGE, angle, killerId);
     }
@@ -72,7 +74,8 @@ function killZombie(sim: SimState, z: ZombieState, angle: number, killerId: Enti
   // The bunker's horde drops nothing: the chest is the reward. Off the overrun this rolls as it always has.
   const bunkerHorde = z.horde && sim.overrun !== null;
   if (!bunkerHorde) maybeDropOnKill(sim, z.x, z.y, killer);
-  if (z.type === 'bloater') burst(sim, z, killerId);
+  const isBloater = z.type === 'bloater';
+  if (isBloater) burst(sim, z, killerId);
   bossDown(sim, z);
 }
 
@@ -85,7 +88,8 @@ export function damageZombie(
   killerId: EntityId | null,
   corrodes = false,
 ): void {
-  if (z.health <= 0) return;
+  const isAlreadyDead = z.health <= 0;
+  if (isAlreadyDead) return;
   z.health -= damage * (corrodes ? corrosionScale(z) : 1);
   const turnsOnShooter = killerId !== null && !z.horde;
   if (turnsOnShooter) startHunting(sim, z);
@@ -94,7 +98,8 @@ export function damageZombie(
   z.knockX += Math.cos(angle) * shove;
   z.knockY += Math.sin(angle) * shove;
   emit(sim, { type: 'zombie_hit', zombieId: z.id, zombieType: z.type, x: z.x, y: z.y, angle });
-  if (z.health <= 0) {
+  const isKilled = z.health <= 0;
+  if (isKilled) {
     z.health = 0;
     killZombie(sim, z, angle, killerId);
   }
@@ -102,7 +107,8 @@ export function damageZombie(
 
 /** Damage with no blow behind it, as from a fire: nothing flinches and nothing new turns round. */
 export function woundZombie(sim: SimState, z: ZombieState, damage: number, killerId: EntityId | null): void {
-  if (z.health <= 0) return;
+  const isAlreadyDead = z.health <= 0;
+  if (isAlreadyDead) return;
   z.health -= damage * corrosionScale(z);
   const killed = z.health <= 0;
   if (!killed) return;
@@ -123,11 +129,13 @@ function segmentEntersCircle(
   const fx = x0 - cx;
   const fy = y0 - cy;
   const c = fx * fx + fy * fy - radius * radius;
-  if (c <= 0) return 0;
+  const startsInside = c <= 0;
+  if (startsInside) return 0;
   const a = dx * dx + dy * dy;
   const b = 2 * (fx * dx + fy * dy);
   const discriminant = b * b - 4 * a * c;
-  if (a === 0 || discriminant < 0) return Infinity;
+  const neverEnters = a === 0 || discriminant < 0;
+  if (neverEnters) return Infinity;
   const t = (-b - Math.sqrt(discriminant)) / (2 * a);
   return t >= 0 && t <= 1 ? t : Infinity;
 }
@@ -150,7 +158,8 @@ function firstZombieOnPath(sim: SimState, b: BulletState, dx: number, dy: number
     const hittable = z.health > 0 && z !== b.passed;
     if (!hittable) continue;
     const t = segmentEntersCircle(b.x, b.y, dx, dy, z.x, z.y, z.radius + BULLET_RADIUS);
-    if (t < best) {
+    const isNearestHit = t < best;
+    if (isNearestHit) {
       best = t;
       zombie = z;
     }

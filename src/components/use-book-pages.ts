@@ -6,7 +6,8 @@ import { firstShown, openOf, pagesLabel, turnWithin } from '../game/book-turn.ts
 import type { BookMode } from '../game/book-turn.ts';
 import { swipeStep, turnKeyStep } from '../game/magazine-controller.ts';
 
-export interface BookPages<T> {
+/** What the open book shows right now. */
+export interface BookView<T> {
   readonly mode: Ref<BookMode>;
   readonly shown: ComputedRef<readonly T[]>;
   /** Changes on every turn, to replay the settle animation. */
@@ -16,7 +17,11 @@ export interface BookPages<T> {
   readonly atEnd: ComputedRef<boolean>;
   /** The number of the first leaf open, from 1. */
   readonly firstFolio: ComputedRef<number>;
-  turn(by: number): void;
+}
+
+export interface BookPages<T> {
+  readonly view: BookView<T>;
+  flipPages(by: number): void;
   goTo(index: number): void;
   beginSwipe(event: PointerEvent): void;
   finishSwipe(event: PointerEvent): void;
@@ -34,7 +39,7 @@ export function useBookPages<T extends { readonly id: string }>(leaves: readonly
   const atEnd = computed(() => turnWithin(leaves.length, at.value, 1, mode.value) === at.value);
   const firstFolio = computed(() => firstShown(at.value, mode.value) + 1);
 
-  function turn(by: number): void {
+  function flipPages(by: number): void {
     const next = turnWithin(leaves.length, at.value, by, mode.value);
     const stays = next === at.value;
     if (stays) return;
@@ -55,7 +60,7 @@ export function useBookPages<T extends { readonly id: string }>(leaves: readonly
     const by = turnKeyStep(event.code);
     const turning = by !== 0;
     if (leaving) onClose();
-    if (turning) turn(by);
+    if (turning) flipPages(by);
   }
 
   let swipeFrom: { readonly x: number; readonly y: number } | null = null;
@@ -68,7 +73,7 @@ export function useBookPages<T extends { readonly id: string }>(leaves: readonly
     swipeFrom = null;
     const by = from ? swipeStep(event.clientX - from.x, event.clientY - from.y) : 0;
     const turning = by !== 0;
-    if (turning) turn(by);
+    if (turning) flipPages(by);
   }
 
   function matchWindow(): void {
@@ -84,5 +89,6 @@ export function useBookPages<T extends { readonly id: string }>(leaves: readonly
     tall.removeEventListener('change', matchWindow);
   });
 
-  return { mode, shown, shownKey, label, atStart, atEnd, firstFolio, turn, goTo, beginSwipe, finishSwipe };
+  const view: BookView<T> = { mode, shown, shownKey, label, atStart, atEnd, firstFolio };
+  return { view, flipPages, goTo, beginSwipe, finishSwipe };
 }

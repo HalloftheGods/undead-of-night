@@ -41,7 +41,7 @@ function huntInTown(seed: number, type: ZombieType, prey: readonly Point[], body
 describe('a body closing on a player cornered behind furniture', () => {
   const scenes = [
     { name: 'a walker past the corner of a table', seed: 5150, type: 'walker', prey: STACKED_IN_A_CORNER, body: { x: 1757, y: 1117 } },
-    { name: 'a bloater under a shelf', seed: 7, type: 'bloater', prey: [{ x: 1187.87, y: 1366.86 }], body: { x: 1139.4, y: 1360.84 } },
+    { name: 'a bloater under a shelf', seed: 7, type: 'bloater', prey: [{ x: 1666, y: 2594 }], body: { x: 1618, y: 2588 } },
   ] as const;
 
   for (const { name, seed, type, prey, body } of scenes) {

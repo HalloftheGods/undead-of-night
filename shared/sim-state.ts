@@ -357,7 +357,8 @@ export function openGroundNear(
     const px = x + Math.cos(angle) * distance;
     const py = y + Math.sin(angle) * distance;
     const onMap = px > clearance && py > clearance && px < sim.map.width - clearance && py < sim.map.height - clearance;
-    if (onMap && !isBlockedAt(sim.map, px, py) && !circleHitsSolid(sim.map, px, py, clearance)) return { x: px, y: py };
+    const isOpenSpot = onMap && !isBlockedAt(sim.map, px, py) && !circleHitsSolid(sim.map, px, py, clearance);
+    if (isOpenSpot) return { x: px, y: py };
   }
   return { x, y };
 }

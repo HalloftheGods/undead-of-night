@@ -76,7 +76,8 @@ function paintCurbs(b: MapBuilder, mask: Uint8Array): void {
       const west = isRoad(col - 1, row);
       const east = isRoad(col + 1, row);
       const sides = Number(north) + Number(south) + Number(west) + Number(east);
-      if (sides !== 1) continue;
+      const isNotRoadEdge = sides !== 1;
+      if (isNotRoadEdge) continue;
       if (north) b.setTile(col, row, 'curb_n');
       else if (south) b.setTile(col, row, 'curb_s');
       else if (east) b.setTile(col, row, 'curb_e');
@@ -110,7 +111,8 @@ function placeLamp(b: MapBuilder, mask: Uint8Array, kind: PropKind, x: number, y
     const col = Math.floor((horizontal ? x + slide : x) / TILE_SIZE);
     const row = Math.floor(((horizontal ? y : y + slide) - 1) / TILE_SIZE);
     const offRoad = col >= 0 && row >= 0 && col < b.cols && row < b.rows && mask[row * b.cols + col] === 0;
-    if (offRoad && b.place(kind, horizontal ? x + slide : x, horizontal ? y : y + slide, 24)) return;
+    const wasPlacedOffRoad = offRoad && b.place(kind, horizontal ? x + slide : x, horizontal ? y : y + slide, 24);
+    if (wasPlacedOffRoad) return;
   }
 }
 
@@ -126,7 +128,8 @@ function lightCorners(b: MapBuilder, mask: Uint8Array): void {
       const lengthways = isRoad(col, row - 1) !== isRoad(col, row + 1);
       const crossways = isRoad(col - 1, row) !== isRoad(col + 1, row);
       const sides = Number(isRoad(col, row - 1)) + Number(isRoad(col, row + 1)) + Number(isRoad(col - 1, row)) + Number(isRoad(col + 1, row));
-      if (sides === 2 && lengthways && crossways) placeOnWalk(b, mask, 'street_lamp', col * TILE_SIZE + 8, row * TILE_SIZE + 12);
+      const isStraightWalk = sides === 2 && lengthways && crossways;
+      if (isStraightWalk) placeOnWalk(b, mask, 'street_lamp', col * TILE_SIZE + 8, row * TILE_SIZE + 12);
     }
   }
 }
@@ -139,8 +142,10 @@ function kerbRuns(b: MapBuilder, mask: Uint8Array, road: Road, line: number): { 
   let from = -1;
   for (let tile = start; tile <= end; tile++) {
     const open = tile < end && (road.horizontal ? mask[line * b.cols + tile] : mask[tile * b.cols + line]) === 0;
-    if (open && from < 0) from = tile;
-    if (!open && from >= 0) {
+    const startsOpenRun = open && from < 0;
+    if (startsOpenRun) from = tile;
+    const endsOpenRun = !open && from >= 0;
+    if (endsOpenRun) {
       runs.push({ from, to: tile - 1 });
       from = -1;
     }
@@ -159,20 +164,24 @@ function lightKerb(b: MapBuilder, mask: Uint8Array, road: Road, line: number, op
     // A run that stops at a crossing already has its corner lamp; one that reaches the town's edge starts a margin in.
     const a = run.from > start ? run.from : run.from + END_MARGIN_TILES;
     const z = run.to < end - 1 ? run.to : run.to - END_MARGIN_TILES;
-    if (z - a < 2) continue;
+    const isRunTooShort = z - a < 2;
+    if (isRunTooShort) continue;
     const gaps = Math.max(1, Math.ceil((z - a) / LAMP_SPACING_TILES));
     const stagger = !opposed && farSide;
     const marks: number[] = [];
     for (let i = stagger ? 0 : 1; i < gaps; i++) marks.push((i + (stagger ? 0.5 : 0)) / gaps);
-    if (run.from <= start) marks.unshift(0);
-    if (run.to >= end - 1) marks.push(1);
+    const startsAtRoadEnd = run.from <= start;
+    if (startsAtRoadEnd) marks.unshift(0);
+    const endsAtRoadEnd = run.to >= end - 1;
+    if (endsAtRoadEnd) marks.push(1);
     for (const mark of marks) {
       const along = Math.round((a + mark * (z - a) + 0.5) * TILE_SIZE);
       const across = line * TILE_SIZE + 12;
       const spot = road.horizontal ? { x: along, y: across } : { x: across, y: along };
       placeLamp(b, mask, 'street_lamp', spot.x, spot.y, road.horizontal);
     }
-    if (b.rng() < 0.3 && z - a > 4) {
+    const getsHydrant = b.rng() < 0.3 && z - a > 4;
+    if (getsHydrant) {
       const hydrantAlong = Math.round((a + randRange(b.rng, 0.25, 0.75) * (z - a)) * TILE_SIZE);
       const hydrant = road.horizontal ? { x: hydrantAlong, y: line * TILE_SIZE + 12 } : { x: line * TILE_SIZE + 12, y: hydrantAlong };
       placeOnWalk(b, mask, 'hydrant', hydrant.x, hydrant.y);
@@ -197,16 +206,20 @@ function dressRoad(b: MapBuilder, road: Road, mask: Uint8Array): void {
   const wreckSpacing = Math.max(8, Math.round(WRECK_SPACING_TILES / b.biome.wrecks));
   for (let tile = start + END_MARGIN_TILES; tile < end - END_MARGIN_TILES; tile += wreckSpacing) {
     const along = (tile + randInt(rng, 0, 10)) * TILE_SIZE;
-    if (width < 5) {
+    const isNarrowRoad = width < 5;
+    if (isNarrowRoad) {
       const spot = alongRoad(along, middle);
-      if (rng() < 0.4) b.scatter('dumpster', around(spot, 30), 1, 24);
+      const getsDumpster = rng() < 0.4;
+      if (getsDumpster) b.scatter('dumpster', around(spot, 30), 1, 24);
       continue;
     }
     const lane = middle + (rng() < 0.5 ? -1 : 1) * randRange(rng, 12, 24);
     const spot = alongRoad(along, lane);
     const wreck = road.horizontal ? pick<PropKind>(rng, ['car_wreck_h', 'car_wreck_h', 'car_sedan_h', 'van_h']) : 'car_sedan_v';
-    if (rng() < 0.7) b.place(wreck, spot.x, spot.y);
-    if (rng() < 0.2) {
+    const getsWreck = rng() < 0.7;
+    if (getsWreck) b.place(wreck, spot.x, spot.y);
+    const getsRoadblock = rng() < 0.2;
+    if (getsRoadblock) {
       const block = alongRoad(along + 96, middle);
       b.place(pick<PropKind>(rng, ['barrier', 'sandbags']), block.x, block.y);
     }
@@ -228,11 +241,13 @@ function dressRoad(b: MapBuilder, road: Road, mask: Uint8Array): void {
 /** The biome's own growth pushing up through the kerbs, never solid enough to block a pavement. */
 function creepKerbs(b: MapBuilder, mask: Uint8Array): void {
   const { chance, kinds } = b.biome.creep;
-  if (chance <= 0) return;
+  const hasNoCreep = chance <= 0;
+  if (hasNoCreep) return;
   for (let row = 0; row < b.rows; row++) {
     for (let col = 0; col < b.cols; col++) {
       const onKerb = mask[row * b.cols + col] === 0 && (b.tileIs(col, row, 'curb_n') || b.tileIs(col, row, 'curb_s') || b.tileIs(col, row, 'curb_e') || b.tileIs(col, row, 'curb_w'));
-      if (onKerb && b.rng() < chance) placeOnWalk(b, mask, pick<PropKind>(b.rng, kinds), col * TILE_SIZE + 8, row * TILE_SIZE + 12);
+      const getsCreep = onKerb && b.rng() < chance;
+      if (getsCreep) placeOnWalk(b, mask, pick<PropKind>(b.rng, kinds), col * TILE_SIZE + 8, row * TILE_SIZE + 12);
     }
   }
 }

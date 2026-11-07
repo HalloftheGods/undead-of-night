@@ -58,7 +58,8 @@ export function createWorkerUpdates(env: UpdateEnv) {
   function applyIfReady(): void {
     const worker = waiting;
     const canApply = titleShowing && !applying;
-    if (worker === null || !canApply) return;
+    const cannotUpdate = worker === null || !canApply;
+    if (cannotUpdate) return;
     applying = true;
     env.container.controller?.postMessage(RELEASE_MUSIC_MESSAGE);
     worker.postMessage(SKIP_WAITING_MESSAGE);
@@ -77,7 +78,8 @@ export function createWorkerUpdates(env: UpdateEnv) {
     waiting = registration.waiting;
     const onUpdateFound = (): void => {
       const installing = registration.installing;
-      if (installing === null) return;
+      const isNotInstalling = installing === null;
+      if (isNotInstalling) return;
       const listener = (): void => onStateChange(installing);
       installing.addEventListener('statechange', listener);
       undo.push(() => installing.removeEventListener('statechange', listener));

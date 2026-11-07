@@ -70,18 +70,21 @@ export function stashIn(seed: number, container: Container): Stash | null {
   const rng = createRng((seed ^ STASH_SALT ^ Math.imul(container.id + 1, 0x9e3779b1)) >>> 0);
   const roll = rng();
   const flareOdds = container.kind === 'car' ? CAR_FLARE_ODDS : FLARE_ODDS[container.buildingKind] ?? 0;
-  if (roll < flareOdds) return 'flare';
+  const isFlare = roll < flareOdds;
+  if (isFlare) return 'flare';
   const fuelOdds = FUEL_ODDS[container.buildingKind] ?? 0;
   return roll < flareOdds + fuelOdds ? 'fuel' : null;
 }
 
 /** The searcher takes it if they have room; otherwise it stays where it was, and the container is searched all the same. */
 export function takeStash(p: PlayerState, stash: Stash | null): Stash | null {
-  if (stash === 'fuel' && p.fuel < FUEL_CARRY) {
+  const takesFuel = stash === 'fuel' && p.fuel < FUEL_CARRY;
+  if (takesFuel) {
     p.fuel += 1;
     return stash;
   }
-  if (stash === 'flare' && p.flares < FLARE_CARRY) {
+  const takesFlare = stash === 'flare' && p.flares < FLARE_CARRY;
+  if (takesFlare) {
     p.flares += 1;
     return stash;
   }
@@ -94,7 +97,8 @@ export function updateThrowables(sim: SimState, p: PlayerState): void {
   const wantsFlare = p.flareQueued;
   p.molotovQueued = false;
   p.flareQueued = false;
-  if (p.throwCooldown > 0) return;
+  const isCoolingDown = p.throwCooldown > 0;
+  if (isCoolingDown) return;
   const fuelled = p.fuel > 0 || sugarOf(p, 'popping_eyeballs') > 0;
   const canMolotov = wantsMolotov && fuelled && p.bottles > 0;
   const canFlare = !canMolotov && wantsFlare && p.flares > 0;
@@ -145,7 +149,8 @@ export function updateFires(sim: SimState): void {
   for (const fire of sim.fires) {
     fire.left -= TICK_DT;
     fire.noiseLeft -= TICK_DT;
-    if (fire.noiseLeft <= 1e-9) {
+    const isDueToCrackle = fire.noiseLeft <= 1e-9;
+    if (isDueToCrackle) {
       fire.noiseLeft += FIRE_NOISE_SEC;
       makeNoise(sim, fire.x, fire.y, FIRE_NOISE_RADIUS);
     }
@@ -155,7 +160,8 @@ export function updateFires(sim: SimState): void {
   for (const flare of sim.flares) {
     flare.left -= TICK_DT;
     flare.noiseLeft -= TICK_DT;
-    if (flare.noiseLeft <= 1e-9) {
+    const isDueToHiss = flare.noiseLeft <= 1e-9;
+    if (isDueToHiss) {
       flare.noiseLeft += FLARE_NOISE_SEC;
       makeNoise(sim, flare.x, flare.y, FLARE_NOISE_RADIUS);
     }

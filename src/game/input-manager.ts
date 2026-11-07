@@ -75,7 +75,8 @@ interface OwnedWeapons {
 /** The next weapon the player owns, stepping through WEAPON_ORDER and wrapping. */
 export function cycleWeapon(state: OwnedWeapons, step: number): WeaponId | null {
   const owned = WEAPON_ORDER.filter((weapon) => state.owned.includes(weapon));
-  if (owned.length < 2 || step === 0) return null;
+  const hasNoOtherGun = owned.length < 2 || step === 0;
+  if (hasNoOtherGun) return null;
   const current = Math.max(0, owned.indexOf(state.weapon));
   return owned[(current + step + owned.length * 8) % owned.length];
 }
@@ -211,7 +212,8 @@ export class InputManager {
 
   /** A touch button goes down as the key it stands for. */
   padDown(code: string): void {
-    if (code === 'Escape') {
+    const isEscape = code === 'Escape';
+    if (isEscape) {
       this.callbacks.onPause();
       return;
     }
@@ -257,44 +259,61 @@ export class InputManager {
   }
 
   private readonly onKeyDown = (event: KeyboardEvent): void => {
-    if (isShortcut(event)) return;
-    if (event.code === 'Escape') {
-      event.preventDefault();
-      if (!event.repeat) this.callbacks.onPause();
-      return;
-    }
-    if (event.code === 'Enter' || event.code === 'NumpadEnter') {
-      this.callbacks.onGesture();
-      // A focused button already answers Enter with a click.
-      if (!event.repeat && !(event.target instanceof HTMLButtonElement)) this.callbacks.onConfirm();
-      return;
-    }
+    const isHandled = isShortcut(event) || this.menuKey(event);
+    if (isHandled) return;
     if (isTyping(event.target)) return;
     this.callbacks.onGesture();
-    if (event.code === 'KeyM') {
-      if (!event.repeat) this.callbacks.onMute();
-      return;
+    const tookPanelKey = this.panelKey(event);
+    if (!tookPanelKey) this.gameKey(event);
+  };
+
+  /** Escape and Enter, which work even while typing. True if the key was one of them. */
+  private menuKey(event: KeyboardEvent): boolean {
+    const isPause = event.code === 'Escape';
+    if (isPause) {
+      event.preventDefault();
+      if (!event.repeat) this.callbacks.onPause();
+      return true;
     }
-    if (event.code === LOG_CODE) {
-      const taken = !event.repeat && (this.callbacks.onLog?.() ?? false);
-      if (taken) event.preventDefault();
-      return;
+    const isEnter = event.code === 'Enter' || event.code === 'NumpadEnter';
+    if (isEnter) {
+      this.callbacks.onGesture();
+      // A focused button already answers Enter with a click.
+      const isUnclaimedPress = !event.repeat && !(event.target instanceof HTMLButtonElement);
+      if (isUnclaimedPress) this.callbacks.onConfirm();
     }
-    if (MAP_CODES.has(event.code)) {
-      const taken = event.repeat ? this.callbacks.mapUsable() : this.callbacks.onMap();
-      if (taken) event.preventDefault();
-      return;
-    }
+    return isEnter;
+  }
+
+  /** Mute, the log and the map. True if the key was one of them. */
+  private panelKey(event: KeyboardEvent): boolean {
+    const { code, repeat } = event;
+    const isMute = code === 'KeyM';
+    const isLog = code === LOG_CODE;
+    const isMap = MAP_CODES.has(code);
+    const shouldMute = isMute && !repeat;
+    if (shouldMute) this.callbacks.onMute();
+    let taken = false;
+    if (isLog) taken = !repeat && (this.callbacks.onLog?.() ?? false);
+    if (isMap) taken = repeat ? this.callbacks.mapUsable() : this.callbacks.onMap();
+    if (taken) event.preventDefault();
+    return isMute || isLog || isMap;
+  }
+
+  /** A movement or action key: held for movement, latched for one-shot actions while input is on. */
+  private gameKey(event: KeyboardEvent): void {
     if (!GAME_CODES.has(event.code)) return;
     this.held.add(event.code);
     if (!this.enabled) return;
     event.preventDefault();
     if (!event.repeat) this.latch(event.code);
-  };
+  }
 
   private latch(code: string): void {
-    if (code === 'KeyR') this.reloadLatch = true;
-    if (code === 'KeyQ') this.cycleLatch += 1;
+    const isReload = code === 'KeyR';
+    if (isReload) this.reloadLatch = true;
+    const isCycle = code === 'KeyQ';
+    if (isCycle) this.cycleLatch += 1;
     this.shoveLatch ||= code === SHOVE_CODE;
     this.healLatch ||= code === HEAL_CODE;
     this.throwLatch ||= code === THROW_CODE;
@@ -341,7 +360,8 @@ export class InputManager {
     if (!this.enabled) return;
     event.preventDefault();
     const now = performance.now();
-    if (now - this.lastWheelAt < WHEEL_COOLDOWN_MS || event.deltaY === 0) return;
+    const isWheelIgnored = now - this.lastWheelAt < WHEEL_COOLDOWN_MS || event.deltaY === 0;
+    if (isWheelIgnored) return;
     this.lastWheelAt = now;
     this.cycleLatch += Math.sign(event.deltaY);
   };

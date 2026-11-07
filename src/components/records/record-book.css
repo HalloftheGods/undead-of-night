@@ -314,10 +314,8 @@
   color: var(--hand-ink);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .rb-open {
-    animation: none;
-  }
+:root[data-motion='reduced'] .rb-open {
+  animation: none;
 }
 
 /* The stamps: a grid of rubber-stamp rings, inked when earned and dashed while empty. */

@@ -73,7 +73,8 @@ interface HandsRequest {
 
 const sortedKeys = (value: unknown): unknown => {
   if (Array.isArray(value)) return value.map(sortedKeys);
-  if (typeof value !== 'object' || value === null) return value;
+  const isNotObject = typeof value !== 'object' || value === null;
+  if (isNotObject) return value;
   const entries = Object.entries(value).sort(([a], [b]) => (a < b ? -1 : 1));
   return Object.fromEntries(entries.map(([key, inner]) => [key, sortedKeys(inner)]));
 };
@@ -106,7 +107,7 @@ export class HomeSync {
   private lastHeld: string | null = null;
   /** The equip or join the room has not yet answered. Its answer settles against the locker; any other change in hand is a bench action. */
   private request: HandsRequest | null = null;
-  private tripWait: ReturnType<typeof setTimeout> | null = null;
+  private tripWait: ReturnType<typeof setTimeout> | undefined;
   /** Asked the room for a level while standing at the van with none picked. */
   private pickAsked = false;
   /** Back in a body the room kept, which may already be waiting at the van. */
@@ -211,7 +212,8 @@ export class HomeSync {
       stepped = next !== null;
       return next ?? save;
     }, 0);
-    if (result.kind !== 'saved') return result.kind;
+    const isNotSaved = result.kind !== 'saved';
+    if (isNotSaved) return result.kind;
     return stepped ? 'saved' : 'refused';
   }
 
@@ -252,8 +254,8 @@ export class HomeSync {
   }
 
   private clearTripWait(): void {
-    if (this.tripWait !== null) clearTimeout(this.tripWait);
-    this.tripWait = null;
+    clearTimeout(this.tripWait);
+    this.tripWait = undefined;
   }
 
   private settleOpenTrip(resumed: boolean): void {
@@ -287,7 +289,8 @@ export class HomeSync {
   /** A breach is written to the save when first seen, so quitting in it is a death, and closed once it is survived or over. */
   private watchBreach(home: HomeView, phase: OverrunView['phase'] | undefined): void {
     const save = this.saves.save;
-    if (!save || this.mustWait || this.breachWriting) return;
+    const cannotWriteYet = !save || this.mustWait || this.breachWriting;
+    if (cannotWriteYet) return;
     const seen = watchBreach(save, phase, (home.overrun ?? null) !== null);
     const change = this.breachChange(seen);
     if (!change) return;
@@ -343,7 +346,8 @@ export class HomeSync {
     this.van = 'away';
     this.atVan = false;
     this.forgeSeconds = 0;
-    if (this.saves.save?.openOverrun && !this.mustWait) void this.saves.write(clearOpenOverrun);
+    const shouldClearOverrun = this.saves.save?.openOverrun && !this.mustWait;
+    if (shouldClearOverrun) void this.saves.write(clearOpenOverrun);
     const onFile = this.saves.save?.openTrip?.level === level;
     const shouldOpen = receipt === null && !onFile && !this.arriving && !this.mustWait;
     if (shouldOpen) this.arrive(level);
@@ -456,7 +460,8 @@ export class HomeSync {
     const tripUnderway = this.van !== 'away' || this.saves.save?.openTrip != null;
     const tripHoldsTheGear = tripUnderway;
     if (tripHoldsTheGear) this.request = null;
-    if (tripUnderway || this.mustWait) return;
+    const isBusy = tripUnderway || this.mustWait;
+    if (isBusy) return;
     const held = loadoutOfEntity(entity);
     const text = textOf(held);
     const sameAsLast = text === this.lastHeld;

@@ -120,7 +120,7 @@ export class EntityRenderer {
   private readonly art: ArtBook;
   private readonly visuals: VisualStore;
   private readonly buildings: BuildingLayer;
-  private readonly reducedMotion: boolean;
+  private reducedMotion: boolean;
   private props: PlacedProp[] = [];
   private fires: PlacedProp[] = [];
   private corpses: Corpse[] = [];
@@ -134,6 +134,11 @@ export class EntityRenderer {
     this.survivorFrames = new SurvivorFrames(art);
     this.visuals = visuals;
     this.buildings = buildings;
+    this.reducedMotion = reducedMotion;
+  }
+
+  /** The Motion setting changed while the game was running. */
+  setReducedMotion(reducedMotion: boolean): void {
     this.reducedMotion = reducedMotion;
   }
 

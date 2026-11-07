@@ -81,8 +81,10 @@ const ACTIONS: Record<QuestRow['state'], QuestAction> = { ready: 'turn_in', offe
 /** Cells lit for a value: one per unit up to STAT_SLOTS, proportional above, and full only when the bar is. */
 export function barCells(value: number, target: number): number {
   const held = Math.max(0, Math.min(value, target));
-  if (target <= STAT_SLOTS) return held;
-  if (held >= target) return STAT_SLOTS;
+  const fitsSlots = target <= STAT_SLOTS;
+  if (fitsSlots) return held;
+  const isFull = held >= target;
+  if (isFull) return STAT_SLOTS;
   return Math.max(held > 0 ? 1 : 0, Math.min(STAT_SLOTS - 1, Math.round((held / target) * STAT_SLOTS)));
 }
 
@@ -95,18 +97,24 @@ export function liveProgress(def: QuestDef, saved: number, home: HomeUi): number
   if (home.inBunker) return saved;
   const { objective, filter } = def;
   const target = targetOf(objective);
-  if (objective.kind === 'bring_home' && objective.what === 'jewel') {
+  const isJewelHaul = objective.kind === 'bring_home' && objective.what === 'jewel';
+  if (isJewelHaul) {
     const { small, large } = home.carried.jewels;
     return Math.max(saved, Math.min(target, small + large));
   }
-  if (objective.kind !== 'tally') return saved;
+  const isNotTally = objective.kind !== 'tally';
+  if (isNotTally) return saved;
   const { tally } = home.quests;
-  if (filter?.minLevel !== undefined && (home.pickedLevel ?? 0) < filter.minLevel) return saved;
-  if (filter?.survivor !== undefined && tally.survivor !== filter.survivor) return saved;
-  if (filter?.minParty !== undefined && tally.party < filter.minParty) return saved;
+  const isBelowLevel = filter?.minLevel !== undefined && (home.pickedLevel ?? 0) < filter.minLevel;
+  if (isBelowLevel) return saved;
+  const isWrongSurvivor = filter?.survivor !== undefined && tally.survivor !== filter.survivor;
+  if (isWrongSurvivor) return saved;
+  const isPartyTooSmall = filter?.minParty !== undefined && tally.party < filter.minParty;
+  if (isPartyTooSmall) return saved;
   const value = objective.counter === 'kills' && filter?.zombie ? tally.killsBy[filter.zombie] : tally.counts[objective.counter];
   const limit = objective.atMost;
-  if (limit && tally.counts[limit.counter] > limit.count) return saved;
+  const isOverLimit = limit && tally.counts[limit.counter] > limit.count;
+  if (isOverLimit) return saved;
   return objective.scope === 'total' ? Math.min(target, saved + value) : Math.max(saved, Math.min(target, value));
 }
 
@@ -131,7 +139,10 @@ function chipOf(home: HomeUi, def: QuestDef, reward: Extract<QuestReward, { kind
 function rewardsOf(home: HomeUi, def: QuestDef): RewardChip[] {
   const silver = silverOf(def, home.highest);
   const chips: RewardChip[] = silver > 0 ? [{ kind: 'silver', label: `${silver} silver`, note: null }] : [];
-  for (const reward of def.reward) if (reward.kind === 'item') chips.push(chipOf(home, def, reward));
+  for (const reward of def.reward) {
+    const isItemReward = reward.kind === 'item';
+    if (isItemReward) chips.push(chipOf(home, def, reward));
+  }
   return chips;
 }
 
@@ -140,21 +151,25 @@ const contextOf = (home: HomeUi): QuestContext => ({ ...shopContext(home), now: 
 /** Says why a step at the counter was turned down, in the words the shop uses. */
 function refusalOf(home: HomeUi, merchant: MerchantId): string | null {
   if (home.save?.openTrip) return 'Not while out on a trip';
-  if (home.station !== merchant) return 'Step up to the counter';
+  const isAwayFromCounter = home.station !== merchant;
+  if (isAwayFromCounter) return 'Step up to the counter';
   return null;
 }
 
 /** The save the row's action would give, or null when it is refused or there is none. */
 function attempt(save: HomeSave, merchant: MerchantId, row: QuestRow, context: QuestContext): HomeSave | null {
-  if (row.state === 'offered') return accept(save, merchant, row.id, context);
-  if (row.state === 'ready') return turnIn(save, merchant, context);
+  const isOffered = row.state === 'offered';
+  if (isOffered) return accept(save, merchant, row.id, context);
+  const isReadyRow = row.state === 'ready';
+  if (isReadyRow) return turnIn(save, merchant, context);
   return null;
 }
 
 function panelOf(home: HomeUi, merchant: MerchantId, row: QuestRow): QuestPanel | null {
   const { save } = home;
   const def = questOf(row.id);
-  if (!save || !def) return null;
+  const hasNoQuest = !save || !def;
+  if (hasNoQuest) return null;
   const context = contextOf(home);
   const open = row.state === 'ready' || row.state === 'active';
   const progress = open ? liveProgress(def, row.progress, home) : 0;
@@ -182,7 +197,8 @@ export function questTracker(home: HomeUi): QuestTracker {
   for (const merchant of MERCHANT_IDS) {
     const open = active?.[merchant];
     const def = open && questOf(open.id);
-    if (!open || !def) continue;
+    const hasNoQuest = !open || !def;
+    if (hasNoQuest) continue;
     const progress = liveProgress(def, open.progress, home);
     lines.push({
       merchant, id: def.id, title: def.title, bar: barOf(null, progress, targetOf(def.objective)), ready: isReady(def, open.progress),

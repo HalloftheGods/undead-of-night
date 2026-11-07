@@ -24,7 +24,8 @@ export function generateRoomCode(length: number = ROOM_CODE_LENGTH): string {
     let code = '';
     while (code.length < length) {
       for (const byte of crypto.getRandomValues(new Uint8Array(length * 2))) {
-        if (byte < limit && code.length < length) code += ROOM_CODE_ALPHABET[byte % size];
+        const isUsableByte = byte < limit && code.length < length;
+        if (isUsableByte) code += ROOM_CODE_ALPHABET[byte % size];
       }
     }
     if (!isBlockedRoomCode(code)) return code;
@@ -33,14 +34,17 @@ export function generateRoomCode(length: number = ROOM_CODE_LENGTH): string {
 
 /** Uppercases and trims typed input, then checks it. Digits, I, L and O get the 'letters only' message. */
 export function normalizeRoomCode(raw: unknown, length: number = ROOM_CODE_LENGTH): RoomCodeCheck {
-  if (typeof raw !== 'string') return { ok: false, reason: 'Enter a room code.' };
+  const isNotText = typeof raw !== 'string';
+  if (isNotText) return { ok: false, reason: 'Enter a room code.' };
   const code = raw.trim().toUpperCase();
   if (!code) return { ok: false, reason: 'Enter a room code.' };
-  if (/[^A-Z]|[ILO]/.test(code)) return { ok: false, reason: 'Room codes are letters only.' };
+  const hasNonLetters = /[^A-Z]|[ILO]/.test(code);
+  if (hasNonLetters) return { ok: false, reason: 'Room codes are letters only.' };
   if ([...code].some((letter) => !ROOM_CODE_ALPHABET.includes(letter))) {
     return { ok: false, reason: 'That is not a room code.' };
   }
-  if (code.length !== length) return { ok: false, reason: `Room codes are ${length} letters.` };
+  const isWrongLength = code.length !== length;
+  if (isWrongLength) return { ok: false, reason: `Room codes are ${length} letters.` };
   if (isBlockedRoomCode(code)) return { ok: false, reason: 'That is not a room code.' };
   return { ok: true, code };
 }

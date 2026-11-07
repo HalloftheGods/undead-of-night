@@ -154,13 +154,16 @@ function drawPixelLine(
 
   while (true) {
     ctx.fillRect(cx, cy, 1, 1);
-    if (cx === x1 && cy === y1) break;
+    const isAtEnd = cx === x1 && cy === y1;
+    if (isAtEnd) break;
     const e2 = 2 * err;
-    if (e2 > -dy) {
+    const shouldStepX = e2 > -dy;
+    if (shouldStepX) {
       err -= dy;
       cx += sx;
     }
-    if (e2 < dx) {
+    const shouldStepY = e2 < dx;
+    if (shouldStepY) {
       err += dx;
       cy += sy;
     }
@@ -256,7 +259,8 @@ export class TownMapView {
     for (const district of this.map.districts) {
       const x = Math.round(district.x / this.worldPerPx);
       const y = Math.round(district.y / this.worldPerPx);
-      if (placeLabel(ctx, district.name, x, y, DISTRICT_COLOR, placed)) this.roomLabels.push(district.name);
+      const isLabelPlaced = placeLabel(ctx, district.name, x, y, DISTRICT_COLOR, placed);
+      if (isLabelPlaced) this.roomLabels.push(district.name);
     }
   }
 
@@ -380,7 +384,8 @@ export class TownMapView {
     drop: DropView | null = null,
     clock: CursorClock = STEADY_CLOCK,
   ): void {
-    if (openedContainers.length > 0) this.syncOpened(openedContainers);
+    const hasOpenedContainers = openedContainers.length > 0;
+    if (hasOpenedContainers) this.syncOpened(openedContainers);
     ctx.drawImage(this.base, 0, 0);
     for (const id of this.visited) {
       const building = this.building(id);
@@ -392,7 +397,8 @@ export class TownMapView {
     if (drop) this.drawDrop(ctx, drop);
     const onMap = players.filter((player) => player.status !== 'dead');
     for (const player of onMap) {
-      if (player.id !== localId) this.drawTeammate(ctx, player);
+      const isTeammate = player.id !== localId;
+      if (isTeammate) this.drawTeammate(ctx, player);
     }
     // The local player goes last, so nobody's mark covers the cursor.
     const local = onMap.find((player) => player.id === localId);

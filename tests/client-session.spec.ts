@@ -5,8 +5,6 @@ import type { GameStyle } from '../shared/game-style.ts';
 import { PROTOCOL_VERSION, type SnapshotPacket, type WelcomePacket } from '../shared/protocol.ts';
 import { LocalSession } from '../src/network/local-session.ts';
 import { SocketSession } from '../src/network/socket-session.ts';
-import { RemoteSession } from '../src/network/remote-session.ts';
-import type { PacketPipe } from '../src/network/packet-pipe.ts';
 import { TickClock } from '../src/network/tick-clock.ts';
 
 const TICK_MS = TICK_DT * 1000;

@@ -80,7 +80,8 @@ function stow(key: string): void {
 watch(
   () => home.save,
   (save) => {
-    if (save && !draft.value) draft.value = sent = { locker: save.locker, hands: save.hands };
+    const isFirstSave = save && !draft.value;
+    if (isFirstSave) draft.value = sent = { locker: save.locker, hands: save.hands };
   }
 );
 

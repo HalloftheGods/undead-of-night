@@ -11,6 +11,13 @@
   --amber: #e8a33d;
 }
 
+/* Colorblind-safe palette: magenta for harm, sky blue for help, both well clear of amber. */
+:root[data-palette='clear'] {
+  --blood: #b8246f;
+  --blood-bright: #ff4fa8;
+  --sick: #5aaef0;
+}
+
 html,
 body {
   background: var(--ink);
@@ -415,8 +422,7 @@ body {
   50% { opacity: 0.35; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .px-screen, .px-page, .px-blink {
-    animation: none !important;
-  }
+/* <html data-motion> follows the Motion option on the Options page, which can override the system either way. */
+:root[data-motion='reduced'] .px-screen, :root[data-motion='reduced'] .px-page, :root[data-motion='reduced'] .px-blink {
+  animation: none !important;
 }

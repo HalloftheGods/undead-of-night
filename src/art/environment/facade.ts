@@ -38,7 +38,8 @@ const HOLE = [
 export function glass(canvas: PixelCanvas, x: number, y: number, w: number, h: number): void {
   canvas.rect(x, y, w, h, denim[0]);
   const put = (i: number, j: number, color: Color) => {
-    if (i >= x && i < x + w && j >= y && j < y + h) canvas.px(i, j, color);
+    const isInsideWindow = i >= x && i < x + w && j >= y && j < y + h;
+    if (isInsideWindow) canvas.px(i, j, color);
   };
   const start = x + Math.round(w * 0.62);
   for (let j = 0; j < h; j++) {
@@ -91,11 +92,13 @@ export function windowUnit(canvas: PixelCanvas, x: number, y: number, w: number,
   else if (kind === 'lit') lit(canvas, x, y, w, h);
   else if (kind === 'blind') blind(canvas, x, y, w, h);
   else glass(canvas, x, y, w, h);
-  if (kind !== 'boarded' && w >= 9) {
+  const hasMullions = kind !== 'boarded' && w >= 9;
+  if (hasMullions) {
     const mid = x + Math.floor(w / 2);
     canvas.rect(mid, y, 1, h, face).rect(x, y + Math.floor(h * 0.45), w, 1, face);
   }
-  if (kind === 'cracked') canvas.grid(x + Math.floor((w - 9) / 2), y + Math.floor((h - 9) / 2), HOLE, SHATTER);
+  const isCracked = kind === 'cracked';
+  if (isCracked) canvas.grid(x + Math.floor((w - 9) / 2), y + Math.floor((h - 9) / 2), HOLE, SHATTER);
   canvas.rect(x - 2, y + h, w + 4, 1, light).rect(x - 1, y + h + 1, w + 2, 1, dark);
 }
 

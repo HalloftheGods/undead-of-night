@@ -64,7 +64,7 @@ const send = (ws: WebSocket, message: ToHostSignal | ToGuestSignal): void => {
   try {
     ws.send(JSON.stringify(message));
   } catch {
-    // The socket is already closing; its close handler tidies up.
+    // chemx-allow: best-effort the socket is already closing; its close handler tidies up
   }
 };
 
@@ -72,12 +72,13 @@ const shut = (ws: WebSocket, code: number, reason: string): void => {
   try {
     ws.close(code, reason);
   } catch {
-    // Already closed.
+    // chemx-allow: best-effort the socket is already closed
   }
 };
 
 function sameText(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
+  const isLengthDifferent = a.length !== b.length;
+  if (isLengthDifferent) return false;
   let diff = 0;
   for (let i = 0; i < a.length; i += 1) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
   return diff === 0;
@@ -110,9 +111,11 @@ export class Room extends DurableObject<Env> {
   override async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
     const meta = await this.load();
     if (!meta) return shut(ws, CLOSE.notFound, 'room ended');
-    if (typeof message !== 'string') return shut(ws, 1003, 'text only');
+    const isBinaryMessage = typeof message !== 'string';
+    if (isBinaryMessage) return shut(ws, 1003, 'text only');
     const at = ws.deserializeAttachment() as Attachment;
-    if (at.role === 'host') return at.authed ? this.fromHost(meta, ws, at, message) : this.authHost(meta, ws, at, message);
+    const isFromHost = at.role === 'host';
+    if (isFromHost) return at.authed ? this.fromHost(meta, ws, at, message) : this.authHost(meta, ws, at, message);
     return this.fromGuest(ws, at, message);
   }
 
@@ -129,20 +132,26 @@ export class Room extends DurableObject<Env> {
     const meta = await this.load();
     if (!meta) return;
     const now = Date.now();
-    if (roomTooOld(meta.createdAt, now)) return this.end(meta, 'max_age');
+    const isRoomExpired = roomTooOld(meta.createdAt, now);
+    if (isRoomExpired) return this.end(meta, 'max_age');
     this.closeOverdue(now);
     const host = this.authedHost();
-    if (host && now - this.lastHeard(host) >= HOST_SILENT_MS) {
+    const isHostSilent = host && now - this.lastHeard(host) >= HOST_SILENT_MS;
+    if (isHostSilent) {
       shut(host, 1001, 'silent');
       await this.hostDropped(meta, now);
     }
-    if (!this.authedHost() && meta.hostDroppedAt !== null && hostGraceExpired(meta.hostDroppedAt, now)) {
+    const isHostGone = !this.authedHost() && meta.hostDroppedAt !== null && hostGraceExpired(meta.hostDroppedAt, now);
+    if (isHostGone) {
       return this.end(meta, 'host_gone');
     }
-    if (meta.reportPending && now - meta.reportSentAt >= REPORT_EVERY_MS) {
-      if (!(await this.sendReport(meta, now))) return this.end(meta, 'unlisted');
+    const isReportDue = meta.reportPending && now - meta.reportSentAt >= REPORT_EVERY_MS;
+    if (isReportDue) {
+      const isUnlisted = !(await this.sendReport(meta, now));
+      if (isUnlisted) return this.end(meta, 'unlisted');
     }
-    if (now - meta.touchedAt >= LIVENESS_MS) {
+    const isLivenessDue = now - meta.touchedAt >= LIVENESS_MS;
+    if (isLivenessDue) {
       meta.touchedAt = now;
       await this.save(meta);
       const listed = await lobbyOf(this.env).roomSeen(meta.code, this.authedHost() === null);
@@ -168,7 +177,8 @@ export class Room extends DurableObject<Env> {
       logEvent('join_refused', refused.reason || String(refused.code));
       return closedSocket(refused.code, refused.reason);
     }
-    if (!(await lobbyOf(this.env).allowTurn(ipKey))) return closedSocket(CLOSE.rateLimited, 'rate limited');
+    const isTurnRefused = !(await lobbyOf(this.env).allowTurn(ipKey));
+    if (isTurnRefused) return closedSocket(CLOSE.rateLimited, 'rate limited');
     const iceServers = await this.iceServers();
     const pair = new WebSocketPair();
     const peerId = crypto.randomUUID();
@@ -183,13 +193,17 @@ export class Room extends DurableObject<Env> {
   /** Why a guest may not start signaling, judged from the host's last report. */
   private guestRefusal(meta: RoomMeta, request: Request): { code: number; reason: string } | null {
     const protocol = Number(new URL(request.url).searchParams.get('protocol'));
-    if (protocol !== meta.protocol) {
+    const isProtocolMismatch = protocol !== meta.protocol;
+    if (isProtocolMismatch) {
       return { code: CLOSE.needsUpdate, reason: protocol < meta.protocol ? UPDATE_REASON.guestOlder : UPDATE_REASON.hostOlder };
     }
     if (meta.report?.locked) return { code: CLOSE.locked, reason: 'locked' };
-    if ((meta.report?.seats ?? 1) >= meta.maxSeats) return { code: CLOSE.roomFull, reason: 'full' };
-    if (!this.authedHost()) return { code: CLOSE.serverBusy, reason: 'host away' };
-    if (this.ctx.getWebSockets('guest').length >= MAX_SIGNALING_GUESTS) return { code: CLOSE.serverBusy, reason: 'busy' };
+    const isRoomFull = (meta.report?.seats ?? 1) >= meta.maxSeats;
+    if (isRoomFull) return { code: CLOSE.roomFull, reason: 'full' };
+    const isHostAway = !this.authedHost();
+    if (isHostAway) return { code: CLOSE.serverBusy, reason: 'host away' };
+    const hasTooManyGuests = this.ctx.getWebSockets('guest').length >= MAX_SIGNALING_GUESTS;
+    if (hasTooManyGuests) return { code: CLOSE.serverBusy, reason: 'busy' };
     return null;
   }
 
@@ -198,17 +212,22 @@ export class Room extends DurableObject<Env> {
   private async authHost(meta: RoomMeta, ws: WebSocket, at: Extract<Attachment, { role: 'host' }>, text: string): Promise<void> {
     const signal = parseHostSignal(text);
     const now = Date.now();
-    if (now - at.openedAt > HOST_AUTH_MS) return shut(ws, POLICY, 'auth too late');
+    const isAuthTooLate = now - at.openedAt > HOST_AUTH_MS;
+    if (isAuthTooLate) return shut(ws, POLICY, 'auth too late');
     // Anything else that races ahead of the auth answer (a report, say) is dropped; the deadline still holds.
-    if (signal?.type !== 'auth') return;
-    if (!sameText(await sha256Hex(signal.hostKey), meta.hostKeyHash)) {
+    const isNotAuth = signal?.type !== 'auth';
+    if (isNotAuth) return;
+    const isWrongHostKey = !sameText(await sha256Hex(signal.hostKey), meta.hostKeyHash);
+    if (isWrongHostKey) {
       logEvent('host_refused', 'bad_key');
       return shut(ws, POLICY, 'bad host key');
     }
     for (const other of this.ctx.getWebSockets('host')) {
-      if (other !== ws) shut(other, NORMAL, 'replaced');
+      const isOtherHost = other !== ws;
+      if (isOtherHost) shut(other, NORMAL, 'replaced');
     }
-    if (!(await lobbyOf(this.env).allowTurn(at.ipKey))) return shut(ws, CLOSE.rateLimited, 'rate limited');
+    const isTurnRefused = !(await lobbyOf(this.env).allowTurn(at.ipKey));
+    if (isTurnRefused) return shut(ws, CLOSE.rateLimited, 'rate limited');
     ws.serializeAttachment({ ...at, authed: true, heardAt: now } satisfies Attachment);
     meta.hostDroppedAt = null;
     meta.touchedAt = now;
@@ -223,25 +242,29 @@ export class Room extends DurableObject<Env> {
     ws.serializeAttachment({ ...at, heardAt: now } satisfies Attachment);
     const signal = parseHostSignal(text);
     if (!signal) return;
-    switch (signal.type) {
-      case 'answer':
-        return this.toGuest(signal.peerId, { type: 'answer', sdp: signal.sdp });
-      case 'ice':
-        return this.toGuest(signal.peerId, { type: 'ice', ice: signal.ice });
-      case 'report':
-        meta.report = signal.report;
-        meta.reportPending = true;
-        if (now - meta.reportSentAt >= REPORT_EVERY_MS) {
-          if (!(await this.sendReport(meta, now))) return this.end(meta, 'unlisted');
-          return;
-        }
-        await this.save(meta);
-        return this.wakeBy(meta.reportSentAt + REPORT_EVERY_MS);
-      case 'end':
-        return this.end(meta, 'host_ended');
-      case 'auth':
-        return;
+    // A repeated auth from an authed host needs no answer, so it falls through every branch.
+    const isAnswer = signal.type === 'answer';
+    if (isAnswer) return this.toGuest(signal.peerId, { type: 'answer', sdp: signal.sdp });
+    const isIce = signal.type === 'ice';
+    if (isIce) return this.toGuest(signal.peerId, { type: 'ice', ice: signal.ice });
+    const isReport = signal.type === 'report';
+    if (isReport) return this.takeReport(meta, signal.report, now);
+    const isEnd = signal.type === 'end';
+    if (isEnd) return this.end(meta, 'host_ended');
+  }
+
+  /** The newest report waits to be sent at most once per REPORT_EVERY_MS. */
+  private async takeReport(meta: RoomMeta, report: RoomReport, now: number): Promise<void> {
+    meta.report = report;
+    meta.reportPending = true;
+    const isReportDue = now - meta.reportSentAt >= REPORT_EVERY_MS;
+    if (isReportDue) {
+      const isUnlisted = !(await this.sendReport(meta, now));
+      if (isUnlisted) return this.end(meta, 'unlisted');
+      return;
     }
+    await this.save(meta);
+    return this.wakeBy(meta.reportSentAt + REPORT_EVERY_MS);
   }
 
   private toGuest(peerId: string, message: ToGuestSignal): void {
@@ -257,7 +280,8 @@ export class Room extends DurableObject<Env> {
   }
 
   private async hostDropped(meta: RoomMeta, now: number): Promise<void> {
-    if (this.authedHost() || meta.hostDroppedAt !== null) return;
+    const isAlreadyTracked = this.authedHost() || meta.hostDroppedAt !== null;
+    if (isAlreadyTracked) return;
     meta.hostDroppedAt = now;
     await this.save(meta);
     await lobbyOf(this.env).roomSeen(meta.code, true);
@@ -269,12 +293,15 @@ export class Room extends DurableObject<Env> {
 
   private fromGuest(ws: WebSocket, at: Extract<Attachment, { role: 'guest' }>, text: string): void {
     const messages = at.messages + 1;
-    if (messages > GUEST_MAX_MESSAGES || Date.now() - at.openedAt > GUEST_WINDOW_MS) return shut(ws, POLICY, 'signaling over');
+    const isSignalingOver = messages > GUEST_MAX_MESSAGES || Date.now() - at.openedAt > GUEST_WINDOW_MS;
+    if (isSignalingOver) return shut(ws, POLICY, 'signaling over');
     ws.serializeAttachment({ ...at, messages } satisfies Attachment);
     const signal = parseGuestSignal(text);
     const host = this.authedHost();
-    if (!signal || !host) return;
-    if (signal.type === 'offer') send(host, { type: 'offer', peerId: at.peerId, sdp: signal.sdp });
+    const cannotRelay = !signal || !host;
+    if (cannotRelay) return;
+    const isOffer = signal.type === 'offer';
+    if (isOffer) send(host, { type: 'offer', peerId: at.peerId, sdp: signal.sdp });
     else send(host, { type: 'ice', peerId: at.peerId, ice: signal.ice });
   }
 
@@ -283,8 +310,10 @@ export class Room extends DurableObject<Env> {
   private async socketGone(ws: WebSocket): Promise<void> {
     const at = ws.deserializeAttachment() as Attachment | null;
     const meta = await this.load();
-    if (!at || !meta) return;
-    if (at.role === 'guest') {
+    const isUnknownSocket = !at || !meta;
+    if (isUnknownSocket) return;
+    const isGuest = at.role === 'guest';
+    if (isGuest) {
       const host = this.authedHost();
       if (host) send(host, { type: 'peer-left', peerId: at.peerId });
       return;
@@ -296,8 +325,10 @@ export class Room extends DurableObject<Env> {
   private closeOverdue(now: number): void {
     for (const ws of this.ctx.getWebSockets()) {
       const at = ws.deserializeAttachment() as Attachment | null;
-      if (at?.role === 'host' && !at.authed && now - at.openedAt >= HOST_AUTH_MS) shut(ws, POLICY, 'no auth');
-      if (at?.role === 'guest' && now - at.openedAt >= GUEST_WINDOW_MS) {
+      const isHostAuthOverdue = at?.role === 'host' && !at.authed && now - at.openedAt >= HOST_AUTH_MS;
+      if (isHostAuthOverdue) shut(ws, POLICY, 'no auth');
+      const isGuestWindowOver = at?.role === 'guest' && now - at.openedAt >= GUEST_WINDOW_MS;
+      if (isGuestWindowOver) {
         shut(ws, NORMAL, 'signaling over');
         const host = this.authedHost();
         if (host) send(host, { type: 'peer-left', peerId: at.peerId });
@@ -334,11 +365,15 @@ export class Room extends DurableObject<Env> {
   private nextWake(meta: RoomMeta, now: number): number {
     const times = [now + LIVENESS_MS];
     if (meta.reportPending) times.push(meta.reportSentAt + REPORT_EVERY_MS);
-    if (meta.hostDroppedAt !== null) times.push(meta.hostDroppedAt + HOST_RECONNECT_GRACE_MS);
+    const droppedAt = meta.hostDroppedAt;
+    const isHostDropped = droppedAt !== null;
+    if (isHostDropped) times.push(droppedAt + HOST_RECONNECT_GRACE_MS);
     for (const ws of this.ctx.getWebSockets()) {
       const at = ws.deserializeAttachment() as Attachment | null;
-      if (at?.role === 'guest') times.push(at.openedAt + GUEST_WINDOW_MS);
-      if (at?.role === 'host' && !at.authed) times.push(at.openedAt + HOST_AUTH_MS);
+      const isGuest = at?.role === 'guest';
+      if (isGuest) times.push(at.openedAt + GUEST_WINDOW_MS);
+      const isUnauthedHost = at?.role === 'host' && !at.authed;
+      if (isUnauthedHost) times.push(at.openedAt + HOST_AUTH_MS);
     }
     return Math.max(now + 1, Math.min(...times));
   }
@@ -346,7 +381,8 @@ export class Room extends DurableObject<Env> {
   /** Moves the alarm earlier if `at` comes before it. */
   private async wakeBy(at: number): Promise<void> {
     const current = await this.ctx.storage.getAlarm();
-    if (current === null || current > at) await this.ctx.storage.setAlarm(at);
+    const isAlarmLater = current === null || current > at;
+    if (isAlarmLater) await this.ctx.storage.setAlarm(at);
   }
 
   private async iceServers(): Promise<IceServer[]> {
@@ -354,8 +390,12 @@ export class Room extends DurableObject<Env> {
   }
 
   private async load(): Promise<RoomMeta | null> {
-    if (this.meta === undefined) this.meta = (await this.ctx.storage.get<RoomMeta>('meta')) ?? null;
-    return this.meta;
+    const cached = this.meta;
+    const isMetaLoaded = cached !== undefined;
+    if (isMetaLoaded) return cached;
+    const loaded = (await this.ctx.storage.get<RoomMeta>('meta')) ?? null;
+    this.meta = loaded;
+    return loaded;
   }
 
   private async save(meta: RoomMeta): Promise<void> {

@@ -50,12 +50,14 @@ const tiles = new Map<number, HTMLElement>();
 const CARD_SIZE = { '--card-w': CARD_W, '--card-h': CARD_H };
 
 function setTile(index: number, el: unknown): void {
-  if (el instanceof HTMLElement) tiles.set(index, el);
+  const isTile = el instanceof HTMLElement;
+  if (isTile) tiles.set(index, el);
 }
 
 function onKey(event: KeyboardEvent): void {
   const next = rosterStep(chosen, event.key, items.length);
-  if (next === null) return;
+  const isNotRosterKey = next === null;
+  if (isNotRosterKey) return;
   event.preventDefault();
   emit('choose', next);
   tiles.get(next)?.focus();

@@ -56,16 +56,14 @@ defineProps<{ callout: Callout }>();
   100% { opacity: 0; transform: translateY(calc(var(--u) * -6)); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .callout {
-    animation: callout-fade 1.2s steps(6) both;
-  }
+:root[data-motion='reduced'] .callout {
+  animation: callout-fade 1.2s steps(6) both;
+}
 
-  @keyframes callout-fade {
-    0% { opacity: 0; }
-    10% { opacity: 1; }
-    80% { opacity: 1; }
-    100% { opacity: 0; }
-  }
+@keyframes callout-fade {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
 }
 </style>

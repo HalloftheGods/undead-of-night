@@ -37,7 +37,8 @@ export function fillParking(b: MapBuilder, lot: Box): void {
     }
     const bottom = (row0 + bayRow + STALL_DEPTH_TILES) * TILE_SIZE - 4;
     for (let col = 2; col < cols - 2; col += 2) {
-      if (b.rng() < 0.55) b.place('car_sedan_v', (col0 + col + 0.5) * TILE_SIZE, bottom, 16);
+      const isStallTaken = b.rng() < 0.55;
+      if (isStallTaken) b.place('car_sedan_v', (col0 + col + 0.5) * TILE_SIZE, bottom, 16);
     }
   }
   b.scatter('van_h', lot, 1, 24);
@@ -183,15 +184,19 @@ export function fillVerge(b: MapBuilder, strip: Box): void {
     b.flora(pick(b.rng, kinds), strip, 1, 32, ground);
     const x = randRange(b.rng, strip.x0, strip.x1);
     const y = randRange(b.rng, strip.y0, strip.y1);
-    if (b.rng() < 0.35) {
+    const growsGrove = b.rng() < 0.35;
+    if (growsGrove) {
       grove(b, b.biome.stand, x, y, randInt(b.rng, 3, 6), 36, ground);
-    } else if (ground === 'grass' && b.rng() < 0.3) {
-      // A dry patch: bare ground with the plants that live on it.
-      b.blob(x, y, 34, 'dirt', 'grass');
-      grove(b, b.species(pick(b.rng, dry)), x, y, randInt(b.rng, 2, 4), 24, 'dirt');
-      grove(b, b.species('bush'), x, y, 3, 28, 'dirt');
     } else {
-      b.blob(x, y, 30, bare, ground);
+      const isDryPatch = ground === 'grass' && b.rng() < 0.3;
+      if (isDryPatch) {
+        // A dry patch: bare ground with the plants that live on it.
+        b.blob(x, y, 34, 'dirt', 'grass');
+        grove(b, b.species(pick(b.rng, dry)), x, y, randInt(b.rng, 2, 4), 24, 'dirt');
+        grove(b, b.species('bush'), x, y, 3, 28, 'dirt');
+      } else {
+        b.blob(x, y, 30, bare, ground);
+      }
     }
   }
 }

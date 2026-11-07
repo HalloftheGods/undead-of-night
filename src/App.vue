@@ -54,13 +54,12 @@ import ConnectionLost from './components/ConnectionLost.vue';
 import DeathSummary from './components/DeathSummary.vue';
 import DownedOverlay from './components/DownedOverlay.vue';
 import EmoteWheel from './components/EmoteWheel.vue';
-import EndingFlow from './components/EndingFlow.vue';
 import ForgeScreen from './components/ForgeScreen.vue';
 import GameOverScreen from './components/GameOverScreen.vue';
 import GarageMap from './components/GarageMap.vue';
 import HudOverlay from './components/HudOverlay.vue';
-import JukeboxScreen from './components/JukeboxScreen.vue';
 import LevelCard from './components/LevelCard.vue';
+import { EndingFlow, JukeboxScreen, prefetchLazyPages } from './components/lazy-pages.ts';
 import LogPanel from './components/log/LogPanel.vue';
 import LockerScreen from './components/LockerScreen.vue';
 import MerchantScreen from './components/MerchantScreen.vue';
@@ -100,6 +99,7 @@ onMounted(() => {
   if (canvasRef.value) game.mount(canvasRef.value);
   if (import.meta.env.DEV) window.__outbreak = game;
   stopAnalytics = startAnalytics(() => ui.value);
+  prefetchLazyPages();
 });
 
 onBeforeUnmount(() => {

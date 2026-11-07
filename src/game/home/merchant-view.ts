@@ -44,14 +44,18 @@ function stallOf(save: HomeSave | null, merchant: MerchantId): Stall {
   const stock = save?.shop.merchants[merchant];
   const closed = stock?.closedTrips ?? 0;
   const thin = stock?.thinTrips ?? 0;
-  if (closed > 0) return { kind: 'closed', trips: closed };
-  if (thin > 0) return { kind: 'thin', trips: thin };
+  const isClosed = closed > 0;
+  if (isClosed) return { kind: 'closed', trips: closed };
+  const isThin = thin > 0;
+  if (isThin) return { kind: 'thin', trips: thin };
   return OPEN_STALL;
 }
 
 export function stallNotice(stall: Stall): string | null {
-  if (stall.kind === 'closed') return `No one at this stall. A new keeper in ${plural(stall.trips, 'trip')}.`;
-  if (stall.kind === 'thin') return `Short on stock for ${plural(stall.trips, 'trip')}`;
+  const isClosedStall = stall.kind === 'closed';
+  if (isClosedStall) return `No one at this stall. A new keeper in ${plural(stall.trips, 'trip')}.`;
+  const isThinStall = stall.kind === 'thin';
+  if (isThinStall) return `Short on stock for ${plural(stall.trips, 'trip')}`;
   return null;
 }
 

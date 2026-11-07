@@ -98,16 +98,15 @@ on('fetch', (event) => {
   const url = new URL(request.url);
   const ours = request.method === 'GET' && url.origin === self.location.origin;
   if (!ours) return;
-  if (url.pathname.startsWith(MUSIC_PATH)) {
-    event.respondWith(serveMusic(request, event));
-    return;
-  }
-  if (url.pathname.startsWith(ASSETS_PATH)) {
-    event.respondWith(cacheFirst(request));
-    return;
-  }
-  event.respondWith(networkFirst(request, request.mode === 'navigate'));
+  event.respondWith(responseFor(request, url, event));
 });
+
+/** Music streams from its own cache, built assets come cache first, and everything else tries the network. */
+function responseFor(request, url, event) {
+  if (url.pathname.startsWith(MUSIC_PATH)) return serveMusic(request, event);
+  if (url.pathname.startsWith(ASSETS_PATH)) return cacheFirst(request);
+  return networkFirst(request, request.mode === 'navigate');
+}
 
 /** A URL with a query is not kept: the same file under ever-changing queries would fill the cache. */
 function hasNoQuery(request) {
@@ -167,8 +166,10 @@ function parseRange(header, size) {
   const match = /^bytes=(\d*)-(\d*)$/.exec(header || '');
   if (!match) return null;
   const [, from, to] = match;
-  if (from === '' && to === '') return null;
-  if (from === '') {
+  const isNoRange = from === '' && to === '';
+  if (isNoRange) return null;
+  const isSuffixRange = from === '';
+  if (isSuffixRange) {
     const length = Math.min(Number(to), size);
     return { start: size - length, end: size - 1 };
   }
@@ -229,7 +230,8 @@ async function serveMusic(request, event) {
 
 /** A 206 that starts at 0 and reaches the last byte is the whole file. */
 function wholeFileOf(response) {
-  if (response.status === 200) return response;
+  const isWholeResponse = response.status === 200;
+  if (isWholeResponse) return response;
   const spans = /^bytes 0-(\d+)\/(\d+)$/.exec(response.headers.get('Content-Range') || '');
   const whole = spans && Number(spans[1]) + 1 === Number(spans[2]);
   if (!whole) return null;

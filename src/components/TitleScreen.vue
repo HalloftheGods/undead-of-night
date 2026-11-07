@@ -36,16 +36,11 @@ import { onlineRoomsLive } from '../network/play-api.ts';
 import { BRAND_MARK, STUDIO_LINE } from '../game/studio-splash.ts';
 import { TITLE_MENU } from '../game/title-menu.ts';
 import { closePage, closePlay, INVITE_LANDING, openPage, pickLevel, TITLE_HOME } from '../game/title-nav.ts';
-import ChangelogPage from './ChangelogPage.vue';
-import DailyPage from './DailyPage.vue';
-import HowToPlay from './HowToPlay.vue';
 import InstallCartridge from './InstallCartridge.vue';
-import LevelsPage from './LevelsPage.vue';
+import { ChangelogPage, DailyPage, HowToPlay, LevelsPage, RecordsPage, SoundTestPage } from './lazy-pages.ts';
 import MenuLink from './MenuLink.vue';
 import OptionsPage from './OptionsPage.vue';
 import PlaySetup from './PlaySetup.vue';
-import RecordsPage from './RecordsPage.vue';
-import SoundTestPage from './SoundTestPage.vue';
 import SpriteImg from './SpriteImg.vue';
 import TitleMenu from './TitleMenu.vue';
 import { useGame } from './use-game.ts';
@@ -64,10 +59,12 @@ const nav = ref(TITLE_HOME);
  */
 const invite = parseInvite(window.location.search);
 if (invite) {
-  if (invite.kind === 'room') {
+  const isRoomInvite = invite.kind === 'room';
+  if (isRoomInvite) {
     setPendingRoomCode(invite.code);
     // An online build joins a code from the same field a LAN address goes in.
-    if (onlineRoomsLive()) game.setServerAddress(invite.code);
+    const isOnlineBuild = onlineRoomsLive();
+    if (isOnlineBuild) game.setServerAddress(invite.code);
   } else game.setServerAddress(invite.address);
   nav.value = INVITE_LANDING;
   window.history.replaceState(null, '', withoutJoinParam(window.location.href));

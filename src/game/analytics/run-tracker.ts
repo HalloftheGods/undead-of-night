@@ -104,7 +104,8 @@ export class RunTracker {
     const dropped = leftRun && screen === 'lost';
     const quit = leftRun && toTitle;
     if (toTitle) this.levelWaiting = false;
-    if (screen !== 'game') this.room = null;
+    const hasLeftGame = screen !== 'game';
+    if (hasLeftGame) this.room = null;
     if (toTitle) this.deps.emit('title_view', {});
     if (quit) this.endRun('quit');
     if (dropped) this.endRun('disconnected');
@@ -194,12 +195,14 @@ export class RunTracker {
           this.runHeadshots += 1;
         }
         break;
-      case 'zombie_die':
-        if (event.killerId === this.localId) {
+      case 'zombie_die': {
+        const isMyKill = event.killerId === this.localId;
+        if (isMyKill) {
           this.levelKills += 1;
           this.runKills += 1;
         }
         break;
+      }
       case 'zombie_attack':
         this.lastAttacker = event.zombieType;
         break;

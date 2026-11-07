@@ -15,11 +15,13 @@ export function questMarks(save: HomeSave | null, highest: number, props: readon
   const marks: QuestMark[] = [];
   for (const merchant of MERCHANT_IDS) {
     const stall = props.find((prop) => prop.kind === merchant);
-    if (!stall || closed.includes(merchant)) continue;
+    const isStallShut = !stall || closed.includes(merchant);
+    if (isStallShut) continue;
     const rows = questRows(save, merchant, highest);
     const ready = rows.some((row) => row.state === 'ready');
     const offered = rows.some((row) => row.state === 'offered');
-    if (ready || offered) marks.push({ merchant, name: MERCHANTS[merchant].name, x: stall.x, y: stall.y, ready });
+    const hasQuestToShow = ready || offered;
+    if (hasQuestToShow) marks.push({ merchant, name: MERCHANTS[merchant].name, x: stall.x, y: stall.y, ready });
   }
   return marks;
 }

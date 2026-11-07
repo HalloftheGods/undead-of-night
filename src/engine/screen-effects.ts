@@ -2,12 +2,18 @@ import { bayerThreshold } from './light-dither.ts';
 
 const MAX_SHAKE_PX = 7;
 const SHAKE_DECAY = 2.6;
-const REDUCED_MOTION_SHAKE = 0.2;
+export const REDUCED_MOTION_SHAKE = 0.2;
 const HURT_DECAY = 1.8;
 const FLASH_DECAY = 3.2;
 const LOW_HEALTH = 0.34;
 const DESATURATE_RATE = 0.45;
 const VIGNETTE_RGB = [122, 16, 12] as const;
+
+/** How hard the screen shakes: the player's slider, 0..1, which Reduced motion caps at a gentle nudge. */
+export function shakeScaleFor(reducedMotion: boolean, shakeLevel: number): number {
+  const level = Math.min(1, Math.max(0, shakeLevel));
+  return reducedMotion ? Math.min(level, REDUCED_MOTION_SHAKE) : level;
+}
 
 function smoothstep(edge0: number, edge1: number, x: number): number {
   const t = Math.min(1, Math.max(0, (x - edge0) / (edge1 - edge0)));
@@ -26,7 +32,8 @@ function buildVignette(width: number, height: number): HTMLCanvasElement {
       const nx = (x / width) * 2 - 1;
       const ny = (y / height) * 2 - 1;
       const density = smoothstep(0.55, 1.15, Math.hypot(nx, ny));
-      if (density <= bayerThreshold(x, y)) continue;
+      const isClear = density <= bayerThreshold(x, y);
+      if (isClear) continue;
       const i = (y * width + x) * 4;
       image.data[i] = VIGNETTE_RGB[0];
       image.data[i + 1] = VIGNETTE_RGB[1];
@@ -42,20 +49,29 @@ function buildVignette(width: number, height: number): HTMLCanvasElement {
 export class ScreenEffects {
   shakeX = 0;
   shakeY = 0;
-  private readonly shakeScale: number;
-  private readonly reducedMotion: boolean;
+  private shakeScale: number;
+  private reducedMotion: boolean;
   private trauma = 0;
   private hurt = 0;
   private flash = 0;
   private health = 1;
+  /** 0..1, the heartbeat's swell this frame (src/game/heartbeat.ts), so the red beats with the heart. */
+  private heartPulse = 0;
   private desaturation = 0;
   private desaturationTarget = 0;
   private time = 0;
   private vignette: HTMLCanvasElement | null = null;
 
-  constructor(reducedMotion: boolean) {
+  constructor(reducedMotion: boolean, shakeLevel = 1) {
     this.reducedMotion = reducedMotion;
-    this.shakeScale = reducedMotion ? REDUCED_MOTION_SHAKE : 1;
+    this.shakeScale = shakeScaleFor(reducedMotion, shakeLevel);
+  }
+
+  /** The Motion setting changed: from the Options page, or the system's own switch under System. */
+  setMotion(reducedMotion: boolean, shakeLevel: number): void {
+    this.reducedMotion = reducedMotion;
+    this.shakeScale = shakeScaleFor(reducedMotion, shakeLevel);
+    if (reducedMotion) this.flash = 0;
   }
 
   resize(width: number, height: number): void {
@@ -67,6 +83,7 @@ export class ScreenEffects {
     this.hurt = 0;
     this.flash = 0;
     this.health = 1;
+    this.heartPulse = 0;
     this.desaturation = 0;
     this.desaturationTarget = 0;
   }
@@ -90,6 +107,10 @@ export class ScreenEffects {
     this.health = fraction;
   }
 
+  setHeartPulse(pulse: number): void {
+    this.heartPulse = pulse;
+  }
+
   setDesaturation(target: number): void {
     this.desaturationTarget = target;
   }
@@ -110,16 +131,19 @@ export class ScreenEffects {
 
   private vignetteStrength(): number {
     let lowHealth = 0;
-    if (this.health > 0 && this.health < LOW_HEALTH) {
+    const isLowHealth = this.health > 0 && this.health < LOW_HEALTH;
+    if (isLowHealth) {
       const severity = 1 - this.health / LOW_HEALTH;
-      const pulse = this.reducedMotion ? 0.7 : 0.55 + 0.45 * Math.sin(this.time * 6);
+      // Reduced motion holds the red steady instead of throbbing.
+      const pulse = this.reducedMotion ? 0.7 : 0.45 + 0.55 * this.heartPulse;
       lowHealth = (0.25 + 0.5 * severity) * pulse;
     }
     return Math.min(1, Math.max(this.hurt, lowHealth));
   }
 
   draw(ctx: CanvasRenderingContext2D, width: number, height: number): void {
-    if (this.desaturation > 0.01) {
+    const isDesaturating = this.desaturation > 0.01;
+    if (isDesaturating) {
       ctx.globalCompositeOperation = 'saturation';
       ctx.globalAlpha = this.desaturation;
       ctx.fillStyle = '#808080';
@@ -127,11 +151,14 @@ export class ScreenEffects {
       ctx.globalCompositeOperation = 'source-over';
     }
     const strength = this.vignetteStrength();
-    if (strength > 0.01 && this.vignette) {
+    const vignette = this.vignette;
+    const showsVignette = strength > 0.01 && vignette !== null;
+    if (showsVignette) {
       ctx.globalAlpha = strength;
-      ctx.drawImage(this.vignette, 0, 0);
+      ctx.drawImage(vignette, 0, 0);
     }
-    if (this.flash > 0.01) {
+    const isFlashing = this.flash > 0.01;
+    if (isFlashing) {
       ctx.globalAlpha = this.flash * 0.6;
       ctx.fillStyle = '#fff4dc';
       ctx.fillRect(0, 0, width, height);

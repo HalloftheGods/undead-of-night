@@ -100,7 +100,7 @@ export class Music {
 
   private track<T extends AudioScheduledSourceNode>(node: T): T {
     node.start();
-    this.stoppers.push(() => { try { node.stop(); } catch { /* already stopped */ } });
+    this.stoppers.push(() => { try { node.stop(); } catch { /* chemx-allow: best-effort a node already stopped has nothing left to stop */ } });
     return node;
   }
 
@@ -170,7 +170,8 @@ export class Music {
 
   private pump(): void {
     const now = this.ctx.currentTime;
-    if (this.next < now - 0.1) this.next = now;
+    const hasFallenBehind = this.next < now - 0.1;
+    if (hasFallenBehind) this.next = now;
     while (this.next < now + LOOKAHEAD) {
       this.smooth += (this.target - this.smooth) * 0.12;
       this.playStep(this.step, this.next);
@@ -178,7 +179,8 @@ export class Music {
       this.step++;
       this.ambientIn -= STEP;
     }
-    if (this.ambientIn <= 0) {
+    const isAmbientDue = this.ambientIn <= 0;
+    if (isAmbientDue) {
       const lull = this.scene === 'intermission';
       this.ambientIn = lull ? 14 + Math.random() * 14 : 16 + Math.random() * 20;
       const groan = lull || Math.random() < 0.6;
@@ -193,8 +195,10 @@ export class Music {
 
   private playStep(step: number, t: number): void {
     if (!this.bedOn) return;
-    if (this.scene === 'menu') return this.menuStep(step, t);
-    if (this.scene !== 'wave') return;
+    const isMenu = this.scene === 'menu';
+    if (isMenu) return this.menuStep(step, t);
+    const isNotWave = this.scene !== 'wave';
+    if (isNotWave) return;
     const i = this.smooth;
     const bar = Math.floor(step / 16);
     const s = step % 16;
@@ -202,28 +206,35 @@ export class Music {
     const root = D2 * semis(chord.root);
     const v = this.voice(t);
 
-    if (s === 0 || s === 8) {
+    const isDownbeat = s === 0 || s === 8;
+    if (isDownbeat) {
       tone(v, { type: 'sine', f0: root, f1: root * 0.7, decay: 0.35, gain: 0.2 + 0.25 * i, lp: 200 });
     }
-    if (i > 0.3 && s % 4 === 0 && s !== 0 && s !== 8) {
+    const isOffbeatKick = i > 0.3 && s % 4 === 0 && s !== 0 && s !== 8;
+    if (isOffbeatKick) {
       tone(v, { type: 'sine', f0: root * 1.5, f1: root * 0.8, decay: 0.15, gain: 0.4 * i, lp: 220 });
     }
-    if (i > 0.65 && s === 14) noise(v, { filter: 'bandpass', freq: 1800, q: 2, decay: 0.05, gain: 0.04 * i });
-    if (i > 0.4) {
+    const isHatStep = i > 0.65 && s === 14;
+    if (isHatStep) noise(v, { filter: 'bandpass', freq: 1800, q: 2, decay: 0.05, gain: 0.04 * i });
+    const isArpeggioOn = i > 0.4;
+    if (isArpeggioOn) {
       const idx = ARP_STEPS[s];
-      if (idx !== null) {
+      const hasArpNote = idx !== null;
+      if (hasArpNote) {
         const tones = [0, chord.third, chord.fifth, 12];
         const hz = D2 * 2 * semis(chord.root + tones[idx]);
         tone(v, { type: 'triangle', f0: hz, decay: 0.16, gain: 0.05 + 0.16 * (i - 0.4), lp: 1500 });
       }
     }
-    if (s === 0 && Math.random() < 0.3) {
+    const isBellStep = s === 0 && Math.random() < 0.3;
+    if (isBellStep) {
       tone(v, { type: 'sine', f0: D2 * 8 * semis(chord.root + 1), attack: 0.1, decay: 0.8, gain: 0.025 + 0.03 * i });
     }
   }
 
   private menuStep(step: number, t: number): void {
-    if (step % 32 !== 0) return;
+    const isOffBar = step % 32 !== 0;
+    if (isOffBar) return;
     const v = this.voice(t);
     tone(v, { type: 'sine', f0: D2 * 2, f1: D2 * 1.8, decay: 1.2, gain: 0.1, lp: 300, attack: 0.05 });
   }

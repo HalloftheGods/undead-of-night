@@ -11,6 +11,7 @@ import { stationPrompt } from './station-labels.ts';
 import { bodyHeight, drawSprite } from './sprite-cache.ts';
 import { drawFingertipBox, drawStick } from './touch-overlay.ts';
 import type { VisualStore } from './visuals.ts';
+import { hitPalette } from './hit-palette.ts';
 
 const POINTER_INSET = 8;
 /** Clear of the HUD in every corner, and of the screen's edge, where the van must not be missed. */
@@ -20,8 +21,6 @@ const VAN_POINTER_LABEL_GAP = 5;
 const BAR_MIN_LIGHT = 60;
 const INK = '#0b0c10';
 const BONE = '#e4dcc3';
-const BLOOD = '#c8332a';
-const SICK = '#8fbf3a';
 const AMBER = '#e8a33d';
 const DEFAULT_BODY_HEIGHT = 18;
 /** Words and the wait bar sit this far over the van's ground line. */
@@ -44,7 +43,8 @@ type Pixel = readonly [number, number];
 function parsePixels(rows: readonly string[]): Pixel[] {
   const pixels: Pixel[] = [];
   rows.forEach((row, y) => [...row].forEach((cell, x) => {
-    if (cell === '#') pixels.push([x - 2, y - 2]);
+    const isInked = cell === '#';
+    if (isInked) pixels.push([x - 2, y - 2]);
   }));
   return pixels;
 }
@@ -77,7 +77,7 @@ export function staminaBar(player: PlayerEntity, isLocal: boolean, time: number)
   if (!worn) return null;
   if (!player.winded) return { fraction: stamina, color: AMBER };
   const lit = Math.floor(time * WINDED_BLINKS_PER_SEC * 2) % 2 === 0;
-  return lit ? { fraction: stamina, color: BLOOD } : { fraction: stamina, color: INK };
+  return lit ? { fraction: stamina, color: hitPalette().danger } : { fraction: stamina, color: INK };
 }
 
 export interface EdgePointer {
@@ -166,24 +166,29 @@ export class OverlayRenderer {
     const width = ZOMBIES[zombie.type].radius * 2;
     const x = Math.round(zombie.x) - left - Math.round(width / 2);
     const y = Math.round(zombie.y) - top - this.heightOf(zombie.id) - 4;
-    drawBar(ctx, x, y, width, zombie.health / zombie.maxHealth, BLOOD);
+    drawBar(ctx, x, y, width, zombie.health / zombie.maxHealth, hitPalette().danger);
   }
 
   private drawPlayerTag(ctx: CanvasRenderingContext2D, player: PlayerEntity, isLocal: boolean, left: number, top: number, time: number): void {
     const x = Math.round(player.x) - left;
     let y = Math.round(player.y) - top - this.heightOf(player.id) - 4;
 
-    if (player.status === 'downed') {
-      if (player.revive > 0) {
+    const isDowned = player.status === 'downed';
+    if (isDowned) {
+      const isBeingRevived = player.revive > 0;
+      if (isBeingRevived) {
         drawBar(ctx, x - 12, y, 24, player.revive, AMBER);
-      } else if (!isLocal && Math.floor(time * 3) % 2 === 0) {
-        drawOutlinedText(ctx, 'HELP', x, y - 2, BLOOD);
+      } else {
+        const isHelpBlinkOn = !isLocal && Math.floor(time * 3) % 2 === 0;
+        if (isHelpBlinkOn) drawOutlinedText(ctx, 'HELP', x, y - 2, hitPalette().danger);
       }
       y -= FONT_HEIGHT + 3;
     }
-    if (isLocal || player.status === 'dead') return;
-    if (player.status === 'alive') {
-      drawBar(ctx, x - 8, y, 16, player.health / player.maxHealth, SICK);
+    const hasNoTag = isLocal || player.status === 'dead';
+    if (hasNoTag) return;
+    const isAlive = player.status === 'alive';
+    if (isAlive) {
+      drawBar(ctx, x - 8, y, 16, player.health / player.maxHealth, hitPalette().safe);
       y -= FONT_HEIGHT + 3;
     }
     drawOutlinedText(ctx, tagLabel(player.name, player.skin), x, y, BONE);
@@ -200,9 +205,10 @@ export class OverlayRenderer {
 
   private drawPointers(ctx: CanvasRenderingContext2D, scene: SceneView, left: number, top: number, viewW: number, viewH: number): void {
     for (const player of scene.players) {
-      if (player.status !== 'downed' || player.id === scene.localId) continue;
+      const needsNoPointer = player.status !== 'downed' || player.id === scene.localId;
+      if (needsNoPointer) continue;
       const pointer = edgePointer(player.x - left, player.y - top, viewW, viewH);
-      if (pointer) drawArrow(ctx, pointer, SICK);
+      if (pointer) drawArrow(ctx, pointer, hitPalette().safe);
     }
   }
 
@@ -243,17 +249,17 @@ export class OverlayRenderer {
     const label = drop.landed ? 'SUPPLIES' : 'DROP';
     const pointer = edgePointer(x, y, viewW, viewH, VAN_POINTER_INSET);
     if (pointer) {
-      drawArrow(ctx, pointer, BLOOD);
+      drawArrow(ctx, pointer, hitPalette().danger);
       const labelBelow = pointer.y < viewH / 2;
       const labelY = labelBelow ? pointer.y + VAN_POINTER_LABEL_GAP : pointer.y - VAN_POINTER_LABEL_GAP - FONT_HEIGHT;
-      drawOutlinedText(ctx, label, pointer.x, labelY, BLOOD);
+      drawOutlinedText(ctx, label, pointer.x, labelY, hitPalette().danger);
       return;
     }
     const blinkOn = drop.landed || Math.floor(time * 3) % 2 === 0;
     if (!blinkOn) return;
-    ctx.fillStyle = BLOOD;
+    ctx.fillStyle = hitPalette().danger;
     for (const [dx, dy] of EXIT_RING) ctx.fillRect(x + dx, y + dy, 1, 1);
-    drawOutlinedText(ctx, label, x, y - VAN_TAG_HEIGHT / 2, BLOOD);
+    drawOutlinedText(ctx, label, x, y - VAN_TAG_HEIGHT / 2, hitPalette().danger);
   }
 
   /** An arrow to the van while it is out of sight. In sight, the ring to stand in and the wait. */
@@ -271,7 +277,8 @@ export class OverlayRenderer {
     ctx.fillStyle = AMBER;
     for (const [dx, dy] of EXIT_RING) ctx.fillRect(x + dx, y + dy, 1, 1);
     const tagY = y - VAN_TAG_HEIGHT;
-    if (exit.progress > 0) drawBar(ctx, x - VAN_BAR_WIDTH / 2, tagY, VAN_BAR_WIDTH, exit.progress, SICK);
+    const isLoading = exit.progress > 0;
+    if (isLoading) drawBar(ctx, x - VAN_BAR_WIDTH / 2, tagY, VAN_BAR_WIDTH, exit.progress, hitPalette().safe);
     else drawOutlinedText(ctx, 'VAN', x, tagY, AMBER);
   }
 

@@ -101,7 +101,8 @@ export function writeFlight(sim: SimState): void {
   const { overrun } = sim;
   const run = sim.homeRun;
   const notBreached = !overrun || overrun.phase !== 'breached';
-  if (notBreached || !run) return;
+  const isFightOff = notBreached || !run;
+  if (isFightOff) return;
   countKills(sim, overrun);
   const share = overrun.total > 0 ? Math.min(1, (overrun.queue.length + standingHorde(sim)) / overrun.total) : 0;
   const bodies = [...sim.players, ...sim.departed.values()];

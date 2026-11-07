@@ -1,3 +1,4 @@
+import { setTimeout as sleep } from 'node:timers/promises';
 import { WebSocket } from 'ws';
 import type { GameStyle } from '../../shared/game-style.ts';
 import type { ServerPacket, SnapshotPacket } from '../../shared/protocol.ts';
@@ -35,8 +36,9 @@ export class TestClient {
     for (;;) {
       const found = find();
       if (found) return found;
-      if (Date.now() > deadline) throw new Error('timed out waiting for the server');
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      const isTimedOut = Date.now() > deadline;
+      if (isTimedOut) throw new Error('timed out waiting for the server');
+      await sleep(10);
     }
   }
 

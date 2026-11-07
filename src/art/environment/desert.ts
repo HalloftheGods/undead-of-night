@@ -98,7 +98,8 @@ const LIMBS: readonly Limb[] = [
 
 function limb(c: PixelCanvas, [x0, y0, x1, y1, thick]: Limb): void {
   for (let i = 0; i < thick; i++) c.line(x0 + i, y0, x1 + i, y1, i === 0 ? ash[2] : wood[2]);
-  if (thick > 1) c.line(x0 + thick - 1, y0, x1 + thick - 1, y1, wood[1]);
+  const isThickLimb = thick > 1;
+  if (isThickLimb) c.line(x0 + thick - 1, y0, x1 + thick - 1, y1, wood[1]);
 }
 
 export function buildDeadTree(): PixelSprite {

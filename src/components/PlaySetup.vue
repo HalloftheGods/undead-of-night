@@ -1,7 +1,7 @@
 <template>
   <TitlePage :heading size="extra-wide" boxed steady @close="back">
     <template #lead>
-      <SetupStepper :stops="stepper" @pick="jump" />
+      <SetupStepper :stops="stepper" :thumbs @pick="jump" />
     </template>
 
     <StyleSelect v-if="flow.step === 'style'" ref="styles" :art="ui.art" :game-style="ui.style" @choose="chooseStyle" />
@@ -71,10 +71,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, useTemplateRef } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue';
 import { DEFAULT_SERVER_PORT } from '../../shared/constants.ts';
 import type { GameStyle } from '../../shared/game-style.ts';
 import { trackTitlePage } from '../game/analytics/index.ts';
+import type { PixelSprite } from '../art/types.ts';
+import { loadCharacter } from '../game/character-pref.ts';
+import { loadDifficulty } from '../game/difficulty-pref.ts';
 import { setupLevelLines } from '../game/home-screens.ts';
 import { SERVER_FIELD_ID } from '../game/hud-state.ts';
 import type { UiState } from '../game/hud-state.ts';
@@ -117,6 +120,21 @@ const startLine = computed(() => levelLines.value.startLine);
 const coopNote = computed(() => levelLines.value.coopNote);
 const heading = computed(() => playHeading(flow.value));
 const stepper = computed(() => playStepper(flow.value));
+/**
+ * What each step settled, as its own picture, for the stepper to show once the step is done.
+ * Difficulty and survivor are saved prefs, read again whenever the flow moves (it is replaced on every step), the only time a done step can change.
+ */
+const thumbs = computed<Partial<Record<PlayStep, PixelSprite>>>(() => {
+  const art = ui.art;
+  const isArtLoading = art === null;
+  if (isArtLoading) return {};
+  return {
+    style: art.ui.style[runStyle.value],
+    mode: art.ui.mode[flow.value.mode],
+    difficulty: art.ui.difficulty[loadDifficulty()],
+    who: art.survivors[loadCharacter()]?.select,
+  };
+});
 /** Co-op on either step: the mode decides how the run starts. The server field shows on the first step only. */
 const multi = computed(() => flow.value.mode === 'multi');
 const serverShown = computed(() => showsServer(flow.value));
@@ -137,6 +155,10 @@ function textOf(event: Event): string {
   return (event.target as HTMLInputElement).value;
 }
 
+/** Puts the copy label back after a moment; cleared on unmount so it never outlives the page. */
+let copiedTimer: ReturnType<typeof setTimeout> | undefined;
+onBeforeUnmount(() => clearTimeout(copiedTimer));
+
 async function copyInvite(): Promise<void> {
   const link = inviteLink.value;
   if (!link) return;
@@ -146,7 +168,8 @@ async function copyInvite(): Promise<void> {
   } catch {
     copied.value = 'failed';
   }
-  setTimeout(() => (copied.value = 'idle'), 2000);
+  clearTimeout(copiedTimer);
+  copiedTimer = setTimeout(() => (copied.value = 'idle'), 2000);
 }
 
 /** A method handed to the template loses its `this`, so the pick goes through here. */
@@ -159,8 +182,12 @@ function pick(mode: PlayMode): void {
 }
 
 function start(): void {
-  if (multi.value) game.startCoop(runStyle.value);
-  else if (chosen !== null) game.continueSolo(chosen);
+  if (multi.value) {
+    game.startCoop(runStyle.value);
+    return;
+  }
+  const isContinuing = chosen !== null;
+  if (isContinuing) game.continueSolo(chosen);
   else game.startSolo(runStyle.value);
 }
 
@@ -176,7 +203,8 @@ function focusStep(): void {
 
 /** Enter in a field only moves one step on, landing on that step's choice; the run starts from the button on the last. */
 function next(event?: Event): void {
-  if (event instanceof KeyboardEvent && event.repeat) return;
+  const isKeyRepeat = event instanceof KeyboardEvent && event.repeat;
+  if (isKeyRepeat) return;
   flow.value = advance(flow.value);
   focusStep();
 }

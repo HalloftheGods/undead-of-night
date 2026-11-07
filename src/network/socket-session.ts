@@ -18,11 +18,15 @@ export function resolveServerUrl(address: string, page: PageLocation): string | 
   const hasScheme = /^[a-z]+:\/\//i.test(text);
   try {
     const url = new URL(hasScheme ? text : `${scheme}//${text}`);
-    if (url.protocol === 'http:') url.protocol = 'ws:';
-    if (url.protocol === 'https:') url.protocol = 'wss:';
-    if (url.protocol !== 'ws:' && url.protocol !== 'wss:') return null;
+    const isHttp = url.protocol === 'http:';
+    if (isHttp) url.protocol = 'ws:';
+    const isHttps = url.protocol === 'https:';
+    if (isHttps) url.protocol = 'wss:';
+    const isNotSocketUrl = url.protocol !== 'ws:' && url.protocol !== 'wss:';
+    if (isNotSocketUrl) return null;
     if (!url.hostname) return null;
-    if (!url.port && !hasScheme) url.port = String(DEFAULT_SERVER_PORT);
+    const needsDefaultPort = !url.port && !hasScheme;
+    if (needsDefaultPort) url.port = String(DEFAULT_SERVER_PORT);
     return url.toString().replace(/\/$/, '');
   } catch {
     return null;
@@ -43,7 +47,9 @@ export class WsPipe implements PacketPipe {
   }
 
   send(text: string): void {
-    if (this.socket?.readyState === WebSocket.OPEN) this.socket.send(text);
+    const socket = this.socket;
+    const isSocketOpen = socket?.readyState === WebSocket.OPEN;
+    if (isSocketOpen) socket.send(text);
   }
 
   close(): void {

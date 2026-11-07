@@ -7,6 +7,15 @@ export const HEARING_RANGE = 420;
 const PAN_SPAN = 260;
 const MAX_VOICES = 44;
 const TRACK_LEVEL = 0.35;
+/** The generated bed sits far under everything else. */
+const BED_LEVEL = 0.12;
+
+/** The player's two sub-levels, 0..1, under the master volume. */
+export interface BusLevels { readonly music: number; readonly sfx: number }
+export const FULL_BUSES: BusLevels = { music: 1, sfx: 1 };
+/** The effects' low-pass when hearing is clear, and at its most muffled near death. */
+const CLEAR_HZ = 20000;
+const MUFFLED_HZ = 1400;
 
 export interface Spatial { readonly gain: number; readonly pan: number }
 
@@ -14,9 +23,11 @@ export interface Spatial { readonly gain: number; readonly pan: number }
 export function spatialize(lx: number, ly: number, x: number, y: number): Spatial | null {
   const dx = x - lx;
   const dist = Math.hypot(dx, y - ly);
-  if (dist >= HEARING_RANGE) return null;
+  const isOutOfEarshot = dist >= HEARING_RANGE;
+  if (isOutOfEarshot) return null;
   const gain = (1 - dist / HEARING_RANGE) ** 1.5;
-  if (gain < 0.01) return null;
+  const isInaudible = gain < 0.01;
+  if (isInaudible) return null;
   return { gain, pan: Math.max(-1, Math.min(1, dx / PAN_SPAN)) };
 }
 
@@ -39,6 +50,8 @@ export class Mixer {
   /** The recorded soundtrack, mixed well under the effects so shots and groans still read. */
   readonly tracks: GainNode;
   private readonly master: GainNode;
+  /** Low-pass on the effects only: the world dulls as the player bleeds out, the music does not. */
+  private readonly muffle: BiquadFilterNode;
   private readonly active = new Map<SfxName, number>();
   private readonly last = new Map<SfxName, number>();
   private total = 0;
@@ -47,12 +60,13 @@ export class Mixer {
   private timers = new Set<ReturnType<typeof setTimeout>>();
 
   /** Starts at the player's level: a ramp from the node's default would leak a burst past a mute. */
-  constructor(readonly ctx: AudioContext, level: number) {
+  constructor(readonly ctx: AudioContext, level: number, buses: BusLevels = FULL_BUSES) {
     this.sfx = ctx.createGain();
+    this.sfx.gain.value = buses.sfx;
     this.music = ctx.createGain();
-    this.music.gain.value = 0.12;
+    this.music.gain.value = BED_LEVEL * buses.music;
     this.tracks = ctx.createGain();
-    this.tracks.gain.value = TRACK_LEVEL;
+    this.tracks.gain.value = TRACK_LEVEL * buses.music;
     const bus = ctx.createGain();
     const comp = ctx.createDynamicsCompressor();
     comp.threshold.value = -16;
@@ -70,7 +84,11 @@ export class Mixer {
     clip.curve = softClip();
     this.master = ctx.createGain();
     this.master.gain.value = level;
-    this.sfx.connect(bus);
+    this.muffle = ctx.createBiquadFilter();
+    this.muffle.type = 'lowpass';
+    this.muffle.frequency.value = CLEAR_HZ;
+    this.sfx.connect(this.muffle);
+    this.muffle.connect(bus);
     this.music.connect(bus);
     this.tracks.connect(bus);
     bus.connect(comp);
@@ -93,17 +111,31 @@ export class Mixer {
     this.master.gain.setTargetAtTime(level, this.ctx.currentTime, 0.02);
   }
 
+  /** Music (the bed and the soundtrack together) and effects, each under the master level. */
+  setBuses(buses: BusLevels): void {
+    const now = this.ctx.currentTime;
+    this.sfx.gain.setTargetAtTime(buses.sfx, now, 0.02);
+    this.music.gain.setTargetAtTime(BED_LEVEL * buses.music, now, 0.02);
+    this.tracks.gain.setTargetAtTime(TRACK_LEVEL * buses.music, now, 0.02);
+  }
+
+  /** 0 is clear hearing, 1 the most muffled. Swept on a log scale so the middle still sounds like a change. */
+  setMuffle(amount: number): void {
+    const t = Math.max(0, Math.min(1, amount));
+    const hz = CLEAR_HZ * (MUFFLED_HZ / CLEAR_HZ) ** t;
+    this.muffle.frequency.setTargetAtTime(hz, this.ctx.currentTime, 0.15);
+  }
+
   play(name: SfxName, o: PlayOpts = {}): void {
     const def = SFX[name];
     const { ctx } = this;
     const now = ctx.currentTime;
     const positional = o.x !== undefined && o.y !== undefined && !o.local;
     const space = positional ? spatialize(this.lx, this.ly, o.x as number, o.y as number) : null;
-    if (positional && !space) return;
-    if (!o.local && now - (this.last.get(name) ?? -1) < def.cooldown) return;
-    const slack = o.local ? 2 : 0;
-    if ((this.active.get(name) ?? 0) >= def.voices + slack) return;
-    if (this.total >= MAX_VOICES + (o.local ? 8 : 0)) return;
+    const isOutOfRange = positional && !space;
+    if (isOutOfRange) return;
+    const hasVoice = this.hasVoiceFor(name, Boolean(o.local), now);
+    if (!hasVoice) return;
     this.last.set(name, now);
 
     const delay = o.delay ?? 0;
@@ -112,7 +144,8 @@ export class Mixer {
     const trim = ctx.createGain();
     trim.gain.value = level;
     let tail: AudioNode = trim;
-    if (space && ctx.createStereoPanner) {
+    const canPan = space && ctx.createStereoPanner;
+    if (canPan) {
       const pan = ctx.createStereoPanner();
       pan.pan.value = space.pan;
       trim.connect(pan);
@@ -126,15 +159,26 @@ export class Mixer {
     const timer = setTimeout(() => {
       this.timers.delete(timer);
       trim.disconnect();
-      if (tail !== trim) tail.disconnect();
+      const hasPanner = tail !== trim;
+      if (hasPanner) tail.disconnect();
       this.total--;
       this.active.set(name, (this.active.get(name) ?? 1) - 1);
     }, (delay + def.length + 0.2) * 1000);
     this.timers.add(timer);
   }
 
+  /** A sound waits out its cooldown and its voice cap; the player's own sounds get a little slack on both. */
+  private hasVoiceFor(name: SfxName, local: boolean, now: number): boolean {
+    const def = SFX[name];
+    const isCoolingDown = !local && now - (this.last.get(name) ?? -1) < def.cooldown;
+    const slack = local ? 2 : 0;
+    const isNameBusy = (this.active.get(name) ?? 0) >= def.voices + slack;
+    const isMixFull = this.total >= MAX_VOICES + (local ? 8 : 0);
+    return !isCoolingDown && !isNameBusy && !isMixFull;
+  }
+
   dispose(): void {
-    for (const t of this.timers) clearTimeout(t);
+    for (const timer of this.timers) clearTimeout(timer);
     this.timers.clear();
     void this.ctx.close().catch(() => undefined);
   }

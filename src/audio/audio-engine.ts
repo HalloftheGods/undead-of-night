@@ -1,52 +1,64 @@
 import type { GameStyle } from '../../shared/game-style.ts';
-import type { GameEvent, PickupType, PlayerEntity, WeaponId, WorldMap, ZombieType } from '../../shared/protocol.ts';
-import type { GunEffect } from '../../shared/round-effect-data.ts';
-import { FootstepTracker, type StepPlayer } from './footsteps.ts';
-import { HEARING_RANGE, Mixer } from './mixer.ts';
+import type { GameEvent, PlayerEntity, WeaponId, WorldMap, ZombieType } from '../../shared/protocol.ts';
+import { LOW_HEALTH } from '../game/heartbeat.ts';
+import { playEventSound } from './event-sounds.ts';
+import { FootstepTracker, StompTracker, type StepPlayer, type Stomper } from './footsteps.ts';
+import { HEARING_RANGE, Mixer, type BusLevels } from './mixer.ts';
 import { Music, type Scene } from './music.ts';
 import { Soundtrack } from './soundtrack.ts';
 import { SFX } from './sfx-registry.ts';
 import type { SfxName } from './sfx-registry.ts';
 
+export { PICKUP_SFX } from './event-sounds.ts';
 export { renderSfx } from './render.ts';
 export { SFX_NAMES } from './sfx-registry.ts';
 export type { SfxName } from './sfx-registry.ts';
 export type { Scene } from './music.ts';
 
 const STORE_KEY = 'outbreak-zero.audio';
-const SHOT: Record<WeaponId, SfxName> = { pistol: 'pistol', carbine: 'carbine', shotgun: 'shotgun' };
-const DEATH: Record<ZombieType, SfxName> = {
-  walker: 'die_walker', runner: 'die_runner', bloater: 'die_bloater', brute: 'die_brute', screamer: 'die_walker',
-};
 const VOICE: Record<ZombieType, SfxName> = {
   walker: 'groan_walker', runner: 'shriek_runner', bloater: 'gurgle_bloater', brute: 'roar_brute', screamer: 'groan_walker',
 };
-const ALERT: Record<ZombieType, SfxName> = {
-  walker: 'alert_walker', runner: 'alert_runner', bloater: 'alert_bloater', brute: 'alert_brute', screamer: 'scream',
-};
-export const PICKUP_SFX: Record<PickupType, SfxName> = {
-  bandage: 'pickup_bandage', medkit: 'pickup_medkit', pistol_ammo: 'pickup_pistol_ammo',
-  carbine_ammo: 'pickup_carbine_ammo', shells: 'pickup_shells', carbine: 'pickup_weapon', shotgun: 'pickup_weapon',
-  knife: 'pickup_weapon', radio: 'pickup_radio',
-  barrel: 'pickup_weapon', grip: 'pickup_weapon', magazine: 'pickup_weapon', suppressor: 'pickup_weapon', toolkit: 'pickup_weapon',
-  incendiary_kit: 'pickup_weapon', acid_kit: 'pickup_weapon', piercing_kit: 'pickup_weapon', tranq_kit: 'pickup_weapon',
-  jewel_small: 'pickup_jewel', jewel_large: 'pickup_jewel_large',
-};
-const STATUS: Record<GunEffect, SfxName> = { incendiary: 'ignite', acid: 'corrode', piercing: 'pierce', tranq: 'tranq_dart' };
-/** A can on the end of a gun: still a shot, but a dull one. */
-const SUPPRESSED_GAIN = 0.35;
 /** A pack waking at once shares this: at most one alert snarl per window. */
 const ALERT_WINDOW = 0.15;
+/** A shotgun loads a shell this often until the reload ends, and never more than a full tube. */
+const SHELL_EVERY = 0.32;
+const SHELLS_MAX = 6;
+/** The last of the reload after the magazine seats: the pistol's slide, the carbine's handle. */
+const RELOAD_TAIL: Partial<Record<WeaponId, SfxName>> = { pistol: 'slide_drop', carbine: 'bolt_rack' };
+/** How far hearing dulls at the very edge of death, 0..1. */
+const MUFFLE_MAX = 0.75;
 
-interface Prefs { volume: number; muted: boolean }
+/** How muffled the world sounds at this share of health: clear above the heartbeat band, dulling below it. */
+export function muffleFor(health: number): number {
+  const bleeding = health > 0 && health < LOW_HEALTH;
+  if (!bleeding) return 0;
+  return (1 - health / LOW_HEALTH) * MUFFLE_MAX;
+}
+
+/** A shotgun mid-reload, loading shells one at a time. */
+interface ShellLoad { x: number; y: number; local: boolean; next: number; loaded: number }
+
+interface Prefs { volume: number; muted: boolean; music: number; sfx: number }
+
+const DEFAULT_PREFS: Prefs = { volume: 0.7, muted: false, music: 1, sfx: 1 };
+
+/** A saved level in 0..1, or the fallback when it is missing or not a number. */
+function level(raw: unknown, fallback: number): number {
+  return typeof raw === 'number' && Number.isFinite(raw) ? Math.max(0, Math.min(1, raw)) : fallback;
+}
 
 function loadPrefs(): Prefs {
   try {
     const raw = JSON.parse(localStorage.getItem(STORE_KEY) ?? 'null') as Partial<Prefs> | null;
-    const volume = typeof raw?.volume === 'number' ? Math.max(0, Math.min(1, raw.volume)) : 0.7;
-    return { volume, muted: raw?.muted === true };
+    return {
+      volume: level(raw?.volume, DEFAULT_PREFS.volume),
+      muted: raw?.muted === true,
+      music: level(raw?.music, DEFAULT_PREFS.music),
+      sfx: level(raw?.sfx, DEFAULT_PREFS.sfx),
+    };
   } catch {
-    return { volume: 0.7, muted: false };
+    return { ...DEFAULT_PREFS };
   }
 }
 
@@ -67,11 +79,11 @@ export class AudioEngine {
   private town = 1;
   private style: GameStyle = 'arcade';
   private intensity = 0;
-  private health = 1;
   private groanIn = 2;
-  private beatIn = 0;
   private alertIn = 0;
   private readonly footsteps = new FootstepTracker();
+  private readonly stompers = new StompTracker();
+  private readonly shellLoads = new Map<string, ShellLoad>();
   private readonly playStep: StepPlayer = (name, opts) => this.mixer?.play(name, opts);
   private unlocking: Promise<void> | null = null;
   private previewTimer: ReturnType<typeof setTimeout> | null = null;
@@ -80,7 +92,7 @@ export class AudioEngine {
     if (!hasWebAudio()) return;
     if (!this.mixer) {
       try {
-        this.mixer = new Mixer(new AudioContext({ latencyHint: 'interactive' }), this.level);
+        this.mixer = new Mixer(new AudioContext({ latencyHint: 'interactive' }), this.level, this.buses);
         this.music = new Music(this.mixer.ctx, this.mixer.music, (n) => this.ambient(n));
         this.music.setScene(this.scene);
         this.music.setIntensity(this.intensity);
@@ -96,7 +108,8 @@ export class AudioEngine {
       }
     }
     const ctx = this.mixer.ctx;
-    if (ctx.state === 'running') {
+    const isAudioRunning = ctx.state === 'running';
+    if (isAudioRunning) {
       this.soundtrack?.retry();
       return;
     }
@@ -188,9 +201,14 @@ export class AudioEngine {
     this.music?.setIntensity(value);
   }
 
-  /** Local player's health fraction 0..1; below a third the heartbeat starts. */
+  /** Local player's health fraction 0..1; in the heartbeat band the world's sounds dull. */
   setHealth(fraction: number): void {
-    this.health = fraction;
+    this.mixer?.setMuffle(muffleFor(fraction));
+  }
+
+  /** One beat of the low-health heart, timed by src/game/heartbeat.ts so the screen beats with it. */
+  heartbeat(health: number): void {
+    this.mixer?.play('heartbeat', { local: true, gain: 0.9 - health });
   }
 
   get volume(): number {
@@ -199,6 +217,26 @@ export class AudioEngine {
 
   set volume(v: number) {
     this.prefs.volume = Math.max(0, Math.min(1, Number.isFinite(v) ? v : 0));
+    this.persist();
+  }
+
+  /** Music, the bed and the soundtrack, as a share of the master volume. */
+  get musicVolume(): number {
+    return this.prefs.music;
+  }
+
+  set musicVolume(v: number) {
+    this.prefs.music = level(v, 0);
+    this.persist();
+  }
+
+  /** Every sound effect, as a share of the master volume. */
+  get sfxVolume(): number {
+    return this.prefs.sfx;
+  }
+
+  set sfxVolume(v: number) {
+    this.prefs.sfx = level(v, 0);
     this.persist();
   }
 
@@ -215,78 +253,34 @@ export class AudioEngine {
     const mixer = this.mixer;
     if (!mixer) return;
     const at = (x: number, y: number, playerId?: string) => ({ x, y, local: playerId !== undefined && playerId === localPlayerId });
-    switch (e.type) {
-      case 'shot': {
-        const p = at(e.x, e.y, e.playerId);
-        mixer.play(SHOT[e.weapon], e.suppressed ? { ...p, gain: SUPPRESSED_GAIN } : p);
-        if (e.weapon === 'shotgun') mixer.play('pump', { ...p, delay: 0.45, gain: 0.8 });
-        break;
-      }
-      case 'dry_fire': mixer.play('dry_click', at(e.x, e.y, e.playerId)); break;
-      case 'reload_start': mixer.play(e.weapon === 'shotgun' ? 'shell_load' : 'mag_out', at(e.x, e.y, e.playerId)); break;
-      case 'reload_end': mixer.play(e.weapon === 'shotgun' ? 'pump' : 'mag_in', at(e.x, e.y, e.playerId)); break;
-      case 'melee': mixer.play(e.hit ? 'melee_thud' : 'melee_swing', at(e.x, e.y, e.playerId)); break;
-      case 'heal': mixer.play('heal', at(e.x, e.y, e.playerId)); break;
-      case 'zombie_alert': {
-        if (this.alertIn > 0) break;
-        this.alertIn = ALERT_WINDOW;
-        mixer.play(ALERT[e.zombieType], { x: e.x, y: e.y });
-        break;
-      }
-      case 'zombie_track': mixer.play('sniff', { x: e.x, y: e.y }); break;
-      case 'weapon_switch': mixer.play('weapon_switch', at(e.x, e.y, e.playerId)); break;
-      case 'bullet_impact': mixer.play('impact', { x: e.x, y: e.y }); break;
-      case 'zombie_hit': mixer.play('flesh_hit', { x: e.x, y: e.y }); break;
-      case 'headshot': mixer.play('headshot', at(e.x, e.y, e.playerId)); break;
-      case 'zombie_die': mixer.play(DEATH[e.zombieType], { x: e.x, y: e.y }); break;
-      case 'zombie_status': mixer.play(STATUS[e.effect], { x: e.x, y: e.y }); break;
-      case 'zombie_attack': mixer.play('claw', { x: e.x, y: e.y }); break;
-      case 'bloater_burst': mixer.play('bloater_burst', { x: e.x, y: e.y }); break;
-      case 'player_hurt': mixer.play('player_hurt', at(e.x, e.y, e.playerId)); break;
-      case 'player_downed': mixer.play('player_downed', at(e.x, e.y, e.playerId)); break;
-      case 'player_dead': mixer.play('player_downed', { ...at(e.x, e.y, e.playerId), pitch: 0.75 }); break;
-      case 'player_revived': mixer.play('revive', at(e.x, e.y, e.playerId)); break;
-      case 'candy_eaten': mixer.play(e.saved ? 'revive' : 'heal', at(e.x, e.y, e.playerId)); break;
-      case 'pickup': mixer.play(PICKUP_SFX[e.pickup], at(e.x, e.y, e.playerId)); break;
-      case 'stairs_taken':
-        // Two treads, the second a little lower, where they come out.
-        mixer.play('step_hard', at(e.x, e.y, e.playerId));
-        mixer.play('step_hard', { ...at(e.x, e.y, e.playerId), pitch: 0.8 });
-        break;
-      case 'container_opened': mixer.play(e.noisy ? 'clatter' : 'container_open', at(e.x, e.y, e.playerId)); break;
-      case 'bottle_smash': mixer.play('glass_smash', { x: e.x, y: e.y }); break;
-      case 'molotov_burst':
-        mixer.play('glass_smash', { x: e.x, y: e.y });
-        mixer.play('ignite', { x: e.x, y: e.y, pitch: 0.7 });
-        break;
-      case 'flare_lit': mixer.play('ignite', { x: e.x, y: e.y, pitch: 1.4 }); break;
-      case 'drop_called': mixer.play('ignite', { x: e.x, y: e.y, pitch: 1.4 }); break;
-      case 'drop_landed': mixer.play('distant_crash', { x: e.x, y: e.y }); break;
-      case 'car_alarm': mixer.play('car_alarm', { x: e.x, y: e.y }); break;
-      case 'wave_start': mixer.play('wave_start'); break;
-      case 'overrun_warning': this.ambient(e.step === 0 ? 'distant_groan' : 'distant_crash'); break;
-      case 'overrun_breach': mixer.play('wave_start'); break;
-      case 'wave_clear': mixer.play('wave_clear'); break;
-      case 'game_over': mixer.play('game_over', { local: true }); break;
-      case 'wave_intermission': break;
-    }
+    playEventSound(e, { mixer, at, playAmbient: (name) => this.ambient(name), claimAlert: () => this.claimAlert(),
+      reloadStart: (weapon, playerId, where) => this.reloadStart(weapon, playerId, where),
+      reloadEnd: (weapon, playerId, where) => this.reloadEnd(weapon, playerId, where),
+      dropShells: (playerId) => this.shellLoads.delete(playerId),
+    });
+  }
+
+  /** A pack waking at once snarls once: the first alert in a window claims it. */
+  private claimAlert(): boolean {
+    const isAlertCoolingDown = this.alertIn > 0;
+    if (isAlertCoolingDown) return false;
+    this.alertIn = ALERT_WINDOW;
+    return true;
   }
 
   tick(dt: number, zombies: readonly { x: number; y: number; type: ZombieType }[]): void {
     const mixer = this.mixer;
     if (!mixer) return;
-    this.beatIn -= dt;
     this.alertIn -= dt;
-    if (this.health < 0.34 && this.health > 0 && this.beatIn <= 0) {
-      this.beatIn = 0.5 + this.health * 1.4;
-      mixer.play('heartbeat', { local: true, gain: 0.9 - this.health });
-    }
+    this.loadShells(mixer, dt);
     this.groanIn -= dt;
-    if (this.groanIn > 0 || zombies.length === 0) return;
+    const isGroanQuiet = this.groanIn > 0 || zombies.length === 0;
+    if (isGroanQuiet) return;
     this.groanIn = (1 + Math.random() * 2.5) / (1 + Math.min(zombies.length, 12) * 0.12);
     const { x, y } = mixer.listener;
     const near = zombies.filter((z) => Math.hypot(z.x - x, z.y - y) < HEARING_RANGE);
-    if (near.length === 0) return;
+    const hasNoZombieInEarshot = near.length === 0;
+    if (hasNoZombieInEarshot) return;
     const z = near[Math.floor(Math.random() * near.length)];
     mixer.play(VOICE[z.type], { x: z.x, y: z.y, gain: 0.8 });
   }
@@ -296,14 +290,62 @@ export class AudioEngine {
    * or at zero volume, and until the audio has unlocked, like every other sound.
    */
   stepPlayers(players: readonly PlayerEntity[], localId: string | null, map: WorldMap, dt: number): void {
-    if (!this.mixer || this.level === 0) {
+    const isSilenced = !this.mixer || this.level === 0;
+    if (isSilenced) {
       this.footsteps.reset();
       return;
     }
     this.footsteps.tick(players, localId, map, dt, this.playStep);
   }
 
+  /** Brutes' and bosses' footfalls this frame. Silent until unlocked and on mute, like footsteps. */
+  stompZombies(zombies: readonly Stomper[]): void {
+    const silent = !this.mixer || this.level === 0;
+    if (silent) {
+      this.stompers.reset();
+      return;
+    }
+    this.stompers.tick(zombies, this.playStep);
+  }
+
+  private reloadStart(weapon: WeaponId, playerId: string, at: { x: number; y: number; local: boolean }): void {
+    const byTheShell = weapon === 'shotgun';
+    if (!byTheShell) {
+      this.mixer?.play('mag_out', at);
+      return;
+    }
+    this.mixer?.play('shell_load', at);
+    this.shellLoads.set(playerId, { ...at, next: SHELL_EVERY, loaded: 1 });
+  }
+
+  private reloadEnd(weapon: WeaponId, playerId: string, at: { x: number; y: number; local: boolean }): void {
+    this.shellLoads.delete(playerId);
+    const byTheShell = weapon === 'shotgun';
+    if (byTheShell) {
+      this.mixer?.play('pump', at);
+      return;
+    }
+    this.mixer?.play('mag_in', at);
+    const tail = RELOAD_TAIL[weapon];
+    if (tail) this.mixer?.play(tail, { ...at, delay: 0.12 });
+  }
+
+  /** Shells go in one by one while a shotgun reloads; the reload's end (or a full tube) stops them. */
+  private loadShells(mixer: Mixer, dt: number): void {
+    for (const [id, load] of this.shellLoads) {
+      load.next -= dt;
+      const between = load.next > 0;
+      if (between) continue;
+      load.next += SHELL_EVERY;
+      load.loaded += 1;
+      mixer.play('shell_load', { x: load.x, y: load.y, local: load.local });
+      const tubeFull = load.loaded >= SHELLS_MAX;
+      if (tubeFull) this.shellLoads.delete(id);
+    }
+  }
+
   dispose(): void {
+    this.shellLoads.clear();
     this.clearPreviewTimer();
     this.soundtrack?.dispose();
     this.music?.dispose();
@@ -327,8 +369,13 @@ export class AudioEngine {
     return this.prefs.muted ? 0 : this.prefs.volume;
   }
 
+  private get buses(): BusLevels {
+    return { music: this.prefs.music, sfx: this.prefs.sfx };
+  }
+
   private applyLevel(): void {
     this.mixer?.setLevel(this.level);
+    this.mixer?.setBuses(this.buses);
   }
 
   private persist(): void {
@@ -336,7 +383,7 @@ export class AudioEngine {
     try {
       localStorage.setItem(STORE_KEY, JSON.stringify(this.prefs));
     } catch {
-      // storage blocked: the setting still applies for this session
+      // chemx-allow: best-effort storage blocked: the setting still applies for this session
     }
   }
 }

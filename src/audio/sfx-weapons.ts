@@ -71,5 +71,22 @@ export const impact: Recipe = (v) => {
   noise(v, { filter: 'bandpass', freq: 3000, q: 1.5, decay: 0.04, gain: 0.4 });
   tone(v, { type: 'sine', f0: 1800, f1: 700, decay: 0.03, gain: 0.12 });
   noise(v, { at: 0.01, filter: 'highpass', freq: 5000, decay: 0.09, gain: 0.12 });
-  if (v.rand() < 0.35) tone(v, { at: 0.02, type: 'sine', f0: 3200, f1: 1300, decay: 0.16, gain: 0.05 });
+  const hasRicochet = v.rand() < 0.35;
+  if (hasRicochet) tone(v, { at: 0.02, type: 'sine', f0: 3200, f1: 1300, decay: 0.16, gain: 0.05 });
+};
+
+/** Pistol: the slide snapping forward on a fresh magazine. */
+export const slideDrop: Recipe = (v) => {
+  noise(v, { filter: 'bandpass', freq: 3400, q: 2.5, decay: 0.02, gain: 0.35 });
+  tone(v, { type: 'square', f0: 1300, f1: 700, decay: 0.02, gain: 0.1, lp: 4500 });
+  tone(v, { type: 'sine', f0: 240, f1: 120, decay: 0.05, gain: 0.25 });
+};
+
+/** Carbine: the charging handle pulled back and let go. */
+export const boltRack: Recipe = (v) => {
+  noise(v, { filter: 'bandpass', freq: 1500, freq1: 2600, q: 1.5, attack: 0.01, decay: 0.05, gain: 0.25 });
+  tone(v, { type: 'triangle', f0: 520, f1: 300, decay: 0.04, gain: 0.15 });
+  noise(v, { at: 0.11, filter: 'bandpass', freq: 3000, q: 2.5, decay: 0.025, gain: 0.4 });
+  tone(v, { at: 0.11, type: 'square', f0: 1600, f1: 850, decay: 0.02, gain: 0.1, lp: 4500 });
+  tone(v, { at: 0.11, type: 'sine', f0: 210, f1: 100, decay: 0.06, gain: 0.3 });
 };

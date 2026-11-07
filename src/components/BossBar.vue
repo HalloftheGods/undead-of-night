@@ -47,9 +47,7 @@ const fill = computed(() => ({ '--fill': `${Math.max(0, Math.min(1, boss.share))
   transition: width 120ms steps(3);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .boss-meter > span {
-    transition: none;
-  }
+:root[data-motion='reduced'] .boss-meter > span {
+  transition: none;
 }
 </style>

@@ -12,13 +12,11 @@ export interface SpinTimers {
   readonly clear: (handle: TimerHandle) => void;
 }
 
-// Wrapped, so each call runs on the global scope: a browser throws Illegal invocation when they run as a method.
+// Called on globalThis, not as a method of this object: a browser throws Illegal invocation otherwise.
+// The spinner keeps the handle and clears it on every restart and stop.
 const BROWSER_TIMERS: SpinTimers = {
-  set: (tick, ms) => {
-    const handle = setInterval(tick, ms);
-    return handle;
-  },
-  clear: (handle) => clearInterval(handle),
+  set: (tick, ms) => globalThis.setInterval(tick, ms),
+  clear: (handle) => globalThis.clearInterval(handle),
 };
 
 /** Reduced motion stills only a touch screen's turn, which nobody asked for. Pointing at a survivor asks to see it turn. */
@@ -41,7 +39,8 @@ export function createSpinner(show: (facing: number) => void, timers: SpinTimers
   function halt(): void {
     const stale = handle;
     handle = null;
-    if (stale !== null) timers.clear(stale);
+    const hasStaleTimer = stale !== null;
+    if (hasStaleTimer) timers.clear(stale);
   }
 
   return {

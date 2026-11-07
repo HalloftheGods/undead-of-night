@@ -101,7 +101,8 @@ export function createPlayer(arrival: Arrival, spot: { x: number; y: number }): 
 
 /** Keeps a leaver's run, position included, so a refresh is neither a respawn nor a teleport. */
 export function rememberDeparted(sim: SimState, p: PlayerState): void {
-  if (p.token === null) return;
+  const hasNoToken = p.token === null;
+  if (hasNoToken) return;
   sim.departed.delete(p.token);
   sim.departed.set(p.token, p);
   const [oldest] = sim.departed.keys();
@@ -130,7 +131,8 @@ export function reclaimLive(sim: SimState, arrival: Arrival): PlayerState | null
 
 /** The run a known token left behind, on its new connection, or null for a token new to this run. */
 export function reclaimDeparted(sim: SimState, arrival: Arrival): PlayerState | null {
-  if (arrival.token === null) return null;
+  const hasNoToken = arrival.token === null;
+  if (hasNoToken) return null;
   const left = sim.departed.get(arrival.token);
   if (!left) return null;
   sim.departed.delete(arrival.token);

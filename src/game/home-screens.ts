@@ -52,18 +52,23 @@ export function loadoutRows(loadout: Loadout): readonly LockerRow[] {
   }
   for (const weapon of WEAPON_ORDER) {
     const rounds = loadout.ammoBag[weapon] ?? 0;
-    if (rounds > 0) rows.push({ key: `ammo:${weapon}`, label: `${WEAPON_LABELS[weapon]} rounds`, count: rounds });
+    const hasRounds = rounds > 0;
+    if (hasRounds) rows.push({ key: `ammo:${weapon}`, label: `${WEAPON_LABELS[weapon]} rounds`, count: rounds });
   }
   for (const part of PART_ORDER) {
     const count = loadout.parts[part] ?? 0;
-    if (count > 0) rows.push({ key: `part:${part}`, label: PART_LABELS[part], count });
+    const hasParts = count > 0;
+    if (hasParts) rows.push({ key: `part:${part}`, label: PART_LABELS[part], count });
   }
   for (const effect of EFFECT_ORDER) {
     const count = loadout.kits[effect] ?? 0;
-    if (count > 0) rows.push({ key: `kit:${effect}`, label: `${GUN_EFFECTS[effect].label} kit`, count });
+    const hasKits = count > 0;
+    if (hasKits) rows.push({ key: `kit:${effect}`, label: `${GUN_EFFECTS[effect].label} kit`, count });
   }
-  if (loadout.medkits > 0) rows.push({ key: 'medkit', label: 'Medkit', count: loadout.medkits });
-  if (loadout.bottles > 0) rows.push({ key: 'bottle', label: 'Bottle', count: loadout.bottles });
+  const hasMedkits = loadout.medkits > 0;
+  if (hasMedkits) rows.push({ key: 'medkit', label: 'Medkit', count: loadout.medkits });
+  const hasBottles = loadout.bottles > 0;
+  if (hasBottles) rows.push({ key: 'bottle', label: 'Bottle', count: loadout.bottles });
   if (loadout.knife) rows.push({ key: 'knife', label: 'Knife', count: 1 });
   return rows;
 }
@@ -76,27 +81,35 @@ export function lockerView(save: HomeSave): { readonly locker: readonly LockerRo
 function take(from: Loadout, key: string): { rest: Loadout; item: Partial<Loadout> | null } {
   const rest = copyOf(from);
   const [kind, id = ''] = key.split(':');
-  if (kind === 'gun') {
+  const isGun = kind === 'gun';
+  if (isGun) {
     const gun = rest.guns[id as WeaponId];
     if (!gun) return { rest: from, item: null };
     delete rest.guns[id as WeaponId];
     return { rest, item: { guns: { [id]: gun } } };
   }
-  if (kind === 'ammo') {
+  const isAmmo = kind === 'ammo';
+  if (isAmmo) {
     const rounds = rest.ammoBag[id as WeaponId] ?? 0;
-    if (rounds <= 0) return { rest: from, item: null };
+    const isOutOfRounds = rounds <= 0;
+    if (isOutOfRounds) return { rest: from, item: null };
     rest.ammoBag[id as WeaponId] = 0;
     return { rest, item: { ammoBag: { pistol: 0, carbine: 0, shotgun: 0, [id]: rounds } } };
   }
-  if (kind === 'part' || kind === 'kit') {
+  const isPartOrKit = kind === 'part' || kind === 'kit';
+  if (isPartOrKit) {
     const pool = (kind === 'part' ? rest.parts : rest.kits) as Record<string, number>;
-    if ((pool[id] ?? 0) <= 0) return { rest: from, item: null };
+    const isOutOfStock = (pool[id] ?? 0) <= 0;
+    if (isOutOfStock) return { rest: from, item: null };
     pool[id] -= 1;
     return { rest, item: { [kind === 'part' ? 'parts' : 'kits']: { [id]: 1 } } };
   }
-  if (kind === 'medkit' && rest.medkits > 0) return { rest: { ...rest, medkits: rest.medkits - 1 }, item: { medkits: 1 } };
-  if (kind === 'bottle' && rest.bottles > 0) return { rest: { ...rest, bottles: rest.bottles - 1 }, item: { bottles: 1 } };
-  if (kind === 'knife' && rest.knife) return { rest: { ...rest, knife: false }, item: { knife: true } };
+  const canTakeMedkit = kind === 'medkit' && rest.medkits > 0;
+  if (canTakeMedkit) return { rest: { ...rest, medkits: rest.medkits - 1 }, item: { medkits: 1 } };
+  const canTakeBottle = kind === 'bottle' && rest.bottles > 0;
+  if (canTakeBottle) return { rest: { ...rest, bottles: rest.bottles - 1 }, item: { bottles: 1 } };
+  const canTakeKnife = kind === 'knife' && rest.knife;
+  if (canTakeKnife) return { rest: { ...rest, knife: false }, item: { knife: true } };
   return { rest: from, item: null };
 }
 
@@ -114,7 +127,8 @@ function put(into: Loadout, item: Partial<Loadout>): Loadout {
 
 function shift(draft: LockerDraft, key: string, from: 'locker' | 'hands', to: 'locker' | 'hands'): LockerDraft {
   const { rest, item } = take(draft[from], key);
-  if (item === null) return draft;
+  const isNothingTaken = item === null;
+  if (isNothingTaken) return draft;
   return { ...draft, [from]: rest, [to]: put(draft[to], item) };
 }
 
@@ -172,7 +186,8 @@ export interface GarageLevel {
 }
 
 function garageState(number: number, reach: number): GarageState {
-  if (number < reach) return 'replay';
+  const isWithinReach = number < reach;
+  if (isWithinReach) return 'replay';
   return number === reach ? 'frontier' : 'locked';
 }
 
@@ -213,7 +228,8 @@ export function deathSummary(death: HomeDeath): readonly string[] {
   if (death.overrun) return overrunLost(death.lost);
   const { receipt, lost } = death;
   const lines: string[] = [];
-  if (receipt.silver > 0) lines.push(coinText(receipt.silver));
+  const hasSilver = receipt.silver > 0;
+  if (hasSilver) lines.push(coinText(receipt.silver));
   lines.push(...jewelLines(receipt.jewels));
   for (const row of loadoutRows(lost)) lines.push(gearLine(row));
   return lines.length > 0 ? lines : ['Nothing was lost'];
@@ -222,8 +238,10 @@ export function deathSummary(death: HomeDeath): readonly string[] {
 /** Each size of jewel counted, leaving out a size there is none of. */
 function jewelCounts(jewels: Jewels): string[] {
   const counts: string[] = [];
-  if (jewels.small > 0) counts.push(plural(jewels.small, 'small jewel'));
-  if (jewels.large > 0) counts.push(plural(jewels.large, 'large jewel'));
+  const hasSmallJewels = jewels.small > 0;
+  if (hasSmallJewels) counts.push(plural(jewels.small, 'small jewel'));
+  const hasLargeJewels = jewels.large > 0;
+  if (hasLargeJewels) counts.push(plural(jewels.large, 'large jewel'));
   return counts;
 }
 
@@ -248,7 +266,8 @@ const COUNTED_NOUNS: Readonly<Record<string, readonly [string, string]>> = {
 
 /** A gun or the knife is named; a stack is counted. */
 function gearLine(row: LockerRow): string {
-  if (UNIT_ROWS.test(row.key)) return row.label;
+  const isUnitRow = UNIT_ROWS.test(row.key);
+  if (isUnitRow) return row.label;
   const noun = COUNTED_NOUNS[row.key];
   if (noun) return `${row.count} ${row.count === 1 ? noun[0] : noun[1]}`;
   return `${row.count} ${row.label.toLowerCase()}`;
@@ -262,7 +281,8 @@ export const CHEST_NOTE = 'The gear is in your locker. The silver and jewels are
 /** What the chest held: silver, jewels, then each piece of gear. */
 export function chestLines(chest: ChestOpened): readonly string[] {
   const lines: string[] = [];
-  if (chest.silver > 0) lines.push(`${chest.silver} silver`);
+  const hasSilver = chest.silver > 0;
+  if (hasSilver) lines.push(`${chest.silver} silver`);
   lines.push(...jewelCounts(chest.jewels));
   for (const row of loadoutRows(chest.gear)) lines.push(gearLine(row));
   return lines;
@@ -305,7 +325,8 @@ export function setupLevelLines(input: SetupLevelInput): { readonly startLine: s
   const { style, multi, level, unlocked, chosen } = input;
   const roomDecides = style === null;
   if (roomDecides) return { startLine: null, coopNote: multi ? ROOM_DECIDES_NOTE : null };
-  if (playsFromHome(style)) return { startLine: null, coopNote: multi ? HOME_COOP_NOTE : null };
+  const isHomeStyle = playsFromHome(style);
+  if (isHomeStyle) return { startLine: null, coopNote: multi ? HOME_COOP_NOTE : null };
   return {
     startLine: !multi && unlocked ? startAtLabel(level) : null,
     coopNote: multi && chosen !== null ? COOP_LEVEL_NOTE : null,

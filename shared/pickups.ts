@@ -28,15 +28,18 @@ export const isAmmoPickup = (type: PickupType): type is AmmoPickup => type in AM
 
 export function spawnPickup(sim: SimState, type: PickupType, x: number, y: number, rounds = 0, ttl: number | null = null): void {
   // Treasure is numbered on its own counter, so it never moves `sim.nextEntity`.
-  if (isTreasurePickup(type) && sim.homeRun) return spawnTreasure(sim, type, x, y, rounds);
+  const isHomeTreasure = isTreasurePickup(type) && sim.homeRun;
+  if (isHomeTreasure) return spawnTreasure(sim, type, x, y, rounds);
   sim.pickups.push({ id: entityId(sim, 'i'), type, x, y, ttl, rounds });
 }
 
 /** Rarely, something small falls off a body. It does not last. */
 export function maybeDropOnKill(sim: SimState, x: number, y: number, killer?: PlayerState): void {
   const odds = killer ? characterOf(killer.skin).dropOdds : 1;
-  if (sim.rng() >= KILL_DROP_CHANCE * odds) return;
-  if (sim.rng() < KILL_DROP_BANDAGE_ODDS) spawnPickup(sim, 'bandage', x, y, 0, KILL_DROP_TTL_SEC);
+  const isNoDrop = sim.rng() >= KILL_DROP_CHANCE * odds;
+  if (isNoDrop) return;
+  const dropsBandage = sim.rng() < KILL_DROP_BANDAGE_ODDS;
+  if (dropsBandage) spawnPickup(sim, 'bandage', x, y, 0, KILL_DROP_TTL_SEC);
   else spawnPickup(sim, 'pistol_ammo', x, y, KILL_DROP_ROUNDS, KILL_DROP_TTL_SEC);
 }
 
@@ -45,7 +48,8 @@ function takeAmmo(p: PlayerState, item: PickupState, type: AmmoPickup): boolean 
   const { weapon } = AMMO_PICKUPS[type];
   const room = ammoCapOf(p, weapon) - p.ammoBag[weapon];
   const taken = Math.min(room, item.rounds);
-  if (taken <= 0) return false;
+  const hasNoRoom = taken <= 0;
+  if (hasNoRoom) return false;
   p.ammoBag[weapon] += taken;
   item.rounds -= taken;
   return true;
@@ -58,7 +62,8 @@ function takeGun(p: PlayerState, item: PickupState, weapon: WeaponId): boolean {
   const loaded = item.rounds > 0 ? item.rounds : stats.foundAmmo;
   if (p.guns[weapon]) {
     const taken = Math.min(ammoCapOf(p, weapon) - p.ammoBag[weapon], loaded);
-    if (taken <= 0) return false;
+    const hasNoRoom = taken <= 0;
+    if (hasNoRoom) return false;
     p.ammoBag[weapon] += taken;
     item.rounds = loaded - taken;
     return true;
@@ -75,23 +80,29 @@ function takeGun(p: PlayerState, item: PickupState, weapon: WeaponId): boolean {
 /** False leaves the item on the ground: it would have done nothing for this player. */
 function applyPickup(p: PlayerState, item: PickupState): boolean {
   const { type } = item;
-  if (type === 'bandage') {
-    if (p.health >= p.maxHealth) return false;
+  const isBandage = type === 'bandage';
+  if (isBandage) {
+    const isFullHealth = p.health >= p.maxHealth;
+    if (isFullHealth) return false;
     p.health = Math.min(p.maxHealth, p.health + BANDAGE_HEAL);
     return true;
   }
-  if (type === 'medkit') {
-    if (p.medkits >= MEDKIT_MAX) return false;
+  const isMedkit = type === 'medkit';
+  if (isMedkit) {
+    const hasMaxMedkits = p.medkits >= MEDKIT_MAX;
+    if (hasMaxMedkits) return false;
     p.medkits += 1;
     return true;
   }
-  if (type === 'knife') {
+  const isKnife = type === 'knife';
+  if (isKnife) {
     if (p.knife) return false;
     p.knife = true;
     return true;
   }
   /** The Radio does nothing in the sim: whoever stands on it takes it, and the event tells every client. */
-  if (type === 'radio') return true;
+  const isRadio = type === 'radio';
+  if (isRadio) return true;
   if (isPartPickup(type)) return takePart(p, type);
   if (isKitPickup(type)) return takeKit(p, type);
   if (isTreasurePickup(type)) return takeTreasure(p, item);
@@ -103,16 +114,20 @@ function applyPickup(p: PlayerState, item: PickupState): boolean {
 function collectedBy(sim: SimState, item: PickupState): PlayerState | null {
   for (const p of sim.players) {
     const touching = p.status === 'alive' && Math.hypot(p.x - item.x, p.y - item.y) <= PICKUP_RADIUS;
-    if (touching && applyPickup(p, item)) return p;
+    const picksUp = touching && applyPickup(p, item);
+    if (picksUp) return p;
   }
   return null;
 }
 
 export function updatePickups(sim: SimState): void {
   sim.pickups = sim.pickups.filter((item) => {
-    if (item.ttl !== null) {
-      item.ttl -= TICK_DT;
-      if (item.ttl <= 0) return false;
+    const { ttl } = item;
+    const isTimed = ttl !== null;
+    if (isTimed) {
+      item.ttl = ttl - TICK_DT;
+      const isExpired = item.ttl <= 0;
+      if (isExpired) return false;
     }
     const taker = collectedBy(sim, item);
     if (!taker) return true;

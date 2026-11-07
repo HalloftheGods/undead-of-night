@@ -129,7 +129,7 @@ import TreasureChip from './TreasureChip.vue';
 
 const LOW_HEALTH = 0.34;
 
-const { hud } = defineProps<{
+interface HudOverlayProps {
   hud: HudState;
   art: ArtBook;
   mode: TransportKind;
@@ -137,7 +137,9 @@ const { hud } = defineProps<{
   place: PlaceBanner | null;
   home: HomeUi | null;
   log: readonly LogEntry[];
-}>();
+}
+
+const { hud } = defineProps<HudOverlayProps>();
 
 const isLow = computed(() => hud.health / hud.maxHealth < LOW_HEALTH);
 const ammo = computed(() => ammoState(hud));

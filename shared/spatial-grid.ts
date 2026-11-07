@@ -28,7 +28,8 @@ export class SpatialHashGrid<T extends SpatialItem> {
     const cell = this.cells.get(key);
     if (cell) cell.push(item);
     else this.cells.set(key, [item]);
-    if (item.radius > this.maxRadius) this.maxRadius = item.radius;
+    const isWidest = item.radius > this.maxRadius;
+    if (isWidest) this.maxRadius = item.radius;
   }
 
   /** Every item whose circle touches the query circle. */
@@ -47,7 +48,8 @@ export class SpatialHashGrid<T extends SpatialItem> {
           const dx = item.x - x;
           const dy = item.y - y;
           const combined = radius + item.radius;
-          if (dx * dx + dy * dy <= combined * combined) out.push(item);
+          const overlaps = dx * dx + dy * dy <= combined * combined;
+          if (overlaps) out.push(item);
         }
       }
     }

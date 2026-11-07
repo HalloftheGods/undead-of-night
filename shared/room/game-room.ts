@@ -62,7 +62,8 @@ export function createGameRoom({ sim, clock, newId, restartVoteMs }: GameRoomOpt
 
   /** What the room plays while someone is in it. An empty room plays nothing, so the next one in can change it. */
   function roomStyle(): GameStyle | null {
-    if (sim.playerCount === 0) return null;
+    const isEmpty = sim.playerCount === 0;
+    if (isEmpty) return null;
     return sim.playsHome ? 'campaign' : 'arcade';
   }
 
@@ -74,11 +75,13 @@ export function createGameRoom({ sim, clock, newId, restartVoteMs }: GameRoomOpt
   function settleStyle(client: RoomClient, asked: GameStyle | undefined): boolean {
     const style = asked ?? STYLELESS_CLIENT;
     const current = roomStyle();
-    if (current === null) sim.setHome(playsFromHome(style));
+    const isUnclaimed = current === null;
+    if (isUnclaimed) sim.setHome(playsFromHome(style));
     const agreed = current === null || current === style;
     if (agreed) return true;
     // A client from before styles has no way to play this room, and this is the nearest thing it can show.
-    if (asked === undefined) client.peer.close(ROOM_FULL_CODE, 'room full');
+    const isStylelessClient = asked === undefined;
+    if (isStylelessClient) client.peer.close(ROOM_FULL_CODE, 'room full');
     else greet(client);
     return false;
   }
@@ -95,7 +98,8 @@ export function createGameRoom({ sim, clock, newId, restartVoteMs }: GameRoomOpt
 
   function runDueTicks(): void {
     const now = clock.now();
-    if (now - nextTickAt > MAX_LAG_MS) nextTickAt = now;
+    const isFarBehind = now - nextTickAt > MAX_LAG_MS;
+    if (isFarBehind) nextTickAt = now;
     for (let ticks = 0; ticks < MAX_CATCH_UP_TICKS && now >= nextTickAt; ticks++) {
       sim.step();
       sendFrame(sim.snapshot());
@@ -105,29 +109,43 @@ export function createGameRoom({ sim, clock, newId, restartVoteMs }: GameRoomOpt
   }
 
   function startTicking(): void {
-    if (tickTimer !== null) return;
+    const isTicking = tickTimer !== null;
+    if (isTicking) return;
     nextTickAt = clock.now();
     runDueTicks();
   }
 
   function stopTicking(): void {
-    if (tickTimer !== null) clock.cancel(tickTimer);
+    const isTicking = tickTimer !== null;
+    if (isTicking) clock.cancel(tickTimer);
     tickTimer = null;
   }
 
-  function join(client: RoomClient, { name, token, character, difficulty, home, style }: JoinPacket): void {
-    if (client.playerId) return;
+  /**
+   * Whether this join may take a seat: the client is not seated yet, there is a seat (or its own old body) to take,
+   * and it agrees with the room's style. Null when it may not; otherwise the stale connection it takes over, if any.
+   */
+  function admitJoin(client: RoomClient, token: JoinPacket['token'], style: JoinPacket['style']): { stale: RoomClient | undefined } | null {
+    if (client.playerId) return null;
     // A dropped link can outlive its refresh: the old socket goes and the new one takes that body over.
     const heldBy = sim.playerWithToken(token);
     const stale = joined().find((other) => other.playerId === heldBy);
-    if (!stale && sim.playerCount >= MAX_PLAYERS) {
+    const isRoomFull = !stale && sim.playerCount >= MAX_PLAYERS;
+    if (isRoomFull) {
       client.peer.close(ROOM_FULL_CODE, 'room full');
-      return;
+      return null;
     }
-    if (!settleStyle(client, style)) return;
+    return settleStyle(client, style) ? { stale } : null;
+  }
+
+  function join(client: RoomClient, { name, token, character, difficulty, home, style }: JoinPacket): void {
+    const admitted = admitJoin(client, token, style);
+    if (!admitted) return;
+    const { stale } = admitted;
     const id = newId();
     // The first player into an empty room sets how hard the run is.
-    if (difficulty && sim.playerCount === 0) sim.setDifficulty(difficulty);
+    const setsDifficulty = difficulty && sim.playerCount === 0;
+    if (setsDifficulty) sim.setDifficulty(difficulty);
     // After that restart, which lets every body go, and before addPlayer takes this one back.
     const resumed = sim.hasBodyFor(token);
     sim.addPlayer(id, name, token, character, home);
@@ -151,10 +169,13 @@ export function createGameRoom({ sim, clock, newId, restartVoteMs }: GameRoomOpt
   function disconnect(client: RoomClient): void {
     clients.delete(client);
     clock.cancel(client.joinDeadline);
-    if (client.playerId === null) return;
-    sim.removePlayer(client.playerId);
-    for (const other of joined()) send(other, { type: 'player_disconnected', playerId: client.playerId });
-    if (sim.playerCount === 0) {
+    const { playerId } = client;
+    const neverJoined = playerId === null;
+    if (neverJoined) return;
+    sim.removePlayer(playerId);
+    for (const other of joined()) send(other, { type: 'player_disconnected', playerId });
+    const isRoomEmpty = sim.playerCount === 0;
+    if (isRoomEmpty) {
       stopTicking();
       vote.end();
       sim.restart();

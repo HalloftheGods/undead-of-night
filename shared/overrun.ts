@@ -105,13 +105,15 @@ function tickClock(sim: SimState, overrun: OverrunState): void {
   const rate = clockRate(sim);
   overrun.slowed = rate < 1;
   overrun.left = Math.max(0, overrun.left - TICK_DT * rate);
-  if (overrun.left < CLOCK_EPSILON) overrun.left = 0;
+  const isClockOut = overrun.left < CLOCK_EPSILON;
+  if (isClockOut) overrun.left = 0;
   const share = overrun.left / overrun.spanSec;
   while (overrun.warned < OVERRUN_WARNINGS.length && share <= OVERRUN_WARNINGS[overrun.warned] + CLOCK_EPSILON) {
     emit(sim, { type: 'overrun_warning', step: overrun.warned, left: Math.round(overrun.left) });
     overrun.warned += 1;
   }
-  if (overrun.phase === 'counting' && share <= OVERRUN_ARM_FRACTION + CLOCK_EPSILON) overrun.phase = 'armed';
+  const shouldArm = overrun.phase === 'counting' && share <= OVERRUN_ARM_FRACTION + CLOCK_EPSILON;
+  if (shouldArm) overrun.phase = 'armed';
 }
 
 /**

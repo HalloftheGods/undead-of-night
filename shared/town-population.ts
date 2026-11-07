@@ -42,8 +42,10 @@ function rollType(sim: SimState): ZombieType {
   const roll = sim.rng();
   const bloatersEnd = ROAMER_MIX.bloater + mix.bloater;
   const runnersEnd = bloatersEnd + ROAMER_MIX.runner + mix.runner;
-  if (roll < bloatersEnd) return 'bloater';
-  if (roll < runnersEnd) return 'runner';
+  const isBloaterRoll = roll < bloatersEnd;
+  if (isBloaterRoll) return 'bloater';
+  const isRunnerRoll = roll < runnersEnd;
+  if (isRunnerRoll) return 'runner';
   const bruteShare = mix.brute + (sim.wave >= BRUTE_FROM_WAVE ? BRUTE_SHARE : 0);
   const brutesEnd = runnersEnd + bruteShare;
   const screamersEnd = brutesEnd + screamerShare(sim.level);
@@ -57,7 +59,8 @@ const clearFor = (sim: SimState, type: ZombieType, spot: Point): boolean =>
 
 function indoorSpot(sim: SimState, building: BuildingInstance, type: ZombieType): Point | null {
   const spots = lootSpots(sim.map, building);
-  if (spots.length === 0) return null;
+  const hasNoSpots = spots.length === 0;
+  if (hasNoSpots) return null;
   const spot = pick(sim.rng, spots);
   return clearFor(sim, type, spot) ? spot : null;
 }
@@ -107,7 +110,8 @@ export function seedPopulation(sim: SimState): void {
 /** One replacement at a time, out of sight, so a cleared street fills back in slowly. */
 export function updatePopulation(sim: SimState): void {
   sim.topUpTimer -= TICK_DT;
-  if (sim.topUpTimer > 0) return;
+  const isTopUpPending = sim.topUpTimer > 0;
+  if (isTopUpPending) return;
   sim.topUpTimer = POPULATION_TOPUP_SEC;
   const roamers = sim.zombies.filter((z) => !z.horde).length;
   // A horde's waiting bodies hold their places under the cap, so the HUD's count stays true.

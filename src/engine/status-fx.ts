@@ -93,7 +93,8 @@ function glowCanvas(): HTMLCanvasElement {
 export function paintTint(ctx: CanvasRenderingContext2D, zombie: ZombieEntity, sprite: PixelSprite, x: number, y: number, time: number, reducedMotion: boolean): void {
   const corroded = (zombie.corrosion ?? 0) > 0;
   const slowed = zombie.slowed === true;
-  if (!corroded && !slowed) return;
+  const isUnaffected = !corroded && !slowed;
+  if (isUnaffected) return;
   const x0 = x - sprite.ax;
   const y0 = y - sprite.ay;
   const previous = ctx.globalAlpha;
@@ -122,7 +123,8 @@ export function paintTint(ctx: CanvasRenderingContext2D, zombie: ZombieEntity, s
 /** Flames over a burning body and the glow it throws. Drawn in the emissive pass, after lighting. */
 export function paintBurn(ctx: CanvasRenderingContext2D, zombie: ZombieEntity, x: number, y: number, bodyHeight: number, time: number, reducedMotion: boolean): void {
   if (!zombie.burning) return;
-  if (glows < MAX_GLOWS) {
+  const hasGlowBudget = glows < MAX_GLOWS;
+  if (hasGlowBudget) {
     glows += 1;
     const previous = ctx.globalCompositeOperation;
     ctx.globalCompositeOperation = 'lighter';
@@ -131,7 +133,8 @@ export function paintBurn(ctx: CanvasRenderingContext2D, zombie: ZombieEntity, x
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = previous;
   }
-  if (flames >= MAX_FLAMES) return;
+  const isOutOfFlames = flames >= MAX_FLAMES;
+  if (isOutOfFlames) return;
   flames += 1;
   const step = reducedMotion ? 0 : Math.floor(time * FLICKER_HZ);
   for (let i = 0; i < FLAME_COLUMNS; i += 1) {

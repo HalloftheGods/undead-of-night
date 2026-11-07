@@ -78,9 +78,14 @@ export function flakeY(spec: WeatherSpec, index: number, time: number, top: numb
 /** The level's palette and weather over the finished frame. It holds still for reduced motion. */
 export class Atmosphere {
   look: LevelLook = LEVEL_LOOKS.night;
-  private readonly reducedMotion: boolean;
+  private reducedMotion: boolean;
 
   constructor(reducedMotion: boolean) {
+    this.reducedMotion = reducedMotion;
+  }
+
+  /** The Motion setting changed while the game was running. */
+  setReducedMotion(reducedMotion: boolean): void {
     this.reducedMotion = reducedMotion;
   }
 

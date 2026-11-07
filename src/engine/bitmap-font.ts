@@ -61,7 +61,8 @@ function buildAtlas(color: string): Atlas {
     const origin = slots.get(char)!;
     rows.forEach((row, y) => {
       for (let x = 0; x < row.length; x += 1) {
-        if (row[x] === '#') ctx.fillRect(origin + x, y, 1, 1);
+        const isInked = row[x] === '#';
+        if (isInked) ctx.fillRect(origin + x, y, 1, 1);
       }
     });
   }
@@ -91,6 +92,34 @@ export function drawText(ctx: CanvasRenderingContext2D, text: string, x: number,
   }
 }
 
+/** Outlined labels already drawn, newest last. A fight floats the same few scores for many frames each. */
+const OUTLINED_CACHE_SIZE = 96;
+const outlinedCache = new Map<string, HTMLCanvasElement>();
+
+/** The label with its outline, baked once: five passes a letter would cost a busy frame hundreds of draws. */
+function outlinedCanvas(text: string, color: string, outline: string): HTMLCanvasElement {
+  const key = `${color}|${outline}|${text}`;
+  const cached = outlinedCache.get(key);
+  if (cached) {
+    outlinedCache.delete(key);
+    outlinedCache.set(key, cached);
+    return cached;
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width = textWidth(text) + 2;
+  canvas.height = FONT_HEIGHT + 2;
+  const ctx = canvas.getContext('2d')!;
+  drawText(ctx, text, 0, 1, outline);
+  drawText(ctx, text, 2, 1, outline);
+  drawText(ctx, text, 1, 0, outline);
+  drawText(ctx, text, 1, 2, outline);
+  drawText(ctx, text, 1, 1, color);
+  outlinedCache.set(key, canvas);
+  const overFull = outlinedCache.size > OUTLINED_CACHE_SIZE;
+  if (overFull) outlinedCache.delete(outlinedCache.keys().next().value!);
+  return canvas;
+}
+
 /** Text with a one-pixel dark outline, for reading over a busy scene. */
 export function drawOutlinedText(
   ctx: CanvasRenderingContext2D,
@@ -101,9 +130,5 @@ export function drawOutlinedText(
   outline = '#0b0c10',
 ): void {
   const x = Math.round(centerX - textWidth(text) / 2);
-  drawText(ctx, text, x - 1, y, outline);
-  drawText(ctx, text, x + 1, y, outline);
-  drawText(ctx, text, x, y - 1, outline);
-  drawText(ctx, text, x, y + 1, outline);
-  drawText(ctx, text, x, y, color);
+  ctx.drawImage(outlinedCanvas(text, color, outline), x - 1, Math.round(y) - 1);
 }

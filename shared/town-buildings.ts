@@ -94,9 +94,11 @@ const plotWidth = (kind: BuildingKind): number => widthOf(kind) + (kind === 'gar
 function nextKind(b: MapBuilder, style: DistrictStyle, wishes: BuildingKind[], late: BuildingKind[], room: number, height: number): BuildingKind | null {
   const fits = (kind: BuildingKind): boolean => plotWidth(kind) <= room && heightOf(kind) <= height;
   const wished = wishes.findIndex(fits);
-  if (wished >= 0) return wishes.splice(wished, 1)[0];
+  const hasWish = wished >= 0;
+  if (hasWish) return wishes.splice(wished, 1)[0];
   const arrived = wishes.length === 0 ? late.findIndex(fits) : -1;
-  if (arrived >= 0) return late.splice(arrived, 1)[0];
+  const hasLateArrival = arrived >= 0;
+  if (hasLateArrival) return late.splice(arrived, 1)[0];
   const fillers = style.fillers.filter(fits);
   return fillers.length > 0 ? pick(b.rng, fillers) : null;
 }
@@ -130,7 +132,8 @@ function raise(b: MapBuilder, kind: BuildingKind, col: number, bottom: number, w
   b.reserve({ x0: door.x0 - DOOR_WIDTH / 2, y0: door.y1, x1: door.x1 + DOOR_WIDTH / 2, y1: door.y1 + apronDepth });
   backStep(b, building);
   furnish(b, building);
-  if (kind === 'garage') forecourt(b, col + widthOf(kind) + 1, bottom);
+  const isGarage = kind === 'garage';
+  if (isGarage) forecourt(b, col + widthOf(kind) + 1, bottom);
 }
 
 /** Packs one row of buildings against `bottom`. Returns the row's top edge, or null if nothing fit. */
@@ -160,9 +163,11 @@ function fillBlock(b: MapBuilder, block: Block, style: DistrictStyle, wishes: Bu
   let walkDown = style.front;
   for (;;) {
     const top = packRow(b, block, style, bottom, walkDown, wishes, late);
-    if (top === null) break;
+    const isBlockFull = top === null;
+    if (isBlockFull) break;
     bottom = top - LANE_TILES;
-    if (bottom <= block.r0) break;
+    const isAtBlockTop = bottom <= block.r0;
+    if (isAtBlockTop) break;
     walkDown = LANE_PAVED_TILES;
     b.fill(rectBox({ c0: block.c0, c1: block.c1, r0: bottom, r1: bottom + LANE_PAVED_TILES }), 'sidewalk');
   }
@@ -186,7 +191,8 @@ export function raiseBuildings(b: MapBuilder, plan: TownPlan, store = false): vo
     const late: BuildingKind[] = store && name === STORE_DISTRICT ? [STORE] : [];
     for (const block of blocks) fillBlock(b, block, style, wishes, late);
     if (openLot) {
-      if (name === 'downtown') fillParking(b, rectBox(openLot));
+      const isDowntown = name === 'downtown';
+      if (isDowntown) fillParking(b, rectBox(openLot));
       else fillCamp(b, rectBox(openLot));
     }
     carried = wishes;

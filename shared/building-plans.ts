@@ -54,7 +54,8 @@ export const PARTITIONS: Readonly<Partial<Record<BuildingKind, readonly Rect[]>>
 /** The opening in the north wall, in the world, or null for a building without one. */
 export function backDoorBox(building: BuildingInstance): Rect | null {
   const middle = BACK_DOORS[building.kind];
-  if (middle === undefined) return null;
+  const hasNoBackDoor = middle === undefined;
+  if (hasNoBackDoor) return null;
   const x0 = building.x + middle - DOOR_WIDTH / 2;
   return { x0, y0: building.y, x1: x0 + DOOR_WIDTH, y1: building.y + WALL_THICKNESS };
 }

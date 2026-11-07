@@ -65,19 +65,22 @@ export class LocalSession implements GameTransport {
   }
 
   setPaused(paused: boolean): void {
-    if (paused === this.paused) return;
+    const isUnchanged = paused === this.paused;
+    if (isUnchanged) return;
     this.paused = paused;
     if (paused) this.clock.stop();
     else this.clock.start();
   }
 
   hold(ms: number): void {
-    if (this.paused || ms <= 0) return;
+    const cannotHold = this.paused || ms <= 0;
+    if (cannotHold) return;
     this.clock.stop();
     if (this.holdTimer) clearTimeout(this.holdTimer);
     this.holdTimer = setTimeout(() => {
       this.holdTimer = null;
-      if (!this.paused && this.sim) this.clock.start();
+      const shouldResume = !this.paused && this.sim;
+      if (shouldResume) this.clock.start();
     }, ms);
   }
 

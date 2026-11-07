@@ -59,7 +59,8 @@ export class LocalPredictor {
 
   record(seq: number, dirX: number, dirY: number): void {
     this.pending.push({ seq, dirX, dirY });
-    if (this.pending.length > MAX_PENDING) this.pending.shift();
+    const isBacklogFull = this.pending.length > MAX_PENDING;
+    if (isBacklogFull) this.pending.shift();
     this.partialDt = 0;
   }
 
@@ -88,12 +89,14 @@ export class LocalPredictor {
     for (const input of this.pending) {
       replay = this.step(replay.x, replay.y, input.dirX, input.dirY, this.tickDt);
     }
-    if (this.partialDt > 0) replay = this.step(replay.x, replay.y, this.dirX, this.dirY, this.partialDt);
+    const hasPartialStep = this.partialDt > 0;
+    if (hasPartialStep) replay = this.step(replay.x, replay.y, this.dirX, this.dirY, this.partialDt);
 
     const errorX = replay.x - this.x;
     const errorY = replay.y - this.y;
     const error = Math.hypot(errorX, errorY);
-    const blockedOff = this.fixRefused && error > DEAD_ZONE;
+    const isDrifting = error > DEAD_ZONE;
+    const blockedOff = this.fixRefused && isDrifting;
     const mustSnap = error > SNAP_DISTANCE || blockedOff || this.isSolid(this.x, this.y);
     this.fixRefused = false;
     if (mustSnap) {
@@ -101,7 +104,7 @@ export class LocalPredictor {
       this.y = replay.y;
       this.correctionX = 0;
       this.correctionY = 0;
-    } else if (error > DEAD_ZONE) {
+    } else if (isDrifting) {
       this.correctionX = errorX;
       this.correctionY = errorY;
     } else {

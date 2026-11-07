@@ -16,8 +16,8 @@
     <nav class="mag-nav" aria-label="Record book pages">
       <MenuLink class="mag-nav-link" @press="emit('close')">Back</MenuLink>
       <span class="mag-nav-page" aria-live="polite">{{ label }}</span>
-      <MenuLink class="mag-nav-link" silent :disabled="atStart" @press="pages.turn(-1)">Prev</MenuLink>
-      <MenuLink class="mag-nav-link is-next" silent :disabled="atEnd" @press="pages.turn(1)">Next</MenuLink>
+      <MenuLink class="mag-nav-link" silent :disabled="atStart" @press="pages.flipPages(-1)">Prev</MenuLink>
+      <MenuLink class="mag-nav-link is-next" silent :disabled="atEnd" @press="pages.flipPages(1)">Next</MenuLink>
     </nav>
   </section>
 </template>
@@ -56,7 +56,7 @@ const book = computed<RecordBookData>(() => ({
 }));
 
 const pages = useBookPages(RECORD_LEAVES, () => game.playUi('click'), () => emit('close'));
-const { mode, shown, shownKey, label, atStart, atEnd } = pages;
+const { mode, shown, shownKey, label, atStart, atEnd } = pages.view;
 
 onMounted(() => trackTitlePage('records'));
 </script>

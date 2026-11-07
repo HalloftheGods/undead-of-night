@@ -54,7 +54,8 @@ function freeTilesReached(blocked: Uint8Array, cols: number, rows: number, start
     ];
     for (const next of neighbours) {
       const onMap = next >= 0 && next < cols * rows;
-      if (onMap && !blocked[next] && !seen[next]) {
+      const isUnvisitedFloor = onMap && !blocked[next] && !seen[next];
+      if (isUnvisitedFloor) {
         seen[next] = 1;
         stack.push(next);
       }
@@ -72,7 +73,8 @@ function nearestSolid(props: readonly PropInstance[], x: number, y: number): num
     const dx = x - Math.max(box.x0, Math.min(x, box.x1));
     const dy = y - Math.max(box.y0, Math.min(y, box.y1));
     const distance = dx * dx + dy * dy;
-    if (distance < bestDistance) {
+    const isNearer = distance < bestDistance;
+    if (isNearer) {
       bestDistance = distance;
       bestIndex = index;
     }
@@ -88,7 +90,8 @@ function connectedProps(base: WorldMap): PropInstance[] {
     const blocked = blockedTiles({ ...base, props });
     const seen = freeTilesReached(blocked, base.cols, base.rows, spawnTile, flightsOf(base));
     const stranded = blocked.findIndex((isBlocked, index) => !isBlocked && !seen[index]);
-    if (stranded < 0) return props;
+    const hasNoStranded = stranded < 0;
+    if (hasNoStranded) return props;
     const x = ((stranded % base.cols) + 0.5) * TILE_SIZE;
     const y = (Math.floor(stranded / base.cols) + 0.5) * TILE_SIZE;
     props.splice(nearestSolid(props, x, y), 1);
@@ -110,13 +113,18 @@ function spreadTerrain(b: MapBuilder): void {
 function lightsFor(props: readonly PropInstance[], rng: Rng): MapLight[] {
   const lights: MapLight[] = [];
   for (const prop of props) {
-    if (prop.kind === 'fire_barrel') {
+    const isFireBarrel = prop.kind === 'fire_barrel';
+    if (isFireBarrel) {
       lights.push({ x: prop.x, y: prop.y - 6, radius: 74, color: FIRE, flicker: true });
-    } else if (prop.kind === 'street_lamp') {
-      const roll = rng();
-      if (roll < 0.25) continue; // Dead lamp: dark gaps keep the flashlight useful.
-      const color = roll < 0.55 ? COOL : SODIUM;
-      lights.push({ x: prop.x, y: prop.y + 2, radius: 104, color, flicker: roll > 0.85 });
+    } else {
+      const isStreetLamp = prop.kind === 'street_lamp';
+      if (isStreetLamp) {
+        const roll = rng();
+        const isDeadLamp = roll < 0.25;
+        if (isDeadLamp) continue; // Dead lamp: dark gaps keep the flashlight useful.
+        const color = roll < 0.55 ? COOL : SODIUM;
+        lights.push({ x: prop.x, y: prop.y + 2, radius: 104, color, flicker: roll > 0.85 });
+      }
     }
   }
   return lights;
@@ -128,7 +136,8 @@ function lightsFor(props: readonly PropInstance[], rng: Rng): MapLight[] {
  */
 function withStoreys(town: WorldMap): WorldMap {
   const plan = planStoreys(town.seed, town.buildings, town.cols, town.rows);
-  if (plan.rows === 0) return town;
+  const hasNoStoreys = plan.rows === 0;
+  if (hasNoStoreys) return town;
   const rows = town.rows + plan.rows;
   const annex = new MapBuilder(town.cols, rows, createRng(town.seed ^ STOREY_FURNISH_SALT), town.spawn);
   annex.tiles.set(town.tiles);

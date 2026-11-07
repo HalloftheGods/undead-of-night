@@ -9,7 +9,8 @@
         @mouseenter="game.playUi('hover')"
         @click="pick(stop.step)"
       >
-        <span class="stepper-number" aria-hidden="true">{{ stop.number }}</span>
+        <img v-if="thumbUrl(stop.step)" class="stepper-thumb" :src="thumbUrl(stop.step)" alt="" draggable="false" />
+        <span v-else class="stepper-number" aria-hidden="true">{{ stop.number }}</span>
         <span class="stepper-label">{{ stop.label }}</span>
       </button>
       <span v-else class="stepper-mark" :aria-current="stop.state === 'current' ? 'step' : undefined">
@@ -23,14 +24,22 @@
 <script setup lang="ts">
 /**
  * The setup's progress: every step of this walk in a row, numbered, the one the player is on lit.
- * Steps already done are buttons back to them; steps ahead are only shown, since Next is how a walk moves on.
+ * Steps already done are buttons back to them, showing a thumbnail of what was picked in place of the number;
+ * steps ahead are only shown, since Next is how a walk moves on.
  */
+import type { PixelSprite } from '../art/types.ts';
+import { spriteDataUrl } from '../engine/sprite-cache.ts';
 import type { PlayStep, StepperStop } from '../game/play-flow.ts';
 import { useGame } from './use-game.ts';
 
-const { stops } = defineProps<{ stops: readonly StepperStop[] }>();
+const { stops, thumbs = {} } = defineProps<{ stops: readonly StepperStop[]; thumbs?: Partial<Record<PlayStep, PixelSprite>> }>();
 const emit = defineEmits<{ pick: [step: PlayStep] }>();
 const game = useGame();
+
+function thumbUrl(step: PlayStep): string | undefined {
+  const sprite = thumbs[step];
+  return sprite ? spriteDataUrl(sprite) : undefined;
+}
 
 function pick(step: PlayStep): void {
   game.playUi('click');
@@ -103,6 +112,20 @@ button.stepper-mark {
   background: var(--amber);
   box-shadow: 0 0 0 var(--u) var(--amber);
   color: var(--ink);
+}
+
+/* The pick itself, framed in amber like a done number, cropped to the middle of its scene. */
+.stepper-thumb {
+  display: block;
+  width: calc(var(--u) * 20);
+  height: calc(var(--u) * 14);
+  object-fit: cover;
+  image-rendering: pixelated;
+  box-shadow: 0 0 0 var(--u) var(--amber);
+}
+
+button.stepper-mark:focus-visible .stepper-thumb {
+  box-shadow: 0 0 0 var(--u) var(--bone);
 }
 
 .is-done .stepper-label {

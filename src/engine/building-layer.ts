@@ -124,7 +124,8 @@ function northWall(ctx: CanvasRenderingContext2D, kind: BuildingKind, art: Envir
   const wall = WALL_THICKNESS;
   const middle = BACK_DOORS[kind];
   const faceH = art.wallFace.h;
-  if (middle === undefined) {
+  const hasNoBackDoor = middle === undefined;
+  if (hasNoBackDoor) {
     tileStrip(ctx, art.wallFace, wall, wall, w - wall * 2, faceH);
     tileStrip(ctx, art.wallCap, 0, 0, w, wall);
     return;
@@ -264,7 +265,8 @@ export class BuildingLayer {
 /** Hides a floor nobody is on, and whatever is on it, under the dark; it fades as someone climbs in. */
 function drawShut(ctx: CanvasRenderingContext2D, placed: PlacedBuilding, left: number, top: number): void {
   const shut = 1 - placed.reveal;
-  if (shut <= 0) return;
+  const isFullyOpen = shut <= 0;
+  if (isFullyOpen) return;
   ctx.globalAlpha = shut;
   ctx.fillStyle = STAIRS_DARK;
   ctx.fillRect(placed.building.x - left, placed.building.y - top, placed.width, placed.height);

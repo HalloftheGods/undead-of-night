@@ -19,9 +19,11 @@ const SHAPE = /^([^:/?#@\s]+)(?::(\d{1,5}))?$/;
  * the value comes from a link anyone can send, so it is never trusted as typed.
  */
 export function sanitizeJoinAddress(raw: string | null | undefined): string | null {
-  if (typeof raw !== 'string') return null;
+  const isNotText = typeof raw !== 'string';
+  if (isNotText) return null;
   const text = raw.trim();
-  if (!text || text.length > MAX_ADDRESS_LENGTH) return null;
+  const isBadLength = !text || text.length > MAX_ADDRESS_LENGTH;
+  if (isBadLength) return null;
 
   const scheme = SCHEME.exec(text)?.[1]?.toLowerCase() ?? null;
   const rest = scheme ? text.slice(scheme.length + 3) : text;
@@ -29,12 +31,15 @@ export function sanitizeJoinAddress(raw: string | null | undefined): string | nu
   if (!shape) return null;
 
   const host = shape[1]!.toLowerCase();
-  if (host.length > 253 || !host.split('.').every((label) => HOST_LABEL.test(label))) return null;
+  const isBadHost = host.length > 253 || !host.split('.').every((label) => HOST_LABEL.test(label));
+  if (isBadHost) return null;
 
   const port = shape[2];
-  if (port !== undefined) {
+  const hasPort = port !== undefined;
+  if (hasPort) {
     const number = Number(port);
-    if (number < 1 || number > 65535) return null;
+    const isBadPort = number < 1 || number > 65535;
+    if (isBadPort) return null;
   }
 
   const address = port === undefined ? host : `${host}:${Number(port)}`;

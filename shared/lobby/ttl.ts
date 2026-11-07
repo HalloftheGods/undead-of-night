@@ -16,7 +16,8 @@ export type ListingFate = 'live' | 'hidden' | 'sweep';
 /** What the Lobby does with a listing last seen at seenAt. */
 export function listingFate(seenAt: number, now: number): ListingFate {
   const unseen = now - seenAt;
-  if (unseen >= SWEEP_AFTER_MS) return 'sweep';
+  const isDueForSweep = unseen >= SWEEP_AFTER_MS;
+  if (isDueForSweep) return 'sweep';
   return unseen >= HIDE_AFTER_MS ? 'hidden' : 'live';
 }
 

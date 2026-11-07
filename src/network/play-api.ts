@@ -56,7 +56,8 @@ export async function createRoom(request: CreateRoomRequest, api: string = PLAY_
     body: JSON.stringify(request),
   });
   if (!response) return { ok: false, reason: OFFLINE };
-  if (response.status === 429) return { ok: false, reason: 'You have opened too many games. Wait a while and try again.' };
+  const isRateLimited = response.status === 429;
+  if (isRateLimited) return { ok: false, reason: 'You have opened too many games. Wait a while and try again.' };
   const busy = { ok: false, reason: 'The online rooms are busy. Try again in a moment.' } as const;
   if (!response.ok) return busy;
   try {

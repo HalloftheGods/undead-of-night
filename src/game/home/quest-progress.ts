@@ -12,39 +12,55 @@ import type { TripTally } from './quest-tally.ts';
 /** Does this trip count for the quest at all: the right level, the right survivor, a big enough party. */
 function passes(filter: QuestFilter | undefined, receipt: Pick<TripReceipt, 'level'>, tally: TripTally): boolean {
   if (!filter) return true;
-  if (filter.minLevel !== undefined && receipt.level < filter.minLevel) return false;
-  if (filter.survivor !== undefined && tally.survivor !== filter.survivor) return false;
-  if (filter.minParty !== undefined && tally.party < filter.minParty) return false;
+  const isBelowLevel = filter.minLevel !== undefined && receipt.level < filter.minLevel;
+  if (isBelowLevel) return false;
+  const isWrongSurvivor = filter.survivor !== undefined && tally.survivor !== filter.survivor;
+  if (isWrongSurvivor) return false;
+  const isPartyTooSmall = filter.minParty !== undefined && tally.party < filter.minParty;
+  if (isPartyTooSmall) return false;
   return true;
 }
 
 function broughtHome(objective: Extract<Objective, { kind: 'bring_home' }>, receipt: TripReceipt): number {
   const gear = receipt.gear;
-  if (objective.what === 'jewel') return receipt.jewels.small + receipt.jewels.large;
+  const { what } = objective;
+  const isJewel = what === 'jewel';
+  if (isJewel) return receipt.jewels.small + receipt.jewels.large;
   if (!gear) return 0;
-  if (objective.what === 'medkit') return gear.medkits;
-  if (objective.what === 'gun') return Object.keys(gear.guns).length;
-  return gear.guns[objective.what] ? 1 : 0;
+  const isMedkit = what === 'medkit';
+  if (isMedkit) return gear.medkits;
+  const isGun = what === 'gun';
+  if (isGun) return Object.keys(gear.guns).length;
+  return gear.guns[what] ? 1 : 0;
 }
 
 /** What one banked trip adds to a counter, honouring a zombie filter on kills. */
 function counted(objective: Extract<Objective, { kind: 'tally' }>, filter: QuestFilter | undefined, tally: TripTally): number {
-  if (objective.counter === 'kills' && filter?.zombie) return tally.killsBy[filter.zombie];
+  const zombie = filter?.zombie;
+  const isZombieKills = objective.counter === 'kills' && zombie !== undefined;
+  if (isZombieKills) return tally.killsBy[zombie];
   return tally.counts[objective.counter];
 }
 
 /** Progress after one banked trip, or the same number if the trip does not move this quest. */
 function afterBanked(def: QuestDef, progress: number, receipt: TripReceipt, tally: TripTally): number {
   const { objective } = def;
-  if (!passes(def.filter, receipt, tally)) return progress;
+  const isFilteredOut = !passes(def.filter, receipt, tally);
+  if (isFilteredOut) return progress;
   const target = targetOf(objective);
-  if (objective.kind === 'bank' || objective.kind === 'streak') return Math.min(target, progress + 1);
-  if (objective.kind === 'receipt_total') return Math.min(target, progress + receipt[objective.field]);
-  if (objective.kind === 'fast') return receipt.seconds <= objective.seconds ? 1 : progress;
-  if (objective.kind === 'bring_home') return Math.max(progress, Math.min(target, broughtHome(objective, receipt)));
-  if (objective.kind === 'tally') {
+  const isPerTrip = objective.kind === 'bank' || objective.kind === 'streak';
+  if (isPerTrip) return Math.min(target, progress + 1);
+  const isReceiptTotal = objective.kind === 'receipt_total';
+  if (isReceiptTotal) return Math.min(target, progress + receipt[objective.field]);
+  const isFast = objective.kind === 'fast';
+  if (isFast) return receipt.seconds <= objective.seconds ? 1 : progress;
+  const isBringHome = objective.kind === 'bring_home';
+  if (isBringHome) return Math.max(progress, Math.min(target, broughtHome(objective, receipt)));
+  const isTally = objective.kind === 'tally';
+  if (isTally) {
     const value = counted(objective, def.filter, tally);
-    if (objective.scope === 'total') return Math.min(target, progress + value);
+    const isTotalScope = objective.scope === 'total';
+    if (isTotalScope) return Math.min(target, progress + value);
     const spoiled = objective.atMost !== undefined && tally.counts[objective.atMost.counter] > objective.atMost.count;
     return spoiled ? progress : Math.max(progress, Math.min(target, value));
   }
@@ -57,9 +73,11 @@ function mapActive(quests: QuestState, step: (def: QuestDef, progress: number, m
   for (const merchant of MERCHANT_IDS) {
     const slot = quests.active[merchant];
     const def = slot && questOf(slot.id);
-    if (!slot || !def) continue;
+    const isEmptySlot = !slot || !def;
+    if (isEmptySlot) continue;
     const next = step(def, slot.progress, merchant);
-    if (next === slot.progress) continue;
+    const isUnchanged = next === slot.progress;
+    if (isUnchanged) continue;
     active[merchant] = { ...slot, progress: next };
     changed = true;
   }
@@ -81,13 +99,15 @@ export function applyDeathToQuests(quests: QuestState, trip: Pick<TripReceipt, '
  * except resetting streaks. Returns the same object when nothing moved.
  */
 export function applyTripToQuests(quests: QuestState, receipt: TripReceipt, tally: TripTally): QuestState {
-  if (receipt.outcome === 'died') return applyDeathToQuests(quests, receipt, tally);
+  const hasDied = receipt.outcome === 'died';
+  if (hasDied) return applyDeathToQuests(quests, receipt, tally);
   return mapActive(quests, (def, progress) => afterBanked(def, progress, receipt, tally));
 }
 
 /** Jewels melted at the forge, counted toward any active smelt quest. */
 export function noteSmelted(quests: QuestState, jewels: number): QuestState {
-  if (jewels <= 0) return quests;
+  const hasNoJewels = jewels <= 0;
+  if (hasNoJewels) return quests;
   return mapActive(quests, (def, progress) => (def.objective.kind === 'smelt' ? Math.min(targetOf(def.objective), progress + jewels) : progress));
 }
 

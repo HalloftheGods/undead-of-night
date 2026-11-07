@@ -5,6 +5,7 @@ import type { SceneView } from '../engine/scene.ts';
 import type { WorldRenderer } from '../engine/world-renderer.ts';
 import type { ClientWorld } from './client-world.ts';
 import { homeUi } from './home-hud.ts';
+import { motion } from './motion.ts';
 import type { HomeFacts } from './home-hud.ts';
 import { buildHud } from './hud-state.ts';
 import type { Banner, RunResult, UiState } from './hud-state.ts';
@@ -25,9 +26,6 @@ const HUD_INTERVAL_MS = 100;
 const MAP_BLINK_REPAINT_MS = 50;
 const MAP_STILL_REPAINT_MS = 500;
 
-function prefersReducedMotion(): boolean {
-  return typeof window !== 'undefined' && (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
-}
 const SIGNAL_WEAK_MS = 1500;
 
 /** Everything a run has on screen, cleared at either end of it. */
@@ -68,7 +66,8 @@ export function finishRun(stats: GameOverStats, localId: string, dailyKey: strin
   const local = stats.players.find((player) => player.id === localId);
   const score = local?.score ?? 0;
   const kills = local?.kills ?? 0;
-  if (dailyKey !== null) {
+  const isDaily = dailyKey !== null;
+  if (isDaily) {
     // A Daily Night keeps its own book, so the leaderboard stays a list of runs anyone could have had.
     const counted = local ? recordDaily(dailyKey, { score, kills, level: stats.level }) : false;
     return { stats, localId, score, kills, isNewBest: false, daily: { label: `Daily Night, ${dayLabel(dailyKey)}`, counted, share: dailyShare(dailyKey) } };
@@ -141,7 +140,7 @@ export class RunHud {
    * Asked every frame, this repaints only the open map canvas, at the blink's pace.
    */
   repaintMap(ms: number): void {
-    const interval = prefersReducedMotion() ? MAP_STILL_REPAINT_MS : MAP_BLINK_REPAINT_MS;
+    const interval = motion.reduced.value ? MAP_STILL_REPAINT_MS : MAP_BLINK_REPAINT_MS;
     const due = this.townCanvas !== null && ms - this.lastMapPaintMs >= interval;
     if (due) this.paintTown(ms);
   }
@@ -153,7 +152,7 @@ export class RunHud {
     const canPaint = ctx !== null && scene !== null;
     if (!canPaint) return;
     this.mapOpenedMs ??= ms;
-    const clock = { nowMs: ms, openedMs: this.mapOpenedMs, reducedMotion: prefersReducedMotion() };
+    const clock = { nowMs: ms, openedMs: this.mapOpenedMs, reducedMotion: motion.reduced.value };
     this.town?.paint(ctx, scene.players, scene.localId, scene.exit, scene.openedContainers, scene.drop, clock);
   }
 

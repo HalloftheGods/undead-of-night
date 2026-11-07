@@ -16,9 +16,11 @@ export function toResponse(answer: Reply, headers: HeadersInit = {}): Response {
 /** The parsed JSON body, or undefined when it is missing, too big or not JSON. */
 export async function readJson(request: Request): Promise<unknown> {
   const declared = Number(request.headers.get('content-length') ?? 0);
-  if (declared > LOBBY_BODY_MAX_BYTES) return undefined;
+  const isDeclaredTooBig = declared > LOBBY_BODY_MAX_BYTES;
+  if (isDeclaredTooBig) return undefined;
   const text = await request.text();
-  if (!text || new TextEncoder().encode(text).length > LOBBY_BODY_MAX_BYTES) return undefined;
+  const isEmptyOrTooBig = !text || new TextEncoder().encode(text).length > LOBBY_BODY_MAX_BYTES;
+  if (isEmptyOrTooBig) return undefined;
   try {
     return JSON.parse(text) as unknown;
   } catch {

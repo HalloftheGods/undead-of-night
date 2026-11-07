@@ -23,10 +23,12 @@ function continentOf(request: Request): Continent {
 }
 
 async function openSocket(request: Request, env: Env, code: string, role: SocketRole, origins: ReadonlySet<string>): Promise<Response> {
-  if (request.headers.get('Upgrade')?.toLowerCase() !== 'websocket') return new Response('Expected a WebSocket upgrade', { status: 426 });
+  const isNotUpgrade = request.headers.get('Upgrade')?.toLowerCase() !== 'websocket';
+  if (isNotUpgrade) return new Response('Expected a WebSocket upgrade', { status: 426 });
   // Browsers do not apply CORS to upgrades; this only filters nuisance traffic, since non-browsers can forge it.
   const origin = request.headers.get('Origin');
-  if (!origin || !origins.has(origin)) {
+  const isForeignOrigin = !origin || !origins.has(origin);
+  if (isForeignOrigin) {
     logEvent('socket_refused', 'origin');
     return new Response('Forbidden', { status: 403 });
   }
@@ -63,23 +65,29 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
   const { pathname } = url;
   const method = request.method;
 
-  if (pathname === '/health') return Response.json({ ok: true, service: 'undead-play-api' }, { headers: cors });
+  const isHealthCheck = pathname === '/health';
+  if (isHealthCheck) return Response.json({ ok: true, service: 'undead-play-api' }, { headers: cors });
   if (!pathname.startsWith('/v1/')) return new Response('Not found', { status: 404 });
-  if (method === 'OPTIONS') return preflight(request, origins);
+  const isPreflight = method === 'OPTIONS';
+  if (isPreflight) return preflight(request, origins);
 
   const socket = SOCKET_PATH.exec(pathname);
   if (socket) return openSocket(request, env, decodeURIComponent(socket[1]), socket[2] as SocketRole, origins);
 
   const lobby = lobbyOf(env);
-  if (pathname === '/v1/rooms' && method === 'POST') {
+  const isCreateRoom = pathname === '/v1/rooms' && method === 'POST';
+  if (isCreateRoom) {
     return toResponse(await lobby.createRoom(clientIp(request), continentOf(request), await readJson(request)), cors);
   }
-  if (pathname === '/v1/rooms' && method === 'GET') return listRooms(request, env, cors, ctx);
-  if (pathname === '/v1/match' && method === 'POST') {
+  const isListRooms = pathname === '/v1/rooms' && method === 'GET';
+  if (isListRooms) return listRooms(request, env, cors, ctx);
+  const isMatchRequest = pathname === '/v1/match' && method === 'POST';
+  if (isMatchRequest) {
     return toResponse(await lobby.match(clientIp(request), continentOf(request), await readJson(request)), cors);
   }
   const room = ROOM_PATH.exec(pathname);
-  if (room && method === 'GET') return toResponse(await lobby.lookupRoom(clientIp(request), decodeURIComponent(room[1])), cors);
+  const isRoomLookup = room && method === 'GET';
+  if (isRoomLookup) return toResponse(await lobby.lookupRoom(clientIp(request), decodeURIComponent(room[1])), cors);
   const known = pathname === '/v1/rooms' || pathname === '/v1/match' || room !== null;
   return toResponse(known ? refusal(405, 'method not allowed') : refusal(404, 'not found'), cors);
 }

@@ -249,6 +249,31 @@ describe('Lighting', () => {
     expect(target.drawImageCalls).toBeGreaterThan(0);
   });
 
+  it('lays last frame\'s light down again, moved with the camera, and reads brightness where it now lies', () => {
+    const lighting = new Lighting();
+    lighting.resize(120, 80);
+    expect(lighting.reuse(0, 0)).toBe(false);
+    lighting.begin(10, 20);
+    lighting.addPool(60, 40, 20, '#ffffff', 1);
+    lighting.finish();
+    const lit = lighting.brightness(60, 40);
+    // The camera moves 3 right and 2 down: the same spot in the world is now 3 left and 2 up on screen.
+    expect(lighting.reuse(13, 22)).toBe(true);
+    expect(lighting.brightness(57, 38)).toBe(lit);
+    const target = fakeCanvas().getContext();
+    lighting.apply(target as unknown as CanvasRenderingContext2D);
+    expect(target.globalCompositeOperation).toBe('source-over');
+    expect(target.drawImageCalls).toBe(2);
+  });
+
+  it('works the light out afresh once the camera has moved too far for the old one', () => {
+    const lighting = new Lighting();
+    lighting.resize(120, 80);
+    lighting.begin(0, 0);
+    lighting.finish();
+    expect(lighting.reuse(100, 0)).toBe(false);
+  });
+
   it('reads colours from the map and the fx', () => {
     expect(parseColor('#ff7a2e')).toEqual([255, 122, 46]);
     expect(parseColor('#000')).toEqual([0, 0, 0]);

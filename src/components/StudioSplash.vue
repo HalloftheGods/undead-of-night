@@ -17,20 +17,26 @@
 
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { motion } from '../game/motion.ts';
 import { BRAND_MARK, splashTimings } from '../game/studio-splash.ts';
 import { useGame } from './use-game.ts';
 
 const emit = defineEmits<{ done: [] }>();
 const game = useGame();
 
-const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+// Read once: the splash is over long before anyone could reach the Options page.
+const reduced = motion.reduced.value;
 const timings = splashTimings(reduced);
 const fades = { '--fade-in': `${timings.fadeIn}ms`, '--fade-out': `${timings.fadeOut}ms` };
 const phase = ref<'in' | 'hold' | 'out'>('in');
 const timers = new Set<ReturnType<typeof setTimeout>>();
 
 function after(ms: number, then: () => void): void {
-  timers.add(setTimeout(then, ms));
+  const timer = setTimeout(() => {
+    timers.delete(timer);
+    then();
+  }, ms);
+  timers.add(timer);
 }
 
 function clearTimers(): void {

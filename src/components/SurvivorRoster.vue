@@ -31,10 +31,11 @@
  * The row of five survivors to pick from. The one pointed at or focused turns through every facing;
  * on a touch screen, which has no hover, the chosen one keeps turning. Arrows move the pick and the focus together.
  */
-import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { CHARACTERS } from '../../shared/characters.ts';
 import type { ArtBook, SurvivorArt } from '../art/types.ts';
 import { rosterStep } from '../game/character-select-view.ts';
+import { motion } from '../game/motion.ts';
 import { createSpinner, FRONT_FACING, holdsStill } from '../game/survivor-spin.ts';
 import { isTouchDevice } from '../game/touch-input.ts';
 import SpriteImg from './SpriteImg.vue';
@@ -49,12 +50,12 @@ const facing = ref(FRONT_FACING);
 const spinner = createSpinner((next) => {
   facing.value = next;
 });
-const wantsCalm = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 const touchOnly = isTouchDevice();
-const stayStill = holdsStill(touchOnly, wantsCalm);
+const stayStill = computed(() => holdsStill(touchOnly, motion.reduced.value));
 
 function setTile(index: number, el: unknown): void {
-  if (el instanceof HTMLElement) tiles.set(index, el);
+  const isElement = el instanceof HTMLElement;
+  if (isElement) tiles.set(index, el);
 }
 
 function shownFor(survivor: SurvivorArt, index: number) {
@@ -64,7 +65,7 @@ function shownFor(survivor: SurvivorArt, index: number) {
 
 /** Turns one survivor in place. Reduced motion only stops a turn nobody pointed at. */
 function spinOn(index: number): void {
-  if (stayStill) return;
+  if (stayStill.value) return;
   spinning.value = index;
   spinner.start();
 }
@@ -88,7 +89,8 @@ function pick(index: number): void {
 
 function onKey(event: KeyboardEvent): void {
   const next = rosterStep(chosen, event.key);
-  if (next === null) return;
+  const stays = next === null;
+  if (stays) return;
   event.preventDefault();
   pick(next);
   tiles.get(next)?.focus();

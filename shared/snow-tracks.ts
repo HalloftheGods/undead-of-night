@@ -15,7 +15,8 @@ import { segmentHitsSolid } from './world-query.ts';
 function headingOf(sim: SimState, p: PlayerState): number {
   for (let i = sim.tracks.length - 1; i >= 0; i -= 1) {
     const last = sim.tracks[i];
-    if (last.by !== p.id) continue;
+    const isSomeoneElses = last.by !== p.id;
+    if (isSomeoneElses) continue;
     const moved = last.x !== p.x || last.y !== p.y;
     return moved ? Math.atan2(p.y - last.y, p.x - last.x) : (last.angle ?? p.angle);
   }
@@ -52,7 +53,8 @@ export function printUnder(sim: SimState, z: ZombieState): Footprint | null {
   for (const print of sim.tracks) {
     const onIt = (print.x - z.x) ** 2 + (print.y - z.y) ** 2 <= reach;
     const fresher = best === null || print.left > best.left;
-    if (onIt && fresher && livingMaker(sim, print.by)) best = print;
+    const isBetterScent = onIt && fresher && livingMaker(sim, print.by);
+    if (isBetterScent) best = print;
   }
   return best;
 }
@@ -73,7 +75,8 @@ export function nextPrint(sim: SimState, trail: ZombieTrail, x: number, y: numbe
     const candidate = print.by === trail.by && print.left > trail.left && (best === null || print.left < best.left);
     if (!candidate) continue;
     const near = (print.x - x) ** 2 + (print.y - y) ** 2 <= reach;
-    if (near && !segmentHitsSolid(sim.map, x, y, print.x, print.y)) best = print;
+    const isVisibleNearPrint = near && !segmentHitsSolid(sim.map, x, y, print.x, print.y);
+    if (isVisibleNearPrint) best = print;
   }
   return best;
 }

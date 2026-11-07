@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { containerLoot } from '../shared/container-loot.ts';
 import { containerInReach, SEARCH_SEC, townContainers } from '../shared/containers.ts';
 import { PLAYER_RADIUS, TICK_RATE } from '../shared/constants.ts';
 import { radioContainerId } from '../shared/radio.ts';
@@ -10,7 +9,6 @@ import { buildingAt, circleHitsSolid } from '../shared/world-query.ts';
 import { input, quietSim, stateOf, steps } from './helpers/sim-harness.ts';
 
 const SEEDS = Array.from({ length: 24 }, (_, index) => index + 1);
-const radios = (state: SimState): number => containerLoot(state).filter((loot) => loot.type === 'radio').length;
 
 describe('the Radio', () => {
   const towns = SEEDS.map((seed) => stateOf(new GameSimulation({ seed })));

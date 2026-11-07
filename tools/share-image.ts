@@ -26,7 +26,7 @@ function main(): void {
   drawSprite(picture, logo, Math.round((picture.w - logo.w) / 2), LOGO_TOP, 1);
   const sheet = picture.scaled(SCALE);
   writeFileSync(outfile, encodePng(sheet.w, sheet.h, sheet.data));
-  console.log(`${outfile} ${sheet.w}x${sheet.h}, logo ${logo.w}x${logo.h}`);
+  process.stdout.write(`${outfile} ${sheet.w}x${sheet.h}, logo ${logo.w}x${logo.h}\n`);
 }
 
 main();

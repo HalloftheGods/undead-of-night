@@ -32,7 +32,8 @@ export function dragStick(stick: Stick, x: number, y: number): Stick {
   const dx = x - stick.baseX;
   const dy = y - stick.baseY;
   const reach = Math.hypot(dx, dy);
-  if (reach <= STICK_TRAVEL) return { ...stick, x, y };
+  const isWithinTravel = reach <= STICK_TRAVEL;
+  if (isWithinTravel) return { ...stick, x, y };
   const trail = (reach - STICK_TRAVEL) / reach;
   return { ...stick, baseX: stick.baseX + dx * trail, baseY: stick.baseY + dy * trail, x, y };
 }
@@ -44,7 +45,8 @@ function stickReach(stick: Stick): number {
 /** The direction to walk: each axis -1, 0 or 1, and nothing inside the dead zone. */
 export function stickDirection(stick: Stick): { x: number; y: number } {
   const reach = stickReach(stick);
-  if (reach < DEAD_ZONE) return { x: 0, y: 0 };
+  const isInDeadZone = reach < DEAD_ZONE;
+  if (isInDeadZone) return { x: 0, y: 0 };
   const across = (stick.x - stick.baseX) / reach;
   const down = (stick.y - stick.baseY) / reach;
   return { x: Math.abs(across) > SECTOR_EDGE ? Math.sign(across) : 0, y: Math.abs(down) > SECTOR_EDGE ? Math.sign(down) : 0 };

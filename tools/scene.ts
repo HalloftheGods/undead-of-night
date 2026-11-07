@@ -24,13 +24,20 @@ const COLS = WIDTH / TILE_SIZE;
 const ROWS = Math.ceil(HEIGHT / TILE_SIZE);
 
 function tileAt(col: number, row: number): TileKind {
-  if (row <= 7) return col >= 21 && col < 25 && row >= 3 ? 'dirt' : 'sidewalk';
-  if (row === 8) return 'curb_n';
-  if (row === 14) return 'curb_s';
-  if (row > 14) return col < 7 ? 'grass' : 'sidewalk';
-  if (col >= 13 && col < 15) return 'crosswalk_v';
-  if (row === 11) return col % 2 === 0 ? 'lane_h' : 'asphalt';
-  if (row === 9 && col >= 3 && col < 9) return 'parking_line';
+  const isTopSidewalk = row <= 7;
+  if (isTopSidewalk) return col >= 21 && col < 25 && row >= 3 ? 'dirt' : 'sidewalk';
+  const isNorthCurb = row === 8;
+  if (isNorthCurb) return 'curb_n';
+  const isSouthCurb = row === 14;
+  if (isSouthCurb) return 'curb_s';
+  const isBottomVerge = row > 14;
+  if (isBottomVerge) return col < 7 ? 'grass' : 'sidewalk';
+  const isCrosswalk = col >= 13 && col < 15;
+  if (isCrosswalk) return 'crosswalk_v';
+  const isLaneRow = row === 11;
+  if (isLaneRow) return col % 2 === 0 ? 'lane_h' : 'asphalt';
+  const isParkingLine = row === 9 && col >= 3 && col < 9;
+  if (isParkingLine) return 'parking_line';
   return (col * 7 + row * 3) % 5 === 0 ? 'asphalt_cracked' : 'asphalt';
 }
 
@@ -117,8 +124,10 @@ const POOLS: readonly Pool[] = [
 
 /** How much of a light reaches a point, in three hard steps like a banded pixel-art light. */
 function band(t: number): number {
-  if (t < 0.45) return 1;
-  if (t < 0.75) return 0.65;
+  const isNearLight = t < 0.45;
+  if (isNearLight) return 1;
+  const isMidLight = t < 0.75;
+  if (isMidLight) return 0.65;
   return t < 1 ? 0.35 : 0;
 }
 

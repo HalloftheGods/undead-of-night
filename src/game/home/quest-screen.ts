@@ -24,16 +24,20 @@ export function stateWord(panel: QuestPanel): string {
 
 /** The button under the panel: accept an offer or collect a finished job. Null when there is nothing to press. */
 export function primaryLabel(panel: QuestPanel): string | null {
-  if (panel.action === 'accept') return 'Accept';
-  if (panel.action === 'turn_in') return 'Turn in';
+  const isAccept = panel.action === 'accept';
+  if (isAccept) return 'Accept';
+  const isTurnIn = panel.action === 'turn_in';
+  if (isTurnIn) return 'Turn in';
   return null;
 }
 
 /** Accept or Turn in, as the panel's action says; the home layer does the rest and the save shows the outcome. */
 export function pressPrimary(panel: QuestPanel, merchant: MerchantId, actions: Pick<HomeActions, 'acceptQuest' | 'turnInQuest'>): void {
   if (!panel.canAct) return;
-  if (panel.action === 'accept') actions.acceptQuest(merchant, panel.id);
-  if (panel.action === 'turn_in') actions.turnInQuest(merchant);
+  const isAccept = panel.action === 'accept';
+  if (isAccept) actions.acceptQuest(merchant, panel.id);
+  const isTurnIn = panel.action === 'turn_in';
+  if (isTurnIn) actions.turnInQuest(merchant);
 }
 
 /** The Abandon button's word: it asks once before it gives anything up, in the same place and the same size. */

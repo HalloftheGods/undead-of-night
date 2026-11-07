@@ -78,7 +78,8 @@ export function headUnderAim(sim: SimState, p: PlayerState, range: number): Zomb
     // A boss is drawn far bigger than its kind's head map, so it takes no headshots.
     const aimedAt = z.health > 0 && z.boss === undefined && isOnHead(z, aim.x, aim.y, marginFor(sim, p));
     const nearerTheCamera = front === null || z.y > front.y;
-    if (aimedAt && nearerTheCamera) front = z;
+    const isFrontTarget = aimedAt && nearerTheCamera;
+    if (isFrontTarget) front = z;
   }
   return front;
 }

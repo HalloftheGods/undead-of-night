@@ -28,7 +28,9 @@ export interface RunningGameServer {
 
 const nodeClock: HostClock = {
   now: () => performance.now(),
-  after: (ms, fn) => setTimeout(fn, ms),
+  after: (ms, fn) => {
+    return setTimeout(fn, ms);
+  },
   cancel: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
 };
 
@@ -71,7 +73,7 @@ export function startGameServer(options: GameServerOptions): Promise<RunningGame
     socket.on('pong', () => peer.heard());
     socket.on('close', () => peer.closed());
     // Oversized frames and protocol errors land here; ws closes the socket for us.
-    socket.on('error', (error) => console.warn(`[zombie-server] client error: ${error.message}`));
+    socket.on('error', (error) => process.stderr.write(`[zombie-server] client error: ${error.message}\n`));
   });
 
   function close(): Promise<void> {
@@ -96,7 +98,7 @@ const launchedDirectly = process.argv[1] !== undefined && import.meta.url === pa
 if (launchedDirectly) {
   const port = Number(process.env.ZOMBIE_PORT) || DEFAULT_SERVER_PORT;
   const server = await startGameServer({ port });
-  console.log(`[zombie-server] listening on ws://0.0.0.0:${server.port}`);
+  process.stdout.write(`[zombie-server] listening on ws://0.0.0.0:${server.port}\n`);
   const shutdown = () => void server.close().then(() => process.exit(0));
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);

@@ -24,7 +24,8 @@ export function viewFor(frame: SnapshotPacket, viewerId: EntityId): SnapshotPack
   const view: SnapshotPacket = { ...frame, players: withOwnReceipt(frame.players, viewerId), zombies: frame.zombies.filter(inView), pickups: frame.pickups.filter(inView) };
   if (!frame.tracks) return view;
   const tracks = frame.tracks.filter(inView);
-  if (tracks.length > 0) return { ...view, tracks };
+  const hasTracksInView = tracks.length > 0;
+  if (hasTracksInView) return { ...view, tracks };
   const { tracks: _none, ...withoutTracks } = view;
   return withoutTracks;
 }

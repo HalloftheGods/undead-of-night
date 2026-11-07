@@ -31,7 +31,8 @@ export function pickWeighted<T extends string>(rng: Rng, table: Partial<Record<T
   let roll = rng() * entries.reduce((sum, [, weight]) => sum + weight, 0);
   for (const [key, weight] of entries) {
     roll -= weight;
-    if (roll <= 0) return key;
+    const isRollSpent = roll <= 0;
+    if (isRollSpent) return key;
   }
   return entries[0][0];
 }

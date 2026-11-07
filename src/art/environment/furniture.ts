@@ -107,7 +107,7 @@ export function buildTable(): PixelSprite {
 
 export function buildSofa(): PixelSprite {
   const p = startPiece('sofa', 10);
-  const { c, left, right, ground, front, top, w } = p;
+  const { c, left, right, ground, top, w } = p;
   const [dark, mid, lit] = [olive[0], olive[1], olive[2]];
   const seat = top + 5;
   const skirt = ground - 7;

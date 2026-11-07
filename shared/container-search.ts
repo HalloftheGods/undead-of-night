@@ -110,12 +110,18 @@ export function updateSearch(sim: SimState, p: PlayerState): void {
   if (released) p.searchSpent = false;
   // The bunker has no containers, and `sim.containers` still holds the last town's.
   if (isBunkerMap(sim.map)) return;
-  if (takeStairs(sim, p)) return;
+  const tookStairs = takeStairs(sim, p);
+  if (tookStairs) return;
   const hurt = p.health < p.searchHealth;
   p.searchHealth = p.health;
-  if (p.searchingId !== null) keepSearching(sim, p, p.searchingId, hurt);
-  if (p.searchingId === null) startSearch(sim, p);
-  if (p.searchingId !== null) advanceSearch(sim, p, p.searchingId);
+  const searchingId = p.searchingId;
+  const isSearching = searchingId !== null;
+  if (isSearching) keepSearching(sim, p, searchingId, hurt);
+  const isIdle = p.searchingId === null;
+  if (isIdle) startSearch(sim, p);
+  const openingId = p.searchingId;
+  const isStillSearching = openingId !== null;
+  if (isStillSearching) advanceSearch(sim, p, openingId);
 }
 
 /** The ids of everything opened in this town, for every client to draw. */

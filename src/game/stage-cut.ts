@@ -20,8 +20,10 @@ export function noteVanCover(covering: boolean): void {
 
 /** Whether what is under the drive has been in plain sight since this time, for this long. */
 export function inSightSince(sinceMs: number, forMs: number): boolean {
-  if (coverOffMs === null) return false;
-  return performance.now() >= Math.max(sinceMs, coverOffMs) + forMs;
+  const coverOff = coverOffMs;
+  const hasNoCover = coverOff === null;
+  if (hasNoCover) return false;
+  return performance.now() >= Math.max(sinceMs, coverOff) + forMs;
 }
 
 export function noteStageCut(inBunker: boolean): void {

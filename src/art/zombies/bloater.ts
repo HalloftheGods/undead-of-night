@@ -67,11 +67,15 @@ function swellPoint(a: number, at: number, d: number): number {
 function swell(art: Stamp, dw: number, dh: number): Stamp {
   const { rowAt, colAt } = swellAt(art);
   const rows = [...art.rows];
-  if (dh > 0) rows.splice(rowAt, 0, ...Array<string>(dh).fill(rows[rowAt]));
-  if (dh < 0) rows.splice(rowAt, -dh);
+  const isTaller = dh > 0;
+  if (isTaller) rows.splice(rowAt, 0, ...Array<string>(dh).fill(rows[rowAt]));
+  const isShorter = dh < 0;
+  if (isShorter) rows.splice(rowAt, -dh);
   const wide = rows.map((row) => {
-    if (dw > 0) return row.slice(0, colAt) + row[colAt].repeat(dw) + row.slice(colAt);
-    if (dw < 0) return row.slice(0, colAt) + row.slice(colAt - dw);
+    const isWider = dw > 0;
+    if (isWider) return row.slice(0, colAt) + row[colAt].repeat(dw) + row.slice(colAt);
+    const isNarrower = dw < 0;
+    if (isNarrower) return row.slice(0, colAt) + row.slice(colAt - dw);
     return row;
   });
   return stamp(wide, art.px + Math.ceil(dw / 2), art.py + dh);

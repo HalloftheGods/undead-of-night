@@ -52,7 +52,8 @@ export class RateLimiter {
   sweep(now: number): void {
     for (const slot of [...this.hits.keys()]) {
       const action = slot.slice(0, slot.indexOf(' ')) as LimitedAction;
-      if (this.pruned(slot, action, now).length === 0) this.hits.delete(slot);
+      const isSlotIdle = this.pruned(slot, action, now).length === 0;
+      if (isSlotIdle) this.hits.delete(slot);
     }
   }
 

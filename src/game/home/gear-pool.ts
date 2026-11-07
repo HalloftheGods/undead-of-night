@@ -53,7 +53,8 @@ function bestGun(locker: Loadout): WeaponId | null {
 export function armedHands({ locker, hands }: HomeSave): Loadout | null {
   const handsHoldAGun = Object.keys(hands.guns).length > 0;
   const weapon = handsHoldAGun ? null : bestGun(locker);
-  if (weapon === null) return null;
+  const isUnarmed = weapon === null;
+  if (isUnarmed) return null;
   const rounds = Math.min(WEAPONS[weapon].reserveCap, hands.ammoBag[weapon] + locker.ammoBag[weapon]);
   return { ...hands, guns: { [weapon]: locker.guns[weapon] }, ammoBag: { ...hands.ammoBag, [weapon]: rounds } };
 }

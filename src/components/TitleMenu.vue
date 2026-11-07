@@ -74,8 +74,10 @@ function onKey(event: KeyboardEvent): void {
   const step = browserShortcut ? 0 : menuStep(event.code);
   const confirming = !browserShortcut && isConfirmKey(event.code);
   // The marker decides, so a focused button must not answer Enter as well.
-  if (step !== 0 || confirming) event.preventDefault();
-  if (step !== 0) moveTo(steppedIndex(selected.value, step, entries.length));
+  const isMenuKey = step !== 0 || confirming;
+  if (isMenuKey) event.preventDefault();
+  const isStepping = step !== 0;
+  if (isStepping) moveTo(steppedIndex(selected.value, step, entries.length));
   const opening = confirming && !event.repeat;
   if (opening) open(selected.value);
 }

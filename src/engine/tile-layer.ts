@@ -25,6 +25,8 @@ export class GroundLayer {
   private readonly chunkCols: number;
   private readonly chunkRows: number;
   private chunks: (HTMLCanvasElement | undefined)[] = [];
+  /** Each chunk's context, kept so a burst of bloodstains does not ask the canvas for it every stamp. */
+  private readonly contexts = new WeakMap<HTMLCanvasElement, CanvasRenderingContext2D>();
   private tint: Tint | null;
 
   constructor(map: WorldMap, tiles: Record<TileKind, readonly PixelSprite[]>, tint: Tint | null = null) {
@@ -93,6 +95,15 @@ export class GroundLayer {
     }
   }
 
+  private contextOf(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
+    let ctx = this.contexts.get(canvas);
+    if (!ctx) {
+      ctx = canvas.getContext('2d')!;
+      this.contexts.set(canvas, ctx);
+    }
+    return ctx;
+  }
+
   /** Paints into every chunk the sprite touches. */
   stamp(sprite: PixelSprite, x: number, y: number, alpha = 1): void {
     const px = Math.round(x);
@@ -105,7 +116,7 @@ export class GroundLayer {
     const row1 = Math.min(this.chunkRows - 1, Math.floor((y0 + sprite.h - 1) / CHUNK_SIZE));
     for (let row = row0; row <= row1; row += 1) {
       for (let col = col0; col <= col1; col += 1) {
-        const ctx = this.chunk(col, row).getContext('2d')!;
+        const ctx = this.contextOf(this.chunk(col, row));
         ctx.globalAlpha = alpha;
         drawSprite(ctx, sprite, px - col * CHUNK_SIZE, py - row * CHUNK_SIZE);
         ctx.globalAlpha = 1;

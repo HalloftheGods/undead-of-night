@@ -136,7 +136,8 @@ export class HomeLink {
     this.sync = sync;
     const save = await sync.open();
     const progress = loadCampaignProgress();
-    if (current()) this.highest = progress.highest;
+    const isCurrentVisit = current();
+    if (isCurrentVisit) this.highest = progress.highest;
     return joinHomeFor(save, progress);
   }
 
@@ -161,7 +162,8 @@ export class HomeLink {
 
   /** Esc: the same as the screen's Close button. True if a station or the chest was open. */
   closeOpenStation(): boolean {
-    if (this.chest !== null) return this.putChestAway();
+    const isChestOut = this.chest !== null;
+    if (isChestOut) return this.putChestAway();
     const { closer } = this;
     const screenCloses = closer !== null && this.station !== null;
     if (!screenCloses) return this.putStationAway();
@@ -179,9 +181,11 @@ export class HomeLink {
 
   /** Enter: reads the death summary, once it has been seen. True if the press was the summary's. */
   confirm(): boolean {
-    if (this.chest !== null) return this.putChestAway();
+    const isChestOut = this.chest !== null;
+    if (isChestOut) return this.putChestAway();
     if (!this.death) return false;
-    if (inSightSince(this.diedAtMs, SUMMARY_READ_MS)) this.wake();
+    const hasSeenSummary = inSightSince(this.diedAtMs, SUMMARY_READ_MS);
+    if (hasSeenSummary) this.wake();
     return true;
   }
 
@@ -215,7 +219,8 @@ export class HomeLink {
     this.tally.observe(snapshot.events, localId);
     this.tally.setContext(snapshot.players.length, characterOf(entity.skin).id);
     const dead = entity.status === 'dead';
-    if (dead && !this.wasDead) this.tally.reset();
+    const hasJustDied = dead && !this.wasDead;
+    if (hasJustDied) this.tally.reset();
     this.wasDead = dead;
   }
 
@@ -278,7 +283,8 @@ export class HomeLink {
     const receipt = entity?.home?.overrun ?? null;
     const isNew = receipt !== null && (this.seenReceipt === null || this.seenReceipt.serial !== receipt.serial || this.seenReceipt.simId !== receipt.simId);
     if (isNew) this.phaseAtReceipt = this.phase;
-    if (receipt !== null) this.seenReceipt = receipt;
+    const hasReceipt = receipt !== null;
+    if (hasReceipt) this.seenReceipt = receipt;
   }
 
   /** The van left with a bunker card up, the fall summary or the chest: the save already has what it said, and the town is not the bunker. */

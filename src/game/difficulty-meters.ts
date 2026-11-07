@@ -30,7 +30,8 @@ function slotsFor(key: Multiplier, value: number): number {
   const all = DIFFICULTIES.map((each) => each[key]);
   const mid = baseline[key];
   const span = BASELINE_SLOTS - 1;
-  if (value >= mid) {
+  const isUpperHalf = value >= mid;
+  if (isUpperHalf) {
     const room = Math.max(...all) - mid;
     return room > 0 ? BASELINE_SLOTS + Math.round((span * (value - mid)) / room) : BASELINE_SLOTS;
   }

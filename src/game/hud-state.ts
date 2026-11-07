@@ -1,3 +1,4 @@
+import type { PaletteId, UiScale } from './display-prefs.ts';
 import { KEEPSAKES } from '../../shared/keepsakes.ts';
 import type { KeepsakeId } from '../../shared/protocol.ts';
 import { CANDIES } from '../../shared/candy.ts';
@@ -8,7 +9,6 @@ import { characterOf } from '../../shared/characters.ts';
 import type { GameStyle } from '../../shared/game-style.ts';
 import type { PlayerGear } from '../../shared/gun-upgrades.ts';
 import { BUNKER_LEVEL } from '../../shared/home-protocol.ts';
-import { levelDef } from '../../shared/levels.ts';
 import { WEAPON_ORDER } from '../../shared/protocol.ts';
 import type {
   EntityId,
@@ -187,7 +187,12 @@ export interface UiState {
   /** The code of the online room this tab is hosting, for the host to share; null otherwise. */
   readonly onlineRoom: string | null;
   readonly volume: number;
+  /** Music and sound effects, each a share of volume. */
+  readonly musicVolume: number;
+  readonly sfxVolume: number;
   readonly muted: boolean;
+  readonly palette: PaletteId;
+  readonly uiScale: UiScale;
 }
 
 export function buildHud(snapshot: SnapshotPacket, local: PlayerEntity, spectating: string | null): HudState {

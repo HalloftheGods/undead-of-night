@@ -89,8 +89,17 @@ export function countdownText(ms: number): string {
   return hours > 0 ? `${hours}h ${pad(minutes % 60)}m` : `${minutes}m`;
 }
 
+/** The day's page lines about the town: its name, level, difficulty, and any rule or event. */
+export interface NightFacts {
+  title: string;
+  level: string;
+  difficulty: string;
+  rule: string | null;
+  event: string | null;
+}
+
 /** What the day's page says about the town before anyone goes in. */
-export function nightFacts(night: DailyNight): { title: string; level: string; difficulty: string; rule: string | null; event: string | null } {
+export function nightFacts(night: DailyNight): NightFacts {
   const rule = townRule(night.level);
   const event = nightEventFor(levelSeed(night.seed, night.level), night.level);
   return {
@@ -103,17 +112,20 @@ export function nightFacts(night: DailyNight): { title: string; level: string; d
 }
 
 function isResult(v: unknown): v is DailyResult {
-  if (typeof v !== 'object' || v === null) return false;
+  const isNotObject = typeof v !== 'object' || v === null;
+  if (isNotObject) return false;
   const r = v as Record<string, unknown>;
   return ['score', 'kills', 'level', 'attempts', 'practiceBest'].every((key) => Number.isFinite(r[key]));
 }
 
 export function loadDailyLog(store: Store | null = browserStore()): DailyLog {
   const raw = readJson(store, DAILY_KEY);
-  if (typeof raw !== 'object' || raw === null) return {};
+  const isNotLog = typeof raw !== 'object' || raw === null;
+  if (isNotLog) return {};
   const log: Record<string, DailyResult> = {};
   for (const [key, value] of Object.entries(raw)) {
-    if (/^\d{4}-\d{2}-\d{2}$/.test(key) && isResult(value)) log[key] = value;
+    const isDayEntry = /^\d{4}-\d{2}-\d{2}$/.test(key) && isResult(value);
+    if (isDayEntry) log[key] = value;
   }
   return log;
 }
@@ -157,7 +169,8 @@ export function streakOf(log: DailyLog, todayKey: string): number {
 export function bestDay(log: DailyLog): { key: string; result: DailyResult } | null {
   let best: { key: string; result: DailyResult } | null = null;
   for (const [key, result] of Object.entries(log)) {
-    if (!best || result.score > best.result.score) best = { key, result };
+    const isNewBest = !best || result.score > best.result.score;
+    if (isNewBest) best = { key, result };
   }
   return best;
 }

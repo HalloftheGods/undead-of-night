@@ -26,7 +26,8 @@ const isCoordinate = (value: unknown): value is number => typeof value === 'numb
 
 /** Both or neither: an input with no crosshair is fine, half of one is not a real client. */
 function parseAim(aimX: unknown, aimY: unknown): { aimX?: number; aimY?: number } | null {
-  if (aimX === undefined && aimY === undefined) return {};
+  const hasNoAim = aimX === undefined && aimY === undefined;
+  if (hasNoAim) return {};
   return isCoordinate(aimX) && isCoordinate(aimY) ? { aimX, aimY } : null;
 }
 
@@ -38,7 +39,8 @@ function parseInput(value: unknown): ClientInputPacket | null {
   const aim = parseAim(aimX, aimY);
   const optionalFlags = [touch, sneak, sprint, toss, molotov, flare, eat];
   const optionalValid = optionalFlags.every((flag) => flag === undefined || typeof flag === 'boolean');
-  if (!numbersValid || !aim || !optionalValid || !flags.every((flag) => typeof flag === 'boolean') || !isWeaponRequest(weapon)) return null;
+  const isMalformedInput = !numbersValid || !aim || !optionalValid || !flags.every((flag) => typeof flag === 'boolean') || !isWeaponRequest(weapon);
+  if (isMalformedInput) return null;
   return {
     seq,
     angle,
@@ -79,7 +81,8 @@ export function parseClientPacket(raw: string): ClientPacket | null {
   }
   if (!isRecord(value)) return null;
 
-  if (value.type === 'join') {
+  const isJoin = value.type === 'join';
+  if (isJoin) {
     const { name, token, character, difficulty, style } = value;
     const validCharacter = character === undefined || isCharacterIndex(character);
     const valid = typeof name === 'string' && isJoinToken(token) && validCharacter;
@@ -93,11 +96,13 @@ export function parseClientPacket(raw: string): ClientPacket | null {
     const version = typeof protocol === 'number' ? { protocol } : {};
     return valid && versioned ? { type: 'join', name: cleanCallsign(name), token, character, ...chosen, ...styled, ...version, ...(home ? { home } : {}) } : null;
   }
-  if (value.type === 'input') {
+  const isInput = value.type === 'input';
+  if (isInput) {
     const input = parseInput(value.input);
     return input ? { type: 'input', input } : null;
   }
-  if (value.type === 'bench') return isBenchAction(value.action) ? { type: 'bench', action: value.action } : null;
+  const isBench = value.type === 'bench';
+  if (isBench) return isBenchAction(value.action) ? { type: 'bench', action: value.action } : null;
   const emote = value.type === 'emote' && isEmoteId(value.emote) ? value.emote : null;
   if (emote) return { type: 'emote', emote };
   const homeAction = value.type === 'home' ? parseHome(value.action) : null;

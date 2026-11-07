@@ -110,9 +110,12 @@ export const LEVEL_LOOKS: Record<LevelTheme, LevelLook> = {
  * the sky with a slow pulse, and a power cut kills most of the lamps and the ambient with them.
  */
 export function withEvent(look: LevelLook, event: NightEventId | null): LevelLook {
-  if (event === 'fog') return { ...look, wash: { color: '#a9b2bc', alpha: 0.26 }, washPulse: 0.03, ambient: mix(look.ambient, [120, 126, 134], 0.4) };
-  if (event === 'blood_moon') return { ...look, wash: { color: '#b3121c', alpha: 0.1 }, washPulse: 0.04, ambient: mix(look.ambient, [120, 24, 28], 0.5) };
-  if (event === 'power_cut') return { ...look, ambient: [10, 11, 20], lampEvery: Math.max(look.lampEvery, 6), lampStrength: Math.min(look.lampStrength, 0.7) };
+  const isFog = event === 'fog';
+  if (isFog) return { ...look, wash: { color: '#a9b2bc', alpha: 0.26 }, washPulse: 0.03, ambient: mix(look.ambient, [120, 126, 134], 0.4) };
+  const isBloodMoon = event === 'blood_moon';
+  if (isBloodMoon) return { ...look, wash: { color: '#b3121c', alpha: 0.1 }, washPulse: 0.04, ambient: mix(look.ambient, [120, 24, 28], 0.5) };
+  const isPowerCut = event === 'power_cut';
+  if (isPowerCut) return { ...look, ambient: [10, 11, 20], lampEvery: Math.max(look.lampEvery, 6), lampStrength: Math.min(look.lampStrength, 0.7) };
   return look;
 }
 

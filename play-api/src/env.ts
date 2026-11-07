@@ -24,5 +24,6 @@ export type SocketRole = 'host' | 'guest';
 
 /** Event-name logs only: never an IP, a callsign or a room code. */
 export function logEvent(event: string, reason?: string): void {
+  // chemx-allow: UNGUARDED_LOGGING this is the Worker's one logger; Workers Logs read console output and nothing else
   console.log(reason ? `${event}:${reason}` : event);
 }

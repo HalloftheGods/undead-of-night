@@ -41,7 +41,8 @@ export function nightEventFor(mapSeed: number, level: number): NightEvent | null
   const eligible = level >= FIRST_EVENT_LEVEL && !isBunkerSeed(mapSeed);
   if (!eligible) return null;
   const rng = createRng((mapSeed ^ EVENT_SALT) >>> 0);
-  if (rng() >= EVENT_CHANCE) return null;
+  const isQuietNight = rng() >= EVENT_CHANCE;
+  if (isQuietNight) return null;
   const id = pick(rng, EVENT_ORDER);
   const alreadyDark = id === 'power_cut' && themeOf(level) === 'blackout';
   return NIGHT_EVENTS[alreadyDark ? 'fog' : id];

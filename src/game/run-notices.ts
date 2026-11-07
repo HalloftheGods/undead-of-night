@@ -2,7 +2,7 @@ import { ammoCapOf } from '../../shared/keepsakes.ts';
 import { CANDIES } from '../../shared/candy.ts';
 import type { CandyId } from '../../shared/protocol.ts';
 import { BOSSES } from '../../shared/bosses.ts';
-import { MEDKIT_MAX, PICKUP_RADIUS, WEAPONS } from '../../shared/constants.ts';
+import { MEDKIT_MAX, PICKUP_RADIUS } from '../../shared/constants.ts';
 import { PART_CARRY_CAP } from '../../shared/gun-upgrade-data.ts';
 import { isPartPickup } from '../../shared/gun-upgrades.ts';
 import type { OverrunEnd } from '../../shared/home-protocol.ts';
@@ -98,8 +98,10 @@ export function candyBanner(candy: CandyId, saved: boolean): Omit<Banner, 'key'>
 export function hordeBanner(event: GameEvent): Omit<Banner, 'key'> | null {
   const hordeCame = event.type === 'wave_start';
   if (hordeCame) return { title: `HORDE ${event.wave}`, subtitle: `${event.hostiles} HOSTILES`, tone: 'danger' };
-  if (event.type === 'boss_arrive') return { title: BOSSES[event.boss].name.toUpperCase(), subtitle: 'BOSS NIGHT', tone: 'danger' };
-  if (event.type === 'boss_down') return { title: 'BOSS DOWN', subtitle: BOSSES[event.boss].name.toUpperCase(), tone: 'hope' };
+  const isBossArrival = event.type === 'boss_arrive';
+  if (isBossArrival) return { title: BOSSES[event.boss].name.toUpperCase(), subtitle: 'BOSS NIGHT', tone: 'danger' };
+  const isBossDown = event.type === 'boss_down';
+  if (isBossDown) return { title: 'BOSS DOWN', subtitle: BOSSES[event.boss].name.toUpperCase(), tone: 'hope' };
   return SET_BANNERS[event.type] ?? null;
 }
 

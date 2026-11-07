@@ -4,18 +4,16 @@
 import type { PixelSprite } from '../types.ts';
 import { RAMPS } from '../palette.ts';
 import { grime, rust, streak } from './facade.ts';
-import type { Trim } from './facade.ts';
 import { roofVent, turbineVent } from './roof-kit.ts';
 import { bakeShell, caseLamp, doorway, startShell } from './shell.ts';
 import type { Shell } from './shell.ts';
 import { blockText, blockWidth, signBoard } from './signage.ts';
 
-const { ink, metal, concrete, asphalt, fire, wood, ash, olive } = RAMPS;
+const { ink, metal, concrete, asphalt, fire, ash, olive } = RAMPS;
 
 const WALL = 36;
 const ROOF_TOP = 3;
 const RIDGE = 40;
-const YELLOW: Trim = [wood[1], fire[1], fire[2]];
 
 /** Corrugated sheet: a rib every 4px, the rear plane lit and the front one dull. */
 function plane(s: Shell, y: number, h: number, base: number, rib: number, hi: number): void {

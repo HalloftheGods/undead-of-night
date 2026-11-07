@@ -45,7 +45,8 @@ const MAX_SPARKLES = 50;
 /** A fraction 0..1 that is the same for the same inputs. */
 /** A ripple runs longer the higher the swell. */
 export function rippleLength(swell: number): number {
-  if (swell > 0.75) return 4;
+  const isHighSwell = swell > 0.75;
+  if (isHighSwell) return 4;
   return swell > 0.45 ? 3 : 2;
 }
 
@@ -74,9 +75,14 @@ const MOTION: Partial<Record<LevelTheme, Motion>> = { flooded: 'water', snow: 's
 export class GroundMotion {
   private map: WorldMap | null = null;
   private motion: Motion = null;
-  private readonly reducedMotion: boolean;
+  private reducedMotion: boolean;
 
   constructor(reducedMotion: boolean) {
+    this.reducedMotion = reducedMotion;
+  }
+
+  /** The Motion setting changed while the game was running. */
+  setReducedMotion(reducedMotion: boolean): void {
     this.reducedMotion = reducedMotion;
   }
 
@@ -109,12 +115,15 @@ export class GroundMotion {
    * Reduced motion holds the water and snow still.
    */
   draw(ctx: CanvasRenderingContext2D, left: number, top: number, viewW: number, viewH: number, time: number, pass: 'ground' | 'lit' = 'ground'): void {
-    if (!this.map || !this.motion) return;
+    const hasNoMotion = !this.map || !this.motion;
+    if (hasNoMotion) return;
     const wanted = this.motion === 'water' ? 'lit' : 'ground';
-    if (pass !== wanted) return;
+    const isOtherPass = pass !== wanted;
+    if (isOtherPass) return;
     const shownTime = this.reducedMotion ? 0 : time;
     const previous = ctx.globalAlpha;
-    if (this.motion === 'water') {
+    const isWater = this.motion === 'water';
+    if (isWater) {
       this.drawRipples(ctx, left, top, viewW, viewH, shownTime);
       if (!this.reducedMotion) this.drawSplashes(ctx, left, top, viewW, viewH, shownTime);
     } else {
@@ -139,7 +148,8 @@ export class GroundMotion {
         const row = row0 + r;
         const seed = hash(col, row);
         const swell = Math.sin(time * (1.1 + seed * 0.9) + seed * Math.PI * 2);
-        if (swell <= 0.2) continue;
+        const isFlat = swell <= 0.2;
+        if (isFlat) continue;
         const wx = col * RIPPLE_CELL + seed * RIPPLE_CELL + driftX;
         const wy = row * RIPPLE_CELL + hash(row, col) * RIPPLE_CELL + driftY;
         const sx = Math.round(wx - left);
@@ -147,7 +157,8 @@ export class GroundMotion {
         const length = rippleLength(swell);
         const x0 = sx - (length >> 1);
         const onScreen = x0 >= 0 && x0 + length <= viewW && sy >= 0 && sy < viewH;
-        if (!onScreen || !this.openRun(left, top, x0, sy, length)) continue;
+        const isHidden = !onScreen || !this.openRun(left, top, x0, sy, length);
+        if (isHidden) continue;
         ctx.globalAlpha = RIPPLE_ALPHA * swell;
         ctx.fillStyle = RIPPLE_COLORS[seed < 0.5 ? 0 : 1];
         ctx.fillRect(x0, sy, length, 1);
@@ -166,9 +177,11 @@ export class GroundMotion {
       const age = clock - slot;
       const sx = margin + Math.floor(hash(i, slot) * (viewW - margin * 2));
       const sy = margin + Math.floor(hash(slot, i + 7) * (viewH - margin * 2));
-      if (!this.openRun(left, top, sx - 4, sy - 3, 9) || !this.openRun(left, top, sx - 4, sy + 3, 9)) continue;
+      const isBlocked = !this.openRun(left, top, sx - 4, sy - 3, 9) || !this.openRun(left, top, sx - 4, sy + 3, 9);
+      if (isBlocked) continue;
       ctx.globalAlpha = 0.34 * (1 - age);
-      if (age < 0.25) {
+      const isFresh = age < 0.25;
+      if (isFresh) {
         ctx.fillRect(sx, sy, 1, 1);
         continue;
       }
@@ -201,7 +214,8 @@ export class GroundMotion {
       const length = Math.round(4 + gust * 5 + hash(i, 2) * 4);
       const tail = Math.round(length / 2);
       const onScreen = sx >= 0 && sx + length + tail <= viewW && sy >= 0 && sy < viewH;
-      if (!onScreen || !this.openRun(left, top, sx, sy, length + tail)) continue;
+      const isHidden = !onScreen || !this.openRun(left, top, sx, sy, length + tail);
+      if (isHidden) continue;
       ctx.globalAlpha = DRIFT_ALPHA * Math.sin(age * Math.PI);
       ctx.fillRect(sx, sy, length, 1);
       ctx.globalAlpha *= 0.5;
@@ -223,13 +237,15 @@ export class GroundMotion {
         const row = row0 + r;
         const seed = hash(col + 11, row);
         const wink = Math.sin(time * (0.8 + seed * 1.6) + seed * 40);
-        if (wink < 0.93) continue;
+        const isDark = wink < 0.93;
+        if (isDark) continue;
         const wx = col * SPARKLE_CELL + seed * SPARKLE_CELL;
         const wy = row * SPARKLE_CELL + hash(row, col + 5) * SPARKLE_CELL;
         const sx = Math.round(wx - left);
         const sy = Math.round(wy - top);
         const onScreen = sx >= 0 && sx < viewW && sy >= 0 && sy < viewH;
-        if (!onScreen || !this.openRun(left, top, sx, sy, 1)) continue;
+        const isHidden = !onScreen || !this.openRun(left, top, sx, sy, 1);
+        if (isHidden) continue;
         ctx.globalAlpha = Math.min(1, (wink - 0.93) * 12);
         ctx.fillRect(sx, sy, 1, 1);
         drawn += 1;

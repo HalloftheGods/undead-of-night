@@ -13,7 +13,11 @@ export const FREEZE_MS = {
   brute: 110,
   chain: 35,
   hordeWiped: 260,
+  /** A boss down is the biggest moment in a town: hold it long enough to land. */
+  boss: 420,
 } as const;
+/** The white wash when a boss falls. Reduced motion skips it in ScreenEffects. */
+const BOSS_FLASH = 0.6;
 
 /** The words a chain earns, by its length. Past the last row the count is printed. */
 const CHAIN_WORDS: Readonly<Record<number, string>> = { 2: 'DOUBLE', 3: 'TRIPLE', 4: 'QUAD' };
@@ -36,7 +40,8 @@ export interface JuiceBeat {
 }
 
 export function chainWords(count: number): string | null {
-  if (count < 2) return null;
+  const isNoChain = count < 2;
+  if (isNoChain) return null;
   return CHAIN_WORDS[count] ?? `MASSACRE x${count}`;
 }
 
@@ -62,23 +67,32 @@ export class KillJuice {
     let kills = 0;
     let anyKill = false;
     let cleared = false;
+    let bossDown = false;
     for (const event of events) {
       if (event.type === 'zombie_die') {
         anyKill = true;
-        if (event.killerId === null || event.killerId !== localId) continue;
+        const isNotMine = event.killerId === null || event.killerId !== localId;
+        if (isNotMine) continue;
         kills += 1;
-        if (event.zombieType === 'brute') freezeMs = Math.max(freezeMs, FREEZE_MS.brute);
+        const isBrute = event.zombieType === 'brute';
+        if (isBrute) freezeMs = Math.max(freezeMs, FREEZE_MS.brute);
       } else if (event.type === 'headshot' && event.playerId === localId) {
         freezeMs = Math.max(freezeMs, FREEZE_MS.headshot);
       } else if (event.type === 'wave_clear') {
         cleared = true;
+      } else if (event.type === 'boss_down') {
+        // Whoever landed it: the boss is the whole town's fight, so everyone gets the beat.
+        bossDown = true;
       }
     }
+    if (bossDown) freezeMs = Math.max(freezeMs, FREEZE_MS.boss);
+    const flash = bossDown ? BOSS_FLASH : 0;
     const hordeWiped = cleared && anyKill;
     if (hordeWiped) {
-      return { freezeMs: FREEZE_MS.hordeWiped, flash: 0.45, callout: null, hordeWiped };
+      return { freezeMs: Math.max(freezeMs, FREEZE_MS.hordeWiped), flash: Math.max(flash, 0.45), callout: null, hordeWiped };
     }
-    if (kills === 0) return freezeMs > 0 ? { freezeMs, flash: 0, callout: null, hordeWiped } : null;
+    const hasNoKills = kills === 0;
+    if (hasNoKills) return freezeMs > 0 ? { freezeMs, flash, callout: null, hordeWiped } : null;
 
     const chained = now - this.lastKillMs <= CHAIN_WINDOW_MS;
     this.chain = (chained ? this.chain : 0) + kills;
@@ -87,12 +101,13 @@ export class KillJuice {
     if (chain) freezeMs = Math.max(freezeMs, FREEZE_MS.chain);
 
     const onTheEdge = health > 0 && health <= CLOSE_CALL_HEALTH && now - this.lastCloseCallMs > CLOSE_CALL_REPEAT_MS;
-    if (onTheEdge && !chain) {
+    const isCloseCall = onTheEdge && !chain;
+    if (isCloseCall) {
       this.lastCloseCallMs = now;
-      return { freezeMs: Math.max(freezeMs, FREEZE_MS.chain), flash: 0, callout: { text: 'CLOSE CALL', tone: 'close' }, hordeWiped };
+      return { freezeMs: Math.max(freezeMs, FREEZE_MS.chain), flash, callout: { text: 'CLOSE CALL', tone: 'close' }, hordeWiped };
     }
     const callout: CalloutWords | null = chain ? { text: chain, tone: 'chain' } : null;
     const nothing = freezeMs === 0 && callout === null;
-    return nothing ? null : { freezeMs, flash: 0, callout, hordeWiped };
+    return nothing ? null : { freezeMs, flash, callout, hordeWiped };
   }
 }

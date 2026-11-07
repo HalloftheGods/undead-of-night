@@ -48,13 +48,15 @@ import { CHANGELOG_TITLE, KIND_LABELS, notePage, noteDate } from '../../game/cha
 import type { ChangeLeaf, ChangeNote } from '../../game/changelog.ts';
 import { usePageFit } from '../../game/magazine-fit.ts';
 
-defineProps<{
+interface ChangeLeafPageProps {
   leaf: ChangeLeaf;
   side: 'left' | 'right';
   folio: number;
   notes: readonly ChangeNote[];
   version: string;
-}>();
+}
+
+defineProps<ChangeLeafPageProps>();
 const emit = defineEmits<{ open: [index: number] }>();
 
 const pageRef = useTemplateRef<HTMLElement>('pageRef');

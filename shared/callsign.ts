@@ -82,16 +82,19 @@ export function callsignWords(text: string): string[] {
     for (const chunk of view.split(/\s+/)) {
       const parts = chunk.split(/[^a-z]+/).filter(Boolean);
       for (const part of parts) words.add(part);
-      if (parts.length > 1) words.add(parts.join(''));
+      const isCompoundChunk = parts.length > 1;
+      if (isCompoundChunk) words.add(parts.join(''));
       pieces.push(...parts);
     }
     let run = '';
     for (const piece of [...pieces, '']) {
-      if (piece.length === 1) {
+      const isSingleLetter = piece.length === 1;
+      if (isSingleLetter) {
         run += piece;
         continue;
       }
-      if (run.length > 1) words.add(run);
+      const isLetterRun = run.length > 1;
+      if (isLetterRun) words.add(run);
       run = '';
     }
   }
@@ -110,9 +113,11 @@ export function compileFilter(rules: readonly FilterRule[]): (text: string) => b
 
   const refuses = (word: string): boolean => {
     const bare = trimDecoration(word);
-    if (insideRaw.some((stem) => word.includes(stem)) || wholeRaw.has(word) || wholeRaw.has(bare)) return true;
+    const isPlainlyRefused = insideRaw.some((stem) => word.includes(stem)) || wholeRaw.has(word) || wholeRaw.has(bare);
+    if (isPlainlyRefused) return true;
     const squeezed = squeeze(word);
-    if (squeezed === word) return false;
+    const isAlreadySqueezed = squeezed === word;
+    if (isAlreadySqueezed) return false;
     return insideSqueezed.some((stem) => squeezed.includes(stem)) || wholeSqueezed.has(squeezed) || wholeSqueezed.has(squeeze(bare));
   };
   return (text) => callsignWords(text).some(refuses);

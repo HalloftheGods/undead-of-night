@@ -27,7 +27,8 @@ function rollPart(rng: Rng, odds: Partial<Record<PartId, number>>): PartId {
   let roll = rng() * entries.reduce((sum, [, weight]) => sum + weight, 0);
   for (const [part, weight] of entries) {
     roll -= weight;
-    if (roll <= 0) return part;
+    const isRollSpent = roll <= 0;
+    if (isRollSpent) return part;
   }
   return entries[0][0];
 }

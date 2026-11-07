@@ -20,18 +20,23 @@ function difficultyGap(a: string, b: string): number {
 }
 
 function levelFits(room: RoomListing, request: MatchRequest): boolean {
-  if (room.style === 'arcade') return room.phase === 'muster' || room.level <= ARCADE_LAST_JOINABLE_LEVEL;
+  const isArcadeRoom = room.style === 'arcade';
+  if (isArcadeRoom) return room.phase === 'muster' || room.level <= ARCADE_LAST_JOINABLE_LEVEL;
   const mine = request.highest ?? 1;
   return room.highest >= mine - CAMPAIGN_REACH_BELOW && room.highest <= mine + CAMPAIGN_REACH_ABOVE;
 }
 
 /** Whether this room may be offered to this player at all. */
 export function isOpenTo(room: RoomListing, request: MatchRequest, now: number): boolean {
-  if (room.visibility !== 'public' || room.locked || isStale(room.seenAt, now)) return false;
-  if (room.seats >= room.maxSeats) return false;
-  if (room.protocol !== request.protocol || room.style !== request.style) return false;
+  const isUnlisted = room.visibility !== 'public' || room.locked || isStale(room.seenAt, now);
+  if (isUnlisted) return false;
+  const isRoomFull = room.seats >= room.maxSeats;
+  if (isRoomFull) return false;
+  const isOtherGame = room.protocol !== request.protocol || room.style !== request.style;
+  if (isOtherGame) return false;
   if (request.avoid?.includes(room.code)) return false;
-  if (difficultyGap(room.difficulty, request.difficulty) > MAX_DIFFICULTY_GAP) return false;
+  const isTooFarInDifficulty = difficultyGap(room.difficulty, request.difficulty) > MAX_DIFFICULTY_GAP;
+  if (isTooFarInDifficulty) return false;
   return levelFits(room, request);
 }
 
@@ -51,7 +56,8 @@ function rankKey(room: RoomListing, request: MatchRequest, mine: Continent): rea
 
 function compareKeys(a: readonly number[], b: readonly number[]): number {
   for (let i = 0; i < a.length; i += 1) {
-    if (a[i] !== b[i]) return a[i] - b[i];
+    const isKeyDifferent = a[i] !== b[i];
+    if (isKeyDifferent) return a[i] - b[i];
   }
   return 0;
 }

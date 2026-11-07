@@ -61,12 +61,15 @@ export class FlowField {
     for (let ring = 0; ring <= 3 && !found; ring++) {
       for (let dr = -ring; dr <= ring; dr++) {
         for (let dc = -ring; dc <= ring; dc++) {
-          if (Math.max(Math.abs(dr), Math.abs(dc)) !== ring) continue;
+          const isOffRing = Math.max(Math.abs(dr), Math.abs(dc)) !== ring;
+          if (isOffRing) continue;
           const c = col + dc;
           const r = row + dr;
-          if (c < 0 || r < 0 || c >= this.cols || r >= this.rows) continue;
+          const isOffGrid = c < 0 || r < 0 || c >= this.cols || r >= this.rows;
+          if (isOffGrid) continue;
           const index = r * this.cols + c;
-          if (this.blocked[index] || !this.inSight(point, c, r)) continue;
+          const isUnusableSeed = this.blocked[index] || !this.inSight(point, c, r);
+          if (isUnusableSeed) continue;
           // A tile another seed already took still ends the search, or a crowd in one corner would spread a ring per player.
           found = true;
           const alreadySeeded = this.distance[index] === 0;
@@ -90,22 +93,27 @@ export class FlowField {
     while (head < tail) {
       const index = queue[head++];
       const next = distance[index] + 1;
-      if (next > reach) break;
+      const isBeyondReach = next > reach;
+      if (isBeyondReach) break;
       const col = index % cols;
       const row = (index - col) / cols;
-      if (col > 0 && !blocked[index - 1] && distance[index - 1] > next) {
+      const canStepWest = col > 0 && !blocked[index - 1] && distance[index - 1] > next;
+      if (canStepWest) {
         distance[index - 1] = next;
         queue[tail++] = index - 1;
       }
-      if (col < cols - 1 && !blocked[index + 1] && distance[index + 1] > next) {
+      const canStepEast = col < cols - 1 && !blocked[index + 1] && distance[index + 1] > next;
+      if (canStepEast) {
         distance[index + 1] = next;
         queue[tail++] = index + 1;
       }
-      if (row > 0 && !blocked[index - cols] && distance[index - cols] > next) {
+      const canStepNorth = row > 0 && !blocked[index - cols] && distance[index - cols] > next;
+      if (canStepNorth) {
         distance[index - cols] = next;
         queue[tail++] = index - cols;
       }
-      if (row < rows - 1 && !blocked[index + cols] && distance[index + cols] > next) {
+      const canStepSouth = row < rows - 1 && !blocked[index + cols] && distance[index + cols] > next;
+      if (canStepSouth) {
         distance[index + cols] = next;
         queue[tail++] = index + cols;
       }
@@ -123,7 +131,8 @@ export class FlowField {
   distanceAt(x: number, y: number): number {
     const col = Math.floor(x / TILE_SIZE);
     const row = Math.floor(y / TILE_SIZE);
-    if (col < 0 || row < 0 || col >= this.cols || row >= this.rows) return Infinity;
+    const isOffGrid = col < 0 || row < 0 || col >= this.cols || row >= this.rows;
+    if (isOffGrid) return Infinity;
     const value = this.distance[row * this.cols + col];
     return value === UNREACHED ? Infinity : value;
   }
@@ -146,7 +155,8 @@ export class FlowField {
     const nudge = radius + WALL_MARGIN - TILE_SIZE / 2;
     const centreX = (col + 0.5) * TILE_SIZE;
     const centreY = (row + 0.5) * TILE_SIZE;
-    if (nudge <= 0) return { x: centreX, y: centreY };
+    const hasNoNudge = nudge <= 0;
+    if (hasNoNudge) return { x: centreX, y: centreY };
 
     let pushX = 0;
     let pushY = 0;
@@ -154,7 +164,8 @@ export class FlowField {
       const c = col + dc;
       const r = row + dr;
       const onMap = c >= 0 && r >= 0 && c < this.cols && r < this.rows;
-      if (onMap && this.blocked[r * this.cols + c]) {
+      const isWallNeighbour = onMap && this.blocked[r * this.cols + c];
+      if (isWallNeighbour) {
         pushX -= dc;
         pushY -= dr;
       }
@@ -176,11 +187,14 @@ export class FlowField {
     for (const [dc, dr] of NEIGHBOURS) {
       const c = col + dc;
       const r = row + dr;
-      if (c < 0 || r < 0 || c >= cols || r >= rows) continue;
+      const isOffGrid = c < 0 || r < 0 || c >= cols || r >= rows;
+      if (isOffGrid) continue;
       const index = r * cols + c;
-      if (blocked[index] || distance[index] >= best) continue;
+      const isNoCloser = blocked[index] || distance[index] >= best;
+      if (isNoCloser) continue;
       // Diagonals may not clip a corner, unless we are already wedged against one.
-      if (!trapped && dc !== 0 && dr !== 0 && (blocked[row * cols + c] || blocked[r * cols + col])) continue;
+      const clipsCorner = !trapped && dc !== 0 && dr !== 0 && (blocked[row * cols + c] || blocked[r * cols + col]);
+      if (clipsCorner) continue;
       // A wall is thinner than its tile, so a wedged body must not aim through to the far side.
       const acrossWall = trapped && !this.inSight({ x, y }, c, r);
       if (acrossWall) continue;

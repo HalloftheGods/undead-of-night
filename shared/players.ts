@@ -64,7 +64,8 @@ function footsteps(sim: SimState, p: PlayerState): void {
 /** Stores the newest input. One-shot requests latch until a tick consumes them. */
 export function receiveInput(p: PlayerState, input: ClientInputPacket): void {
   const validSeq = Number.isFinite(input.seq);
-  if (validSeq && input.seq < p.queuedSeq) return;
+  const isStaleInput = validSeq && input.seq < p.queuedSeq;
+  if (isStaleInput) return;
   if (validSeq) p.queuedSeq = input.seq;
 
   p.up = input.up === true;
@@ -79,9 +80,12 @@ export function receiveInput(p: PlayerState, input: ClientInputPacket): void {
   const aimed = Number.isFinite(aimX) && Number.isFinite(aimY);
   if (aimed) p.aim = { x: aimX as number, y: aimY as number };
   p.touchAim = input.touch === true;
-  if (input.reload === true) p.reloadQueued = true;
-  if (input.melee === true) p.meleeQueued = true;
-  if (input.heal === true) p.healQueued = true;
+  const wantsReload = input.reload === true;
+  if (wantsReload) p.reloadQueued = true;
+  const wantsMelee = input.melee === true;
+  if (wantsMelee) p.meleeQueued = true;
+  const wantsHeal = input.heal === true;
+  if (wantsHeal) p.healQueued = true;
   p.throwQueued ||= input.throw === true;
   p.molotovQueued ||= input.molotov === true;
   p.flareQueued ||= input.flare === true;
@@ -115,7 +119,8 @@ function holdFire(p: PlayerState): void {
 export function updatePlayer(sim: SimState, p: PlayerState): void {
   p.lastInputSeq = p.queuedSeq;
   noteActivity(sim, p);
-  if (p.status !== 'alive') {
+  const isNotAlive = p.status !== 'alive';
+  if (isNotAlive) {
     p.moving = false;
     p.reloadQueued = false;
     p.weaponQueued = null;

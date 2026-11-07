@@ -1,5 +1,6 @@
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue';
 import type { InjectionKey } from 'vue';
+import { motion } from './motion.ts';
 import { isConfirmKey } from './title-menu.ts';
 import { openBook, pageLabel, planTurn, steppedPage } from './magazine-pages.ts';
 import type { PageTurn, ReadingMode } from './magazine-pages.ts';
@@ -10,7 +11,6 @@ export const TURN_MS = 560;
 
 const SWIPE_MIN_PX = 40;
 const TALL_WINDOW = '(max-aspect-ratio: 1/1)';
-const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
 
 const TURN_KEYS: Readonly<Record<string, number>> = {
   ArrowRight: 1,
@@ -66,7 +66,7 @@ export function useMagazineReader(magazine: Magazine, onTurn: () => void, onClos
     pageIndex.value = target;
     onTurn();
     window.clearTimeout(settle);
-    const stillPage = window.matchMedia(REDUCED_MOTION).matches;
+    const stillPage = motion.reduced.value;
     turn.value = stillPage ? null : planTurn(before, book.value, forward);
     settle = window.setTimeout(() => (turn.value = null), TURN_MS);
   }

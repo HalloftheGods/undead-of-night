@@ -97,14 +97,12 @@ onBeforeUnmount(() => setTitleShowing(false));
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .cartridge {
-    transition: none;
-  }
+:root[data-motion='reduced'] .cartridge {
+  transition: none;
+}
 
-  .cartridge:hover,
-  .cartridge:focus-visible {
-    transform: none;
-  }
+:root[data-motion='reduced'] .cartridge:hover,
+:root[data-motion='reduced'] .cartridge:focus-visible {
+  transform: none;
 }
 </style>

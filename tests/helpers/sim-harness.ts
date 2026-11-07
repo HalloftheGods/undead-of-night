@@ -96,7 +96,8 @@ export function eventsOf<T extends GameEvent['type']>(snapshot: SnapshotPacket, 
 /** Steps until the predicate holds, or fails the test by returning -1. */
 export function stepUntil(sim: GameSimulation, predicate: () => boolean, maxTicks: number): number {
   for (let tick = 0; tick < maxTicks; tick++) {
-    if (predicate()) return tick;
+    const isMet = predicate();
+    if (isMet) return tick;
     sim.step();
   }
   return predicate() ? maxTicks : -1;

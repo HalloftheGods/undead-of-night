@@ -44,7 +44,8 @@ export const HOME_UNREADABLE = 'The game could not open your saved home.';
 
 /** Where the walk starts: an invite wins over a level, and a visit with neither starts on Style. */
 export function startFlow(join: boolean, level: number | null): PlayFlow {
-  if (picksStyle(join, level)) return PLAY_START;
+  const shouldPickStyle = picksStyle(join, level);
+  if (shouldPickStyle) return PLAY_START;
   return join ? PLAY_JOIN : PLAY_LEVEL;
 }
 

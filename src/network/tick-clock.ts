@@ -24,14 +24,17 @@ export class TickClock {
   }
 
   start(): void {
-    if (this.timer !== null) return;
+    const isRunning = this.timer !== null;
+    if (isRunning) return;
     this.nextAt = this.now() + this.tickMs;
     this.schedule();
   }
 
   stop(): void {
-    if (this.timer === null) return;
-    clearTimeout(this.timer);
+    const timer = this.timer;
+    const isStopped = timer === null;
+    if (isStopped) return;
+    clearTimeout(timer);
     this.timer = null;
   }
 
@@ -48,9 +51,11 @@ export class TickClock {
       ticks += 1;
       this.onTick();
       // onTick may have stopped the clock.
-      if (this.timer === null) return;
+      const isStopped = this.timer === null;
+      if (isStopped) return;
     }
-    if (now >= this.nextAt) this.nextAt = now + this.tickMs;
+    const isBehind = now >= this.nextAt;
+    if (isBehind) this.nextAt = now + this.tickMs;
     this.schedule();
   };
 }

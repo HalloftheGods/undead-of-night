@@ -45,7 +45,8 @@ const disableFlag = (id: string): string => `ga-disable-${id}`;
 
 export function createSender(options: SenderOptions): Sender {
   const { consent, dev } = options;
-  if (options.page === null) return { track: () => undefined };
+  const hasNoPage = options.page === null;
+  if (hasNoPage) return { track: () => undefined };
   const page: SenderPage = options.page;
   const log = options.log ?? ((message: string, detail: unknown) => console.debug(message, detail));
   const isBlockedHere = dev || isLocalHost(page.hostname);
@@ -101,7 +102,8 @@ export function createSender(options: SenderOptions): Sender {
   function track(name: string, raw: Readonly<Record<string, unknown>> = {}): void {
     try {
       const params: EventParams | null = consent.allowed() ? allowedParams(name, raw) : null;
-      if (params === null) return;
+      const isUntracked = params === null;
+      if (isUntracked) return;
       if (dev) log(`[analytics] would send ${name}`, params);
       if (isBlockedHere) return;
       load(page);

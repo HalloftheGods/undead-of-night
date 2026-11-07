@@ -80,8 +80,10 @@ export class SnapshotHandler {
     const beat = this.juice.read(snapshot.events, localId, healthFraction(after), now);
     if (!beat) return null;
     const { renderer, runHud } = this.host;
-    if (beat.freezeMs > 0) this.host.hitStop(beat.freezeMs);
-    if (beat.flash > 0) renderer?.effects.addFlash(beat.flash);
+    const hasFreeze = beat.freezeMs > 0;
+    if (hasFreeze) this.host.hitStop(beat.freezeMs);
+    const hasFlash = beat.flash > 0;
+    if (hasFlash) renderer?.effects.addFlash(beat.flash);
     if (beat.callout) runHud.callout(beat.callout, now);
     if (beat.hordeWiped) runHud.say(HORDE_WIPED_BANNER, now);
     return beat.callout;
@@ -160,7 +162,8 @@ export class SnapshotHandler {
       this.stamps.give(inARow ? ['daily_bread', 'three_nights'] : ['daily_bread'], today);
     }
     const won = stats.outcome === 'victory';
-    if (won && state.daily === null) recordGameFinished();
+    const isWonNormalRun = won && state.daily === null;
+    if (isWonNormalRun) recordGameFinished();
     state.gameOverAtMs = now;
     input.setEnabled(false);
     audio.setScene(won ? 'victory' : 'gameover');

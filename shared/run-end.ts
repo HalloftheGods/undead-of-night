@@ -25,7 +25,8 @@ export function leaveTown(sim: SimState): void {
 
 /** In a home room a body on its feet inside its grace period is a refresh that may come back, so it still counts. A downed one has no one to lift it. */
 function anyoneCouldStillStand(sim: SimState): boolean {
-  if (standingPlayers(sim).length > 0) return true;
+  const hasStandingPlayers = standingPlayers(sim).length > 0;
+  if (hasStandingPlayers) return true;
   if (!sim.homeRun) return false;
   return [...sim.departed.values()].some((p) => p.home?.leftTick != null && p.status === 'alive');
 }
@@ -84,7 +85,8 @@ export function restartRun(sim: SimState, fromLevel?: number): void {
     p.keepsakes = [];
     p.keepsakeOffer = null;
     p.dryFireCooldown = 0;
-    if (level > FIRST_LEVEL) giveReturnKit(p);
+    const isPastFirstLevel = level > FIRST_LEVEL;
+    if (isPastFirstLevel) giveReturnKit(p);
     else giveStartingLoadout(p);
   }
   announceRunStart(sim);

@@ -131,7 +131,8 @@ export function allowedParams(name: string, raw: Readonly<Record<string, unknown
   const kept: Record<string, string | number> = {};
   for (const [param, rule] of Object.entries(rules)) {
     const value = allowedValue(rule, raw[param]);
-    if (value !== null) kept[param] = value;
+    const isKeptParam = value !== null;
+    if (isKeptParam) kept[param] = value;
   }
   return kept;
 }

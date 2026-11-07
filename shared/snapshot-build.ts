@@ -40,7 +40,8 @@ const exitView = (exit: ExitEntity | null): ExitEntity | null => exit && { ...ex
 /** Snow prints near someone, whole pixels and tenths: they are drawn, not simulated, on the client. */
 function tracksField(sim: SimState, inRange: (item: { x: number; y: number }) => boolean): Pick<SnapshotPacket, 'tracks'> {
   const shown = sim.tracks.filter(inRange);
-  if (shown.length === 0) return {};
+  const hasNoTracks = shown.length === 0;
+  if (hasNoTracks) return {};
   const tenth = (value: number): number => Math.round(value * 10) / 10 + 0;
   return {
     tracks: shown.map((print) => ({ x: Math.round(print.x), y: Math.round(print.y), angle: tenth(print.angle ?? 0), left: tenth(print.left) })),

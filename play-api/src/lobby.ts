@@ -137,7 +137,8 @@ export class Lobby extends DurableObject<Env> {
     if (!check.ok) return refusal(400, check.reason);
     const key = await this.keyFor(ip);
     const now = Date.now();
-    if (!this.limiter.take(key, 'lookup', now)) return refusal(429, 'rate limited');
+    const isLookupLimited = !this.limiter.take(key, 'lookup', now);
+    if (isLookupLimited) return refusal(429, 'rate limited');
     const found = this.listed(check.code);
     if (found) return reply(200, toCard(found));
     this.limiter.charge(key, 'lookup', now, LOOKUP_MISS_COST - 1);
@@ -149,10 +150,12 @@ export class Lobby extends DurableObject<Env> {
     if (!request) return refusal(400, 'bad match request');
     const key = await this.keyFor(ip);
     const now = Date.now();
-    if (!this.limiter.take(key, 'match', now)) return refusal(429, 'rate limited');
+    const isMatchLimited = !this.limiter.take(key, 'match', now);
+    if (isMatchLimited) return refusal(429, 'rate limited');
     const rooms = this.rows('SELECT * FROM listings WHERE visibility = ? AND hidden = 0', 'public').map((each) => each.listing);
     const decision = findOrCreate(rooms, request, now, continent);
-    if (decision.kind === 'join') {
+    const isJoiningRoom = decision.kind === 'join';
+    if (isJoiningRoom) {
       const found = this.listed(decision.room.code);
       const result: MatchResult = { kind: 'join', code: decision.room.code, card: toCard(found as Listed) };
       return reply(200, result);
@@ -186,11 +189,13 @@ export class Lobby extends DurableObject<Env> {
     const check = normalizeRoomCode(raw);
     if (!check.ok) return { ok: false, close: CLOSE.notFound };
     const key = await this.keyFor(ip);
-    if (!this.limiter.take(key, 'connect', Date.now())) {
+    const isConnectLimited = !this.limiter.take(key, 'connect', Date.now());
+    if (isConnectLimited) {
       logEvent('socket_refused', 'rate_limited');
       return { ok: false, close: CLOSE.rateLimited };
     }
-    if (!this.listed(check.code)) {
+    const isUnlistedRoom = !this.listed(check.code);
+    if (isUnlistedRoom) {
       logEvent('socket_refused', `${role}_no_room`);
       return { ok: false, close: CLOSE.notFound };
     }
@@ -243,7 +248,8 @@ export class Lobby extends DurableObject<Env> {
     this.sql.exec('DELETE FROM tombstones WHERE ended_at <= ?', now - TOMBSTONE_MS);
     this.limiter.sweep(now);
     const left = this.sql.exec<{ n: number }>('SELECT (SELECT COUNT(*) FROM listings) + (SELECT COUNT(*) FROM tombstones) AS n').one().n;
-    if (left > 0) await this.ctx.storage.setAlarm(now + SWEEP_EVERY_MS);
+    const hasRowsLeft = left > 0;
+    if (hasRowsLeft) await this.ctx.storage.setAlarm(now + SWEEP_EVERY_MS);
   }
 
   // ---- Inside ----
@@ -256,10 +262,13 @@ export class Lobby extends DurableObject<Env> {
     now: number,
   ): { ok: true; code: string; hostKey: string } | { ok: false; status: number; error: string } {
     const mine = this.liveByKey.get(key) ?? new Set<string>();
-    if (mine.size >= MAX_LIVE_ROOMS_PER_IP) return { ok: false, status: 429, error: 'too many open rooms' };
+    const hasTooManyRooms = mine.size >= MAX_LIVE_ROOMS_PER_IP;
+    if (hasTooManyRooms) return { ok: false, status: 429, error: 'too many open rooms' };
     const total = this.sql.exec<{ n: number }>('SELECT COUNT(*) AS n FROM listings').one().n;
-    if (total >= MAX_LIVE_ROOMS) return { ok: false, status: 503, error: 'busy' };
-    if (!this.limiter.take(key, 'create', now)) return { ok: false, status: 429, error: 'rate limited' };
+    const isLobbyFull = total >= MAX_LIVE_ROOMS;
+    if (isLobbyFull) return { ok: false, status: 503, error: 'busy' };
+    const isCreateLimited = !this.limiter.take(key, 'create', now);
+    if (isCreateLimited) return { ok: false, status: 429, error: 'rate limited' };
     const code = this.freeCode(now);
     this.sql.exec(
       `INSERT INTO listings (code, protocol, style, difficulty, visibility, device, continent, level, highest, seats,
@@ -309,7 +318,8 @@ export class Lobby extends DurableObject<Env> {
   private freeCode(now: number): string {
     for (;;) {
       const code = generateRoomCode();
-      if (!this.listed(code) && !this.tombstoned(code, now)) return code;
+      const isCodeFree = !this.listed(code) && !this.tombstoned(code, now);
+      if (isCodeFree) return code;
     }
   }
 
@@ -336,17 +346,20 @@ export class Lobby extends DurableObject<Env> {
   }
 
   private async ensureSweep(now: number): Promise<void> {
-    if ((await this.ctx.storage.getAlarm()) === null) await this.ctx.storage.setAlarm(now + SWEEP_EVERY_MS);
+    const hasNoSweep = (await this.ctx.storage.getAlarm()) === null;
+    if (hasNoSweep) await this.ctx.storage.setAlarm(now + SWEEP_EVERY_MS);
   }
 
   /** The caller's ipKey under today's salt. A new day drops yesterday's limits along with the salt. */
   private async keyFor(ip: string): Promise<string> {
     const day = saltDay(Date.now());
-    if (this.salt?.day !== day) {
-      this.salt = { day, key: await newSalt() };
-      this.limiter.clear();
-      this.liveByKey.clear();
-    }
-    return ipKey(this.salt.key, ip);
+    const current = this.salt;
+    const isSaltFresh = current?.day === day;
+    if (isSaltFresh) return ipKey(current.key, ip);
+    const salt = { day, key: await newSalt() };
+    this.salt = salt;
+    this.limiter.clear();
+    this.liveByKey.clear();
+    return ipKey(salt.key, ip);
   }
 }

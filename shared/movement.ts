@@ -20,7 +20,8 @@ export function stepMovement(
   radius: number,
 ): { x: number; y: number } {
   const length = Math.hypot(dirX, dirY);
-  if (!(length > 0) || !(speed > 0) || !(dt > 0)) return { x, y };
+  const isStill = !(length > 0) || !(speed > 0) || !(dt > 0);
+  if (isStill) return { x, y };
 
   const distance = speed * dt;
   const steps = Math.ceil(distance / MAX_SUBSTEP);
@@ -32,13 +33,17 @@ export function stepMovement(
   let py = y;
 
   for (let i = 0; i < steps; i++) {
-    if (stepX !== 0) {
+    const movesSideways = stepX !== 0;
+    if (movesSideways) {
       const nx = Math.min(maxX, Math.max(radius, px + stepX));
-      if (!circleHitsSolid(map, nx, py, radius)) px = nx;
+      const isSideClear = !circleHitsSolid(map, nx, py, radius);
+      if (isSideClear) px = nx;
     }
-    if (stepY !== 0) {
+    const movesVertically = stepY !== 0;
+    if (movesVertically) {
       const ny = Math.min(maxY, Math.max(radius, py + stepY));
-      if (!circleHitsSolid(map, px, ny, radius)) py = ny;
+      const isVerticalClear = !circleHitsSolid(map, px, ny, radius);
+      if (isVerticalClear) py = ny;
     }
   }
   return { x: px, y: py };

@@ -21,7 +21,7 @@ const CREAM: Cloth = { hi: bone[1], mid: bone[0] };
 const TRIM: Trim = [wood[0], wood[2], wood[3]];
 
 function roof(s: Shell): void {
-  const { c, left, wallTop } = s;
+  const { c, left } = s;
   const shade = asphalt[2];
   const box = parapetRoof(s, ROOF_TOP, { ...GREY_PARAPET, lit: wood[3], top: wood[2], face: wood[1], low: wood[0] });
   rollSeams(c, box, [36, 64, 90], shade);

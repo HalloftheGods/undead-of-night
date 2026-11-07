@@ -9,9 +9,10 @@ import type { Legend, Point } from '../kit.ts';
 import { RAMPS } from '../palette.ts';
 import type { Color } from '../palette.ts';
 import { STENCIL } from './lettering.ts';
+import { paintSky } from './logo-sky.ts';
 import type { Grid } from './shared.ts';
 
-const { blood, bone, denim, fire, ink, metal, wood } = RAMPS;
+const { blood, bone, denim, fire, ink, wood } = RAMPS;
 
 const W = 276;
 const H = 94;
@@ -224,13 +225,6 @@ const FLECKS: readonly Point[] = [
   [12, 53], [46, 54], [92, 53], [118, 52], [141, 54], [172, 53], [207, 51],
 ];
 
-const MOON: readonly [number, number, number] = [240, 56, 26];
-/** Dark seas on the moon, as ellipses. */
-const SEAS: readonly (readonly [number, number, number, number])[] = [[222, 50, 4, 3], [250, 41, 5, 3], [253, 62, 6, 7], [238, 72, 8, 4], [229, 62, 4, 3]];
-const STARS: readonly Point[] = [[3, 42], [50, 1], [92, 1], [270, 20], [272, 74], [3, 78], [234, 1], [150, 1], [64, 76]];
-const BAT: Grid = ['#.........#', '##..#.#..##', '###.###.###', '###########', '.##.###.##.', '.....#.....'];
-const BATS: readonly Point[] = [[234, 48]];
-
 const LOWER_STENCIL: Readonly<Record<string, Grid>> = {
   L: ['###......', '###......', '###......', '###......', '###......', '###......', '###......', '###......', '###.#####', '###.#####'],
   A: ['.###.###.', '####.####', '###...###', '###...###', '###...###', '#########', '#########', '###...###', '###...###', '###...###'],
@@ -242,15 +236,12 @@ const stencil = (letter: string): Grid => LOWER_STENCIL[letter] ?? STENCIL[lette
 
 // ---------------------------------------------------------------- painting
 
-/** The moon's lit edge fades through grey into the blue of its shadow. */
-function moonShade(shade: number, r: number): Color {
-  if (shade < r + 1) return metal[3];
-  return shade < r + 7 ? metal[2] : denim[2];
-}
-
 function stamped(mask: PixelCanvas, rows: Grid, x: number, y: number): void {
   rows.forEach((row, j) => {
-    for (let i = 0; i < row.length; i++) if (row[i] === '#') mask.erase(x + i, y + j);
+    for (let i = 0; i < row.length; i++) {
+      const isInked = row[i] === '#';
+      if (isInked) mask.erase(x + i, y + j);
+    }
   });
 }
 
@@ -270,7 +261,10 @@ function wordMask(): PixelCanvas {
     for (let i = 0; i + 1 < crack.length; i++) cuts.line(crack[i][0], crack[i][1], crack[i + 1][0], crack[i + 1][1], ink[0]);
   }
   for (let y = 0; y < H; y++) {
-    for (let x = 0; x < W; x++) if (cuts.get(x, y) !== null) mask.erase(x, y);
+    for (let x = 0; x < W; x++) {
+      const isCut = cuts.get(x, y) !== null;
+      if (isCut) mask.erase(x, y);
+    }
   }
   for (const [x, y] of HOLES) stamped(mask, HOLE, x, y);
   return mask;
@@ -283,7 +277,8 @@ function soakAt(word: Word, x: number): number {
   for (let i = 0; i + 1 < line.length; i++) {
     const [x0, y0] = line[i];
     const [x1, y1] = line[i + 1];
-    if (x >= x0 && x < x1) return Math.round(y0 + ((x - x0) / (x1 - x0)) * (y1 - y0));
+    const isOnSegment = x >= x0 && x < x1;
+    if (isOnSegment) return Math.round(y0 + ((x - x0) / (x1 - x0)) * (y1 - y0));
   }
   return line[line.length - 1][1];
 }
@@ -294,12 +289,15 @@ function faceColor(mask: PixelCanvas, x: number, y: number): Color {
   const soak = soakAt(word, x);
   const litEdge = open(-1, 0) || open(0, -1);
   const shadeEdge = open(1, 0) || open(0, 1);
-  if (y >= soak) {
+  const isSoaked = y >= soak;
+  if (isSoaked) {
     if (shadeEdge) return blood[1];
-    if (y === soak || litEdge) return blood[3];
+    const isBloodHighlight = y === soak || litEdge;
+    if (isBloodHighlight) return blood[3];
     return y > soak + 7 ? blood[1] : blood[2];
   }
-  if (y === soak - 1) return bone[1];
+  const isSoakLine = y === soak - 1;
+  if (isSoakLine) return bone[1];
   if (shadeEdge) return bone[1];
   if (litEdge) return bone[3];
   return y < word.y + 9 ? bone[3] : bone[2];
@@ -308,17 +306,27 @@ function faceColor(mask: PixelCanvas, x: number, y: number): Color {
 function paintFace(mask: PixelCanvas): PixelCanvas {
   const face = new PixelCanvas(W, H);
   for (let y = 0; y < H; y++) {
-    for (let x = 0; x < W; x++) if (mask.get(x, y) !== null) face.px(x, y, faceColor(mask, x, y));
+    for (let x = 0; x < W; x++) {
+      const isLetter = mask.get(x, y) !== null;
+      if (isLetter) face.px(x, y, faceColor(mask, x, y));
+    }
   }
   for (const [x, y, length] of SCUFFS) {
     for (let i = 0; i < length; i++) {
-      if (face.get(x + i, y) === bone[3]) face.px(x + i, y, bone[2]);
-      else if (face.get(x + i, y) === bone[2]) face.px(x + i, y, bone[1]);
+      // A scuff darkens bone one step: the brightest bone first, then the middle tone.
+      const isBrightBone = face.get(x + i, y) === bone[3];
+      if (isBrightBone) {
+        face.px(x + i, y, bone[2]);
+        continue;
+      }
+      const isMidBone = face.get(x + i, y) === bone[2];
+      if (isMidBone) face.px(x + i, y, bone[1]);
     }
   }
   for (const [x, y] of FLECKS) {
     for (const [dx, dy, color] of [[0, 0, blood[2]], [1, 0, blood[1]], [0, 1, blood[1]]]) {
-      if (mask.get(x + dx, y + dy) !== null) face.px(x + dx, y + dy, color);
+      const isOnLetter = mask.get(x + dx, y + dy) !== null;
+      if (isOnLetter) face.px(x + dx, y + dy, color);
     }
   }
   return face;
@@ -328,7 +336,10 @@ function extrusion(mask: PixelCanvas): PixelCanvas {
   const block = new PixelCanvas(W, H);
   for (let d = EXTRUDE; d >= 1; d--) {
     for (let y = 0; y < H; y++) {
-      for (let x = 0; x < W; x++) if (mask.get(x, y) !== null) block.px(x + d, y + d, d === 1 ? blood[0] : ink[1]);
+      for (let x = 0; x < W; x++) {
+        const isLetter = mask.get(x, y) !== null;
+        if (isLetter) block.px(x + d, y + d, d === 1 ? blood[0] : ink[1]);
+      }
     }
   }
   return block;
@@ -344,7 +355,8 @@ function openSky(letters: PixelCanvas): Uint8Array {
     const x = at % W;
     const y = (at - x) / W;
     for (const [nx, ny] of [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]]) {
-      if (!letters.inBounds(nx, ny) || open[ny * W + nx] || letters.get(nx, ny) !== null) continue;
+      const isBlocked = !letters.inBounds(nx, ny) || open[ny * W + nx] || letters.get(nx, ny) !== null;
+      if (isBlocked) continue;
       open[ny * W + nx] = 1;
       stack.push(ny * W + nx);
     }
@@ -362,54 +374,21 @@ function paintGlow(target: PixelCanvas, letters: PixelCanvas): void {
       let near = 99;
       for (let j = -reach; j <= reach; j++) {
         for (let i = -reach; i <= reach; i++) {
-          if (letters.get(x + i, y + j) !== null) near = Math.min(near, Math.abs(i) + Math.abs(j));
+          const isLetterNear = letters.get(x + i, y + j) !== null;
+          if (isLetterNear) near = Math.min(near, Math.abs(i) + Math.abs(j));
         }
       }
-      if (near <= 3 || (near <= reach && (x + y) % 2 === 0)) target.px(x, y, denim[0]);
+      const isInGlow = near <= 3 || (near <= reach && (x + y) % 2 === 0);
+      if (isInGlow) target.px(x, y, denim[0]);
     }
   }
-}
-
-function paintMoon(target: PixelCanvas): void {
-  const [cx, cy, r] = MOON;
-  for (let y = 0; y < H; y++) {
-    for (let x = 0; x < W; x++) {
-      const dx = x - cx;
-      const dy = y - cy;
-      const d = Math.hypot(dx, dy);
-      const even = (x + y) % 2 === 0;
-      if (d > r + 7) continue;
-      if (d > r + 2) {
-        if (even) target.px(x, y, denim[0]);
-      } else if (d > r) {
-        target.px(x, y, even ? denim[1] : denim[0]);
-      } else {
-        const shade = Math.hypot(dx + 7, dy + 7) + (even ? 2 : 0);
-        target.px(x, y, moonShade(shade, r));
-      }
-    }
-  }
-  for (const [x, y, rx, ry] of SEAS) {
-    for (let j = -ry; j <= ry; j++) {
-      for (let i = -rx; i <= rx; i++) {
-        if ((i * i) / (rx * rx) + (j * j) / (ry * ry) > 1) continue;
-        const under = target.get(x + i, y + j);
-        if (under === metal[3]) target.px(x + i, y + j, metal[2]);
-        else if (under === metal[2]) target.px(x + i, y + j, denim[2]);
-        else if (under === denim[2]) target.px(x + i, y + j, denim[1]);
-      }
-    }
-  }
-}
-
-function paintSky(target: PixelCanvas): void {
-  for (const [x, y] of STARS) target.px(x, y, metal[3]);
-  paintMoon(target);
-  for (const [x, y] of BATS) target.grid(x, y, BAT, { '#': ink[0] });
 }
 
 function bottomOf(mask: PixelCanvas, x: number, word: Word): number {
-  for (let y = word.y + word.h + 2; y >= word.y; y--) if (mask.get(x, y) !== null) return y;
+  for (let y = word.y + word.h + 2; y >= word.y; y--) {
+    const isLetter = mask.get(x, y) !== null;
+    if (isLetter) return y;
+  }
   return -1;
 }
 
@@ -417,14 +396,16 @@ function paintDrips(target: PixelCanvas, mask: PixelCanvas): void {
   for (const [x, row, shape, neck] of DRIPS) {
     const { head, neck: neckRow, bead } = RUNS[shape];
     const top = bottomOf(mask, x + 1, WORDS[row]);
-    if (top < 0) continue;
+    const hasNoLetterBelow = top < 0;
+    if (hasNoLetterBelow) continue;
     target.grid(x, top, [...head, ...Array.from({ length: neck }, () => neckRow), ...bead], BLOOD);
   }
   for (const [x, y] of LOOSE) target.grid(x, y, DROP, BLOOD);
 }
 
 function subtitleColor(row: number): Color {
-  if (row < 2) return fire[3];
+  const isTopRow = row < 2;
+  if (isTopRow) return fire[3];
   return row < 7 ? fire[2] : fire[1];
 }
 
@@ -452,12 +433,16 @@ function paintSubtitle(target: PixelCanvas): void {
   const layer = new PixelCanvas(W, H);
   let pen = left;
   for (const letter of SUBTITLE) {
-    if (letter === ' ') {
+    const isSpace = letter === ' ';
+    if (isSpace) {
       pen += SUB_SPACE;
       continue;
     }
     stencil(letter).forEach((row, j) => {
-      for (let i = 0; i < row.length; i++) if (row[i] === '#') layer.px(pen + i, SUB_Y + j, subtitleColor(j));
+      for (let i = 0; i < row.length; i++) {
+        const isInked = row[i] === '#';
+        if (isInked) layer.px(pen + i, SUB_Y + j, subtitleColor(j));
+      }
     });
     pen += SUB_PITCH;
   }

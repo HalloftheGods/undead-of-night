@@ -4,7 +4,8 @@ const LEAD_RATE = 5;
 
 /** Top-left of the view along one axis. A world smaller than the view stays centred. */
 export function clampCameraAxis(position: number, viewSize: number, worldSize: number): number {
-  if (worldSize <= viewSize) return Math.round((worldSize - viewSize) / 2);
+  const isWorldSmaller = worldSize <= viewSize;
+  if (isWorldSmaller) return Math.round((worldSize - viewSize) / 2);
   return Math.min(Math.max(position, 0), worldSize - viewSize);
 }
 

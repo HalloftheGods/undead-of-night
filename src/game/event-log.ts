@@ -88,7 +88,8 @@ export function eventLine(event: GameEvent, ctx: LogContext): LogLine | null {
 }
 
 function teamLine(id: EntityId, ctx: LogContext, said: string, saidOfYou: string, tone: LogTone): LogLine | null {
-  if (id === ctx.localId) return { text: saidOfYou, tone, kind: 'team' };
+  const isAboutYou = id === ctx.localId;
+  if (isAboutYou) return { text: saidOfYou, tone, kind: 'team' };
   const name = ctx.nameOf(id);
   return name ? { text: `${name.toUpperCase()} ${said}`, tone, kind: 'team' } : null;
 }

@@ -110,13 +110,15 @@ function spawnPoint(sim: SimState, anchors: readonly PlayerState[], radius: numb
     const x = anchor.x + Math.cos(angle) * distance;
     const y = anchor.y + Math.sin(angle) * distance;
     const onMap = x > radius && y > radius && x < map.width - radius && y < townHeight(map) - radius;
-    if (!onMap || isBlockedAt(map, x, y) || circleHitsSolid(map, x, y, radius + 1)) continue;
+    const isBadSpawnSpot = !onMap || isBlockedAt(map, x, y) || circleHitsSolid(map, x, y, radius + 1);
+    if (isBadSpawnSpot) continue;
     const outdoors = buildingAt(map, x, y) === null;
     const outOfSight = anchors.every((p) => {
       const ground = groundOf(map, p.x, p.y);
       return Math.hypot(ground.x - x, ground.y - y) >= SPAWN_MIN_DISTANCE;
     });
-    if (outdoors && outOfSight) return { x, y };
+    const isHiddenOutdoors = outdoors && outOfSight;
+    if (isHiddenOutdoors) return { x, y };
   }
   return null;
 }
@@ -136,7 +138,8 @@ function trickleSpawns(sim: SimState): void {
     zombie.speed *= HORDE_SPEED_SCALE;
     sim.spawnTimer += spawnInterval(sim.wave);
   }
-  if (sim.spawnTimer < 0) sim.spawnTimer = 0;
+  const isTimerNegative = sim.spawnTimer < 0;
+  if (isTimerNegative) sim.spawnTimer = 0;
 }
 
 function startHorde(sim: SimState): void {
@@ -198,17 +201,21 @@ export const hordesSurvivedHere = (sim: SimState): number => (sim.phase === 'wav
 
 /** Horde zombies alive or still to come. */
 export function hordeHostiles(sim: SimState): number {
-  if (sim.phase !== 'wave') return 0;
+  const isNotWave = sim.phase !== 'wave';
+  if (isNotWave) return 0;
   return sim.spawnQueue.length + sim.zombies.filter((z) => z.horde && z.health > 0).length;
 }
 
 export function updateWaves(sim: SimState): void {
-  if (sim.phase === 'intermission') {
+  const isIntermission = sim.phase === 'intermission';
+  if (isIntermission) {
     sim.intermissionLeft -= TICK_DT;
-    if (sim.intermissionLeft <= 1e-9) startHorde(sim);
+    const isIntermissionOver = sim.intermissionLeft <= 1e-9;
+    if (isIntermissionOver) startHorde(sim);
     return;
   }
-  if (sim.phase !== 'wave') return;
+  const isNotWave = sim.phase !== 'wave';
+  if (isNotWave) return;
   sim.hordeLeft -= TICK_DT;
   trickleSpawns(sim);
   // A boss keeps its horde going until it falls: the clock alone does not send it home.

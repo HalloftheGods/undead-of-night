@@ -32,7 +32,9 @@ const HOST_KEY_STORE = 'outbreak.hostKey';
 
 const browserClock: HostClock = {
   now: () => performance.now(),
-  after: (ms, fn) => setTimeout(fn, ms),
+  after: (ms, fn) => {
+    return setTimeout(fn, ms);
+  },
   cancel: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
 };
 
@@ -164,7 +166,7 @@ export class HostSession implements RoomSession {
     try {
       sessionStorage.setItem(HOST_KEY_STORE, JSON.stringify({ code: this.code, hostKey: this.hostKey }));
     } catch {
-      // Storage can be off; the key then lives only in memory.
+      // chemx-allow: best-effort storage can be off; the key then lives only in memory
     }
     this.openRoom();
     this.openSignal();
@@ -210,9 +212,12 @@ export class HostSession implements RoomSession {
     signal.onopen = () => signal.send(JSON.stringify({ type: 'auth', hostKey: this.hostKey } satisfies HostSignal));
     signal.onmessage = (event) => void this.fromRoom(event.data);
     signal.onclose = (event) => this.signalClosed(event.code);
-    if (this.keepalive === null) {
+    const hasNoKeepalive = this.keepalive === null;
+    if (hasNoKeepalive) {
       this.keepalive = setInterval(() => {
-        if (this.signal?.readyState === WebSocket.OPEN) this.signal.send('ping');
+        const live = this.signal;
+        const isSignalOpen = live?.readyState === WebSocket.OPEN;
+        if (isSignalOpen) live.send('ping');
       }, KEEPALIVE_MS);
     }
   }
@@ -226,7 +231,8 @@ export class HostSession implements RoomSession {
     if (refused) return this.finish('The online room closed. Your game can no longer take new survivors.');
     const now = Date.now();
     this.signalLostAt ??= now;
-    if (now - this.signalLostAt >= SIGNAL_GRACE_MS) return this.onUnlisted();
+    const isGraceOver = now - this.signalLostAt >= SIGNAL_GRACE_MS;
+    if (isGraceOver) return this.onUnlisted();
     this.retry = setTimeout(() => {
       this.retry = null;
       if (!this.finished) this.openSignal();
@@ -235,7 +241,8 @@ export class HostSession implements RoomSession {
 
   private async fromRoom(raw: unknown): Promise<void> {
     const signal = parseToHostSignal(raw);
-    if (!signal || this.finished) return;
+    const isIgnored = !signal || this.finished;
+    if (isIgnored) return;
     if (signal.type === 'ready') {
       this.ready = true;
       this.iceServers = signal.iceServers;
@@ -253,16 +260,20 @@ export class HostSession implements RoomSession {
       // A guest closes its signal socket as soon as its own end of the channel opens, which can be a moment
       // before this end does. So a half-open guest gets a little longer before it is given up on.
       const guest = this.guests.get(signal.peerId);
-      if (guest && guest.channel.readyState !== 'open' && guest.setupDeadline === null) {
+      const isHalfOpen = guest && guest.channel.readyState !== 'open' && guest.setupDeadline === null;
+      if (isHalfOpen) {
         guest.setupDeadline = setTimeout(() => {
-          if (this.guests.get(signal.peerId) === guest && guest.channel.readyState !== 'open') this.dropGuest(signal.peerId);
+          const isStillHalfOpen = this.guests.get(signal.peerId) === guest && guest.channel.readyState !== 'open';
+          if (isStillHalfOpen) this.dropGuest(signal.peerId);
         }, GUEST_SETUP_MS);
       }
     }
   }
 
   private tell(message: HostSignal): void {
-    if (this.signal?.readyState === WebSocket.OPEN) this.signal.send(JSON.stringify(message));
+    const live = this.signal;
+    const isSignalOpen = live?.readyState === WebSocket.OPEN;
+    if (isSignalOpen) live.send(JSON.stringify(message));
   }
 
   private report(report: RoomReport): void {
@@ -270,7 +281,8 @@ export class HostSession implements RoomSession {
       this.lastReport = report;
       return;
     }
-    if (sameReport(this.lastReport, report)) return;
+    const isReportUnchanged = sameReport(this.lastReport, report);
+    if (isReportUnchanged) return;
     this.lastReport = report;
     this.tell({ type: 'report', report });
   }
@@ -278,7 +290,8 @@ export class HostSession implements RoomSession {
   // ---- Guests ----
 
   private async acceptGuest(peerId: string, sdp: string): Promise<void> {
-    if (this.guests.has(peerId) || !this.room) return;
+    const isUnwelcome = this.guests.has(peerId) || !this.room;
+    if (isUnwelcome) return;
     const pc = this.rtc.peer(rtcConfig(this.iceServers, this.relayOnly));
     const channel = pc.createDataChannel('game', GAME_CHANNEL);
     const guest: Guest = { pc, channel, hosted: null, remoteSet: false, early: [], setupDeadline: null };
@@ -288,15 +301,19 @@ export class HostSession implements RoomSession {
       if (ice) this.tell({ type: 'ice', peerId, ice });
     };
     pc.onconnectionstatechange = () => {
-      if (pc.connectionState === 'failed' || pc.connectionState === 'closed') this.dropGuest(peerId);
+      const isLinkDown = pc.connectionState === 'failed' || pc.connectionState === 'closed';
+      if (isLinkDown) this.dropGuest(peerId);
     };
     channel.onopen = () => {
-      if (guest.setupDeadline !== null) clearTimeout(guest.setupDeadline);
+      const { setupDeadline } = guest;
+      const hasSetupDeadline = setupDeadline !== null;
+      if (hasSetupDeadline) clearTimeout(setupDeadline);
       guest.setupDeadline = null;
       guest.hosted = this.room?.admit(this.peerOf(guest), peerId) ?? null;
     };
     channel.onmessage = (event) => {
-      if (typeof event.data === 'string') guest.hosted?.receive(event.data, byteLength(event.data));
+      const isText = typeof event.data === 'string';
+      if (isText) guest.hosted?.receive(event.data, byteLength(event.data));
       else guest.hosted?.receive(null, (event.data as ArrayBuffer).byteLength ?? 0);
     };
     channel.onclose = () => this.dropGuest(peerId);
@@ -323,7 +340,7 @@ export class HostSession implements RoomSession {
     try {
       await guest.pc.addIceCandidate(ice);
     } catch {
-      // A late or duplicate candidate; the connection carries on without it.
+      // chemx-allow: best-effort a late or duplicate candidate; the connection carries on without it
     }
   }
 
@@ -335,17 +352,20 @@ export class HostSession implements RoomSession {
         return channel.readyState === 'open';
       },
       send: (text) => {
-        if (channel.readyState === 'open') channel.send(text);
+        const isChannelOpen = channel.readyState === 'open';
+        if (isChannelOpen) channel.send(text);
       },
       close: (code, reason) => {
-        if (channel.readyState === 'open') channel.send(JSON.stringify({ type: 'bye', code, reason }));
+        const isChannelOpen = channel.readyState === 'open';
+        if (isChannelOpen) channel.send(JSON.stringify({ type: 'bye', code, reason }));
         channel.close();
       },
       drop: () => pc.close(),
       canTakeFrame: (bytes) => channel.bufferedAmount + bytes <= MAX_BUFFERED_BYTES,
       // SCTP checks the link itself; a connected channel counts as an answer.
       probe: () => {
-        if (pc.connectionState === 'connected') guest.hosted?.heard();
+        const isConnected = pc.connectionState === 'connected';
+        if (isConnected) guest.hosted?.heard();
       },
     };
   }
@@ -354,7 +374,9 @@ export class HostSession implements RoomSession {
     const guest = this.guests.get(peerId);
     if (!guest) return;
     this.guests.delete(peerId);
-    if (guest.setupDeadline !== null) clearTimeout(guest.setupDeadline);
+    const { setupDeadline } = guest;
+    const hasSetupDeadline = setupDeadline !== null;
+    if (hasSetupDeadline) clearTimeout(setupDeadline);
     guest.channel.onclose = null;
     guest.pc.onconnectionstatechange = null;
     guest.hosted?.closed();
@@ -374,12 +396,16 @@ export class HostSession implements RoomSession {
   /** The room ends: guests hear 4011 over their channels, the Room DO hears `end` and tombstones the code. */
   private teardown(): void {
     globalThis.removeEventListener?.('beforeunload', this.warnOnLeave);
-    if (this.keepalive !== null) clearInterval(this.keepalive);
-    if (this.retry !== null) clearTimeout(this.retry);
+    const { keepalive, retry } = this;
+    const hasKeepalive = keepalive !== null;
+    if (hasKeepalive) clearInterval(keepalive);
+    const hasRetry = retry !== null;
+    if (hasRetry) clearTimeout(retry);
     this.keepalive = null;
     this.retry = null;
     for (const [peerId, guest] of [...this.guests]) {
-      if (guest.channel.readyState === 'open') guest.channel.send(JSON.stringify({ type: 'bye', code: CLOSE.hostLeft, reason: 'host left' }));
+      const isChannelOpen = guest.channel.readyState === 'open';
+      if (isChannelOpen) guest.channel.send(JSON.stringify({ type: 'bye', code: CLOSE.hostLeft, reason: 'host left' }));
       this.dropGuest(peerId);
     }
     this.room?.shutdown();
@@ -392,13 +418,14 @@ export class HostSession implements RoomSession {
     if (signal) {
       signal.onclose = null;
       signal.onmessage = null;
-      if (signal.readyState === WebSocket.OPEN) signal.send(JSON.stringify({ type: 'end' } satisfies HostSignal));
+      const isSignalOpen = signal.readyState === WebSocket.OPEN;
+      if (isSignalOpen) signal.send(JSON.stringify({ type: 'end' } satisfies HostSignal));
       signal.close(1000, 'host left');
     }
     try {
       sessionStorage.removeItem(HOST_KEY_STORE);
     } catch {
-      // Nothing was stored.
+      // chemx-allow: best-effort storage can be off, and then nothing was stored
     }
   }
 }

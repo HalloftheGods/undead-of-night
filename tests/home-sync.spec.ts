@@ -1,13 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BUNKER_SEED } from '../shared/home-protocol.ts';
-import type { HomeAction, HomeView, TripReceipt } from '../shared/home-protocol.ts';
 import { MEDKIT_MAX, TICK_RATE } from '../shared/constants.ts';
 import { emptyLoadout, loadoutOfEntity } from '../shared/loadout.ts';
 import type { PlayerEntity, SnapshotPacket } from '../shared/protocol.ts';
 import { createBrowserHomeStore } from '../src/game/home/browser-home-store.ts';
 import { emptySave } from '../src/game/home/home-store.ts';
-import type { HomeSave, HomeStore, OpenTrip, SaveResult } from '../src/game/home/home-store.ts';
-import { HomeSync, joinHomeFor, OPEN_TRIP_WAIT_MS } from '../src/game/home/home-sync.ts';
+import type { SaveResult } from '../src/game/home/home-store.ts';
+import { joinHomeFor, OPEN_TRIP_WAIT_MS } from '../src/game/home/home-sync.ts';
 import { SaveQueue } from '../src/game/home/save-queue.ts';
 
 import { ME, TOWN_SEED, entity, frame, atVan, inTown, receipt, trip, sharedStore, syncOver, opened, see, readyCalls, equipCalls, lockerGuns, holdingCarbine } from './helpers/home-sync-frames.ts';

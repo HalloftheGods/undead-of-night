@@ -74,7 +74,8 @@ const isCount = (value: unknown, max: number): value is number =>
 
 /** JSON.parse that refuses oversize text and anything that is not an object. */
 export function parseSignalText(text: unknown): Raw | null {
-  if (typeof text !== 'string' || new TextEncoder().encode(text).length > SIGNAL_MAX_BYTES) return null;
+  const isUnreadableText = typeof text !== 'string' || new TextEncoder().encode(text).length > SIGNAL_MAX_BYTES;
+  if (isUnreadableText) return null;
   try {
     const value: unknown = JSON.parse(text);
     return isRaw(value) ? value : null;
@@ -84,12 +85,14 @@ export function parseSignalText(text: unknown): Raw | null {
 }
 
 export function parseIce(value: unknown): IceCandidate | null {
-  if (!isRaw(value) || !isText(value.candidate, CANDIDATE_MAX)) return null;
-  const { sdpMid, sdpMLineIndex } = value;
+  if (!isRaw(value)) return null;
+  const { candidate, sdpMid, sdpMLineIndex } = value;
+  if (!isText(candidate, CANDIDATE_MAX)) return null;
   const midOk = sdpMid === undefined || sdpMid === null || isText(sdpMid, 64);
   const indexOk = sdpMLineIndex === undefined || sdpMLineIndex === null || isCount(sdpMLineIndex, 255);
-  if (!midOk || !indexOk) return null;
-  return { candidate: value.candidate, sdpMid: sdpMid as string | null | undefined, sdpMLineIndex: sdpMLineIndex as number | null | undefined };
+  const isBadPlacement = !midOk || !indexOk;
+  if (isBadPlacement) return null;
+  return { candidate, sdpMid: sdpMid as string | null | undefined, sdpMLineIndex: sdpMLineIndex as number | null | undefined };
 }
 
 export function parseReport(value: unknown): RoomReport | null {
@@ -97,7 +100,8 @@ export function parseReport(value: unknown): RoomReport | null {
   const { seats, taken, level, highest, phase, locked } = value;
   const phaseOk = phase === 'muster' || phase === 'playing' || phase === 'over';
   const shapeOk = isCount(seats, 4) && isCount(taken, ALL_SURVIVORS_TAKEN) && isCount(level, 99) && isCount(highest, 99);
-  if (!phaseOk || !shapeOk || typeof locked !== 'boolean') return null;
+  const isBadRoomInfo = !phaseOk || !shapeOk || typeof locked !== 'boolean';
+  if (isBadRoomInfo) return null;
   return { seats, taken, level, highest, phase, locked };
 }
 
@@ -117,9 +121,11 @@ export function parseHostSignal(text: unknown): HostSignal | null {
       const report = parseReport(m.report);
       return report ? { type: 'report', report } : null;
     }
-    case 'end':
-      if (m.reason === undefined) return { type: 'end' };
+    case 'end': {
+      const hasNoReason = m.reason === undefined;
+      if (hasNoReason) return { type: 'end' };
       return isText(m.reason, END_REASON_MAX) ? { type: 'end', reason: m.reason } : null;
+    }
     default:
       return null;
   }
@@ -128,8 +134,10 @@ export function parseHostSignal(text: unknown): HostSignal | null {
 export function parseGuestSignal(text: unknown): GuestSignal | null {
   const m = parseSignalText(text);
   if (!m) return null;
-  if (m.type === 'offer') return isText(m.sdp, SDP_MAX) ? { type: 'offer', sdp: m.sdp } : null;
-  if (m.type === 'ice') {
+  const isOffer = m.type === 'offer';
+  if (isOffer) return isText(m.sdp, SDP_MAX) ? { type: 'offer', sdp: m.sdp } : null;
+  const isIce = m.type === 'ice';
+  if (isIce) {
     const ice = parseIce(m.ice);
     return ice ? { type: 'ice', ice } : null;
   }
@@ -145,9 +153,12 @@ function parseIceServer(value: unknown): IceServer | null {
   if (!isRaw(value)) return null;
   const { urls, username, credential } = value;
   const listOk = Array.isArray(urls) && urls.length > 0 && urls.length <= ICE_URLS_MAX && urls.every((url) => isText(url, ICE_URL_MAX));
-  if (!isText(urls, ICE_URL_MAX) && !listOk) return null;
-  if (username !== undefined && !isText(username, ICE_SECRET_MAX)) return null;
-  if (credential !== undefined && !isText(credential, ICE_SECRET_MAX)) return null;
+  const isBadUrls = !isText(urls, ICE_URL_MAX) && !listOk;
+  if (isBadUrls) return null;
+  const isBadUsername = username !== undefined && !isText(username, ICE_SECRET_MAX);
+  if (isBadUsername) return null;
+  const isBadCredential = credential !== undefined && !isText(credential, ICE_SECRET_MAX);
+  if (isBadCredential) return null;
   return {
     urls: urls as string | string[],
     ...(username === undefined ? {} : { username: username as string }),
@@ -157,7 +168,8 @@ function parseIceServer(value: unknown): IceServer | null {
 
 /** A non-empty list of at most ICE_SERVERS_MAX good entries, or null. */
 export function parseIceServers(value: unknown): IceServer[] | null {
-  if (!Array.isArray(value) || value.length === 0 || value.length > ICE_SERVERS_MAX) return null;
+  const isBadServerList = !Array.isArray(value) || value.length === 0 || value.length > ICE_SERVERS_MAX;
+  if (isBadServerList) return null;
   const servers = value.map(parseIceServer);
   return servers.every((server): server is IceServer => server !== null) ? servers : null;
 }
@@ -165,27 +177,35 @@ export function parseIceServers(value: unknown): IceServer[] | null {
 /** The DO's side: what the host or guest receives. */
 export function parseToHostSignal(text: unknown): ToHostSignal | null {
   const m = parseSignalText(text);
-  if (m?.type === 'ready') {
+  const isReadySignal = m?.type === 'ready';
+  if (isReadySignal) {
     const iceServers = parseIceServers(m.iceServers);
     return iceServers && typeof m.relayOnly === 'boolean' ? { type: 'ready', iceServers, relayOnly: m.relayOnly } : null;
   }
-  if (!m || !isText(m.peerId, PEER_ID_MAX)) return null;
-  if (m.type === 'peer-left') return { type: 'peer-left', peerId: m.peerId };
-  if (m.type === 'offer') return isText(m.sdp, SDP_MAX) ? { type: 'offer', peerId: m.peerId, sdp: m.sdp } : null;
+  if (!m) return null;
+  const { peerId } = m;
+  if (!isText(peerId, PEER_ID_MAX)) return null;
+  const isPeerLeft = m.type === 'peer-left';
+  if (isPeerLeft) return { type: 'peer-left', peerId };
+  const isOffer = m.type === 'offer';
+  if (isOffer) return isText(m.sdp, SDP_MAX) ? { type: 'offer', peerId, sdp: m.sdp } : null;
   const ice = m.type === 'ice' ? parseIce(m.ice) : null;
-  return ice ? { type: 'ice', peerId: m.peerId, ice } : null;
+  return ice ? { type: 'ice', peerId, ice } : null;
 }
 
 export function parseToGuestSignal(text: unknown): ToGuestSignal | null {
   const m = parseSignalText(text);
   if (!m) return null;
-  if (m.type === 'peer-left') return { type: 'peer-left' };
-  if (m.type === 'admitted') {
+  const isPeerLeft = m.type === 'peer-left';
+  if (isPeerLeft) return { type: 'peer-left' };
+  const isAdmitted = m.type === 'admitted';
+  if (isAdmitted) {
     const iceServers = parseIceServers(m.iceServers);
     const shapeOk = isText(m.peerId, PEER_ID_MAX) && iceServers && typeof m.relayOnly === 'boolean';
     return shapeOk ? { type: 'admitted', peerId: m.peerId as string, iceServers, relayOnly: m.relayOnly as boolean } : null;
   }
-  if (m.type === 'answer') return isText(m.sdp, SDP_MAX) ? { type: 'answer', sdp: m.sdp } : null;
+  const isAnswer = m.type === 'answer';
+  if (isAnswer) return isText(m.sdp, SDP_MAX) ? { type: 'answer', sdp: m.sdp } : null;
   const ice = m.type === 'ice' ? parseIce(m.ice) : null;
   return ice ? { type: 'ice', ice } : null;
 }

@@ -30,13 +30,15 @@ export function stashReceipt(run: HomeRun, p: PlayerState): void {
   run.unclaimed.delete(p.token);
   run.unclaimed.set(p.token, receipt);
   const [oldest] = run.unclaimed.keys();
-  if (run.unclaimed.size > UNCLAIMED_LIMIT) run.unclaimed.delete(oldest);
+  const isOverUnclaimedLimit = run.unclaimed.size > UNCLAIMED_LIMIT;
+  if (isOverUnclaimedLimit) run.unclaimed.delete(oldest);
 }
 
 function claimStashedReceipt(sim: SimState, p: PlayerState): void {
   const { home } = p;
   const kept = p.token === null ? undefined : sim.homeRun?.unclaimed.get(p.token);
-  if (!home || !kept || home.receipt) return;
+  const hasNoReceiptToRestore = !home || !kept || home.receipt;
+  if (hasNoReceiptToRestore) return;
   home.receipt = kept;
   sim.homeRun?.unclaimed.delete(p.token as string);
 }
@@ -56,7 +58,8 @@ export function arriveInRoom(sim: SimState, p: PlayerState): void {
 function startFreshRoomClock(sim: SimState): void {
   const firstIntoFreshRoom = sim.tick === 0 && sim.players.length === 1 && sim.homeRun?.tripLevel === null;
   const clockAlreadyRunning = sim.overrun !== null;
-  if (firstIntoFreshRoom && !clockAlreadyRunning) startOverrunClock(sim);
+  const shouldStartClock = firstIntoFreshRoom && !clockAlreadyRunning;
+  if (shouldStartClock) startOverrunClock(sim);
 }
 
 /**

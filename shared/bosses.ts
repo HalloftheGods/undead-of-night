@@ -95,7 +95,8 @@ function bossRng(sim: SimState): Rng {
 
 function bossSpot(sim: SimState, rng: Rng, radius: number): { x: number; y: number } | null {
   const anchors = alivePlayers(sim);
-  if (anchors.length === 0) return null;
+  const hasNoAnchors = anchors.length === 0;
+  if (hasNoAnchors) return null;
   for (let attempt = 0; attempt < 60; attempt += 1) {
     const picked = pick(rng, anchors);
     const anchor = groundOf(sim.map, picked.x, picked.y);
@@ -141,7 +142,8 @@ function brood(sim: SimState, type: ZombieType, x: number, y: number, count: num
     const angle = (i / count) * Math.PI * 2;
     const bx = x + Math.cos(angle) * spread;
     const by = y + Math.sin(angle) * spread;
-    if (circleHitsSolid(sim.map, bx, by, 8)) continue;
+    const isSpotBlocked = circleHitsSolid(sim.map, bx, by, 8);
+    if (isSpotBlocked) continue;
     spawnZombie(sim, type, bx, by);
     const child = sim.zombies[sim.zombies.length - 1];
     child.horde = true;
@@ -155,12 +157,14 @@ function nearestSurvivor(sim: SimState, z: ZombieState): number {
 }
 
 function useTrick(sim: SimState, z: ZombieState, boss: BossDef): boolean {
-  if (boss.id === 'howler') {
+  const isHowler = boss.id === 'howler';
+  if (isHowler) {
     makeNoise(sim, z.x, z.y, HOWL_RADIUS);
     brood(sim, 'runner', z.x, z.y, HOWL_RUNNERS, z.radius + 14);
     return true;
   }
-  if (boss.id === 'mother') {
+  const isMother = boss.id === 'mother';
+  if (isMother) {
     brood(sim, 'walker', z.x, z.y, BROOD_SIZE, z.radius + 12);
     return true;
   }
@@ -182,12 +186,15 @@ export function updateBosses(sim: SimState): void {
     const fallen = z.health <= 0;
     if (fallen) continue;
     const boss = BOSSES[state.id];
-    if (state.chargeLeft > 0) {
+    const isCharging = state.chargeLeft > 0;
+    if (isCharging) {
       state.chargeLeft -= TICK_DT;
-      if (state.chargeLeft <= 1e-9) z.speed = state.baseSpeed;
+      const isChargeSpent = state.chargeLeft <= 1e-9;
+      if (isChargeSpent) z.speed = state.baseSpeed;
     }
     state.trickLeft -= TICK_DT;
-    if (state.trickLeft > 1e-9) continue;
+    const isTrickCoolingDown = state.trickLeft > 1e-9;
+    if (isTrickCoolingDown) continue;
     const used = useTrick(sim, z, boss);
     // A Butcher with nobody close tries again shortly rather than waiting out a whole turn.
     state.trickLeft = used ? boss.everySec : 0.5;

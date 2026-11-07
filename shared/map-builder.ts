@@ -67,7 +67,8 @@ export class MapBuilder {
         const distance = Math.hypot((col + 0.5) * TILE_SIZE - x, (row + 0.5) * TILE_SIZE - y);
         const raggedRadius = radius * randRange(this.rng, 0.7, 1.1);
         const inside = col >= 0 && row >= 0 && col < this.cols && row < this.rows;
-        if (inside && distance < raggedRadius && settles.some((ground) => this.tileIs(col, row, ground))) this.setTile(col, row, kind);
+        const settlesHere = inside && distance < raggedRadius && settles.some((ground) => this.tileIs(col, row, ground));
+        if (settlesHere) this.setTile(col, row, kind);
       }
     }
   }
@@ -78,12 +79,15 @@ export class MapBuilder {
     const box: Box = { x0: x - def.w / 2, y0: y - def.h, x1: x + def.w / 2, y1: y };
     const onMap = box.x0 >= 0 && box.y0 >= 0 && box.x1 <= this.cols * TILE_SIZE && box.y1 <= this.rows * TILE_SIZE;
     if (!onMap) return false;
-    if (def.h === 0) {
-      if (this.insideBuilding(x, y)) return false;
+    const isFlatProp = def.h === 0;
+    if (isFlatProp) {
+      const isIndoors = this.insideBuilding(x, y);
+      if (isIndoors) return false;
       this.props.push({ kind, x, y });
       return true;
     }
-    if (this.crowdsSpawn(box) || this.crowdsSolid(box, gap) || this.crowdsFence(box)) return false;
+    const isCrowded = this.crowdsSpawn(box) || this.crowdsSolid(box, gap) || this.crowdsFence(box);
+    if (isCrowded) return false;
     this.solids.push(box);
     this.props.push({ kind, x, y });
     return true;
@@ -147,7 +151,8 @@ export class MapBuilder {
       const x = Math.round(randRange(this.rng, area.x0 + w / 2, area.x1 - w / 2));
       const y = Math.round(randRange(this.rng, area.y0 + h, area.y1));
       const allowed = !onlyOn || this.tileIs(Math.floor(x / TILE_SIZE), Math.floor((y - 1) / TILE_SIZE), onlyOn);
-      if (allowed && this.place(kind, x, y, gap)) placed++;
+      const wasPlaced = allowed && this.place(kind, x, y, gap);
+      if (wasPlaced) placed++;
     }
   }
 

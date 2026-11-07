@@ -30,7 +30,8 @@ export function silverToCoins(silver: number): { gold: number; silver: number } 
 /** Money as a player reads it: "2 gold 80 silver", "3 gold" or "80 silver". */
 export function coinText(silver: number): string {
   const coins = silverToCoins(silver);
-  if (coins.gold === 0) return `${coins.silver} silver`;
+  const hasNoGold = coins.gold === 0;
+  if (hasNoGold) return `${coins.silver} silver`;
   return coins.silver === 0 ? `${coins.gold} gold` : `${coins.gold} gold ${coins.silver} silver`;
 }
 
@@ -105,8 +106,10 @@ export function placeTownTreasure(sim: SimState): void {
 export function takeTreasure(p: PlayerState, item: PickupState): boolean {
   const { home } = p;
   if (!home) return false;
-  if (item.type === 'jewel_small') home.jewels.small += 1;
-  if (item.type === 'jewel_large') home.jewels.large += 1;
+  const isSmallJewel = item.type === 'jewel_small';
+  if (isSmallJewel) home.jewels.small += 1;
+  const isLargeJewel = item.type === 'jewel_large';
+  if (isLargeJewel) home.jewels.large += 1;
   // Zero rounds is how the pickup loop knows it is spent.
   item.rounds = 0;
   return true;
@@ -118,7 +121,8 @@ export function takeTreasure(p: PlayerState, item: PickupState): boolean {
  */
 export function dropCarried(sim: SimState, p: PlayerState): void {
   const { home } = p;
-  if (!sim.homeRun || !home) return;
+  const hasNothingCarried = !sim.homeRun || !home;
+  if (hasNothingCarried) return;
   const { silver, jewels } = home;
   for (let n = 0; n < jewels.small; n++) spawnTreasure(sim, 'jewel_small', p.x, p.y, SMALL_JEWEL_SILVER);
   for (let n = 0; n < jewels.large; n++) spawnTreasure(sim, 'jewel_large', p.x, p.y, LARGE_JEWEL_SILVER);

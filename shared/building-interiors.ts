@@ -153,7 +153,8 @@ function spreadOut(run: Piece[], slack: number): void {
   run.forEach((piece, index) => {
     const opensAisle = aisle && index - 1 === widest;
     const evenShare = aisle ? 0 : free / gaps.length;
-    if (index > 0) x += opensAisle ? free : evenShare;
+    const hasPieceBefore = index > 0;
+    if (hasPieceBefore) x += opensAisle ? free : evenShare;
     piece.left = x;
     x += piece.width;
   });

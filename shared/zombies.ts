@@ -56,7 +56,8 @@ function refreshFields(sim: SimState): void {
     sim.flow.recompute(alive.length > 0 ? alive : standingPlayers(sim), FLOW_REACH_TILES);
   }
   // At once, not on a schedule: whoever heard this must not walk an older noise's field.
-  if (sim.noises.length > 0) {
+  const hasNoises = sim.noises.length > 0;
+  if (hasNoises) {
     sim.noiseFlow.recompute(sim.noises, NOISE_REACH_TILES);
     sim.noises = [];
   }
@@ -82,7 +83,8 @@ function nearest(sim: SimState, z: ZombieState, players: readonly PlayerState[])
   let bestDistance = Infinity;
   for (const p of players) {
     const distance = planDistance(sim, z, p);
-    if (distance < bestDistance) {
+    const isNearer = distance < bestDistance;
+    if (isNearer) {
       bestDistance = distance;
       best = p;
     }
@@ -100,7 +102,8 @@ const canSee = (sim: SimState, z: ZombieState, p: PlayerState): boolean =>
 /** Rays down the middle and both edges of the body: anything thinner than that could slip between. */
 function hasClearLane(sim: SimState, z: ZombieState, p: PlayerState): boolean {
   const distance = Math.hypot(p.x - z.x, p.y - z.y);
-  if (distance === 0) return true;
+  const isOnTop = distance === 0;
+  if (isOnTop) return true;
   const sideX = (-(p.y - z.y) / distance) * z.radius;
   const sideY = ((p.x - z.x) / distance) * z.radius;
   return [-1, 0, 1].every(
@@ -110,7 +113,8 @@ function hasClearLane(sim: SimState, z: ZombieState, p: PlayerState): boolean {
 
 function applyKnockback(sim: SimState, z: ZombieState): void {
   const speed = Math.hypot(z.knockX, z.knockY);
-  if (speed < MIN_KNOCK_SPEED) {
+  const isKnockSpent = speed < MIN_KNOCK_SPEED;
+  if (isKnockSpent) {
     z.knockX = 0;
     z.knockY = 0;
     return;
@@ -129,19 +133,24 @@ function separation(sim: SimState, z: ZombieState): { x: number; y: number } {
   let x = 0;
   let y = 0;
   for (const other of crowd) {
-    if (other === z || other.health <= 0) continue;
+    const isSelfOrDead = other === z || other.health <= 0;
+    if (isSelfOrDead) continue;
     const dx = z.x - other.x;
     const dy = z.y - other.y;
     const distance = Math.hypot(dx, dy);
     const comfort = z.radius + other.radius + SEPARATION_GAP;
-    if (distance === 0) {
+    const isStacked = distance === 0;
+    if (isStacked) {
       const angle = sim.rng() * Math.PI * 2;
       x += Math.cos(angle);
       y += Math.sin(angle);
-    } else if (distance < comfort) {
-      const strength = 1 - distance / comfort;
-      x += (dx / distance) * strength;
-      y += (dy / distance) * strength;
+    } else {
+      const isTooClose = distance < comfort;
+      if (isTooClose) {
+        const strength = 1 - distance / comfort;
+        x += (dx / distance) * strength;
+        y += (dy / distance) * strength;
+      }
     }
   }
   return { x, y };
@@ -150,7 +159,8 @@ function separation(sim: SimState, z: ZombieState): { x: number; y: number } {
 /** One tick of purposeful walking along a heading, in step with the crowd, at a share of full speed. */
 function stride(sim: SimState, z: ZombieState, dirX: number, dirY: number, pace = 1): void {
   const length = Math.hypot(dirX, dirY);
-  if (length === 0) return;
+  const isStill = length === 0;
+  if (isStill) return;
   z.angle = Math.atan2(dirY, dirX);
   const push = separation(sim, z);
   const headingX = dirX / length;
@@ -197,7 +207,8 @@ function walkToward(sim: SimState, z: ZombieState, prey: PlayerState): void {
 /** A dead-on heading gives per-axis sliding nothing to slide along, so step off to one side. */
 function startSidestepIfBlocked(sim: SimState, z: ZombieState, progress: number): void {
   const blocked = progress < zombieSpeed(z) * TICK_DT * BLOCKED_PROGRESS;
-  if (!blocked || z.sidestepLeft > 0) return;
+  const needsNoSidestep = !blocked || z.sidestepLeft > 0;
+  if (needsNoSidestep) return;
   z.sidestepLeft = SIDESTEP_SEC;
   z.sidestepSide = sim.rng() < 0.5 ? -1 : 1;
 }
@@ -212,7 +223,8 @@ function startSwing(sim: SimState, z: ZombieState): void {
 function landSwing(sim: SimState, z: ZombieState, prey: readonly PlayerState[]): void {
   const target = nearest(sim, z, prey);
   const inReach = target !== null && bodyGap(z, target) <= z.reach + SWING_LEEWAY;
-  if (inReach && canSee(sim, z, target)) hurtPlayer(sim, target, z.damage);
+  const landsSwing = inReach && canSee(sim, z, target);
+  if (landsSwing) hurtPlayer(sim, target, z.damage);
   z.recoveryLeft = ZOMBIE_RECOVERY_SEC;
   z.cooldownLeft = z.cooldownSec;
 }
@@ -228,7 +240,8 @@ function chooseWander(sim: SimState, z: ZombieState): void {
 /** Aimless shambling. A zombie that settled indoors stays indoors until something draws it out. */
 function wander(sim: SimState, z: ZombieState): void {
   z.wanderLeft -= TICK_DT;
-  if (z.wanderLeft <= 0) chooseWander(sim, z);
+  const isWanderDone = z.wanderLeft <= 0;
+  if (isWanderDone) chooseWander(sim, z);
   const standingStill = z.wanderX === 0 && z.wanderY === 0;
   if (standingStill) return;
 
@@ -288,13 +301,14 @@ function hunt(sim: SimState, z: ZombieState, prey: readonly PlayerState[], fallb
   if (!target) return;
   const gap = bodyGap(z, target);
   const swingReady = target.status === 'alive' && gap <= z.reach && z.cooldownLeft === 0;
-  if (swingReady && canSee(sim, z, target)) {
+  const canSwing = swingReady && canSee(sim, z, target);
+  if (canSwing) {
     z.angle = Math.atan2(target.y - z.y, target.x - z.x);
     startSwing(sim, z);
-  } else if (gap > 1) {
-    walkToward(sim, z, target);
   } else {
-    z.angle = Math.atan2(target.y - z.y, target.x - z.x);
+    const isOutOfReach = gap > 1;
+    if (isOutOfReach) walkToward(sim, z, target);
+    else z.angle = Math.atan2(target.y - z.y, target.x - z.x);
   }
 }
 
@@ -303,17 +317,21 @@ function updateZombie(sim: SimState, z: ZombieState, prey: readonly PlayerState[
   z.cooldownLeft = Math.max(0, z.cooldownLeft - TICK_DT);
   z.staggerImmuneLeft = Math.max(0, z.staggerImmuneLeft - TICK_DT);
 
-  if (z.windupLeft > 0) {
+  const isWindingUp = z.windupLeft > 0;
+  if (isWindingUp) {
     z.windupLeft -= TICK_DT;
-    if (z.windupLeft <= 1e-9) {
+    const isWindupDone = z.windupLeft <= 1e-9;
+    if (isWindupDone) {
       z.windupLeft = 0;
       landSwing(sim, z, prey);
     }
     return;
   }
-  if (z.recoveryLeft > 0) {
+  const isRecovering = z.recoveryLeft > 0;
+  if (isRecovering) {
     z.recoveryLeft -= TICK_DT;
-    if (z.recoveryLeft <= 1e-9) {
+    const isRecoveryDone = z.recoveryLeft <= 1e-9;
+    if (isRecoveryDone) {
       z.recoveryLeft = 0;
       z.attacking = false;
     }
@@ -338,9 +356,14 @@ export function updateZombies(sim: SimState): void {
   const prey = alivePlayers(sim);
   const fallback = standingPlayers(sim);
   for (const z of sim.zombies) {
-    if (z.health <= 0) continue;
-    if (!isAsleep(sim, z, fallback)) updateZombie(sim, z, prey, fallback);
-    else if (z.mode !== 'wander') backToRoaming(sim, z);
+    const isDead = z.health <= 0;
+    if (isDead) continue;
+    if (!isAsleep(sim, z, fallback)) {
+      updateZombie(sim, z, prey, fallback);
+    } else {
+      const isRoused = z.mode !== 'wander';
+      if (isRoused) backToRoaming(sim, z);
+    }
   }
 }
 

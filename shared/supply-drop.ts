@@ -103,17 +103,22 @@ export function updateSupplyDrop(sim: SimState): void {
   const drop = sim.drop;
   if (!drop) return;
   drop.left -= TICK_DT;
-  if (drop.left > 1e-9) return;
-  if (drop.phase === 'waiting') {
+  const isStillTiming = drop.left > 1e-9;
+  if (isStillTiming) return;
+  const isWaiting = drop.phase === 'waiting';
+  if (isWaiting) {
     drop.phase = 'falling';
     drop.left = DROP_FALL_SEC;
     sim.flares.push({ x: drop.x, y: drop.y, left: FLARE_SEC, noiseLeft: 0 });
     emit(sim, { type: 'drop_called', x: drop.x, y: drop.y, sec: DROP_FALL_SEC });
-  } else if (drop.phase === 'falling') {
-    drop.phase = 'landed';
-    drop.left = DROP_MARK_SEC;
-    land(sim, drop);
   } else {
-    sim.drop = null;
+    const isFalling = drop.phase === 'falling';
+    if (isFalling) {
+      drop.phase = 'landed';
+      drop.left = DROP_MARK_SEC;
+      land(sim, drop);
+    } else {
+      sim.drop = null;
+    }
   }
 }

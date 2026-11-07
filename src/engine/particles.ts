@@ -1,5 +1,5 @@
 import type { Clip, PixelSprite } from '../art/types.ts';
-import { drawOutlinedText, FONT_HEIGHT } from './bitmap-font.ts';
+import { FloatingTexts } from './floating-texts.ts';
 import { clipDuration, clipFrame, drawSprite } from './sprite-cache.ts';
 
 const GRAVITY = 260;
@@ -8,9 +8,6 @@ const CASING_FRICTION = 0.6;
 const MAX_DOTS = 320;
 const MAX_CASINGS = 48;
 const MAX_CLIPS = 64;
-const MAX_TEXTS = 24;
-const TEXT_LIFE = 0.9;
-const TEXT_RISE = 16;
 
 export interface Dot {
   x: number;
@@ -46,18 +43,11 @@ interface ClipEffect {
   emissive: boolean;
 }
 
-interface FloatingText {
-  text: string;
-  x: number;
-  y: number;
-  age: number;
-  color: string;
-}
-
 function removeWhere<T>(items: T[], gone: (item: T) => boolean): void {
   let kept = 0;
   for (const item of items) {
-    if (!gone(item)) items[kept++] = item;
+    const isKept = !gone(item);
+    if (isKept) items[kept++] = item;
   }
   items.length = kept;
 }
@@ -68,7 +58,8 @@ export function stepCasing(casing: Casing, dt: number): boolean {
   casing.y += casing.vy * dt;
   casing.z += casing.vz * dt;
   casing.vz -= GRAVITY * dt;
-  if (casing.z > 0) return false;
+  const isAirborne = casing.z > 0;
+  if (isAirborne) return false;
   casing.z = 0;
   casing.bounces += 1;
   casing.vz = -casing.vz * CASING_RESTITUTION;
@@ -83,7 +74,8 @@ function stepDot(dot: Dot, dt: number): boolean {
   dot.y += dot.vy * dt;
   dot.z += dot.vz * dt;
   dot.vz -= GRAVITY * dt;
-  if (dot.z < 0) {
+  const isBelowGround = dot.z < 0;
+  if (isBelowGround) {
     dot.z = 0;
     dot.vx = 0;
     dot.vy = 0;
@@ -97,8 +89,10 @@ export class ParticleSystem {
   readonly dots: Dot[] = [];
   readonly casings: Casing[] = [];
   private readonly clips: ClipEffect[] = [];
-  private readonly texts: FloatingText[] = [];
+  private readonly texts = new FloatingTexts();
   private readonly stamp: (sprite: PixelSprite, x: number, y: number) => void;
+  /** Share of each cap in force: under 1 while a slow machine is shedding load (`frame-budget.ts`). */
+  private share = 1;
 
   constructor(stamp: (sprite: PixelSprite, x: number, y: number) => void) {
     this.stamp = stamp;
@@ -108,25 +102,39 @@ export class ParticleSystem {
     this.dots.length = 0;
     this.casings.length = 0;
     this.clips.length = 0;
-    this.texts.length = 0;
+    this.texts.clear();
+  }
+
+  /** Scales every cap. What is already flying stays; only new debris is refused past the lower cap. */
+  setShare(share: number): void {
+    this.share = share;
+  }
+
+  private cap(max: number): number {
+    return Math.max(1, Math.round(max * this.share));
+  }
+
+  private isCasingsFull(): boolean {
+    return this.casings.length >= this.cap(MAX_CASINGS);
   }
 
   addDot(dot: Dot): void {
-    if (this.dots.length < MAX_DOTS) this.dots.push(dot);
+    const hasRoomForDot = this.dots.length < this.cap(MAX_DOTS);
+    if (hasRoomForDot) this.dots.push(dot);
   }
 
   addCasing(casing: Casing): void {
-    if (this.casings.length >= MAX_CASINGS) this.casings.shift();
+    while (this.isCasingsFull()) this.casings.shift();
     this.casings.push(casing);
   }
 
   addClip(clip: Clip, x: number, y: number, emissive: boolean): void {
-    if (this.clips.length < MAX_CLIPS) this.clips.push({ clip, x, y, age: 0, emissive });
+    const hasRoomForClip = this.clips.length < this.cap(MAX_CLIPS);
+    if (hasRoomForClip) this.clips.push({ clip, x, y, age: 0, emissive });
   }
 
   addText(text: string, x: number, y: number, color: string): void {
-    if (this.texts.length >= MAX_TEXTS) this.texts.shift();
-    this.texts.push({ text, x, y, age: 0, color });
+    this.texts.add(text, x, y, color);
   }
 
   update(dt: number): void {
@@ -140,15 +148,13 @@ export class ParticleSystem {
       effect.age += dt;
       return effect.age >= clipDuration(effect.clip);
     });
-    removeWhere(this.texts, (text) => {
-      text.age += dt;
-      return text.age >= TEXT_LIFE;
-    });
+    this.texts.update(dt);
   }
 
   private drawDots(ctx: CanvasRenderingContext2D, left: number, top: number, emissive: boolean): void {
     for (const dot of this.dots) {
-      if (dot.emissive !== emissive) continue;
+      const isOtherLayer = dot.emissive !== emissive;
+      if (isOtherLayer) continue;
       ctx.fillStyle = dot.color;
       ctx.fillRect(Math.round(dot.x) - left, Math.round(dot.y - dot.z) - top, dot.size, dot.size);
     }
@@ -156,7 +162,8 @@ export class ParticleSystem {
 
   private drawClips(ctx: CanvasRenderingContext2D, left: number, top: number, emissive: boolean): void {
     for (const effect of this.clips) {
-      if (effect.emissive !== emissive) continue;
+      const isOtherLayer = effect.emissive !== emissive;
+      if (isOtherLayer) continue;
       drawSprite(ctx, clipFrame(effect.clip, effect.age), Math.round(effect.x) - left, Math.round(effect.y) - top);
     }
   }
@@ -177,9 +184,6 @@ export class ParticleSystem {
   }
 
   drawTexts(ctx: CanvasRenderingContext2D, left: number, top: number): void {
-    for (const text of this.texts) {
-      const rise = Math.round((text.age / TEXT_LIFE) * TEXT_RISE);
-      drawOutlinedText(ctx, text.text, Math.round(text.x) - left, Math.round(text.y) - top - rise - FONT_HEIGHT, text.color);
-    }
+    this.texts.draw(ctx, left, top);
   }
 }

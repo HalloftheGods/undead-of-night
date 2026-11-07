@@ -63,9 +63,7 @@ defineProps<{ card: LevelCard }>();
 }
 
 /* The controller still takes the card down on time. */
-@media (prefers-reduced-motion: reduce) {
-  .level-card {
-    animation: none;
-  }
+:root[data-motion='reduced'] .level-card {
+  animation: none;
 }
 </style>

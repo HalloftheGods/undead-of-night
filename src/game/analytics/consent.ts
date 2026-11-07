@@ -82,7 +82,8 @@ export function createConsent(options: ConsentOptions = {}): Consent {
     const { key } = event as StorageEvent;
     const mine = key === null || key === CONSENT_KEY;
     const next = loadConsent(store);
-    if (!optedOut && mine && next !== status.value) apply(next);
+    const shouldApplyChoice = !optedOut && mine && next !== status.value;
+    if (shouldApplyChoice) apply(next);
   });
 
   return {

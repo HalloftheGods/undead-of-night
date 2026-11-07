@@ -126,7 +126,8 @@ function endTrip(sim: SimState, banks: (p: PlayerState) => boolean): void {
   const close = (p: PlayerState, banked: boolean): void => {
     const write = banked ? bankTrip : loseTrip;
     write(sim, run, p, p.home as PlayerHome, level);
-    if (p.token !== null) run.unclaimed.delete(p.token);
+    const hasToken = p.token !== null;
+    if (hasToken) run.unclaimed.delete(p.token);
   };
   for (const p of sim.players) close(p, banks(p));
   for (const p of sim.departed.values()) close(p, false);
@@ -152,8 +153,13 @@ export function vanLeaves(sim: SimState): void {
   const run = sim.homeRun;
   if (!run) return;
   const outOnATrip = run.tripLevel !== null;
-  if (outOnATrip) returnToBunker(sim);
-  else if (run.pickedLevel !== null) startTrip(sim, run.pickedLevel);
+  if (outOnATrip) {
+    returnToBunker(sim);
+  } else {
+    const { pickedLevel } = run;
+    const hasPickedLevel = pickedLevel !== null;
+    if (hasPickedLevel) startTrip(sim, pickedLevel);
+  }
 }
 
 /** A home room restarts by going back to the bunker. Any trip under way counts as lost, and every body not in the room lets go. */

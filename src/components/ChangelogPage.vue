@@ -18,8 +18,8 @@
     <nav class="mag-nav" aria-label="Changelog pages">
       <MenuLink class="mag-nav-link" @press="emit('close')">Back</MenuLink>
       <span class="mag-nav-page" aria-live="polite">{{ label }}</span>
-      <MenuLink class="mag-nav-link" silent :disabled="atStart" @press="pages.turn(-1)">Prev</MenuLink>
-      <MenuLink class="mag-nav-link is-next" silent :disabled="atEnd" @press="pages.turn(1)">Next</MenuLink>
+      <MenuLink class="mag-nav-link" silent :disabled="atStart" @press="pages.flipPages(-1)">Prev</MenuLink>
+      <MenuLink class="mag-nav-link is-next" silent :disabled="atEnd" @press="pages.flipPages(1)">Next</MenuLink>
     </nav>
   </section>
 </template>
@@ -44,7 +44,7 @@ const game = useGame();
 
 const leaves = changeLeaves();
 const pages = useBookPages(leaves, () => game.playUi('click'), () => emit('close'));
-const { mode, shown, shownKey, label, atStart, atEnd, firstFolio } = pages;
+const { mode, shown, shownKey, label, atStart, atEnd, firstFolio } = pages.view;
 
 onMounted(() => trackTitlePage('changelog'));
 </script>

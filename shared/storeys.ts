@@ -74,7 +74,8 @@ function apartmentStorey(building: BuildingInstance): StoreyKind | null {
 }
 
 function storeyKind(roll: number): StoreyKind | null {
-  if (roll < UPSTAIRS_ODDS) return 'upstairs';
+  const goesUpstairs = roll < UPSTAIRS_ODDS;
+  if (goesUpstairs) return 'upstairs';
   return roll < UPSTAIRS_ODDS + CELLAR_ODDS ? 'cellar' : null;
 }
 
@@ -174,10 +175,12 @@ export function voidBoxes(map: Pick<WorldMap, 'buildings' | 'cols' | 'rows' | 't
     const across = floors.filter((box) => box.y0 < y1 && box.y1 > y0).sort((a, b) => a.x0 - b.x0);
     let x = 0;
     for (const box of across) {
-      if (box.x0 > x) boxes.push({ x0: x, y0, x1: box.x0, y1 });
+      const hasGapBefore = box.x0 > x;
+      if (hasGapBefore) boxes.push({ x0: x, y0, x1: box.x0, y1 });
       x = Math.max(x, box.x1);
     }
-    if (x < width) boxes.push({ x0: x, y0, x1: width, y1 });
+    const hasGapAfter = x < width;
+    if (hasGapAfter) boxes.push({ x0: x, y0, x1: width, y1 });
   }
   return boxes;
 }

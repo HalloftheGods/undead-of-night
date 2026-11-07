@@ -91,12 +91,15 @@ function down(sim: SimState, p: PlayerState): void {
 }
 
 export function hurtPlayer(sim: SimState, p: PlayerState, damage: number): void {
-  if (p.status !== 'alive') return;
+  const isNotAlive = p.status !== 'alive';
+  if (isNotAlive) return;
   const guarded = damage * (1 - JAWBREAKER_GUARD * sugarOf(p, 'jawbreaker'));
   p.health = Math.max(0, p.health - guarded);
   emit(sim, { type: 'player_hurt', playerId: p.id, x: p.x, y: p.y, damage: guarded });
-  if (p.health > 0) return;
-  if (caramelCatch(sim, p)) return;
+  const isStanding = p.health > 0;
+  if (isStanding) return;
+  const caughtByCaramel = caramelCatch(sim, p);
+  if (caughtByCaramel) return;
   const teammateCanRevive = sim.players.some((other) => other !== p && other.status === 'alive');
   if (teammateCanRevive) down(sim, p);
   else kill(sim, p);
@@ -106,13 +109,15 @@ export function hurtPlayer(sim: SimState, p: PlayerState, damage: number): void 
 export function updateDownedPlayers(sim: SimState): void {
   const rescuers = alivePlayers(sim);
   for (const p of sim.players) {
-    if (p.status !== 'downed') continue;
+    const isNotDowned = p.status !== 'downed';
+    if (isNotDowned) continue;
     const near = rescuers.filter((r) => Math.hypot(r.x - p.x, r.y - p.y) <= REVIVE_RANGE);
     const beingRevived = near.length > 0;
     const tagged = near.some((r) => hasKeepsake(r, 'dog_tags'));
     if (beingRevived) {
       p.revive = Math.min(1, p.revive + (TICK_DT * (tagged ? DOG_TAG_REVIVE : 1)) / REVIVE_SEC);
-      if (p.revive >= 1) {
+      const isRevived = p.revive >= 1;
+      if (isRevived) {
         p.status = 'alive';
         p.health = Math.ceil(p.maxHealth / 2);
         p.bleedout = 0;
@@ -123,7 +128,8 @@ export function updateDownedPlayers(sim: SimState): void {
     }
     p.revive = 0;
     p.bleedout -= rescuers.length > 0 ? TICK_DT : TICK_DT * BLEEDOUT_ALONE_RATE;
-    if (p.bleedout <= 0) kill(sim, p);
+    const hasBledOut = p.bleedout <= 0;
+    if (hasBledOut) kill(sim, p);
   }
 }
 
@@ -138,7 +144,8 @@ export function returnDeadPlayers(sim: SimState): void {
     giveReturnKit(p);
   };
   for (const p of sim.players) {
-    if (p.status !== 'dead') continue;
+    const isNotDead = p.status !== 'dead';
+    if (isNotDead) continue;
     putBack(p);
     emit(sim, { type: 'player_revived', playerId: p.id, x: p.x, y: p.y });
   }

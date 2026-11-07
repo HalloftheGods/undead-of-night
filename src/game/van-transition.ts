@@ -85,13 +85,15 @@ export function vanTimeline(trip: VanTrip, reduced: boolean): VanTimeline {
 /** The drive a change in where the party is calls for. The first sighting, and leaving home mode, call for none. */
 export function tripFor(wasInBunker: boolean | null, inBunker: boolean | null): VanTrip | null {
   const unknown = wasInBunker === null || inBunker === null;
-  if (unknown || wasInBunker === inBunker) return null;
+  const isNoTransition = unknown || wasInBunker === inBunker;
+  if (isNoTransition) return null;
   return inBunker ? 'returning' : 'leaving';
 }
 
 /** Leaving pulls away from a crawl; coming home it brakes to a stop in the middle. */
 function drive(trip: VanTrip, p: number): { x: number; speed: number } {
-  if (trip === 'leaving') {
+  const isLeaving = trip === 'leaving';
+  if (isLeaving) {
     const eased = 0.3 * p + 0.7 * p * p;
     return { x: LEAVE_FROM + LEAVE_SPAN * eased, speed: (0.3 + 1.4 * p) / 1.7 };
   }

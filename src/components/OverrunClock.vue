@@ -49,10 +49,9 @@ const line = computed(() => overrunClockLine(props.overrun));
   color: var(--blood-bright);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .is-urgent .overrun-value {
-    animation: overrun-pulse 1s steps(2) infinite;
-  }
+/* Full motion only: <html data-motion> follows the Motion option, which can override the system either way. */
+:root[data-motion='full'] .is-urgent .overrun-value {
+  animation: overrun-pulse 1s steps(2) infinite;
 }
 
 @keyframes overrun-pulse {

@@ -35,7 +35,8 @@ export class Sheet {
   }
 
   set(x: number, y: number, color: number): void {
-    if (x >= 0 && y >= 0 && x < this.w && y < this.h) this.write(y * this.w + x, color);
+    const isOnSheet = x >= 0 && y >= 0 && x < this.w && y < this.h;
+    if (isOnSheet) this.write(y * this.w + x, color);
   }
 
   hline(x: number, y: number, w: number, color: number): void {
@@ -44,7 +45,8 @@ export class Sheet {
 
   /** Multiplies a pixel by per-channel factors. */
   tint(x: number, y: number, r: number, g: number, b: number): void {
-    if (x < 0 || y < 0 || x >= this.w || y >= this.h) return;
+    const isOffSheet = x < 0 || y < 0 || x >= this.w || y >= this.h;
+    if (isOffSheet) return;
     const i = (y * this.w + x) * 4;
     this.data[i] *= r;
     this.data[i + 1] *= g;
@@ -81,7 +83,8 @@ export function drawSprite(sheet: Sheet, sprite: PixelSprite, x: number, y: numb
   for (let j = 0; j < sprite.h; j++) {
     for (let i = 0; i < sprite.w; i++) {
       const at = (j * sprite.w + i) * 4;
-      if (sprite.rgba[at + 3] === 0) continue;
+      const isTransparent = sprite.rgba[at + 3] === 0;
+      if (isTransparent) continue;
       const color = (sprite.rgba[at] << 16) | (sprite.rgba[at + 1] << 8) | sprite.rgba[at + 2];
       for (let v = 0; v < scale; v++) for (let u = 0; u < scale; u++) sheet.set(x + i * scale + u, y + j * scale + v, color);
     }
@@ -94,7 +97,10 @@ export function drawText(sheet: Sheet, text: string, x: number, y: number, color
     const glyph = GLYPHS[letter];
     if (glyph) {
       glyph.forEach((bits, row) => {
-        for (let col = 0; col < 3; col++) if (bits & (4 >> col)) sheet.set(pen + col, y + row, color);
+        for (let col = 0; col < 3; col++) {
+          const isLitBit = (bits & (4 >> col)) !== 0;
+          if (isLitBit) sheet.set(pen + col, y + row, color);
+        }
       });
     }
     pen += 4;

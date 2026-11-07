@@ -73,8 +73,10 @@ function rollMerchant(def: MerchantDef, rng: Rng): MerchantStock {
     items[id] = (items[id] ?? 0) + count;
   };
   for (const { id, stock } of def.items) {
-    if (stock.kind === 'fixed') add(id, stock.count);
-    if (stock.kind === 'chance' && rng() * stock.oneIn < 1) add(id, 1);
+    const isFixedStock = stock.kind === 'fixed';
+    if (isFixedStock) add(id, stock.count);
+    const isLuckyRoll = stock.kind === 'chance' && rng() * stock.oneIn < 1;
+    if (isLuckyRoll) add(id, 1);
   }
   for (const [pool, draws] of Object.entries(def.pools)) {
     const members = def.items.filter(({ stock }) => stock.kind === 'pool' && stock.pool === pool);
@@ -87,8 +89,10 @@ function rollMerchant(def: MerchantDef, rng: Rng): MerchantStock {
 function recovered(rolled: MerchantStock, before: MerchantStock): MerchantStock {
   const closed = before.closedTrips ?? 0;
   const thin = Math.max(0, (before.thinTrips ?? 0) - 1);
-  if (closed > 1) return { items: {}, closedTrips: closed - 1 };
-  if (thin === 0) return rolled;
+  const isStillClosed = closed > 1;
+  if (isStillClosed) return { items: {}, closedTrips: closed - 1 };
+  const isFullyStocked = thin === 0;
+  if (isFullyStocked) return rolled;
   const items = Object.fromEntries(Object.entries(rolled.items).map(([id, count]) => [id, Math.floor(count * (1 - thin / 4))]));
   return { items, thinTrips: thin };
 }
@@ -111,40 +115,55 @@ const ownsGun = (save: HomeSave, weapon: WeaponId): boolean => weapon in save.lo
 function held(save: HomeSave, item: ItemDef): number {
   const { locker, hands } = save;
   const { grant } = item;
-  if (grant.kind === 'ammo') {
+  const isAmmo = grant.kind === 'ammo';
+  if (isAmmo) {
     const { weapon } = AMMO_PICKUPS[grant.ammo];
     return locker.ammoBag[weapon] + hands.ammoBag[weapon];
   }
-  if (grant.kind === 'part') return locker.parts[grant.part] + hands.parts[grant.part];
-  if (grant.kind === 'kit') return locker.kits[grant.effect] + hands.kits[grant.effect];
-  if (grant.kind === 'medkit') return locker.medkits + hands.medkits;
-  if (grant.kind === 'bottle') return locker.bottles + hands.bottles;
-  if (grant.kind === 'knife') return Number(locker.knife || hands.knife);
+  const isPart = grant.kind === 'part';
+  if (isPart) return locker.parts[grant.part] + hands.parts[grant.part];
+  const isKit = grant.kind === 'kit';
+  if (isKit) return locker.kits[grant.effect] + hands.kits[grant.effect];
+  const isMedkit = grant.kind === 'medkit';
+  if (isMedkit) return locker.medkits + hands.medkits;
+  const isBottle = grant.kind === 'bottle';
+  if (isBottle) return locker.bottles + hands.bottles;
+  const isKnife = grant.kind === 'knife';
+  if (isKnife) return Number(locker.knife || hands.knife);
   return Number(ownsGun(save, grant.weapon));
 }
 
 /** How many of the item fit in a pocket, counting the box as one unit. */
 function carryLimit(item: ItemDef): number {
   const { grant } = item;
-  if (grant.kind === 'ammo') return WEAPONS[AMMO_PICKUPS[grant.ammo].weapon].reserveCap;
-  if (grant.kind === 'part') return PART_CARRY_CAP;
-  if (grant.kind === 'kit') return KIT_CARRY_CAP;
-  if (grant.kind === 'medkit') return MEDKIT_MAX;
-  if (grant.kind === 'bottle') return BOTTLE_CARRY;
+  const isAmmo = grant.kind === 'ammo';
+  if (isAmmo) return WEAPONS[AMMO_PICKUPS[grant.ammo].weapon].reserveCap;
+  const isPart = grant.kind === 'part';
+  if (isPart) return PART_CARRY_CAP;
+  const isKit = grant.kind === 'kit';
+  if (isKit) return KIT_CARRY_CAP;
+  const isMedkit = grant.kind === 'medkit';
+  if (isMedkit) return MEDKIT_MAX;
+  const isBottle = grant.kind === 'bottle';
+  if (isBottle) return BOTTLE_CARRY;
   return 1;
 }
 
 /** Shown on the screen at all: past its gate, and of use to what the player owns. */
 function offered(save: HomeSave, item: ItemDef, context: ShopContext): boolean {
-  if (context.highest < (item.gate ?? 0)) return false;
+  const isGated = context.highest < (item.gate ?? 0);
+  if (isGated) return false;
   const { grant } = item;
-  if (grant.kind === 'gun') return !ownsGun(save, grant.weapon);
-  if (grant.kind === 'ammo') return ownsGun(save, AMMO_PICKUPS[grant.ammo].weapon);
+  const isGun = grant.kind === 'gun';
+  if (isGun) return !ownsGun(save, grant.weapon);
+  const isAmmo = grant.kind === 'ammo';
+  if (isAmmo) return ownsGun(save, AMMO_PICKUPS[grant.ammo].weapon);
   return true;
 }
 
 function stockOf(save: HomeSave, merchant: MerchantId, item: ItemDef): number {
-  if (item.stock.kind === 'always') return Infinity;
+  const isAlwaysStocked = item.stock.kind === 'always';
+  if (isAlwaysStocked) return Infinity;
   return save.shop.merchants[merchant].items[item.id] ?? 0;
 }
 
@@ -156,13 +175,20 @@ function fits(save: HomeSave, item: ItemDef, context: ShopContext): boolean {
 function granted(locker: Loadout, item: ItemDef, context: ShopContext): Loadout {
   const next: Loadout = { ...locker, guns: { ...locker.guns }, ammoBag: { ...locker.ammoBag }, parts: { ...locker.parts }, kits: { ...locker.kits } };
   const { grant } = item;
-  if (grant.kind === 'gun') next.guns[grant.weapon] = {};
-  if (grant.kind === 'ammo') next.ammoBag[AMMO_PICKUPS[grant.ammo].weapon] += boxRounds(item, context.difficulty);
-  if (grant.kind === 'part') next.parts[grant.part] += 1;
-  if (grant.kind === 'kit') next.kits[grant.effect] += 1;
-  if (grant.kind === 'medkit') next.medkits += 1;
-  if (grant.kind === 'bottle') next.bottles += 1;
-  if (grant.kind === 'knife') next.knife = true;
+  const isGun = grant.kind === 'gun';
+  if (isGun) next.guns[grant.weapon] = {};
+  const isAmmo = grant.kind === 'ammo';
+  if (isAmmo) next.ammoBag[AMMO_PICKUPS[grant.ammo].weapon] += boxRounds(item, context.difficulty);
+  const isPart = grant.kind === 'part';
+  if (isPart) next.parts[grant.part] += 1;
+  const isKit = grant.kind === 'kit';
+  if (isKit) next.kits[grant.effect] += 1;
+  const isMedkit = grant.kind === 'medkit';
+  if (isMedkit) next.medkits += 1;
+  const isBottle = grant.kind === 'bottle';
+  if (isBottle) next.bottles += 1;
+  const isKnife = grant.kind === 'knife';
+  if (isKnife) next.knife = true;
   return next;
 }
 
@@ -171,8 +197,10 @@ export function buy(save: HomeSave, merchant: MerchantId, item: string, context:
   const nothingToBuyFrom = context.station !== merchant || save.openTrip || stallClosed(save.shop, merchant);
   if (nothingToBuyFrom) return null;
   const def = itemOf(merchant, item);
-  if (!def || !offered(save, def, context)) return null;
-  if (save.silver < def.price || stockOf(save, merchant, def) < 1 || !fits(save, def, context)) return null;
+  const isNotOnShelf = !def || !offered(save, def, context);
+  if (isNotOnShelf) return null;
+  const cannotAfford = save.silver < def.price || stockOf(save, merchant, def) < 1 || !fits(save, def, context);
+  if (cannotAfford) return null;
   const shelf = save.shop.merchants[merchant];
   const items = def.stock.kind === 'always' ? shelf.items : { ...shelf.items, [def.id]: stockOf(save, merchant, def) - 1 };
   const merchants = { ...save.shop.merchants, [merchant]: { ...shelf, items } };
@@ -182,7 +210,8 @@ export function buy(save: HomeSave, merchant: MerchantId, item: string, context:
 /** One unit of an item into the locker as a reward, or null when it does not fit. A quest pays silver at the shop price instead. */
 export function stow(save: HomeSave, item: ItemDef, difficulty: DifficultyId): HomeSave | null {
   const context: ShopContext = { highest: 0, station: null, difficulty };
-  if (!fits(save, item, context)) return null;
+  const doesNotFit = !fits(save, item, context);
+  if (doesNotFit) return null;
   return { ...save, locker: granted(save.locker, item, context) };
 }
 

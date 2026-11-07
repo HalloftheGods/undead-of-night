@@ -95,7 +95,8 @@ export class RemoteSession implements RoomSession {
 
   private receive(raw: unknown): void {
     const packet = parseServerPacket(raw);
-    if (!packet || this.finished) return;
+    const isIgnored = !packet || this.finished;
+    if (isIgnored) return;
     if (packet.type === 'bye') {
       this.finish(this.closeReason(packet.code, packet.reason));
     } else if (packet.type === 'room') {
@@ -125,7 +126,9 @@ export class RemoteSession implements RoomSession {
   }
 
   private clearTimeout(): void {
-    if (this.timeout !== null) clearTimeout(this.timeout);
+    const timeout = this.timeout;
+    const hasTimeout = timeout !== null;
+    if (hasTimeout) clearTimeout(timeout);
     this.timeout = null;
   }
 

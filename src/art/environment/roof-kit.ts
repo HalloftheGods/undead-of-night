@@ -62,7 +62,8 @@ export function acUnit(canvas: PixelCanvas, x: number, y: number, w: number, sha
   canvas.rect(x, y, w, top, metal[1]);
   canvas.rect(x, y, w, 1, metal[2]).rect(x, y, 1, top, metal[2]);
   canvas.grid(x + 2, y + 2, FAN, METAL);
-  if (w > 20) canvas.grid(x + w - 11, y + 2, FAN, METAL);
+  const hasRoomForSecondFan = w > 20;
+  if (hasRoomForSecondFan) canvas.grid(x + w - 11, y + 2, FAN, METAL);
   canvas.rect(x, y + top, w, front, metal[0]);
   canvas.rect(x, y + top, w, 1, metal[2]);
   for (let j = 2; j < front - 1; j += 2) canvas.rect(x + 2, y + top + j, w - 4, 1, ink[1]);

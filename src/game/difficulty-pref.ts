@@ -27,6 +27,6 @@ export function saveDifficulty(id: DifficultyId, store: Store | null = browserSt
   try {
     store?.setItem(DIFFICULTY_KEY, id);
   } catch {
-    // A choice that does not persist is not worth interrupting the menu for.
+    // chemx-allow: best-effort a choice that does not persist is not worth interrupting the menu for
   }
 }

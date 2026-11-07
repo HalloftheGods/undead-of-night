@@ -28,7 +28,8 @@ function shingles(c: PixelCanvas, plane: Plane, alongY = false): void {
   const mask = new PixelCanvas(c.w, c.h).poly(plane.points, plane.base);
   for (let y = 0; y < c.h; y++) {
     for (let x = 0; x < c.w; x++) {
-      if (mask.get(x, y) === null) continue;
+      const isOffRoof = mask.get(x, y) === null;
+      if (isOffRoof) continue;
       const [run, across] = alongY ? [y, x] : [x, y];
       const band = Math.floor(across / 4);
       const onCourse = across % 4 === 3;

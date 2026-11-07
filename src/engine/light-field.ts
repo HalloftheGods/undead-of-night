@@ -303,8 +303,7 @@ export class LightField {
       const x1 = Math.min(width, (firstCell + SPAN_CELLS) * CELL - offsetX);
       const flat = flatSpans[cellY * spanCols + span] === 1;
       if (flat) {
-        const color = lowColor[cellRow + firstCell];
-        for (let x = x0; x < x1; x += 1) pixels[rowStart + x] = color;
+        pixels.fill(lowColor[cellRow + firstCell], rowStart + x0, rowStart + x1);
         continue;
       }
       for (let x = x0; x < x1; x += 1) {

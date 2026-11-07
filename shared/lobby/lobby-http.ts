@@ -48,8 +48,10 @@ export function parseCreateRoom(value: unknown): CreateRoomRequest | null {
   if (!isRaw(value)) return null;
   const { protocol, style, difficulty, visibility, device, label } = value;
   const shapeOk = isProtocol(protocol) && isGameStyle(style) && isDifficultyId(difficulty);
-  if (!shapeOk || !isVisibility(visibility) || !isHostDevice(device)) return null;
-  if (label !== undefined && typeof label !== 'string') return null;
+  const isBadShape = !shapeOk || !isVisibility(visibility) || !isHostDevice(device);
+  if (isBadShape) return null;
+  const isBadLabel = label !== undefined && typeof label !== 'string';
+  if (isBadLabel) return null;
   const base = { protocol, style, difficulty, visibility, device };
   const cleaned = visibility === 'private' && label ? cleanCallsign(label) : '';
   return cleaned ? { ...base, label: cleaned } : base;
@@ -59,10 +61,14 @@ export function parseCreateRoom(value: unknown): CreateRoomRequest | null {
 export function parseMatchRequest(value: unknown): MatchRequest | null {
   if (!isRaw(value)) return null;
   const { protocol, style, difficulty, character, highest, avoid, device } = value;
-  if (!isProtocol(protocol) || !isGameStyle(style) || !isDifficultyId(difficulty) || !isCharacterIndex(character)) return null;
-  if (highest !== undefined && !isWhole(highest, 1, HIGHEST_MAX)) return null;
-  if (device !== undefined && !isHostDevice(device)) return null;
-  if (avoid !== undefined && (!Array.isArray(avoid) || avoid.length > MAX_AVOID)) return null;
+  const isBadShape = !isProtocol(protocol) || !isGameStyle(style) || !isDifficultyId(difficulty) || !isCharacterIndex(character);
+  if (isBadShape) return null;
+  const isBadHighest = highest !== undefined && !isWhole(highest, 1, HIGHEST_MAX);
+  if (isBadHighest) return null;
+  const isBadDevice = device !== undefined && !isHostDevice(device);
+  if (isBadDevice) return null;
+  const isBadAvoidList = avoid !== undefined && (!Array.isArray(avoid) || avoid.length > MAX_AVOID);
+  if (isBadAvoidList) return null;
   const codes = (avoid ?? []).flatMap((raw: unknown) => {
     const check = normalizeRoomCode(raw);
     return check.ok ? [check.code] : [];

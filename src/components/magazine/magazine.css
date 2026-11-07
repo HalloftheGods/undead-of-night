@@ -352,12 +352,10 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .mag-screen {
-    animation: none;
-  }
+:root[data-motion='reduced'] .mag-screen {
+  animation: none;
+}
 
-  .mag-leaf {
-    display: none;
-  }
+:root[data-motion='reduced'] .mag-leaf {
+  display: none;
 }

@@ -23,17 +23,16 @@ import { isConfirmKey } from '../game/title-menu.ts';
 import MenuLink from './MenuLink.vue';
 import PixelButton from './PixelButton.vue';
 
-withDefaults(
-  defineProps<{
-    heading: string;
-    size?: 'normal' | 'wide' | 'extra-wide';
-    /** Back as a boxed button, to sit level with boxed Next and Start buttons. */
-    boxed?: boolean;
-    /** One height for every step of a walk, so the sheet and its buttons stay put as the steps change. */
-    steady?: boolean;
-  }>(),
-  { size: 'normal', boxed: false, steady: false }
-);
+interface TitlePageProps {
+  heading: string;
+  size?: 'normal' | 'wide' | 'extra-wide';
+  /** Back as a boxed button, to sit level with boxed Next and Start buttons. */
+  boxed?: boolean;
+  /** One height for every step of a walk, so the sheet and its buttons stay put as the steps change. */
+  steady?: boolean;
+}
+
+withDefaults(defineProps<TitlePageProps>(), { size: 'normal', boxed: false, steady: false });
 const emit = defineEmits<{ close: [] }>();
 
 function onKey(event: KeyboardEvent): void {

@@ -102,7 +102,8 @@ export function isPickupEntity(v: unknown): v is PickupEntity {
 
 /** Coarse on purpose: the consumers switch on type and skip what they do not know. */
 export function isGameEvent(v: unknown): v is GameEvent {
-  if (!isFields(v) || !EVENT_TYPES.has(v.type)) return false;
+  const isNotEvent = !isFields(v) || !EVENT_TYPES.has(v.type);
+  if (isNotEvent) return false;
   return !('x' in v) || (isNumber(v.x) && isNumber(v.y));
 }
 
@@ -159,18 +160,24 @@ export function isByePacket(v: unknown): v is ByePacket {
   return isFields(v) && v.type === 'bye' && isNumber(v.code) && isString(v.reason);
 }
 
+function isDisconnectPacket(v: unknown): v is { type: 'player_disconnected'; playerId: string } {
+  return isFields(v) && v.type === 'player_disconnected' && isString(v.playerId);
+}
+
 /** Returns null for anything that is not a well-formed server packet. */
 export function parseServerPacket(raw: unknown): ServerPacket | null {
   if (!isString(raw)) return null;
-  let value: unknown;
+  let parsed: unknown;
   try {
-    value = JSON.parse(raw);
+    parsed = JSON.parse(raw);
   } catch {
     return null;
   }
-  if (isSnapshotPacket(value) || isWelcomePacket(value) || isRoomPacket(value)) return value;
+  const value = parsed;
+  const isPassThrough = isSnapshotPacket(value) || isWelcomePacket(value) || isRoomPacket(value);
+  if (isPassThrough) return value;
   if (isByePacket(value)) return { type: 'bye', code: value.code, reason: value.reason };
-  if (isFields(value) && value.type === 'player_disconnected' && isString(value.playerId)) {
+  if (isDisconnectPacket(value)) {
     return { type: 'player_disconnected', playerId: value.playerId };
   }
   return null;

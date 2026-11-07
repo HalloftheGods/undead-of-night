@@ -98,13 +98,14 @@ function heardOn(index: number, style: GameStyle, found: ReadonlySet<string>): P
 
 
 
+/** Scenes that play the same thing on every level. */
+const SCENE_PLAYLISTS: Partial<Record<Scene, Playlist>> = { menu: RUINS, wave: HORDE, victory: VICTORY, credits: CREDITS, gameover: QUIET };
+
 /** What plays in a scene on a level. Levels past either end of the run hold to the nearest. */
 export function playlistFor(scene: Scene, level: number, style: GameStyle = 'arcade', found: ReadonlySet<string> = foundTracks()): Playlist {
-  if (scene === 'menu') return RUINS;
-  if (scene === 'bunker' && playsFromHome(style)) return BUNKER;
-  if (scene === 'wave') return HORDE;
-  if (scene === 'victory') return VICTORY;
-  if (scene === 'credits') return CREDITS;
-  if (scene === 'gameover') return QUIET;
+  const fixed = SCENE_PLAYLISTS[scene];
+  if (fixed) return fixed;
+  const isHomeBunker = scene === 'bunker' && playsFromHome(style);
+  if (isHomeBunker) return BUNKER;
   return heardOn(levelIndex(level), style, found);
 }

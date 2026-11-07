@@ -39,3 +39,10 @@ export const stepSludge: Recipe = (v) => {
 export const stepAsh: Recipe = (v) => {
   noise(v, { filter: 'lowpass', freq: 2200, freq1: 900, attack: 0.008, decay: 0.08, gain: 0.2 });
 };
+
+/** A brute's or a boss's footfall: a heavy thud felt more than heard, with a little grit. */
+export const stomp: Recipe = (v) => {
+  tone(v, { type: 'sine', f0: 85, f1: 38, attack: 0.004, decay: 0.16, gain: 0.7, lp: 220 });
+  noise(v, { filter: 'lowpass', freq: 600, freq1: 200, attack: 0.004, decay: 0.09, gain: 0.3 });
+  noise(v, { at: 0.02, filter: 'bandpass', freq: 1500, q: 1.2, decay: 0.05, gain: 0.08 });
+};

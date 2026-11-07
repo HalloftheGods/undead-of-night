@@ -171,7 +171,8 @@ export function planTown(rng: Rng): TownPlan {
   quadrants.forEach((quadrant, index) => {
     const style = styles[index];
     districts.push({ name: DISTRICT_NAMES[style], ...rectCentre(quadrant) });
-    if (index === home) carved.rest.forEach((rect) => subdivide(rect, style, roads, blocks, rng));
+    const isHomeQuadrant = index === home;
+    if (isHomeQuadrant) carved.rest.forEach((rect) => subdivide(rect, style, roads, blocks, rng));
     else subdivide(quadrant, style, roads, blocks, rng);
   });
   const spawn = rectCentre(carved.park);

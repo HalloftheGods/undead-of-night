@@ -53,12 +53,15 @@ export class RtcGuestPipe implements PacketPipe {
     signal.onmessage = (event) => void this.fromRoom(event.data);
     // Before the channel opens, the Room's close code is the answer: full, locked, needs an update, ended.
     signal.onclose = (event) => {
-      if (this.channel?.readyState !== 'open') this.fail(event.code, event.reason);
+      const isBeforeOpen = this.channel?.readyState !== 'open';
+      if (isBeforeOpen) this.fail(event.code, event.reason);
     };
   }
 
   send(text: string): void {
-    if (this.channel?.readyState === 'open') this.channel.send(text);
+    const channel = this.channel;
+    const isChannelOpen = channel?.readyState === 'open';
+    if (isChannelOpen) channel.send(text);
   }
 
   close(): void {
@@ -90,7 +93,8 @@ export class RtcGuestPipe implements PacketPipe {
       this.signal?.close(1000, 'connected');
     };
     channel.onmessage = (event) => {
-      if (typeof event.data === 'string') this.handlers?.message(event.data);
+      const isText = typeof event.data === 'string';
+      if (isText) this.handlers?.message(event.data);
     };
     channel.onclose = () => this.fail(DROPPED, '');
     pc.onicecandidate = (event) => {
@@ -98,7 +102,8 @@ export class RtcGuestPipe implements PacketPipe {
       if (ice) this.tell({ type: 'ice', ice });
     };
     pc.onconnectionstatechange = () => {
-      if (pc.connectionState === 'failed') this.fail(DROPPED, '');
+      const isFailed = pc.connectionState === 'failed';
+      if (isFailed) this.fail(DROPPED, '');
     };
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
@@ -106,24 +111,30 @@ export class RtcGuestPipe implements PacketPipe {
   }
 
   private async answer(sdp: string): Promise<void> {
-    if (!this.pc || this.answered) return;
-    await this.pc.setRemoteDescription({ type: 'answer', sdp });
+    const pc = this.pc;
+    const cannotAnswer = !pc || this.answered;
+    if (cannotAnswer) return;
+    await pc.setRemoteDescription({ type: 'answer', sdp });
     this.answered = true;
     const early = this.early;
     this.early = [];
-    for (const ice of early) await this.pc.addIceCandidate(ice);
+    for (const ice of early) await pc.addIceCandidate(ice);
   }
 
   private async addIce(ice: IceCandidate): Promise<void> {
-    if (!this.pc || !this.answered) {
+    const pc = this.pc;
+    const isEarlyIce = !pc || !this.answered;
+    if (isEarlyIce) {
       this.early.push(ice);
       return;
     }
-    await this.pc.addIceCandidate(ice);
+    await pc.addIceCandidate(ice);
   }
 
   private tell(message: GuestSignal): void {
-    if (this.signal?.readyState === WebSocket.OPEN) this.signal.send(JSON.stringify(message));
+    const signal = this.signal;
+    const isSignalOpen = signal?.readyState === WebSocket.OPEN;
+    if (isSignalOpen) signal.send(JSON.stringify(message));
   }
 
   private fail(code: number, reason: string): void {
@@ -141,7 +152,8 @@ export class RtcGuestPipe implements PacketPipe {
     if (signal) {
       signal.onmessage = null;
       signal.onclose = null;
-      if (signal.readyState === WebSocket.OPEN || signal.readyState === WebSocket.CONNECTING) signal.close(1000, 'bye');
+      const isSignalLive = signal.readyState === WebSocket.OPEN || signal.readyState === WebSocket.CONNECTING;
+      if (isSignalLive) signal.close(1000, 'bye');
     }
     if (channel) {
       channel.onopen = null;

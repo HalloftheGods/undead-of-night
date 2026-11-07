@@ -20,7 +20,8 @@ const leftFoot = (print: TrackEntity): boolean => ((print.x * 7 + print.y * 13) 
 
 /** Boot prints on the ground, fading as they fill in. Call before the lightmap so they sit in the dark like the snow. */
 export function paintPrints(ctx: CanvasRenderingContext2D, tracks: readonly TrackEntity[], left: number, top: number, viewW: number, viewH: number): void {
-  if (tracks.length === 0) return;
+  const hasNoTracks = tracks.length === 0;
+  if (hasNoTracks) return;
   const previous = ctx.globalAlpha;
   ctx.fillStyle = PRINT_COLOR;
   for (const print of tracks) {

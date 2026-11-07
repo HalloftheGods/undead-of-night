@@ -44,7 +44,8 @@ function choose(index: number): void {
 }
 
 function preview(index: number | null): void {
-  if (index !== null) game.playUi('hover');
+  const isHovering = index !== null;
+  if (isHovering) game.playUi('hover');
   previewed.value = index;
 }
 

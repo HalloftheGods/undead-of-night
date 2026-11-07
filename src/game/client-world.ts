@@ -95,7 +95,8 @@ export class ClientWorld {
     this.winded = local?.winded === true;
     this.sugarSpeed = candySpeed({ sugar: (local?.sugar ?? []).map((sugar) => ({ ...sugar })) });
     this.refreshSpeed();
-    if (local?.status === 'alive' && this.predicting) {
+    const isPredictingLocal = local?.status === 'alive' && this.predicting;
+    if (isPredictingLocal) {
       this.predictor.reconcile(local.x, local.y, local.lastInputSeq);
     }
   }
@@ -115,7 +116,8 @@ export class ClientWorld {
 
   /** The player the camera should sit on: yourself, or a teammate once you are dead. */
   private viewer(players: readonly PlayerEntity[], local: PlayerEntity): PlayerEntity {
-    if (local.status !== 'dead') return local;
+    const isLocalUp = local.status !== 'dead';
+    if (isLocalUp) return local;
     return players.find((player) => player.status === 'alive')
       ?? players.find((player) => player.status === 'downed')
       ?? local;
@@ -142,7 +144,8 @@ export class ClientWorld {
   advance(nowMs: number, delayMs: number, dirX: number, dirY: number, aim: number, dt: number): WorldEntities | null {
     const newest = this.buffer.latest;
     const sample = this.buffer.sample(nowMs, delayMs);
-    if (!newest || !sample) return null;
+    const hasNoSample = !newest || !sample;
+    if (hasNoSample) return null;
 
     const players = interpolatePlayers(sample);
     const local = newest.players.get(this.localId) ?? null;
@@ -200,7 +203,8 @@ export class ClientWorld {
     // The room opens for where the player is shown; the sim will not say so for a few ticks yet.
     const indoors = buildingAt(this.map, x, y)?.id ?? null;
     const shown = { ...local, x, y, indoors, angle: canMove ? aim : local.angle, moving };
-    if (index >= 0) players[index] = shown;
+    const isListed = index >= 0;
+    if (isListed) players[index] = shown;
     else players.push(shown);
   }
 }

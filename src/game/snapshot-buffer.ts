@@ -60,40 +60,49 @@ export class SnapshotBuffer {
 
   push(snapshot: SnapshotPacket, nowMs: number): void {
     const newest = this.latest;
-    if (newest && snapshot.tick <= newest.snapshot.tick) {
+    const isStaleTick = newest && snapshot.tick <= newest.snapshot.tick;
+    if (isStaleTick) {
       // A run can end between ticks, when the last survivor leaves, and the tick then stands still.
       const phaseMoved = snapshot.tick === newest.snapshot.tick && snapshot.phase !== newest.snapshot.phase;
       if (phaseMoved) {
         this.frames[this.frames.length - 1] = buffered(snapshot, newest.time);
         return;
       }
-      if (newest.snapshot.tick - snapshot.tick < RESTART_TICK_GAP) return;
+      const isLateDuplicate = newest.snapshot.tick - snapshot.tick < RESTART_TICK_GAP;
+      if (isLateDuplicate) return;
       this.clear();
     }
     const time = snapshot.tick * this.tickMs;
     this.syncClock(nowMs - time);
     this.frames.push(buffered(snapshot, time));
-    if (this.frames.length > CAPACITY) this.frames.shift();
+    const isOverCapacity = this.frames.length > CAPACITY;
+    if (isOverCapacity) this.frames.shift();
   }
 
   private syncClock(measured: number): void {
-    if (this.clockOffset === null || Math.abs(measured - this.clockOffset) > RESYNC_MS) {
+    const offset = this.clockOffset;
+    const shouldResync = offset === null || Math.abs(measured - offset) > RESYNC_MS;
+    if (shouldResync) {
       this.clockOffset = measured;
     } else {
-      this.clockOffset += (measured - this.clockOffset) * CLOCK_SMOOTHING;
+      this.clockOffset = offset + (measured - offset) * CLOCK_SMOOTHING;
     }
   }
 
   /** The two snapshots either side of now minus delay. Clamps to the ends; never extrapolates. */
   sample(nowMs: number, delayMs: number): SnapshotSample | null {
     const frames = this.frames;
-    if (frames.length === 0 || this.clockOffset === null) return null;
-    const renderTime = nowMs - this.clockOffset - delayMs;
+    const offset = this.clockOffset;
+    const isNotReady = frames.length === 0 || offset === null;
+    if (isNotReady) return null;
+    const renderTime = nowMs - offset - delayMs;
     const oldest = frames[0];
-    if (renderTime <= oldest.time) return { from: oldest, to: oldest, alpha: 0 };
+    const isBeforeOldest = renderTime <= oldest.time;
+    if (isBeforeOldest) return { from: oldest, to: oldest, alpha: 0 };
     for (let i = frames.length - 1; i > 0; i -= 1) {
       const from = frames[i - 1];
-      if (renderTime >= from.time) {
+      const isPastFrom = renderTime >= from.time;
+      if (isPastFrom) {
         const to = frames[i];
         const alpha = Math.min(1, (renderTime - from.time) / (to.time - from.time));
         return { from, to, alpha };
@@ -121,7 +130,8 @@ interface Placed {
 }
 
 function blendPlaced<T extends Placed>(from: T | undefined, to: T, alpha: number): T {
-  if (!from || Math.hypot(to.x - from.x, to.y - from.y) > TELEPORT_PX) return to;
+  const isTeleport = !from || Math.hypot(to.x - from.x, to.y - from.y) > TELEPORT_PX;
+  if (isTeleport) return to;
   return { ...to, x: lerp(from.x, to.x, alpha), y: lerp(from.y, to.y, alpha), angle: lerpAngle(from.angle, to.angle, alpha) };
 }
 

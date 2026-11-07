@@ -6,6 +6,7 @@ import { createBrowserHomeStore } from '../../src/game/home/browser-home-store.t
 import { emptySave } from '../../src/game/home/home-store.ts';
 import type { HomeSave } from '../../src/game/home/home-store.ts';
 import { HomeSync, joinHomeFor } from '../../src/game/home/home-sync.ts';
+import { setTimeout as sleep } from 'node:timers/promises';
 import { TestClient } from './ws-client.ts';
 
 const HOME_KEY = 'outbreak.home';
@@ -29,8 +30,9 @@ export async function waitFor<T>(find: () => T | undefined | null | false): Prom
   for (;;) {
     const found = find();
     if (found) return found;
-    if (Date.now() > deadline) throw new Error('timed out waiting');
-    await new Promise((resolve) => setTimeout(resolve, 5));
+    const isTimedOut = Date.now() > deadline;
+    if (isTimedOut) throw new Error('timed out waiting');
+    await sleep(5);
   }
 }
 

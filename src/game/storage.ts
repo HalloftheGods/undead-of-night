@@ -52,7 +52,7 @@ export function writeJson(store: Store | null, key: string, value: unknown): voi
   try {
     store?.setItem(key, JSON.stringify(value));
   } catch {
-    // A best run that does not persist is not worth interrupting a game over for.
+    // chemx-allow: best-effort a best run that does not persist is not worth interrupting a game over for
   }
 }
 
@@ -108,9 +108,11 @@ export function recordLeaderboardEntry(
   list.push(entry);
   list.sort((a, b) => {
     const scoreDiff = b.score - a.score;
-    if (scoreDiff !== 0) return scoreDiff;
+    const isScoreTie = scoreDiff !== 0;
+    if (isScoreTie) return scoreDiff;
     const waveDiff = b.wave - a.wave;
-    if (waveDiff !== 0) return waveDiff;
+    const isWaveTie = waveDiff !== 0;
+    if (isWaveTie) return waveDiff;
     return b.kills - a.kills;
   });
   const trimmed = list.slice(0, MAX_LEADERBOARD_ENTRIES);
@@ -119,10 +121,7 @@ export function recordLeaderboardEntry(
 }
 
 export function beatsBest(run: BestRun, best: BestRun | null): boolean {
-  if (!best) {
-    const hasInitialProgress = run.score > 0 || run.wave > 0;
-    return hasInitialProgress;
-  }
+  if (!best) return run.score > 0 || run.wave > 0;
   const hasHigherScore = run.score > best.score;
   const isTiedScoreWithMoreWaves = run.score === best.score && run.wave > best.wave;
   return hasHigherScore || isTiedScoreWithMoreWaves;

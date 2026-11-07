@@ -13,12 +13,14 @@
  * Props: slots (segments in total), filled (segments lit), label (the word),
  * accent (optional css colour for lit segments, default blood).
  */
-const { slots, filled, label, accent = '' } = defineProps<{
+interface SlotMeterProps {
   slots: number;
   filled: number;
   label: string;
   accent?: string;
-}>();
+}
+
+const { slots, filled, label, accent = '' } = defineProps<SlotMeterProps>();
 </script>
 
 <style scoped>

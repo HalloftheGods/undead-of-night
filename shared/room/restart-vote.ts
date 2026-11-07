@@ -18,7 +18,8 @@ export function createRestartVote<C extends Voter>(sim: GameSimulation, joined: 
   let timer: unknown = null;
 
   function end(): void {
-    if (timer !== null) clock.cancel(timer);
+    const isVoteRunning = timer !== null;
+    if (isVoteRunning) clock.cancel(timer);
     timer = null;
   }
 
@@ -42,7 +43,8 @@ export function createRestartVote<C extends Voter>(sim: GameSimulation, joined: 
   }
 
   function ask(client: C): void {
-    if (sim.phase !== 'gameover') return;
+    const isRunStillGoing = sim.phase !== 'gameover';
+    if (isRunStillGoing) return;
     client.wantsRestart = true;
     restartIfAgreed();
     const waiting = sim.phase === 'gameover' && timer === null;

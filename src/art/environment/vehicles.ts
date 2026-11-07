@@ -85,7 +85,6 @@ const BARE_RIM = [
 ];
 
 const SEDAN_W = 44;
-const FOOT_H = 18;
 
 function sedanBody(paint: Ramp): PixelCanvas {
   const c = new PixelCanvas(SEDAN_W + 2, 30);

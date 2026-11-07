@@ -97,7 +97,9 @@ function holdToOpen(sim: SimState, p: PlayerState, home: NonNullable<PlayerState
 /** Runs beside `updateSearch` on every tick. Only a home room has stations. */
 export function updateStations(sim: SimState, p: PlayerState): void {
   const { home } = p;
-  if (!sim.homeRun || !home) return;
-  if (home.station !== null) keepOpen(sim, p, home);
+  const hasNoStations = !sim.homeRun || !home;
+  if (hasNoStations) return;
+  const isAtStation = home.station !== null;
+  if (isAtStation) keepOpen(sim, p, home);
   else holdToOpen(sim, p, home);
 }

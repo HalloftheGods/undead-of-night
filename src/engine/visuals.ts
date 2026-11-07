@@ -65,9 +65,11 @@ export class VisualStore {
   /** Drops anything not touched lately. */
   endFrame(): void {
     this.frame += 1;
-    if (this.frame % 120 !== 0) return;
+    const isNotSweepFrame = this.frame % 120 !== 0;
+    if (isNotSweepFrame) return;
     for (const [id, visual] of this.visuals) {
-      if (this.frame - visual.seenFrame > 120) this.visuals.delete(id);
+      const isStale = this.frame - visual.seenFrame > 120;
+      if (isStale) this.visuals.delete(id);
     }
   }
 
@@ -80,7 +82,8 @@ export class VisualStore {
 export function trackWalking(visual: EntityVisual, x: number, y: number): void {
   if (visual.placed) {
     const step = Math.hypot(x - visual.lastX, y - visual.lastY);
-    if (step < 32) visual.walked += step;
+    const isWalkStep = step < 32;
+    if (isWalkStep) visual.walked += step;
   }
   visual.placed = true;
   visual.lastX = x;

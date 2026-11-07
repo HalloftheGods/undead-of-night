@@ -24,7 +24,8 @@ const jewelsIn = (save: HomeSave): number => save.rawJewels.small + save.rawJewe
  */
 export function applyReceiptWithQuests(save: HomeSave, receipt: TripReceipt, tally: TripTally, highest: number): HomeSave {
   const after = applyReceipt(save, receipt);
-  if (after === save) return save;
+  const isUnchanged = after === save;
+  if (isUnchanged) return save;
   const moved = applyTripToQuests(after.quests, receipt, tally);
   const banked = receipt.outcome === 'banked';
   return withQuests(after, banked ? rollJobs(moved, Math.max(highest, receipt.level)) : moved);
@@ -44,7 +45,8 @@ export function resolveOpenTripWithQuests(save: HomeSave, resumed: boolean | nul
 /** The forge's payout and the jewels it melted, counted toward any smelt quest in the same save. */
 export function smeltWithQuests(save: HomeSave, seconds: number): HomeSave {
   const after = smeltTick(save, seconds);
-  if (after === save) return save;
+  const isUnchanged = after === save;
+  if (isUnchanged) return save;
   return withQuests(after, noteSmelted(after.quests, jewelsIn(save) - jewelsIn(after)));
 }
 

@@ -156,10 +156,8 @@ defineExpose({ focus: () => focusTile(cursor) });
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .is-playing .track-record {
-    animation: none;
-  }
+:root[data-motion='reduced'] .is-playing .track-record {
+  animation: none;
 }
 
 .track-name,

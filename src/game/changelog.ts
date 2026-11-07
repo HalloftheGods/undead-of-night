@@ -20,6 +20,86 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'smooth-hordes',
+    date: '2026-11-07',
+    kind: 'better',
+    title: 'Smoother big hordes',
+    deck: 'A full horde runs faster on slower computers and phones.',
+    points: [
+      'Score pop-ups and bloodstains cost far less to draw.',
+      'When frames start to drop, the game trims spare sparks and small flashes of light first.',
+      'If that is not enough, the lighting updates every other frame until the fight thins out.',
+    ],
+  },
+  {
+    id: 'motion-setting',
+    date: '2026-11-07',
+    kind: 'new',
+    title: 'Choose your motion',
+    deck: 'Options has a Motion setting, and a slider for screen shake.',
+    points: [
+      'System follows your device, as before. Full plays every animation, the van ride too, whatever your device says.',
+      'Reduced calms things down: no big flashes, still transitions, and only a nudge of shake.',
+      'Screen shake goes from 0 to 100%, so you can keep the motion and lose the wobble.',
+    ],
+  },
+  {
+    id: 'readable-pickup-text',
+    date: '2026-11-07',
+    kind: 'better',
+    title: 'Pickup words you can read',
+    deck: 'The little words over your head no longer pile on top of each other.',
+    points: [
+      'Grab several things at once and each word gets its own line, newest at the bottom.',
+      'Grab the same thing twice and the numbers add up: two boxes of shells read +8 SHELLS.',
+      'Words hold still for a moment once they rise, then fade out instead of blinking away.',
+    ],
+  },
+  {
+    id: 'combat-feel',
+    date: '2026-11-07',
+    kind: 'better',
+    title: 'Fights hit harder',
+    deck: 'You can hear a brute coming, and a boss going down feels like it.',
+    points: [
+      'Brutes and bosses stomp as they walk, so you hear a big one before you see it.',
+      'Every gun reloads its own way: the pistol slide snaps, the carbine racks, the shotgun loads shell by shell.',
+      'When you are badly hurt the red at the edge of the screen beats with your heart, and the world goes muffled.',
+      'A boss kill freezes the moment with a flash and the biggest shake in the game. Reduced motion keeps it calm.',
+    ],
+  },
+  {
+    id: 'faster-first-load',
+    date: '2026-11-07',
+    kind: 'better',
+    title: 'A faster first load',
+    deck: 'The game downloads less before the title screen shows.',
+    points: [
+      'The books, the jukebox and the ending now load in the background after the title is up.',
+      'Online rooms load their code only when you host or join one.',
+    ],
+  },
+  {
+    id: 'setup-stepper-thumbs',
+    date: '2026-11-07',
+    kind: 'better',
+    title: 'Setup shows your picks',
+    deck: 'Each finished step in the setup stepper shows a little picture of what you chose.',
+    points: ['Your style, mode and difficulty sit in the stepper as thumbnails. Tap one to go back and change it.'],
+  },
+  {
+    id: 'sound-color-size-options',
+    date: '2026-11-07',
+    kind: 'better',
+    title: 'Options for your ears and eyes',
+    deck: 'Set music and sound effects apart, pick colorblind hit colors and make the UI bigger.',
+    points: [
+      'Music and Sound effects each get their own slider under Volume.',
+      'Hit colors: Colorblind swaps red and green for magenta and blue on health bars, callouts and the HUD.',
+      'UI size: Large and Larger make the HUD and menus easier to read on a phone.',
+    ],
+  },
+  {
     id: 'apartment-floors',
     date: '2026-11-07',
     kind: 'new',

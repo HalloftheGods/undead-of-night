@@ -47,7 +47,8 @@ function stripOf(wall: WallLine, thickness: number): Box {
 function clearStrip(b: MapBuilder, strip: Box): void {
   for (let i = b.props.length - 1; i >= 0; i--) {
     const { x, y } = b.props[i];
-    if (x >= strip.x0 && x <= strip.x1 && y >= strip.y0 && y <= strip.y1) b.props.splice(i, 1);
+    const isOnStrip = x >= strip.x0 && x <= strip.x1 && y >= strip.y0 && y <= strip.y1;
+    if (isOnStrip) b.props.splice(i, 1);
   }
 }
 
@@ -87,7 +88,8 @@ function junkWall(b: MapBuilder, wall: WallLine): void {
   const pitch = wall.runsAlongX ? 46 : 44;
   let index = 0;
   for (let at = wall.from + pitch / 2; at < wall.to; at += pitch) {
-    if (Math.abs(at - middle) < GATE_PX / 2 + pitch / 2) continue;
+    const isAtGate = Math.abs(at - middle) < GATE_PX / 2 + pitch / 2;
+    if (isAtGate) continue;
     const kind = kinds[index++ % kinds.length];
     if (wall.runsAlongX) b.place(kind, at, wall.line, TIGHT);
     else b.place(kind, wall.line, at, TIGHT);
@@ -103,7 +105,8 @@ function raiseWalls(b: MapBuilder, plan: TownPlan): void {
     const start = road.horizontal ? road.c0 : road.r0;
     const end = road.horizontal ? road.c1 : road.r1;
     const wall = wallLine(road, randInt(b.rng, start + WALL_MARGIN_TILES, end - WALL_MARGIN_TILES));
-    if (style === 'fence') fenceWall(b, wall);
+    const isFence = style === 'fence';
+    if (isFence) fenceWall(b, wall);
     else junkWall(b, wall);
   }
 }

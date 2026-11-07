@@ -84,7 +84,8 @@ export interface SugarState {
 
 /** The candy a container hides, if any. Cars never hold candy. */
 export function candyIn(seed: number, container: Container): CandyId | null {
-  if (container.kind === 'car') return null;
+  const isCar = container.kind === 'car';
+  if (isCar) return null;
   const rng = createRng((seed ^ CANDY_SALT ^ Math.imul(container.id + 1, 0x85ebca6b)) >>> 0);
   const odds = CANDY_ODDS[container.buildingKind] ?? 0;
   const found = rng() < odds;
@@ -109,8 +110,10 @@ export function takeCandy(p: PlayerState, candy: CandyId | null): CandyId | null
 export function sugarOf(p: Pick<PlayerState, 'sugar'>, id: CandyId): number {
   let strength = 0;
   for (const sugar of p.sugar) {
-    if (sugar.id === id) return 1;
-    if (sugar.id === 'full_size_bar') strength = FULL_SIZE_STRENGTH;
+    const isAlreadyBuzzing = sugar.id === id;
+    if (isAlreadyBuzzing) return 1;
+    const isFullSizeBar = sugar.id === 'full_size_bar';
+    if (isFullSizeBar) strength = FULL_SIZE_STRENGTH;
   }
   return strength;
 }
@@ -137,7 +140,8 @@ export function updateCandy(sim: SimState, p: PlayerState): void {
   for (const sugar of p.sugar) sugar.left -= TICK_DT;
   p.sugar = p.sugar.filter((sugar) => sugar.left > 1e-9);
   const index = wantsToEat && p.status === 'alive' ? nextToEat(p) : -1;
-  if (index < 0) return;
+  const hasNothingToEat = index < 0;
+  if (hasNothingToEat) return;
   const [id] = p.candy.splice(index, 1);
   p.sugar.push({ id, left: id === 'full_size_bar' ? FULL_SIZE_SEC : CANDY_SEC });
   emit(sim, { type: 'candy_eaten', playerId: p.id, candy: id, x: p.x, y: p.y });
@@ -146,7 +150,8 @@ export function updateCandy(sim: SimState, p: PlayerState): void {
 /** A Caramel Apple catches a survivor about to go down, and is spent doing it. True if it did. */
 export function caramelCatch(sim: SimState, p: PlayerState): boolean {
   const apple = p.sugar.findIndex((sugar) => sugar.id === 'caramel_apple');
-  if (apple < 0) return false;
+  const hasNoCaramelApple = apple < 0;
+  if (hasNoCaramelApple) return false;
   p.sugar.splice(apple, 1);
   p.health = Math.ceil(p.maxHealth * CARAMEL_HEALTH);
   emit(sim, { type: 'candy_eaten', playerId: p.id, candy: 'caramel_apple', x: p.x, y: p.y, saved: true });

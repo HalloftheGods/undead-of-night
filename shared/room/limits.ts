@@ -37,7 +37,8 @@ export function takePacketAllowance(client: PacketBudget, now: number): boolean 
   const refill = ((now - client.allowanceAt) / 1000) * PACKETS_PER_SEC;
   client.packetAllowance = Math.min(PACKET_BURST, client.packetAllowance + refill);
   client.allowanceAt = now;
-  if (client.packetAllowance < 1) return false;
+  const isOutOfAllowance = client.packetAllowance < 1;
+  if (isOutOfAllowance) return false;
   client.packetAllowance -= 1;
   return true;
 }

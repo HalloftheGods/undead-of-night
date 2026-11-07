@@ -1,6 +1,6 @@
 <template>
   <section class="px-screen credits" aria-label="Credits" @click="done">
-    <ol class="credits-roll" :style="{ animationDuration: duration }" @animationend="done">
+    <ol class="credits-roll" :style="{ '--roll-duration': duration }" @animationend="done">
       <li v-for="(line, index) in CREDITS" :key="index" :class="'credits-' + line.kind">{{ line.text }}</li>
     </ol>
     <div class="credits-skip">
@@ -50,7 +50,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
   padding: 0;
   list-style: none;
   text-align: center;
-  animation: credits-roll linear both;
+  animation: credits-roll var(--roll-duration) linear both;
 }
 
 @keyframes credits-roll {

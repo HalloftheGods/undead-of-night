@@ -77,6 +77,36 @@ const EVENTS: GameEvent[] = [
   { type: 'game_over', stats: { outcome: 'defeat', difficulty: 'lights_out', level: 1, wave: 3, durationSec: 120, players: [] } },
 ];
 
+describe('reload foley', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it('loads a shotgun shell by shell until the reload ends, and racks the others after the magazine', async () => {
+    const a = new AudioEngine();
+    await a.unlock();
+    const played: string[] = [];
+    vi.spyOn(Mixer.prototype, 'play').mockImplementation((name) => { played.push(name); });
+    a.handleEvent({ type: 'reload_start', playerId: P, weapon: 'shotgun', x: 0, y: 0 }, P);
+    for (let i = 0; i < 70; i += 1) a.tick(0.01, []);
+    a.handleEvent({ type: 'reload_end', playerId: P, weapon: 'shotgun', x: 0, y: 0 }, P);
+    for (let i = 0; i < 100; i += 1) a.tick(0.01, []);
+    expect(played.filter((n) => n === 'shell_load')).toHaveLength(3);
+    expect(played.at(-1)).toBe('pump');
+    played.length = 0;
+    a.handleEvent({ type: 'reload_end', playerId: P, weapon: 'carbine', x: 0, y: 0 }, P);
+    a.handleEvent({ type: 'reload_end', playerId: P, weapon: 'pistol', x: 0, y: 0 }, P);
+    expect(played).toEqual(['mag_in', 'bolt_rack', 'mag_in', 'slide_drop']);
+    vi.restoreAllMocks();
+    a.dispose();
+  });
+});
+
 describe('Mixer level', () => {
   /** The gain node wired to the speakers, read before any time has passed. */
   function masterGain(level: number): number {
@@ -91,6 +121,7 @@ describe('Mixer level', () => {
       },
       createDynamicsCompressor: deep,
       createWaveShaper: deep,
+      createBiquadFilter: deep,
     };
     new Mixer(ctx as unknown as AudioContext, level);
     return gains.find((node) => node.target === destination)!.gain.value;
@@ -118,6 +149,8 @@ describe('AudioEngine without Web Audio', () => {
     a.handleEvent(EVENTS[0], null);
     a.tick(0.016, [{ x: 0, y: 0, type: 'walker' }]);
     a.stepPlayers([], P, STEP_MAP, 0.016);
+    a.stompZombies([{ id: 'z', type: 'brute', x: 0, y: 0 }]);
+    a.heartbeat(0.1);
     a.dispose();
     a.dispose();
   });
@@ -156,6 +189,7 @@ describe('AudioEngine with a fake AudioContext', () => {
     expect(stats.created).toBeGreaterThan(50);
     a.tick(5, [{ x: 100, y: 0, type: 'bloater' }]);
     a.setHealth(0.1);
+    a.heartbeat(0.1);
     a.tick(1, []);
     vi.advanceTimersByTime(10_000);
     a.setScene('gameover');

@@ -80,7 +80,8 @@ const BUILD: Record<LandmarkId, (b: MapBuilder, at: Spot) => void> = {
   // A cordon compound: barrier lines, a gap to drive through, vans and fire inside.
   checkpoint(b, at) {
     for (let dx = -88; dx <= 88; dx += 36) {
-      if (Math.abs(dx) < 20) continue;
+      const isRoadGap = Math.abs(dx) < 20;
+      if (isRoadGap) continue;
       b.place('barrier', at.x + dx, at.y - 56, TIGHT);
       b.place('barrier', at.x + dx, at.y + 60, TIGHT);
     }

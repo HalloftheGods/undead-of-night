@@ -1,21 +1,9 @@
 <template>
   <TitlePage heading="Options" @close="emit('close')">
-    <div class="options-sound">
-      <div class="options-volume">
-        <label class="px-label" for="volume">Volume</label>
-        <input
-          id="volume"
-          class="px-slider"
-          type="range"
-          min="0"
-          max="1"
-          step="0.05"
-          :value="ui.volume"
-          @input="onVolume"
-        />
-      </div>
-      <PixelButton class="options-mute" :aria-pressed="ui.muted" @press="game.toggleMute()">{{ muteLabel }}</PixelButton>
-    </div>
+    <SoundOptions :ui />
+    <DisplayOptions :ui />
+
+    <MotionOptions />
 
     <div class="options-analytics">
       <div class="options-analytics-head">
@@ -45,16 +33,16 @@ import { computed } from 'vue';
 import { consent, openPrivacy } from '../game/analytics/index.ts';
 import type { UiState } from '../game/hud-state.ts';
 import { CONTROLS } from '../game/title-menu.ts';
+import DisplayOptions from './DisplayOptions.vue';
 import MenuLink from './MenuLink.vue';
+import MotionOptions from './MotionOptions.vue';
 import PixelButton from './PixelButton.vue';
+import SoundOptions from './SoundOptions.vue';
 import TitlePage from './TitlePage.vue';
-import { useGame } from './use-game.ts';
 
-const { ui } = defineProps<{ ui: UiState }>();
+defineProps<{ ui: UiState }>();
 const emit = defineEmits<{ close: [] }>();
-const game = useGame();
 
-const muteLabel = computed(() => (ui.muted ? 'Unmute' : 'Mute'));
 const analyticsOn = computed(() => consent.allowed());
 const analyticsLabel = computed(() => (analyticsOn.value ? 'On' : 'Off'));
 const analyticsNote = computed(() =>
@@ -67,24 +55,9 @@ function toggleAnalytics(): void {
   if (analyticsOn.value) consent.deny();
   else consent.grant();
 }
-
-function onVolume(event: Event): void {
-  game.setVolume(Number((event.target as HTMLInputElement).value));
-}
 </script>
 
 <style scoped>
-.options-sound {
-  display: flex;
-  align-items: flex-end;
-  gap: calc(var(--u) * 6);
-}
-
-.options-volume {
-  flex: 1;
-  padding-bottom: calc(var(--u) * 3);
-}
-
 .options-mute {
   width: calc(var(--u) * 56);
 }

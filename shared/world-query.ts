@@ -108,7 +108,8 @@ function footprintIndex(map: WorldMap): Int32Array {
 export function buildingAt(map: WorldMap, x: number, y: number): BuildingInstance | null {
   const col = Math.floor(x / TILE_SIZE);
   const row = Math.floor(y / TILE_SIZE);
-  if (col < 0 || row < 0 || col >= map.cols || row >= map.rows) return null;
+  const isOffGrid = col < 0 || row < 0 || col >= map.cols || row >= map.rows;
+  if (isOffGrid) return null;
   const owner = footprintIndex(map)[row * map.cols + col];
   return owner < 0 ? null : map.buildings[owner];
 }
@@ -168,7 +169,8 @@ export function blockedTiles(map: WorldMap): Uint8Array {
 export function isBlockedAt(map: WorldMap, x: number, y: number): boolean {
   const col = Math.floor(x / TILE_SIZE);
   const row = Math.floor(y / TILE_SIZE);
-  if (col < 0 || row < 0 || col >= map.cols || row >= map.rows) return true;
+  const isOffGrid = col < 0 || row < 0 || col >= map.cols || row >= map.rows;
+  if (isOffGrid) return true;
   return solidIndex(map).blocked[row * map.cols + col] === 1;
 }
 
@@ -185,7 +187,8 @@ export function circleHitsSolid(map: WorldMap, x: number, y: number, r: number):
       for (const box of buckets[row * map.cols + col]) {
         const dx = x - Math.max(box.x0, Math.min(x, box.x1));
         const dy = y - Math.max(box.y0, Math.min(y, box.y1));
-        if (dx * dx + dy * dy < r2) return true;
+        const isTouching = dx * dx + dy * dy < r2;
+        if (isTouching) return true;
       }
     }
   }
@@ -196,16 +199,20 @@ export function circleHitsSolid(map: WorldMap, x: number, y: number, r: number):
 function segmentEntersBox(box: Box, x0: number, y0: number, dx: number, dy: number): number {
   let tMin = 0;
   let tMax = 1;
-  if (dx === 0) {
-    if (x0 < box.x0 || x0 > box.x1) return Infinity;
+  const isVertical = dx === 0;
+  if (isVertical) {
+    const missesSideways = x0 < box.x0 || x0 > box.x1;
+    if (missesSideways) return Infinity;
   } else {
     const a = (box.x0 - x0) / dx;
     const b = (box.x1 - x0) / dx;
     tMin = Math.max(tMin, Math.min(a, b));
     tMax = Math.min(tMax, Math.max(a, b));
   }
-  if (dy === 0) {
-    if (y0 < box.y0 || y0 > box.y1) return Infinity;
+  const isHorizontal = dy === 0;
+  if (isHorizontal) {
+    const missesVertically = y0 < box.y0 || y0 > box.y1;
+    if (missesVertically) return Infinity;
   } else {
     const a = (box.y0 - y0) / dy;
     const b = (box.y1 - y0) / dy;
@@ -237,15 +244,19 @@ export function segmentHitsSolid(
   let best = Infinity;
 
   for (;;) {
-    if (col >= 0 && row >= 0 && col < map.cols && row < map.rows) {
+    const isOnGrid = col >= 0 && row >= 0 && col < map.cols && row < map.rows;
+    if (isOnGrid) {
       for (const box of buckets[row * map.cols + col]) {
         const t = segmentEntersBox(box, x0, y0, dx, dy);
-        if (t < best) best = t;
+        const isNearerHit = t < best;
+        if (isNearerHit) best = t;
       }
     }
     const exit = Math.min(nextX, nextY);
-    if (best <= exit || exit >= 1) break;
-    if (nextX < nextY) {
+    const isDone = best <= exit || exit >= 1;
+    if (isDone) break;
+    const crossesColumnFirst = nextX < nextY;
+    if (crossesColumnFirst) {
       nextX += deltaX;
       col += stepCol;
     } else {

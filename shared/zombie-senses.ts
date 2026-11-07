@@ -34,7 +34,8 @@ export function pickUpTrail(sim: SimState, z: ZombieState, print: Footprint): vo
 /** The prints ran out: it casts about for a while where it stands, then gives up. */
 export function loseTrail(z: ZombieState): void {
   const trail = z.trail;
-  if (!trail || trail.searching) return;
+  const hasNoFreshTrail = !trail || trail.searching;
+  if (hasNoFreshTrail) return;
   trail.searching = true;
   z.interestLeft = TRACK_SEARCH_SEC;
   z.wanderLeft = 0;
@@ -65,7 +66,8 @@ export function makeNoise(sim: SimState, x: number, y: number, radius: number): 
     if (!heard) continue;
     // A noise beats a nose: a bottle pulls a tracker off the trail.
     delete z.trail;
-    if (z.mode === 'hunt') z.interestLeft = ZOMBIE_LOSE_INTEREST_SEC;
+    const isHunting = z.mode === 'hunt';
+    if (isHunting) z.interestLeft = ZOMBIE_LOSE_INTEREST_SEC;
     else notice(sim, z, 'alert', ZOMBIE_INVESTIGATE_SEC);
   }
 }
@@ -117,7 +119,9 @@ export function updateAwareness(sim: SimState, z: ZombieState, prey: readonly Pl
     pickUpTrail(sim, z, print);
     return;
   }
-  if (z.mode === 'wander') return;
+  const isWandering = z.mode === 'wander';
+  if (isWandering) return;
   z.interestLeft -= TICK_DT;
-  if (z.interestLeft <= 0) backToRoaming(sim, z);
+  const hasLostInterest = z.interestLeft <= 0;
+  if (hasLostInterest) backToRoaming(sim, z);
 }

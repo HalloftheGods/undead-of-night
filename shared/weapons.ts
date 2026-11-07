@@ -25,7 +25,8 @@ function cancelReload(p: PlayerState): void {
 function switchWeapon(sim: SimState, p: PlayerState): void {
   const wanted = p.weaponQueued;
   p.weaponQueued = null;
-  if (!wanted || wanted === p.weapon || !p.owned.includes(wanted)) return;
+  const hasNoSwitchToMake = !wanted || wanted === p.weapon || !p.owned.includes(wanted);
+  if (hasNoSwitchToMake) return;
   cancelReload(p);
   p.weapon = wanted;
   p.fireCooldown = Math.max(p.fireCooldown, WEAPON_SWITCH_DELAY_SEC);
@@ -40,18 +41,21 @@ function reloadSeconds(p: PlayerState): number {
 function startReload(sim: SimState, p: PlayerState): void {
   const gun = p.guns[p.weapon];
   const magFull = !gun || gun.ammo >= heldStats(p).magSize;
-  if (magFull || p.ammoBag[p.weapon] === 0 || p.reloadLeft > 0) return;
+  const cannotReload = magFull || p.ammoBag[p.weapon] === 0 || p.reloadLeft > 0;
+  if (cannotReload) return;
   p.reloadLeft = reloadSeconds(p);
   emit(sim, { type: 'reload_start', playerId: p.id, weapon: p.weapon, x: p.x, y: p.y });
 }
 
 function advanceReload(sim: SimState, p: PlayerState): void {
-  if (p.reloadLeft <= 0) return;
+  const isNotReloading = p.reloadLeft <= 0;
+  if (isNotReloading) return;
   const total = reloadSeconds(p);
   p.reloadLeft -= TICK_DT;
   // A floor above zero keeps "reloading" distinct from "not reloading" on the first tick.
   p.reload = Math.max(0.01, 1 - p.reloadLeft / total);
-  if (p.reloadLeft > 1e-9) return;
+  const isStillReloading = p.reloadLeft > 1e-9;
+  if (isStillReloading) return;
 
   const gun = p.guns[p.weapon];
   if (gun) {

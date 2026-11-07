@@ -36,11 +36,11 @@ export function loopbackPair(): {
   peer: PeerSocket & { onFrame: (text: string) => void; onClosed: () => void; onProbe: () => void };
 } {
   let handlers: PipeHandlers | null = null;
-  let open = true;
+  let isOpen = true;
   const later = (fn: () => void): void => queueMicrotask(fn);
   const shut = (code: number, reason: string, tellClient: boolean): void => {
-    if (!open) return;
-    open = false;
+    if (!isOpen) return;
+    isOpen = false;
     const told = handlers;
     handlers = null;
     later(() => {
@@ -54,16 +54,16 @@ export function loopbackPair(): {
     /** Nothing can drop between two ends in one tab, so a probe is answered at once. */
     onProbe: (): void => {},
     get open() {
-      return open;
+      return isOpen;
     },
     send: (text: string) => {
-      if (open) later(() => handlers?.message(text));
+      if (isOpen) later(() => handlers?.message(text));
     },
     close: (code: number, reason: string) => shut(code, reason, true),
     drop: () => shut(DROPPED, '', true),
     canTakeFrame: () => true,
     probe: () => {
-      if (open) peer.onProbe();
+      if (isOpen) peer.onProbe();
     },
   };
   const pipe: PacketPipe = {
@@ -71,7 +71,7 @@ export function loopbackPair(): {
       handlers = next;
     },
     send: (text) => {
-      if (open) later(() => peer.onFrame(text));
+      if (isOpen) later(() => peer.onFrame(text));
     },
     close: () => shut(1000, 'left', false),
   };

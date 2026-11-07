@@ -69,11 +69,13 @@ export function createRoomHost(options: RoomHostOptions): RoomHost {
 
   /** Closes a join from another build with 4014, saying which side is behind. True when it was turned away. */
   function turnedAwayForVersion(client: RoomClient, packet: ClientPacket): boolean {
-    if (packet.type !== 'join') return false;
+    const isNotJoin = packet.type !== 'join';
+    if (isNotJoin) return false;
     const theirs = packet.protocol;
     const sameBuild = theirs === PROTOCOL_VERSION;
     const unversionedAllowed = theirs === undefined && options.acceptUnversioned === true;
-    if (sameBuild || unversionedAllowed) return false;
+    const isCompatible = sameBuild || unversionedAllowed;
+    if (isCompatible) return false;
     const hostIsBehind = theirs !== undefined && theirs > PROTOCOL_VERSION;
     const reason = hostIsBehind ? UPDATE_REASON.hostOlder : UPDATE_REASON.guestOlder;
     // A data channel has no close code, so the bye carries it.
@@ -95,7 +97,8 @@ export function createRoomHost(options: RoomHostOptions): RoomHost {
     const admitted = text !== null && takePacketAllowance(client, clock.now());
     if (!admitted) return;
     const packet = parseClientPacket(text);
-    if (packet && !turnedAwayForVersion(client, packet)) room.receive(client, packet);
+    const isAcceptedPacket = packet && !turnedAwayForVersion(client, packet);
+    if (isAcceptedPacket) room.receive(client, packet);
   }
 
   function admit(peer: PeerSocket, address: string): HostedPeer | null {

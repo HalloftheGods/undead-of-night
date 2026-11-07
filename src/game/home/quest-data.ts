@@ -111,7 +111,9 @@ export const startersOf = (): QuestDef[] => QUESTS.filter((each) => each.starter
 
 /** How much of the objective is a full bar. */
 export function targetOf(objective: Objective): number {
-  if (objective.kind === 'visit') return 1;
-  if (objective.kind === 'fast') return 1;
+  const isVisit = objective.kind === 'visit';
+  if (isVisit) return 1;
+  const isFast = objective.kind === 'fast';
+  if (isFast) return 1;
   return objective.count;
 }

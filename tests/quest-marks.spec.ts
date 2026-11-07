@@ -78,7 +78,7 @@ describe('the overlay', () => {
   };
   const mark = (ready: boolean) => ({ merchant: 'quartermaster' as const, name: 'Sarge', x: 176, y: 40, ready });
 
-  /** The glyph blits the overlay makes for a scene: where each landed, and the atlas it was cut from. */
+  /** The text blits the overlay makes for a scene: where each landed, and the atlas it was cut from. */
   const blits = (scene: Partial<typeof EMPTY_SCENE>): { x: number; y: number; source: unknown }[] => {
     const calls: { x: number; y: number; source: unknown }[] = [];
     const real = fakeCanvas().getContext() as unknown as CanvasRenderingContext2D;
@@ -87,7 +87,9 @@ describe('the overlay', () => {
         const passesThrough = key !== 'drawImage';
         if (passesThrough) return Reflect.get(target, key);
         return (source: unknown, ...c: number[]) => {
-          calls.push({ x: c[4], y: c[5], source });
+          // A glyph cut from an atlas lands at c[4], c[5]; a whole baked label at c[0], c[1].
+          const cut = c.length >= 8;
+          calls.push({ x: cut ? c[4] : c[0], y: cut ? c[5] : c[1], source });
           (target.drawImage as (...a: unknown[]) => void)(source, ...c);
         };
       },

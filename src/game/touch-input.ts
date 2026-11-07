@@ -125,8 +125,10 @@ export class TouchInput {
 
   private track(touch: Touch): void {
     const { identifier: id, clientX: x, clientY: y } = touch;
-    if (this.stick?.id === id) {
-      this.stick = dragStick(this.stick, x, y);
+    const stick = this.stick;
+    const isStickFinger = stick?.id === id;
+    if (isStickFinger) {
+      this.stick = dragStick(stick, x, y);
       const dir = stickDirection(this.stick);
       this.dirX = dir.x;
       this.dirY = dir.y;
@@ -136,11 +138,13 @@ export class TouchInput {
     if (!finger) return;
     finger.x = x;
     finger.y = y;
-    if (finger === this.fingers.at(-1)) this.host.aimAt(x, y);
+    const isAimFinger = finger === this.fingers.at(-1);
+    if (isAimFinger) this.host.aimAt(x, y);
   }
 
   private lift(id: number): void {
-    if (this.stick?.id === id) {
+    const isStickFinger = this.stick?.id === id;
+    if (isStickFinger) {
       this.stick = null;
       this.dirX = 0;
       this.dirY = 0;
@@ -153,7 +157,8 @@ export class TouchInput {
     this.lastAim = { x: lifted.x, y: lifted.y };
     this.liftedAt = performance.now();
     const next = this.fingers.at(-1);
-    if (wasAiming && next) this.host.aimAt(next.x, next.y);
+    const shouldReaim = wasAiming && next;
+    if (shouldReaim) this.host.aimAt(next.x, next.y);
   }
 
   /** An edge swipe can take a finger with no touchend, and it must not walk on forever. */
@@ -173,17 +178,20 @@ export class TouchInput {
 
   private readonly onStart = (event: TouchEvent): void => {
     this.noteTouch();
-    if (!this.host.live()) return;
+    const isIdle = !this.host.live();
+    if (isIdle) return;
     this.used = true;
     if (event.cancelable) event.preventDefault();
     this.dropLost(event.touches);
     for (const touch of Array.from(event.changedTouches)) {
-      if (!onPad(touch.target)) this.place(touch);
+      const isOffPad = !onPad(touch.target);
+      if (isOffPad) this.place(touch);
     }
   };
 
   private readonly onMove = (event: TouchEvent): void => {
-    if (!this.host.live()) return;
+    const isIdle = !this.host.live();
+    if (isIdle) return;
     if (event.cancelable) event.preventDefault();
     for (const touch of Array.from(event.changedTouches)) this.track(touch);
   };
@@ -195,6 +203,7 @@ export class TouchInput {
   };
 
   private readonly onPinch = (event: Event): void => {
-    if (this.host.live()) event.preventDefault();
+    const isLive = this.host.live();
+    if (isLive) event.preventDefault();
   };
 }

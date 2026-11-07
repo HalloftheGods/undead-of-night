@@ -33,8 +33,10 @@ export interface QuestRow {
 const rowOf = (def: QuestDef, state: QuestRow['state'], progress = 0): QuestRow => ({ id: def.id, state, progress, target: targetOf(def.objective) });
 
 function unlocked(save: HomeSave, def: QuestDef, highest: number): boolean {
-  if (def.repeat === 'once' && save.quests.done.includes(def.id)) return false;
-  if (highest < (def.gate ?? 0)) return false;
+  const isDoneForGood = def.repeat === 'once' && save.quests.done.includes(def.id);
+  if (isDoneForGood) return false;
+  const isGated = highest < (def.gate ?? 0);
+  if (isGated) return false;
   if (!(def.after ?? []).every((id) => save.quests.done.includes(id))) return false;
   const gun = def.owns;
   return gun === undefined || gun in save.locker.guns || gun in save.hands.guns;
@@ -52,19 +54,23 @@ export function questRows(save: HomeSave, merchant: MerchantId, highest: number)
   const openDef = open && questOf(open.id);
   const rows: QuestRow[] = [];
   const waiting = openDef ? 'busy' : 'offered';
-  if (open && openDef) rows.push(rowOf(openDef, isReady(openDef, open.progress) ? 'ready' : 'active', open.progress));
+  const hasOpenQuest = open && openDef;
+  if (hasOpenQuest) rows.push(rowOf(openDef, isReady(openDef, open.progress) ? 'ready' : 'active', open.progress));
   const next = nextOnce(save, merchant, highest);
   if (next) rows.push(rowOf(next, waiting));
   const jobId = save.quests.jobs[merchant];
   const job = jobId ? questOf(jobId) : undefined;
-  if (job && job.id !== open?.id) rows.push(rowOf(job, waiting));
+  const hasOtherJob = job && job.id !== open?.id;
+  if (hasOtherJob) rows.push(rowOf(job, waiting));
   return rows;
 }
 
 function isOnOffer(save: HomeSave, merchant: MerchantId, id: string, highest: number): boolean {
   const def = questOf(id);
-  if (!def || def.giver !== merchant) return false;
-  if (def.repeat === 'job') return save.quests.jobs[merchant] === id;
+  const isNotTheirs = !def || def.giver !== merchant;
+  if (isNotTheirs) return false;
+  const isJob = def.repeat === 'job';
+  if (isJob) return save.quests.jobs[merchant] === id;
   return unlocked(save, def, highest);
 }
 
@@ -72,7 +78,8 @@ const atCounter = (save: HomeSave, merchant: MerchantId, context: QuestContext):
 
 /** Takes the quest on, one at a time per merchant. */
 export function accept(save: HomeSave, merchant: MerchantId, id: string, context: QuestContext): HomeSave | null {
-  if (!atCounter(save, merchant, context) || save.quests.active[merchant]) return null;
+  const cannotAccept = !atCounter(save, merchant, context) || save.quests.active[merchant];
+  if (cannotAccept) return null;
   if (!isOnOffer(save, merchant, id, context.highest)) return null;
   const { quests } = save;
   const jobs = questOf(id)?.repeat === 'job' ? { ...quests.jobs, [merchant]: null } : quests.jobs;
@@ -87,7 +94,8 @@ const mayAbandon = (def: QuestDef | undefined, progress: number): boolean => def
 export function abandon(save: HomeSave, merchant: MerchantId, context: QuestContext): HomeSave | null {
   const open = save.quests.active[merchant];
   const def = open && questOf(open.id);
-  if (!atCounter(save, merchant, context) || !open || !mayAbandon(def, open.progress)) return null;
+  const cannotAbandon = !atCounter(save, merchant, context) || !open || !mayAbandon(def, open.progress);
+  if (cannotAbandon) return null;
   const active = { ...save.quests.active };
   delete active[merchant];
   const isJob = def?.repeat === 'job';
@@ -121,10 +129,12 @@ export function paidAsSilver(save: HomeSave, def: QuestDef, difficulty: Difficul
 
 /** Pays the quest and clears it. Refused unless it is ready, at its giver's counter, with no trip open. */
 export function turnIn(save: HomeSave, merchant: MerchantId, context: QuestContext): HomeSave | null {
-  if (!atCounter(save, merchant, context)) return null;
+  const isAwayFromCounter = !atCounter(save, merchant, context);
+  if (isAwayFromCounter) return null;
   const open = save.quests.active[merchant];
   const def = open && questOf(open.id);
-  if (!open || !def || !isReady(def, open.progress)) return null;
+  const cannotTurnIn = !open || !def || !isReady(def, open.progress);
+  if (cannotTurnIn) return null;
   const items = def.reward.reduce<HomeSave>((so, reward) => (reward.kind === 'item' ? payItem(so, reward, context.difficulty) : so), save);
   const active = { ...save.quests.active };
   delete active[merchant];

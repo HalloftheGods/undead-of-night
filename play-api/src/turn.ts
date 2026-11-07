@@ -28,15 +28,22 @@ export function dropPort53(servers: readonly IceServer[]): IceServer[] {
 
 export const turnConfigured = (env: TurnEnv): boolean => env.TURN_ENABLED === '1' && !!env.TURN_KEY_ID && !!env.TURN_KEY_API_TOKEN;
 
+/** The API answers `iceServers` as one server or a list; absent means none. */
+function asServerList(raw: unknown): unknown[] {
+  if (Array.isArray(raw)) return raw;
+  return raw ? [raw] : [];
+}
+
 function readServers(data: unknown): IceServer[] {
   const raw = (data as { iceServers?: unknown } | null)?.iceServers;
-  const list = Array.isArray(raw) ? raw : raw ? [raw] : [];
+  const list = asServerList(raw);
   return list.filter((each): each is IceServer => typeof each === 'object' && each !== null && 'urls' in each);
 }
 
 /** STUN plus Cloudflare TURN when it is on and minting works; STUN alone otherwise. */
 export async function iceServersFor(env: TurnEnv, fetcher: typeof fetch = fetch): Promise<IceServer[]> {
-  if (!turnConfigured(env)) return [STUN_SERVER];
+  const isTurnOff = !turnConfigured(env);
+  if (isTurnOff) return [STUN_SERVER];
   try {
     const response = await fetcher(turnUrl(env.TURN_KEY_ID as string), {
       method: 'POST',

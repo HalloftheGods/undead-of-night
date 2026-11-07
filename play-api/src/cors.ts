@@ -19,7 +19,8 @@ export function corsHeaders(origin: string | null, allowed: ReadonlySet<string>)
 
 export function preflight(request: Request, allowed: ReadonlySet<string>): Response {
   const origin = request.headers.get('Origin');
-  if (!origin || !allowed.has(origin)) return new Response(null, { status: 403, headers: { Vary: 'Origin' } });
+  const isForeignOrigin = !origin || !allowed.has(origin);
+  if (isForeignOrigin) return new Response(null, { status: 403, headers: { Vary: 'Origin' } });
   return new Response(null, {
     status: 204,
     headers: {

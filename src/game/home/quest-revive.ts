@@ -12,11 +12,15 @@ const isNumber = (v: unknown): v is number => typeof v === 'number' && Number.is
 
 /** An active quest that still exists, belongs to this merchant, and has progress inside its bar. */
 function reviveActive(value: unknown, merchant: MerchantId): ActiveQuest | null {
-  if (!isFields(value) || typeof value.id !== 'string') return null;
-  const def = questOf(value.id);
-  if (!def || def.giver !== merchant) return null;
-  const progress = isNumber(value.progress) ? Math.min(targetOf(def.objective), Math.max(0, Math.floor(value.progress))) : 0;
-  return { id: def.id, progress, acceptedAt: isNumber(value.acceptedAt) ? value.acceptedAt : 0 };
+  const fields: Fields = isFields(value) ? value : {};
+  const { id } = fields;
+  const isBadQuest = typeof id !== 'string';
+  if (isBadQuest) return null;
+  const def = questOf(id);
+  const isUnknownQuest = !def || def.giver !== merchant;
+  if (isUnknownQuest) return null;
+  const progress = isNumber(fields.progress) ? Math.min(targetOf(def.objective), Math.max(0, Math.floor(fields.progress))) : 0;
+  return { id: def.id, progress, acceptedAt: isNumber(fields.acceptedAt) ? fields.acceptedAt : 0 };
 }
 
 const reviveDone = (value: unknown): string[] => {
@@ -31,15 +35,18 @@ const reviveJob = (value: unknown, merchant: MerchantId): string | null => {
 
 /** `blank` is what a new save holds, and stands in for anything that does not read. */
 export function reviveQuests(value: unknown, blank: QuestState): QuestState {
-  if (!isFields(value) || !isNumber(value.seed) || !isNumber(value.rolls)) return blank;
+  const fields: Fields = isFields(value) ? value : {};
+  const { seed, rolls } = fields;
+  const isBadShop = !isNumber(seed) || !isNumber(rolls);
+  if (isBadShop) return blank;
   const active: QuestState['active'] = {};
   const jobs = { ...blank.jobs };
-  const rawActive = isFields(value.active) ? value.active : {};
-  const rawJobs = isFields(value.jobs) ? value.jobs : {};
+  const rawActive = isFields(fields.active) ? fields.active : {};
+  const rawJobs = isFields(fields.jobs) ? fields.jobs : {};
   for (const merchant of MERCHANT_IDS) {
     const quest = reviveActive(rawActive[merchant], merchant);
     if (quest) active[merchant] = quest;
     jobs[merchant] = reviveJob(rawJobs[merchant], merchant);
   }
-  return { seed: value.seed, rolls: Math.max(0, Math.floor(value.rolls)), active, done: reviveDone(value.done), jobs };
+  return { seed, rolls: Math.max(0, Math.floor(rolls)), active, done: reviveDone(fields.done), jobs };
 }

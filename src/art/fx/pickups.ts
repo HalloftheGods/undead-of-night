@@ -180,7 +180,8 @@ function frame({ rows, glint }: ItemSpec, index: number): PixelCanvas {
   const y = ANCHOR_Y - HOVER - rows.length - BOB[index];
   const canvas = new PixelCanvas(CELL_W, CELL_H).grid(x, y, rows, ITEM).outline({ color: ink[0] });
   const size = GLINT_SIZE[index];
-  if (size > 0) {
+  const hasGlint = size > 0;
+  if (hasGlint) {
     const stamp = GLINTS[size - 1];
     canvas.grid(x + glint[0] - size, y + glint[1] - size, stamp, ITEM);
   }
