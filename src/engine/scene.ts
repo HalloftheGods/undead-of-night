@@ -34,6 +34,8 @@ export interface QuestMark {
 /** Everything the renderer draws this frame. Plain values; nothing here is reactive. */
 export interface SceneView {
   readonly players: readonly PlayerEntity[];
+  /** The Daily Night's ghost: the day's counted run, replayed. Drawn pale and apart; it touches nothing. */
+  readonly ghost?: PlayerEntity | null;
   readonly zombies: readonly ZombieEntity[];
   readonly bullets: readonly BulletEntity[];
   readonly pickups: readonly PickupEntity[];

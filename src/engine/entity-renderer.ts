@@ -35,6 +35,9 @@ const KILLED_MEMORY_SEC = 2;
 const FADED_ALPHA = 0.42;
 const FADE_RATE = 7;
 const SILHOUETTE_ALPHA = 0.34;
+/** The Daily Night ghost: a faint figure with a pale glow, drawn over the dark so it can be followed. */
+const GHOST_ALPHA = 0.38;
+const GHOST_GLOW_ALPHA = 0.22;
 /** Firm enough to read as a contact puddle on near-black asphalt; a darker core would blot snow. */
 const SHADOW_ALPHA = 0.6;
 /** A shove lurches the body this far along its aim and straight back. */
@@ -454,13 +457,36 @@ export class EntityRenderer {
   }
 
   /** Teammates stay findable behind and inside buildings as a pale outline. */
-  drawOccluded(ctx: CanvasRenderingContext2D, scene: SceneView, left: number, top: number, viewW: number, viewH: number): void {
+  drawOccluded(ctx: CanvasRenderingContext2D, scene: SceneView, left: number, top: number, viewW: number, viewH: number, time = 0): void {
+    this.drawGhost(ctx, scene, left, top, viewW, viewH, time);
     ctx.globalAlpha = SILHOUETTE_ALPHA;
     for (const player of scene.players) {
       const sprite = this.visuals.get(player.id).sprite;
       const showsOutline = sprite !== null && player.status !== 'dead' && this.hiddenByShell(player, left, top, viewW, viewH);
       if (showsOutline) drawSilhouette(ctx, sprite, Math.round(player.x) - left, Math.round(player.y) - top);
     }
+    ctx.globalAlpha = 1;
+  }
+
+  /** The day's counted run, walking it again: lit by nothing, so drawn after the dark, and hidden under closed roofs. */
+  private drawGhost(ctx: CanvasRenderingContext2D, scene: SceneView, left: number, top: number, viewW: number, viewH: number, time: number): void {
+    const ghost = scene.ghost;
+    const onScreen = ghost != null
+      && ghost.x > left - CULL_MARGIN && ghost.x < left + viewW + CULL_MARGIN
+      && ghost.y > top - CULL_MARGIN && ghost.y < top + viewH + CULL_MARGIN;
+    const shown = onScreen && !this.buildings.isHidden(ghost.x, ghost.y);
+    if (!shown) return;
+    const visual = this.visuals.touch(ghost.id);
+    trackWalking(visual, ghost.x, ghost.y);
+    this.survivorFrames.track(visual, ghost.status, time);
+    const sprite = this.survivorFrames.frame(ghost, visual, time);
+    visual.sprite = sprite;
+    const x = Math.round(ghost.x) - left;
+    const y = Math.round(ghost.y) - top;
+    ctx.globalAlpha = GHOST_GLOW_ALPHA;
+    drawSilhouette(ctx, sprite, x, y);
+    ctx.globalAlpha = GHOST_ALPHA;
+    drawSprite(ctx, sprite, x, y);
     ctx.globalAlpha = 1;
   }
 }

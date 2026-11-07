@@ -51,6 +51,7 @@ export class SnapshotHandler {
       this.beginRun();
     }
     stage.follow(world, snapshot, now);
+    state.ghost?.observe(snapshot, world.localId);
     bench.observe(snapshot);
     audio.setLevel(snapshot.level);
     const before = world.localPlayer;
@@ -157,6 +158,7 @@ export class SnapshotHandler {
     state.runResult = finishRun(stats, localId, state.daily);
     const today = dateKeyOf(new Date());
     const daily = state.runResult.daily;
+    state.ghost?.finish(daily?.counted === true, state.runResult.score);
     if (daily?.counted) {
       const inARow = state.daily !== null && streakOf(loadDailyLog(), state.daily) >= 3;
       this.stamps.give(inARow ? ['daily_bread', 'three_nights'] : ['daily_bread'], today);

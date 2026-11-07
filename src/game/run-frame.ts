@@ -1,3 +1,5 @@
+import type { PlayerEntity } from '../../shared/protocol.ts';
+import { TICK_DT } from '../../shared/constants.ts';
 import type { MerchantId } from '../../shared/home-protocol.ts';
 import { aimAngle } from '../engine/camera.ts';
 import { CHEST_HEIGHT, EMPTY_SCENE } from '../engine/scene.ts';
@@ -73,6 +75,7 @@ export class RunFrame {
     // A finger picks a spot on the picture, so the picture must not lean toward it and move the spot.
     const scene: SceneView = {
       ...entities,
+      ghost: over ? null : this.ghost(world, ms),
       closedStalls: this.closedStalls(),
       questMarks: this.questMarks(world),
       overrunOn: this.host.overrunOn,
@@ -112,6 +115,17 @@ export class RunFrame {
       camera.screenY(world.predictor.y) - CHEST_HEIGHT,
     );
     inputs.aimPoint = renderer.toWorld(pointerX, pointerY);
+  }
+
+  /** The day's counted run where it was at this moment, timed off the sim's tick and the time since it last spoke. */
+  private ghost(world: ClientWorld, ms: number): PlayerEntity | null {
+    const { state } = this.host.parts;
+    const { ghost } = state;
+    const latest = world.latest;
+    const noGhost = ghost === null || latest === null;
+    if (noGhost) return null;
+    const sinceTick = Math.min(1, Math.max(0, (ms - state.lastSnapshotMs) / (TICK_DT * 1000)));
+    return ghost.figure(latest.level, latest.tick + sinceTick, world.localPlayer);
   }
 
   /** The stalls this player's own save has closed. */

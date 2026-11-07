@@ -313,7 +313,7 @@ export class WorldRenderer {
     paintTrackingMarks(ctx, scene.zombies, left, top, viewW, viewH, time, this.reducedMotion);
     this.entities.drawGlints(ctx, scene, left, top, viewW, viewH, time, lightAt);
     this.fx.particles.drawEmissive(ctx, left, top);
-    this.entities.drawOccluded(ctx, scene, left, top, viewW, viewH);
+    this.entities.drawOccluded(ctx, scene, left, top, viewW, viewH, time);
     this.atmosphere.drawWeather(ctx, left, top, viewW, viewH, time, outdoors);
     this.effects.draw(ctx, viewW, viewH);
     this.overlay.draw(ctx, scene, left, top, viewW, viewH, time, lightAt, isKilled);

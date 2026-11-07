@@ -1,5 +1,6 @@
 import type { DifficultyId } from '../../shared/difficulty.ts';
 import type { DailyNight } from './daily-night.ts';
+import { DailyGhost } from './daily-ghost.ts';
 import type { ShallowRef } from 'vue';
 import { cleanCallsign } from '../../shared/callsign.ts';
 import { playsFromHome } from '../../shared/game-style.ts';
@@ -45,6 +46,8 @@ export interface RunState {
   inBunker: boolean | null;
   /** The day of the Daily Night being played, or null for any other run. */
   daily: string | null;
+  /** The Daily Night's ghost: the counted run playing back, or this one recording. Null for any other run. */
+  ghost: DailyGhost | null;
 }
 
 /** The controller's parts a run reaches into. */
@@ -69,7 +72,7 @@ export interface RunHost {
 const ONLINE_UNLOADED = 'Could not load online play. Check the connection and try again.';
 
 export function newRunState(): RunState {
-  return { transport: null, world: null, runResult: null, welcomed: false, lastSnapshotMs: 0, gameOverAtMs: 0, levelNoted: 0, inBunker: null, daily: null };
+  return { transport: null, world: null, runResult: null, welcomed: false, lastSnapshotMs: 0, gameOverAtMs: 0, levelNoted: 0, inBunker: null, daily: null, ghost: null };
 }
 
 /** Starts, restarts and ends a run: the connection from menu to welcome to menu. */
@@ -89,6 +92,7 @@ export class RunSession {
     this.host.audio.playUi('start');
     this.host.publish({ mode: 'solo', error: null });
     this.host.state.daily = null;
+    this.host.state.ghost = null;
     this.beginSession(new LocalSession(), style, fromLevel);
   }
 
@@ -99,6 +103,7 @@ export class RunSession {
     this.host.audio.playUi('start');
     this.host.publish({ mode: 'solo', error: null });
     this.host.state.daily = night.key;
+    this.host.state.ghost = new DailyGhost(night.key);
     this.beginSession(new LocalSession(), 'arcade', night.level, { seed: night.seed, difficulty: night.difficulty });
   }
 
@@ -117,6 +122,7 @@ export class RunSession {
   startCoop(style: GameStyle): void {
     if (!this.canStart()) return;
     this.host.state.daily = null;
+    this.host.state.ghost = null;
     this.host.audio.unlock();
     const text = this.host.ui.value.serverAddress.trim();
     const code = normalizeRoomCode(text);
@@ -211,6 +217,7 @@ export class RunSession {
     const { state, input, inputs, runHud } = this.host;
     state.runResult = null;
     state.inBunker = null;
+    state.ghost?.begin();
     inputs.reset();
     runHud.reset();
     this.host.onResize();
