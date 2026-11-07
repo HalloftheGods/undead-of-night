@@ -161,7 +161,9 @@ export function buildMagazine(art: ArtBook, reached: (level: number) => boolean,
   const photos = magazinePhotos(art);
   const itinerary = Array.from({ length: LEVEL_COUNT }, (_, index) => {
     const level = index + 1;
-    return { level, sprite: buildLevelThumbnail(level, reached(level)) };
+    // A reached level prints the same scene as the Levels page; the rest stay padlocked.
+    const sprite = reached(level) ? art.ui.levelScenes[index] : buildLevelThumbnail(level, false);
+    return { level, sprite };
   });
   const context: HintContext = { art, photos, itinerary };
   const chapters = chapterLinks(sections, context);
