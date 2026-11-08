@@ -13,7 +13,6 @@ export type PickKey = 'mode' | 'difficulty' | 'who';
 export interface PickOption {
   readonly id: string;
   readonly name: string;
-  readonly line: string;
 }
 
 export interface SetupPick {
@@ -32,9 +31,9 @@ export interface SetupChoices {
   readonly survivor: number;
 }
 
-const MODE_OPTIONS: readonly PickOption[] = MODE_CARDS.map((card) => ({ id: card.mode, name: card.label, line: card.line }));
-const DIFFICULTY_OPTIONS: readonly PickOption[] = DIFFICULTIES.map((each) => ({ id: each.id, name: each.label, line: each.blurb }));
-const SURVIVOR_OPTIONS: readonly PickOption[] = CHARACTERS.map((each, index) => ({ id: String(index), name: each.name, line: each.trait }));
+const MODE_OPTIONS: readonly PickOption[] = MODE_CARDS.map((card) => ({ id: card.mode, name: card.label }));
+const DIFFICULTY_OPTIONS: readonly PickOption[] = DIFFICULTIES.map((each) => ({ id: each.id, name: each.label }));
+const SURVIVOR_OPTIONS: readonly PickOption[] = CHARACTERS.map((each, index) => ({ id: String(index), name: each.name }));
 
 /** Where `id` sits in `options`, or the first option when it is not there. */
 function indexOf(options: readonly PickOption[], id: string): number {

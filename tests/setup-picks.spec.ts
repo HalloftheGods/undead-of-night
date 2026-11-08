@@ -24,7 +24,7 @@ describe('setup picks', () => {
     const [mode, difficulty, who] = setupPicks({ mode: 'multi', difficulty: 'undead_tired', survivor: 3 });
     expect(chosenOption(mode).name).toBe('Multiplayer');
     expect(chosenOption(difficulty).name).toBe('Undead Tired');
-    expect(chosenOption(who)).toEqual({ id: '3', name: 'Rex', line: 'Shoves harder' });
+    expect(chosenOption(who)).toEqual({ id: '3', name: 'Rex' });
   });
 
   it('falls back to the first survivor for an index the table does not have', () => {

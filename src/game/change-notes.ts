@@ -34,6 +34,29 @@ export const CHANGE_NOTES: readonly ChangeNote[] = [
     ],
   },
   {
+    id: 'setup-portraits',
+    date: '2026-11-08',
+    kind: 'better',
+    title: 'Taller setup cards',
+    deck: 'The three Play cards stand tall now, and your survivor turns on theirs.',
+    points: [
+      'Mode, Difficulty and Survivor cards share one tall shape, with more night sky over each scene.',
+      'Point at an option to see it in its card before you pick it.',
+      'The lists show just names and pictures, and open without covering Start.',
+    ],
+  },
+  {
+    id: 'menu-details-switch',
+    date: '2026-11-08',
+    kind: 'better',
+    title: 'A cleaner main menu',
+    deck: 'The main menu shows just the names now. The line under each one is a switch in Options.',
+    points: [
+      'Turn on Menu details under Options to bring back a line saying what each item opens.',
+      'On a short screen, like a phone on its side, the lines stay hidden either way so the menu fits.',
+    ],
+  },
+  {
     id: 'menu-sections',
     date: '2026-11-08',
     kind: 'better',
