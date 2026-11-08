@@ -38,10 +38,13 @@ export function fillParking(b: MapBuilder, lot: Box): void {
     const bottom = (row0 + bayRow + STALL_DEPTH_TILES) * TILE_SIZE - 4;
     for (let col = 2; col < cols - 2; col += 2) {
       const isStallTaken = b.rng() < 0.55;
-      if (isStallTaken) b.place('car_sedan_v', (col0 + col + 0.5) * TILE_SIZE, bottom, 16);
+      // Every third stall or so holds a hatchback, picked off the stall so the lot's dice stay put.
+      const parked: PropKind = (col * 7 + bayRow) % 3 === 0 ? 'car_hatch_v' : 'car_sedan_v';
+      if (isStallTaken) b.place(parked, (col0 + col + 0.5) * TILE_SIZE, bottom, 16);
     }
   }
   b.scatter('van_h', lot, 1, 24);
+  b.scatter('pickup_h', lot, 1, 24);
   b.scatter('car_wreck_h', lot, 1, 24);
   lightLot(b, lot);
   b.scatter('rubble', lot, 3);

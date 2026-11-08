@@ -23,6 +23,7 @@ import { GroundLayer } from './tile-layer.ts';
 import { clientFromBuffer, computeViewport } from './viewport.ts';
 import type { Viewport } from './viewport.ts';
 import { VisualStore } from './visuals.ts';
+import { beaconPool } from './car-looks.ts';
 
 const FLASHLIGHT_REACH = 215;
 const TEAM_FLASHLIGHT_REACH = 170;
@@ -211,6 +212,10 @@ export class WorldRenderer {
       const light = lights[i];
       const strength = (light.flicker ? flicker(this.time, i) : 1) * LAMP_STRENGTH * look.lampStrength;
       lighting.addPool(light.x - left, light.y - top, light.radius * LAMP_REACH, look.lampColor ?? light.color, strength);
+    }
+    for (const beacon of this.entities.beacons) {
+      const pool = beaconPool(beacon, this.time, this.reducedMotion);
+      lighting.addPool(pool.x - left, pool.y - top, pool.radius, pool.color, pool.strength);
     }
     if (scene.exit) {
       lighting.addPool(scene.exit.x - left, scene.exit.y - VAN_GLOW_HEIGHT - top, VAN_GLOW_RADIUS, VAN_GLOW_COLOR, VAN_GLOW_STRENGTH);

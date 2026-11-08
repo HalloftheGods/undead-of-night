@@ -16,6 +16,8 @@ export interface Container {
   readonly propIndex: number;
   readonly building?: string;
   readonly buildingKind: BuildingKind | 'outdoors';
+  /** Whose loot it holds: its building's, or for a police car or ambulance, the station's or the clinic's. */
+  readonly stock: BuildingKind | 'outdoors';
   /** On a floor above or below a house, whose stock comes off a generator of its own. */
   readonly upOrDown?: true;
   /** The bottom centre of the furniture it is part of. */
@@ -82,12 +84,21 @@ export const ROOM_CONTAINERS: Record<BuildingKind, Partial<Record<PropKind, Cont
   gun_shop: { locker: 'locker', counter: 'cabinet', shelf: 'shelf' },
 };
 
+/** Vehicles that carry what their service keeps indoors. */
+const SERVICE_STOCK: Partial<Record<PropKind, BuildingKind>> = { police_h: 'police', police_v: 'police', ambulance_h: 'clinic' };
+
 /** What vehicles and clutter open up as outdoors. */
 export const OUTDOOR_CONTAINERS: Partial<Record<PropKind, ContainerKind>> = {
   car_sedan_h: 'car',
   car_sedan_v: 'car',
   car_wreck_h: 'car',
   van_h: 'car',
+  car_hatch_h: 'car',
+  car_hatch_v: 'car',
+  pickup_h: 'car',
+  police_h: 'car',
+  police_v: 'car',
+  ambulance_h: 'car',
   crate_stack: 'box',
   candy_bowl: 'bowl',
 };
@@ -116,6 +127,7 @@ function survey(map: WorldMap): TownContainers {
       propIndex,
       building: room ? room.id : undefined,
       buildingKind: room ? room.kind : 'outdoors',
+      stock: room ? room.kind : SERVICE_STOCK[prop.kind] ?? 'outdoors',
       ...(room?.of === undefined ? {} : { upOrDown: true as const }),
       x: prop.x,
       y: prop.y,

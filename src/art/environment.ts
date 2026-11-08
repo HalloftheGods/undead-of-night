@@ -34,7 +34,11 @@ import {
   buildStreetLamp,
 } from './environment/street.ts';
 import { buildTiles } from './environment/tiles.ts';
-import { buildEscapeVanLights, buildSedanH, buildSedanV, buildVan, buildWreckH } from './environment/vehicles.ts';
+import { buildHatchH, buildHatchV, buildPickupH } from './environment/car-bodies.ts';
+import { CAR_PAINTS, LOT_PAINTS } from './environment/car-paints.ts';
+import { buildAmbulance, buildAmbulanceLights, buildPoliceH, buildPoliceHLights, buildPoliceV, buildPoliceVLights } from './environment/emergency.ts';
+import { buildEscapeVanLights, buildVan, VAN_LIVERIES } from './environment/van.ts';
+import { buildSedanH, buildSedanV, buildWreckH } from './environment/vehicles.ts';
 import { buildBrickWarehouse, buildSteelWarehouse } from './environment/warehouse.ts';
 import { buildFenceH, buildFenceV, buildGasPump } from './environment/yard.ts';
 
@@ -46,6 +50,12 @@ export function buildEnvironment(): EnvironmentArt {
       car_sedan_v: buildSedanV(),
       car_wreck_h: buildWreckH(),
       van_h: buildVan(),
+      car_hatch_h: buildHatchH(),
+      car_hatch_v: buildHatchV(),
+      pickup_h: buildPickupH(),
+      police_h: buildPoliceH(),
+      police_v: buildPoliceV(),
+      ambulance_h: buildAmbulance(),
       dumpster: buildDumpster(),
       crate_stack: buildCrates(),
       barrier: buildBarrier(),
@@ -81,6 +91,15 @@ export function buildEnvironment(): EnvironmentArt {
       chest: buildChest(),
       candy_bowl: buildCandyBowl(),
     },
+    paintJobs: {
+      car_sedan_h: CAR_PAINTS.map(buildSedanH),
+      car_sedan_v: LOT_PAINTS.map(buildSedanV),
+      car_hatch_h: CAR_PAINTS.map(buildHatchH),
+      car_hatch_v: CAR_PAINTS.map(buildHatchV),
+      pickup_h: CAR_PAINTS.map(buildPickupH),
+      van_h: VAN_LIVERIES.map(buildVan),
+    },
+    beacons: { police_h: buildPoliceHLights(), police_v: buildPoliceVLights(), ambulance_h: buildAmbulanceLights() },
     overrun: { doorBuckling: buildBlastDoorBuckling(), doorBurst: buildBlastDoorBurst(), chestOpen: buildChestOpen() },
     buildings: {
       pharmacy: [buildPharmacy()],

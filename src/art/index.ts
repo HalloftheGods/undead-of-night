@@ -2,6 +2,7 @@
 
 import type { ArtBook } from './types.ts';
 import { buildContainers } from './containers.ts';
+import { buildPaintedCars } from './containers/vehicles.ts';
 import { buildEnvironment } from './environment.ts';
 import { buildMerchants } from './environment/merchants.ts';
 import { buildFx, buildPickups } from './fx.ts';
@@ -19,6 +20,7 @@ function assemble(): ArtBook {
     environment,
     pickups: buildPickups(),
     containers: buildContainers(environment.props),
+    paintedContainers: buildPaintedCars(environment.paintJobs),
     merchants: buildMerchants(),
     fx: buildFx(),
     ui: buildUi(),

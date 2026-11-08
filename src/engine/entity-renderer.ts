@@ -14,6 +14,8 @@ import type {
   ZombieType,
 } from '../../shared/protocol.ts';
 import { containerLook } from '../art/containers.ts';
+import { beaconsOn, drawBeacons, paintedContainer, propSprite } from './car-looks.ts';
+import type { Beacon } from './car-looks.ts';
 import type { ContainerArt } from '../art/containers.ts';
 import { dirFromAngle } from '../art/types.ts';
 import type { ArtBook, PixelSprite } from '../art/types.ts';
@@ -133,6 +135,8 @@ export class EntityRenderer {
   private reducedMotion: boolean;
   private props: PlacedProp[] = [];
   private fires: PlacedProp[] = [];
+  /** Police cars' and ambulances' light bars, for the lightmap as well as the art. */
+  beacons: Beacon[] = [];
   private corpses: Corpse[] = [];
   /** Zombies whose death has been shown, though the delayed view has not caught up. */
   private readonly killed = new Map<EntityId, number>();
@@ -157,8 +161,8 @@ export class EntityRenderer {
     const containers = new Map(townContainers(map).map((container) => [container.propIndex, container]));
     this.props = map.props.map((prop, index) => {
       const found = containers.get(index);
-      const art = found ? this.art.containers[containerLook(found)] : null;
-      const sprite = art ? art.closed : this.art.environment.props[prop.kind];
+      const art = found ? (paintedContainer(this.art, prop) ?? this.art.containers[containerLook(found)]) : null;
+      const sprite = art ? art.closed : propSprite(this.art, prop);
       const states = art ? [art.closed, art.opened] : [sprite];
       const x = Math.round(prop.x);
       const y = Math.round(prop.y);
@@ -176,6 +180,7 @@ export class EntityRenderer {
       };
     });
     this.fires = this.props.filter((placed) => placed.prop.kind === 'fire_barrel');
+    this.beacons = beaconsOn(this.art, map);
     this.reset();
   }
 
@@ -420,6 +425,7 @@ export class EntityRenderer {
       const onScreen = fire.x1 > left && fire.x0 < left + viewW && fire.y1 > top - 24 && fire.y0 < top + viewH;
       if (onScreen) drawSprite(ctx, clipFrame(flames, time + fire.prop.x), Math.round(fire.prop.x) - left, Math.round(fire.prop.y) - top);
     }
+    drawBeacons(ctx, this.beacons, { x0: left - CULL_MARGIN, y0: top, x1: left + viewW + CULL_MARGIN, y1: top + viewH + CULL_MARGIN, left, top }, time, this.reducedMotion);
     if (scene.exit) {
       const lamps = clipFrame(this.art.environment.escapeVanLights, this.reducedMotion ? 0 : time);
       drawSprite(ctx, lamps, Math.round(scene.exit.x) - left, Math.round(scene.exit.y) - top);

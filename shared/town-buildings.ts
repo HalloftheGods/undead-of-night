@@ -2,7 +2,7 @@ import { furnish } from './building-interiors.ts';
 import { backDoorBox } from './building-plans.ts';
 import { DOORSTEP_HOMES } from './candy.ts';
 import { BUILDING_DEFS, DOOR_WIDTH, PROP_DEFS, TILE_SIZE } from './protocol.ts';
-import type { BuildingInstance, BuildingKind, TileKind } from './protocol.ts';
+import type { BuildingInstance, BuildingKind, PropKind, TileKind } from './protocol.ts';
 import type { MapBuilder } from './map-builder.ts';
 import { createRng, pick, randInt } from './rng.ts';
 import { EDGE_TILES, MAP_TILES, WALK_TILES, rectBox } from './town-plan.ts';
@@ -115,6 +115,34 @@ function forecourt(b: MapBuilder, col: number, bottom: number): void {
   b.reserve(area);
 }
 
+/** The service that parks out front of these, light bar going. */
+const SERVICE_CARS: Partial<Record<BuildingKind, PropKind>> = { police: 'police_h', clinic: 'ambulance_h', pharmacy: 'ambulance_h' };
+/** Down from the building's front to the lane by the kerb, in pixels. */
+const KERB_LANE = [44, 56];
+/** Pulled in close: a parked car does not need the room a wreck in the road is given. */
+const PARKED_GAP = 8;
+
+/**
+ * A cruiser at the station, an ambulance at the clinic and at some pharmacies, pulled up on the
+ * street beside the door. Picked off the plot rather than the town's dice, so the rest stays put.
+ */
+function parkService(b: MapBuilder, building: BuildingInstance, walkDown: number): void {
+  const car = SERVICE_CARS[building.kind];
+  const skipsPharmacy = building.kind === 'pharmacy' && (building.x / TILE_SIZE) % 3 !== 0;
+  const hasNoService = !car || skipsPharmacy;
+  if (hasNoService) return;
+  const { w, h, doorX } = BUILDING_DEFS[building.kind];
+  const front = building.y + h + walkDown * TILE_SIZE;
+  const door = building.x + doorX;
+  const sides = [door + 64, door - 64, building.x + w / 2, building.x + w - 22, building.x + 22];
+  for (const drop of KERB_LANE) {
+    for (const x of sides) {
+      const parked = b.place(car, x, front + drop, PARKED_GAP);
+      if (parked) return;
+    }
+  }
+}
+
 /** A step of paving outside a back door, kept clear, so the door is seen from the lane and never blocked. */
 function backStep(b: MapBuilder, building: BuildingInstance): void {
   const back = backDoorBox(building);
@@ -135,7 +163,7 @@ function setOutBowl(b: MapBuilder, building: BuildingInstance): void {
   b.fixture('candy_bowl', door.x0 - BOWL_SIDE_GAP, door.y1 + PROP_DEFS.candy_bowl.h);
 }
 
-function raise(b: MapBuilder, kind: BuildingKind, col: number, bottom: number, walkDown: number): void {
+function raise(b: MapBuilder, kind: BuildingKind, col: number, bottom: number, walkDown: number, onStreet: boolean): void {
   const building = b.addBuilding(kind, col, bottom - heightOf(kind));
   const door = doorBox(building);
   // Paves from the door out to the sidewalk and keeps props from blocking it.
@@ -145,12 +173,13 @@ function raise(b: MapBuilder, kind: BuildingKind, col: number, bottom: number, w
   backStep(b, building);
   furnish(b, building);
   setOutBowl(b, building);
+  if (onStreet) parkService(b, building, walkDown);
   const isGarage = kind === 'garage';
   if (isGarage) forecourt(b, col + widthOf(kind) + 1, bottom);
 }
 
 /** Packs one row of buildings against `bottom`. Returns the row's top edge, or null if nothing fit. */
-function packRow(b: MapBuilder, block: Block, style: DistrictStyle, bottom: number, walkDown: number, wishes: BuildingKind[], late: BuildingKind[]): number | null {
+function packRow(b: MapBuilder, block: Block, style: DistrictStyle, bottom: number, walkDown: number, wishes: BuildingKind[], late: BuildingKind[], onStreet: boolean): number | null {
   const height = bottom - block.r0;
   let cursor = block.c0 + randInt(b.rng, 0, 2);
   let top: number | null = null;
@@ -159,7 +188,7 @@ function packRow(b: MapBuilder, block: Block, style: DistrictStyle, bottom: numb
     if (leaveVacant) cursor += randInt(b.rng, 3, 6);
     const kind = nextKind(b, style, wishes, late, block.c1 - cursor, height);
     if (!kind) return top;
-    raise(b, kind, cursor, bottom, walkDown);
+    raise(b, kind, cursor, bottom, walkDown, onStreet);
     top = Math.min(top ?? bottom, bottom - heightOf(kind));
     cursor += plotWidth(kind) + randInt(b.rng, style.gap[0], style.gap[1]);
   }
@@ -175,7 +204,8 @@ function fillBlock(b: MapBuilder, block: Block, style: DistrictStyle, wishes: Bu
   let bottom = block.r1 - style.front;
   let walkDown = style.front;
   for (;;) {
-    const top = packRow(b, block, style, bottom, walkDown, wishes, late);
+    const onStreet = bottom === block.r1 - style.front && !facesFence;
+    const top = packRow(b, block, style, bottom, walkDown, wishes, late, onStreet);
     const isBlockFull = top === null;
     if (isBlockFull) break;
     bottom = top - LANE_TILES;

@@ -1,7 +1,7 @@
 import { TILE_SIZE } from './protocol.ts';
 import type { PropKind, TileKind } from './protocol.ts';
 import type { MapBuilder } from './map-builder.ts';
-import { pick, randInt, randRange } from './rng.ts';
+import { pick, pickWeighted, randInt, randRange } from './rng.ts';
 import { rectBox, WALK_TILES } from './town-plan.ts';
 import type { Road } from './town-plan.ts';
 import type { Box } from './world-query.ts';
@@ -189,6 +189,19 @@ function lightKerb(b: MapBuilder, mask: Uint8Array, road: Road, line: number, op
   }
 }
 
+/** What is left on an east-west road: mostly burned out, now and then a police car or an ambulance. */
+const CROSSWISE_CARS: Partial<Record<PropKind, number>> = {
+  car_wreck_h: 2,
+  car_sedan_h: 1,
+  car_hatch_h: 0.8,
+  pickup_h: 0.7,
+  van_h: 0.8,
+  police_h: 0.2,
+  ambulance_h: 0.15,
+};
+/** And nose-up on a north-south one. */
+const LENGTHWISE_CARS: Partial<Record<PropKind, number>> = { car_sedan_v: 1.4, car_hatch_v: 1, police_v: 0.15 };
+
 /** Lamps, hydrants, wrecks and roadblocks along one road, leaving at least a lane open. */
 function dressRoad(b: MapBuilder, road: Road, mask: Uint8Array): void {
   const { rng } = b;
@@ -215,7 +228,7 @@ function dressRoad(b: MapBuilder, road: Road, mask: Uint8Array): void {
     }
     const lane = middle + (rng() < 0.5 ? -1 : 1) * randRange(rng, 12, 24);
     const spot = alongRoad(along, lane);
-    const wreck = road.horizontal ? pick<PropKind>(rng, ['car_wreck_h', 'car_wreck_h', 'car_sedan_h', 'van_h']) : 'car_sedan_v';
+    const wreck = pickWeighted<PropKind>(rng, road.horizontal ? CROSSWISE_CARS : LENGTHWISE_CARS);
     const getsWreck = rng() < 0.7;
     if (getsWreck) b.place(wreck, spot.x, spot.y);
     const getsRoadblock = rng() < 0.2;

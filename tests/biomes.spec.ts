@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { BIOMES, biomeFor } from '../shared/biomes.ts';
 import { FINAL_LEVEL } from '../shared/levels.ts';
+import { OUTDOOR_CONTAINERS } from '../shared/containers.ts';
 import { TILE_KINDS, TILE_SIZE } from '../shared/protocol.ts';
 import type { PropKind, TileKind } from '../shared/protocol.ts';
 import { blockedTiles, generateWorldMap } from '../shared/world-map.ts';
@@ -67,7 +68,7 @@ describe('terrain and landmarks', () => {
   });
 
   it('raises a landmark of vehicles on the levels that have one', () => {
-    const wrecks = (level: number): number => generateWorldMap(SEED, level).props.filter((prop) => prop.kind === 'car_wreck_h' || prop.kind === 'van_h').length;
+    const wrecks = (level: number): number => generateWorldMap(SEED, level).props.filter((prop) => OUTDOOR_CONTAINERS[prop.kind] === 'car').length;
     expect(wrecks(3)).toBeGreaterThan(wrecks(1));
     expect(wrecks(10)).toBeGreaterThan(wrecks(1));
   });

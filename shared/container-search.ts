@@ -48,7 +48,7 @@ function findIn(sim: SimState, p: PlayerState, id: number): Finds {
   // A candy bowl holds candy and nothing else, however lucky the hand in it.
   const isBowl = townContainers(sim.map)[id].kind === 'bowl';
   const lucky = stored === null && !isBowl && sim.rng() < luck;
-  const ordinary = lucky ? rollFind(sim, townContainers(sim.map)[id].buildingKind) : stored;
+  const ordinary = lucky ? rollFind(sim, townContainers(sim.map)[id].stock) : stored;
   return { treasure, ordinary };
 }
 

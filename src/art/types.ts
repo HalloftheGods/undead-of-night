@@ -85,6 +85,13 @@ export interface EnvironmentArt {
   /** Variants per tile kind, each exactly TILE_SIZE square. */
   readonly tiles: Record<TileKind, readonly PixelSprite[]>;
   readonly props: Record<PropKind, PixelSprite>;
+  /**
+   * The other coats a car comes in, each the same size and anchor as its prop, which is the first.
+   * A car's spot on the map picks its coat, so every client sees the same one.
+   */
+  readonly paintJobs: Partial<Record<PropKind, readonly PixelSprite[]>>;
+  /** Light bars blinking over their props, same size and anchor, drawn after the lightmap. */
+  readonly beacons: Partial<Record<PropKind, Clip>>;
   /** The overrun's other frames: props.blast_door is shut and props.chest is closed. The door frames share its size. */
   readonly overrun: {
     readonly doorBuckling: PixelSprite;
@@ -211,6 +218,8 @@ export interface ArtBook {
   readonly pickups: Record<PickupType, Clip>;
   /** Searchable furniture and vehicles, shut and searched, each drawn in place of its prop. */
   readonly containers: Record<ContainerLook, ContainerArt>;
+  /** Shut and searched art for each of a car's coats, in paintJobs order. */
+  readonly paintedContainers: Partial<Record<PropKind, readonly ContainerArt[]>>;
   readonly merchants: Record<MerchantId, MerchantArt>;
   readonly fx: FxArt;
   readonly ui: UiArt;
