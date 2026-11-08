@@ -28,7 +28,19 @@ export const CHANGE_NOTES: readonly ChangeNote[] = [
     points: [
       'Each survivor has a team colour, so no two players look alike. The team chips in the corner wear it too.',
       'Private rooms show callsigns. Public games show survivor names, as always.',
-      'A downed teammate says DOWN under their name, so you know who to run to. With Motion set to Reduced, the locators hold still.',
+      'A downed teammate says DOWN beside their name, so you know who to run to. With Motion set to Reduced, the locators hold still.',
+    ],
+  },
+  {
+    id: 'left-behind-marks',
+    date: '2026-11-08',
+    kind: 'new',
+    title: 'Left behind',
+    deck: 'The map marks every building you walked out of with supplies still lying inside.',
+    points: [
+      'A small mark per kind sits at the building\'s foot: a red cross for medical, yellow rounds for ammo, a grey gun, a violet diamond for parts and finds.',
+      'Floors upstairs and in the cellar count toward their house. The mark goes once it is empty.',
+      'In co-op the whole team shares the marks, wherever each of you is.',
     ],
   },
   {
@@ -36,9 +48,9 @@ export const CHANGE_NOTES: readonly ChangeNote[] = [
     date: '2026-11-08',
     kind: 'better',
     title: 'Daily Night up top',
-    deck: 'The main menu now opens on Daily Night, then Arcade, then Campaign.',
+    deck: 'The main menu now reads How to Play, Daily Night, Arcade, then Campaign.',
     points: [
-      'Daily Night is the first button, so Enter on the menu starts the day\'s night.',
+      'How to Play sits on top. The menu still opens pointed at Daily Night, so Enter starts the day\'s night.',
       'The Play setup lists Arcade before Campaign to match.',
     ],
   },

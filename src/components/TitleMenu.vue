@@ -5,7 +5,7 @@
       :key="item.label"
       ref="items"
       class="px-menu-item"
-      :class="{ 'is-selected': index === selected, 'is-primary': index === 0 }"
+      :class="{ 'is-selected': index === selected, 'is-primary': index === primaryIndex(entries) }"
       type="button"
       :aria-current="index === selected"
       @mousemove="moveTo(index)"
@@ -21,7 +21,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, useTemplateRef } from 'vue';
 import { loadSoundUnlock } from '../game/sound-unlock.ts';
-import { isConfirmKey, menuLabel, menuLine, menuOwnsKey, menuStep, steppedIndex, TITLE_MENU } from '../game/title-menu.ts';
+import { isConfirmKey, menuLabel, menuLine, menuOwnsKey, menuStep, primaryIndex, steppedIndex, TITLE_MENU } from '../game/title-menu.ts';
 import type { KeyFocus, TitleMenuItem } from '../game/title-menu.ts';
 import { useGame } from './use-game.ts';
 

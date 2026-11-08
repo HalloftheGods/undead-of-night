@@ -27,7 +27,7 @@ function stairsFor(map: WorldMap, player: PlayerEntity | null): { stairs?: strin
 
 export type WorldEntities = Pick<
   SceneView,
-  'players' | 'zombies' | 'bullets' | 'pickups' | 'exit' | 'drop' | 'openedContainers' | 'tracks' | 'searchable' | 'stairs' | 'station' | 'overrun' | 'localId' | 'viewerId' | 'focusX' | 'focusY' | 'phase' | 'hostiles'
+  'players' | 'zombies' | 'bullets' | 'pickups' | 'exit' | 'drop' | 'openedContainers' | 'leftovers' | 'tracks' | 'searchable' | 'stairs' | 'station' | 'overrun' | 'localId' | 'viewerId' | 'focusX' | 'focusY' | 'phase' | 'hostiles'
 >;
 
 /** What this client currently believes: buffered snapshots plus the predicted local player. */
@@ -164,6 +164,7 @@ export class ClientWorld {
       exit: newest.snapshot.exit,
       drop: newest.snapshot.drop ?? null,
       openedContainers: newest.snapshot.openedContainers,
+      leftovers: newest.snapshot.leftovers ?? [],
       tracks: newest.snapshot.tracks ?? [],
       searchable: this.searchableBy(shownLocal, newest.snapshot.openedContainers),
       ...stairsFor(this.map, shownLocal),
