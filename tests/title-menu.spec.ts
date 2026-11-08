@@ -4,13 +4,14 @@ import {
   isConfirmKey,
   menuLabel,
   menuLine,
+  menuColumns,
+  menuMove,
   menuOwnsKey,
-  menuStep,
+  movedIndex,
   recordRows,
   recordSections,
   recordStats,
   setupActionLabel,
-  steppedIndex,
   primaryIndex,
   TITLE_MENU,
 } from '../src/game/title-menu.ts';
@@ -28,24 +29,36 @@ describe('title scale', () => {
 });
 
 describe('title menu', () => {
-  it('runs in the agreed order: How to Play on top, then Daily Night, Arcade and Campaign', () => {
-    expect(TITLE_MENU.map((item) => item.label)).toEqual(['How to Play', 'Daily Night', 'Arcade', 'Campaign', 'Levels', 'Town Guide', 'Records', 'Sound Test', 'Options']);
+  it('runs section by section: Books with How to Play on top, then Play, then Extras', () => {
+    expect(TITLE_MENU.map((item) => item.label)).toEqual(['How to Play', 'Town Guide', 'Records', 'Daily Night', 'Arcade', 'Campaign', 'Levels', 'Sound Test', 'Options']);
+  });
+
+  it('lays the sections out as three headed columns, Books, Play and Extras', () => {
+    const columns = menuColumns();
+    expect(columns.map((column) => column.heading)).toEqual(['Books', 'Play', 'Extras']);
+    expect(columns.map((column) => column.indices.map((index) => TITLE_MENU[index].label))).toEqual([
+      ['How to Play', 'Town Guide', 'Records'],
+      ['Daily Night', 'Arcade', 'Campaign', 'Levels'],
+      ['Sound Test', 'Options'],
+    ]);
+    expect(menuColumns([{ group: 'extras', page: 'options', label: 'Options', line: 'x' }]).map((column) => column.group)).toEqual(['extras']);
   });
 
   it('opens pointed at Daily Night, the one primary item, even though How to Play is on top', () => {
     expect(TITLE_MENU.filter((item) => item.primary === true).map((item) => item.label)).toEqual(['Daily Night']);
     expect(TITLE_MENU[primaryIndex()].page).toBe('daily');
-    expect(primaryIndex([{ page: 'options', label: 'Options', line: 'x' }])).toBe(0);
+    expect(primaryIndex([{ group: 'extras', page: 'options', label: 'Options', line: 'x' }])).toBe(0);
   });
 
   it('names the Sound Test from the start, with or without a Radio found', () => {
     const labels = (radio: boolean) => TITLE_MENU.map((item) => menuLabel(item, { radio, tracks: [] }));
-    expect(labels(false)).toEqual(['How to Play', 'Daily Night', 'Arcade', 'Campaign', 'Levels', 'Town Guide', 'Records', 'Sound Test', 'Options']);
+    expect(labels(false)).toEqual(['How to Play', 'Town Guide', 'Records', 'Daily Night', 'Arcade', 'Campaign', 'Levels', 'Sound Test', 'Options']);
     expect(labels(true)).toEqual(TITLE_MENU.map((item) => item.label));
   });
 
   it('opens the one Play setup from both Campaign and Arcade, each carrying its own style', () => {
-    const [, , arcade, campaign] = TITLE_MENU;
+    const arcade = TITLE_MENU.find((item) => item.label === 'Arcade')!;
+    const campaign = TITLE_MENU.find((item) => item.label === 'Campaign')!;
     expect([campaign.page, campaign.style]).toEqual(['play', 'campaign']);
     expect([arcade.page, arcade.style]).toEqual(['play', 'arcade']);
     expect(TITLE_MENU.filter((item) => item.style !== undefined)).toHaveLength(2);
@@ -68,14 +81,21 @@ describe('title menu', () => {
   });
 
   it.each([
-    ['ArrowUp', -1],
-    ['KeyW', -1],
-    ['ArrowDown', 1],
-    ['KeyS', 1],
-    ['KeyD', 0],
-    ['Enter', 0],
-  ])('reads %s as a step of %i', (code, step) => {
-    expect(menuStep(code)).toBe(step);
+    ['ArrowUp', 0, -1],
+    ['KeyW', 0, -1],
+    ['ArrowDown', 0, 1],
+    ['KeyS', 0, 1],
+    ['ArrowLeft', -1, 0],
+    ['KeyA', -1, 0],
+    ['ArrowRight', 1, 0],
+    ['KeyD', 1, 0],
+  ])('reads %s as a move of %i across and %i down', (code, across, down) => {
+    expect(menuMove(code)).toEqual({ across, down });
+  });
+
+  it('reads Enter and other keys as no move', () => {
+    expect(menuMove('Enter')).toBeNull();
+    expect(menuMove('KeyQ')).toBeNull();
   });
 
   it('leaves a key alone when focus sits on a control outside the menu, such as the Install cartridge', () => {
@@ -84,11 +104,23 @@ describe('title menu', () => {
     expect(menuOwnsKey({ focusInMenu: false, focusOnControl: false })).toBe(true);
   });
 
-  it('wraps at both ends', () => {
-    const last = TITLE_MENU.length - 1;
-    expect(steppedIndex(0, -1)).toBe(last);
-    expect(steppedIndex(last, 1)).toBe(0);
-    expect(steppedIndex(2, 1)).toBe(3);
+  it('moves up and down inside a column, wrapping at its ends', () => {
+    const at = (label: string) => TITLE_MENU.findIndex((item) => item.label === label);
+    const label = (index: number) => TITLE_MENU[index].label;
+    expect(label(movedIndex(at('Daily Night'), { across: 0, down: 1 }))).toBe('Arcade');
+    expect(label(movedIndex(at('Daily Night'), { across: 0, down: -1 }))).toBe('Levels');
+    expect(label(movedIndex(at('Records'), { across: 0, down: 1 }))).toBe('How to Play');
+  });
+
+  it('moves across the columns on the same row, wrapping at the sides, and drops to the end of a shorter column', () => {
+    const at = (label: string) => TITLE_MENU.findIndex((item) => item.label === label);
+    const label = (index: number) => TITLE_MENU[index].label;
+    expect(label(movedIndex(at('Daily Night'), { across: -1, down: 0 }))).toBe('How to Play');
+    expect(label(movedIndex(at('Arcade'), { across: 1, down: 0 }))).toBe('Options');
+    expect(label(movedIndex(at('Campaign'), { across: 1, down: 0 }))).toBe('Options');
+    expect(label(movedIndex(at('Levels'), { across: -1, down: 0 }))).toBe('Records');
+    expect(label(movedIndex(at('Options'), { across: 1, down: 0 }))).toBe('Town Guide');
+    expect(label(movedIndex(at('How to Play'), { across: -1, down: 0 }))).toBe('Sound Test');
   });
 
   it('takes either Enter key as confirm, and nothing else', () => {

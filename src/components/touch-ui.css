@@ -231,19 +231,15 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
-/* A phone on its side has no height to spare: the logo stands beside the menu, not over it. */
+/* A phone on its side has no height to spare: a smaller logo, with the menu's three columns under it. */
 @media (orientation: landscape) and (max-height: 520px) {
   .is-touch .title {
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-content: center;
-    gap: calc(var(--u) * 12);
-    padding-bottom: calc(var(--u) * 6);
+    gap: calc(var(--u) * 3);
+    padding-bottom: calc(var(--u) * 32);
   }
 
   .is-touch .title-logo {
-    max-width: 50%;
-    height: auto !important;
+    max-height: 20vh;
   }
 
   .is-touch .title-credit {

@@ -114,6 +114,30 @@ function openItem(item: TitleMenuItem): void {
   object-fit: contain;
 }
 
+/* A short window: the logo gives up height so the three menu columns fit above the footer. Touch has its own (touch-ui.css). */
+@media (max-height: 520px) {
+  :where(.game-root:not(.is-touch)) .title {
+    gap: calc(var(--u) * 3);
+    padding-bottom: calc(var(--u) * 32);
+  }
+
+  :where(.game-root:not(.is-touch)) .title-logo {
+    max-height: 20vh;
+  }
+}
+
+/* A small phone held upright: the same trade, so the menu clears the credit line. */
+@media (max-aspect-ratio: 4 / 5) and (max-height: 620px) {
+  .game-root .title {
+    gap: calc(var(--u) * 4);
+    padding-bottom: calc(var(--u) * 30);
+  }
+
+  .title-logo {
+    max-height: 18vh;
+  }
+}
+
 .title-columns {
   display: flex;
   align-items: center;
