@@ -8,7 +8,6 @@ import { stepMovement } from '../../shared/movement.ts';
 import { playerSpeed } from '../../shared/players.ts';
 import { effectiveStance } from '../../shared/stamina.ts';
 import { openableStation } from '../../shared/stations.ts';
-import { flightAt } from '../../shared/storeys.ts';
 import { groundSpeedScale } from '../../shared/town-rules.ts';
 import type { EntityId, PlayerEntity, PropInstance, SnapshotPacket, Stance, WorldMap } from '../../shared/protocol.ts';
 import { buildingAt, circleHitsSolid } from '../../shared/world-query.ts';
@@ -18,16 +17,9 @@ import { extrapolateBullets, interpolatePlayers, interpolateZombies, SnapshotBuf
 
 const MAX_BULLET_LEAD_SEC = 0.1;
 
-/** Where the stairs the local player stands on lead, by the sim's own rule: anyone on their feet takes them with the search key. */
-function stairsFor(map: WorldMap, player: PlayerEntity | null): { stairs?: string } {
-  const standing = player !== null && player.status === 'alive';
-  const flight = standing ? flightAt(map, player.x, player.y) : null;
-  return flight ? { stairs: flight.label } : {};
-}
-
 export type WorldEntities = Pick<
   SceneView,
-  'players' | 'zombies' | 'bullets' | 'pickups' | 'exit' | 'drop' | 'openedContainers' | 'leftovers' | 'tracks' | 'searchable' | 'stairs' | 'station' | 'overrun' | 'localId' | 'viewerId' | 'focusX' | 'focusY' | 'phase' | 'hostiles'
+  'players' | 'zombies' | 'bullets' | 'pickups' | 'exit' | 'drop' | 'openedContainers' | 'leftovers' | 'tracks' | 'searchable' | 'station' | 'overrun' | 'localId' | 'viewerId' | 'focusX' | 'focusY' | 'phase' | 'hostiles'
 >;
 
 /** What this client currently believes: buffered snapshots plus the predicted local player. */
@@ -167,7 +159,6 @@ export class ClientWorld {
       leftovers: newest.snapshot.leftovers ?? [],
       tracks: newest.snapshot.tracks ?? [],
       searchable: this.searchableBy(shownLocal, newest.snapshot.openedContainers),
-      ...stairsFor(this.map, shownLocal),
       ...(station ? { station } : {}),
       ...(overrun ? { overrun } : {}),
       localId: this.localId,

@@ -52,8 +52,6 @@ export interface SceneView {
   readonly tracks?: readonly TrackEntity[];
   /** What the local player could search from where they stand, if anything. */
   readonly searchable: Container | null;
-  /** Where the stairs underfoot lead, said in the prompt. Absent off the stairs. */
-  readonly stairs?: string;
   /** The bunker station the local player could open from where they stand. Absent anywhere else. */
   readonly station?: StationId;
   /** The bunker's horde clock, which the door and the chest are drawn from. Absent when there is none. */

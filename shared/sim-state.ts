@@ -117,6 +117,8 @@ export interface PlayerState extends Omit<PlayerEntity, 'mags' | 'gear' | 'bottl
   searchHeld: boolean;
   /** This press of the key has done its work, or been cut off: nothing more until it is let go. */
   searchSpent: boolean;
+  /** The stairs tile the player came out on, left alone until they step off it; -1 off the stairs. */
+  stairsLanding: number;
   /** Container being searched, or null. */
   searchingId: number | null;
   searchLeft: number;
