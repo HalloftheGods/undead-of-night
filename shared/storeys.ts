@@ -31,9 +31,10 @@ const ANNEX_MARGIN_TILES = 2;
 
 /**
  * The stairs, in tiles from the footprint's top left, the same on every floor so they line up. In a
- * house this is the kitchen's corner between the fridge and the sofa, off the way through.
+ * house they stand in the back corner on the west, against the back wall and off the way through
+ * from the front door to the back, so nobody takes them by walking past.
  */
-const HOUSE_STAIRS = { col: 5, row: 3 } as const;
+const HOUSE_STAIRS = { col: 1, row: 1 } as const;
 /** In an apartment block, the lobby's east end, below the east flat's doorway. */
 const APARTMENT_STAIRS = { col: 7, row: 5 } as const;
 export const STAIRS: Readonly<Partial<Record<BuildingKind, { readonly col: number; readonly row: number }>>> = {
@@ -50,6 +51,18 @@ export function isStorey(building: BuildingInstance): boolean {
 
 export function isStoreyKind(kind: BuildingKind): boolean {
   return kind === 'upstairs' || kind === 'cellar' || kind === 'apartment_upstairs';
+}
+
+/** The ids of every building with a flight of stairs in it: each floor, and each house a floor belongs to. */
+export function buildingsWithStairs(buildings: readonly BuildingInstance[]): ReadonlySet<string> {
+  const ids = new Set<string>();
+  for (const building of buildings) {
+    const isTownBuilding = building.of === undefined;
+    if (isTownBuilding) continue;
+    ids.add(building.id);
+    ids.add(building.of);
+  }
+  return ids;
 }
 
 const townCache = new WeakMap<readonly BuildingInstance[], readonly BuildingInstance[]>();

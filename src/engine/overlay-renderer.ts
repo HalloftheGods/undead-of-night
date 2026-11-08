@@ -264,9 +264,7 @@ export class OverlayRenderer {
       const isLocal = player.id === scene.localId;
       const prompted = isLocal && scene.searchable !== null;
       const atStation = isLocal && scene.station !== undefined;
-      const onStairs = isLocal && scene.stairs !== undefined;
       if (player.search > 0) drawBar(ctx, x - SEARCH_BAR_WIDTH / 2, y, SEARCH_BAR_WIDTH, player.search, BONE);
-      else if (onStairs) drawOutlinedText(ctx, `${scene.touch ? 'SEARCH' : 'E'}: ${scene.stairs}`, x, y, AMBER);
       else if (prompted) drawOutlinedText(ctx, `${scene.touch ? 'SEARCH' : 'HOLD E'}: ${CONTAINER_LABEL[scene.searchable.kind]}`, x, y, AMBER);
       else if (atStation) drawOutlinedText(ctx, stationPrompt(scene.station, Boolean(scene.touch), this.payFrom(scene)), x, y, AMBER);
     }

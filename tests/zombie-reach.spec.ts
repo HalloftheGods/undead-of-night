@@ -17,8 +17,8 @@ describe('blows and walls', () => {
     const quiet = quietSim();
     const [p] = quiet.state.players;
     const box = buildingBox(findBuilding(quiet.sim, 'house'));
-    // Between the bed and the table, on open floor.
-    const y = box.y0 + 52;
+    // In the back corner above the bed, on open floor beside the stairs.
+    const y = box.y0 + 28;
     p.x = box.x0 + WALL_THICKNESS + PLAYER_RADIUS + 0.5;
     p.y = y;
     const zombie = addZombie(quiet.state, type, box.x0 - ZOMBIES[type].radius - 0.5, y);

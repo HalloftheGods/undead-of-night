@@ -5,7 +5,7 @@ import { FlowField } from '../shared/flow-field.ts';
 import { BUNKER_SEED } from '../shared/home-protocol.ts';
 import { BUILDING_DEFS, BUILDING_KINDS, DOOR_WIDTH, PROP_DEFS, TILE_KINDS, TILE_SIZE, WALL_THICKNESS } from '../shared/protocol.ts';
 import type { BuildingInstance, BuildingKind, PropKind, WorldMap } from '../shared/protocol.ts';
-import { flightsOf } from '../shared/storeys.ts';
+import { buildingsWithStairs, flightsOf } from '../shared/storeys.ts';
 import { createRng } from '../shared/rng.ts';
 import { planTown } from '../shared/town-plan.ts';
 import {
@@ -262,7 +262,8 @@ describe('buildings', () => {
     const map = generateWorldMap(2);
     const boxes = wallBoxes(map);
     const sides = (building: BuildingInstance): number => (building.of === undefined ? 5 + (backDoorBox(building) ? 1 : 0) : 4);
-    const expected = map.buildings.reduce((sum, building) => sum + sides(building) + partitionBoxes(building).length, 0);
+    const withStairs = buildingsWithStairs(map.buildings);
+    const expected = map.buildings.reduce((sum, building) => sum + sides(building) + partitionBoxes(building, withStairs.has(building.id)).length, 0);
     expect(boxes.length).toBe(expected);
     for (const building of townBuildings(map)) {
       const door = doorBox(building);
@@ -274,6 +275,20 @@ describe('buildings', () => {
       expect(circleHitsSolid(map, door.x1 + 2, y, 1)).toBe(true);
       expect(circleHitsSolid(map, midX, y, ZOMBIES.brute.radius)).toBe(false);
     }
+  });
+
+  it('a house with stairs is one open room, and one without keeps its bedroom wall', () => {
+    const map = generateWorldMap(2);
+    const withStairs = buildingsWithStairs(map.buildings);
+    const houses = map.buildings.filter((building) => building.kind === 'house');
+    const open = houses.filter((house) => withStairs.has(house.id));
+    const walled = houses.filter((house) => !withStairs.has(house.id));
+    expect(open.length).toBeGreaterThan(0);
+    expect(walled.length).toBeGreaterThan(0);
+    // The bedroom wall's middle, a little in from the north wall.
+    const inWall = (house: BuildingInstance): boolean => circleHitsSolid(map, house.x + 57, house.y + 30, 1);
+    for (const house of open) expect(inWall(house)).toBe(false);
+    for (const house of walled) expect(inWall(house)).toBe(true);
   });
 
   it('wallBoxes cover the other three sides whole, but for a back door', () => {

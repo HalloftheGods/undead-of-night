@@ -35,6 +35,7 @@ const FRESH_CONNECTION = {
   search: 0,
   searchHeld: false,
   searchSpent: false,
+  stairsLanding: -1,
   searchingId: null,
   searchLeft: 0,
   searchHealth: 0,

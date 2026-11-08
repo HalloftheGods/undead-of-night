@@ -1,7 +1,7 @@
 import { BUILDING_DEFS, DOOR_WIDTH, TILE_SIZE, WALL_THICKNESS } from '../../shared/protocol.ts';
 import type { BuildingInstance, BuildingKind, WorldMap } from '../../shared/protocol.ts';
 import { buildingAt } from '../../shared/world-map.ts';
-import { BACK_DOORS, PARTITIONS } from '../../shared/building-plans.ts';
+import { BACK_DOORS, partitionsOf } from '../../shared/building-plans.ts';
 import { flightsOf, isStoreyKind } from '../../shared/storeys.ts';
 import type { Flight } from '../../shared/storeys.ts';
 import type { EnvironmentArt, PixelSprite } from '../art/types.ts';
@@ -47,7 +47,7 @@ function tileStrip(
 }
 
 /** What a room shows once its roof has gone: the north wall's face, every wall top and the door mat. */
-function paintInterior(kind: BuildingKind, art: EnvironmentArt['interior']): HTMLCanvasElement {
+function paintInterior(kind: BuildingKind, art: EnvironmentArt['interior'], hasStairs: boolean): HTMLCanvasElement {
   const { w, h, doorX } = BUILDING_DEFS[kind];
   const canvas = document.createElement('canvas');
   canvas.width = w;
@@ -63,7 +63,7 @@ function paintInterior(kind: BuildingKind, art: EnvironmentArt['interior']): HTM
   const closed = isStoreyKind(kind);
   if (closed) tileStrip(ctx, art.wallCap, 0, h - wall, w, wall);
   else southWall(ctx, art, doorX, doorLeft, doorRight, w, h);
-  for (const inner of PARTITIONS[kind] ?? []) {
+  for (const inner of partitionsOf(kind, hasStairs)) {
     tileStrip(ctx, art.wallCap, inner.x0, inner.y0, inner.x1 - inner.x0, inner.y1 - inner.y0);
     // The end that faces south shows its face, like the north wall does.
     const freeEnd = inner.y1 < h - wall;
@@ -145,7 +145,8 @@ function northWall(ctx: CanvasRenderingContext2D, kind: BuildingKind, art: Envir
 export class BuildingLayer {
   placed: PlacedBuilding[] = [];
   private readonly art: EnvironmentArt;
-  private readonly interiors = new Map<BuildingKind, HTMLCanvasElement>();
+  /** Painted once per kind, and again for the open-plan house a flight of stairs stands in. */
+  private readonly interiors = new Map<string, HTMLCanvasElement>();
   private readonly byId = new Map<string, PlacedBuilding>();
   /** The stairs in each building, drawn over its floor once it is open. */
   private readonly stairs = new Map<string, Flight[]>();
@@ -221,11 +222,13 @@ export class BuildingLayer {
     return room;
   }
 
-  private interior(kind: BuildingKind): HTMLCanvasElement {
-    let canvas = this.interiors.get(kind);
+  private interior(building: BuildingInstance): HTMLCanvasElement {
+    const hasStairs = this.stairs.has(building.id);
+    const key = `${building.kind}${hasStairs ? ':stairs' : ''}`;
+    let canvas = this.interiors.get(key);
     if (!canvas) {
-      canvas = paintInterior(kind, this.art.interior);
-      this.interiors.set(kind, canvas);
+      canvas = paintInterior(building.kind, this.art.interior, hasStairs);
+      this.interiors.set(key, canvas);
     }
     return canvas;
   }
@@ -234,7 +237,7 @@ export class BuildingLayer {
     for (const placed of this.placed) {
       const showing = placed.reveal > 0;
       if (!showing) continue;
-      ctx.drawImage(this.interior(placed.building.kind), placed.building.x - left, placed.building.y - top);
+      ctx.drawImage(this.interior(placed.building), placed.building.x - left, placed.building.y - top);
       for (const flight of this.stairs.get(placed.building.id) ?? []) this.drawStairs(ctx, flight, left, top);
     }
   }

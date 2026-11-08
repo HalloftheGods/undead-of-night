@@ -44,8 +44,8 @@ const APARTMENT_HALL: readonly Rect[] = [
  */
 export const PARTITIONS: Readonly<Partial<Record<BuildingKind, readonly Rect[]>>> = {
   // A bedroom on the west and a kitchen with the back door on the east, both opening onto the living room.
+  // A house with a floor above or below leaves this wall out: see `partitionsOf`. The floor above is one room.
   house: [{ x0: 54, y0: T, x1: 54 + T, y1: 56 }],
-  upstairs: [{ x0: 54, y0: T, x1: 54 + T, y1: 56 }],
   // A hall from the front door to the back, with a room on each side through a doorway.
   apartment: APARTMENT_HALL,
   apartment_upstairs: APARTMENT_HALL,
@@ -60,8 +60,17 @@ export function backDoorBox(building: BuildingInstance): Rect | null {
   return { x0, y0: building.y, x1: x0 + DOOR_WIDTH, y1: building.y + WALL_THICKNESS };
 }
 
+/** Kinds that are one open room when their stairs lead somewhere, the stairs standing in the wall's corner. */
+const OPEN_WITH_STAIRS: ReadonlySet<BuildingKind> = new Set(['house']);
+
+/** The inside walls of a kind, from its footprint's top left, with or without a flight of stairs in it. */
+export function partitionsOf(kind: BuildingKind, hasStairs: boolean): readonly Rect[] {
+  const openPlan = hasStairs && OPEN_WITH_STAIRS.has(kind);
+  return openPlan ? [] : PARTITIONS[kind] ?? [];
+}
+
 /** The inside walls, in the world. */
-export function partitionBoxes(building: BuildingInstance): Rect[] {
-  const inside = PARTITIONS[building.kind] ?? [];
+export function partitionBoxes(building: BuildingInstance, hasStairs = false): Rect[] {
+  const inside = partitionsOf(building.kind, hasStairs);
   return inside.map((r) => ({ x0: building.x + r.x0, y0: building.y + r.y0, x1: building.x + r.x1, y1: building.y + r.y1 }));
 }

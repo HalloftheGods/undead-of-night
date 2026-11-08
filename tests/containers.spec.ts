@@ -76,9 +76,11 @@ describe('the town\'s containers', () => {
 
   it('cannot be reached from the far side of a wall', () => {
     const { state } = quietSim();
-    const room = state.map.buildings.find((each) => each.kind === 'house') as BuildingInstance;
-    const inRoom = townContainers(state.map).filter((c) => c.building === room.id);
-    const against = inRoom.reduce((best, c) => (c.box.y0 < best.box.y0 ? c : best));
+    // A house whose bedside locker stands against the north wall: the locker is not in every one.
+    const nearNorthWall = (c: ReturnType<typeof townContainers>[number], house: BuildingInstance): boolean => c.box.y0 - house.y < TILE_SIZE;
+    const houses = state.map.buildings.filter((each) => each.kind === 'house');
+    const room = houses.find((house) => townContainers(state.map).some((c) => c.building === house.id && nearNorthWall(c, house))) as BuildingInstance;
+    const against = townContainers(state.map).find((c) => c.building === room.id && nearNorthWall(c, room))!;
     const behindNorthWall = { x: against.x, y: room.y - 2 };
     expect(against.box.y0 - behindNorthWall.y).toBeLessThan(TILE_SIZE * 2);
     expect(containerInReach(state.map, behindNorthWall.x, behindNorthWall.y, () => false)?.building).not.toBe(room.id);
