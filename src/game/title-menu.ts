@@ -8,8 +8,12 @@ import type { BestRun, LeaderboardEntry } from './storage.ts';
 /** Every title page. The changelog has no menu item: the version number in the corner opens it. */
 export type TitlePage = 'play' | 'daily' | 'levels' | 'howto' | 'guide' | 'records' | 'sound' | 'options' | 'changelog';
 
+/** The menu's three sections, each a column under its own small header. */
+export type MenuGroup = 'books' | 'play' | 'extras';
+
 export interface TitleMenuItem {
   readonly page: TitlePage;
+  readonly group: MenuGroup;
   readonly label: string;
   /** One line under the label, saying what the button opens. */
   readonly line: string;
@@ -33,18 +37,41 @@ export function menuLine(item: TitleMenuItem, unlock: SoundUnlock): string {
   return hidden ? '' : item.line;
 }
 
-/** How to Play first, then Daily Night (the primary, where the menu opens), Arcade and Campaign. The two books sit together after Levels. */
+/**
+ * Three sections, read left to right: Books (How to Play on top), Play (Daily Night, the primary, where the menu
+ * opens) and Extras. The list runs section by section, so an item's place in it never changes.
+ */
 export const TITLE_MENU: readonly TitleMenuItem[] = [
-  { page: 'howto', label: 'How to Play', line: 'Controls and the rules of the night.' },
-  { page: 'daily', label: 'Daily Night', line: 'A fresh night every day.', primary: true },
-  { page: 'play', label: 'Arcade', style: 'arcade', line: 'Ten levels in a row. Die and the run ends.' },
-  { page: 'play', label: 'Campaign', style: 'campaign', line: 'Live in a bunker. Run trips, haul treasure home.' },
-  { page: 'levels', label: 'Levels', line: 'Jump to an Arcade level you have reached.' },
-  { page: 'guide', label: 'Town Guide', line: 'What each kind of building holds.' },
-  { page: 'records', label: 'Records', line: 'Your best runs, trips and scores.' },
-  { page: 'sound', label: 'Sound Test', line: 'Hear the music and effects.' },
-  { page: 'options', label: 'Options', line: 'Sound, display, motion and controls.' },
+  { group: 'books', page: 'howto', label: 'How to Play', line: 'Controls and the rules of the night.' },
+  { group: 'books', page: 'guide', label: 'Town Guide', line: 'What each kind of building holds.' },
+  { group: 'books', page: 'records', label: 'Records', line: 'Your best runs, trips and scores.' },
+  { group: 'play', page: 'daily', label: 'Daily Night', line: 'A fresh night every day.', primary: true },
+  { group: 'play', page: 'play', label: 'Arcade', style: 'arcade', line: 'Ten levels in a row. Die and the run ends.' },
+  { group: 'play', page: 'play', label: 'Campaign', style: 'campaign', line: 'Live in a bunker. Run trips, haul treasure home.' },
+  { group: 'play', page: 'levels', label: 'Levels', line: 'Jump to an Arcade level you have reached.' },
+  { group: 'extras', page: 'sound', label: 'Sound Test', line: 'Hear the music and effects.' },
+  { group: 'extras', page: 'options', label: 'Options', line: 'Sound, display, motion and controls.' },
 ];
+
+const GROUP_ORDER: readonly MenuGroup[] = ['books', 'play', 'extras'];
+const GROUP_LABELS: Readonly<Record<MenuGroup, string>> = { books: 'Books', play: 'Play', extras: 'Extras' };
+
+export interface MenuColumn {
+  readonly group: MenuGroup;
+  readonly heading: string;
+  /** Where each of the column's items sits in the whole list, top to bottom. */
+  readonly indices: readonly number[];
+}
+
+/** The columns the menu lays out, left to right. A section with nothing in it is left out. */
+export function menuColumns(entries: readonly TitleMenuItem[] = TITLE_MENU): readonly MenuColumn[] {
+  const columns = GROUP_ORDER.map((group) => ({
+    group,
+    heading: GROUP_LABELS[group],
+    indices: entries.flatMap((item, index) => (item.group === group ? [index] : [])),
+  }));
+  return columns.filter((column) => column.indices.length > 0);
+}
 
 /** Where the menu starts: the primary item, or the top if none is marked. */
 export function primaryIndex(entries: readonly TitleMenuItem[] = TITLE_MENU): number {
@@ -69,21 +96,44 @@ export const CONTROLS: readonly (readonly [keys: string, action: string])[] = [
   ['M', 'Mute'],
 ];
 
-const MENU_STEPS: Readonly<Record<string, number>> = {
-  ArrowUp: -1,
-  KeyW: -1,
-  ArrowDown: 1,
-  KeyS: 1,
-};
-
-/** Which way a key moves the menu, or 0 if it does not. */
-export function menuStep(code: string): number {
-  return MENU_STEPS[code] ?? 0;
+/** A key's move on the menu: down a column, or across to the next. */
+export interface MenuMove {
+  readonly across: number;
+  readonly down: number;
 }
 
-/** The item a step lands on, wrapping at both ends. */
-export function steppedIndex(index: number, step: number, count = TITLE_MENU.length): number {
-  return (index + step + count) % count;
+const MENU_MOVES: Readonly<Record<string, MenuMove>> = {
+  ArrowUp: { across: 0, down: -1 },
+  KeyW: { across: 0, down: -1 },
+  ArrowDown: { across: 0, down: 1 },
+  KeyS: { across: 0, down: 1 },
+  ArrowLeft: { across: -1, down: 0 },
+  KeyA: { across: -1, down: 0 },
+  ArrowRight: { across: 1, down: 0 },
+  KeyD: { across: 1, down: 0 },
+};
+
+/** Which way a key moves the menu, or null if it does not. */
+export function menuMove(code: string): MenuMove | null {
+  return MENU_MOVES[code] ?? null;
+}
+
+/** Steps along a list of length count, wrapping at both ends. */
+function wrapped(at: number, step: number, count: number): number {
+  return (at + step + count) % count;
+}
+
+/**
+ * The item a move lands on. Up and down wrap inside the column; left and right wrap across the columns and keep
+ * the row, or take the last item of a shorter column.
+ */
+export function movedIndex(index: number, move: MenuMove, entries: readonly TitleMenuItem[] = TITLE_MENU): number {
+  const columns = menuColumns(entries);
+  const column = Math.max(0, columns.findIndex((each) => each.indices.includes(index)));
+  const row = Math.max(0, columns[column].indices.indexOf(index));
+  const target = columns[wrapped(column, move.across, columns.length)];
+  const clampedRow = Math.min(row, target.indices.length - 1);
+  return target.indices[wrapped(clampedRow, move.down, target.indices.length)];
 }
 
 export interface KeyFocus {
