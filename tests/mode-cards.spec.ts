@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CARD_H, CARD_W, cardOf } from '../src/art/difficulty-card.ts';
+import { CARD_H, CARD_W, cardOf, TALL_H, tallRows } from '../src/art/difficulty-card.ts';
 import type { CardDef } from '../src/art/difficulty-card.ts';
 import { buildModeCards } from '../src/art/mode-cards.ts';
 import { MULTI_CARD } from '../src/art/modes/multi.ts';
@@ -62,12 +62,25 @@ describe('play mode card pictures (#7198)', () => {
   it('draws the two scenes at least 40% differently', () => {
     const { solo, multi } = buildModeCards();
     let diff = 0;
-    for (let y = 0; y < CARD_H; y++) {
+    for (let y = TALL_H - CARD_H; y < TALL_H; y++) {
       for (let x = 0; x < CARD_W; x++) {
         const differs = colourAt(solo, x, y) !== colourAt(multi, x, y);
         if (differs) diff++;
       }
     }
     expect(diff / (CARD_W * CARD_H)).toBeGreaterThanOrEqual(0.4);
+  });
+
+  it('builds portrait cards, the scene kept whole under added sky', () => {
+    for (const sprite of Object.values(buildModeCards())) expect([sprite.w, sprite.h]).toEqual([CARD_W, TALL_H]);
+    const rows = tallRows(SOLO_CARD, { fill: 'V', dot: 'w', high: 'K' });
+    expect(rows).toHaveLength(TALL_H);
+    expect(rows.slice(TALL_H - CARD_H)).toEqual(SOLO_CARD.rows);
+    expect(rows.every((row) => row.length === CARD_W)).toBe(true);
+  });
+
+  it('extends a scene that starts on a wall by repeating its top row', () => {
+    const rows = tallRows(MULTI_CARD, 'repeat');
+    expect(rows.slice(0, TALL_H - CARD_H).every((row) => row === MULTI_CARD.rows[0])).toBe(true);
   });
 });

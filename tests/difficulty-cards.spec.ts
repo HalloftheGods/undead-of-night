@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DIFFICULTIES } from '../shared/difficulty.ts';
-import { CARD_H, CARD_W, cardOf } from '../src/art/difficulty-card.ts';
+import { CARD_H, CARD_W, cardOf, TALL_H } from '../src/art/difficulty-card.ts';
 import type { CardDef } from '../src/art/difficulty-card.ts';
 import { buildDifficultyCards } from '../src/art/difficulty-cards.ts';
 import { LIGHTS_OUT_CARD } from '../src/art/difficulty/lights-out.ts';
@@ -26,11 +26,14 @@ function colourAt(sprite: PixelSprite, x: number, y: number): string {
   return `${sprite.rgba[at]},${sprite.rgba[at + 1]},${sprite.rgba[at + 2]},${sprite.rgba[at + 3]}`;
 }
 
-/** Fraction of pixels that differ between two same-size sprites. */
+/** Fraction of the scene's pixels (under the added sky) that differ between two portrait cards. */
 function differing(a: PixelSprite, b: PixelSprite): number {
   let diff = 0;
-  for (let y = 0; y < CARD_H; y++) {
-    for (let x = 0; x < CARD_W; x++) if (colourAt(a, x, y) !== colourAt(b, x, y)) diff++;
+  for (let y = TALL_H - CARD_H; y < TALL_H; y++) {
+    for (let x = 0; x < CARD_W; x++) {
+      const differs = colourAt(a, x, y) !== colourAt(b, x, y);
+      if (differs) diff++;
+    }
   }
   return diff / (CARD_W * CARD_H);
 }
@@ -61,7 +64,8 @@ describe('difficulty card pictures (#7192)', () => {
           for (let x = 0; x < CARD_W; x++) {
             const alpha = alphaAt(sprite, x, y);
             expect([0, 255]).toContain(alpha);
-            if (alpha === 255) {
+            const isOpaque = alpha === 255;
+            if (isOpaque) {
               opaque++;
               colours.add(colourAt(sprite, x, y));
             }
@@ -75,6 +79,10 @@ describe('difficulty card pictures (#7192)', () => {
 
   it('keys the built cards by difficulty id, in order', () => {
     expect(Object.keys(buildDifficultyCards())).toEqual(DIFFICULTIES.map((each) => each.id));
+  });
+
+  it('builds every card as a portrait', () => {
+    for (const sprite of Object.values(buildDifficultyCards())) expect([sprite.w, sprite.h]).toEqual([CARD_W, TALL_H]);
   });
 
   it('draws every pair of scenes at least 40% differently', () => {

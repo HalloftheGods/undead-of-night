@@ -18,16 +18,17 @@
             <span class="pick-number" aria-hidden="true">{{ pick.number }}</span>
             <span class="pick-label">{{ pick.label }}</span>
           </span>
-          <span class="pick-art">
-            <img v-if="spriteUrl(pick.key, chosenOption(pick).id)" :src="spriteUrl(pick.key, chosenOption(pick).id)" alt="" draggable="false" />
+          <span class="pick-art" :class="{ 'is-figure': pick.key === 'who' }">
+            <img v-if="tileUrl(pick)" :src="tileUrl(pick)" alt="" draggable="false" />
           </span>
-          <span class="pick-name">{{ chosenOption(pick).name }}<span class="pick-caret" aria-hidden="true">▾</span></span>
+          <span class="pick-name">{{ shownOption(pick).name }}<span class="pick-caret" aria-hidden="true">▾</span></span>
         </button>
       </li>
     </ol>
 
     <ul
       v-if="openPick"
+      ref="list"
       :id="listId(openPick.key)"
       class="picks-list px-frame"
       :class="`is-${openPick.key}`"
@@ -43,16 +44,15 @@
           type="button"
           role="option"
           :aria-selected="index === openPick.chosen"
-          @mouseenter="game.playUi('hover')"
+          @mouseenter="preview(option.id, true)"
+          @focus="preview(option.id, false)"
+          @mouseleave="unpreview"
           @click="choose(openPick.key, option.id)"
         >
-          <span class="pick-option-art">
+          <span class="pick-option-art" :class="{ 'is-figure': openPick.key === 'who' }">
             <img v-if="spriteUrl(openPick.key, option.id)" :src="spriteUrl(openPick.key, option.id)" alt="" draggable="false" />
           </span>
-          <span class="pick-option-text">
-            <span class="pick-option-name">{{ option.name }}</span>
-            <span class="pick-option-line">{{ option.line }}</span>
-          </span>
+          <span class="pick-option-name">{{ option.name }}</span>
         </button>
       </li>
     </ul>
@@ -63,15 +63,19 @@
 /**
  * The Play page's stepper: one portrait per pick (mode, difficulty, survivor) showing what is chosen, joined like steps.
  * A portrait opens the list of that pick's options under the row; choosing one, Esc, or a click elsewhere closes it.
+ * Pointing at or focusing an option shows it in its portrait until the pointer leaves or the list closes.
+ * The survivor portrait is the whole figure, turning through every facing unless motion is turned down.
  */
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue';
 import type { ComponentPublicInstance } from 'vue';
 import type { DifficultyId } from '../../shared/difficulty.ts';
 import type { ArtBook, PixelSprite } from '../art/types.ts';
 import { spriteDataUrl } from '../engine/sprite-cache.ts';
 import type { PlayMode } from '../game/play-flow.ts';
 import { chosenOption, stepFocus } from '../game/setup-picks.ts';
-import type { PickKey, SetupPick } from '../game/setup-picks.ts';
+import type { PickKey, PickOption, SetupPick } from '../game/setup-picks.ts';
+import { motion } from '../game/motion.ts';
+import { createSpinner, FRONT_FACING } from '../game/survivor-spin.ts';
 import { useGame } from './use-game.ts';
 
 const { picks, art } = defineProps<{ picks: readonly SetupPick[]; art: ArtBook | null }>();
@@ -83,6 +87,13 @@ const open = ref<PickKey | null>(null);
 const openPick = computed(() => picks.find((pick) => pick.key === open.value) ?? null);
 const tiles = new Map<PickKey, HTMLButtonElement>();
 let options: HTMLButtonElement[] = [];
+
+/** The option shown in the open pick's portrait instead of its choice, while one is pointed at or focused. */
+const previewed = ref<string | null>(null);
+const facing = ref(FRONT_FACING);
+const spinner = createSpinner((next) => {
+  facing.value = next;
+});
 
 type Ref = Element | ComponentPublicInstance | null;
 
@@ -100,7 +111,31 @@ function listId(key: PickKey): string {
   return `setup-pick-${key}`;
 }
 
-/** The picture for one option: the mode's scene, the difficulty's scene, or the survivor's bust. */
+/** What a pick's portrait shows: the option being previewed in its open list, else its choice. */
+function shownOption(pick: SetupPick): PickOption {
+  const isPreviewing = open.value === pick.key && previewed.value !== null;
+  const found = isPreviewing ? pick.options.find((each) => each.id === previewed.value) : undefined;
+  return found ?? chosenOption(pick);
+}
+
+/** The portrait's picture; a survivor stands whole and turns. */
+function tileUrl(pick: SetupPick): string | undefined {
+  const id = shownOption(pick).id;
+  const isSurvivor = pick.key === 'who';
+  const figure = isSurvivor ? art?.survivors[Number(id)]?.portraits[facing.value] : undefined;
+  return figure ? spriteDataUrl(figure) : spriteUrl(pick.key, id);
+}
+
+function preview(id: string, byPointer: boolean): void {
+  if (byPointer) game.playUi('hover');
+  previewed.value = id;
+}
+
+function unpreview(): void {
+  previewed.value = null;
+}
+
+/** The picture for one option in a list: the mode's scene, the difficulty's scene, or the survivor standing. */
 function spriteOf(key: PickKey, id: string): PixelSprite | undefined {
   const isArtLoading = art === null;
   if (isArtLoading) return undefined;
@@ -108,7 +143,7 @@ function spriteOf(key: PickKey, id: string): PixelSprite | undefined {
   const isDifficulty = key === 'difficulty';
   if (isMode) return art.ui.mode[id as PlayMode];
   if (isDifficulty) return art.ui.difficulty[id as DifficultyId];
-  return art.survivors[Number(id)]?.select;
+  return art.survivors[Number(id)]?.portrait;
 }
 
 function spriteUrl(key: PickKey, id: string): string | undefined {
@@ -133,6 +168,7 @@ function toggle(key: PickKey): void {
 function close(refocus = true): void {
   const was = open.value;
   open.value = null;
+  previewed.value = null;
   const shouldRefocus = refocus && was !== null;
   if (shouldRefocus) tiles.get(was)?.focus();
 }
@@ -168,8 +204,22 @@ function onPointerDown(event: PointerEvent): void {
   if (isOutsideWhileOpen) close(false);
 }
 
-onMounted(() => document.addEventListener('pointerdown', onPointerDown));
-onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerDown));
+/** Motion turned down holds the survivor facing front. */
+function syncSpin(isCalm: boolean): void {
+  if (isCalm) spinner.stop();
+  else spinner.start();
+}
+
+watch(motion.reduced, syncSpin);
+
+onMounted(() => {
+  document.addEventListener('pointerdown', onPointerDown);
+  syncSpin(motion.reduced.value);
+});
+onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', onPointerDown);
+  spinner.stop();
+});
 
 defineExpose({ focus: () => tiles.get('mode')?.focus(), isOpen: () => open.value !== null });
 </script>
@@ -196,7 +246,7 @@ defineExpose({ focus: () => tiles.get('mode')?.focus(), isOpen: () => open.value
   align-items: stretch;
   flex: 1 1 0;
   min-width: 0;
-  max-width: calc(var(--u) * 130);
+  max-width: calc(var(--u) * 84);
 }
 
 /* The rule that joins one step to the next, drawn in the gap so every portrait is the same width. */
@@ -255,11 +305,17 @@ defineExpose({ focus: () => tiles.get('mode')?.focus(), isOpen: () => open.value
   font-weight: 700;
 }
 
+/* Every portrait shares the cards' portrait shape (CARD_W by TALL_H in src/art/difficulty-card.ts). */
 .pick-art {
   display: block;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 56 / 72;
   overflow: hidden;
   background: var(--ink);
+}
+
+/* A survivor stands whole in the frame rather than cropped to fill it. */
+.is-figure img {
+  object-fit: contain;
 }
 
 .pick-art img,
@@ -290,20 +346,14 @@ defineExpose({ focus: () => tiles.get('mode')?.focus(), isOpen: () => open.value
   color: var(--bone-dim);
 }
 
-/* The open list drops over the page below the row, as wide as the row. */
+/* The open list opens in the page under the row, pushing the fields and buttons below it down rather than covering them. */
 .picks-list {
   --edge: var(--amber);
-  position: absolute;
-  z-index: 5;
-  top: calc(100% + var(--u) * 3);
-  left: 0;
-  right: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(calc(var(--u) * 110), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(calc(var(--u) * 40), calc(var(--u) * 56)));
+  justify-content: center;
   gap: calc(var(--u) * 3);
-  max-height: 60vh;
-  overflow-y: auto;
-  margin: 0;
+  margin: calc(var(--u) * 4) 0 0;
   padding: calc(var(--u) * 3);
   background: rgba(11, 12, 16, 0.97);
   list-style: none;
@@ -312,8 +362,9 @@ defineExpose({ focus: () => tiles.get('mode')?.focus(), isOpen: () => open.value
 .pick-option {
   --edge: var(--ink-line);
   display: flex;
-  align-items: center;
-  gap: calc(var(--u) * 4);
+  flex-direction: column;
+  align-items: stretch;
+  gap: calc(var(--u) * 2);
   width: 100%;
   border: 0;
   padding: calc(var(--u) * 2);
@@ -321,7 +372,7 @@ defineExpose({ focus: () => tiles.get('mode')?.focus(), isOpen: () => open.value
   box-shadow: 0 0 0 var(--u) var(--edge);
   color: var(--bone);
   font: inherit;
-  text-align: left;
+  text-align: center;
   cursor: pointer;
   outline: none;
 }
@@ -337,31 +388,20 @@ defineExpose({ focus: () => tiles.get('mode')?.focus(), isOpen: () => open.value
 }
 
 .pick-option-art {
-  flex: none;
-  width: calc(var(--u) * 36);
-  aspect-ratio: 4 / 3;
+  display: block;
+  aspect-ratio: 56 / 72;
   overflow: hidden;
   background: var(--ink);
 }
 
-.pick-option-text {
-  display: flex;
-  flex-direction: column;
-  gap: var(--u);
-  min-width: 0;
-}
-
 .pick-option-name {
+  overflow: hidden;
   color: var(--amber);
-  font-size: calc(var(--u) * 6);
+  font-size: calc(var(--u) * 5);
+  white-space: nowrap;
+  text-overflow: ellipsis;
   font-weight: 700;
   text-transform: uppercase;
-}
-
-.pick-option-line {
-  color: var(--bone-dim);
-  font-size: calc(var(--u) * 5);
-  line-height: 1.4;
 }
 
 /* A phone keeps the three portraits in a row and lets the list run one per line. */
@@ -379,7 +419,7 @@ defineExpose({ focus: () => tiles.get('mode')?.focus(), isOpen: () => open.value
   }
 
   .picks-list {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(calc(var(--u) * 34), 1fr));
   }
 }
 </style>
