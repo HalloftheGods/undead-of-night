@@ -1,44 +1,54 @@
 <template>
-  <nav ref="menu" class="px-menu title-menu" aria-label="Main menu">
-    <section v-for="column in columns" :key="column.group" class="title-menu-group" :class="`is-${column.group}`" :aria-labelledby="`menu-${column.group}`">
-      <h2 :id="`menu-${column.group}`" class="title-menu-heading">{{ column.heading }}</h2>
-      <button
-        v-for="index in column.indices"
-        :key="entries[index].label"
-        :ref="(el) => keep(index, el)"
-        class="px-menu-item"
-        :class="{ 'is-selected': index === selected, 'is-primary': index === primary }"
-        type="button"
-        :aria-current="index === selected"
-        @mousemove="moveTo(index)"
-        @focus="select(index)"
-        @click="open(index)"
-      >
-        <span class="px-menu-label">{{ menuLabel(entries[index], unlock) }}</span>
-        <span class="px-menu-line">{{ menuLine(entries[index], unlock) }}</span>
-      </button>
-    </section>
+  <nav ref="menu" class="px-menu title-menu" :aria-label="section ? `${heading} menu` : 'Main menu'">
+    <h2 v-if="heading" class="title-menu-heading">{{ heading }}</h2>
+    <button
+      v-for="(row, index) in rows"
+      :key="row.label"
+      :ref="(el) => keep(index, el)"
+      class="px-menu-item"
+      :class="{ 'is-selected': index === selected, 'is-primary': row.primary && section === null }"
+      type="button"
+      :aria-current="index === selected"
+      @mousemove="moveTo(index)"
+      @focus="select(index)"
+      @click="open(index)"
+    >
+      <span class="px-menu-label">{{ menuRowLabel(row, unlock) }}</span>
+      <span class="px-menu-line">{{ menuRowLine(row, unlock) }}</span>
+    </button>
   </nav>
 </template>
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, useTemplateRef } from 'vue';
 import { loadSoundUnlock } from '../game/sound-unlock.ts';
-import { isConfirmKey, menuLabel, menuLine, menuColumns, menuMove, menuOwnsKey, movedIndex, primaryIndex, TITLE_MENU } from '../game/title-menu.ts';
-import type { KeyFocus, TitleMenuItem } from '../game/title-menu.ts';
+import { isBackKey, isConfirmKey, MENU_SECTIONS, menuOwnsKey, menuRows, menuStep, openingRow, steppedRow, TITLE_MENU } from '../game/title-menu.ts';
+import type { KeyFocus, MenuGroup, MenuRow, TitleMenuItem } from '../game/title-menu.ts';
+import type { SoundUnlock } from '../game/sound-unlock.ts';
+import { menuLabel, menuLine } from '../game/title-menu.ts';
 import { useGame } from './use-game.ts';
 
 const { entries = TITLE_MENU } = defineProps<{ entries?: readonly TitleMenuItem[] }>();
+/** The highlighted row of whichever list is showing. */
 const selected = defineModel<number>({ required: true });
+/** Null on the title (the three parents); a group once its parent is opened. */
+const section = defineModel<MenuGroup | null>('section', { default: null });
 const emit = defineEmits<{ open: [item: TitleMenuItem] }>();
 const game = useGame();
 const unlock = loadSoundUnlock();
-const columns = computed(() => menuColumns(entries));
-const primary = computed(() => primaryIndex(entries));
-/** The buttons by their place in the whole list, which the columns break up on screen. */
+const rows = computed(() => menuRows(section.value, entries));
+const heading = computed(() => MENU_SECTIONS.find((each) => each.group === section.value)?.label ?? '');
 const buttons: HTMLButtonElement[] = [];
 const menu = useTemplateRef<HTMLElement>('menu');
 const CONTROLS = 'button, a[href], input, select, textarea, summary, [role="button"]';
+
+function menuRowLabel(row: MenuRow, soundUnlock: SoundUnlock): string {
+  return row.item ? menuLabel(row.item, soundUnlock) : row.label;
+}
+
+function menuRowLine(row: MenuRow, soundUnlock: SoundUnlock): string {
+  return row.item ? menuLine(row.item, soundUnlock) : row.line;
+}
 
 function keep(index: number, el: unknown): void {
   const isButton = el instanceof HTMLButtonElement;
@@ -53,18 +63,34 @@ function select(index: number): void {
 }
 
 /**
- * Focus follows the marker, so Space and a screen reader land on the item it shows.
+ * Focus follows the marker, so Space and a screen reader land on the row it shows.
  * The mouse drives this by moving, not by entering: Back must not lose the player's
- * place to whichever item comes back under a resting cursor.
+ * place to whichever row comes back under a resting cursor.
  */
 function moveTo(index: number): void {
   select(index);
   buttons[index]?.focus({ preventScroll: true });
 }
 
+/** Opens a parent's list pointed at its primary row; the title remembers which parent it came from. */
+function enter(group: MenuGroup): void {
+  section.value = group;
+  selected.value = openingRow(menuRows(group, entries));
+}
+
+function leave(): void {
+  const group = section.value;
+  if (group === null) return;
+  section.value = null;
+  selected.value = Math.max(0, MENU_SECTIONS.findIndex((each) => each.group === group));
+}
+
 function open(index: number): void {
   game.playUi('click');
-  emit('open', entries[index]);
+  const row = rows.value[index];
+  if (row.kind === 'section' && row.group) enter(row.group);
+  else if (row.kind === 'back') leave();
+  else if (row.item) emit('open', row.item);
 }
 
 function focusOf(eventTarget: EventTarget | null): KeyFocus {
@@ -82,12 +108,15 @@ function onKey(event: KeyboardEvent): void {
   const otherControlHasFocus = !menuOwnsKey(focusOf(event.target));
   if (otherControlHasFocus) return;
   const browserShortcut = event.ctrlKey || event.metaKey || event.altKey;
-  const move = browserShortcut ? null : menuMove(event.code);
-  const confirming = !browserShortcut && isConfirmKey(event.code);
+  if (browserShortcut) return;
+  const step = menuStep(event.code);
+  const confirming = isConfirmKey(event.code);
+  const leaving = isBackKey(event.code) && section.value !== null;
   // The marker decides, so a focused button must not answer Enter as well.
-  const isMenuKey = move !== null || confirming;
+  const isMenuKey = step !== null || confirming || leaving;
   if (isMenuKey) event.preventDefault();
-  if (move) moveTo(movedIndex(selected.value, move, entries));
+  if (step !== null) moveTo(steppedRow(selected.value, step, rows.value.length));
+  if (leaving && !event.repeat) leave();
   const opening = confirming && !event.repeat;
   if (opening) open(selected.value);
 }
@@ -97,38 +126,17 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
 </script>
 
 <style scoped>
-/* Three columns side by side, so the menu stays short enough to sit under the logo on a sideways phone. */
-.title-menu {
-  flex-direction: row;
-  align-items: flex-start;
-  justify-content: center;
-  gap: calc(var(--u) * 6);
-}
-
-.title-menu-group {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: calc(var(--u) * 2);
-}
-
 .title-menu-heading {
-  margin: 0 0 var(--u);
+  margin: 0;
   color: var(--amber);
-  font-size: calc(var(--u) * 5);
+  font-size: calc(var(--u) * 6);
   font-weight: 400;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   text-shadow: calc(var(--u) * 0.5) calc(var(--u) * 0.5) 0 var(--ink);
 }
 
-/* Play leads the eye: it sits in the middle and its words run a size bigger. */
 .title-menu .px-menu-item {
-  padding-inline: calc(var(--u) * 8);
-  font-size: calc(var(--u) * 7);
-}
-
-.is-play .px-menu-item {
   font-size: calc(var(--u) * 9);
 }
 
@@ -136,59 +144,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
   font-size: calc(var(--u) * 12);
 }
 
-/* The side columns keep each line under its own item. */
 .title-menu .px-menu-line {
-  max-width: calc(var(--u) * 90);
+  max-width: calc(var(--u) * 110);
   text-wrap: balance;
 }
 
-/* A short screen drops the lines under the items; the labels say enough. */
+/* A short screen drops the lines under the rows; the labels say enough. */
 @media (max-height: 520px) {
-  .title-menu .px-menu-line {
-    display: none;
-  }
-}
-
-/* A tall, narrow screen puts Play on top, full width, and Books and Extras side by side under it. */
-@media (max-aspect-ratio: 4 / 5) {
-  .title-menu {
-    display: grid;
-    grid-template-areas:
-      'play play'
-      'books extras';
-    justify-items: center;
-    row-gap: calc(var(--u) * 6);
-  }
-
-  .is-play {
-    grid-area: play;
-  }
-
-  .is-books {
-    grid-area: books;
-  }
-
-  .is-extras {
-    grid-area: extras;
-  }
-
-  .is-books .px-menu-line,
-  .is-extras .px-menu-line {
-    display: none;
-  }
-
-  .is-play .px-menu-line {
-    max-width: none;
-  }
-
-  .is-books .px-menu-item,
-  .is-extras .px-menu-item {
-    padding-inline: calc(var(--u) * 6);
-  }
-}
-
-/* A small phone held upright drops the lines under Play's items too. */
-@media (max-aspect-ratio: 4 / 5) and (max-height: 620px) {
   .title-menu .px-menu-line {
     display: none;
   }

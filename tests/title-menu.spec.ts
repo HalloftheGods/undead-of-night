@@ -4,15 +4,17 @@ import {
   isConfirmKey,
   menuLabel,
   menuLine,
-  menuColumns,
-  menuMove,
+  isBackKey,
+  MENU_SECTIONS,
   menuOwnsKey,
-  movedIndex,
+  menuRows,
+  menuStep,
+  openingRow,
+  steppedRow,
   recordRows,
   recordSections,
   recordStats,
   setupActionLabel,
-  primaryIndex,
   TITLE_MENU,
 } from '../src/game/title-menu.ts';
 
@@ -33,21 +35,21 @@ describe('title menu', () => {
     expect(TITLE_MENU.map((item) => item.label)).toEqual(['How to Play', 'Town Guide', 'Records', 'Daily Night', 'Arcade', 'Campaign', 'Levels', 'Sound Test', 'Options']);
   });
 
-  it('lays the sections out as three headed columns, Books, Play and Extras', () => {
-    const columns = menuColumns();
-    expect(columns.map((column) => column.heading)).toEqual(['Books', 'Play', 'Extras']);
-    expect(columns.map((column) => column.indices.map((index) => TITLE_MENU[index].label))).toEqual([
-      ['How to Play', 'Town Guide', 'Records'],
-      ['Daily Night', 'Arcade', 'Campaign', 'Levels'],
-      ['Sound Test', 'Options'],
-    ]);
-    expect(menuColumns([{ group: 'extras', page: 'options', label: 'Options', line: 'x' }]).map((column) => column.group)).toEqual(['extras']);
+  it('shows only three parents on the title, Play on top and pointed at', () => {
+    const rows = menuRows(null);
+    expect(rows.map((row) => row.label)).toEqual(['Play', 'Books', 'Extras']);
+    expect(rows.every((row) => row.kind === 'section')).toBe(true);
+    expect(openingRow(rows)).toBe(0);
+    expect(MENU_SECTIONS.map((section) => section.group)).toEqual(['play', 'books', 'extras']);
   });
 
-  it('opens pointed at Daily Night, the one primary item, even though How to Play is on top', () => {
-    expect(TITLE_MENU.filter((item) => item.primary === true).map((item) => item.label)).toEqual(['Daily Night']);
-    expect(TITLE_MENU[primaryIndex()].page).toBe('daily');
-    expect(primaryIndex([{ group: 'extras', page: 'options', label: 'Options', line: 'x' }])).toBe(0);
+  it('lists a parent\'s links with Back last, and opens Play at Daily Night', () => {
+    const play = menuRows('play');
+    expect(play.map((row) => row.label)).toEqual(['Daily Night', 'Arcade', 'Campaign', 'Levels', 'Back']);
+    expect(play[openingRow(play)].label).toBe('Daily Night');
+    expect(menuRows('books').map((row) => row.label)).toEqual(['How to Play', 'Town Guide', 'Records', 'Back']);
+    expect(menuRows('extras').map((row) => row.label)).toEqual(['Sound Test', 'Options', 'Back']);
+    expect(menuRows('extras')[2].kind).toBe('back');
   });
 
   it('names the Sound Test from the start, with or without a Radio found', () => {
@@ -81,21 +83,19 @@ describe('title menu', () => {
   });
 
   it.each([
-    ['ArrowUp', 0, -1],
-    ['KeyW', 0, -1],
-    ['ArrowDown', 0, 1],
-    ['KeyS', 0, 1],
-    ['ArrowLeft', -1, 0],
-    ['KeyA', -1, 0],
-    ['ArrowRight', 1, 0],
-    ['KeyD', 1, 0],
-  ])('reads %s as a move of %i across and %i down', (code, across, down) => {
-    expect(menuMove(code)).toEqual({ across, down });
+    ['ArrowUp', -1],
+    ['KeyW', -1],
+    ['ArrowDown', 1],
+    ['KeyS', 1],
+    ['Enter', null],
+    ['ArrowLeft', null],
+  ])('reads %s as a step of %s', (code, step) => {
+    expect(menuStep(code)).toBe(step);
   });
 
-  it('reads Enter and other keys as no move', () => {
-    expect(menuMove('Enter')).toBeNull();
-    expect(menuMove('KeyQ')).toBeNull();
+  it('leaves an opened parent on Left, A, Escape or Backspace', () => {
+    for (const code of ['ArrowLeft', 'KeyA', 'Escape', 'Backspace']) expect(isBackKey(code)).toBe(true);
+    expect(isBackKey('Enter')).toBe(false);
   });
 
   it('leaves a key alone when focus sits on a control outside the menu, such as the Install cartridge', () => {
@@ -104,23 +104,10 @@ describe('title menu', () => {
     expect(menuOwnsKey({ focusInMenu: false, focusOnControl: false })).toBe(true);
   });
 
-  it('moves up and down inside a column, wrapping at its ends', () => {
-    const at = (label: string) => TITLE_MENU.findIndex((item) => item.label === label);
-    const label = (index: number) => TITLE_MENU[index].label;
-    expect(label(movedIndex(at('Daily Night'), { across: 0, down: 1 }))).toBe('Arcade');
-    expect(label(movedIndex(at('Daily Night'), { across: 0, down: -1 }))).toBe('Levels');
-    expect(label(movedIndex(at('Records'), { across: 0, down: 1 }))).toBe('How to Play');
-  });
-
-  it('moves across the columns on the same row, wrapping at the sides, and drops to the end of a shorter column', () => {
-    const at = (label: string) => TITLE_MENU.findIndex((item) => item.label === label);
-    const label = (index: number) => TITLE_MENU[index].label;
-    expect(label(movedIndex(at('Daily Night'), { across: -1, down: 0 }))).toBe('How to Play');
-    expect(label(movedIndex(at('Arcade'), { across: 1, down: 0 }))).toBe('Options');
-    expect(label(movedIndex(at('Campaign'), { across: 1, down: 0 }))).toBe('Options');
-    expect(label(movedIndex(at('Levels'), { across: -1, down: 0 }))).toBe('Records');
-    expect(label(movedIndex(at('Options'), { across: 1, down: 0 }))).toBe('Town Guide');
-    expect(label(movedIndex(at('How to Play'), { across: -1, down: 0 }))).toBe('Sound Test');
+  it('steps through a list, wrapping at both ends', () => {
+    expect(steppedRow(0, -1, 3)).toBe(2);
+    expect(steppedRow(2, 1, 3)).toBe(0);
+    expect(steppedRow(1, 1, 3)).toBe(2);
   });
 
   it('takes either Enter key as confirm, and nothing else', () => {

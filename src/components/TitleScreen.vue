@@ -5,7 +5,7 @@
 
     <PressAnyKey v-if="asking" :touch="ui.touch" :splashing @wake="answer" />
     <div v-else class="title-columns" :class="{ 'title-arrive': arrived }">
-      <TitleMenu v-model="selected" :entries="TITLE_MENU" @open="openItem" />
+      <TitleMenu v-model="selected" v-model:section="section" :entries="TITLE_MENU" @open="openItem" />
       <InstallCartridge />
     </div>
 
@@ -39,8 +39,8 @@ import { setPendingRoomCode } from '../game/pending-room.ts';
 import { markPressAnswered, shouldAskForPress } from '../game/press-start.ts';
 import { onlineRoomsLive } from '../network/play-api.ts';
 import { BRAND_MARK, STUDIO_LINE } from '../game/studio-splash.ts';
-import { primaryIndex, TITLE_MENU } from '../game/title-menu.ts';
-import type { TitleMenuItem } from '../game/title-menu.ts';
+import { TITLE_MENU } from '../game/title-menu.ts';
+import type { MenuGroup, TitleMenuItem } from '../game/title-menu.ts';
 import { closePage, closePlay, INVITE_LANDING, openPage, pickLevel, TITLE_HOME } from '../game/title-nav.ts';
 import InstallCartridge from './InstallCartridge.vue';
 import { ChangelogPage, DailyPage, HowToPlay, LevelsPage, RecordsPage, SoundTestPage, TownGuidePage } from './lazy-pages.ts';
@@ -81,7 +81,9 @@ if (invite) {
   window.history.replaceState(null, '', withoutJoinParam(window.location.href));
 }
 /** Lives here, so Back returns to the item the player left from. */
-const selected = ref(primaryIndex());
+const selected = ref(0);
+/** Null on the title's three parents; the opened parent once the player is inside one. */
+const section = ref<MenuGroup | null>(null);
 
 function answer(): void {
   markPressAnswered();

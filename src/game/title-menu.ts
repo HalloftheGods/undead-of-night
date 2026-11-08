@@ -8,7 +8,7 @@ import type { BestRun, LeaderboardEntry } from './storage.ts';
 /** Every title page. The changelog has no menu item: the version number in the corner opens it. */
 export type TitlePage = 'play' | 'daily' | 'levels' | 'howto' | 'guide' | 'records' | 'sound' | 'options' | 'changelog';
 
-/** The menu's three sections, each a column under its own small header. */
+/** The menu's three parents. */
 export type MenuGroup = 'books' | 'play' | 'extras';
 
 export interface TitleMenuItem {
@@ -37,10 +37,7 @@ export function menuLine(item: TitleMenuItem, unlock: SoundUnlock): string {
   return hidden ? '' : item.line;
 }
 
-/**
- * Three sections, read left to right: Books (How to Play on top), Play (Daily Night, the primary, where the menu
- * opens) and Extras. The list runs section by section, so an item's place in it never changes.
- */
+/** Every link, section by section. The title shows only the three parents (MENU_SECTIONS); a link shows once its parent is opened. */
 export const TITLE_MENU: readonly TitleMenuItem[] = [
   { group: 'books', page: 'howto', label: 'How to Play', line: 'Controls and the rules of the night.' },
   { group: 'books', page: 'guide', label: 'Town Guide', line: 'What each kind of building holds.' },
@@ -53,29 +50,45 @@ export const TITLE_MENU: readonly TitleMenuItem[] = [
   { group: 'extras', page: 'options', label: 'Options', line: 'Sound, display, motion and controls.' },
 ];
 
-const GROUP_ORDER: readonly MenuGroup[] = ['books', 'play', 'extras'];
-const GROUP_LABELS: Readonly<Record<MenuGroup, string>> = { books: 'Books', play: 'Play', extras: 'Extras' };
-
-export interface MenuColumn {
+/** A parent on the title: it opens a list of its own links instead of a page. */
+export interface MenuSection {
   readonly group: MenuGroup;
-  readonly heading: string;
-  /** Where each of the column's items sits in the whole list, top to bottom. */
-  readonly indices: readonly number[];
+  readonly label: string;
+  readonly line: string;
 }
 
-/** The columns the menu lays out, left to right. A section with nothing in it is left out. */
-export function menuColumns(entries: readonly TitleMenuItem[] = TITLE_MENU): readonly MenuColumn[] {
-  const columns = GROUP_ORDER.map((group) => ({
-    group,
-    heading: GROUP_LABELS[group],
-    indices: entries.flatMap((item, index) => (item.group === group ? [index] : [])),
-  }));
-  return columns.filter((column) => column.indices.length > 0);
+/** The three parents the title shows, Play on top. Each opens its children; Back returns here. */
+export const MENU_SECTIONS: readonly MenuSection[] = [
+  { group: 'play', label: 'Play', line: 'Daily Night, Arcade, Campaign and Levels.' },
+  { group: 'books', label: 'Books', line: 'How to Play, the Town Guide and your Records.' },
+  { group: 'extras', label: 'Extras', line: 'Sound Test and Options.' },
+];
+
+/** One line of the menu as drawn: a parent, one of its links, or the Back that leaves a list. */
+export interface MenuRow {
+  readonly kind: 'section' | 'item' | 'back';
+  readonly label: string;
+  readonly line: string;
+  readonly primary: boolean;
+  /** Set on a parent: the section it opens. */
+  readonly group?: MenuGroup;
+  /** Set on a link: the entry it opens. */
+  readonly item?: TitleMenuItem;
 }
 
-/** Where the menu starts: the primary item, or the top if none is marked. */
-export function primaryIndex(entries: readonly TitleMenuItem[] = TITLE_MENU): number {
-  return Math.max(0, entries.findIndex((item) => item.primary === true));
+/** The rows for the title (section null) or for one opened section, which ends in Back. */
+export function menuRows(section: MenuGroup | null, entries: readonly TitleMenuItem[] = TITLE_MENU): readonly MenuRow[] {
+  if (section === null) {
+    return MENU_SECTIONS.map((each, index) => ({ kind: 'section', label: each.label, line: each.line, primary: index === 0, group: each.group }));
+  }
+  const links = entries.filter((item) => item.group === section);
+  const rows: MenuRow[] = links.map((item) => ({ kind: 'item', label: item.label, line: item.line, primary: item.primary === true, item }));
+  return [...rows, { kind: 'back', label: 'Back', line: '', primary: false }];
+}
+
+/** Where a list opens: its primary row, or the top. */
+export function openingRow(rows: readonly MenuRow[]): number {
+  return Math.max(0, rows.findIndex((row) => row.primary));
 }
 
 /** The Levels page belongs to Arcade; Campaign picks its level at the garage map in the bunker. */
@@ -96,44 +109,21 @@ export const CONTROLS: readonly (readonly [keys: string, action: string])[] = [
   ['M', 'Mute'],
 ];
 
-/** A key's move on the menu: down a column, or across to the next. */
-export interface MenuMove {
-  readonly across: number;
-  readonly down: number;
+/** Which way a key steps the list: -1 up, 1 down, or null if it does not move it. */
+export function menuStep(code: string): -1 | 1 | null {
+  if (code === 'ArrowUp' || code === 'KeyW') return -1;
+  if (code === 'ArrowDown' || code === 'KeyS') return 1;
+  return null;
 }
 
-const MENU_MOVES: Readonly<Record<string, MenuMove>> = {
-  ArrowUp: { across: 0, down: -1 },
-  KeyW: { across: 0, down: -1 },
-  ArrowDown: { across: 0, down: 1 },
-  KeyS: { across: 0, down: 1 },
-  ArrowLeft: { across: -1, down: 0 },
-  KeyA: { across: -1, down: 0 },
-  ArrowRight: { across: 1, down: 0 },
-  KeyD: { across: 1, down: 0 },
-};
-
-/** Which way a key moves the menu, or null if it does not. */
-export function menuMove(code: string): MenuMove | null {
-  return MENU_MOVES[code] ?? null;
+/** Keys that leave an opened section for the title. */
+export function isBackKey(code: string): boolean {
+  return code === 'ArrowLeft' || code === 'KeyA' || code === 'Escape' || code === 'Backspace';
 }
 
 /** Steps along a list of length count, wrapping at both ends. */
-function wrapped(at: number, step: number, count: number): number {
+export function steppedRow(at: number, step: number, count: number): number {
   return (at + step + count) % count;
-}
-
-/**
- * The item a move lands on. Up and down wrap inside the column; left and right wrap across the columns and keep
- * the row, or take the last item of a shorter column.
- */
-export function movedIndex(index: number, move: MenuMove, entries: readonly TitleMenuItem[] = TITLE_MENU): number {
-  const columns = menuColumns(entries);
-  const column = Math.max(0, columns.findIndex((each) => each.indices.includes(index)));
-  const row = Math.max(0, columns[column].indices.indexOf(index));
-  const target = columns[wrapped(column, move.across, columns.length)];
-  const clampedRow = Math.min(row, target.indices.length - 1);
-  return target.indices[wrapped(clampedRow, move.down, target.indices.length)];
 }
 
 export interface KeyFocus {
