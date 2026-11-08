@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { shouldShowSplash, splashTimings } from '../src/game/studio-splash.ts';
+import { STUDIO_LINE, shouldShowSplash, splashTimings, studioLine } from '../src/game/studio-splash.ts';
 
 describe('the studio splash', () => {
   it('fades in and out, and only holds for someone who wants less motion', () => {
     expect(splashTimings(false)).toEqual({ fadeIn: 400, hold: 1600, fadeOut: 500 });
     expect(splashTimings(true)).toEqual({ fadeIn: 0, hold: 1000, fadeOut: 0 });
+  });
+
+  it('carries one studio line, from 2006 to the build year', () => {
+    expect(studioLine(2031)).toBe('© 2006–2031 Hall of the Gods, Inc.');
+    // vitest.config.ts stamps __BUILD_YEAR__ as 2026; the line follows the build, not the clock.
+    expect(STUDIO_LINE).toBe('© 2006–2026 Hall of the Gods, Inc.');
   });
 
   it('shows unless the address says not to', () => {

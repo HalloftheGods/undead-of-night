@@ -10,8 +10,18 @@ export interface SplashTimings {
 /** Served from public/, relative so the build works from any folder. */
 export const BRAND_MARK = 'brand/hall-of-the-gods.webp';
 
-/** The dated line games carry on the title screen. */
-export const STUDIO_LINE = '© 2026 Hall of the Gods, Inc.';
+/** Year of the build, injected by Vite (`define`), so the line never follows the visitor's clock. */
+declare const __BUILD_YEAR__: number;
+
+/** The year the studio opened its doors. */
+export const STUDIO_FOUNDED = 2006;
+
+/** The dated line games carry on the title screen: one studio line, founding year to build year. */
+export function studioLine(buildYear: number): string {
+  return `© ${STUDIO_FOUNDED}–${buildYear} Hall of the Gods, Inc.`;
+}
+
+export const STUDIO_LINE = studioLine(__BUILD_YEAR__);
 
 /** Add this to the address to go straight to the title. */
 const SKIP_QUERY = 'nosplash';
