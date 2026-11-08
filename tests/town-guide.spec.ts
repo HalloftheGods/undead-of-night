@@ -41,6 +41,11 @@ describe('the Town Guide', () => {
     expect(tierOf('house', 'flare')).toBeUndefined();
   });
 
+  it('sends players to the diner for a knife first', () => {
+    expect(tierOf('diner', 'knife')).toBe('often');
+    expect(whereToLook().find((line) => line.id === 'knife')?.places[0].id).toBe('diner');
+  });
+
   it('puts candy where the tables hide it and never in cars', () => {
     expect(tierOf('upstairs', 'candy')).toBe('often');
     expect(tierOf('cars', 'candy')).toBeUndefined();

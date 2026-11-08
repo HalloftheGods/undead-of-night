@@ -20,6 +20,17 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'diner-knives',
+    date: '2026-11-08',
+    kind: 'better',
+    title: 'Knives in the kitchen',
+    deck: 'Diners now turn up a knife far more often, as a kitchen should.',
+    points: [
+      'About half the fridges in a diner keep a knife when nothing else is in them.',
+      'The Town Guide lists knives as Often at the Diner, and Where to Look now has a line for knives.',
+    ],
+  },
+  {
     id: 'town-guide',
     date: '2026-11-08',
     kind: 'new',

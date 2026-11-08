@@ -15,6 +15,7 @@ import type { Point } from './flow-field.ts';
 import { difficultyDef, scaleRounds } from './difficulty.ts';
 import type { DifficultyId } from './difficulty.ts';
 import { placeTownKits } from './kit-loot.ts';
+import { placeKitchenKnives } from './kitchen-knives.ts';
 import { levelDef } from './levels.ts';
 import { placeTownParts } from './part-loot.ts';
 import { isAmmoPickup, spawnPickup } from './pickups.ts';
@@ -203,6 +204,7 @@ export function placeTownLoot(sim: SimState): void {
   settleContainerAmmo(sim, budget - onFloors, damageOf);
   stockEmptyHomes(sim);
   placeRadio(sim);
+  placeKitchenKnives(sim);
   placeTownParts(sim, (building) => lootSpots(sim.map, building));
   placeTownKits(sim, (building) => lootSpots(sim.map, building));
   stockStoreys(sim, upOrDown);

@@ -10,6 +10,7 @@ import { CANDY_ODDS } from '../../shared/candy.ts';
 import { CONTAINER_LOOT } from '../../shared/container-loot.ts';
 import { OUTDOOR_CONTAINERS, ROOM_CONTAINERS } from '../../shared/containers.ts';
 import type { ContainerKind } from '../../shared/containers.ts';
+import { KITCHEN_KNIFE_ODDS, KITCHENS } from '../../shared/kitchen-knives.ts';
 import { LOOT_RULES } from '../../shared/loot.ts';
 import { PART_SOURCES } from '../../shared/part-loot.ts';
 import { BUILDING_DEFS } from '../../shared/protocol.ts';
@@ -85,7 +86,7 @@ const BLURBS: Readonly<Record<PlaceId, string>> = {
   warehouse: 'Big, dark and mostly empty, but the cabinets hold fuel and gun parts lie about.',
   grocery: 'Long aisles of first aid. Not much else is left on the shelves.',
   discount: 'Cheap goods: bandages, the odd knife, half a box of rounds.',
-  diner: 'Quick to search. The fridge keeps more than food.',
+  diner: 'A kitchen, so a knife turns up more often here than anywhere. The fridge keeps more than food.',
   house: 'Where the spare ammo went: a box in a drawer is why a house is worth going in.',
   apartment: 'Like a house, with more drawers to go through.',
   upstairs: 'Bedrooms: where a night\'s candy haul gets hidden.',
@@ -209,8 +210,14 @@ function searchSpots(kinds: readonly Partial<Record<string, ContainerKind>>[]): 
   return CONTAINER_ORDER.filter((kind) => found.has(kind));
 }
 
+/** A kitchen's fridges often keep a knife, on top of what its tables hold. */
+function kitchenFinds(kind: BuildingKind): GuideFind[] {
+  const isKitchen = KITCHENS.has(kind);
+  return isKitchen ? [{ id: 'knife', name: FIND_NAMES.knife ?? 'Knife', icon: 'knife', tier: stashTier(KITCHEN_KNIFE_ODDS), weight: KITCHEN_KNIFE_ODDS }] : [];
+}
+
 function buildingFinds(kind: BuildingKind): GuideFind[] {
-  return [...stockFinds(kind), ...stashFinds(kind, false), ...townFinds(kind)];
+  return mergeFinds([...stockFinds(kind), ...stashFinds(kind, false), ...townFinds(kind)], kitchenFinds(kind));
 }
 
 /** The street: cars and the crates left by the road. */
@@ -242,7 +249,7 @@ export interface WhereToLook {
 }
 
 /** The finds the index lists, in the order a player goes looking for them. */
-const LOOKED_FOR: readonly string[] = ['medkit', 'bandage', 'pistol_ammo', 'carbine_ammo', 'shells', 'carbine', 'shotgun', 'flare', 'fuel', 'candy', 'parts', 'kits', 'radio'];
+const LOOKED_FOR: readonly string[] = ['medkit', 'bandage', 'pistol_ammo', 'carbine_ammo', 'shells', 'carbine', 'shotgun', 'knife', 'flare', 'fuel', 'candy', 'parts', 'kits', 'radio'];
 const PLACES_PER_LINE = 3;
 
 /** For each find, the places it turns up most, best tier first, at most three. */
