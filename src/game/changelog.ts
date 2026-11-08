@@ -32,6 +32,17 @@ export const CHANGE_NOTES: readonly ChangeNote[] = [
     ],
   },
   {
+    id: 'option-switches',
+    date: '2026-11-08',
+    kind: 'better',
+    title: 'Flip switches',
+    deck: 'Analytics and haptic feedback on Options are now pixel switches instead of boxed buttons.',
+    points: [
+      'The knob snaps right and the track goes red when a setting is on.',
+      'Screen readers hear them as switches, and Space or Enter flips them.',
+    ],
+  },
+  {
     id: 'candy-timer',
     date: '2026-11-08',
     kind: 'new',

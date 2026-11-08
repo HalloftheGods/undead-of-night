@@ -2,23 +2,7 @@
   <div v-if="isTouch" class="touch-options">
     <p class="px-label">Touch Controls</p>
 
-    <div class="touch-haptics">
-      <label class="px-label touch-haptics-label" for="touch-haptics">
-        <span>Haptic feedback</span>
-      </label>
-      <button
-        id="touch-haptics"
-        class="touch-toggle px-frame"
-        :class="{ 'is-on': hapticsOn }"
-        type="button"
-        role="switch"
-        :aria-checked="hapticsOn"
-        @mouseenter="game.playUi('hover')"
-        @click="toggleHaptics"
-      >
-        {{ hapticsOn ? 'On' : 'Off' }}
-      </button>
-    </div>
+    <PixelSwitch label="Haptic feedback" :on="hapticsOn" @change="setHaptics" />
 
     <div class="touch-swipe">
       <label class="px-label touch-swipe-label" for="touch-swipe">
@@ -53,6 +37,7 @@ import {
   saveHapticsEnabled,
   saveSwipeSensitivity,
 } from '../game/touch-pref.ts';
+import PixelSwitch from './PixelSwitch.vue';
 import { useGame } from './use-game.ts';
 
 const game = useGame();
@@ -75,10 +60,9 @@ const note = computed(() => {
     : 'Vibration off. Swipe: up=reload, down=pause, left/right=weapon.';
 });
 
-function toggleHaptics(): void {
-  game.playUi('click');
-  hapticsOn.value = !hapticsOn.value;
-  saveHapticsEnabled(hapticsOn.value);
+function setHaptics(on: boolean): void {
+  hapticsOn.value = on;
+  saveHapticsEnabled(on);
 }
 
 function onSwipe(event: Event): void {
@@ -100,43 +84,6 @@ watchEffect(() => {
   display: flex;
   flex-direction: column;
   gap: calc(var(--u) * 2);
-}
-
-.touch-haptics {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: calc(var(--u) * 4);
-}
-
-.touch-haptics-label {
-  flex: 1;
-}
-
-.touch-toggle {
-  --edge: var(--ink-line);
-  min-width: calc(var(--u) * 24);
-  min-height: calc(var(--u) * 12);
-  border: 0;
-  padding: calc(var(--u) * 2) calc(var(--u) * 4);
-  background: var(--ink-raised);
-  color: var(--bone-dim);
-  font: inherit;
-  text-transform: uppercase;
-  cursor: pointer;
-  outline: none;
-  touch-action: manipulation;
-}
-
-.touch-toggle:hover,
-.touch-toggle:focus-visible {
-  --edge: var(--bone-dim);
-  color: var(--bone);
-}
-
-.touch-toggle.is-on {
-  --edge: var(--amber);
-  color: var(--amber);
 }
 
 .touch-swipe {
