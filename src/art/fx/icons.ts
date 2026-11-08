@@ -13,7 +13,7 @@ import type { Grid } from './shared.ts';
 import { BANDAGE, CARBINE_AMMO, PISTOL_AMMO, SHELLS } from './pickups.ts';
 import { JEWEL_LARGE, JEWEL_SMALL, SILVER, TREASURE_LEGEND } from './treasure.ts';
 
-const { blood, bone, fire, ink, metal, olive, wood } = RAMPS;
+const { blood, bone, fire, ink, metal, olive, violet, wood } = RAMPS;
 
 const ICON: Legend = {
   k: ink[0], K: ink[1],
@@ -23,6 +23,7 @@ const ICON: Legend = {
   a: olive[0], b: olive[1], c: olive[2],
   w: wood[0], x: wood[1], y: wood[2], z: wood[3],
   Y: fire[3], B: fire[2], C: fire[1], D: fire[0],
+  i: violet[0], j: violet[1], l: violet[2],
   ...TREASURE_LEGEND,
 };
 
@@ -172,20 +173,20 @@ const BOTTLE: Grid = [
   '.aaa.',
 ];
 
-/** A jerrycan of fuel: what turns a bottle into a molotov. */
-const FUEL_CAN: Grid = [
-  '..nnn.....',
-  '..n.nmm...',
-  '.ssssssst.',
-  'sttttttsst',
-  'stuuuuutst',
-  'stussssust',
-  'stusttsust',
-  'stusttsust',
-  'stussssust',
-  'stuuuuutst',
-  'sttttttsst',
-  '.ssssssss.',
+/** A ground spinner firework: a striped drum with its fuse lit. Lit and tossed, it whirls sparks on the street. */
+const FIREWORKS: Grid = [
+  '......Y....',
+  '.....YBY...',
+  '......C....',
+  '.....n.....',
+  '..gffnffg..',
+  '.gfeeeeefg.',
+  '.ijjjjjjll.',
+  '.rsssssstt.',
+  '.ijjjjjjll.',
+  '.rsssssstt.',
+  '.ijjjjjjll.',
+  '..rrsssst..',
 ];
 
 /** A road flare: a red stick with its cap struck and burning. */
@@ -290,8 +291,8 @@ export function buildBottle(): PixelSprite {
   return outlined(BOTTLE, 15, 14);
 }
 
-export function buildFuelCan(): PixelSprite {
-  return outlined(FUEL_CAN, 15, 14);
+export function buildFireworks(): PixelSprite {
+  return outlined(FIREWORKS, 15, 14);
 }
 
 export function buildFlare(): PixelSprite {

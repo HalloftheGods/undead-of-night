@@ -103,9 +103,10 @@ const EVENT_SOUNDS: EventSounds = {
   },
   container_opened: (e, { mixer, at }) => mixer.play(e.noisy ? 'clatter' : 'container_open', at(e.x, e.y, e.playerId)),
   bottle_smash: (e, { mixer }) => mixer.play('glass_smash', { x: e.x, y: e.y }),
-  molotov_burst: (e, { mixer }) => {
-    mixer.play('glass_smash', { x: e.x, y: e.y });
-    mixer.play('ignite', { x: e.x, y: e.y, pitch: 0.7 });
+  // The fuse catches, then the spinner screams into life a little higher.
+  spinner_lit: (e, { mixer }) => {
+    mixer.play('ignite', { x: e.x, y: e.y, pitch: 1.2 });
+    mixer.play('ignite', { x: e.x, y: e.y, pitch: 1.9 });
   },
   flare_lit: (e, { mixer }) => mixer.play('ignite', { x: e.x, y: e.y, pitch: 1.4 }),
   drop_called: (e, { mixer }) => mixer.play('ignite', { x: e.x, y: e.y, pitch: 1.4 }),

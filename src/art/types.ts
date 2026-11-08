@@ -175,8 +175,8 @@ export interface UiArt {
   readonly heart: PixelSprite;
   /** The HUD's count of bottles to throw. */
   readonly bottle: PixelSprite;
-  /** The HUD's count of fuel for molotovs, and of flares. */
-  readonly fuelCan: PixelSprite;
+  /** The HUD's count of fireworks, and of flares. */
+  readonly fireworks: PixelSprite;
   readonly flare: PixelSprite;
   readonly skull: PixelSprite;
   /** The six emote icons, 16x16 (shared/emotes.ts). */

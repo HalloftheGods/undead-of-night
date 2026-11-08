@@ -106,22 +106,22 @@ const visibleItems = computed<WheelItem[]>(() => {
   items.push({ code: 'KeyN', label: 'Map', glyph: MAP_GLYPH, ready: true });
 
   // Conditional items based on inventory
-  const { bottles, fuel, flares, candy, sugar } = props.hud;
-  const FREE_FIRE = 'Popping Eyeballs';
-  const freeFire = sugar.some((s) => s.name === FREE_FIRE);
+  const { bottles, fireworks, flares, candy } = props.hud;
   const hasBottle = bottles > 0;
-  const canLight = fuel > 0 || freeFire;
+  const hasFirework = fireworks > 0;
+  const hasFlare = flares > 0;
+  const hasCandy = candy.length > 0;
 
   if (hasBottle) {
     items.push({ code: 'KeyG', label: 'Throw Bottle', sprite: props.art.ui.bottle, count: bottles, ready: true });
   }
-  if (canLight) {
-    items.push({ code: 'KeyT', label: 'Molotov', sprite: props.art.ui.fuelCan, count: fuel, ready: hasBottle });
+  if (hasFirework) {
+    items.push({ code: 'KeyT', label: 'Firework', sprite: props.art.ui.fireworks, count: fireworks, ready: true });
   }
-  if (flares > 0) {
+  if (hasFlare) {
     items.push({ code: 'KeyV', label: 'Flare', sprite: props.art.ui.flare, count: flares, ready: true });
   }
-  if (candy.length > 0) {
+  if (hasCandy) {
     items.push({ code: 'KeyX', label: 'Eat Candy', icon: 'candy', count: candy.length, ready: true });
   }
 

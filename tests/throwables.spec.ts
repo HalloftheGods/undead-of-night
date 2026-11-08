@@ -3,57 +3,59 @@ import { parseClientPacket } from '../server/packets.ts';
 import { townContainers } from '../shared/containers.ts';
 import { rebuildZombieGrid } from '../shared/zombies.ts';
 import {
-  FIRE_PLAYER_DAMAGE,
-  FIRE_SEC,
+  SPARK_PLAYER_DAMAGE,
+  SPINNER_SEC,
   FLARE_CARRY,
   FLARE_SEC,
-  FUEL_CARRY,
-  MOLOTOV_RANGE,
+  FIREWORK_CARRY,
+  SPINNER_RADIUS,
+  SPINNER_RANGE,
   stashIn,
   takeStash,
 } from '../shared/throwables.ts';
 import { addRoamer, eventsOf, input, quietSim, steps } from './helpers/sim-harness.ts';
 
-describe('molotovs and flares', () => {
-  it('a molotov spends a bottle and a fuel, lights a zombie in the pool, and burns out', () => {
+describe('fireworks and flares', () => {
+  it('a spinner spends a firework and no bottle, lights a zombie in its sparks, and burns out', () => {
     const { sim, state } = quietSim();
     const [p] = state.players;
-    p.fuel = 1;
+    p.fireworks = 1;
     p.bottles = 1;
     const aim = { x: p.x + 1, y: p.y + 60 };
     const z = addRoamer(state, 'brute', aim.x, aim.y);
     rebuildZombieGrid(state);
-    sim.setInput('a', input({ seq: 1, aimX: aim.x, aimY: aim.y, molotov: true }));
+    sim.setInput('a', input({ seq: 1, aimX: aim.x, aimY: aim.y, spinner: true }));
     steps(sim, 1);
-    const [burst] = eventsOf(sim.snapshot(), 'molotov_burst');
+    const [burst] = eventsOf(sim.snapshot(), 'spinner_lit');
     expect(burst).toBeDefined();
-    expect(Math.hypot(burst.x - p.x, burst.y - p.y)).toBeLessThanOrEqual(MOLOTOV_RANGE + 0.01);
-    expect(p.fuel).toBe(0);
-    expect(p.bottles).toBe(0);
+    expect(Math.hypot(burst.x - p.x, burst.y - p.y)).toBeLessThanOrEqual(SPINNER_RANGE + 0.01);
+    expect(p.fireworks).toBe(0);
+    expect(p.bottles).toBe(1);
+    expect(burst.radius).toBe(SPINNER_RADIUS);
     steps(sim, 2);
     expect(z.status?.burnLeft ?? 0).toBeGreaterThan(0);
-    steps(sim, Math.ceil(FIRE_SEC * 30) + 2);
-    expect(state.fires).toEqual([]);
+    steps(sim, Math.ceil(SPINNER_SEC * 30) + 2);
+    expect(state.spinners).toEqual([]);
   });
 
-  it('needs a bottle as well as fuel', () => {
+  it('lights nothing without a firework', () => {
     const { sim, state } = quietSim();
     const [p] = state.players;
-    p.fuel = 1;
-    p.bottles = 0;
-    sim.setInput('a', input({ seq: 1, molotov: true }));
+    p.fireworks = 0;
+    p.bottles = 2;
+    sim.setInput('a', input({ seq: 1, spinner: true }));
     steps(sim, 1);
-    expect(eventsOf(sim.snapshot(), 'molotov_burst')).toEqual([]);
-    expect(p.fuel).toBe(1);
+    expect(eventsOf(sim.snapshot(), 'spinner_lit')).toEqual([]);
+    expect(p.bottles).toBe(2);
   });
 
   it('burns a survivor who stands in it', () => {
     const { sim, state } = quietSim();
     const [p] = state.players;
-    state.fires.push({ x: p.x, y: p.y, ownerId: p.id, left: FIRE_SEC, noiseLeft: 1 });
+    state.spinners.push({ x: p.x, y: p.y, radius: SPINNER_RADIUS, ownerId: p.id, left: SPINNER_SEC, noiseLeft: 1 });
     const before = p.health;
     steps(sim, 30);
-    expect(p.health).toBeLessThanOrEqual(before - FIRE_PLAYER_DAMAGE);
+    expect(p.health).toBeLessThanOrEqual(before - SPARK_PLAYER_DAMAGE);
   });
 
   it('a flare lands, hisses for its time, and goes out', () => {
@@ -72,23 +74,23 @@ describe('molotovs and flares', () => {
   it('carries no more than two of each', () => {
     const { state } = quietSim();
     const [p] = state.players;
-    p.fuel = FUEL_CARRY;
+    p.fireworks = FIREWORK_CARRY;
     p.flares = FLARE_CARRY;
-    expect(takeStash(p, 'fuel')).toBeNull();
+    expect(takeStash(p, 'firework')).toBeNull();
     expect(takeStash(p, 'flare')).toBeNull();
-    p.fuel = 0;
-    expect(takeStash(p, 'fuel')).toBe('fuel');
-    expect(p.fuel).toBe(1);
+    p.fireworks = 0;
+    expect(takeStash(p, 'firework')).toBe('firework');
+    expect(p.fireworks).toBe(1);
   });
 
-  it('hides fuel and flares by the seed alone, only where they belong', () => {
+  it('hides fireworks and flares by the seed alone, only where they belong', () => {
     const { state } = quietSim();
     const containers = townContainers(state.map);
     const first = containers.map((c) => stashIn(state.map.seed, c));
     const again = containers.map((c) => stashIn(state.map.seed, c));
     expect(again).toEqual(first);
     containers.forEach((c, i) => {
-      if (first[i] === 'fuel') expect(['garage', 'warehouse', 'diner']).toContain(c.buildingKind);
+      if (first[i] === 'firework') expect(['garage', 'warehouse', 'diner']).toContain(c.buildingKind);
       if (first[i] === 'flare') expect(c.kind === 'car' || ['police', 'garage'].includes(c.buildingKind)).toBe(true);
     });
   });
@@ -96,7 +98,7 @@ describe('molotovs and flares', () => {
   it('the server passes the new throws through and drops junk', () => {
     const base = { seq: 1, up: false, down: false, left: false, right: false, angle: 0, shoot: false, reload: false, weapon: null, melee: false, heal: false, search: false };
     const parse = (extra: Record<string, unknown>) => parseClientPacket(JSON.stringify({ type: 'input', input: { ...base, ...extra } }));
-    expect(parse({ molotov: true, flare: true })).toMatchObject({ input: { molotov: true, flare: true } });
-    expect(parse({ molotov: 'yes' })).toBeNull();
+    expect(parse({ spinner: true, flare: true })).toMatchObject({ input: { spinner: true, flare: true } });
+    expect(parse({ spinner: 'yes' })).toBeNull();
   });
 });

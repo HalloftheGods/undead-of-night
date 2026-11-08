@@ -2,7 +2,7 @@ import type { SugarState } from './candy.ts';
 import type { SupplyDrop } from './supply-drop.ts';
 import type { BossState } from './bosses.ts';
 import type { KillChain } from './kill-chain.ts';
-import type { FireState, FlareState } from './throwables.ts';
+import type { SpinnerState, FlareState } from './throwables.ts';
 import type { DifficultyId } from './difficulty.ts';
 import type {
   BulletEntity,
@@ -60,16 +60,16 @@ export interface PlayerHome extends Omit<HomeView, 'overrun' | 'chest'> {
 }
 
 /** Magazines live in `guns` and are read out for snapshots, so there is one copy of the count. */
-export interface PlayerState extends Omit<PlayerEntity, 'mags' | 'gear' | 'bottles' | 'fuel' | 'flares' | 'home' | 'candy' | 'sugar' | 'keepsakes' | 'keepsakeOffer'> {
+export interface PlayerState extends Omit<PlayerEntity, 'mags' | 'gear' | 'bottles' | 'fireworks' | 'flares' | 'home' | 'candy' | 'sugar' | 'keepsakes' | 'keepsakeOffer'> {
   bottles: number;
-  /** Fuel for molotovs and flares to throw, found in town and left there (`shared/throwables.ts`). */
-  fuel: number;
+  /** Fireworks and flares to throw, found in town and left there (`shared/throwables.ts`). */
+  fireworks: number;
   flares: number;
   /** Null outside home mode. */
   home: PlayerHome | null;
   /** A throw asked for and not yet made. */
   throwQueued: boolean;
-  molotovQueued: boolean;
+  spinnerQueued: boolean;
   flareQueued: boolean;
   throwCooldown: number;
   /** Candy carried, oldest first, and candy working now (`shared/candy.ts`). */
@@ -290,8 +290,8 @@ export interface SimState {
   tracks: Footprint[];
   /** Each survivor's kill chain, for the points it multiplies (`shared/kill-chain.ts`). */
   killChains: Map<EntityId, KillChain>;
-  /** Pools of molotov fire and lit flares, burning down. */
-  fires: FireState[];
+  /** Lit ground spinners and flares, burning down. */
+  spinners: SpinnerState[];
   flares: FlareState[];
   /** This town's supply drop, from arming to the end of its marked time. */
   drop: SupplyDrop | null;

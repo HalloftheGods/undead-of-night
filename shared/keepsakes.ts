@@ -21,7 +21,7 @@ export const KEEPSAKES: Readonly<Record<KeepsakeId, KeepsakeDef>> = {
   sneakers: { id: 'sneakers', name: 'Worn Sneakers', blurb: 'Sprint a fifth longer.' },
   bandolier: { id: 'bandolier', name: 'Bandolier', blurb: 'Carry a quarter more spare ammo.' },
   rosary: { id: 'rosary', name: 'Rosary', blurb: 'Downed, you hold on half as long again.' },
-  lighter: { id: 'lighter', name: 'Pocket Lighter', blurb: 'Molotov fires burn half as long again.' },
+  lighter: { id: 'lighter', name: 'Pocket Lighter', blurb: 'Spinners whirl half as long again.' },
   old_watch: { id: 'old_watch', name: 'Old Watch', blurb: 'Reload a tenth faster, every gun.' },
   treat_bag: { id: 'treat_bag', name: 'Trick-or-Treat Bag', blurb: 'Carry three candies instead of two.' },
   dog_tags: { id: 'dog_tags', name: 'Dog Tags', blurb: 'Revive a downed teammate twice as fast.' },
@@ -40,7 +40,7 @@ export const RABBIT_LUCK = 0.15;
 export const SNEAKER_STAMINA = 1.2;
 export const BANDOLIER_AMMO = 1.25;
 export const ROSARY_BLEEDOUT = 1.5;
-export const LIGHTER_FIRE = 1.5;
+export const LIGHTER_SPIN = 1.5;
 export const WATCH_RELOAD = 1.1;
 export const TREAT_BAG_CANDY = 3;
 export const DOG_TAG_REVIVE = 2;
