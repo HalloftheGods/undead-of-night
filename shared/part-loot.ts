@@ -13,7 +13,7 @@ const PART_SEED_SALT = 0x9a47;
 const SPOT_GAP = 10;
 
 /** Who keeps what, with relative odds. Toolkits only turn up where people fix things. */
-const PART_SOURCES: Partial<Record<BuildingKind, Partial<Record<PartId, number>>>> = {
+export const PART_SOURCES: Partial<Record<BuildingKind, Partial<Record<PartId, number>>>> = {
   gun_shop: { barrel: 3, grip: 3, magazine: 3, suppressor: 2 },
   police: { magazine: 3, grip: 2, barrel: 1, suppressor: 1 },
   garage: { barrel: 2, grip: 2, toolkit: 1 },

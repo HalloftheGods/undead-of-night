@@ -1,9 +1,8 @@
-// What's new, in the players' own words: the book that opens from the version number on the title screen.
-//
-// To add an update, put a new note at the TOP of CHANGE_NOTES. Nothing else needs to change: the book lays the
-// notes out two to a page, newest first, and lists them on its front page.
+// What's new: the book that opens from the version number on the title screen. The notes themselves live in
+// change-notes.ts; add an update at the top of CHANGE_NOTES there.
 
-export type ChangeKind = 'new' | 'better' | 'fixed';
+import { CHANGE_NOTES } from './change-notes.ts';
+import type { ChangeKind, ChangeNote } from './change-notes.ts';
 
 export interface ChangeNote {
   /** Stable and unique, for keys. */
@@ -463,6 +462,11 @@ export const CHANGE_NOTES: readonly ChangeNote[] = [
     ],
   },
 ];
+    ],
+  },
+  {
+export { CHANGE_NOTES };
+export type { ChangeKind, ChangeNote };
 
 export const CHANGELOG_TITLE = "What's New";
 

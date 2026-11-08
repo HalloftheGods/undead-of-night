@@ -62,7 +62,7 @@ const SEARCH_GAP = 10;
 const SEARCH_REACH = PLAYER_RADIUS + SEARCH_GAP;
 
 /** What each piece of furniture opens up as, room by room. Anything left out is not searched. */
-const ROOM_CONTAINERS: Record<BuildingKind, Partial<Record<PropKind, ContainerKind>>> = {
+export const ROOM_CONTAINERS: Record<BuildingKind, Partial<Record<PropKind, ContainerKind>>> = {
   house: { bed: 'drawer', fridge: 'fridge', locker: 'locker' },
   apartment: { bed: 'drawer', fridge: 'fridge', locker: 'locker', shelf: 'shelf' },
   upstairs: { bed: 'drawer', locker: 'locker', shelf: 'shelf' },
@@ -80,7 +80,7 @@ const ROOM_CONTAINERS: Record<BuildingKind, Partial<Record<PropKind, ContainerKi
 };
 
 /** What vehicles and clutter open up as outdoors. */
-const OUTDOOR_CONTAINERS: Partial<Record<PropKind, ContainerKind>> = {
+export const OUTDOOR_CONTAINERS: Partial<Record<PropKind, ContainerKind>> = {
   car_sedan_h: 'car',
   car_sedan_v: 'car',
   car_wreck_h: 'car',
