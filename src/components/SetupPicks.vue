@@ -261,7 +261,8 @@ defineExpose({ focus: () => tiles.get('mode')?.focus(), isOpen: () => open.value
   align-items: stretch;
   flex: 1 1 0;
   min-width: 0;
-  max-width: calc(var(--u) * 84);
+  /* As big as the screen allows, leaving room under the row for the callsign and the buttons. */
+  max-width: min(calc(var(--u) * 150), calc((100vh - var(--u) * 150) * 0.66));
 }
 
 /* The rule that joins one step to the next, drawn in the gap so every portrait is the same width. */
@@ -368,7 +369,9 @@ defineExpose({ focus: () => tiles.get('mode')?.focus(), isOpen: () => open.value
   grid-template-columns: repeat(auto-fit, minmax(calc(var(--u) * 40), calc(var(--u) * 56)));
   justify-content: center;
   gap: calc(var(--u) * 3);
-  margin: calc(var(--u) * 4) 0 0;
+  width: fit-content;
+  max-width: 100%;
+  margin: calc(var(--u) * 4) auto 0;
   padding: calc(var(--u) * 3);
   background: rgba(11, 12, 16, 0.97);
   list-style: none;

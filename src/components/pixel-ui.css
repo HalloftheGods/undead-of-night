@@ -175,6 +175,30 @@ body {
   flex: 1;
 }
 
+/* A bare page drops the box and centres everything on the scene, its buttons in one row under it. */
+.px-sheet.is-bare {
+  width: min(calc(var(--u) * 640), 98vw);
+  max-height: none;
+  padding: 0;
+  background: none;
+}
+
+.px-sheet.is-bare > .px-sheet-heading {
+  font-size: calc(var(--u) * 16);
+}
+
+.px-sheet.is-bare > .px-sheet-body {
+  overflow: visible;
+}
+
+.px-sheet.is-bare > .px-sheet-foot {
+  justify-content: center;
+}
+
+.px-sheet.is-bare .px-sheet-actions {
+  margin-left: 0;
+}
+
 .px-sheet-heading {
   font-size: calc(var(--u) * 12);
 }

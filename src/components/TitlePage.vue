@@ -1,6 +1,9 @@
 <template>
   <section class="px-screen px-title-scale px-page" :aria-label="heading">
-    <div class="px-sheet px-frame" :class="{ 'is-wide': size === 'wide', 'is-extra-wide': size === 'extra-wide', 'is-steady': steady }">
+    <div
+      class="px-sheet"
+      :class="{ 'px-frame': !bare, 'is-bare': bare, 'is-wide': size === 'wide', 'is-extra-wide': size === 'extra-wide', 'is-steady': steady }"
+    >
       <h2 class="px-heading px-sheet-heading">{{ heading }}</h2>
       <slot name="lead" />
       <div class="px-sheet-body">
@@ -30,9 +33,11 @@ interface TitlePageProps {
   boxed?: boolean;
   /** One height for every step of a walk, so the sheet and its buttons stay put as the steps change. */
   steady?: boolean;
+  /** No box: the page stands on the scene itself, its content and buttons centred, as a game's own screen does. */
+  bare?: boolean;
 }
 
-withDefaults(defineProps<TitlePageProps>(), { size: 'normal', boxed: false, steady: false });
+withDefaults(defineProps<TitlePageProps>(), { size: 'normal', boxed: false, steady: false, bare: false });
 const emit = defineEmits<{ close: [] }>();
 
 function onKey(event: KeyboardEvent): void {

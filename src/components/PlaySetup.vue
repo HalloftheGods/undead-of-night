@@ -1,12 +1,12 @@
 <template>
-  <TitlePage :heading size="extra-wide" boxed @close="back">
+  <TitlePage :heading bare boxed @close="back">
     <template #lead>
       <SetupPicks ref="picker" :picks :art="ui.art" @choose="choose" />
     </template>
 
-    <!-- The co-op half keeps its room on Solo, hidden, so choosing a mode moves nothing. -->
+    <!-- The co-op fields show only for Multiplayer, under the callsign. -->
     <div class="setup-fields">
-      <div class="setup-field">
+      <div class="setup-field is-callsign">
         <label class="px-label" for="callsign">Callsign</label>
         <input
           id="callsign"
@@ -216,12 +216,19 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Callsign and the co-op fields side by side, one input high, under the picks. */
+/* Callsign, then the co-op fields when playing together, centred under the picks. */
 .setup-fields {
   display: grid;
-  grid-template-columns: 1fr 2fr;
-  gap: calc(var(--u) * 6);
+  grid-template-columns: 1fr;
+  gap: calc(var(--u) * 4);
+  width: min(calc(var(--u) * 240), 100%);
+  margin-inline: auto;
   padding: 0 var(--u);
+  text-align: center;
+}
+
+.setup-fields .px-input {
+  text-align: center;
 }
 
 .setup-field {
@@ -230,8 +237,13 @@ onMounted(() => {
   min-width: 0;
 }
 
+.setup-field.is-callsign {
+  justify-self: center;
+  width: min(calc(var(--u) * 150), 100%);
+}
+
 .setup-field.is-hidden {
-  visibility: hidden;
+  display: none;
 }
 
 .setup-server {
@@ -269,7 +281,9 @@ onMounted(() => {
 .setup-lines {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: calc(var(--u) * 2);
+  text-align: center;
 }
 
 .setup-lines:empty {
@@ -280,10 +294,8 @@ onMounted(() => {
   margin: 0;
 }
 
-/* A phone stacks the two, the server's room still kept. */
 @media (max-width: 600px) {
   .setup-fields {
-    grid-template-columns: 1fr;
     gap: calc(var(--u) * 3);
   }
 }
