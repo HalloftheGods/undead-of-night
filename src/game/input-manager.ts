@@ -3,6 +3,7 @@ import { WEAPON_ORDER } from '../../shared/protocol.ts';
 import type { ClientInputPacket, Stance, WeaponId } from '../../shared/protocol.ts';
 import { GamepadInput, PAD_FIRE, PAD_PREV_WEAPON } from './gamepad-input.ts';
 import type { NavDirection, PadConnection } from './gamepad-input.ts';
+import type { SwipeDirection } from './swipe-gesture.ts';
 import { TouchInput } from './touch-input.ts';
 
 const WHEEL_COOLDOWN_MS = 110;
@@ -55,6 +56,15 @@ const GAME_CODES: ReadonlySet<string> = new Set([
 /** The last hand on the game, for button prompts and for who steers the flashlight. */
 export type InputDevice = 'keyboard' | 'touch' | 'gamepad';
 
+/** The platform for leaderboard tracking. Maps InputDevice to Platform. */
+export type { Platform } from '../../shared/home-protocol.ts';
+import type { Platform } from '../../shared/home-protocol.ts';
+
+/** Converts an InputDevice to a Platform for leaderboard tracking. */
+export function toPlatform(device: InputDevice): Platform {
+  return device === 'keyboard' ? 'desktop' : device;
+}
+
 export interface InputCallbacks {
   /** First key or click, the moment browsers allow audio to start. */
   onGesture(): void;
@@ -76,6 +86,8 @@ export interface InputCallbacks {
   onNavigate?(direction: NavDirection): void;
   /** A gamepad came or went. */
   onGamepadConnection?(change: PadConnection): void;
+  /** Touch aim assist: returns adjusted coordinates if snapping to a target. */
+  aimAssist?(x: number, y: number): { x: number; y: number } | null;
 }
 
 interface OwnedWeapons {
@@ -150,6 +162,8 @@ export class InputManager {
         this.callbacks.onGesture();
       },
       onSeen: () => this.callbacks.onTouchSeen?.(),
+      onSwipe: (direction) => this.handleSwipe(direction),
+      aimAssist: (x, y) => this.callbacks.aimAssist?.(x, y) ?? null,
     });
     this.lastDevice = this.touch.used ? 'touch' : 'keyboard';
     // A pad press is not a user activation, so it does not count as the gesture that lets audio start.
@@ -231,6 +245,24 @@ export class InputManager {
     if (this.lastDevice === device) return;
     this.lastDevice = device;
     this.callbacks.onDeviceChange?.(device);
+  }
+
+  /** Routes a swipe gesture to the appropriate action. */
+  private handleSwipe(direction: SwipeDirection): void {
+    switch (direction) {
+      case 'up':
+        this.reloadLatch = true;
+        break;
+      case 'down':
+        this.callbacks.onPause();
+        break;
+      case 'left':
+        this.cycleLatch -= 1;
+        break;
+      case 'right':
+        this.cycleLatch += 1;
+        break;
+    }
   }
 
   private isHeld(codes: readonly string[]): boolean {

@@ -5,6 +5,8 @@
 
     <MotionOptions />
 
+    <TouchOptions />
+
     <div class="options-analytics">
       <div class="options-analytics-head">
         <p class="px-label">Analytics</p>
@@ -39,6 +41,7 @@ import MotionOptions from './MotionOptions.vue';
 import PixelButton from './PixelButton.vue';
 import SoundOptions from './SoundOptions.vue';
 import TitlePage from './TitlePage.vue';
+import TouchOptions from './TouchOptions.vue';
 
 defineProps<{ ui: UiState }>();
 const emit = defineEmits<{ close: [] }>();
