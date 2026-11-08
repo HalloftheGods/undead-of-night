@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { FlowField } from '../shared/flow-field.ts';
 import { makeNoise } from '../shared/zombie-senses.ts';
 import { flightAt, flightsOf, isStorey, planStoreys, stairsPoint, townBuildings, townHeight } from '../shared/storeys.ts';
+import { TILE_SIZE } from '../shared/protocol.ts';
 import type { BuildingInstance, WorldMap } from '../shared/protocol.ts';
 import { townContainers } from '../shared/containers.ts';
 import { buildingAt, circleHitsSolid, generateWorldMap, segmentHitsSolid } from '../shared/world-map.ts';
@@ -98,31 +99,37 @@ describe('taking the stairs', () => {
     return { sim, state, p, storey, house };
   }
 
-  it('a press of E on the stairs takes them, and another press comes back', () => {
+  it('walking onto the stairs takes them, with no key, and walking off and back on comes back', () => {
     const { sim, state, p, storey, house } = onStairs();
-    sim.setInput('a', input({ seq: 1, search: true }));
-    sim.step();
-    expect(buildingAt(state.map, p.x, p.y)).toBe(storey);
+    // Start a step east of the stairs and walk onto them.
+    p.x += TILE_SIZE;
+    sim.setInput('a', input({ seq: 1, left: true }));
+    const took = stepUntil(sim, () => buildingAt(state.map, p.x, p.y) === storey, 60);
+    expect(took).toBeGreaterThan(0);
     const events = eventsOf(sim.snapshot(), 'stairs_taken');
     expect(events[0]?.to).toBe(storey.kind === 'upstairs' ? 'UPSTAIRS' : 'CELLAR');
 
-    // Held, it does not carry you straight back.
-    sim.step();
+    // Standing on the stairs you came out on does not carry you straight back.
+    sim.setInput('a', input({ seq: 2 }));
+    for (let tick = 0; tick < 10; tick++) sim.step();
     expect(buildingAt(state.map, p.x, p.y)).toBe(storey);
     expect(p.indoors).toBe(storey.id);
-    sim.setInput('a', input({ seq: 2, search: false }));
-    sim.step();
-    sim.setInput('a', input({ seq: 3, search: true }));
-    sim.step();
-    expect(buildingAt(state.map, p.x, p.y)).toBe(house);
+
+    // Off them and back on again goes back down.
+    sim.setInput('a', input({ seq: 3, right: true }));
+    stepUntil(sim, () => flightAt(state.map, p.x, p.y) === null, 60);
+    expect(buildingAt(state.map, p.x, p.y)).toBe(storey);
+    sim.setInput('a', input({ seq: 4, left: true }));
+    const back = stepUntil(sim, () => buildingAt(state.map, p.x, p.y) === house, 60);
+    expect(back).toBeGreaterThan(0);
   });
 
   it('a zombie on your heels follows you up', () => {
     const { sim, state, p, storey } = onStairs();
-    sim.setInput('a', input({ seq: 1, search: true }));
     sim.step();
+    expect(buildingAt(state.map, p.x, p.y)).toBe(storey);
     const down = stairsPoint(houseOf(state.map, storey))!;
-    const z = addZombie(state, 'walker', down.x - 16, down.y + 4);
+    const z = addZombie(state, 'walker', down.x + 16, down.y + 4);
     const followed = stepUntil(sim, () => buildingAt(state.map, z.x, z.y) === storey, 600);
     expect(followed).toBeGreaterThan(0);
     expect(Math.hypot(z.x - p.x, z.y - p.y)).toBeLessThan(120);

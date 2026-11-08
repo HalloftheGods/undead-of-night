@@ -64,7 +64,9 @@ describe('snow trackers', () => {
   it('only the zombie that found the trail follows it; one going to a bottle keeps going to the bottle', () => {
     const { sim, state, lane, p } = snowScene();
     const bottle = { x: lane.points[PRINTS - 1].x, y: lane.points[PRINTS - 1].y };
-    const investigator = addRoamer(state, 'walker', lane.points[2].x, lane.points[2].y + 40);
+    // Off to the side of the lane, on open ground so it can walk.
+    const side = [40, -40, 30, -30].find((dy) => !circleHitsSolid(state.map, lane.points[2].x, lane.points[2].y + dy, ZOMBIES.walker.radius + 1))!;
+    const investigator = addRoamer(state, 'walker', lane.points[2].x, lane.points[2].y + side);
     makeNoise(state, bottle.x, bottle.y, 250);
     expect(investigator.mode).toBe('alert');
     const tracker = addRoamer(state, 'walker', lane.points[0].x, lane.points[0].y);

@@ -1,7 +1,7 @@
 import { backDoorBox, partitionBoxes } from './building-plans.ts';
 import { settleVan } from './exit-van.ts';
 import type { Point } from './flow-field.ts';
-import { isStorey, voidBoxes } from './storeys.ts';
+import { buildingsWithStairs, isStorey, voidBoxes } from './storeys.ts';
 import { BUILDING_DEFS, DOOR_WIDTH, PROP_DEFS, TILE_SIZE, WALL_THICKNESS } from './protocol.ts';
 import type { BuildingInstance, PropInstance, WorldMap } from './protocol.ts';
 
@@ -55,19 +55,19 @@ function northWall(building: BuildingInstance, x0: number, y0: number, x1: numbe
 }
 
 /** A floor above or below has no door of its own: its stairs are the way in. */
-function closedWalls(building: BuildingInstance): Box[] {
+function closedWalls(building: BuildingInstance, hasStairs: boolean): Box[] {
   const { x0, y0, x1, y1 } = buildingBox(building);
   return [
     { x0, y0, x1, y1: y0 + WALL_THICKNESS },
     { x0, y0, x1: x0 + WALL_THICKNESS, y1 },
     { x0: x1 - WALL_THICKNESS, y0, x1, y1 },
     { x0, y0: y1 - WALL_THICKNESS, x1, y1 },
-    ...partitionBoxes(building),
+    ...partitionBoxes(building, hasStairs),
   ];
 }
 
-function wallsOf(building: BuildingInstance): Box[] {
-  if (isStorey(building)) return closedWalls(building);
+function wallsOf(building: BuildingInstance, hasStairs: boolean): Box[] {
+  if (isStorey(building)) return closedWalls(building, hasStairs);
   const { x0, y0, x1, y1 } = buildingBox(building);
   const door = doorBox(building);
   return [
@@ -76,7 +76,7 @@ function wallsOf(building: BuildingInstance): Box[] {
     { x0: x1 - WALL_THICKNESS, y0, x1, y1 },
     { x0, y0: door.y0, x1: door.x0, y1 },
     { x0: door.x1, y0: door.y0, x1, y1 },
-    ...partitionBoxes(building),
+    ...partitionBoxes(building, hasStairs),
   ];
 }
 
@@ -85,7 +85,8 @@ export function wallBoxes(map: Pick<WorldMap, 'buildings' | 'walls'>): readonly 
   if (map.walls) return map.walls;
   const cached = walls.get(map.buildings);
   if (cached) return cached;
-  const boxes = map.buildings.flatMap(wallsOf);
+  const withStairs = buildingsWithStairs(map.buildings);
+  const boxes = map.buildings.flatMap((building) => wallsOf(building, withStairs.has(building.id)));
   walls.set(map.buildings, boxes);
   return boxes;
 }

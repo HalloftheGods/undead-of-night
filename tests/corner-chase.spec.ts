@@ -8,11 +8,11 @@ import { GameSimulation } from '../shared/simulation.ts';
 import { addZombie, stateOf, stepUntil } from './helpers/sim-harness.ts';
 
 const ARRIVAL_TICKS = TICK_RATE * 5;
-/** Three survivors backed into the same corner of a house, between its west wall and the table, seed 5150. */
+/** Three survivors backed into the same corner of a house, between its west wall and the bed, seed 5150. */
 const STACKED_IN_A_CORNER: readonly Point[] = [
-  { x: 1724.1, y: 1131.9 },
-  { x: 1724.24, y: 1131.82 },
-  { x: 1723.92, y: 1132.03 },
+  { x: 1724.1, y: 1105.9 },
+  { x: 1724.24, y: 1105.82 },
+  { x: 1723.92, y: 1106.03 },
 ];
 
 /** A real town from a known seed, emptied, with one body hunting players who stay put. */
@@ -40,7 +40,7 @@ function huntInTown(seed: number, type: ZombieType, prey: readonly Point[], body
  */
 describe('a body closing on a player cornered behind furniture', () => {
   const scenes = [
-    { name: 'a walker past the corner of a table', seed: 5150, type: 'walker', prey: STACKED_IN_A_CORNER, body: { x: 1757, y: 1117 } },
+    { name: 'a walker past the corner of a bed', seed: 5150, type: 'walker', prey: STACKED_IN_A_CORNER, body: { x: 1757, y: 1127 } },
     { name: 'a bloater under a shelf', seed: 7, type: 'bloater', prey: [{ x: 1666, y: 2594 }], body: { x: 1618, y: 2588 } },
   ] as const;
 

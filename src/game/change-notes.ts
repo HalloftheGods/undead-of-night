@@ -22,6 +22,18 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'house-stairs-corner',
+    date: '2026-11-08',
+    kind: 'better',
+    title: 'Stairs you just walk onto',
+    deck: 'Step on the stairs to go up or down. No key to press.',
+    points: [
+      'A house\'s stairs stand in its back corner now, out of the way through.',
+      'A house with stairs is one open room, with no bedroom wall.',
+      'You stay put on the stairs you come out on until you step off.',
+    ],
+  },
+  {
     id: 'queen-is-kat',
     date: '2026-11-08',
     kind: 'better',

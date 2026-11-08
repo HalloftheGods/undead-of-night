@@ -9,6 +9,8 @@ const NORTH_WALL = TILE_SIZE;
 /** Keeps deeper pieces clear of the north wall's own thickness. */
 const NORTH_DEEP = 18;
 const NORTH_BED = 38;
+/** A bed against the west wall, below the back corner a house keeps bare for its stairs. */
+const STAIRS_CLEAR_BED = 72;
 
 /**
  * Hand-laid so every room keeps a way in from the door, with pieces against the walls. Any gap
@@ -73,12 +75,13 @@ const LAYOUTS: Record<BuildingKind, readonly Slot[]> = {
     ['shelf', 156, 64], ['shelf', 202, 100, 0.6],
   ],
   // Bedroom west of the inside wall at 54, kitchen east of it with the back door, living room along the front.
+  // The bedroom's back corner is left bare for the stairs, and a house with stairs has no inside wall.
   house: [
-    ['bed', 6, NORTH_BED],
+    ['bed', 6, STAIRS_CLEAR_BED],
     ['locker', 38, 14, 0.5],
     ['fridge', 90, 40],
     ['sofa', 70, 90],
-    ['table', 6, 80],
+    ['table', 6, 90],
   ],
   // Two rooms either side of the hall that runs from the front door to the back, and a lobby along the front.
   apartment: [
@@ -88,12 +91,10 @@ const LAYOUTS: Record<BuildingKind, readonly Slot[]> = {
     ['table', 130, 80],
     ['sofa', 6, 122], ['shelf', 122, 122, 0.5],
   ],
-  // Two bedrooms either side of the same inside wall as the house below, the landing along the front.
-  // The stairs come up in the east room's south corner, which is left bare. A bed would leave the east
-  // room a sliver too narrow to follow anyone through, so it is a box room with a wardrobe.
+  // One bedroom under the roof, with two beds and the stairs coming up in the same back corner as below.
   upstairs: [
-    ['bed', 6, NORTH_BED], ['locker', 38, 14],
-    ['locker', 90, 14],
+    ['bed', 6, STAIRS_CLEAR_BED], ['locker', 38, 14], ['locker', 58, 14],
+    ['bed', 82, NORTH_BED],
     ['shelf', 6, 90], ['table', 82, 90, 0.6],
   ],
   // Two more flats off the same hall, furnished the same, with the stairs coming up in the lobby's east end.
@@ -106,8 +107,8 @@ const LAYOUTS: Record<BuildingKind, readonly Slot[]> = {
   ],
   // One room under the whole house, stores along the walls and the stairs coming down in the same corner.
   cellar: [
-    ['shelf', 6, NORTH_WALL], ['workbench', 66, NORTH_DEEP],
-    ['crate_stack', 6, 62],
+    ['shelf', 34, NORTH_WALL], ['workbench', 66, NORTH_DEEP], ['shelf', 6, 90],
+    ['crate_stack', 6, 74],
     ['crate_stack', 86, 90],
   ],
 };

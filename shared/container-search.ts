@@ -13,7 +13,6 @@ import { maybeCarAlarm, scroungeBottle } from './bottles.ts';
 import { stashIn, takeStash } from './throwables.ts';
 import { candyIn, takeCandy } from './candy.ts';
 import { hasKeepsake, RABBIT_LUCK } from './keepsakes.ts';
-import { flightAt } from './storeys.ts';
 
 /** Odds that a search knocks something over. */
 export const CLATTER_CHANCE = 0.1;
@@ -91,27 +90,12 @@ function advanceSearch(sim: SimState, p: PlayerState, id: number): void {
   if (done) finishSearch(sim, p, id);
 }
 
-/** A fresh press of the key on the stairs takes them, ahead of any drawer in reach. True if it did. */
-function takeStairs(sim: SimState, p: PlayerState): boolean {
-  const pressed = p.searchHeld && !p.searchSpent;
-  const flight = pressed ? flightAt(sim.map, p.x, p.y) : null;
-  if (!flight) return false;
-  stopSearch(p);
-  p.searchSpent = true;
-  p.x = flight.to.x;
-  p.y = flight.to.y;
-  emit(sim, { type: 'stairs_taken', playerId: p.id, x: p.x, y: p.y, to: flight.label });
-  return true;
-}
-
 /** Holding the key works through what is in reach. Moving or taking a hit undoes it, and it wants a fresh press. */
 export function updateSearch(sim: SimState, p: PlayerState): void {
   const released = !p.searchHeld;
   if (released) p.searchSpent = false;
   // The bunker has no containers, and `sim.containers` still holds the last town's.
   if (isBunkerMap(sim.map)) return;
-  const tookStairs = takeStairs(sim, p);
-  if (tookStairs) return;
   const hurt = p.health < p.searchHealth;
   p.searchHealth = p.health;
   const searchingId = p.searchingId;
