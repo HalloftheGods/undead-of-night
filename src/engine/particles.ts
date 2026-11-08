@@ -1,5 +1,6 @@
 import type { Clip, PixelSprite } from '../art/types.ts';
 import { FloatingTexts } from './floating-texts.ts';
+import type { KeepOut } from './sugar-tags.ts';
 import { clipDuration, clipFrame, drawSprite } from './sprite-cache.ts';
 
 const GRAVITY = 260;
@@ -181,6 +182,11 @@ export class ParticleSystem {
   drawEmissive(ctx: CanvasRenderingContext2D, left: number, top: number): void {
     this.drawClips(ctx, left, top, true);
     this.drawDots(ctx, left, top, true);
+  }
+
+  /** Lifts any note that would sit on a candy timer up over it. */
+  keepTextsClear(keepOuts: readonly KeepOut[]): void {
+    this.texts.keepClear(keepOuts);
   }
 
   drawTexts(ctx: CanvasRenderingContext2D, left: number, top: number): void {
