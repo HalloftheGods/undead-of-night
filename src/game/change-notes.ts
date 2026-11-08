@@ -20,6 +20,18 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'team-on-map',
+    date: '2026-11-08',
+    kind: 'new',
+    title: 'Find your team on the map',
+    deck: 'In co-op, every teammate shows on the map with a flashing locator in their own colour and their name.',
+    points: [
+      'Each survivor has a team colour, so no two players look alike. The team chips in the corner wear it too.',
+      'Private rooms show callsigns. Public games show survivor names, as always.',
+      'A downed teammate says DOWN beside their name, so you know who to run to. With Motion set to Reduced, the locators hold still.',
+    ],
+  },
+  {
     id: 'town-guide',
     date: '2026-11-08',
     kind: 'new',
