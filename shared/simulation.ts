@@ -33,6 +33,7 @@ import { updateBosses } from './bosses.ts';
 import { benchCommand, updateBench } from './workbench.ts';
 import type { BenchAction } from './workbench.ts';
 import { ageFootprints } from './snow-tracks.ts';
+import { noteEntered } from './leftovers.ts';
 import { rebuildZombieGrid, removeDeadZombies, updateZombies } from './zombies.ts';
 
 export type { SimulationOptions } from './sim-factory.ts';
@@ -202,6 +203,7 @@ export class GameSimulation {
     }
     rebuildZombieGrid(sim);
     for (const p of sim.players) updatePlayer(sim, p);
+    noteEntered(sim);
     ageFootprints(sim);
     updateFires(sim);
     updateBullets(sim);

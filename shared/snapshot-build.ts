@@ -5,6 +5,7 @@ import { gearField } from './gun-upgrades.ts';
 import { overrunView } from './overrun.ts';
 import { WEAPON_ORDER } from './protocol.ts';
 import { liveBoss } from './bosses.ts';
+import { leftoversField } from './leftovers.ts';
 import type { BossView, DropView, ExitEntity, GameEvent, PlayerEntity, SnapshotPacket, WeaponId } from './protocol.ts';
 import type { PlayerState, SimState } from './sim-state.ts';
 import { hordeHostiles } from './waves.ts';
@@ -161,6 +162,7 @@ export function buildSnapshot(sim: SimState): SnapshotPacket {
     pickups: sim.pickups.filter(inRange).map((item) => ({ id: item.id, type: item.type, x: round2(item.x), y: round2(item.y) })),
     exit: exitView(exitEntity(sim)),
     openedContainers: openedContainers(sim),
+    ...leftoversField(sim),
     ...dropField(sim),
     ...bossField(sim),
     ...tracksField(sim, inRange),

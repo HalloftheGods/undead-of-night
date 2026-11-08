@@ -8,6 +8,7 @@ import { GAME_EVENT_TYPES, GAME_PHASES, PICKUP_TYPES } from './events.ts';
 import type { GameStyle } from './game-style.ts';
 import type { PlayerGear } from './gun-upgrades.ts';
 import type { HomeAction, HomeView, JoinHome, OverrunEnd, RoomHomeView } from './home-protocol.ts';
+import type { LeftoverView } from './leftovers.ts';
 import type { GunEffect } from './round-effect-data.ts';
 import type { BenchAction, BenchView } from './workbench.ts';
 
@@ -314,6 +315,8 @@ export interface SnapshotPacket {
   readonly exit: ExitEntity | null;
   /** Ids of the town's containers that have been opened, so everyone sees them open. */
   readonly openedContainers: readonly number[];
+  /** Buildings the team has been inside that still hold supplies, sent to everyone. Left off when there are none. */
+  readonly leftovers?: readonly LeftoverView[];
   /** The town's supply drop, from its flare to the end of its marked time, sent to everyone. Left off otherwise. */
   readonly drop?: DropView;
   /** The town's boss while it stands, sent to everyone wherever they are. Left off otherwise. */

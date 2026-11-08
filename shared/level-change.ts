@@ -45,6 +45,7 @@ function emptyWorld(sim: SimState, level: number): void {
   sim.zombies = [];
   sim.bullets = [];
   sim.pickups = [];
+  sim.entered = new Set();
   sim.events = [];
   sim.flow.invalidate();
   sim.noiseFlow.invalidate();
