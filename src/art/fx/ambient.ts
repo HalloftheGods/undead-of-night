@@ -98,12 +98,14 @@ interface MoteLook {
 function moteClip(look: MoteLook): Clip {
   const frames = MOTE_SWAY.map((sway, f) => {
     const canvas = new PixelCanvas(MOTE_W, MOTE_H);
-    const y = 9 - f * 2;
+    // Frame 0 sits on the bottom rows and the last frame on the top one, so every frame stays on the canvas.
+    const y = 10 - f * 2;
     const color = look.colors[f];
     const big = f < look.shrinkAt;
     if (big) canvas.rect(sway, y, 2, 2, color);
     else canvas.px(sway, y, color);
-    if (f < look.coreUntil) canvas.px(sway, y, look.core);
+    const hot = f < look.coreUntil;
+    if (hot) canvas.px(sway, y, look.core);
     return canvas.toSprite(MOTE_W, MOTE_H, 4, MOTE_H);
   });
   return makeClip(frames, 8, true);
@@ -190,7 +192,8 @@ function scorch(size: number, seed: number): PixelSprite {
     for (let x = 0; x < size; x++) {
       const distance = Math.hypot((x - c) / (size / 2), (y - c) / (size / 2.5));
       const rim = distance > 0.75 && canvas.get(x, y) !== null;
-      if (rim && random() < 0.4) canvas.erase(x, y);
+      const chipped = rim && random() < 0.4;
+      if (chipped) canvas.erase(x, y);
     }
   }
   for (let i = 0; i < 6; i++) {
