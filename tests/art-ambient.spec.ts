@@ -33,7 +33,7 @@ describe('ambient fx art', () => {
   it('exposes twelve assets', () => {
     expect(clips.length + lists.length).toBe(12);
     expect(clips.map(([k]) => k).sort()).toEqual(['emberDrift', 'hitSpark', 'leafFall', 'pickupRing', 'rainSplash', 'rainStreak', 'sporeDrift']);
-    expect(lists.map(([k]) => k).sort()).toEqual(['bloodFootprints', 'bulletHoles', 'glassShards', 'gibs', 'scorchDecals']);
+    expect(lists.map(([k]) => k).sort()).toEqual(['bloodFootprints', 'bulletHoles', 'gibs', 'glassShards', 'scorchDecals']);
   });
 
   it('gives every clip several same-sized frames with something visible', () => {
