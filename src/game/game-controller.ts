@@ -463,6 +463,8 @@ export class GameController {
     this.raf = requestAnimationFrame(this.frame);
     const dt = Math.min(MAX_FRAME_DT, (ms - this.lastFrameMs) / 1000);
     this.lastFrameMs = ms;
+    // Before the art is in, so Start and the D-pad already answer on the title.
+    this.input.pollGamepad();
     const renderer = this.renderer;
     if (!renderer) return;
     if (this.run.world) this.runFrame.draw(renderer, this.run.world, ms, dt);
