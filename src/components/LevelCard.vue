@@ -6,6 +6,7 @@
     <span v-if="card.rule" class="level-card-rule">{{ card.rule }}</span>
     <span v-if="card.event" class="level-card-event">Tonight: {{ card.event }}</span>
     <span v-if="card.boss" class="level-card-event">Boss night: {{ card.boss }}</span>
+    <span v-if="card.streak" class="level-card-streak">{{ card.streak }}</span>
   </div>
 </template>
 
@@ -49,6 +50,10 @@ defineProps<{ card: LevelCard }>();
 
 .level-card-rule {
   color: var(--amber);
+}
+
+.level-card-streak {
+  color: var(--sick);
 }
 
 .level-card-event {

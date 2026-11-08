@@ -103,6 +103,9 @@ export class RunHud {
   /** The town the run is in, which is where a Radio's track belongs. */
   private level = 1;
   private lastScene: SceneView | null = null;
+  /** The streak kit's line for the run's first title card, and whether that card has gone up yet. */
+  private streakLine: string | null = null;
+  private streakShown = false;
 
   constructor(ui: () => UiState, publish: (patch: Partial<UiState>) => void, homeFacts: () => HomeFacts) {
     this.ui = ui;
@@ -116,6 +119,7 @@ export class RunHud {
 
   /** A new run, on this map or the next. */
   reset(): void {
+    this.streakShown = false;
     this.notices.reset();
     this.log.reset();
     this.town?.clearVisited();
@@ -213,10 +217,17 @@ export class RunHud {
     this.publish({ home: homeUi(snapshot, local, this.homeFacts()) });
   }
 
+  /** What the streak kit gave this run, said on its first title card. Null for a run with no kit. */
+  setStreakLine(line: string | null): void {
+    this.streakLine = line;
+  }
+
   /** The level's title card. Nothing said in the last town is worth keeping up beside it. */
   showLevel(level: number, now: number, mapSeed: number | null = null): void {
     this.level = level;
-    const levelCard = this.notices.levelCard(level, now, mapSeed);
+    const streak = this.streakShown ? null : this.streakLine;
+    this.streakShown = true;
+    const levelCard = this.notices.levelCard(level, now, mapSeed, streak);
     for (const line of levelLines(levelCard)) this.log.add(line, now);
     this.publish({ levelCard, banner: null, place: null, log: this.log.entries });
   }

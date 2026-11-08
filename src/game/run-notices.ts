@@ -190,10 +190,10 @@ export class RunNotices {
     return { key: this.placeKey, label };
   }
 
-  levelCard(level: number, now: number, mapSeed: number | null = null): LevelCard {
+  levelCard(level: number, now: number, mapSeed: number | null = null, streak: string | null = null): LevelCard {
     this.levelCardKey += 1;
     this.levelCardUntilMs = now + LEVEL_CARD_MS;
-    return { ...levelTitle(level, mapSeed), key: this.levelCardKey };
+    return { ...levelTitle(level, mapSeed), ...(streak ? { streak } : {}), key: this.levelCardKey };
   }
 
   /** The building id the player has just stepped into, or null if nothing changed. */
