@@ -18,6 +18,7 @@ import type { HomeActions } from './home-hud.ts';
 import { overrunOn } from './home-mode.ts';
 import { createBrowserHomeStore } from './home/browser-home-store.ts';
 import type { HomeStore } from './home/home-store.ts';
+import { standingInTown } from './hud-state.ts';
 import type { UiState } from './hud-state.ts';
 import { InputManager } from './input-manager.ts';
 import { InputSender } from './input-sender.ts';
@@ -113,6 +114,7 @@ export class GameController {
       onMute: () => this.toggleMute(),
       onConfirm: () => this.confirm(),
       onMap: () => this.toggleMap(),
+      onBackpack: () => this.toggleBackpack(),
       mapUsable: () => this.canUseMap(),
       onLog: () => this.toggleLog(),
       onTouchSeen: () => { this.publish({ touch: true }); this.onResize(); },
@@ -192,7 +194,11 @@ export class GameController {
   }
 
   private publish(patch: Partial<UiState>): void {
-    this.ui.value = { ...this.ui.value, ...patch };
+    const next = { ...this.ui.value, ...patch };
+    // Nobody rummages in a backpack on their back, or at the workbench, or off a run: whatever
+    // closed the moment for it closes the ring with it, from wherever the news arrived.
+    const ringStuck = next.backpackOpen && !standingInTown(next);
+    this.ui.value = ringStuck ? { ...next, backpackOpen: false } : next;
   }
 
   private stopDprWatch: () => void = () => {};
@@ -329,8 +335,17 @@ export class GameController {
     if (!free) this.sendNeutralInput();
   }
 
-  /** Esc puts an open station away before it asks for the pause menu. */
+  /**
+   * Esc takes the backpack ring off, then puts an open station away, before it asks for the pause
+   * menu. The ring is handled here and not in `shutOverlay`, which `onAway` also runs: tabbing away
+   * from a solo run must still pause it, ring or no ring.
+   */
   togglePause(): void {
+    const ringUp = this.ui.value.backpackOpen;
+    if (ringUp) {
+      this.closeBackpack();
+      return;
+    }
     const stationOpen = !this.ui.value.paused && this.homeLink.closeOpenStation();
     if (stationOpen) return;
     this.flipPause();
@@ -367,8 +382,43 @@ export class GameController {
     if (!this.canUseMap()) return false;
     const mapOpen = !this.ui.value.mapOpen;
     this.holdRun(mapOpen);
+    this.closeBackpack();
     this.publish({ mapOpen });
     return true;
+  }
+
+  /**
+   * The backpack ring, on the survivor. Unlike the map it does not hold the run: the ring is meant
+   * to be read while walking, and it follows the survivor as they go.
+   */
+  private canUseBackpack(): boolean {
+    return standingInTown(this.ui.value) && !this.homeLink.holdsControls;
+  }
+
+  /** True if the ring took the press. Closing always works, so a ring is never stuck open. */
+  toggleBackpack(): boolean {
+    const isOpen = this.ui.value.backpackOpen;
+    if (isOpen) {
+      this.publish({ backpackOpen: false });
+      return true;
+    }
+    if (!this.canUseBackpack()) return false;
+    // The ring covers the screen, so nothing can start a shot while it is up; a shot already
+    // under way would otherwise keep firing behind it.
+    this.input.letGoButtons();
+    this.publish({ backpackOpen: true });
+    return true;
+  }
+
+  closeBackpack(): void {
+    if (this.ui.value.backpackOpen) this.publish({ backpackOpen: false });
+  }
+
+  /** A pick off the ring is that item's key pressed and let go, and the ring closes behind it. */
+  pickFromBackpack(code: string): void {
+    this.closeBackpack();
+    this.input.padDown(code);
+    this.input.padUp(code);
   }
 
   /** The run's full log, over the run, which keeps going. Not behind a menu or the map. */

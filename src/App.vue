@@ -1,5 +1,5 @@
 <template>
-  <main class="game-root" :class="{ 'is-aiming': aiming, 'is-touch': ui.touch, 'has-touch-items': touchItemsShown }">
+  <main class="game-root" :class="{ 'is-aiming': aiming, 'is-touch': ui.touch }">
     <canvas ref="canvasRef" class="game-canvas" />
 
     <TitleScreen v-if="ui.screen === 'title'" :ui :splashing />
@@ -8,7 +8,15 @@
       <template v-if="ui.hud && ui.art">
         <HudOverlay :hud="ui.hud" :art="ui.art" :mode="ui.mode" :signal-weak="ui.signalWeak" :place="ui.place" :home="ui.home" :log="ui.log" />
         <DownedOverlay v-if="ui.hud.status !== 'alive'" :hud="ui.hud" :mode="ui.mode" />
-        <TouchControls v-if="ui.touch" :hud="ui.hud" :art="ui.art" />
+        <TouchControls v-if="ui.touch" />
+        <!-- The backpack ring: the Backpack button on a phone, a middle-click on a desktop. -->
+        <BackpackWheel
+          v-if="ui.backpackOpen"
+          :hud="ui.hud"
+          :art="ui.art"
+          @close="game.closeBackpack()"
+          @action="game.pickFromBackpack($event)"
+        />
         <EmoteWheel :art="ui.art" :enabled="emotesOn" />
         <RoomInvite v-if="ui.onlineRoom && !ui.paused && ui.hud.teammates.length === 0" :room="ui.onlineRoom" :is-public="ui.onlinePublic" />
       </template>
@@ -51,6 +59,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, provide, ref, useTemplateRef } from 'vue';
+import BackpackWheel from './components/BackpackWheel.vue';
 import ConnectionLost from './components/ConnectionLost.vue';
 import DeathSummary from './components/DeathSummary.vue';
 import DownedOverlay from './components/DownedOverlay.vue';
@@ -82,18 +91,22 @@ import { privacyOpen, startAnalytics } from './game/analytics/index.ts';
 import { GameController } from './game/game-controller.ts';
 import { aimsCursor } from './game/home-screens.ts';
 import { shouldShowSplash } from './game/studio-splash.ts';
-import { touchItems } from './game/touch-items.ts';
 
 const game = new GameController();
 const ui = game.ui;
 const splashing = ref(shouldShowSplash(window.location.search));
 const canvasRef = useTemplateRef<HTMLCanvasElement>('canvasRef');
 const aiming = computed(() =>
-  aimsCursor({ screen: ui.value.screen, paused: ui.value.paused, mapOpen: ui.value.mapOpen, bench: !!ui.value.hud?.bench, home: ui.value.home })
+  aimsCursor({
+    screen: ui.value.screen,
+    paused: ui.value.paused,
+    mapOpen: ui.value.mapOpen,
+    bench: !!ui.value.hud?.bench,
+    home: ui.value.home,
+    backpackOpen: ui.value.backpackOpen,
+  })
 );
-/** The wheel is for a team, and only while the keys are the game's. */
-// The throw and candy buttons take a row (a column on a wide screen) the HUD must stand clear of.
-const touchItemsShown = computed(() => ui.value.touch && ui.value.hud !== null && touchItems(ui.value.hud).length > 0);
+/** The emote wheel is for a team, and only while the keys are the game's. */
 const emotesOn = computed(() => aiming.value && ui.value.mode === 'coop');
 
 provide(GAME_KEY, game);

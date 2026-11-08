@@ -1,13 +1,9 @@
 # HUD and mobile controls redesign
 
-Date: 2026-11-08. Status: pieces 1 and 2 built; piece 3 (the desktop wheel) still open.
+Date: 2026-11-08. Status: built, all three pieces.
 
-Built so far: the top-right health / kills / points stack with the new `art.ui.zombieHead`; the gun bar
-centred and tappable at every width; the feed at the right edge, halfway down; the four-button pixel
-cluster with Sprint; and the backpack ring on the survivor, carrying the game's own item sprites.
-Not built: piece 3, middle-click to open the ring on a desktop with the scroll wheel stepping the
-highlight. The Sprint button does not show the Sprint bar; the bar is already drawn under the
-survivor's feet in the world, so a second one on the button would say it twice.
+Two things were deliberately not done as written, and both are recorded under Open questions below:
+the Sprint button does not carry its own Sprint bar, and the ring has no focus trap.
 
 ## Intent
 
@@ -52,7 +48,17 @@ Middle-click opens the same wheel. Click an item to use it. While open, the scro
 
 Top-left level/wave chip, boss bar, quest tracker, the title screens, new HUD features.
 
-## Open questions
+## How it was built
 
-- Is the dead touch-bar code safe to remove? (Ask before deleting.)
-- Should Sprint also toggle for players who cannot hold it? (Not in this design.)
+- **Piece 1.** The top of the HUD is a three-column grid: the town on the left, the trip's chips in the middle, and health / kills / points down the right (`HudOverlay.vue`). `art.ui.zombieHead` is a new 11x11 walker's head in the rot ramp. The gun bar is pinned to the middle of the foot of the screen rather than laid out, so a long vitals column can never shove it, and each slot is a `<button>` carrying `aria-pressed`, sized to `--tap` only under `.is-touch` so a mouse keeps the small chip and its key hints and a click there still fires the gun. What each slot stands for is `game/weapon-bar.ts`. The feed is pinned to the right edge, halfway down.
+- **Piece 2.** `game/backpack-wheel.ts` says what the ring holds, from the HUD alone. Each slot carries the sprite the game already draws that thing with; `art.ui.candy` and `art.ui.townMap` are new, because candy was CSS boxes and the map had no art at all. `ready` is false where the sim would refuse the pick (a medkit at full health, `shared/player-health.ts`; a candy already working, `shared/candy.ts`). The ring follows the survivor through `--player-x` / `--player-y`, written onto `<html>` once a rendered frame by `game/run-frame.ts` from `game/player-anchor.ts`; the HUD's own state is rebuilt ten times a second, which cannot track a walking survivor. Slot art is sized off the chip, not off `--u`: `SpriteImg`'s own unit times a scale drew the 32-wide gun icon at nearly 200px inside a 44px chip.
+- **Piece 3.** `backpackOpen` moved into `UiState`, so the phone's button and a desktop middle-click open the same ring from the same state (`GameController.toggleBackpack`, `closeBackpack`, `pickFromBackpack`). The gate is `standingInTown` in `game/hud-state.ts`, checked on every publish, so whatever closes the moment for the ring — pausing, the map, a station or the death summary, the workbench, going down, the run ending — closes the ring with it from wherever the news arrives. A middle press goes through `InputCallbacks.onBackpack`. While the ring is up it covers the screen and stops `mousedown`, so no shot can start, and `InputManager.letGoButtons()` drops a trigger already held without touching the movement keys. The scroll wheel is caught on the window in the capture phase and stopped there, so the game's own bubbling wheel listener never cycles guns; `stepSlot` walks the highlight at `WHEEL_COOLDOWN_MS`, the pace the wheel already cycles guns at, and `Enter` or `Space` uses what it walked to. `aimsCursor` hands the real pointer back, since the slots are clicked.
+- **Esc belongs to `togglePause`, not `shutOverlay`.** `Esc` reaches the game as `onPause`, so the ring has to be taken off there or one press would close the ring *and* pause the run. It is handled in `togglePause` rather than in `shutOverlay` because `onAway` (a blurred window or a hidden tab) calls `flipPause` directly: a `shutOverlay` branch would mean tabbing away with the ring open stopped pausing a solo run, and it would keep taking hits unseen.
+- **The ring's catcher is walk-through on touch.** The full-screen catcher carries `data-touch-walk` and the ring itself carries `data-touch-ui` (`game/touch-input.ts`). A finger on a chip is left alone so the browser turns it into a click; a finger on the catcher fires nothing, but the left thumb may still take the movement stick through it, because the ring does not hold the run.
+
+## Answers to the open questions
+
+- **Is the dead touch-bar code safe to remove?** Yes, and it is gone: `.touch-pad`, `.touch-button`, `.touch-glyph`, `.touch-items`, `.touch-item`, `.touch-item-count` and `.touch-candy` in `touch-ui.css` with the `--pad-size` and `--item-size` vars; `TOUCH_BUTTONS`, the `TouchButton` type and the `PAUSE`, `MAP`, `WEAPON`, `HEAL` and `RELOAD` glyphs in `game/touch-pad.ts`; and `game/touch-items.ts` with its spec. Nothing rendered any of it once `TouchControls` became a corner cluster. The padding those vars drove had already gone with piece 1: `.is-touch .hud` was reserving a 58px strip for the bar, and another 52px while anything throwable was carried, so the HUD was giving up screen for buttons that were not there. What was left to remove here was the unreachable code itself. `[data-touch-pad]` stays: it is live, and marks the cluster so a thumb that misses a button is not a shot.
+- **Should Sprint also toggle for players who cannot hold it?** Not in this design, and still not. Worth revisiting as an accessibility option beside Reduced Motion rather than as a second behaviour on the button.
+- **Does the Sprint button show the Sprint bar?** No. The bar is already drawn under the survivor's feet in the world (`engine/overlay-renderer.ts`), so a second one on the button would say the same thing twice, in the corner the eye is not on.
+- **Does the ring trap keyboard focus?** No. Tab reaches its slots and `Esc` closes it, which is enough for an overlay that does not hold the run; a trap would fight the fact that the survivor keeps walking underneath.

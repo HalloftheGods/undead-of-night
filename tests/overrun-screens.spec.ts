@@ -47,7 +47,7 @@ describe('the reward chest card', () => {
 
   it('shows the real cursor while it is up', () => {
     const home = { station: null, death: null, chest: { gear: gear(), silver: 1, jewels: { small: 0, large: 0 } } } as unknown as HomeUi;
-    expect(aimsCursor({ screen: 'game', paused: false, mapOpen: false, bench: false, home })).toBe(false);
+    expect(aimsCursor({ screen: 'game', paused: false, mapOpen: false, bench: false, backpackOpen: false, home })).toBe(false);
   });
 });
 

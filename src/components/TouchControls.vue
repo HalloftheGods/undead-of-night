@@ -1,11 +1,4 @@
 <template>
-  <BackpackWheel
-    v-if="backpackOpen"
-    :hud="hud"
-    :art="art"
-    @close="closeBackpack"
-    @action="handleAction"
-  />
   <!--
     Four buttons in a block under the right thumb. Sprint takes the corner, where the thumb
     rests and where it can be held through a whole street; the backpack, which is opened and
@@ -22,8 +15,8 @@
     <MobileFAB
       label="Backpack"
       :glyph="BACKPACK"
-      :open="backpackOpen"
-      @press="toggleBackpack"
+      :open="game.ui.value.backpackOpen"
+      @press="game.toggleBackpack()"
       @release="() => {}"
     />
     <MobileFAB
@@ -44,22 +37,17 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, ref, watch } from 'vue';
-import type { ArtBook } from '../art/types.ts';
-import type { HudState } from '../game/hud-state.ts';
+import { onBeforeUnmount, ref } from 'vue';
 import { BACKPACK, SEARCH, SHOVE, SPRINT } from '../game/touch-pad.ts';
-import BackpackWheel from './BackpackWheel.vue';
 import MobileFAB from './MobileFAB.vue';
 import { useGame } from './use-game.ts';
 
 /** Held to sprint, the same key the keyboard holds (game/input-manager.ts). */
 const SPRINT_CODE = 'ShiftLeft';
 
-const props = defineProps<{ hud: HudState; art: ArtBook }>();
-
-const { input } = useGame();
+const game = useGame();
+const input = game.input;
 const held = ref<string[]>([]);
-const backpackOpen = ref(false);
 
 function press(code: string): void {
   held.value = [...held.value, code];
@@ -73,29 +61,9 @@ function release(code: string): void {
   input.padUp(code);
 }
 
-function toggleBackpack(): void {
-  backpackOpen.value = !backpackOpen.value;
-}
-
-function closeBackpack(): void {
-  backpackOpen.value = false;
-}
-
-function handleAction(code: string): void {
-  input.padDown(code);
-  input.padUp(code);
-  closeBackpack();
-}
-
-/** Nobody rummages in a backpack on their back: going down shuts the ring. */
-watch(() => props.hud.status, (status) => {
-  const standing = status === 'alive';
-  if (!standing) closeBackpack();
-});
-
 onBeforeUnmount(() => {
   held.value.forEach((code) => input.padUp(code));
-  backpackOpen.value = false;
+  game.closeBackpack();
 });
 </script>
 

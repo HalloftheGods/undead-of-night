@@ -22,6 +22,18 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'backpack-desktop',
+    date: '2026-11-08',
+    kind: 'new',
+    title: 'The backpack on a desktop',
+    deck: 'Middle-click to open it on yourself, scroll to walk it, click to use.',
+    points: [
+      'Middle-click opens the ring on your survivor and middle-clicking again closes it. Esc or a click outside closes it too, without opening the pause menu.',
+      'While it is open the scroll wheel steps round the ring instead of cycling your guns. Enter uses whatever it lands on, or just click a slot.',
+      'You cannot shoot while it is up, but you can still walk: the ring comes with you.',
+    ],
+  },
+  {
     id: 'hud-reorder',
     date: '2026-11-08',
     kind: 'better',

@@ -32,6 +32,7 @@ const SIGNAL_WEAK_MS = 1500;
 export const NO_RUN_UI = {
   paused: false,
   mapOpen: false,
+  backpackOpen: false,
   hud: null,
   banner: null,
   callout: null,

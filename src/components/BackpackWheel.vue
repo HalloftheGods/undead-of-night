@@ -1,12 +1,17 @@
 <template>
+  <!--
+    The catcher takes the tap or click that closes the ring. It fires no shot, but the left thumb
+    walks straight through it (data-touch-walk, game/touch-input.ts): the ring does not hold the run.
+  -->
   <section
     class="backpack"
+    data-touch-walk
     aria-label="Backpack"
-    @pointerdown.self="$emit('close')"
+    @pointerdown="onDown"
     @mousedown.stop
     @contextmenu.prevent
   >
-    <div class="backpack-ring" :style="{ '--slots': slots.length }">
+    <div class="backpack-ring" data-touch-ui :style="{ '--slots': slots.length }">
       <span class="backpack-cord" aria-hidden="true" />
       <p v-if="lit" class="backpack-say">{{ lit.name }}</p>
       <button
@@ -33,15 +38,21 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import type { ArtBook, PixelSprite } from '../art/types.ts';
-import { slotAngle, wheelSlots } from '../game/backpack-wheel.ts';
+import { slotAngle, stepSlot, wheelSlots } from '../game/backpack-wheel.ts';
 import type { WheelSlot } from '../game/backpack-wheel.ts';
 import type { HudState } from '../game/hud-state.ts';
+import { WHEEL_COOLDOWN_MS } from '../game/input-manager.ts';
 import SpriteImg from './SpriteImg.vue';
+
+/** The button that opens the ring also closes it (game/input-manager.ts). */
+const MIDDLE_BUTTON = 1;
 
 const props = defineProps<{ hud: HudState; art: ArtBook }>();
 const emit = defineEmits<{ close: []; action: [code: string] }>();
 
 const hovered = ref<string | null>(null);
+/** When the wheel last stepped the highlight, for the cooldown. */
+let lastWheelAt = 0;
 
 const slots = computed<WheelSlot[]>(() => wheelSlots(props.hud));
 /** The slot under the finger, which is the only one that says its name. */
@@ -79,9 +90,47 @@ function pick(slot: WheelSlot): void {
   emit('action', slot.code);
 }
 
+/**
+ * A press outside the ring closes it, and so does a second middle press wherever it lands: the
+ * catcher stops `mousedown`, so the middle-click that opens the ring never reaches the game again.
+ */
+function onDown(event: PointerEvent): void {
+  const outside = event.target === event.currentTarget;
+  const middle = event.button === MIDDLE_BUTTON;
+  if (outside || middle) emit('close');
+}
+
 function onKeyDown(event: KeyboardEvent): void {
   const quit = event.key === 'Escape';
-  if (quit) emit('close');
+  if (quit) {
+    emit('close');
+    return;
+  }
+  // Enter or Space uses whatever the wheel walked to, so stepping the ring is not a dead end.
+  const commit = event.key === 'Enter' || event.key === ' ';
+  const hasPick = commit && lit.value !== null;
+  if (!hasPick) return;
+  // A slot can also hold focus, and the browser would click it: this is the one pick either way.
+  event.preventDefault();
+  pick(lit.value!);
+}
+
+/**
+ * The scroll wheel walks the ring instead of cycling guns. Caught on the way down and stopped
+ * here, so the game's own wheel listener (game/input-manager.ts, on the window, bubbling) never
+ * sees it: what is under the hand is the ring, not the guns.
+ */
+function onWheel(event: WheelEvent): void {
+  const still = event.deltaY === 0;
+  if (still) return;
+  event.preventDefault();
+  event.stopPropagation();
+  // One notch per cooldown, the same pace the wheel cycles guns at: a trackpad sends a flurry.
+  const now = performance.now();
+  const tooSoon = now - lastWheelAt < WHEEL_COOLDOWN_MS;
+  if (tooSoon) return;
+  lastWheelAt = now;
+  hovered.value = stepSlot(slots.value, hovered.value, Math.sign(event.deltaY));
 }
 
 /** A tab or a call taking the window leaves nothing open over the town. */
@@ -89,13 +138,18 @@ function onAway(): void {
   emit('close');
 }
 
+/** Capture, so the step lands before the game's own wheel listener on the same window. */
+const CATCH = { capture: true, passive: false } as const;
+
 onMounted(() => {
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('blur', onAway);
+  window.addEventListener('wheel', onWheel, CATCH);
 });
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeyDown);
   window.removeEventListener('blur', onAway);
+  window.removeEventListener('wheel', onWheel, CATCH);
 });
 </script>
 

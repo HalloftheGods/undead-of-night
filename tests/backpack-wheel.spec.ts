@@ -1,47 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { nextCandy, slotAngle, wheelSlots } from '../src/game/backpack-wheel.ts';
+import { nextCandy, slotAngle, stepSlot, wheelSlots } from '../src/game/backpack-wheel.ts';
 import type { HudState } from '../src/game/hud-state.ts';
-
-function hud(patch: Partial<HudState> = {}): HudState {
-  return {
-    health: 60,
-    maxHealth: 100,
-    status: 'alive',
-    weapon: 'pistol',
-    owned: ['pistol'],
-    ammo: 6,
-    magSize: 12,
-    reserve: 24,
-    ammoBag: { pistol: 24, carbine: 0, shotgun: 0 },
-    mags: { pistol: 6, carbine: 0, shotgun: 0 },
-    medkits: 1,
-    bottles: 0,
-    fireworks: 0,
-    flares: 0,
-    candy: [],
-    sugar: [],
-    keepsakes: [],
-    keepsakeOffer: null,
-    knife: false,
-    reload: 0,
-    score: 0,
-    kills: 0,
-    bleedout: 0,
-    revive: 0,
-    phase: 'wave',
-    level: 1,
-    exitOpen: false,
-    wave: 1,
-    intermission: 0,
-    hostiles: 3,
-    teammates: [],
-    spectating: null,
-    gear: null,
-    bench: null,
-    boss: null,
-    ...patch,
-  };
-}
+import { aHud as hud, fullBackpack } from './backpack-fixture.ts';
 
 const codes = (state: HudState): string[] => wheelSlots(state).map((slot) => slot.code);
 
@@ -129,6 +89,40 @@ describe('nextCandy', () => {
   it('is null with nothing carried, and null with everything working', () => {
     expect(nextCandy({ candy: [], sugar: [] })).toBe(null);
     expect(nextCandy({ candy: ['Jawbreaker'], sugar: [{ name: 'Jawbreaker', left: 3 }] })).toBe(null);
+  });
+});
+
+describe('stepSlot', () => {
+  const slots = wheelSlots(fullBackpack());
+  const codes = slots.map((slot) => slot.code);
+
+  it('lights the first slot going down the ring from nothing, and the last going up', () => {
+    expect(stepSlot(slots, null, 1)).toBe(codes[0]);
+    expect(stepSlot(slots, null, -1)).toBe(codes[codes.length - 1]);
+  });
+
+  it('walks the ring one slot at a time, either way', () => {
+    expect(stepSlot(slots, codes[0], 1)).toBe(codes[1]);
+    expect(stepSlot(slots, codes[2], -1)).toBe(codes[1]);
+  });
+
+  it('wraps round both ends rather than stopping', () => {
+    expect(stepSlot(slots, codes[codes.length - 1], 1)).toBe(codes[0]);
+    expect(stepSlot(slots, codes[0], -1)).toBe(codes[codes.length - 1]);
+  });
+
+  it('steps past a slot that is no longer there, instead of sticking on it', () => {
+    expect(stepSlot(slots, 'KeyZ', 1)).toBe(codes[0]);
+  });
+
+  it('holds still for no step and for an empty ring', () => {
+    expect(stepSlot(slots, codes[1], 0)).toBe(codes[1]);
+    expect(stepSlot([], null, 1)).toBe(null);
+  });
+
+  it('goes right round a full ring and comes home', () => {
+    const home = codes.reduce((at) => stepSlot(slots, at, 1), codes[0] as string | null);
+    expect(home).toBe(codes[0]);
   });
 });
 

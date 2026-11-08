@@ -2,6 +2,24 @@
 
 All notable changes to the Undead of Night: Last Round game are documented in this file.
 
+## [2026-11-08] - The backpack ring on a desktop, and the old touch bar removed
+
+Finishes `docs/superpowers/specs/2026-11-08-hud-mobile-design.md`: piece 3, and the spec's open questions answered in it.
+
+### Added
+- A middle-click opens the backpack ring on a desktop and closes it again (`InputCallbacks.onBackpack`, `GameController.toggleBackpack`). While it is open the scroll wheel steps the highlight round the ring instead of cycling guns (`stepSlot` in `src/game/backpack-wheel.ts`, caught in the capture phase so the game's own wheel listener never sees it, one notch per `WHEEL_COOLDOWN_MS` so a trackpad's flurry is one step), `Enter` or `Space` uses whatever it walked to, a click on a slot uses that, and `Esc` or a click outside closes it. `Esc` spends itself on the ring and does not also open the pause menu. Nothing can start a shot while the ring is up, and a trigger already held is let go (`InputManager.letGoButtons`), though the survivor keeps walking: the ring follows them, and on touch the left thumb walks straight through the ring's catcher (`data-touch-walk`).
+- `standingInTown` (`src/game/hud-state.ts`): on their feet in a town with nothing up over the game. The ring is gated on it, and every publish re-checks it, so pausing, the map, the workbench, going down or the run ending closes the ring from wherever the news arrives.
+
+### Changed
+- `backpackOpen` lives in `UiState`, so the phone's Backpack button and a desktop middle-click open one ring from one piece of state. `BackpackWheel.vue` moved out of `TouchControls.vue` into `App.vue`, and `TouchControls.vue` no longer takes props.
+- The real pointer comes back while the ring is open (`aimsCursor`), since its slots are clicked.
+- The ring is marked `data-touch-ui`, so a finger on it is a tap and never a shot or a stick drag.
+- `.is-touch .hud` is one rule for both orientations instead of two that each padded one axis: the buttons are a corner block, so the HUD keeps off the safe-area insets on all four sides and reserves no strip for a bar.
+
+### Removed
+- The old rectangular touch bar, dead since the buttons became a corner cluster: `.touch-pad`, `.touch-button`, `.touch-glyph`, `.touch-items`, `.touch-item`, `.touch-item-count` and `.touch-candy` with the `--pad-size` and `--item-size` vars (`src/components/touch-ui.css`); `TOUCH_BUTTONS`, the `TouchButton` type and the `PAUSE`, `MAP`, `WEAPON`, `HEAL` and `RELOAD` glyphs (`src/game/touch-pad.ts`); and `src/game/touch-items.ts` with its spec. `[data-touch-pad]` stays and still marks the cluster.
+- The `has-touch-items` class on `.game-root`, which nothing styles any more.
+
 ## [2026-11-08] - HUD order, the backpack ring and a Sprint button
 
 Builds pieces 1 and 2 of `docs/superpowers/specs/2026-11-08-hud-mobile-design.md`.

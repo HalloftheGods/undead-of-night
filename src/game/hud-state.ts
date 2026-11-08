@@ -163,6 +163,8 @@ export interface UiState {
   readonly error: string | null;
   readonly paused: boolean;
   readonly mapOpen: boolean;
+  /** The backpack ring is open on the survivor: a middle-click on a desktop, the button on a phone. */
+  readonly backpackOpen: boolean;
   readonly hud: HudState | null;
   readonly banner: Banner | null;
   readonly callout: Callout | null;
@@ -242,6 +244,20 @@ export function buildHud(snapshot: SnapshotPacket, local: PlayerEntity, spectati
     bench: benchHud(snapshot, local),
     boss: snapshot.boss ? { name: BOSSES[snapshot.boss.id].name, share: snapshot.boss.health / Math.max(1, snapshot.boss.maxHealth) } : null,
   };
+}
+
+/**
+ * On their feet in a town with nothing up over the game: the moment a survivor can reach into
+ * their own backpack. Not paused, not behind the map, not at the workbench, not down, not off a run.
+ */
+export function standingInTown(ui: Pick<UiState, 'screen' | 'paused' | 'mapOpen' | 'hud' | 'home'>): boolean {
+  const onRun = ui.screen === 'game' && ui.hud !== null;
+  if (!onRun) return false;
+  // A station, the death summary or an opened chest has the screen and the keys (game/home-link.ts).
+  const { home } = ui;
+  const homeScreenUp = home !== null && (home.station !== null || home.death !== null || home.chest !== null);
+  const nothingUp = !ui.paused && !ui.mapOpen && !homeScreenUp && ui.hud.bench === null;
+  return nothingUp && ui.hud.status === 'alive' && ui.hud.phase !== 'gameover';
 }
 
 export type AmmoState = 'ok' | 'low' | 'empty';

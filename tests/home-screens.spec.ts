@@ -198,15 +198,15 @@ describe('leaving mid-trip', () => {
 describe('the cursor', () => {
   it('the cursor shows while a shop is open', () => {
     const open = homeUi({ station: 'gunsmith', shop: 'gunsmith' });
-    expect(aimsCursor({ screen: 'game', paused: false, mapOpen: false, bench: false, home: open })).toBe(false);
-    expect(aimsCursor({ screen: 'game', paused: false, mapOpen: false, bench: false, home: homeUi() })).toBe(true);
-    expect(aimsCursor({ screen: 'game', paused: false, mapOpen: false, bench: false, home: null })).toBe(true);
+    expect(aimsCursor({ screen: 'game', paused: false, mapOpen: false, bench: false, backpackOpen: false, home: open })).toBe(false);
+    expect(aimsCursor({ screen: 'game', paused: false, mapOpen: false, bench: false, backpackOpen: false, home: homeUi() })).toBe(true);
+    expect(aimsCursor({ screen: 'game', paused: false, mapOpen: false, bench: false, backpackOpen: false, home: null })).toBe(true);
   });
 
   it('the cursor shows while the death summary is up', () => {
     const lost = { receipt: { outcome: 'died' }, lost: gear() } as unknown as HomeUi['death'];
     const dead = homeUi({ death: lost });
-    expect(aimsCursor({ screen: 'game', paused: false, mapOpen: false, bench: false, home: dead })).toBe(false);
+    expect(aimsCursor({ screen: 'game', paused: false, mapOpen: false, bench: false, backpackOpen: false, home: dead })).toBe(false);
   });
 });
 

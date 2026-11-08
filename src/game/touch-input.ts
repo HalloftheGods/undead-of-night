@@ -41,9 +41,21 @@ export function isTouchDevice(): boolean {
 /** Ordinary buttons laid over play (the room card): a touch there is a tap, never a stick or a shot. */
 export const TOUCH_UI_SELECTOR = '[data-touch-ui]';
 
+/**
+ * A catcher laid over the whole screen, which the backpack ring uses to take the tap that closes
+ * it (components/BackpackWheel.vue). It must never fire a shot, since the finger is aiming at
+ * nothing, but the left thumb has to keep walking under it: the ring does not hold the run.
+ */
+const WALK_SELECTOR = '[data-touch-walk]';
+
 function onUi(target: EventTarget | null): boolean {
   const element = target as Partial<Element> | null;
   return element?.closest?.(TOUCH_UI_SELECTOR) != null;
+}
+
+function onWalkThrough(target: EventTarget | null): boolean {
+  const element = target as Partial<Element> | null;
+  return element?.closest?.(WALK_SELECTOR) != null;
 }
 
 function onPad(target: EventTarget | null): boolean {
@@ -133,7 +145,8 @@ export class TouchInput {
     return ms - this.liftedAt < MARK_LINGER_MS ? this.lastAim : null;
   }
 
-  private place(touch: Touch): void {
+  /** `walkOnly` takes the stick and nothing else: the finger is on a catcher, not on the town. */
+  private place(touch: Touch, walkOnly = false): void {
     const { identifier: id, clientX: x, clientY: y } = touch;
     const { innerWidth: viewW, innerHeight: viewH } = window;
     const walking = this.stick === null && inStickZone(x, y, viewW, viewH);
@@ -141,6 +154,7 @@ export class TouchInput {
       this.stick = startStick(id, x, y);
       return;
     }
+    if (walkOnly) return;
     // Track for potential swipe if in the swipe zone and no other fingers are aiming
     const canSwipe = this.fingers.length === 0 && isSwipeZone(x, y, viewW, viewH);
     if (canSwipe) {
@@ -236,7 +250,7 @@ export class TouchInput {
     this.dropLost(event.touches);
     for (const touch of Array.from(event.changedTouches)) {
       const isOffPad = !onPad(touch.target);
-      if (isOffPad) this.place(touch);
+      if (isOffPad) this.place(touch, onWalkThrough(touch.target));
     }
   };
 

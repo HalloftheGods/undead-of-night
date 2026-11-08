@@ -6,7 +6,8 @@ import type { NavDirection, PadConnection } from './gamepad-input.ts';
 import type { SwipeDirection } from './swipe-gesture.ts';
 import { TouchInput } from './touch-input.ts';
 
-const WHEEL_COOLDOWN_MS = 110;
+/** One notch of the wheel per this long, so a trackpad's flurry of events is one step. */
+export const WHEEL_COOLDOWN_MS = 110;
 
 const UP = ['KeyW', 'ArrowUp'];
 const DOWN = ['KeyS', 'ArrowDown'];
@@ -32,6 +33,8 @@ const SPRINT_CODES = ['ShiftLeft', 'ShiftRight'];
 const MAP_CODES: ReadonlySet<string> = new Set(['Tab', 'KeyN']);
 const LOG_CODE = 'KeyL';
 const LEFT_BUTTON = 0;
+/** Nothing in play used the middle button, so it opens the backpack. */
+const MIDDLE_BUTTON = 1;
 const RIGHT_BUTTON = 2;
 const LEFT_BUTTON_BIT = 1;
 const RIGHT_BUTTON_BIT = 2;
@@ -74,6 +77,8 @@ export interface InputCallbacks {
   onConfirm(): void;
   /** Tab or N. True if the game took the key, so Tab does not also move focus. */
   onMap(): boolean;
+  /** A middle-click: the backpack ring. True if the game took it. */
+  onBackpack?(): boolean;
   /** The map is open or could open, so a Tab held down must stay away from the browser. */
   mapUsable(): boolean;
   /** The first touch of the page. */
@@ -220,6 +225,17 @@ export class InputManager {
     this.touch.letGo();
     this.clearLatches();
   };
+
+  /**
+   * Lets go of the mouse buttons and leaves the keys alone: the backpack ring can open over a
+   * held trigger, and the survivor must keep walking while it is up.
+   */
+  letGoButtons(): void {
+    this.firing = false;
+    this.shoving = false;
+    this.fireLatch = false;
+    this.shoveLatch = false;
+  }
 
   /** The keepsake card the player chose, sent with the next input. */
   pickKeepsake(id: KeepsakeId): void {
@@ -449,6 +465,13 @@ export class InputManager {
     const pressedRight = event.button === RIGHT_BUTTON;
     // A press on a menu belongs to the menu, which may never hand back its release.
     if (!this.enabled) return;
+    const pressedMiddle = event.button === MIDDLE_BUTTON;
+    if (pressedMiddle) {
+      // Whether the ring takes it or not: a middle press left alone scrolls the page.
+      event.preventDefault();
+      this.callbacks.onBackpack?.();
+      return;
+    }
     this.firing ||= pressedLeft;
     this.shoving ||= pressedRight;
     this.fireLatch ||= pressedLeft;

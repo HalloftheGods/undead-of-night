@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { InputManager } from '../src/game/input-manager.ts';
 import type { InputCallbacks } from '../src/game/input-manager.ts';
-import { touchItems } from '../src/game/touch-items.ts';
-import { BACKPACK, glyphPath, SEARCH, SHOVE, SPRINT, TOUCH_BUTTONS } from '../src/game/touch-pad.ts';
+import { wheelSlots } from '../src/game/backpack-wheel.ts';
+import { BACKPACK, glyphPath, SEARCH, SHOVE, SPRINT } from '../src/game/touch-pad.ts';
 import { weaponBar } from '../src/game/weapon-bar.ts';
+import { fullBackpack } from './backpack-fixture.ts';
 import { dragStick, inStickZone, startStick, stickAngle, stickDirection, STICK_TRAVEL } from '../src/game/touch-stick.ts';
 import { installFakeBrowser } from './client-fake-dom.ts';
 import type { FakeBrowser } from './client-fake-dom.ts';
@@ -64,7 +65,7 @@ describe('the floating stick', () => {
 
 describe('fingers on the game', () => {
   let browser: FakeBrowser;
-  let calls: { onGesture: number; onMap: number; onPause: number; onTouchSeen: number };
+  let calls: { onGesture: number; onMap: number; onPause: number; onTouchSeen: number; onBackpack: number };
   let input: InputManager;
 
   const start = (...touches: FakeTouch[]) => {
@@ -81,13 +82,14 @@ describe('fingers on the game', () => {
 
   beforeEach(() => {
     browser = installFakeBrowser();
-    calls = { onGesture: 0, onMap: 0, onPause: 0, onTouchSeen: 0 };
+    calls = { onGesture: 0, onMap: 0, onPause: 0, onTouchSeen: 0, onBackpack: 0 };
     const callbacks: InputCallbacks = {
       onGesture: () => { calls.onGesture += 1; },
       onPause: () => { calls.onPause += 1; },
       onMute() {},
       onConfirm() {},
       onMap: () => { calls.onMap += 1; return true; },
+      onBackpack: () => { calls.onBackpack += 1; return true; },
       mapUsable: () => true,
       onTouchSeen: () => { calls.onTouchSeen += 1; },
     };
@@ -249,48 +251,29 @@ describe('fingers on the game', () => {
   });
 
   describe('the buttons', () => {
-    const code = (label: string): string => TOUCH_BUTTONS.find((each) => each.label === label)!.code;
-
-    it('are the six the player needs and a way to pause', () => {
-      expect(TOUCH_BUTTONS.map((each) => each.label).sort()).toEqual(['Heal', 'Map', 'Next weapon', 'Pause', 'Reload', 'Search', 'Shove']);
-    });
-
     it('latch a press as its key does', () => {
-      input.padDown(code('Reload'));
-      input.padUp(code('Reload'));
-      input.padDown(code('Heal'));
-      input.padUp(code('Heal'));
+      input.padDown('KeyR');
+      input.padUp('KeyR');
+      input.padDown('KeyH');
+      input.padUp('KeyH');
       expect(input.sample(1, 0, null)).toMatchObject({ reload: true, heal: true });
       expect(input.sample(2, 0, null)).toMatchObject({ reload: false, heal: false });
     });
 
     it('hold Search for as long as the thumb stays', () => {
-      input.padDown(code('Search'));
+      input.padDown('KeyE');
       expect(input.sample(1, 0, null).search).toBe(true);
       expect(input.sample(2, 0, null).search).toBe(true);
-      input.padUp(code('Search'));
+      input.padUp('KeyE');
       expect(input.sample(3, 0, null).search).toBe(false);
     });
 
     it('shove on the press and through the hold', () => {
-      input.padDown(code('Shove'));
+      input.padDown('KeyF');
       expect(input.sample(1, 0, null).melee).toBe(true);
       expect(input.sample(2, 0, null).melee).toBe(true);
-      input.padUp(code('Shove'));
+      input.padUp('KeyF');
       expect(input.sample(3, 0, null).melee).toBe(false);
-    });
-
-    it('step to the next gun', () => {
-      input.padDown(code('Next weapon'));
-      input.padUp(code('Next weapon'));
-      expect(input.sample(1, 0, { owned: ['pistol', 'shotgun'], weapon: 'pistol' }).weapon).toBe('shotgun');
-    });
-
-    it('each wear a square picture with some ink in it', () => {
-      TOUCH_BUTTONS.forEach((each) => {
-        expect(each.glyph.every((row) => row.length === each.glyph.length)).toBe(true);
-        expect(glyphPath(each.glyph)).toMatch(/^M/);
-      });
     });
 
     it('sprint for as long as the thumb stays on it, as the Shift key does', () => {
@@ -302,33 +285,71 @@ describe('fingers on the game', () => {
     });
 
     it('pick a gun straight off the weapon bar', () => {
-      const bar = weaponBar({ weapon: 'pistol', owned: ['pistol', 'shotgun'], ammoBag: { pistol: 0, carbine: 0, shotgun: 0 }, mags: { pistol: 0, carbine: 0, shotgun: 0 } });
-      const shotgun = bar.find((slot) => slot.weapon === 'shotgun');
-      input.padDown(shotgun!.code);
-      input.padUp(shotgun!.code);
+      const dry = { pistol: 0, carbine: 0, shotgun: 0 } as const;
+      const bar = weaponBar({ weapon: 'pistol', owned: ['pistol', 'shotgun'], ammoBag: dry, mags: dry });
+      const shotgun = bar.find((slot) => slot.weapon === 'shotgun')!;
+      input.padDown(shotgun.code);
+      input.padUp(shotgun.code);
       expect(input.sample(1, 0, { owned: ['pistol', 'shotgun'], weapon: 'pistol' }).weapon).toBe('shotgun');
     });
 
-    it('wear a square picture on the action cluster too', () => {
+    /** Every slot of a full backpack reaches the sim through the key the ring sends. */
+    it('heal, switch gun, throw, light, flare and eat, every one off the backpack ring', () => {
+      const slots = wheelSlots(fullBackpack());
+      expect(slots.map((slot) => slot.code)).toEqual(['KeyH', 'KeyQ', 'KeyG', 'KeyT', 'KeyV', 'KeyX', 'KeyN']);
+      for (const slot of slots) {
+        input.padDown(slot.code);
+        input.padUp(slot.code);
+      }
+      expect(input.sample(1, 0, { owned: ['pistol', 'shotgun'], weapon: 'pistol' })).toMatchObject({
+        heal: true,
+        throw: true,
+        spinner: true,
+        flare: true,
+        eat: true,
+        weapon: 'shotgun',
+      });
+      // The map is not an input: it opens a screen, through the same callback Tab and N use.
+      expect(calls.onMap).toBe(1);
+    });
+
+    it('each wear a square picture with some ink in it', () => {
       [SEARCH, SHOVE, SPRINT, BACKPACK].forEach((glyph) => {
         expect(glyph.every((row) => row.length === glyph.length)).toBe(true);
         expect(glyphPath(glyph)).toMatch(/^M/);
       });
     });
 
-    it('throw a bottle, light a firework, throw a flare, and eat a candy, from the item buttons', () => {
-      const items = touchItems({ bottles: 1, fireworks: 1, flares: 1, candy: ['Ghost Gum'] });
-      items.forEach((each) => {
-        input.padDown(each.code);
-        input.padUp(each.code);
-      });
-      expect(input.sample(1, 0, null)).toMatchObject({ throw: true, spinner: true, flare: true, eat: true });
+    it('open the map and the pause menu', () => {
+      input.padDown('KeyN');
+      input.padDown('Escape');
+      expect(calls).toMatchObject({ onMap: 1, onPause: 1 });
+    });
+  });
+
+  describe('the backpack ring', () => {
+    it('opens on a middle-click, which nothing in play used', () => {
+      browser.dispatch('mousedown', { button: 1, clientX: 400, clientY: 300, preventDefault: vi.fn() });
+      expect(calls.onBackpack).toBe(1);
     });
 
-    it('open the map and the pause menu', () => {
-      input.padDown(code('Map'));
-      input.padDown(code('Pause'));
-      expect(calls).toMatchObject({ onMap: 1, onPause: 1 });
+    it('does not fire or shove on that middle-click', () => {
+      browser.dispatch('mousedown', { button: 1, clientX: 400, clientY: 300, preventDefault: vi.fn() });
+      expect(input.sample(1, 0, null)).toMatchObject({ shoot: false, melee: false });
+    });
+
+    it('is left alone behind a menu', () => {
+      input.setEnabled(false);
+      browser.dispatch('mousedown', { button: 1, clientX: 400, clientY: 300, preventDefault: vi.fn() });
+      expect(calls.onBackpack).toBe(0);
+    });
+
+    it('lets go of a held trigger when it opens, and leaves the keys walking', () => {
+      browser.dispatch('keydown', { code: 'KeyW', preventDefault: vi.fn() });
+      browser.dispatch('mousedown', { button: 0, clientX: 400, clientY: 300, preventDefault: vi.fn() });
+      expect(input.sample(1, 0, null)).toMatchObject({ shoot: true, up: true });
+      input.letGoButtons();
+      expect(input.sample(2, 0, null)).toMatchObject({ shoot: false, up: true });
     });
   });
 

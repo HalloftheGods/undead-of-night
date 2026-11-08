@@ -110,3 +110,17 @@ export function slotAngle(index: number, count: number): number {
   const step = 360 / Math.max(1, count);
   return index * step - 90;
 }
+
+/**
+ * Steps the highlight round the ring, wrapping both ways: the scroll wheel, which cycles guns in
+ * play, walks the open ring instead. `from` is the code lit now, or null for nothing lit, which
+ * steps onto the first slot going one way and the last going the other.
+ */
+export function stepSlot(slots: readonly WheelSlot[], from: string | null, step: number): string | null {
+  const nothingToStep = slots.length === 0 || step === 0;
+  if (nothingToStep) return from;
+  const at = slots.findIndex((slot) => slot.code === from);
+  const nothingLit = at < 0;
+  if (nothingLit) return (step < 0 ? slots[slots.length - 1] : slots[0]).code;
+  return slots[(at + step + slots.length * 8) % slots.length].code;
+}
