@@ -80,6 +80,7 @@ export function createSimState(options: SimulationOptions): SimState {
     zombies: [],
     bullets: [],
     pickups: [],
+    entered: new Set(),
     containers: [],
     events: [],
     gameOver: null,

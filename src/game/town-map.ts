@@ -3,9 +3,11 @@ import { isBunkerMap } from '../../shared/home-protocol.ts';
 import { isStorey } from '../../shared/storeys.ts';
 import { groundOf } from '../../shared/world-query.ts';
 import { BUILDING_DEFS, TILE_KINDS, TILE_SIZE } from '../../shared/protocol.ts';
+import type { LeftoverView } from '../../shared/leftovers.ts';
 import type { BuildingInstance, BuildingKind, DropView, EntityId, ExitEntity, PlayerEntity, TileKind, WorldMap } from '../../shared/protocol.ts';
 import { drawOutlinedText, FONT_HEIGHT, textWidth } from '../engine/bitmap-font.ts';
 import { drawCursor } from './map-cursor.ts';
+import { drawLeftovers, LEFTOVER_LEGEND } from './map-leftovers.ts';
 import type { CursorClock } from './map-cursor.ts';
 import { isLandmark } from './run-notices.ts';
 
@@ -85,6 +87,7 @@ export const TOWN_LEGEND: readonly (readonly [string, string])[] = [
   [HOMES, 'Homes'],
   [EXIT_COLOR, 'The van, once it comes'],
   [DROP_COLOR, 'A supply drop'],
+  ...LEFTOVER_LEGEND,
 ];
 
 const EDGE_COLOR = '#0b0c10';
@@ -354,6 +357,14 @@ export class TownMapView {
     ctx.fillRect(x - 1, y - 1, 3, 3);
   }
 
+  /** Marks every building the team left supplies in, whoever it was that walked out. */
+  private drawLeftovers(ctx: CanvasRenderingContext2D, leftovers: readonly LeftoverView[]): void {
+    for (const { building: id, supplies } of leftovers) {
+      const building = this.building(id);
+      if (building) drawLeftovers(ctx, footprint(building), supplies);
+    }
+  }
+
   /** A red box where the supply drop is coming down, or came down. */
   private drawDrop(ctx: CanvasRenderingContext2D, drop: DropView): void {
     const x = Math.round(drop.x / this.worldPerPx);
@@ -383,6 +394,7 @@ export class TownMapView {
     openedContainers: readonly number[] = [],
     drop: DropView | null = null,
     clock: CursorClock = STEADY_CLOCK,
+    leftovers: readonly LeftoverView[] = [],
   ): void {
     const hasOpenedContainers = openedContainers.length > 0;
     if (hasOpenedContainers) this.syncOpened(openedContainers);
@@ -393,6 +405,7 @@ export class TownMapView {
       if (this.isCleared(id)) this.drawCross(ctx, building);
       this.drawTick(ctx, building);
     }
+    this.drawLeftovers(ctx, leftovers);
     if (exit) this.drawExit(ctx, exit);
     if (drop) this.drawDrop(ctx, drop);
     const onMap = players.filter((player) => player.status !== 'dead');

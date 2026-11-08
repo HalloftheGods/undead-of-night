@@ -32,6 +32,18 @@ export const CHANGE_NOTES: readonly ChangeNote[] = [
     ],
   },
   {
+    id: 'left-behind-marks',
+    date: '2026-11-08',
+    kind: 'new',
+    title: 'Left behind',
+    deck: 'The map marks every building you walked out of with supplies still lying inside.',
+    points: [
+      'A small mark per kind sits at the building\'s foot: a red cross for medical, yellow rounds for ammo, a grey gun, a violet diamond for parts and finds.',
+      'Floors upstairs and in the cellar count toward their house. The mark goes once it is empty.',
+      'In co-op the whole team shares the marks, wherever each of you is.',
+    ],
+  },
+  {
     id: 'mode-order',
     date: '2026-11-08',
     kind: 'better',
