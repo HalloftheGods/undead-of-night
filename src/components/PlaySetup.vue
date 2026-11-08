@@ -28,22 +28,23 @@
         </div>
 
         <div class="setup-field" :class="{ 'is-hidden': !serverShown }" :aria-hidden="!serverShown || undefined">
-          <label class="px-label" :for="SERVER_FIELD_ID">{{ online ? 'Room code or server' : 'Server address' }}</label>
+          <label class="px-label" :for="SERVER_FIELD_ID">{{ online ? "Friend's room code" : 'Server address' }}</label>
           <div class="setup-server">
             <input
               :id="SERVER_FIELD_ID"
               class="px-input px-frame"
               :value="ui.serverAddress"
-              :placeholder="online ? 'BLANK HOSTS ONLINE' : defaultServer"
+              :placeholder="online ? 'LEAVE BLANK TO HOST' : defaultServer"
               autocomplete="off"
               spellcheck="false"
               @input="game.setServerAddress(textOf($event))"
               @keydown.enter.prevent="next"
             />
-            <PixelButton class="setup-invite" :disabled="!inviteLink" @press="copyInvite">
+            <PixelButton v-if="!online" class="setup-invite" :disabled="!inviteLink" @press="copyInvite">
               {{ INVITE_LABELS[copied] }}
             </PixelButton>
           </div>
+          <p v-if="online" class="setup-hint">To host, leave it blank: your room code and invite link show on screen once you are in town.</p>
         </div>
       </div>
     </template>
@@ -82,7 +83,7 @@ import { setupLevelLines } from '../game/home-screens.ts';
 import { SERVER_FIELD_ID } from '../game/hud-state.ts';
 import type { UiState } from '../game/hud-state.ts';
 import { buildInviteLink, buildRoomLink } from '../game/invite-link.ts';
-import { onlineRoomsLive } from '../network/play-api.ts';
+import { coopTarget, onlineRoomsLive } from '../network/play-api.ts';
 import { chosenStartLevel, continueLevel, isLevelUnlocked, loadLevelProgress } from '../game/level-progress.ts';
 import { advance, chooseMode, claimedStyle, playHeading, playStepper, retreat, returnTo, setupFailure, setupStyle, showsServer, showsStyleLabel, startFlow, startsRun, STYLE_LABELS } from '../game/play-flow.ts';
 import type { PlayMode, PlayStep } from '../game/play-flow.ts';
@@ -139,12 +140,13 @@ const thumbs = computed<Partial<Record<PlayStep, PixelSprite>>>(() => {
 const multi = computed(() => flow.value.mode === 'multi');
 const serverShown = computed(() => showsServer(flow.value));
 const ready = computed(() => ui.art !== null && !ui.connecting);
-const actionLabel = computed(() => setupActionLabel(multi.value, ui.art !== null, ui.connecting));
+/** A build with online rooms takes a room code in the same field, and a blank one hosts a new room. */
+const online = onlineRoomsLive();
+const hosts = computed(() => coopTarget(ui.serverAddress, online).kind === 'host');
+const actionLabel = computed(() => setupActionLabel(multi.value, ui.art !== null, ui.connecting, hosts.value));
 const failure = computed(() => setupFailure(flow.value.mode, runStyle.value, ui.error));
 const defaultServer = `${window.location.hostname}:${DEFAULT_SERVER_PORT}`;
 /** The address friends need: what is typed, or this host's default when the field is blank. */
-/** A build with online rooms takes a room code in the same field, and a blank one hosts a new room. */
-const online = onlineRoomsLive();
 const inviteLink = computed(() => {
   const typed = ui.serverAddress.trim();
   if (online) return typed ? (buildRoomLink(window.location.href, typed) ?? buildInviteLink(window.location.href, typed)) : null;
@@ -261,6 +263,13 @@ onMounted(() => {
 .setup-invite {
   flex: none;
   width: auto;
+}
+
+.setup-hint {
+  margin: var(--u) 0 0;
+  color: var(--bone-dim);
+  font-size: calc(var(--u) * 5);
+  line-height: 1.4;
 }
 
 .setup-start-at {

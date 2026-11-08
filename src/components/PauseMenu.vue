@@ -5,7 +5,7 @@
       <p v-if="mode === 'coop'" class="px-note">Co-op does not pause. The horde is still coming.</p>
       <template v-if="ui.onlineRoom">
         <p class="px-label">Room code {{ ui.onlineRoom }}</p>
-        <PixelButton @press="copyRoom">{{ ROOM_LABELS[copied] }}</PixelButton>
+        <PixelButton @press="copy">{{ COPY_LABELS[copied] }}</PixelButton>
         <p class="px-note">Leaving ends the game for everyone in it.</p>
       </template>
 
@@ -29,31 +29,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { buildRoomLink } from '../game/invite-link.ts';
+import { computed } from 'vue';
 import { leaveWarning } from '../game/home-screens.ts';
 import type { UiState } from '../game/hud-state.ts';
 import type { TransportKind } from '../network/transport.ts';
 import PixelButton from './PixelButton.vue';
+import { COPY_LABELS, useRoomLink } from './use-room-link.ts';
 import { useGame } from './use-game.ts';
 
 const { ui } = defineProps<{ ui: UiState; mode: TransportKind }>();
 const game = useGame();
 const warning = computed(() => leaveWarning(ui.home));
 
-const copied = ref<'idle' | 'done' | 'failed'>('idle');
-const ROOM_LABELS = { idle: 'Copy invite link', done: 'Link copied', failed: 'Copy failed' } as const;
-
-async function copyRoom(): Promise<void> {
-  const link = ui.onlineRoom ? buildRoomLink(window.location.href, ui.onlineRoom) : null;
-  if (!link) return;
-  try {
-    await navigator.clipboard.writeText(link);
-    copied.value = 'done';
-  } catch {
-    copied.value = 'failed';
-  }
-}
+const { copied, copy } = useRoomLink(() => ui.onlineRoom);
 
 function onVolume(event: Event): void {
   game.setVolume(Number((event.target as HTMLInputElement).value));

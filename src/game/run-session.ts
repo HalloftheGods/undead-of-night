@@ -10,8 +10,7 @@ import type { SnapshotPacket, WelcomePacket, WorldMap } from '../../shared/proto
 import type { AudioEngine } from '../audio/audio-engine.ts';
 import type { WorldRenderer } from '../engine/world-renderer.ts';
 import { LocalSession } from '../network/local-session.ts';
-import { normalizeRoomCode } from '../../shared/lobby/room-code.ts';
-import { onlineRoomsLive } from '../network/play-api.ts';
+import { coopTarget, onlineRoomsLive } from '../network/play-api.ts';
 import type { RoomSession } from '../network/remote-session.ts';
 import { resolveServerUrl, SocketSession } from '../network/socket-session.ts';
 import type { GameTransport } from '../network/transport.ts';
@@ -116,22 +115,24 @@ export class RunSession {
 
   /**
    * `style` is offered to an empty room. A room already playing keeps its own, and this run follows it.
-   * In a build with online rooms, a blank field hosts one from this tab and a room code joins one over WebRTC.
-   * Anything else, and every address in a build without them, is a LAN server.
+   * In a build with online rooms, a blank field hosts one from this tab and a room code joins one over WebRTC
+   * (`coopTarget` says how the field is read). Every address in a build without them is a LAN server.
    */
   startCoop(style: GameStyle): void {
     if (!this.canStart()) return;
     this.host.state.daily = null;
     this.host.state.ghost = null;
     this.host.audio.unlock();
-    const text = this.host.ui.value.serverAddress.trim();
-    const code = normalizeRoomCode(text);
-    const online = onlineRoomsLive() && (!text || code.ok);
-    if (online) {
-      void this.startOnline(style, code.ok ? code.code : null);
+    const target = coopTarget(this.host.ui.value.serverAddress, onlineRoomsLive());
+    if (target.kind === 'bad') {
+      this.host.publish({ error: target.reason });
       return;
     }
-    const url = resolveServerUrl(text, window.location);
+    if (target.kind !== 'lan') {
+      void this.startOnline(style, target.kind === 'join' ? target.code : null);
+      return;
+    }
+    const url = resolveServerUrl(target.address, window.location);
     const badAddress = url === null;
     if (badAddress) {
       this.host.publish({ error: 'That server address does not look right.' });
