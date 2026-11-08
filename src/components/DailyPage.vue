@@ -15,6 +15,8 @@
       </dl>
     </header>
 
+    <StreakKit :reward="reward" />
+
     <CharacterSelect ref="survivors" :art="ui.art" :bust-scale="2" />
 
     <template #actions>
@@ -29,10 +31,12 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue';
 import { countdownText, dailyShare, dayLabel, loadDailyLog, msUntilTomorrow, nightFacts, streakOf, todaysNight } from '../game/daily-night.ts';
 import type { UiState } from '../game/hud-state.ts';
+import { streakReward } from '../game/streak-reward.ts';
 import CharacterSelect from './CharacterSelect.vue';
 import PixelButton from './PixelButton.vue';
 import ShareButton from './ShareButton.vue';
 import SpriteImg from './SpriteImg.vue';
+import StreakKit from './StreakKit.vue';
 import TitlePage from './TitlePage.vue';
 import { useGame } from './use-game.ts';
 
@@ -48,6 +52,7 @@ const today = log[night.key] ?? null;
 const played = today !== null;
 const share = dailyShare(night.key);
 const streak = streakOf(log, night.key);
+const reward = streakReward(log, night.key);
 const todayLine = today ? `${today.score} points, level ${today.level}${today.attempts > 1 ? `, ${today.attempts - 1} practice` : ''}` : 'Not played yet';
 const scene = computed(() => ui.art?.ui.levelScenes[night.level - 1] ?? null);
 const ready = computed(() => ui.art !== null && !ui.connecting);

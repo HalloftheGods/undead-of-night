@@ -22,6 +22,18 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'streak-kit',
+    date: '2026-11-08',
+    kind: 'new',
+    title: 'Streak kit',
+    deck: 'Come back night after night and your runs start better armed.',
+    points: [
+      'Play the Daily Night on days in a row: night 2 starts you with a medkit and spare rounds, then a knife, a shotgun, a Jawbreaker and, by night 7, a carbine.',
+      'The Daily Night page shows tonight\'s kit and what tomorrow adds. Each run says its kit on the first title card.',
+      'Solo Arcade runs get the kit too. Campaign and co-op start as before. Miss a day and the streak starts again.',
+    ],
+  },
+  {
     id: 'setup-portraits',
     date: '2026-11-08',
     kind: 'better',

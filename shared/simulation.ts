@@ -34,6 +34,7 @@ import { benchCommand, updateBench } from './workbench.ts';
 import type { BenchAction } from './workbench.ts';
 import { ageFootprints } from './snow-tracks.ts';
 import { noteEntered } from './leftovers.ts';
+import { giveStreakKit } from './streak-kit.ts';
 import { rebuildZombieGrid, removeDeadZombies, updateZombies } from './zombies.ts';
 
 export type { SimulationOptions } from './sim-factory.ts';
@@ -178,6 +179,12 @@ export class GameSimulation {
   }
 
   /** An icon from a player, passed on to every client as an event. Over the pace, or not an emote, it is dropped. */
+  /** Solo only: the streak kit for this night of the player's Daily Night streak, on top of what the run gave. */
+  giveStreakKit(id: string, night: number): void {
+    const player = this.sim.players.find((p) => p.id === id);
+    if (player) giveStreakKit(player, night);
+  }
+
   emote(id: string, emote: unknown): void {
     const player = this.sim.players.find((p) => p.id === id);
     const allowed = player !== undefined && isEmoteId(emote) && takeEmote(player, this.sim.tick * TICK_DT);

@@ -58,7 +58,7 @@ export function calloutLine(words: CalloutWords): LogLine {
 /** The title card's news, a line each: the town, then its weather, night event and boss. */
 export function levelLines(card: Omit<LevelCard, 'key'>): readonly LogLine[] {
   const town: LogLine = { text: card.title.toUpperCase(), detail: `${card.heading.toUpperCase()}. ${card.goal.toUpperCase()}`, tone: 'quiet', kind: 'night' };
-  const extras = [card.rule, card.event, card.boss].filter((said): said is string => Boolean(said));
+  const extras = [card.rule, card.event, card.boss, card.streak].filter((said): said is string => Boolean(said));
   return [town, ...extras.map((said): LogLine => ({ text: said.toUpperCase(), tone: card.boss === said ? 'danger' : 'plain', kind: 'night' }))];
 }
 
