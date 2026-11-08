@@ -25,6 +25,7 @@ import { bodyHeight, clipFrame, drawSilhouette, drawSprite, drawSpriteScaled, sp
 import { beginStatusFrame, paintBurn, paintEffectTrail, paintTint } from './status-fx.ts';
 import { SurvivorFrames } from './survivor-frames.ts';
 import { trackWalking } from './visuals.ts';
+import { blinking, eyeGlow, eyePhase, eyesOf, paintEyes } from './zombie-eyes.ts';
 import type { EntityVisual, VisualStore } from './visuals.ts';
 
 const CULL_MARGIN = 40;
@@ -73,6 +74,12 @@ interface Corpse {
   readonly x: number;
   readonly y: number;
   readonly bornAt: number;
+}
+
+/** Anyone with a place on the ground, for asking whether a building stands in front of them. */
+interface Standing {
+  readonly x: number;
+  readonly y: number;
 }
 
 type DrawItem =
@@ -310,7 +317,7 @@ export class EntityRenderer {
     ctx.globalAlpha = 1;
   }
 
-  private covers(art: Pick<PlacedProp, 'x0' | 'y0' | 'x1' | 'y1'>, depthY: number, player: PlayerEntity): boolean {
+  private covers(art: Pick<PlacedProp, 'x0' | 'y0' | 'x1' | 'y1'>, depthY: number, player: Standing): boolean {
     const chestY = player.y - CHEST_HEIGHT;
     return player.y < depthY
       && player.x > art.x0 && player.x < art.x1
@@ -431,6 +438,30 @@ export class EntityRenderer {
     }
   }
 
+  /**
+   * Zombie eyes, after the lightmap: full in the dark, down to a glint where the light already
+   * shows the face. None for a zombie under a closed roof or behind a building, nor mid hit flash.
+   */
+  drawEyes(ctx: CanvasRenderingContext2D, scene: SceneView, left: number, top: number, viewW: number, viewH: number, time: number, lightAt: (x: number, y: number) => number): void {
+    for (const zombie of scene.zombies) {
+      const onScreen = zombie.x > left - CULL_MARGIN && zombie.x < left + viewW + CULL_MARGIN
+        && zombie.y > top - CULL_MARGIN && zombie.y < top + viewH + CULL_MARGIN;
+      if (!onScreen || this.killed.has(zombie.id)) continue;
+      const visual = this.visuals.get(zombie.id);
+      const sprite = visual.sprite;
+      const shut = sprite === null || time < visual.flashUntil || (!this.reducedMotion && blinking(time, eyePhase(zombie.id)));
+      if (shut) continue;
+      const eyes = eyesOf(sprite, zombie.type);
+      if (eyes.length === 0) continue;
+      const hidden = this.buildings.isHidden(zombie.x, zombie.y) || this.hiddenByShell(zombie, left, top, viewW, viewH);
+      if (hidden) continue;
+      const x = Math.round(zombie.x) - left;
+      const y = Math.round(zombie.y) - top;
+      const scale = zombie.boss ? BOSSES[zombie.boss].scale : 1;
+      paintEyes(ctx, eyes, sprite, x, y, scale, eyeGlow(lightAt(x, y - CHEST_HEIGHT * scale)));
+    }
+  }
+
   /** A small star where the light lands on loot: enough to catch the eye, no pool to give the room away. */
   drawGlints(ctx: CanvasRenderingContext2D, scene: SceneView, left: number, top: number, viewW: number, viewH: number, time: number, lightAt: (x: number, y: number) => number): void {
     for (const pickup of scene.pickups) {
@@ -449,7 +480,7 @@ export class EntityRenderer {
     }
   }
 
-  private hiddenByShell(player: PlayerEntity, left: number, top: number, viewW: number, viewH: number): boolean {
+  private hiddenByShell(player: Standing, left: number, top: number, viewW: number, viewH: number): boolean {
     return this.buildings.placed.some((placed) => {
       const onScreen = placed.x1 > left && placed.x0 < left + viewW && placed.y1 > top && placed.y0 < top + viewH;
       return onScreen && placed.reveal < 0.5 && this.covers(placed, placed.depthY, player);
