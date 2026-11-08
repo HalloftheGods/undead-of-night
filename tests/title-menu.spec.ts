@@ -29,7 +29,7 @@ describe('title scale', () => {
 
 describe('title menu', () => {
   it('runs in the agreed order: How to Play on top, then Daily Night, Arcade and Campaign', () => {
-    expect(TITLE_MENU.map((item) => item.label)).toEqual(['How to Play', 'Daily Night', 'Arcade', 'Campaign', 'Levels', 'Records', 'Sound Test', 'Options']);
+    expect(TITLE_MENU.map((item) => item.label)).toEqual(['How to Play', 'Daily Night', 'Arcade', 'Campaign', 'Levels', 'Town Guide', 'Records', 'Sound Test', 'Options']);
   });
 
   it('opens pointed at Daily Night, the one primary item, even though How to Play is on top', () => {
@@ -40,7 +40,7 @@ describe('title menu', () => {
 
   it('names the Sound Test from the start, with or without a Radio found', () => {
     const labels = (radio: boolean) => TITLE_MENU.map((item) => menuLabel(item, { radio, tracks: [] }));
-    expect(labels(false)).toEqual(['How to Play', 'Daily Night', 'Arcade', 'Campaign', 'Levels', 'Records', 'Sound Test', 'Options']);
+    expect(labels(false)).toEqual(['How to Play', 'Daily Night', 'Arcade', 'Campaign', 'Levels', 'Town Guide', 'Records', 'Sound Test', 'Options']);
     expect(labels(true)).toEqual(TITLE_MENU.map((item) => item.label));
   });
 
