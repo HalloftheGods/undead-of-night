@@ -3,6 +3,7 @@ import { BUILDING_DEFS, TILE_SIZE } from '../../shared/protocol.ts';
 import type { TileKind, WorldMap } from '../../shared/protocol.ts';
 import type { ArtBook, PixelSprite } from '../art/types.ts';
 import { tileVariant } from '../engine/tile-layer.ts';
+import { propSprite } from '../engine/car-looks.ts';
 
 /** The magazine's snapshots: the game's own tiles and sprites, posed on a patch of ground and baked to one sprite. */
 export type PhotoName =
@@ -90,7 +91,7 @@ export function townClip(art: ArtBook, map: WorldMap, centerX: number, centerY: 
     const { w, h } = BUILDING_DEFS[building.kind];
     return { sprite: facades[building.variant % facades.length], x: building.x + w / 2, y: building.y + h };
   });
-  const props = map.props.map((prop) => ({ sprite: art.environment.props[prop.kind], x: prop.x, y: prop.y }));
+  const props = map.props.map((prop) => ({ sprite: propSprite(art, prop), x: prop.x, y: prop.y }));
   const near = [...buildings, ...props].filter((item) => reach(item.x, item.y));
   const clamp = (value: number, most: number) => Math.max(0, Math.min(most - 1, value));
   const ground: GroundPick = (col, row) => tileKindAt(map, clamp(col, map.cols), clamp(row, map.rows));

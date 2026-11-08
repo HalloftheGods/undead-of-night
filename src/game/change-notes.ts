@@ -22,6 +22,18 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'more-cars',
+    date: '2026-11-08',
+    kind: 'new',
+    title: 'Police cars, ambulances and more',
+    deck: 'The streets fill up with hatchbacks and pickups in a dozen colours.',
+    points: [
+      'Police cars and ambulances sit with their lights still flashing red and blue.',
+      'A cruiser waits outside the police station, an ambulance outside the clinic.',
+      'Search a police car for ammo, an ambulance for medkits.',
+    ],
+  },
+  {
     id: 'halloween-night',
     date: '2026-11-08',
     kind: 'new',

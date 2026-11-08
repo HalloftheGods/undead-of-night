@@ -48,6 +48,14 @@ export const PROP_DEFS = {
   car_sedan_v: { w: 20, h: 40 },
   car_wreck_h: { w: 44, h: 18 },
   van_h: { w: 52, h: 22 },
+  car_hatch_h: { w: 36, h: 18 },
+  car_hatch_v: { w: 20, h: 36 },
+  pickup_h: { w: 46, h: 18 },
+  /** A cruiser with its light bar going. */
+  police_h: { w: 44, h: 18 },
+  police_v: { w: 20, h: 40 },
+  /** An ambulance with its lights going, a van in a different coat. */
+  ambulance_h: { w: 52, h: 22 },
   dumpster: { w: 30, h: 14 },
   crate_stack: { w: 20, h: 14 },
   barrier: { w: 32, h: 8 },

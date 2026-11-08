@@ -45,7 +45,7 @@ const BUILD: Record<LandmarkId, (b: MapBuilder, at: Spot) => void> = {
   scrapheap(b, at) {
     b.place('car_wreck_h', at.x - 30, at.y - 8, TIGHT);
     b.place('van_h', at.x + 12, at.y - 16, TIGHT);
-    b.place('car_sedan_h', at.x - 8, at.y + 14, TIGHT);
+    b.place('pickup_h', at.x - 8, at.y + 14, TIGHT);
     b.place('car_wreck_h', at.x + 38, at.y + 10, TIGHT);
     ring(b, 'barrier', at, 74, 7, 10);
     litter(b, 'crate_stack', at, 56, 3);
@@ -56,7 +56,7 @@ const BUILD: Record<LandmarkId, (b: MapBuilder, at: Spot) => void> = {
   drowned_convoy(b, at) {
     b.blob(at.x, at.y, 74, 'water', ['grass', 'dirt']);
     b.blob(at.x + 36, at.y + 10, 56, 'water', ['grass', 'dirt']);
-    convoy(b, at, ['car_sedan_h', 'van_h', 'car_wreck_h', 'car_sedan_h']);
+    convoy(b, at, ['car_sedan_h', 'van_h', 'car_wreck_h', 'car_hatch_h']);
     ring(b, 'reeds', at, 86, 12, TIGHT);
     litter(b, 'rubble', at, 50, 3);
   },
@@ -89,14 +89,14 @@ const BUILD: Record<LandmarkId, (b: MapBuilder, at: Spot) => void> = {
       for (const sy of [-1, 1]) b.place('sandbags', at.x + sx * 100, at.y + sy * 34, TIGHT);
     }
     b.place('van_h', at.x - 40, at.y, 8);
-    b.place('van_h', at.x + 40, at.y + 6, 8);
+    b.place('police_h', at.x + 40, at.y + 6, 8);
     litter(b, 'crate_stack', at, 50, 3);
     litter(b, 'fire_barrel', at, 44, 2);
   },
   // A convoy buried in a drift.
   frozen_convoy(b, at) {
     b.blob(at.x, at.y, 82, 'snow', ['grass', 'dirt']);
-    convoy(b, at, ['van_h', 'car_wreck_h', 'car_sedan_h', 'van_h']);
+    convoy(b, at, ['van_h', 'car_wreck_h', 'pickup_h', 'van_h']);
     litter(b, 'dead_tree', at, 70, 3);
     litter(b, 'rubble', at, 50, 3);
   },
@@ -112,6 +112,7 @@ const BUILD: Record<LandmarkId, (b: MapBuilder, at: Spot) => void> = {
     b.blob(at.x, at.y, 72, 'ash', ['grass', 'dirt']);
     b.place('van_h', at.x, at.y, TIGHT);
     b.place('car_wreck_h', at.x + 50, at.y + 20, TIGHT);
+    b.place('ambulance_h', at.x - 56, at.y + 30, TIGHT);
     ring(b, 'fire_barrel', at, 46, 4, 6);
     litter(b, 'dead_tree', at, 80, 3);
     litter(b, 'rubble', at, 60, 7);

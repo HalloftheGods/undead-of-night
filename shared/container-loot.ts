@@ -61,7 +61,7 @@ export function stockContainers(sim: SimState, upOrDown: Rng = sim.rng): void {
     // A candy bowl holds its candy and nothing else, so it takes no roll.
     const isBowl = container.kind === 'bowl';
     if (isBowl) return { opened: false, loot: null };
-    return fill(sim, container.buildingKind, container.upOrDown ? upOrDown : sim.rng);
+    return fill(sim, container.stock, container.upOrDown ? upOrDown : sim.rng);
   });
 }
 
@@ -85,9 +85,9 @@ export function settleContainerAmmo(sim: SimState, budget: number, worth: (loot:
       state.loot = null;
     }
   }
-  for (const { id, buildingKind } of spaces) {
+  for (const { id, stock } of spaces) {
     const state = sim.containers[id];
-    const find = rollFind(sim, buildingKind);
+    const find = rollFind(sim, stock);
     const fits = state.loot === null && isAmmo(find) && total + worth(find) <= budget;
     if (fits) {
       state.loot = find;

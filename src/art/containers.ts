@@ -9,11 +9,12 @@ import { buildFridgeArt, buildLockerArt, buildShelfArt } from './containers/shel
 import type { ContainerArt } from './containers/stage.ts';
 import { buildCarArt } from './containers/vehicles.ts';
 import { buildCandyBowlArt } from './environment/halloween.ts';
+import type { CarLook } from './containers/vehicles.ts';
 import type { PixelSprite } from './types.ts';
 
 export type { ContainerArt } from './containers/stage.ts';
 
-export type ContainerLook = ContainerKind | 'bench' | 'car_v' | 'wreck' | 'van';
+export type ContainerLook = ContainerKind | 'bench' | Exclude<CarLook, 'car'>;
 
 /** The props that look different from the rest of their kind. */
 const PROP_LOOKS: Partial<Record<PropKind, ContainerLook>> = {
@@ -21,6 +22,12 @@ const PROP_LOOKS: Partial<Record<PropKind, ContainerLook>> = {
   car_sedan_v: 'car_v',
   car_wreck_h: 'wreck',
   van_h: 'van',
+  car_hatch_h: 'hatch',
+  car_hatch_v: 'hatch_v',
+  pickup_h: 'pickup',
+  police_h: 'police',
+  police_v: 'police_v',
+  ambulance_h: 'ambulance',
 };
 
 export const containerLook = ({ kind, prop }: Pick<Container, 'kind' | 'prop'>): ContainerLook => PROP_LOOKS[prop] ?? kind;
