@@ -61,19 +61,21 @@ export function pressPrompt(touch: boolean): string {
 }
 
 /**
- * Pad buttons that went down since the last read. A button already down the first time a pad is seen is held,
- * not pressed, so a press that skipped the splash cannot also answer the title.
+ * Pad buttons that went down since the last read. Browsers only show a pad once one of its buttons is pressed, so a
+ * pad first seen with a button down counts as a press, unless it was first seen behind the splash: that button is
+ * held, and cannot also answer the title.
  */
 export class PadPressWatch {
   private readonly lastDown = new Map<number, readonly boolean[]>();
 
-  /** True when any button on any pad went down since the last call. */
-  pressed(pads: readonly { readonly index: number; readonly buttons: readonly { readonly pressed: boolean }[] }[]): boolean {
+  /** True when any button on any pad went down since the last call. `newPadsPress` is false while the splash is up. */
+  pressed(pads: readonly { readonly index: number; readonly buttons: readonly { readonly pressed: boolean }[] }[], newPadsPress: boolean): boolean {
     let anyNew = false;
     for (const pad of pads) {
       const down = pad.buttons.map((button) => button.pressed);
-      const before = this.lastDown.get(pad.index);
-      const wentDown = before !== undefined && down.some((isDown, button) => isDown && !before[button]);
+      // A pad never seen before reads as all up, or all held behind the splash.
+      const before = this.lastDown.get(pad.index) ?? down.map(() => !newPadsPress);
+      const wentDown = down.some((isDown, button) => isDown && !before[button]);
       if (wentDown) anyNew = true;
       this.lastDown.set(pad.index, down);
     }

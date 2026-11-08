@@ -45,14 +45,21 @@ function swallowNextClick(): void {
   };
   window.addEventListener('click', swallow, { capture: true, once: true });
   // A drag or a long press never clicks: the next press lets its own click through.
-  const release = (): void => window.removeEventListener('click', swallow, { capture: true });
-  window.addEventListener('pointerdown', release, { capture: true, once: true });
+  const release = (): void => {
+    window.removeEventListener('click', swallow, { capture: true });
+    window.removeEventListener('pointerdown', release, { capture: true });
+    window.removeEventListener('pointercancel', release, { capture: true });
+  };
+  window.addEventListener('pointerdown', release, { capture: true });
+  window.addEventListener('pointercancel', release, { capture: true });
 }
 
 /** Privacy and the version number still work: a press on them opens them as usual. */
 function onPointer(event: PointerEvent): void {
   const pressedLink = onControl(event.target);
-  if (pressedLink) return;
+  const isPrimary = event.button === 0;
+  const answers = isPrimary && !pressedLink;
+  if (!answers) return;
   swallowNextClick();
   wake();
 }
@@ -68,7 +75,7 @@ function readPads(): Gamepad[] {
 
 /** Pads are read every frame, splash or not, so a button held through the splash stays spent. */
 function pollPads(): void {
-  const padPressed = pads.pressed(readPads());
+  const padPressed = pads.pressed(readPads(), !splashing);
   const answers = padPressed && !splashing;
   if (answers) wake();
   frame = requestAnimationFrame(pollPads);

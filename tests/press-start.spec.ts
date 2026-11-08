@@ -45,12 +45,18 @@ describe('press any key', () => {
     expect(pressPrompt(true)).toBe('Tap to start');
   });
 
-  it('counts a pad button going down, not one already held', () => {
+  it('counts a pad button going down, not one held through the splash', () => {
     const watch = new PadPressWatch();
-    expect(watch.pressed([pad(0, [true, false])])).toBe(false);
-    expect(watch.pressed([pad(0, [true, false])])).toBe(false);
-    expect(watch.pressed([pad(0, [false, false])])).toBe(false);
-    expect(watch.pressed([pad(0, [false, true])])).toBe(true);
-    expect(watch.pressed([pad(0, [false, true])])).toBe(false);
+    expect(watch.pressed([pad(0, [true, false])], false)).toBe(false);
+    expect(watch.pressed([pad(0, [true, false])], true)).toBe(false);
+    expect(watch.pressed([pad(0, [false, false])], true)).toBe(false);
+    expect(watch.pressed([pad(0, [false, true])], true)).toBe(true);
+    expect(watch.pressed([pad(0, [false, true])], true)).toBe(false);
+  });
+
+  it('counts the press that first shows a pad after the splash', () => {
+    const watch = new PadPressWatch();
+    expect(watch.pressed([], true)).toBe(false);
+    expect(watch.pressed([pad(0, [true, false])], true)).toBe(true);
   });
 });
