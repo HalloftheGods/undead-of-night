@@ -3,7 +3,8 @@
     <SpriteImg v-if="ui.art" class="title-logo" :sprite="ui.art.ui.logo" />
     <h1 v-else class="px-heading">UNDEAD OF NIGHT: LAST ROUND</h1>
 
-    <div class="title-columns">
+    <PressAnyKey v-if="asking" :touch="ui.touch" :splashing @wake="answer" />
+    <div v-else class="title-columns" :class="{ 'title-arrive': arrived }">
       <TitleMenu v-model="selected" :entries="TITLE_MENU" @open="openItem" />
       <InstallCartridge />
     </div>
@@ -34,6 +35,7 @@ import { openPrivacy, privacyOpen } from '../game/analytics/index.ts';
 import type { UiState } from '../game/hud-state.ts';
 import { parseInvite, withoutJoinParam } from '../game/invite-link.ts';
 import { setPendingRoomCode } from '../game/pending-room.ts';
+import { markPressAnswered, shouldAskForPress } from '../game/press-start.ts';
 import { onlineRoomsLive } from '../network/play-api.ts';
 import { BRAND_MARK, STUDIO_LINE } from '../game/studio-splash.ts';
 import { TITLE_MENU } from '../game/title-menu.ts';
@@ -44,6 +46,7 @@ import { ChangelogPage, DailyPage, HowToPlay, LevelsPage, RecordsPage, SoundTest
 import MenuLink from './MenuLink.vue';
 import OptionsPage from './OptionsPage.vue';
 import PlaySetup from './PlaySetup.vue';
+import PressAnyKey from './PressAnyKey.vue';
 import SpriteImg from './SpriteImg.vue';
 import TitleMenu from './TitleMenu.vue';
 import { useGame } from './use-game.ts';
@@ -51,10 +54,14 @@ import { useGame } from './use-game.ts';
 declare const __APP_VERSION__: string;
 const APP_VERSION = __APP_VERSION__;
 
-const { ui } = defineProps<{ ui: UiState }>();
+const { ui, splashing = false } = defineProps<{ ui: UiState; splashing?: boolean }>();
 
 const game = useGame();
 const nav = ref(TITLE_HOME);
+/** Read before the invite below rewrites the address, so an invite link never waits for a key. */
+const asking = ref(shouldAskForPress(window.location.search));
+/** The menu fades in after a press, not when coming back to the title. */
+const arrived = ref(false);
 
 /**
  * An invite link opens co-op setup. ?join=host:port fills in the server address; ?room=CODE holds
@@ -74,6 +81,12 @@ if (invite) {
 }
 /** Lives here, so Back returns to the item the player left from. */
 const selected = ref(0);
+
+function answer(): void {
+  markPressAnswered();
+  asking.value = false;
+  arrived.value = true;
+}
 
 function close(): void {
   nav.value = closePage(nav.value);
@@ -105,6 +118,14 @@ function openItem(item: TitleMenuItem): void {
   align-items: center;
   justify-content: center;
   gap: calc(var(--u) * 8);
+}
+
+.title-arrive {
+  animation: px-fade-in 0.35s ease-out;
+}
+
+:root[data-motion='reduced'] .title-arrive {
+  animation: none;
 }
 
 .title-foot {

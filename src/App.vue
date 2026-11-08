@@ -2,7 +2,7 @@
   <main class="game-root" :class="{ 'is-aiming': aiming, 'is-touch': ui.touch, 'has-touch-items': touchItemsShown }">
     <canvas ref="canvasRef" class="game-canvas" />
 
-    <TitleScreen v-if="ui.screen === 'title'" :ui />
+    <TitleScreen v-if="ui.screen === 'title'" :ui :splashing />
 
     <template v-else-if="ui.screen === 'game'">
       <template v-if="ui.hud && ui.art">
