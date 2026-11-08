@@ -144,9 +144,9 @@ describe('progress', () => {
 
   it('counts a fast trip only at or under the limit', () => {
     const save = idle('medic', 'run_for_it');
-    const queen = { survivor: 'satori' };
-    expect(applyTripToQuests(save.quests, bring({ level: 3, seconds: 481 }), tallied({}, queen))).toBe(save.quests);
-    expect(applyTripToQuests(save.quests, bring({ level: 3, seconds: 480 }), tallied({}, queen)).active.medic?.progress).toBe(1);
+    const kat = { survivor: 'satori' };
+    expect(applyTripToQuests(save.quests, bring({ level: 3, seconds: 481 }), tallied({}, kat))).toBe(save.quests);
+    expect(applyTripToQuests(save.quests, bring({ level: 3, seconds: 480 }), tallied({}, kat)).active.medic?.progress).toBe(1);
   });
 
   it('counts hordes across banked trips', () => {

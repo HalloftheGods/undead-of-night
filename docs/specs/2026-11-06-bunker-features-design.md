@@ -74,7 +74,7 @@ The tally can undercount in co-op if a snapshot is dropped, and is lost on a mid
   - `tally` of a counter, scoped to one trip or the total, with an optional `atMost` second counter that fails the trip, not the quest;
   - `smelt` N jewels.
 
-  Every kind takes an optional filter: `minLevel`, `survivor` (a character id from `shared/characters.ts`, such as `'satori'` for Queen, never an index), `zombie`, `minParty`.
+  Every kind takes an optional filter: `minLevel`, `survivor` (a character id from `shared/characters.ts`, such as `'satori'` for Kat, never an index), `zombie`, `minParty`.
 - **Reward kinds**: `silver`, or `item` naming an existing merchant `ItemDef`, so the icon, facts and price come for free. Costume unlocks are added as a third kind by #7173 once it lands.
 
 **Save** (`HomeSave.quests`, #7228):
@@ -179,7 +179,7 @@ All rows are content to tune in the soak, not settled data.
 | `fast_hands` | Sarge | as Bandus, 50 kills in a trip at level 4+ | gate 4, owns carbine | 150 silver |
 | `patch_up` | Doc | use 2 medkits in total | after `pharmacy_run` | 1 medkit + 40 silver |
 | `steady_hands` | Doc | 3 banked trips in a row at level 2+ | gate 2 | 2 medkits |
-| `run_for_it` | Doc | as Queen, bank a level 3+ trip in 480 s or less | gate 3 | 1 medkit + 100 silver |
+| `run_for_it` | Doc | as Kat, bank a level 3+ trip in 480 s or less | gate 3 | 1 medkit + 100 silver |
 | `firestarter` | Cinder | 10 burning kills in total | after `first_smelt` | 1 flame kit + 60 silver |
 | `big_game` | Cinder | 1 brute kill in a trip | gate 5 | 1 acid kit + 100 silver |
 | `magpie` | Cinder | as Sol, 20 finds in one banked trip at level 3+ | gate 3 | 1 piercing kit |
@@ -270,7 +270,7 @@ The sources mirror `KIT_SOURCES`. Fuel and batteries come mostly from cars, whic
 The recommendation is **not to build perks now** (open question 11).
 
 1. **Damage perks do nothing on a finished gun.** `GUN_POWER_CAP = 1.5` (`shared/gun-upgrade-data.ts:47`) is enforced inside `gunStats()` on burst damage per second. A finished gun already sits at the cap, so a damage or fire-rate perk inside `gunStats` is clamped to nothing. One applied outside it breaks the cap.
-2. **The free axes belong to the survivors.** `shared/characters.ts` gives each survivor one: sight and noise (Night), reload (Bandus 0.75), speed (Queen 1.12), shove (Rex 1.5) and loot (Sol). A perk on any of them blunts the pick. Reload is worst because the cap ignores it. Bandus 0.75 × three reload ranks (0.55) × Slick latch (0.8) is already about 0.33 of stock reload time.
+2. **The free axes belong to the survivors.** `shared/characters.ts` gives each survivor one: sight and noise (Night), reload (Bandus 0.75), speed (Kat 1.12), shove (Rex 1.5) and loot (Sol). A perk on any of them blunts the pick. Reload is worst because the cap ignores it. Bandus 0.75 × three reload ranks (0.55) × Slick latch (0.8) is already about 0.33 of stock reload time.
 3. **What is left is small or tuned for balance.** Medkit heal and bleed-out are scaled per difficulty. The carry caps are the only guard on ammo across trips.
 4. **There are already five build layers**: trait, upgrades, quirks, round effect and difficulty.
 

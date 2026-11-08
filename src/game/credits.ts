@@ -6,7 +6,7 @@ export interface CreditLine {
   readonly text: string;
 }
 
-export const CAST: readonly string[] = ['Night', 'Bandus', 'Queen', 'Rex', 'Sol'];
+export const CAST: readonly string[] = ['Night', 'Bandus', 'Kat', 'Rex', 'Sol'];
 
 export const CREDITS: readonly CreditLine[] = [
   { kind: 'title', text: 'Undead of Night: Last Round' },

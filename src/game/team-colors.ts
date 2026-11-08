@@ -10,7 +10,7 @@ import { CHARACTERS } from '../../shared/characters.ts';
 export const TEAM_COLORS: readonly string[] = [
   '#b493ff', // Night: violet
   '#ff8a3d', // Bandus: orange
-  '#ff6fc8', // Queen: pink
+  '#ff6fc8', // Kat: pink
   '#4fe08a', // Rex: dino green
   '#4fe6e0', // Sol: teal
 ];

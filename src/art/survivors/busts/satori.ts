@@ -1,4 +1,4 @@
-// Queen's select screen bust (the satori slot): the homemade tabby cat hood with its pink-lined
+// Kat's select screen bust (the satori slot): the homemade tabby cat hood with its pink-lined
 // ears and the M on the brow, and inside it her own face. Wavy brown hair parted in the middle
 // spills out from under the hood past the jaw, freckles across the nose and cheeks, big wide-set
 // blue-grey eyes under thick dark brows, and a closed-mouth smirk with one fang showing. Bell on

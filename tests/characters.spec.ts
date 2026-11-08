@@ -10,7 +10,7 @@ const skinOf = (id: string): number => CHARACTERS.findIndex((character) => chara
 
 describe('the character table', () => {
   it('gives everyone a name, a trait and one thing they do better', () => {
-    expect(CHARACTERS.map((character) => character.name)).toEqual(['Night', 'Bandus', 'Queen', 'Rex', 'Sol']);
+    expect(CHARACTERS.map((character) => character.name)).toEqual(['Night', 'Bandus', 'Kat', 'Rex', 'Sol']);
     for (const { sightRange, reloadTime, moveSpeed, shoveForce, dropOdds, trait } of CHARACTERS) {
       expect(trait).not.toBe('');
       const edges = [sightRange < 1, reloadTime < 1, moveSpeed > 1, shoveForce > 1, dropOdds > 1];
@@ -89,7 +89,7 @@ describe('traits in play', () => {
     expect(reloadTicks(skinOf('bandus'))).toBeLessThan(normal * 0.8);
   });
 
-  it('runs faster as Queen, in the sim and in the speed the client predicts with', () => {
+  it('runs faster as Kat, in the sim and in the speed the client predicts with', () => {
     expect(playerSpeed(skinOf('satori'))).toBeGreaterThan(PLAYER_SPEED);
     expect(playerSpeed(skinOf('sol'))).toBe(PLAYER_SPEED);
 

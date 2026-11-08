@@ -22,6 +22,17 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'queen-is-kat',
+    date: '2026-11-08',
+    kind: 'better',
+    title: 'Queen is now Kat',
+    deck: 'The survivor in the tabby cat hood has a new name.',
+    points: [
+      'Same quick feet: Kat still runs 12% faster.',
+      'Costumes, quests and records carry over as they were.',
+    ],
+  },
+  {
     id: 'backpack-desktop',
     date: '2026-11-08',
     kind: 'new',
