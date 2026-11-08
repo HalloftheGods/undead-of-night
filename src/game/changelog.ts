@@ -32,6 +32,17 @@ export const CHANGE_NOTES: readonly ChangeNote[] = [
     ],
   },
   {
+    id: 'one-screen-setup',
+    date: '2026-11-08',
+    kind: 'better',
+    title: 'Setup on one screen',
+    deck: 'Mode, difficulty and survivor now sit side by side, each showing its picture.',
+    points: [
+      'Tap a picture to open its list, then tap what you want. No more Next, Next, Next.',
+      'Callsign and the co-op fields are on the same screen, with Start at the bottom.',
+    ],
+  },
+  {
     id: 'option-switches',
     date: '2026-11-08',
     kind: 'better',
