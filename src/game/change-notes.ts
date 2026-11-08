@@ -34,6 +34,17 @@ export const CHANGE_NOTES: readonly ChangeNote[] = [
     ],
   },
   {
+    id: 'menu-details-switch',
+    date: '2026-11-08',
+    kind: 'better',
+    title: 'A cleaner main menu',
+    deck: 'The main menu shows just the names now. The line under each one is a switch in Options.',
+    points: [
+      'Turn on Menu details under Options to bring back a line saying what each item opens.',
+      'On a short screen, like a phone on its side, the lines stay hidden either way so the menu fits.',
+    ],
+  },
+  {
     id: 'menu-sections',
     date: '2026-11-08',
     kind: 'better',

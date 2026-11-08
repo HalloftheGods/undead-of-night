@@ -15,7 +15,7 @@
         @click="open(index)"
       >
         <span class="px-menu-label">{{ menuLabel(entries[index], unlock) }}</span>
-        <span class="px-menu-line">{{ menuLine(entries[index], unlock) }}</span>
+        <span v-if="showInfo" class="px-menu-line">{{ menuLine(entries[index], unlock) }}</span>
       </button>
     </section>
   </nav>
@@ -23,6 +23,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, useTemplateRef } from 'vue';
+import { loadMenuInfo } from '../game/menu-info-pref.ts';
 import { loadSoundUnlock } from '../game/sound-unlock.ts';
 import { isConfirmKey, menuLabel, menuLine, menuColumns, menuMove, menuOwnsKey, movedIndex, primaryIndex, TITLE_MENU } from '../game/title-menu.ts';
 import type { KeyFocus, TitleMenuItem } from '../game/title-menu.ts';
@@ -33,6 +34,8 @@ const selected = defineModel<number>({ required: true });
 const emit = defineEmits<{ open: [item: TitleMenuItem] }>();
 const game = useGame();
 const unlock = loadSoundUnlock();
+/** The lines under the items, switched on in Options. Read on mount, so coming back from Options shows the change. */
+const showInfo = loadMenuInfo();
 const columns = computed(() => menuColumns(entries));
 const primary = computed(() => primaryIndex(entries));
 /** The buttons by their place in the whole list, which the columns break up on screen. */
