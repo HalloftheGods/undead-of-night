@@ -3,8 +3,10 @@
     <SpriteImg v-if="ui.art" class="title-logo" :sprite="ui.art.ui.logo" />
     <h1 v-else class="px-heading">UNDEAD OF NIGHT: LAST ROUND</h1>
 
-    <TitleMenu v-model="selected" :entries="TITLE_MENU" @open="nav = openPage(nav, $event)" />
-    <InstallCartridge />
+    <div class="title-columns">
+      <TitleMenu v-model="selected" :entries="TITLE_MENU" @open="nav = openPage(nav, $event)" />
+      <InstallCartridge />
+    </div>
 
     <footer class="title-foot">
       <p class="title-credit">
@@ -89,6 +91,13 @@ function close(): void {
   flex: none;
   max-width: 100%;
   object-fit: contain;
+}
+
+.title-columns {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--u) * 8);
 }
 
 .title-foot {

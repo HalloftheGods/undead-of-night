@@ -2,6 +2,11 @@
 
 All notable changes to the Undead of Night: Last Round game are documented in this file.
 
+## [2026-11-07] - Title screen layout
+
+### Changed
+- The Install Game cartridge moves from the far right screen margin into a second column beside the main menu under the title logo (`src/components/TitleScreen.vue`, `src/components/InstallCartridge.vue`).
+
 ## [2026-11-07] - What's New book
 
 ### Added

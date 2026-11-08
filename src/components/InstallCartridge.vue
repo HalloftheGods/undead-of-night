@@ -23,21 +23,19 @@ onBeforeUnmount(() => setTitleShowing(false));
 /* --pixel is one pixel of the 48 by 56 cartridge picture, label included (src/art/cartridge-art.ts). */
 .cartridge {
   --pixel: calc(var(--u) * 1.25);
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  right: max(calc(var(--u) * 12), env(safe-area-inset-right));
+  position: relative;
   width: calc(var(--pixel) * 48);
   height: calc(var(--pixel) * 56);
   min-width: 44px;
   min-height: 44px;
-  margin: auto 0;
+  margin: 0;
   padding: 0;
   border: 0;
   background: none;
   cursor: pointer;
   filter: drop-shadow(0 calc(var(--u) * 2) 0 rgba(0, 0, 0, 0.5));
   transition: transform 120ms steps(3);
+  flex: none;
 }
 
 .cartridge:hover,
@@ -64,6 +62,7 @@ onBeforeUnmount(() => setTitleShowing(false));
 @media (orientation: portrait) {
   .cartridge {
     --pixel: var(--u);
+    position: absolute;
     top: auto;
     bottom: calc(var(--u) * 26);
     left: 0;
