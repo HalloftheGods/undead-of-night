@@ -21,6 +21,7 @@ function lazy(loader: Loader): Component {
 }
 
 export const HowToPlay = lazy(() => import('./HowToPlay.vue'));
+export const TownGuidePage = lazy(() => import('./TownGuidePage.vue'));
 export const RecordsPage = lazy(() => import('./RecordsPage.vue'));
 export const ChangelogPage = lazy(() => import('./ChangelogPage.vue'));
 export const DailyPage = lazy(() => import('./DailyPage.vue'));

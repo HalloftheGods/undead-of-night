@@ -1,0 +1,216 @@
+/* The Town Guide: How to Play's paper, a facade at the head of each page and its finds stamped Always, Often, Sometimes or Rare. */
+
+.tg-leaf p,
+.tg-leaf h3,
+.tg-leaf ol,
+.tg-leaf ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tg-leaf .mag-flow {
+  gap: calc(var(--k) * 12);
+}
+
+/* The contents: a place, its two likeliest finds, its page. */
+.tg-contents {
+  display: flex;
+  flex-direction: column;
+}
+
+.tg-contents-line {
+  display: grid;
+  grid-template-columns: calc(var(--k) * 190) 1fr auto;
+  align-items: baseline;
+  gap: calc(var(--k) * 10);
+  width: 100%;
+  padding: calc(var(--k) * 3) 0;
+  border: 0;
+  border-bottom: calc(var(--k) * 1) dotted var(--print-soft);
+  background: none;
+  color: var(--print);
+  font: inherit;
+  font-size: calc(var(--k) * 15);
+  text-align: left;
+  cursor: pointer;
+}
+
+.tg-contents-line:hover,
+.tg-contents-line:focus-visible,
+.tg-place-link:hover,
+.tg-place-link:focus-visible {
+  background: color-mix(in srgb, var(--band) 18%, transparent);
+  outline: none;
+}
+
+.tg-contents-title {
+  font-family: var(--chunky);
+  font-size: calc(var(--k) * 14);
+}
+
+.tg-contents-best {
+  font-family: var(--book);
+  font-style: italic;
+  color: var(--print-soft);
+}
+
+.tg-contents-page {
+  font-family: var(--chunky);
+  color: var(--band-deep);
+}
+
+/* Where to look: a find, then the places best for it, each a link to its page. */
+.tg-lookup {
+  display: flex;
+  flex-direction: column;
+}
+
+.tg-lookup-line {
+  display: grid;
+  grid-template-columns: calc(var(--k) * 34) calc(var(--k) * 150) 1fr;
+  align-items: center;
+  gap: calc(var(--k) * 8);
+  padding: calc(var(--k) * 2) 0;
+  border-bottom: calc(var(--k) * 1) dotted var(--print-soft);
+}
+
+.tg-lookup-name {
+  font-family: var(--chunky);
+  font-size: calc(var(--k) * 13);
+}
+
+.tg-lookup-places {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--k) * 4) calc(var(--k) * 10);
+}
+
+.tg-place-link {
+  padding: 0 calc(var(--k) * 2);
+  border: 0;
+  background: none;
+  color: var(--band-deep);
+  font-family: var(--book);
+  font-size: calc(var(--k) * 15);
+  text-decoration: underline dotted;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+}
+
+.tg-tips {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--k) * 4);
+  padding: calc(var(--k) * 8) calc(var(--k) * 12) !important;
+  border-left: calc(var(--k) * 4) solid var(--band);
+  background: color-mix(in srgb, var(--band) 10%, transparent);
+  font-size: calc(var(--k) * 14);
+}
+
+/* A place: its name and blurb beside its facade, then its finds by tier. */
+.tg-place-head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: calc(var(--k) * 16);
+}
+
+.tg-facade {
+  width: auto;
+  max-width: calc(var(--k) * 300);
+  height: calc(var(--k) * 150);
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.tg-tier {
+  display: grid;
+  grid-template-columns: calc(var(--k) * 130) 1fr;
+  align-items: start;
+  gap: calc(var(--k) * 12);
+  padding-top: calc(var(--k) * 12);
+  border-top: calc(var(--k) * 3) solid var(--band);
+}
+
+.tg-leaf .tg-stamp {
+  position: static;
+  justify-self: start;
+  margin-top: calc(var(--k) * 4);
+  font-size: calc(var(--k) * 14);
+  transform: rotate(-5deg);
+}
+
+.tg-stamp.is-always {
+  color: #a8301a;
+}
+
+.tg-stamp.is-often {
+  color: #0a6a64;
+}
+
+.tg-stamp.is-sometimes {
+  color: #442a80;
+}
+
+.tg-stamp.is-rare {
+  color: var(--print-soft);
+}
+
+.tg-finds {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: calc(var(--k) * 10) calc(var(--k) * 14);
+}
+
+.tg-find {
+  display: grid;
+  grid-template-columns: calc(var(--k) * 44) 1fr;
+  align-items: center;
+  column-gap: calc(var(--k) * 10);
+}
+
+.tg-find-name {
+  font-family: var(--chunky);
+  font-size: calc(var(--k) * 16);
+  line-height: 1.1;
+}
+
+.tg-find-note {
+  grid-column: 2;
+  font-size: calc(var(--k) * 14);
+  font-style: italic;
+  line-height: 1.15;
+  color: var(--print-soft);
+}
+
+.tg-find .tg-icon-cell {
+  grid-row: span 2;
+  width: calc(var(--k) * 44);
+  height: calc(var(--k) * 44);
+}
+
+.tg-icon-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--k) * 34);
+  height: calc(var(--k) * 34);
+}
+
+.tg-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+/* The HUD's wrapped candy, drawn at the page's scale. */
+.tg-candy {
+  width: calc(var(--k) * 30);
+  height: calc(var(--k) * 15);
+  background:
+    linear-gradient(#e8742a, #e8742a) center / calc(var(--k) * 15) 100% no-repeat,
+    linear-gradient(#f4d36b, #f4d36b) left center / calc(var(--k) * 8) calc(var(--k) * 8) no-repeat,
+    linear-gradient(#f4d36b, #f4d36b) right center / calc(var(--k) * 8) calc(var(--k) * 8) no-repeat;
+}

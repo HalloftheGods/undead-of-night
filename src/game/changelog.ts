@@ -20,6 +20,18 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'town-guide',
+    date: '2026-11-08',
+    kind: 'new',
+    title: 'Town Guide',
+    deck: 'A new book on the main menu: what every kind of building holds, and where to look for it.',
+    points: [
+      'A page per place, from the Pharmacy to Cars & Streets, with what turns up there stamped Always, Often, Sometimes or Rare.',
+      'Where to Look lists the best places for medkits, each kind of ammo, flares, fuel, candy, gun parts and more.',
+      'It reads off the same loot tables the town is stocked from, so it stays true as they change.',
+    ],
+  },
+  {
     id: 'left-behind-marks',
     date: '2026-11-08',
     kind: 'new',

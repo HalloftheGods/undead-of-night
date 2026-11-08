@@ -23,6 +23,7 @@
   <DailyPage v-else-if="nav.page === 'daily'" :ui @close="close" />
   <LevelsPage v-else-if="nav.page === 'levels'" :art="ui.art" @start="nav = pickLevel(nav, $event)" @close="close" />
   <HowToPlay v-else-if="nav.page === 'howto'" @close="close" />
+  <TownGuidePage v-else-if="nav.page === 'guide'" @close="close" />
   <RecordsPage v-else-if="nav.page === 'records'" :ui @close="close" />
   <ChangelogPage v-else-if="nav.page === 'changelog'" :version="APP_VERSION" @close="close" />
   <SoundTestPage v-else-if="nav.page === 'sound'" @close="close" />
@@ -42,7 +43,7 @@ import { primaryIndex, TITLE_MENU } from '../game/title-menu.ts';
 import type { TitleMenuItem } from '../game/title-menu.ts';
 import { closePage, closePlay, INVITE_LANDING, openPage, pickLevel, TITLE_HOME } from '../game/title-nav.ts';
 import InstallCartridge from './InstallCartridge.vue';
-import { ChangelogPage, DailyPage, HowToPlay, LevelsPage, RecordsPage, SoundTestPage } from './lazy-pages.ts';
+import { ChangelogPage, DailyPage, HowToPlay, LevelsPage, RecordsPage, SoundTestPage, TownGuidePage } from './lazy-pages.ts';
 import MenuLink from './MenuLink.vue';
 import OptionsPage from './OptionsPage.vue';
 import PlaySetup from './PlaySetup.vue';

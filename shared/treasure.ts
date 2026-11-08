@@ -70,7 +70,7 @@ export const townWorth = (level: number, replay: boolean): number => jewelWorth(
 
 /** Jewels live in people's homes, and most of all in the bedroom furniture. */
 const BEDROOM_FURNITURE: ReadonlySet<Container['kind']> = new Set(['drawer', 'cabinet']);
-const HOME_BUILDINGS: ReadonlySet<Container['buildingKind']> = new Set(['house', 'apartment']);
+export const HOME_BUILDINGS: ReadonlySet<Container['buildingKind']> = new Set(['house', 'apartment']);
 
 function jewelRank(container: Container): number {
   const inAHome = HOME_BUILDINGS.has(container.buildingKind);
