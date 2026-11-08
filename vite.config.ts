@@ -11,7 +11,8 @@ const { version } = JSON.parse(readFileSync(path.resolve(__dirname, 'package.jso
 
 export default defineConfig({
   base: './',
-  define: { __APP_VERSION__: JSON.stringify(version) },
+  // __BUILD_YEAR__ is stamped at build time, so the studio line shows the build year, not the visitor's clock.
+  define: { __APP_VERSION__: JSON.stringify(version), __BUILD_YEAR__: new Date().getFullYear() },
   plugins: [
     vue(),
   ],

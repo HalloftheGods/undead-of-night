@@ -20,6 +20,8 @@ export default defineConfig({
   base: './',
   define: {
     __APP_VERSION__: JSON.stringify(version),
+    // Stamped at build time, so the studio line shows the build year, not the visitor's clock.
+    __BUILD_YEAR__: new Date().getFullYear(),
     __ZOMBIE_SERVER_PORT__: JSON.stringify(serverPort),
     __ZOMBIE_PLAY_API__: JSON.stringify(playApi),
   },
