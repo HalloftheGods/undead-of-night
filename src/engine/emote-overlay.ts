@@ -52,7 +52,8 @@ export class EmoteOverlay {
     return sprite ? bodyHeight(sprite) : DEFAULT_BODY_HEIGHT;
   }
 
-  draw(ctx: CanvasRenderingContext2D, scene: SceneView, left: number, top: number, viewW: number, viewH: number, time: number): void {
+  /** headroomOf: how much higher than usual a survivor's head tags reach this frame (a candy timer), so the icon sits over them. */
+  draw(ctx: CanvasRenderingContext2D, scene: SceneView, left: number, top: number, viewW: number, viewH: number, time: number, headroomOf: (id: EntityId) => number = () => 0): void {
     for (const [id, { emote, until }] of this.shown) {
       const player = scene.players.find((each) => each.id === id);
       const gone = time >= until || player === undefined;
@@ -65,7 +66,7 @@ export class EmoteOverlay {
       const y = Math.round(player.y) - top;
       const pinned = edgePointer(x, y, viewW, viewH, ICON_INSET);
       if (!pinned) {
-        drawSprite(ctx, sprite, x, y - this.heightOf(id) - ABOVE_HEAD);
+        drawSprite(ctx, sprite, x, y - this.heightOf(id) - ABOVE_HEAD - headroomOf(id));
         continue;
       }
       drawSprite(ctx, sprite, pinned.x, pinned.y);

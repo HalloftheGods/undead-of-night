@@ -16,6 +16,8 @@ export type { CandyId } from './protocol.ts';
 export interface CandyDef {
   readonly id: CandyId;
   readonly name: string;
+  /** The stat it boosts, in a word, for the timer over the eater's head. */
+  readonly stat: string;
   /** What it does, as the banner and the how-to-play say it. */
   readonly blurb: string;
   /** How often it turns up against the rest. */
@@ -23,18 +25,18 @@ export interface CandyDef {
 }
 
 export const CANDIES: Readonly<Record<CandyId, CandyDef>> = {
-  sour_skulls: { id: 'sour_skulls', name: 'Sour Skulls', blurb: 'Reload twice as fast.', weight: 10 },
-  fang_taffy: { id: 'fang_taffy', name: 'Fang Taffy', blurb: 'Your shove and knife hit twice as hard.', weight: 10 },
-  ghost_gum: { id: 'ghost_gum', name: 'Ghost Gum', blurb: 'Sprint without a sound.', weight: 10 },
-  pumpkin_fizz: { id: 'pumpkin_fizz', name: 'Pumpkin Fizz', blurb: 'Run a quarter faster.', weight: 10 },
-  witchs_brittle: { id: 'witchs_brittle', name: "Witch's Brittle", blurb: 'Every kill heals 2 health.', weight: 10 },
-  bat_bites: { id: 'bat_bites', name: 'Bat Bites', blurb: 'Bullets go through one zombie into the next.', weight: 10 },
-  corn_rush: { id: 'corn_rush', name: 'Candy Corn Rush', blurb: 'Kill chains hold five times as long.', weight: 10 },
-  jawbreaker: { id: 'jawbreaker', name: 'Jawbreaker', blurb: 'Take half damage.', weight: 10 },
-  licorice_lash: { id: 'licorice_lash', name: 'Black Licorice Lash', blurb: 'Heads are easier to hit.', weight: 10 },
-  caramel_apple: { id: 'caramel_apple', name: 'Caramel Apple', blurb: 'Go down while it lasts and you get straight back up.', weight: 6 },
-  popping_eyeballs: { id: 'popping_eyeballs', name: 'Popping Eyeballs', blurb: 'Molotovs need no fuel.', weight: 8 },
-  full_size_bar: { id: 'full_size_bar', name: 'Full-Size Bar', blurb: 'A little of everything, but not for long.', weight: 2 },
+  sour_skulls: { id: 'sour_skulls', name: 'Sour Skulls', stat: 'RELOAD', blurb: 'Reload twice as fast.', weight: 10 },
+  fang_taffy: { id: 'fang_taffy', name: 'Fang Taffy', stat: 'MELEE', blurb: 'Your shove and knife hit twice as hard.', weight: 10 },
+  ghost_gum: { id: 'ghost_gum', name: 'Ghost Gum', stat: 'QUIET', blurb: 'Sprint without a sound.', weight: 10 },
+  pumpkin_fizz: { id: 'pumpkin_fizz', name: 'Pumpkin Fizz', stat: 'SPEED', blurb: 'Run a quarter faster.', weight: 10 },
+  witchs_brittle: { id: 'witchs_brittle', name: "Witch's Brittle", stat: 'HEAL', blurb: 'Every kill heals 2 health.', weight: 10 },
+  bat_bites: { id: 'bat_bites', name: 'Bat Bites', stat: 'PIERCE', blurb: 'Bullets go through one zombie into the next.', weight: 10 },
+  corn_rush: { id: 'corn_rush', name: 'Candy Corn Rush', stat: 'CHAIN', blurb: 'Kill chains hold five times as long.', weight: 10 },
+  jawbreaker: { id: 'jawbreaker', name: 'Jawbreaker', stat: 'ARMOR', blurb: 'Take half damage.', weight: 10 },
+  licorice_lash: { id: 'licorice_lash', name: 'Black Licorice Lash', stat: 'AIM', blurb: 'Heads are easier to hit.', weight: 10 },
+  caramel_apple: { id: 'caramel_apple', name: 'Caramel Apple', stat: 'REVIVE', blurb: 'Go down while it lasts and you get straight back up.', weight: 6 },
+  popping_eyeballs: { id: 'popping_eyeballs', name: 'Popping Eyeballs', stat: 'FIRE', blurb: 'Molotovs need no fuel.', weight: 8 },
+  full_size_bar: { id: 'full_size_bar', name: 'Full-Size Bar', stat: 'ALL', blurb: 'A little of everything, but not for long.', weight: 2 },
 };
 
 export const CANDY_ORDER = Object.keys(CANDIES) as CandyId[];
@@ -133,6 +135,11 @@ function nextToEat(p: PlayerState): number {
   return p.candy.findIndex((id) => !p.sugar.some((sugar) => sugar.id === id));
 }
 
+/** How long a candy works once eaten. */
+export function candySeconds(id: CandyId): number {
+  return id === 'full_size_bar' ? FULL_SIZE_SEC : CANDY_SEC;
+}
+
 /** Once a tick: eats a candy if asked, and wears the rest down. */
 export function updateCandy(sim: SimState, p: PlayerState): void {
   const wantsToEat = p.eatQueued;
@@ -143,7 +150,7 @@ export function updateCandy(sim: SimState, p: PlayerState): void {
   const hasNothingToEat = index < 0;
   if (hasNothingToEat) return;
   const [id] = p.candy.splice(index, 1);
-  p.sugar.push({ id, left: id === 'full_size_bar' ? FULL_SIZE_SEC : CANDY_SEC });
+  p.sugar.push({ id, left: candySeconds(id) });
   emit(sim, { type: 'candy_eaten', playerId: p.id, candy: id, x: p.x, y: p.y });
 }
 

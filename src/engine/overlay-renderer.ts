@@ -8,6 +8,8 @@ import type { ArtBook } from '../art/types.ts';
 import { drawOutlinedText, FONT_HEIGHT } from './bitmap-font.ts';
 import type { SceneView } from './scene.ts';
 import { stationPrompt } from './station-labels.ts';
+import { SUGAR_BAR_WIDTH, SUGAR_LINE_GAP, SUGAR_ROW_HEIGHT, sugarTags, sugarTagsWidth } from './sugar-tags.ts';
+import type { KeepOut } from './sugar-tags.ts';
 import { bodyHeight, drawSprite } from './sprite-cache.ts';
 import { drawFingertipBox, drawStick } from './touch-overlay.ts';
 import type { VisualStore } from './visuals.ts';
@@ -22,6 +24,8 @@ const BAR_MIN_LIGHT = 60;
 const INK = '#0b0c10';
 const BONE = '#e4dcc3';
 const AMBER = '#e8a33d';
+/** Candy's own colour, clear of health, harm, stamina and every prompt. */
+const SUGAR = '#b98cf0';
 const DEFAULT_BODY_HEIGHT = 18;
 /** Words and the wait bar sit this far over the van's ground line. */
 const VAN_TAG_HEIGHT = 46;
@@ -151,10 +155,24 @@ const EXIT_RING: readonly Pixel[] = Array.from({ length: EXIT_RING_DOTS }, (_, d
 export class OverlayRenderer {
   private readonly art: ArtBook;
   private readonly visuals: VisualStore;
+  /** This frame's candy timers: where pickup notes must not go, how much higher each stack reaches, and its top on screen. */
+  private readonly keepOuts: KeepOut[] = [];
+  private readonly headroom = new Map<EntityId, number>();
+  private readonly sugarTops = new Map<EntityId, number>();
 
   constructor(art: ArtBook, visuals: VisualStore) {
     this.art = art;
     this.visuals = visuals;
+  }
+
+  /** The candy timers drawn this frame, in world pixels, for pickup notes to keep clear of. */
+  sugarKeepOuts(): readonly KeepOut[] {
+    return this.keepOuts;
+  }
+
+  /** How many pixels higher a survivor's candy timer reaches this frame, so an emote can sit over it. */
+  headroomOf(id: EntityId): number {
+    return this.headroom.get(id) ?? 0;
   }
 
   private heightOf(id: string): number {
@@ -169,7 +187,8 @@ export class OverlayRenderer {
     drawBar(ctx, x, y, width, zombie.health / zombie.maxHealth, hitPalette().danger);
   }
 
-  private drawPlayerTag(ctx: CanvasRenderingContext2D, player: PlayerEntity, isLocal: boolean, left: number, top: number, time: number): void {
+  /** Health and name over a teammate, or a downed survivor's revive bar or HELP. Returns the y the next line up goes at. */
+  private drawPlayerTag(ctx: CanvasRenderingContext2D, player: PlayerEntity, isLocal: boolean, left: number, top: number, time: number): number {
     const x = Math.round(player.x) - left;
     let y = Math.round(player.y) - top - this.heightOf(player.id) - 4;
 
@@ -185,13 +204,36 @@ export class OverlayRenderer {
       y -= FONT_HEIGHT + 3;
     }
     const hasNoTag = isLocal || player.status === 'dead';
-    if (hasNoTag) return;
+    if (hasNoTag) return y;
     const isAlive = player.status === 'alive';
     if (isAlive) {
       drawBar(ctx, x - 8, y, 16, player.health / player.maxHealth, hitPalette().safe);
       y -= FONT_HEIGHT + 3;
     }
     drawOutlinedText(ctx, tagLabel(player.name, player.skin), x, y, BONE);
+    return y - FONT_HEIGHT - 3;
+  }
+
+  /** The candy timer: a line per candy working, its stat and seconds over a draining bar, stacked up from y. */
+  private drawSugar(ctx: CanvasRenderingContext2D, player: PlayerEntity, left: number, top: number, from: number, time: number): void {
+    const tags = sugarTags(player, time);
+    const hasNoSugar = tags.length === 0;
+    if (hasNoSugar) return;
+    const x = Math.round(player.x) - left;
+    let y = from;
+    for (const tag of tags) {
+      drawBar(ctx, x - SUGAR_BAR_WIDTH / 2, y, SUGAR_BAR_WIDTH, tag.fraction, tag.lit ? SUGAR : INK);
+      if (tag.lit) drawOutlinedText(ctx, tag.label, x, y - SUGAR_LINE_GAP, SUGAR);
+      y -= SUGAR_ROW_HEIGHT;
+    }
+    this.headroom.set(player.id, tags.length * SUGAR_ROW_HEIGHT);
+    this.sugarTops.set(player.id, y + SUGAR_ROW_HEIGHT - SUGAR_LINE_GAP - 1);
+    this.keepOuts.push({
+      x: Math.round(player.x),
+      top: y + SUGAR_ROW_HEIGHT - SUGAR_LINE_GAP - 1 + top,
+      bottom: from + 3 + top,
+      width: sugarTagsWidth(tags),
+    });
   }
 
   /** The local survivor's sprint bar, under their feet. */
@@ -216,7 +258,9 @@ export class OverlayRenderer {
   private drawSearch(ctx: CanvasRenderingContext2D, scene: SceneView, left: number, top: number): void {
     for (const player of scene.players) {
       const x = Math.round(player.x) - left;
-      const y = Math.round(player.y) - top - this.heightOf(player.id) - SEARCH_TAG_HEIGHT;
+      const under = Math.round(player.y) - top - this.heightOf(player.id) - SEARCH_TAG_HEIGHT;
+      const sugarTop = this.sugarTops.get(player.id);
+      const y = sugarTop === undefined ? under : Math.min(under, sugarTop - FONT_HEIGHT - 3);
       const isLocal = player.id === scene.localId;
       const prompted = isLocal && scene.searchable !== null;
       const atStation = isLocal && scene.station !== undefined;
@@ -300,8 +344,12 @@ export class OverlayRenderer {
       const showBar = onScreen && hurt && lightAt(zombie.x - left, zombie.y - top) >= BAR_MIN_LIGHT;
       if (showBar) this.drawZombieBar(ctx, zombie, left, top);
     }
+    this.keepOuts.length = 0;
+    this.headroom.clear();
+    this.sugarTops.clear();
     for (const player of scene.players) {
-      this.drawPlayerTag(ctx, player, player.id === scene.localId, left, top, time);
+      const above = this.drawPlayerTag(ctx, player, player.id === scene.localId, left, top, time);
+      this.drawSugar(ctx, player, left, top, above, time);
       this.drawStamina(ctx, player, player.id === scene.localId, left, top, time);
     }
     this.drawQuestMarks(ctx, scene, left, top);
