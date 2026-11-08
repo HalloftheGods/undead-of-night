@@ -27,7 +27,7 @@
         <OverrunChest v-else-if="ui.home.chest" :chest="ui.home.chest" />
         <OverrunClock :overrun="ui.home.overrun" />
       </template>
-      <TownMap v-if="ui.mapOpen" :mode="ui.mode" :in-bunker="ui.home?.inBunker === true" />
+      <TownMap v-if="ui.mapOpen" :mode="ui.mode" :in-bunker="ui.home?.inBunker === true" :teammates="ui.hud?.teammates ?? []" />
       <PauseMenu v-if="ui.paused" :ui :mode="ui.mode" />
       <VanTransition :in-bunker="ui.home?.inBunker ?? null" :art="ui.art" />
     </template>

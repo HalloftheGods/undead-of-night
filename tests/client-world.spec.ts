@@ -195,7 +195,7 @@ describe('buildHud', () => {
     const hud = buildHud(snapshot(1, [me, player('mate', { health: 10 })]), me, null);
     expect(hud.ammo).toBe(3);
     expect(hud.score).toBe(40);
-    expect(hud.teammates).toEqual([{ id: 'mate', name: 'MATE', character: 'Night', health: 10, maxHealth: 100, status: 'alive' }]);
+    expect(hud.teammates).toEqual([{ id: 'mate', name: 'MATE', character: 'Night', color: '#b493ff', health: 10, maxHealth: 100, status: 'alive' }]);
   });
 
   it('carries what is loaded in each gun', () => {
