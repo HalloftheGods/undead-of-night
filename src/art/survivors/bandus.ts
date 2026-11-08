@@ -1,4 +1,4 @@
-// Skin 1, Bandus: an older teen, the tallest of the cast, in a brown grizzly bear suit. The
+// Skin 1, Bear: an older teen, the tallest of the cast, in a brown grizzly bear suit. The
 // hood has round ears with tan insides, felt eyes and a tan snout over the forehead, with his
 // own face in the opening. Pale tips on the hood crown and the shoulder hump read as a
 // grizzly's silvertip coat. A tan belly, tan mitten paws on thick arms, paw feet with pale

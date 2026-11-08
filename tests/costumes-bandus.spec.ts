@@ -1,4 +1,4 @@
-// Bandus's costume list (#7169): the grizzly first, then the polar bear, the honey bear and
+// Bear's costume list (#7169): the grizzly first, then the polar bear, the honey bear and
 // his recruit look from before the bear suit. Each must stay in the palette and the portrait
 // frame like the default, keep outline ink off its fills, and look different from the grizzly.
 // How each one reads on the road was judged by eye.
@@ -70,7 +70,7 @@ function costume(id: string): Person {
   return found.person;
 }
 
-describe("Bandus's costumes (#7169)", () => {
+describe("Bear's costumes (#7169)", () => {
   it('starts with the default grizzly', () => {
     expect(BANDUS_COSTUMES[0]).toMatchObject({ id: 'grizzly', person: BANDUS });
   });

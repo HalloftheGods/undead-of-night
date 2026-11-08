@@ -176,13 +176,13 @@ All rows are content to tune in the soak, not settled data.
 | `ghost_walk` | Mags | as Night, 8 finds in a trip at level 3+, no noisy search | gate 4 | 1 suppressor |
 | `hold_the_line` | Sarge | 10 hordes in total (levels 1-4 give 2+2+3+3) | after `out_and_back` | 1 knife (silver if carried) |
 | `shove_and_stab` | Sarge | as Rex, 30 landed shoves in a trip | gate 2 | 120 silver + 3 bottles |
-| `fast_hands` | Sarge | as Bandus, 50 kills in a trip at level 4+ | gate 4, owns carbine | 150 silver |
+| `fast_hands` | Sarge | as Bear, 50 kills in a trip at level 4+ | gate 4, owns carbine | 150 silver |
 | `patch_up` | Doc | use 2 medkits in total | after `pharmacy_run` | 1 medkit + 40 silver |
 | `steady_hands` | Doc | 3 banked trips in a row at level 2+ | gate 2 | 2 medkits |
 | `run_for_it` | Doc | as Kat, bank a level 3+ trip in 480 s or less | gate 3 | 1 medkit + 100 silver |
 | `firestarter` | Cinder | 10 burning kills in total | after `first_smelt` | 1 flame kit + 60 silver |
 | `big_game` | Cinder | 1 brute kill in a trip | gate 5 | 1 acid kit + 100 silver |
-| `magpie` | Cinder | as Sol, 20 finds in one banked trip at level 3+ | gate 3 | 1 piercing kit |
+| `magpie` | Cinder | as Kai, 20 finds in one banked trip at level 3+ | gate 3 | 1 piercing kit |
 | **Jobs** (one per stall, silver ×1, ×1.5 or ×2) | | | | |
 | `job_range_day` | Mags | 25 kills in a trip | | 40 / 60 / 80 |
 | `job_quiet_hands` | Sarge | 15 landed shoves in a trip | | 30 / 45 / 60 |
@@ -195,7 +195,7 @@ Derivations for the gated rows:
 - **`run_for_it`.** Level 3's lulls (140 s, then two of 100 s) plus 3 hordes come to about 340-520 s, which puts 480 s near the top. The bot runs tune it.
 - **`big_game`.** A level 5 town holds about 1.6 brutes (1% of the crowd).
 
-The table holds every survivor, with Sol's Magpie as row 17. Kits, the forge, fire and big kills are Cinder's; guns, accuracy and the suppressor are Mags'.
+The table holds every survivor, with Kai's Magpie as row 17. Kits, the forge, fire and big kills are Cinder's; guns, accuracy and the suppressor are Mags'.
 
 ## Workshop and reloading press
 
@@ -270,7 +270,7 @@ The sources mirror `KIT_SOURCES`. Fuel and batteries come mostly from cars, whic
 The recommendation is **not to build perks now** (open question 11).
 
 1. **Damage perks do nothing on a finished gun.** `GUN_POWER_CAP = 1.5` (`shared/gun-upgrade-data.ts:47`) is enforced inside `gunStats()` on burst damage per second. A finished gun already sits at the cap, so a damage or fire-rate perk inside `gunStats` is clamped to nothing. One applied outside it breaks the cap.
-2. **The free axes belong to the survivors.** `shared/characters.ts` gives each survivor one: sight and noise (Night), reload (Bandus 0.75), speed (Kat 1.12), shove (Rex 1.5) and loot (Sol). A perk on any of them blunts the pick. Reload is worst because the cap ignores it. Bandus 0.75 × three reload ranks (0.55) × Slick latch (0.8) is already about 0.33 of stock reload time.
+2. **The free axes belong to the survivors.** `shared/characters.ts` gives each survivor one: sight and noise (Night), reload (Bear 0.75), speed (Kat 1.12), shove (Rex 1.5) and loot (Kai). A perk on any of them blunts the pick. Reload is worst because the cap ignores it. Bear 0.75 × three reload ranks (0.55) × Slick latch (0.8) is already about 0.33 of stock reload time.
 3. **What is left is small or tuned for balance.** Medkit heal and bleed-out are scaled per difficulty. The carry caps are the only guard on ammo across trips.
 4. **There are already five build layers**: trait, upgrades, quirks, round effect and difficulty.
 
@@ -356,7 +356,7 @@ Each has a default the build follows until it is answered.
 4. **A reward over a carry cap.** Default: paid in silver at the shop price, so turn-in never sticks. The alternative is to hold the turn-in until there is room.
 5. **Workshop scene.** Is #7210's portrait-card bench the scene you wanted, or should the picture go live, with the gun in the vise, its mods drawn on and a beat on each fit (#7246)? Default: #7210 counts, and #7246 waits.
 6. **Quest pace.** Default: one active quest per merchant, four at most, with unaccepted jobs re-rolled after each banked trip. The alternative is to re-roll a job only after it is turned in.
-7. **Survivor quests.** Default: offered to everyone, counting only trips played as that survivor, with Sol's Magpie as a 17th one-time row. The alternative is to show them only while playing that survivor.
+7. **Survivor quests.** Default: offered to everyone, counting only trips played as that survivor, with Kai's Magpie as a 17th one-time row. The alternative is to show them only while playing that survivor.
 8. **A merchant killed by the Overrun.** Default: their active quest waits for the replacement at the same stall, with progress still counting. The alternatives are to carry it to the replacement as new, or to cancel it. Overrun-specific quests come later, after #7218.
 9. **Decor.** Build it at all, and in co-op does each player see their own decor or the room host's? Default: build it only if the soak shows silver piling up, and each player sees their own.
 10. **The forge Smelt button.** Default: replace it with a status line and drop the no-op. The alternative is to make it start and stop the forge.

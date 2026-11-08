@@ -10,7 +10,7 @@ const skinOf = (id: string): number => CHARACTERS.findIndex((character) => chara
 
 describe('the character table', () => {
   it('gives everyone a name, a trait and one thing they do better', () => {
-    expect(CHARACTERS.map((character) => character.name)).toEqual(['Night', 'Bandus', 'Kat', 'Rex', 'Sol']);
+    expect(CHARACTERS.map((character) => character.name)).toEqual(['Night', 'Bear', 'Kat', 'Rex', 'Kai']);
     for (const { sightRange, reloadTime, moveSpeed, shoveForce, dropOdds, trait } of CHARACTERS) {
       expect(trait).not.toBe('');
       const edges = [sightRange < 1, reloadTime < 1, moveSpeed > 1, shoveForce > 1, dropOdds > 1];
@@ -83,7 +83,7 @@ describe('traits in play', () => {
     return ticks;
   }
 
-  it('reloads faster as Bandus', () => {
+  it('reloads faster as Bear', () => {
     const normal = Math.ceil(WEAPONS.pistol.reloadMs / 1000 / TICK_DT);
     expect(reloadTicks(skinOf('night'))).toBeGreaterThanOrEqual(normal);
     expect(reloadTicks(skinOf('bandus'))).toBeLessThan(normal * 0.8);
@@ -159,7 +159,7 @@ describe('traits in play', () => {
     expect(heardBy(skinOf('night'), 'sprint', SPRINT_NOISE_RADIUS * 0.6)).toBe(true);
   });
 
-  it('drops more often from the zombies Sol kills', () => {
+  it('drops more often from the zombies Kai kills', () => {
     const { state } = quietSim();
     const [p] = state.players;
     const dropsOutOf = (skin: number, kills: number): number => {

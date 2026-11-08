@@ -45,7 +45,7 @@ describe('sneak and sprint', () => {
     const hears = (extra: { sprint?: boolean }) => {
       const { sim, state } = quietSim();
       const [p] = state.players;
-      p.skin = 1; // Bandus: a normal noise radius, unlike the default survivor, Night
+      p.skin = 1; // Bear: a normal noise radius, unlike the default survivor, Night
       // Behind the player, in earshot of a sprint but out of the way of the stride.
       const roamer = addRoamer(state, 'walker', p.x - SPRINT_NOISE_RADIUS + 20, p.y);
       roamer.senseOffset = 1;

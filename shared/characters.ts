@@ -71,10 +71,10 @@ const SOL_LOOKS: readonly CostumeLabel[] = [
 
 export const CHARACTERS: readonly Character[] = [
   { ...PLAIN, id: 'night', name: 'Night', trait: 'Moves quieter', sightRange: 0.75, noise: 0.75, clatterChance: 0.5, costumes: NIGHT_LOOKS },
-  { ...PLAIN, id: 'bandus', name: 'Bandus', trait: 'Reloads faster', reloadTime: 0.75, costumes: BANDUS_LOOKS },
+  { ...PLAIN, id: 'bandus', name: 'Bear', trait: 'Reloads faster', reloadTime: 0.75, costumes: BANDUS_LOOKS },
   { ...PLAIN, id: 'satori', name: 'Kat', trait: 'Runs faster', moveSpeed: 1.12, costumes: SATORI_LOOKS },
   { ...PLAIN, id: 'rex', name: 'Rex', trait: 'Shoves harder', shoveForce: 1.5, costumes: REX_LOOKS },
-  { ...PLAIN, id: 'sol', name: 'Sol', trait: 'Loots more', dropOdds: 2, searchLuck: 0.15, costumes: SOL_LOOKS },
+  { ...PLAIN, id: 'sol', name: 'Kai', trait: 'Loots more', dropOdds: 2, searchLuck: 0.15, costumes: SOL_LOOKS },
 ];
 
 export function characterOf(skin: number): Character {

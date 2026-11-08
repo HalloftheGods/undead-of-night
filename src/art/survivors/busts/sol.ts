@@ -1,4 +1,4 @@
-// Sol's select screen bust, drawn from his face reference: a very round, chubby-cheeked face;
+// Kai's select screen bust, drawn from his face reference: a very round, chubby-cheeked face;
 // thick dark brown hair in a bowl cut whose fringe sweeps from the part on the left down across
 // the forehead to the right and covers the tops of the ears; big round black glasses with
 // thick rims and a high bridge, the wide-open dark brown eyes and raised brows seen through

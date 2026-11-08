@@ -1,4 +1,4 @@
-// Bandus' select portrait: the older teen in his grizzly bear suit. The hood is a bear's head,
+// Bear's select portrait: the older teen in his grizzly bear suit. The hood is a bear's head,
 // round ears with tan insides, felt button eyes and a tan snout with a dark nose over his brow,
 // and his own face looks out of the opening: a dark brown buzz cut at the hood's front rim,
 // thick dark brows, blue eyes, a straight nose, a broad grin with the top teeth showing,

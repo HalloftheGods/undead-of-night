@@ -250,10 +250,10 @@ export const HOW_TO_SECTIONS: readonly HowToSection[] = [
     title: 'Five survivors',
     points: [
       'Night: harder for zombies to see.',
-      'Bandus: reloads faster.',
+      'Bear: reloads faster.',
       'Kat: runs faster.',
       'Rex: shoves harder.',
-      'Sol: finds more in searches and on kills.',
+      'Kai: finds more in searches and on kills.',
     ],
   },
   {

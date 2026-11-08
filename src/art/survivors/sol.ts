@@ -1,4 +1,4 @@
-// Skin 4, Sol: seven years old and the smallest of the cast:
+// Skin 4, Kai: seven years old and the smallest of the cast:
 // dark hair, round glasses, red baseball cap with blue visor, yellow and blue striped tee,
 // blue shorts, red sneakers and a canvas backpack.
 

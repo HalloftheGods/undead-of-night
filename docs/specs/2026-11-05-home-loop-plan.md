@@ -147,7 +147,7 @@ Tests, in `tests/bunker-map.spec.ts`, `tests/stations.spec.ts`, `tests/treasure.
 - `holding E at a station sets p.home.station, and walking off clears it`.
 - `home off places no treasure`.
 - `treasure leaves ammo in town and every roll on sim.rng as they were` (same seed with and without, compare ammo budget and `sim.nextEntity`).
-- `a treasure container still makes the luck and bottle rolls` (Sol's find rate over 2000 searches matches an empty container's).
+- `a treasure container still makes the luck and bottle rolls` (Kai's find rate over 2000 searches matches an empty container's).
 - `a replay places half as many treasures, rounded down, at full value`.
 - `a coin stack vanishes when taken` (rounds zeroed in `takeTreasure`).
 - `a dead player's carried treasure drops where they fell, p.home.lost records it, and a teammate can take it`.

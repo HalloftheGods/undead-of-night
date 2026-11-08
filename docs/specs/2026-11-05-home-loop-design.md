@@ -36,7 +36,7 @@ The Home Loop turns Undead of Night from one all-or-nothing run into a campaign 
 | 10 | 12 | 5 | 1,480 | 1,482 | 51 s |
 
 - A **replay**, a level below the highest anyone in the room has reached, places half as many jewels of each size, rounded down. Each jewel keeps its full value, so a jewel is the same jewel wherever it came from.
-- Treasure is placed from its own generator, off the town's seed, as `shared/radio.ts` does, and takes a container only if it was empty. It uses its own id counter, never `entityId()`, both when placed and when a search drops it, because zombie sense timing reads `sim.nextEntity`. A search of a treasure container still makes the luck roll and the bottle roll, so Sol's finds and bottles stay as they are.
+- Treasure is placed from its own generator, off the town's seed, as `shared/radio.ts` does, and takes a container only if it was empty. It uses its own id counter, never `entityId()`, both when placed and when a search drops it, because zombie sense timing reads `sim.nextEntity`. A search of a treasure container still makes the luck roll and the bottle roll, so Kai's finds and bottles stay as they are.
 
 ### A trip
 
@@ -371,7 +371,7 @@ At the flip, level 6 is renamed **Blackout**, and `level-06-underground-bunker.m
 
 ## Testing
 
-- **Specs per lane:** treasure leaves the ammo budget and placement rolls alone, Sol's finds and bottles still roll, every room is reachable, what comes home, repeated trips cannot grow ammo past the caps, boarding with an empty locker, dying and smelting, prices and level gates, a sale at the cap counting gear in hand is refused, a box refused at 56 of 60 rounds, a failed save charges nothing, stock survives a reload, ten empty quit-trips leave stock unchanged, bought ammo stays under 15% of the town budget at every difficulty, boarding with bought gear and no gun keeps that gear, old saves load, an open trip resolves as a death, a refresh between receipt and save applies it exactly once.
+- **Specs per lane:** treasure leaves the ammo budget and placement rolls alone, Kai's finds and bottles still roll, every room is reachable, what comes home, repeated trips cannot grow ammo past the caps, boarding with an empty locker, dying and smelting, prices and level gates, a sale at the cap counting gear in hand is refused, a box refused at 56 of 60 rounds, a failed save charges nothing, stock survives a reload, ten empty quit-trips leave stock unchanged, bought ammo stays under 15% of the town budget at every difficulty, boarding with bought gear and no gun keeps that gear, old saves load, an open trip resolves as a death, a refresh between receipt and save applies it exactly once.
 - **Soak:** a bot loops bunker, trip, death and bank, checking that treasure is conserved except where a rule forfeits it, and reports treasure per trip for tuning. The merchants lane's half reports spending.
 - **Co-op over real sockets:** join with gear, refused gear stays in the locker, a new loadout between trips, level pick is capped, the idle rule, a teammate dies mid-trip, downed at departure, disconnecting while downed, an empty room, and a worst-case join stays under `MAX_PACKET_BYTES`.
 - **Real browser:** one full loop solo with reduced motion on and off, in co-op, and with two real tabs trying to take the same gear, smelt the same jewels and buy the same stock.

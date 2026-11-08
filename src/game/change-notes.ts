@@ -22,6 +22,17 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'bear-and-kai',
+    date: '2026-11-08',
+    kind: 'better',
+    title: 'Bandus is Bear, Sol is Kai',
+    deck: 'Two more survivors have new names.',
+    points: [
+      'Bear still reloads faster, and Kai still finds more.',
+      'Costumes, quests and records carry over as they were.',
+    ],
+  },
+  {
     id: 'setup-stage',
     date: '2026-11-08',
     kind: 'better',

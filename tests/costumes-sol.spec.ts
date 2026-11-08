@@ -1,4 +1,4 @@
-// Sol's costumes (#7172): the list, the palette and the portrait frame, his build, and
+// Kai's costumes (#7172): the list, the palette and the portrait frame, his build, and
 // the owner's hard rule that every costume keeps his round glasses exactly as the
 // default draws them, in every facing.
 
@@ -18,7 +18,7 @@ import { SOL } from '../src/art/survivors/sol.ts';
 import type { PixelSprite } from '../src/art/types.ts';
 
 const DRAWN: readonly DrawnDir[] = [0, 1, 2, 6, 7];
-/** The letters Sol's heads draw his glasses with: rims, lens glint, pupils, lower rims. */
+/** The letters Kai's heads draw his glasses with: rims, lens glint, pupils, lower rims. */
 const GLASSES = new Set(['K', 'k', 'l', 'm']);
 const INKS = new Set<Color>(RAMPS.ink);
 const COSTUMES = SOL_COSTUMES.slice(1);
@@ -74,7 +74,7 @@ function headOrigin(person: Person, dir: DrawnDir): readonly [number, number] {
   return [x, y];
 }
 
-/** The cell pixels of Sol's glasses in one facing at rest. */
+/** The cell pixels of Kai's glasses in one facing at rest. */
 function glassesPixels(dir: DrawnDir): readonly (readonly [number, number])[] {
   const [x0, y0] = headOrigin(SOL, dir);
   const pixels: [number, number][] = [];
@@ -96,7 +96,7 @@ function inkLetters(legend: Legend): string[] {
   return Object.entries(legend).filter(([, color]) => color !== null && INKS.has(color)).map(([letter]) => letter).sort();
 }
 
-describe("Sol's costumes (#7172)", () => {
+describe("Kai's costumes (#7172)", () => {
   it('lists the default first, then the three hero costumes, with unique lowercase ids', () => {
     expect(SOL_COSTUMES[0]).toEqual({ id: 'kid', name: 'Kid', person: SOL });
     expect(SOL_COSTUMES.map((c) => c.id)).toEqual(['kid', 'plumber', 'adventurer', 'caped']);
