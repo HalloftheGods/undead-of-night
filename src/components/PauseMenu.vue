@@ -5,7 +5,7 @@
       <p v-if="mode === 'coop'" class="px-note">Co-op does not pause. The horde is still coming.</p>
       <template v-if="ui.onlineRoom">
         <p class="px-label">Room code {{ ui.onlineRoom }}</p>
-        <PixelButton @press="copy">{{ COPY_LABELS[copied] }}</PixelButton>
+        <PixelButton @press="copy">{{ label }}</PixelButton>
         <p class="px-note">Leaving ends the game for everyone in it.</p>
       </template>
 
@@ -34,14 +34,14 @@ import { leaveWarning } from '../game/home-screens.ts';
 import type { UiState } from '../game/hud-state.ts';
 import type { TransportKind } from '../network/transport.ts';
 import PixelButton from './PixelButton.vue';
-import { COPY_LABELS, useRoomLink } from './use-room-link.ts';
+import { useRoomLink } from './use-room-link.ts';
 import { useGame } from './use-game.ts';
 
 const { ui } = defineProps<{ ui: UiState; mode: TransportKind }>();
 const game = useGame();
 const warning = computed(() => leaveWarning(ui.home));
 
-const { copied, copy } = useRoomLink(() => ui.onlineRoom);
+const { label, copy } = useRoomLink(() => ui.onlineRoom);
 
 function onVolume(event: Event): void {
   game.setVolume(Number((event.target as HTMLInputElement).value));

@@ -9,7 +9,9 @@ import type { FakeBrowser } from './client-fake-dom.ts';
 const WIDE = { w: 800, h: 400 };
 const TALL = { w: 400, h: 800 };
 const PLAY_AREA = { closest: () => null };
-const PAD = { closest: () => ({}) };
+const PAD = { closest: (selector: string) => (selector === '[data-touch-pad]' ? {} : null) };
+/** A button laid over play, like the room card's Share invite link. */
+const UI = { closest: (selector: string) => (selector === '[data-touch-ui]' ? {} : null) };
 
 interface FakeTouch {
   identifier: number;
@@ -159,6 +161,14 @@ describe('fingers on the game', () => {
     expect(input.sample(1, 0, null).shoot).toBe(false);
     expect(input.pointerClientX).not.toBe(1900);
     expect(event.preventDefault).toHaveBeenCalled();
+  });
+
+  it('leaves a tap on a button over play to the button: no shot, and the click still comes', () => {
+    const down = start(finger(1, 1500, 300, UI));
+    const dragged = move(finger(1, 1500, 290, UI));
+    expect(input.sample(1, 0, null).shoot).toBe(false);
+    expect(down.preventDefault).not.toHaveBeenCalled();
+    expect(dragged.preventDefault).not.toHaveBeenCalled();
   });
 
   it('keeps the page still through play: no scroll, no zoom, no mouse made up from a tap', () => {
