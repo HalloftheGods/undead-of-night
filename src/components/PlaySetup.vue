@@ -1,110 +1,95 @@
 <template>
-  <TitlePage :heading size="extra-wide" boxed steady @close="back">
+  <TitlePage :heading size="extra-wide" boxed @close="back">
     <template #lead>
-      <SetupStepper :stops="stepper" :thumbs @pick="jump" />
+      <SetupPicks ref="picker" :picks :art="ui.art" @choose="choose" />
     </template>
 
-    <template v-if="flow.step === 'mode'">
-      <ModeSelect :art="ui.art" :mode="flow.mode" :game-style="shownStyle" @choose="pick" />
+    <!-- The co-op half keeps its room on Solo, hidden, so choosing a mode moves nothing. -->
+    <div class="setup-fields">
+      <div class="setup-field">
+        <label class="px-label" for="callsign">Callsign</label>
+        <input
+          id="callsign"
+          class="px-input px-frame"
+          :value="ui.callsign"
+          maxlength="12"
+          placeholder="SURVIVOR"
+          autocomplete="off"
+          spellcheck="false"
+          @input="game.setCallsign(textOf($event))"
+        />
+      </div>
 
-      <!-- The server half keeps its room on Solo, hidden, so choosing a mode moves nothing. -->
-      <div class="setup-fields">
-        <div class="setup-field">
-          <label class="px-label" for="callsign">Callsign</label>
-          <input
-            id="callsign"
-            ref="callsign"
-            class="px-input px-frame"
-            :value="ui.callsign"
-            maxlength="12"
-            placeholder="SURVIVOR"
-            autocomplete="off"
-            spellcheck="false"
-            @input="game.setCallsign(textOf($event))"
-            @keydown.enter.prevent="next"
-          />
+      <div v-if="online" class="setup-field" :class="{ 'is-hidden': !serverShown }" :aria-hidden="!serverShown || undefined">
+        <span class="px-label" id="coop-entry">Play with</span>
+        <div class="setup-entries" role="group" aria-labelledby="coop-entry">
+          <PixelButton
+            v-for="choice in COOP_ENTRIES"
+            :key="choice.entry"
+            class="setup-entry"
+            :primary="entry === choice.entry"
+            :aria-pressed="entry === choice.entry"
+            @press="entry = choice.entry"
+          >
+            {{ choice.label }}
+          </PixelButton>
         </div>
+        <input
+          v-if="entry === 'code'"
+          :id="SERVER_FIELD_ID"
+          class="px-input px-frame setup-code"
+          :value="ui.serverAddress"
+          placeholder="ROOM CODE, E.G. BCDFG"
+          aria-label="Friend's room code"
+          maxlength="64"
+          autocomplete="off"
+          spellcheck="false"
+          @input="game.setServerAddress(textOf($event))"
+        />
+        <p v-else class="setup-hint">{{ ENTRY_HINTS[entry] }}</p>
+      </div>
 
-        <div v-if="online" class="setup-field" :class="{ 'is-hidden': !serverShown }" :aria-hidden="!serverShown || undefined">
-          <span class="px-label" id="coop-entry">Play with</span>
-          <div class="setup-entries" role="group" aria-labelledby="coop-entry">
-            <PixelButton
-              v-for="choice in COOP_ENTRIES"
-              :key="choice.entry"
-              class="setup-entry"
-              :primary="entry === choice.entry"
-              :aria-pressed="entry === choice.entry"
-              @press="entry = choice.entry"
-            >
-              {{ choice.label }}
-            </PixelButton>
-          </div>
+      <div v-else class="setup-field" :class="{ 'is-hidden': !serverShown }" :aria-hidden="!serverShown || undefined">
+        <label class="px-label" :for="SERVER_FIELD_ID">Server address</label>
+        <div class="setup-server">
           <input
-            v-if="entry === 'code'"
             :id="SERVER_FIELD_ID"
-            class="px-input px-frame setup-code"
+            class="px-input px-frame"
             :value="ui.serverAddress"
-            placeholder="ROOM CODE, E.G. BCDFG"
-            aria-label="Friend's room code"
-            maxlength="64"
+            :placeholder="defaultServer"
             autocomplete="off"
             spellcheck="false"
             @input="game.setServerAddress(textOf($event))"
-            @keydown.enter.prevent="next"
           />
-          <p v-else class="setup-hint">{{ ENTRY_HINTS[entry] }}</p>
-        </div>
-
-        <div v-else class="setup-field" :class="{ 'is-hidden': !serverShown }" :aria-hidden="!serverShown || undefined">
-          <label class="px-label" :for="SERVER_FIELD_ID">Server address</label>
-          <div class="setup-server">
-            <input
-              :id="SERVER_FIELD_ID"
-              class="px-input px-frame"
-              :value="ui.serverAddress"
-              :placeholder="defaultServer"
-              autocomplete="off"
-              spellcheck="false"
-              @input="game.setServerAddress(textOf($event))"
-              @keydown.enter.prevent="next"
-            />
-            <PixelButton class="setup-invite" :disabled="!inviteLink" @press="copyInvite">
-              {{ INVITE_LABELS[copied] }}
-            </PixelButton>
-          </div>
+          <PixelButton class="setup-invite" :disabled="!inviteLink" @press="copyInvite">
+            {{ INVITE_LABELS[copied] }}
+          </PixelButton>
         </div>
       </div>
-    </template>
+    </div>
 
-    <DifficultySelect v-else-if="flow.step === 'difficulty'" ref="difficulty" :art="ui.art" />
-
-    <template v-else>
-      <CharacterSelect ref="survivors" :art="ui.art" />
-      <p v-if="showsStyleLabel(join, flow.mode)" class="px-label setup-start-at">{{ STYLE_LABELS[runStyle] }}</p>
+    <div class="setup-lines">
       <p v-if="startLine" class="px-label setup-start-at">{{ startLine }}</p>
       <p v-if="coopNote" class="px-label setup-start-at">{{ coopNote }}</p>
       <p v-if="failure" class="px-error" role="alert">{{ failure }}</p>
-    </template>
+    </div>
 
     <template #actions>
-      <PixelButton v-if="!startsRun(flow)" @press="next">Next</PixelButton>
-      <template v-else>
-        <PixelButton primary silent :disabled="!ready" @press="start">{{ actionLabel }}</PixelButton>
-        <PixelButton v-if="resumeAt !== null && !multi && runStyle === 'arcade'" :disabled="!ready" @press="game.continueSolo()">
-          Continue from level {{ resumeAt }}
-        </PixelButton>
-      </template>
+      <PixelButton v-if="resumeAt !== null && !multi && runStyle === 'arcade'" :disabled="!ready" @press="game.continueSolo()">
+        Continue from level {{ resumeAt }}
+      </PixelButton>
+      <PixelButton primary silent :disabled="!ready" @press="start">{{ actionLabel }}</PixelButton>
     </template>
   </TitlePage>
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue';
 import { DEFAULT_SERVER_PORT } from '../../shared/constants.ts';
+import type { DifficultyId } from '../../shared/difficulty.ts';
 import { trackTitlePage } from '../game/analytics/index.ts';
-import type { PixelSprite } from '../art/types.ts';
-import { loadCharacter } from '../game/character-pref.ts';
-import { loadDifficulty } from '../game/difficulty-pref.ts';
+import { loadCharacter, saveCharacter } from '../game/character-pref.ts';
+import { loadDifficulty, saveDifficulty } from '../game/difficulty-pref.ts';
 import { setupLevelLines } from '../game/home-screens.ts';
 import { SERVER_FIELD_ID } from '../game/hud-state.ts';
 import type { UiState } from '../game/hud-state.ts';
@@ -112,25 +97,24 @@ import { buildInviteLink } from '../game/invite-link.ts';
 import { onlineRoomsLive } from '../network/play-api.ts';
 import type { CoopEntry } from '../game/run-session.ts';
 import { chosenStartLevel, continueLevel, isLevelUnlocked, loadLevelProgress } from '../game/level-progress.ts';
-import { advance, chooseMode, claimedStyle, playHeading, playStepper, retreat, returnTo, setupFailure, setupStyle, showsServer, showsStyleLabel, startFlow, startsRun, STYLE_LABELS } from '../game/play-flow.ts';
-import type { PlayMode, PlayStep } from '../game/play-flow.ts';
+import { chooseMode, claimedStyle, setupFailure, setupHeading, setupStyle, showsServer, startFlow } from '../game/play-flow.ts';
+import type { PlayMode } from '../game/play-flow.ts';
+import { setupPicks } from '../game/setup-picks.ts';
+import type { PickKey } from '../game/setup-picks.ts';
 import { COOP_ACTIONS, setupActionLabel, type CoopAction } from '../game/title-menu.ts';
-import CharacterSelect from './CharacterSelect.vue';
-import DifficultySelect from './DifficultySelect.vue';
-import ModeSelect from './ModeSelect.vue';
 import PixelButton from './PixelButton.vue';
-import SetupStepper from './SetupStepper.vue';
+import SetupPicks from './SetupPicks.vue';
 import TitlePage from './TitlePage.vue';
 import { useGame } from './use-game.ts';
 
 const { ui, join = false, level = null } = defineProps<{ ui: UiState; join?: boolean; level?: number | null }>();
 const emit = defineEmits<{ close: [] }>();
 const game = useGame();
-const callsign = useTemplateRef<HTMLInputElement>('callsign');
-
-const survivors = useTemplateRef<InstanceType<typeof CharacterSelect>>('survivors');
-const difficulty = useTemplateRef<InstanceType<typeof DifficultySelect>>('difficulty');
+const picker = useTemplateRef<InstanceType<typeof SetupPicks>>('picker');
 const flow = ref(startFlow(join, level));
+/** Saved prefs, so the next visit opens on the same difficulty and survivor. */
+const difficulty = ref<DifficultyId>(loadDifficulty());
+const survivor = ref(loadCharacter());
 const copied = ref<'idle' | 'done' | 'failed'>('idle');
 const INVITE_LABELS = { idle: 'Copy invite link', done: 'Link copied', failed: 'Copy failed' } as const;
 
@@ -145,23 +129,9 @@ const shownStyle = computed(() => claimedStyle(join, runStyle.value));
 const levelLines = computed(() => setupLevelLines({ style: shownStyle.value, multi: multi.value, level, unlocked: isChosenUnlocked, chosen }));
 const startLine = computed(() => levelLines.value.startLine);
 const coopNote = computed(() => levelLines.value.coopNote);
-const heading = computed(() => playHeading(flow.value));
-const stepper = computed(() => playStepper(flow.value));
-/**
- * What each step settled, as its own picture, for the stepper to show once the step is done.
- * Difficulty and survivor are saved prefs, read again whenever the flow moves (it is replaced on every step), the only time a done step can change.
- */
-const thumbs = computed<Partial<Record<PlayStep, PixelSprite>>>(() => {
-  const art = ui.art;
-  const isArtLoading = art === null;
-  if (isArtLoading) return {};
-  return {
-    mode: art.ui.mode[flow.value.mode],
-    difficulty: art.ui.difficulty[loadDifficulty()],
-    who: art.survivors[loadCharacter()]?.select,
-  };
-});
-/** Co-op on either step: the mode decides how the run starts. The server field shows on the first step only. */
+const heading = computed(() => setupHeading(join, flow.value.mode, runStyle.value));
+const picks = computed(() => setupPicks({ mode: flow.value.mode, difficulty: difficulty.value, survivor: survivor.value }));
+/** The mode decides how the run starts, and whether the co-op fields show. */
 const multi = computed(() => flow.value.mode === 'multi');
 const serverShown = computed(() => showsServer(flow.value));
 const ready = computed(() => ui.art !== null && !ui.connecting);
@@ -206,8 +176,21 @@ async function copyInvite(): Promise<void> {
   copiedTimer = setTimeout(() => (copied.value = 'idle'), 2000);
 }
 
-function pick(mode: PlayMode): void {
-  flow.value = chooseMode(flow.value, mode);
+/** A choice from one of the picks' lists: the mode moves the page, difficulty and survivor are remembered for next time. */
+function choose(key: PickKey, id: string): void {
+  const isMode = key === 'mode';
+  const isDifficulty = key === 'difficulty';
+  if (isMode) {
+    flow.value = chooseMode(flow.value, id as PlayMode);
+    return;
+  }
+  if (isDifficulty) {
+    difficulty.value = id as DifficultyId;
+    saveDifficulty(difficulty.value);
+    return;
+  }
+  survivor.value = Number(id);
+  saveCharacter(survivor.value);
 }
 
 function start(): void {
@@ -220,49 +203,20 @@ function start(): void {
   else game.startSolo(runStyle.value);
 }
 
-/** Puts the keyboard where each step starts: the callsign, the chosen difficulty, or the chosen survivor. */
-function focusStep(): void {
-  void nextTick(() => {
-    callsign.value?.focus();
-    difficulty.value?.focus();
-    survivors.value?.focus();
-  });
-}
-
-/** Enter in a field only moves one step on, landing on that step's choice; the run starts from the button on the last. */
-function next(event?: Event): void {
-  const isKeyRepeat = event instanceof KeyboardEvent && event.repeat;
-  if (isKeyRepeat) return;
-  flow.value = advance(flow.value);
-  focusStep();
-}
-
-/** A done step picked on the stepper: straight back to it, the keyboard landing on its choice. */
-function jump(step: PlayStep): void {
-  flow.value = returnTo(flow.value, step);
-  focusStep();
-}
-
-/** Back and Esc step back first; a connection still being tried would otherwise pull the player into a room from the menu. */
+/** Back and Esc leave for the title; a connection still being tried would otherwise pull the player into a room from the menu. */
 function back(): void {
   if (ui.connecting) game.toMenu();
-  const earlier = retreat(flow.value);
-  if (earlier) {
-    flow.value = earlier;
-    focusStep();
-    return;
-  }
   emit('close');
 }
 
 onMounted(() => {
-  callsign.value?.focus();
+  picker.value?.focus();
   trackTitlePage('play');
 });
 </script>
 
 <style scoped>
-/* Callsign and the server side by side, one input high, so the step fits beside the big card's height. */
+/* Callsign and the co-op fields side by side, one input high, under the picks. */
 .setup-fields {
   display: grid;
   grid-template-columns: 1fr 2fr;
@@ -310,6 +264,16 @@ onMounted(() => {
   color: var(--bone-dim);
   font-size: calc(var(--u) * 5);
   line-height: 1.4;
+}
+
+.setup-lines {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 2);
+}
+
+.setup-lines:empty {
+  display: none;
 }
 
 .setup-start-at {
