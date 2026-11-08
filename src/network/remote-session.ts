@@ -8,6 +8,7 @@ import type { BenchAction } from '../../shared/workbench.ts';
 import { tapRoomDifficulty } from '../game/analytics/event-tap.ts';
 import type { PacketPipe, PipeWords } from './packet-pipe.ts';
 import { parseServerPacket } from './packet-guards.ts';
+import { withoutNames } from './strip-names.ts';
 import { tabToken } from './tab-token.ts';
 import type { ConnectOptions, GameTransport } from './transport.ts';
 
@@ -40,6 +41,8 @@ export class RemoteSession implements RoomSession {
     private readonly pipe: PacketPipe,
     private readonly words: PipeWords,
     private readonly timeoutMs = DEFAULT_TIMEOUT_MS,
+    /** A public room: no callsign goes out, and any name that comes back is dropped (strip-names.ts). */
+    private readonly anonymous = false,
   ) {}
 
   /** Opens the pipe. The room speaks first, so nothing is sent until `onRoom` has been answered. */
@@ -57,7 +60,8 @@ export class RemoteSession implements RoomSession {
 
   /** Asks in, as the style the room said it plays. Campaign brings its gear; Arcade has none to bring. */
   join(style: GameStyle, home?: JoinHome): void {
-    const { name, difficulty, character } = this.joiner;
+    const { difficulty, character } = this.joiner;
+    const name = this.anonymous ? '' : this.joiner.name;
     this.send({ type: 'join', name, token: tabToken(), difficulty, character, style, home, protocol: PROTOCOL_VERSION });
   }
 
@@ -107,7 +111,7 @@ export class RemoteSession implements RoomSession {
       if (packet.difficulty) tapRoomDifficulty(packet.difficulty);
       this.onWelcome(packet);
     } else if (packet.type === 'snapshot' && this.welcomed) {
-      this.onSnapshot(packet);
+      this.onSnapshot(this.anonymous ? withoutNames(packet) : packet);
     }
   }
 

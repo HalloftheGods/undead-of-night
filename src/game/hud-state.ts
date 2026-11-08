@@ -186,6 +186,8 @@ export interface UiState {
   readonly serverAddress: string;
   /** The code of the online room this tab is hosting, for the host to share; null otherwise. */
   readonly onlineRoom: string | null;
+  /** The hosted room is public (Find a team), so strangers may be matched into it. */
+  readonly onlinePublic: boolean;
   readonly volume: number;
   /** Music and sound effects, each a share of volume. */
   readonly musicVolume: number;

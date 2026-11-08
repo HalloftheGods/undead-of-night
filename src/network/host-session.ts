@@ -5,7 +5,7 @@ import { DEFAULT_DIFFICULTY } from '../../shared/difficulty.ts';
 import type { EmoteId } from '../../shared/emotes.ts';
 import type { GameStyle } from '../../shared/game-style.ts';
 import { OVERRUN_LIVE, type HomeAction, type JoinHome } from '../../shared/home-protocol.ts';
-import type { HostDevice } from '../../shared/lobby/types.ts';
+import type { HostDevice, Visibility } from '../../shared/lobby/types.ts';
 import { parseToHostSignal, type HostSignal, type IceCandidate, type IceServer, type RoomReport } from '../../shared/lobby/lobby-protocol.ts';
 import { PROTOCOL_VERSION, type ClientInputPacket, type SnapshotPacket, type WelcomePacket } from '../../shared/protocol.ts';
 import { HEARTBEAT_MS, JOIN_DEADLINE_MS, MAX_BUFFERED_BYTES, RESTART_VOTE_MS } from '../../shared/room/limits.ts';
@@ -40,7 +40,7 @@ const browserClock: HostClock = {
 
 const byteLength = (text: string): number => new TextEncoder().encode(text).length;
 
-function hostDevice(): HostDevice {
+export function hostDevice(): HostDevice {
   const coarse = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
   return coarse ? 'phone' : 'desktop';
 }
@@ -79,6 +79,9 @@ export class HostSession implements RoomSession {
   onUnlisted: () => void = () => {};
 
   private options: ConnectOptions = { name: '' };
+  private visibility: Visibility = 'private';
+  /** A room Find a team already made, with this tab as its host: no POST /v1/rooms then. */
+  private preset: { code: string; hostKey: string } | null = null;
   private inner: RemoteSession | null = null;
   private room: RoomHost | null = null;
   private code = '';
@@ -106,6 +109,16 @@ export class HostSession implements RoomSession {
     private readonly rtc: RtcDeps = browserRtc,
     private readonly fetcher: typeof fetch = (...args) => fetch(...args),
   ) {}
+
+  /** Before connect: a public room, either made here or handed over by Find a team. Its players show by survivor name only. */
+  openToAnyone(preset?: { code: string; hostKey: string }): void {
+    this.visibility = 'public';
+    this.preset = preset ?? null;
+  }
+
+  get isPublic(): boolean {
+    return this.visibility === 'public';
+  }
 
   connect(options: ConnectOptions): void {
     this.options = options;
@@ -146,23 +159,10 @@ export class HostSession implements RoomSession {
   }
 
   private async start(): Promise<void> {
-    const { name, difficulty } = this.options;
-    const created = await createRoom(
-      {
-        protocol: PROTOCOL_VERSION,
-        style: this.style,
-        difficulty: difficulty ?? DEFAULT_DIFFICULTY,
-        visibility: 'private',
-        device: hostDevice(),
-        ...(name ? { label: name } : {}),
-      },
-      this.api,
-      this.fetcher,
-    );
-    if (this.finished) return;
-    if (!created.ok) return this.finish(created.reason);
-    this.code = created.room.code;
-    this.hostKey = created.room.hostKey;
+    const room = this.preset ?? (await this.create());
+    if (this.finished || !room) return;
+    this.code = room.code;
+    this.hostKey = room.hostKey;
     try {
       sessionStorage.setItem(HOST_KEY_STORE, JSON.stringify({ code: this.code, hostKey: this.hostKey }));
     } catch {
@@ -172,6 +172,30 @@ export class HostSession implements RoomSession {
     this.openSignal();
     globalThis.addEventListener?.('beforeunload', this.warnOnLeave);
     this.onHosted(this.code);
+  }
+
+  /** A new room from the Lobby. A private one carries the host's callsign for its card; a public one never does. */
+  private async create(): Promise<{ code: string; hostKey: string } | null> {
+    const { name, difficulty } = this.options;
+    const isPrivate = this.visibility === 'private';
+    const created = await createRoom(
+      {
+        protocol: PROTOCOL_VERSION,
+        style: this.style,
+        difficulty: difficulty ?? DEFAULT_DIFFICULTY,
+        visibility: this.visibility,
+        device: hostDevice(),
+        ...(name && isPrivate ? { label: name } : {}),
+      },
+      this.api,
+      this.fetcher,
+    );
+    if (this.finished) return null;
+    if (!created.ok) {
+      this.finish(created.reason);
+      return null;
+    }
+    return created.room;
   }
 
   /** The same room the Node server runs, ticking in this tab, with the host's own player let in first. */
@@ -184,10 +208,12 @@ export class HostSession implements RoomSession {
       restartVoteMs: RESTART_VOTE_MS,
       joinDeadlineMs: JOIN_DEADLINE_MS,
       heartbeatMs: HEARTBEAT_MS,
+      anonymous: this.isPublic,
     });
     this.room = room;
     const { pipe, peer } = loopbackPair();
-    const inner = new RemoteSession(pipe, { badAddress: 'The game could not start.', noAnswer: 'The game did not start in time.', unreachable: 'The game could not start.' });
+    const words = { badAddress: 'The game could not start.', noAnswer: 'The game did not start in time.', unreachable: 'The game could not start.' };
+    const inner = new RemoteSession(pipe, words, undefined, this.isPublic);
     this.inner = inner;
     inner.onRoom = (style) => this.onRoom(style);
     inner.onWelcome = (packet) => this.onWelcome(packet);

@@ -29,6 +29,14 @@ export function isTouchDevice(): boolean {
   return window.matchMedia?.('(pointer: coarse)').matches ?? false;
 }
 
+/** Ordinary buttons laid over play (the room card): a touch there is a tap, never a stick or a shot. */
+export const TOUCH_UI_SELECTOR = '[data-touch-ui]';
+
+function onUi(target: EventTarget | null): boolean {
+  const element = target as Partial<Element> | null;
+  return element?.closest?.(TOUCH_UI_SELECTOR) != null;
+}
+
 function onPad(target: EventTarget | null): boolean {
   const element = target as Partial<Element> | null;
   return element?.closest?.(PAD_SELECTOR) != null;
@@ -180,6 +188,9 @@ export class TouchInput {
     this.noteTouch();
     const isIdle = !this.host.live();
     if (isIdle) return;
+    // Left alone so the browser turns it into a click on the button under the finger.
+    const isOnUi = Array.from(event.changedTouches).every((touch) => onUi(touch.target));
+    if (isOnUi) return;
     this.used = true;
     if (event.cancelable) event.preventDefault();
     this.dropLost(event.touches);
@@ -192,6 +203,8 @@ export class TouchInput {
   private readonly onMove = (event: TouchEvent): void => {
     const isIdle = !this.host.live();
     if (isIdle) return;
+    const isOnUi = Array.from(event.changedTouches).every((touch) => onUi(touch.target));
+    if (isOnUi) return;
     if (event.cancelable) event.preventDefault();
     for (const touch of Array.from(event.changedTouches)) this.track(touch);
   };

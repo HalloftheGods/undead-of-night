@@ -20,6 +20,18 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'find-a-team',
+    date: '2026-11-08',
+    kind: 'new',
+    title: 'Find a team',
+    deck: 'Play online with strangers, or host a private game for friends.',
+    points: [
+      'Under Multiplayer, Find a team drops you into an open public game near your difficulty, or opens one.',
+      'Public games show survivor names only, never callsigns.',
+      'Host for friends gives you a room code and an invite link on screen while you wait.',
+    ],
+  },
+  {
     id: 'smooth-hordes',
     date: '2026-11-07',
     kind: 'better',
