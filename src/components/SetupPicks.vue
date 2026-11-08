@@ -18,7 +18,7 @@
             <span class="pick-number" aria-hidden="true">{{ pick.number }}</span>
             <span class="pick-label">{{ pick.label }}</span>
           </span>
-          <span class="pick-art" :class="{ 'is-figure': pick.key === 'who' }">
+          <span class="pick-art">
             <img v-if="tileUrl(pick)" :src="tileUrl(pick)" alt="" draggable="false" />
           </span>
           <span class="pick-name">{{ shownOption(pick).name }}<span class="pick-caret" aria-hidden="true">▾</span></span>
@@ -50,9 +50,17 @@
           @click="choose(openPick.key, option.id)"
         >
           <span class="pick-option-art" :class="{ 'is-figure': openPick.key === 'who' }">
-            <img v-if="spriteUrl(openPick.key, option.id)" :src="spriteUrl(openPick.key, option.id)" alt="" draggable="false" />
+            <img v-if="optionUrl(openPick.key, option.id)" :src="optionUrl(openPick.key, option.id)" alt="" draggable="false" />
           </span>
           <span class="pick-option-name">{{ option.name }}</span>
+          <span class="pick-bars">
+            <span v-for="bar in option.bars" :key="bar.key" class="pick-bar" :class="{ 'is-strong': bar.strong }">
+              <span class="pick-bar-label">{{ bar.label }}</span>
+              <span class="pick-bar-cells" role="img" :aria-label="`${bar.label} ${bar.filled} of ${STAT_SLOTS}`">
+                <span v-for="n in STAT_SLOTS" :key="n" class="pick-bar-cell" :class="{ 'is-on': n <= bar.filled }" />
+              </span>
+            </span>
+          </span>
         </button>
       </li>
     </ul>
@@ -64,9 +72,10 @@
  * The Play page's stepper: one portrait per pick (mode, difficulty, survivor) showing what is chosen, joined like steps.
  * A portrait opens the list of that pick's options under the row; choosing one, Esc, or a click elsewhere closes it.
  * Pointing at or focusing an option shows it in its portrait until the pointer leaves or the list closes.
- * The survivor portrait is the whole figure, turning through every facing unless motion is turned down.
+ * The chosen survivor shows as their bust; in the list each stands as in play, the one pointed at turning
+ * through every facing unless motion is turned down. Every option carries its stat bars.
  */
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue';
 import type { ComponentPublicInstance } from 'vue';
 import type { DifficultyId } from '../../shared/difficulty.ts';
 import type { ArtBook, PixelSprite } from '../art/types.ts';
@@ -74,6 +83,7 @@ import { spriteDataUrl } from '../engine/sprite-cache.ts';
 import type { PlayMode } from '../game/play-flow.ts';
 import { chosenOption, stepFocus } from '../game/setup-picks.ts';
 import type { PickKey, PickOption, SetupPick } from '../game/setup-picks.ts';
+import { STAT_SLOTS } from '../../shared/character-stats.ts';
 import { motion } from '../game/motion.ts';
 import { createSpinner, FRONT_FACING } from '../game/survivor-spin.ts';
 import { useGame } from './use-game.ts';
@@ -118,21 +128,37 @@ function shownOption(pick: SetupPick): PickOption {
   return found ?? chosenOption(pick);
 }
 
-/** The portrait's picture; a survivor stands whole and turns. */
+/** The portrait's picture: the scene, or the survivor's bust. */
 function tileUrl(pick: SetupPick): string | undefined {
   const id = shownOption(pick).id;
   const isSurvivor = pick.key === 'who';
-  const figure = isSurvivor ? art?.survivors[Number(id)]?.portraits[facing.value] : undefined;
-  return figure ? spriteDataUrl(figure) : spriteUrl(pick.key, id);
+  const bust = isSurvivor ? art?.survivors[Number(id)]?.select : undefined;
+  return bust ? spriteDataUrl(bust) : spriteUrl(pick.key, id);
+}
+
+/** A list option's picture; the survivor being pointed at turns. */
+function optionUrl(key: PickKey, id: string): string | undefined {
+  const isTurning = key === 'who' && previewed.value === id;
+  const turning = isTurning ? art?.survivors[Number(id)]?.portraits[facing.value] : undefined;
+  return turning ? spriteDataUrl(turning) : spriteUrl(key, id);
+}
+
+/** Motion turned down holds the survivor facing front. */
+function spinFromFront(): void {
+  const isCalm = motion.reduced.value;
+  if (isCalm) spinner.stop();
+  else spinner.start();
 }
 
 function preview(id: string, byPointer: boolean): void {
   if (byPointer) game.playUi('hover');
   previewed.value = id;
+  spinFromFront();
 }
 
 function unpreview(): void {
   previewed.value = null;
+  spinner.stop();
 }
 
 /** The picture for one option in a list: the mode's scene, the difficulty's scene, or the survivor standing. */
@@ -168,7 +194,7 @@ function toggle(key: PickKey): void {
 function close(refocus = true): void {
   const was = open.value;
   open.value = null;
-  previewed.value = null;
+  unpreview();
   const shouldRefocus = refocus && was !== null;
   if (shouldRefocus) tiles.get(was)?.focus();
 }
@@ -204,18 +230,7 @@ function onPointerDown(event: PointerEvent): void {
   if (isOutsideWhileOpen) close(false);
 }
 
-/** Motion turned down holds the survivor facing front. */
-function syncSpin(isCalm: boolean): void {
-  if (isCalm) spinner.stop();
-  else spinner.start();
-}
-
-watch(motion.reduced, syncSpin);
-
-onMounted(() => {
-  document.addEventListener('pointerdown', onPointerDown);
-  syncSpin(motion.reduced.value);
-});
+onMounted(() => document.addEventListener('pointerdown', onPointerDown));
 onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', onPointerDown);
   spinner.stop();
@@ -380,6 +395,50 @@ defineExpose({ focus: () => tiles.get('mode')?.focus(), isOpen: () => open.value
 .pick-option:hover,
 .pick-option:focus-visible {
   --edge: var(--amber);
+}
+
+.pick-bars {
+  display: grid;
+  grid-template-columns: max-content max-content;
+  justify-content: center;
+  gap: max(1px, calc(var(--u) / 2)) calc(var(--u) * 2);
+}
+
+.pick-bar {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: center;
+}
+
+.pick-bar-label {
+  color: var(--bone-dim);
+  font-size: calc(var(--u) * 3);
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.pick-bar.is-strong .pick-bar-label {
+  color: var(--amber);
+}
+
+.pick-bar-cells {
+  display: flex;
+  gap: max(1px, calc(var(--u) / 2));
+}
+
+.pick-bar-cell {
+  width: calc(var(--u) * 4);
+  height: calc(var(--u) * 2);
+  background: var(--ink-line);
+}
+
+.pick-bar-cell.is-on {
+  background: var(--sick);
+}
+
+.pick-bar.is-strong .pick-bar-cell.is-on {
+  background: var(--amber);
 }
 
 .pick-option.is-chosen {
