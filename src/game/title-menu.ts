@@ -17,6 +17,8 @@ export interface TitleMenuItem {
   readonly style?: GameStyle;
   /** Shows as ??? until the player has found this. */
   readonly needs?: 'radio';
+  /** The highlighted button, and the one the menu opens pointed at. */
+  readonly primary?: boolean;
 }
 
 /** What an item reads as: its name, or ??? while what it needs has not been found. */
@@ -31,17 +33,22 @@ export function menuLine(item: TitleMenuItem, unlock: SoundUnlock): string {
   return hidden ? '' : item.line;
 }
 
-/** Daily Night first, so it is the default, then Arcade and Campaign. */
+/** How to Play first, then Daily Night (the primary, where the menu opens), Arcade and Campaign. */
 export const TITLE_MENU: readonly TitleMenuItem[] = [
-  { page: 'daily', label: 'Daily Night', line: 'A fresh night every day.' },
+  { page: 'howto', label: 'How to Play', line: 'Controls and the rules of the night.' },
+  { page: 'daily', label: 'Daily Night', line: 'A fresh night every day.', primary: true },
   { page: 'play', label: 'Arcade', style: 'arcade', line: 'Ten levels in a row. Die and the run ends.' },
   { page: 'play', label: 'Campaign', style: 'campaign', line: 'Live in a bunker. Run trips, haul treasure home.' },
-  { page: 'howto', label: 'How to Play', line: 'Controls and the rules of the night.' },
   { page: 'levels', label: 'Levels', line: 'Jump to an Arcade level you have reached.' },
   { page: 'records', label: 'Records', line: 'Your best runs, trips and scores.' },
   { page: 'sound', label: 'Sound Test', line: 'Hear the music and effects.' },
   { page: 'options', label: 'Options', line: 'Sound, display, motion and controls.' },
 ];
+
+/** Where the menu starts: the primary item, or the top if none is marked. */
+export function primaryIndex(entries: readonly TitleMenuItem[] = TITLE_MENU): number {
+  return Math.max(0, entries.findIndex((item) => item.primary === true));
+}
 
 /** The Levels page belongs to Arcade; Campaign picks its level at the garage map in the bunker. */
 export const LEVELS_PAGE_NOTE = 'Arcade levels: pick one you have reached to start there. Campaign picks its level at the garage map.';

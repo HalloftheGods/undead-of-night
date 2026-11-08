@@ -36,9 +36,9 @@ export const CHANGE_NOTES: readonly ChangeNote[] = [
     date: '2026-11-08',
     kind: 'better',
     title: 'Daily Night up top',
-    deck: 'The main menu now opens on Daily Night, then Arcade, then Campaign.',
+    deck: 'The main menu now reads How to Play, Daily Night, Arcade, then Campaign.',
     points: [
-      'Daily Night is the first button, so Enter on the menu starts the day\'s night.',
+      'How to Play sits on top. The menu still opens pointed at Daily Night, so Enter starts the day\'s night.',
       'The Play setup lists Arcade before Campaign to match.',
     ],
   },

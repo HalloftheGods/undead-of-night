@@ -38,7 +38,7 @@ import { setPendingRoomCode } from '../game/pending-room.ts';
 import { markPressAnswered, shouldAskForPress } from '../game/press-start.ts';
 import { onlineRoomsLive } from '../network/play-api.ts';
 import { BRAND_MARK, STUDIO_LINE } from '../game/studio-splash.ts';
-import { TITLE_MENU } from '../game/title-menu.ts';
+import { primaryIndex, TITLE_MENU } from '../game/title-menu.ts';
 import type { TitleMenuItem } from '../game/title-menu.ts';
 import { closePage, closePlay, INVITE_LANDING, openPage, pickLevel, TITLE_HOME } from '../game/title-nav.ts';
 import InstallCartridge from './InstallCartridge.vue';
@@ -80,7 +80,7 @@ if (invite) {
   window.history.replaceState(null, '', withoutJoinParam(window.location.href));
 }
 /** Lives here, so Back returns to the item the player left from. */
-const selected = ref(0);
+const selected = ref(primaryIndex());
 
 function answer(): void {
   markPressAnswered();
