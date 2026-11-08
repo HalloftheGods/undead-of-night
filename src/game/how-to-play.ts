@@ -48,6 +48,7 @@ export const HOW_TO_SECTIONS: readonly HowToSection[] = [
       'Touch: put your left thumb down and drag to move.',
       'Touch anywhere else to aim there and fire. Tap a head for a headshot. Hold and drag to keep firing.',
       'The buttons along the edge do the rest. Hold Search.',
+      'Bottles, molotovs, flares and candy get their own buttons beside the bar while you carry them.',
     ],
   },
   {

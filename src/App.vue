@@ -1,5 +1,5 @@
 <template>
-  <main class="game-root" :class="{ 'is-aiming': aiming, 'is-touch': ui.touch }">
+  <main class="game-root" :class="{ 'is-aiming': aiming, 'is-touch': ui.touch, 'has-touch-items': touchItemsShown }">
     <canvas ref="canvasRef" class="game-canvas" />
 
     <TitleScreen v-if="ui.screen === 'title'" :ui />
@@ -8,7 +8,7 @@
       <template v-if="ui.hud && ui.art">
         <HudOverlay :hud="ui.hud" :art="ui.art" :mode="ui.mode" :signal-weak="ui.signalWeak" :place="ui.place" :home="ui.home" :log="ui.log" />
         <DownedOverlay v-if="ui.hud.status !== 'alive'" :hud="ui.hud" :mode="ui.mode" />
-        <TouchControls v-if="ui.touch" />
+        <TouchControls v-if="ui.touch" :hud="ui.hud" :art="ui.art" />
         <EmoteWheel :art="ui.art" :enabled="emotesOn" />
         <RoomInvite v-if="ui.onlineRoom && !ui.paused && ui.hud.teammates.length === 0" :room="ui.onlineRoom" :is-public="ui.onlinePublic" />
       </template>
@@ -82,6 +82,7 @@ import { privacyOpen, startAnalytics } from './game/analytics/index.ts';
 import { GameController } from './game/game-controller.ts';
 import { aimsCursor } from './game/home-screens.ts';
 import { shouldShowSplash } from './game/studio-splash.ts';
+import { touchItems } from './game/touch-items.ts';
 
 const game = new GameController();
 const ui = game.ui;
@@ -91,6 +92,8 @@ const aiming = computed(() =>
   aimsCursor({ screen: ui.value.screen, paused: ui.value.paused, mapOpen: ui.value.mapOpen, bench: !!ui.value.hud?.bench, home: ui.value.home })
 );
 /** The wheel is for a team, and only while the keys are the game's. */
+// The throw and candy buttons take a row (a column on a wide screen) the HUD must stand clear of.
+const touchItemsShown = computed(() => ui.value.touch && ui.value.hud !== null && touchItems(ui.value.hud).length > 0);
 const emotesOn = computed(() => aiming.value && ui.value.mode === 'coop');
 
 provide(GAME_KEY, game);
