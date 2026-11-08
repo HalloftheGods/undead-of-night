@@ -136,7 +136,7 @@ describe('far legs', () => {
   });
 
   it('shades the right-hand leg facing the camera and from behind, as the light falls', () => {
-    // Bandus has no leg trim, so the strips hang from the hip line unmoved.
+    // Bear has no leg trim, so the strips hang from the hip line unmoved.
     const far = farLegsLegend(BANDUS);
     for (const dir of [2, 6] as const) {
       const sprite = drawPose(BANDUS, 'pistol', dir, {});
@@ -215,7 +215,7 @@ describe('small build', () => {
     });
   });
 
-  it('leaves most of Sol’s legs in view from the front, as from behind', () => {
+  it('leaves most of Kai’s legs in view from the front, as from behind', () => {
     const marker = RAMPS.teal[1];
     const legs = Object.fromEntries([...LEG_LETTERS].map((letter) => [letter, marker]));
     const marked: Person = { ...SOL, legend: { ...SOL.legend, ...legs }, farLegend: { ...SOL.farLegend, ...legs } };

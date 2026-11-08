@@ -1,4 +1,4 @@
-// Sol's look (#7128): round glasses drawn as rims with the eyes showing through, and
+// Kai's look (#7128): round glasses drawn as rims with the eyes showing through, and
 // dark-brown hair that keeps an edge against the outline instead of outline ink.
 // These checks pin the grid shapes only; how the sprite reads is judged by eye on the
 // contact sheets, not here.
@@ -9,7 +9,7 @@ import type { Color } from '../src/art/palette.ts';
 import { SOL } from '../src/art/survivors/sol.ts';
 
 const INKS = new Set<Color>(RAMPS.ink);
-/** Letters that draw outline ink in Sol's grids: the glasses rims and the pupils. */
+/** Letters that draw outline ink in Kai's grids: the glasses rims and the pupils. */
 const OUTLINE = new Set(['k', 'K']);
 /** Heads that face the viewer and wear the glasses: E, SE and S. */
 const FACE_DIRS = [0, 1, 2] as const;
@@ -22,7 +22,7 @@ function inkCount(rows: readonly string[]): number {
   return n;
 }
 
-describe('Sol glasses (#7128)', () => {
+describe('Kai glasses (#7128)', () => {
   it('keeps every face head under the ink budget', () => {
     for (const dir of FACE_DIRS) expect(inkCount(SOL.heads[dir].rows), `head ${dir}`).toBeLessThanOrEqual(MAX_FACE_INK);
   });
@@ -39,7 +39,7 @@ describe('Sol glasses (#7128)', () => {
   });
 });
 
-describe('Sol hair (#7128)', () => {
+describe('Kai hair (#7128)', () => {
   it('maps no hair letter to outline ink, near or far', () => {
     for (const letter of ['h', 'i', 'j']) {
       // A letter the legend leaves out or blanks is not ink either.

@@ -63,7 +63,7 @@ describe('survivors', () => {
     }
   });
 
-  it('makes Sol the smallest of the cast', () => {
+  it('makes Kai the smallest of the cast', () => {
     const heights = art.map((skin) => bounds(skin.weapons.pistol.idle[2].frames[0]).h);
     const sol = heights[heights.length - 1];
     expect(heights.slice(0, -1).every((height) => height > sol)).toBe(true);

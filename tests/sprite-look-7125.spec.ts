@@ -1,4 +1,4 @@
-// Bandus's own look, the grizzly bear suit (#7125, redrawn in #7169): no outline-ink fills,
+// Bear's own look, the grizzly bear suit (#7125, redrawn in #7169): no outline-ink fills,
 // an outer suit that never drops below wood[1] so it stays off the road, two round ears on
 // every hood, thick arms that keep their colour across the chest, silvertips on the shoulder
 // hump, a tan belly from the front and only a stub tail behind. These pin the data in
@@ -25,7 +25,7 @@ function runs(row: string): number[] {
   return row.split('.').filter((run) => run.length > 0).map((run) => run.length);
 }
 
-describe('Bandus grizzly look (#7125, #7169)', () => {
+describe('Bear grizzly look (#7125, #7169)', () => {
   it('maps only the outline letters to ink, near and far', () => {
     for (const legend of [BANDUS.legend, BANDUS.farLegend]) {
       for (const [letter, color] of Object.entries(legend)) {

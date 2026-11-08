@@ -1,4 +1,4 @@
-// Bandus's costumes, default first. See ../costume.ts.
+// Bear's costumes, default first. See ../costume.ts.
 // Grizzly is his default look, drawn in ../bandus.ts. Polar Bear and Honey Bear reuse the
 // grizzly's hood, tail and build with their own colours; Polar Bear also draws a red scarf
 // over the torso. Recruit is his look from before the bear suit, kept unchanged: a plain red

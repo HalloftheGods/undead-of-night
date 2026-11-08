@@ -256,7 +256,7 @@ describe('searching a treasure container', () => {
     throw new Error('nowhere to stand');
   }
 
-  /** Searches one container 2000 times as Sol, holding the given loot, and counts what was turned up besides treasure. */
+  /** Searches one container 2000 times as Kai, holding the given loot, and counts what was turned up besides treasure. */
   function searches(loot: ContainerLoot | null) {
     const { state, p } = townWithSurvivor();
     const container = townContainers(state.map).find((candidate) => candidate.building !== undefined);

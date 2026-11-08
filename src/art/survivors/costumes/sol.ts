@@ -1,6 +1,6 @@
-// Sol's costumes, default first. See ../costume.ts.
+// Kai's costumes, default first. See ../costume.ts.
 // Each is a kid's dress-up of a game-hero archetype, drawn as an original outfit with no
-// letters, logos or emblems. Every costume keeps Sol's round glasses as the default draws
+// letters, logos or emblems. Every costume keeps Kai's round glasses as the default draws
 // them: his heads' K, k, l and m letters stay at the same cell pixels with the same
 // colours in every facing (tests/costumes-sol.spec.ts checks it). Each keeps his small
 // build and changes only what sits above the glasses and the clothes.
@@ -13,7 +13,7 @@ import { SOL } from '../sol.ts';
 
 const { acid, blood, bone, denim, fire, metal, wood } = RAMPS;
 
-/** Sol's legend with the clothes letters replaced; the face and glasses letters stay his. */
+/** Kai's legend with the clothes letters replaced; the face and glasses letters stay his. */
 function dressed(clothes: Legend): Legend {
   return { ...SOL.legend, ...clothes };
 }
@@ -166,7 +166,7 @@ const ADVENTURER: Person = {
   },
   sleeve: [acid[0], acid[1], acid[2]],
   cuff: [bone[1], bone[2], bone[3]],
-  // Wider grids hold the drooping tip; dx keeps the face where Sol's is.
+  // Wider grids hold the drooping tip; dx keeps the face where Kai's is.
   heads: {
     0: { rows: [
       '.....HGGGH...',

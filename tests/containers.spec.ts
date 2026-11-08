@@ -241,7 +241,7 @@ function fixRoll(state: SimState, roll: number): void {
   (state as { rng: () => number }).rng = () => roll;
 }
 
-describe('Sol\'s luck', () => {
+describe('Kai\'s luck', () => {
   const skin = CHARACTERS.findIndex((character) => character.id === 'sol');
   const { searchLuck } = CHARACTERS[skin];
 
@@ -256,7 +256,7 @@ describe('Sol\'s luck', () => {
     return eventsOf(sim.snapshot(), 'container_opened')[0].found;
   }
 
-  it('is a modest edge, and Sol\'s alone', () => {
+  it('is a modest edge, and Kai\'s alone', () => {
     expect(searchLuck).toBeGreaterThan(0.1);
     expect(searchLuck).toBeLessThanOrEqual(0.2);
     expect(CHARACTERS.filter((character) => character.searchLuck > 0).map((character) => character.id)).toEqual(['sol']);
