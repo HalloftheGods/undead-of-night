@@ -24,7 +24,7 @@
     <KeepsakeOffer v-if="hud.keepsakeOffer" :offer="hud.keepsakeOffer" />
 
     <ul v-if="hud.teammates.length" class="hud-team">
-      <li v-for="mate in hud.teammates" :key="mate.id" class="hud-chip">
+      <li v-for="mate in hud.teammates" :key="mate.id" class="hud-chip hud-mate" :style="{ '--mate': mate.color }">
         <span :class="{ 'is-threat': mate.status !== 'alive' }">{{ mate.name }}</span>
         <span class="hud-sub">{{ mate.character }}</span>
         <span v-if="mate.status !== 'alive'" class="hud-sub is-threat">{{ mate.status }}</span>
@@ -286,6 +286,11 @@ function slotClass(weapon: WeaponId): Record<string, boolean> {
   flex-direction: column;
   gap: calc(var(--u) * 2);
   list-style: none;
+}
+
+/* The same colour marks this teammate on the map. */
+.hud-mate {
+  border-left: calc(var(--u) * 1.5) solid var(--mate);
 }
 
 .hud-team-meter {

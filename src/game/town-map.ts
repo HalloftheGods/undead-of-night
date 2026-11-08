@@ -7,6 +7,7 @@ import type { BuildingInstance, BuildingKind, DropView, EntityId, ExitEntity, Pl
 import { drawOutlinedText, FONT_HEIGHT, textWidth } from '../engine/bitmap-font.ts';
 import { drawCursor } from './map-cursor.ts';
 import type { CursorClock } from './map-cursor.ts';
+import { drawTeammateLocator } from './map-teammate.ts';
 import { isLandmark } from './run-notices.ts';
 
 /** Map pixels per world tile. 200 tiles makes a 400px map, which scales up by whole numbers. */
@@ -92,8 +93,6 @@ const DISTRICT_COLOR = '#938d7a';
 const LABEL_COLOR = '#e4dcc3';
 export const TICK_COLOR = '#b6e04a';
 export const CROSS_COLOR = '#e0463a';
-const TEAM_COLOR = '#e8a33d';
-const DOWNED_COLOR = '#e0463a';
 
 const TICK_PIXELS: readonly (readonly [number, number])[] = [[0, 2], [1, 3], [2, 2], [3, 1], [4, 0]];
 /** Label positions tried in turn around a building until one is clear. */
@@ -344,14 +343,9 @@ export class TownMapView {
     ctx.fillRect(midX, midY, 2, 2);
   }
 
-  private drawTeammate(ctx: CanvasRenderingContext2D, player: PlayerEntity): void {
+  private drawTeammate(ctx: CanvasRenderingContext2D, player: PlayerEntity, clock: CursorClock): void {
     const at = groundOf(this.map, player.x, player.y);
-    const x = Math.round(at.x / this.worldPerPx);
-    const y = Math.round(at.y / this.worldPerPx);
-    ctx.fillStyle = EDGE_COLOR;
-    ctx.fillRect(x - 2, y - 2, 5, 5);
-    ctx.fillStyle = player.status === 'alive' ? TEAM_COLOR : DOWNED_COLOR;
-    ctx.fillRect(x - 1, y - 1, 3, 3);
+    drawTeammateLocator(ctx, Math.round(at.x / this.worldPerPx), Math.round(at.y / this.worldPerPx), player, clock, this);
   }
 
   /** A red box where the supply drop is coming down, or came down. */
@@ -398,7 +392,7 @@ export class TownMapView {
     const onMap = players.filter((player) => player.status !== 'dead');
     for (const player of onMap) {
       const isTeammate = player.id !== localId;
-      if (isTeammate) this.drawTeammate(ctx, player);
+      if (isTeammate) this.drawTeammate(ctx, player, clock);
     }
     // The local player goes last, so nobody's mark covers the cursor.
     const local = onMap.find((player) => player.id === localId);
