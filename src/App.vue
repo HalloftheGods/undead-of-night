@@ -10,6 +10,7 @@
         <DownedOverlay v-if="ui.hud.status !== 'alive'" :hud="ui.hud" :mode="ui.mode" />
         <TouchControls v-if="ui.touch" />
         <EmoteWheel :art="ui.art" :enabled="emotesOn" />
+        <RoomInvite v-if="ui.onlineRoom && !ui.paused && ui.hud.teammates.length === 0" :room="ui.onlineRoom" />
       </template>
       <LevelCard v-if="ui.levelCard" :key="ui.levelCard.key" :card="ui.levelCard" />
       <WaveBanner v-if="ui.banner" :key="ui.banner.key" :banner="ui.banner" />
@@ -58,6 +59,7 @@ import ForgeScreen from './components/ForgeScreen.vue';
 import GameOverScreen from './components/GameOverScreen.vue';
 import GarageMap from './components/GarageMap.vue';
 import HudOverlay from './components/HudOverlay.vue';
+import RoomInvite from './components/RoomInvite.vue';
 import LevelCard from './components/LevelCard.vue';
 import { EndingFlow, JukeboxScreen, prefetchLazyPages } from './components/lazy-pages.ts';
 import LogPanel from './components/log/LogPanel.vue';

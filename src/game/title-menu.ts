@@ -80,11 +80,12 @@ export function isConfirmKey(code: string): boolean {
   return code === 'Enter' || code === 'NumpadEnter';
 }
 
-/** The setup page's one button, which also says why it cannot be pressed yet. */
-export function setupActionLabel(coop: boolean, artReady: boolean, connecting: boolean): string {
+/** The setup page's one button, which also says why it cannot be pressed yet. `hosts`: co-op with a blank field makes a new online room. */
+export function setupActionLabel(coop: boolean, artReady: boolean, connecting: boolean, hosts: boolean = false): string {
   if (!artReady) return 'Loading...';
   if (connecting) return 'Connecting...';
-  return coop ? 'Join' : 'Start';
+  if (!coop) return 'Start';
+  return hosts ? 'Host room' : 'Join';
 }
 
 export interface RecordStat {
