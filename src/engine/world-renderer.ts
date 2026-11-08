@@ -318,7 +318,8 @@ export class WorldRenderer {
     this.atmosphere.drawWeather(ctx, left, top, viewW, viewH, time, outdoors);
     this.effects.draw(ctx, viewW, viewH);
     this.overlay.draw(ctx, scene, left, top, viewW, viewH, time, lightAt, isKilled);
-    this.emotes.draw(ctx, scene, left, top, viewW, viewH, time);
+    this.emotes.draw(ctx, scene, left, top, viewW, viewH, time, (id) => this.overlay.headroomOf(id));
+    this.fx.particles.keepTextsClear(this.overlay.sugarKeepOuts());
     this.fx.particles.drawTexts(ctx, left, top);
     if (scene.showCrosshair) this.overlay.drawCrosshair(ctx, scene, left, top, lightAt, isKilled);
 

@@ -20,6 +20,18 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'candy-timer',
+    date: '2026-11-08',
+    kind: 'new',
+    title: 'Candy timer overhead',
+    deck: 'While a candy works, its boost and the seconds left float over your head.',
+    points: [
+      'A word for what it boosts (SPEED, ARMOR, RELOAD...) and a bar that drains for the whole boost.',
+      'It blinks in the last five seconds, so you know it is about to wear off.',
+      'In co-op you see your team\'s candy too. Pickup notes float clear of it.',
+    ],
+  },
+  {
     id: 'mode-order',
     date: '2026-11-08',
     kind: 'better',
