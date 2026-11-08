@@ -11,7 +11,7 @@ import { emit } from './sim-state.ts';
 import { makeNoise } from './zombie-senses.ts';
 import { maybeCarAlarm, scroungeBottle } from './bottles.ts';
 import { stashIn, takeStash } from './throwables.ts';
-import { candyIn, takeCandy } from './candy.ts';
+import { candyCarry, candyIn, takeCandy } from './candy.ts';
 import { hasKeepsake, RABBIT_LUCK } from './keepsakes.ts';
 
 /** Odds that a search knocks something over. */
@@ -45,13 +45,31 @@ function findIn(sim: SimState, p: PlayerState, id: number): Finds {
   const treasure = loot !== null && isTreasurePickup(loot.type) ? loot : null;
   const stored = treasure ? null : loot;
   const luck = characterOf(p.skin).searchLuck + (hasKeepsake(p, 'rabbit_foot') ? RABBIT_LUCK : 0);
-  const lucky = stored === null && sim.rng() < luck;
+  // A candy bowl holds candy and nothing else, however lucky the hand in it.
+  const isBowl = townContainers(sim.map)[id].kind === 'bowl';
+  const lucky = stored === null && !isBowl && sim.rng() < luck;
   const ordinary = lucky ? rollFind(sim, townContainers(sim.map)[id].buildingKind) : stored;
   return { treasure, ordinary };
 }
 
+/**
+ * A bowl's candy only goes into a bag with room. Full, the searcher is told so and the bowl stays out
+ * for whoever comes next. True if it did.
+ */
+function bowlLeftFor(sim: SimState, p: PlayerState, id: number): boolean {
+  const container = townContainers(sim.map)[id];
+  const isFullAtBowl = container.kind === 'bowl' && p.candy.length >= candyCarry(p);
+  if (!isFullAtBowl) return false;
+  emit(sim, { type: 'container_opened', playerId: p.id, container: id, x: p.x, y: p.y, found: false, noisy: false, full: true });
+  stopSearch(p);
+  p.searchSpent = true;
+  return true;
+}
+
 /** Whatever was in it falls at the searcher's feet, for them or for whoever has room for it. */
 function finishSearch(sim: SimState, p: PlayerState, id: number): void {
+  const leftOut = bowlLeftFor(sim, p, id);
+  if (leftOut) return;
   const state = sim.containers[id];
   const { treasure, ordinary } = findIn(sim, p, id);
   state.opened = true;
@@ -62,8 +80,8 @@ function finishSearch(sim: SimState, p: PlayerState, id: number): void {
   if (noisy) makeNoise(sim, p.x, p.y, CLATTER_RADIUS * noise);
   if (treasure) spawnPickup(sim, treasure.type, p.x, p.y, treasure.rounds);
   if (ordinary) spawnPickup(sim, ordinary.type, p.x, p.y, ordinary.rounds);
-  const bottle = ordinary === null && scroungeBottle(sim, p);
   const container = townContainers(sim.map)[id];
+  const bottle = ordinary === null && container.kind !== 'bowl' && scroungeBottle(sim, p);
   const thrown = takeStash(p, stashIn(sim.map.seed, container));
   const candy = thrown ? null : takeCandy(p, candyIn(sim.map.seed, container));
   const stash = thrown ?? (candy ? 'candy' : null);

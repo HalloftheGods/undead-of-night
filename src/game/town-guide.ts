@@ -6,7 +6,7 @@
 // round kits, Radios and jewels a whole town has. Each find is ranked Always, Often, Sometimes or Rare.
 
 import { BOTTLE_FIND_CHANCE, CAR_ALARM_CHANCE } from '../../shared/bottles.ts';
-import { CANDY_ODDS } from '../../shared/candy.ts';
+import { CANDY_ODDS, DOORSTEP_HOMES } from '../../shared/candy.ts';
 import { CONTAINER_LOOT } from '../../shared/container-loot.ts';
 import { OUTDOOR_CONTAINERS, ROOM_CONTAINERS } from '../../shared/containers.ts';
 import type { ContainerKind } from '../../shared/containers.ts';
@@ -87,7 +87,7 @@ const BLURBS: Readonly<Record<PlaceId, string>> = {
   grocery: 'Long aisles of first aid. Not much else is left on the shelves.',
   discount: 'Cheap goods: bandages, the odd knife, half a box of rounds.',
   diner: 'A kitchen, so a knife turns up more often here than anywhere. The fridge keeps more than food.',
-  house: 'Where the spare ammo went: a box in a drawer is why a house is worth going in.',
+  house: 'Where the spare ammo went: a box in a drawer is why a house is worth going in. Candy waits on the step.',
   apartment: 'Like a house, with more drawers to go through.',
   upstairs: 'Bedrooms: where a night\'s candy haul gets hidden.',
   cellar: 'Worth the trip down for first aid, and the noise it brings.',
@@ -203,7 +203,7 @@ function mergeFinds(first: readonly GuideFind[], second: readonly GuideFind[]): 
 /** Floors above and below are only ever seen from inside, so their pages show what is searched there. */
 const PICTURES: Partial<Record<PlaceId, GuidePlace['picture']>> = { upstairs: { container: 'drawer' }, cellar: { container: 'shelf' }, cars: { container: 'car' } };
 
-const CONTAINER_ORDER: readonly ContainerKind[] = ['drawer', 'fridge', 'cabinet', 'shelf', 'locker', 'box', 'car'];
+const CONTAINER_ORDER: readonly ContainerKind[] = ['bowl', 'drawer', 'fridge', 'cabinet', 'shelf', 'locker', 'box', 'car'];
 
 function searchSpots(kinds: readonly Partial<Record<string, ContainerKind>>[]): ContainerKind[] {
   const found = new Set(kinds.flatMap((spots) => Object.values(spots)));
@@ -216,15 +216,22 @@ function kitchenFinds(kind: BuildingKind): GuideFind[] {
   return isKitchen ? [{ id: 'knife', name: FIND_NAMES.knife ?? 'Knife', icon: 'knife', tier: stashTier(KITCHEN_KNIFE_ODDS), weight: KITCHEN_KNIFE_ODDS }] : [];
 }
 
+/** Halloween night: a home's candy bowl by the front door always holds one. */
+function doorstepFinds(kind: BuildingKind): GuideFind[] {
+  const hasBowl = DOORSTEP_HOMES.has(kind);
+  return hasBowl ? [{ id: 'candy', name: 'Candy', icon: 'candy', tier: 'always', weight: 1, note: 'In the bowl by the front door' }] : [];
+}
+
 function buildingFinds(kind: BuildingKind): GuideFind[] {
-  return mergeFinds([...stockFinds(kind), ...stashFinds(kind, false), ...townFinds(kind)], kitchenFinds(kind));
+  const inside = mergeFinds([...stockFinds(kind), ...stashFinds(kind, false), ...townFinds(kind)], kitchenFinds(kind));
+  return mergeFinds(inside, doorstepFinds(kind));
 }
 
 /** The street: cars and the crates left by the road. */
 function carsPlace(): GuidePlace {
   const radio: GuideFind = { id: 'radio', name: 'Radio', icon: 'radio', tier: stashTier(CAR_RADIO_ODDS), weight: CAR_RADIO_ODDS, note: 'Cars only' };
   const finds = [...stockFinds('outdoors'), ...stashFinds('outdoors', true), radio];
-  return { id: 'cars', name: 'Cars & Streets', picture: { container: 'car' }, blurb: BLURBS.cars, searchIn: searchSpots([OUTDOOR_CONTAINERS]), finds: ranked(finds) };
+  return { id: 'cars', name: 'Cars & Streets', picture: { container: 'car' }, blurb: BLURBS.cars, searchIn: searchSpots([OUTDOOR_CONTAINERS]).filter((spot) => spot !== 'bowl'), finds: ranked(finds) };
 }
 
 function buildingPlace(kind: Exclude<PlaceId, 'cars'>): GuidePlace {
@@ -232,6 +239,8 @@ function buildingPlace(kind: Exclude<PlaceId, 'cars'>): GuidePlace {
   // A house's upstairs and an apartment's read as one page: their tables only differ in a fridge.
   const finds = isUpstairs ? mergeFinds(buildingFinds('upstairs'), buildingFinds('apartment_upstairs')) : buildingFinds(kind);
   const spots = isUpstairs ? [ROOM_CONTAINERS.upstairs, ROOM_CONTAINERS.apartment_upstairs] : [ROOM_CONTAINERS[kind]];
+  const hasBowl = DOORSTEP_HOMES.has(kind);
+  if (hasBowl) spots.push({ candy_bowl: 'bowl' });
   return { id: kind, name: BUILDING_DEFS[kind].label, picture: PICTURES[kind] ?? { building: kind }, blurb: BLURBS[kind], searchIn: searchSpots(spots), finds: ranked(finds) };
 }
 

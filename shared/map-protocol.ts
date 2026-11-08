@@ -90,6 +90,8 @@ export const PROP_DEFS = {
   /** Set into the hall's west wall, its footprint all rock, so nothing walks differently for it. */
   blast_door: { w: 16, h: 48 },
   chest: { w: 16, h: 10 },
+  /** A carved pumpkin of candy by a home's front door on Halloween night: searched, it gives one. */
+  candy_bowl: { w: 10, h: 6 },
 } as const;
 export type PropKind = keyof typeof PROP_DEFS;
 export const PROP_KINDS = Object.keys(PROP_DEFS) as PropKind[];

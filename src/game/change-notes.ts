@@ -22,6 +22,18 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'halloween-night',
+    date: '2026-11-08',
+    kind: 'new',
+    title: 'It is Halloween night',
+    deck: 'The town got ready for trick-or-treaters before the dead came.',
+    points: [
+      'Houses and apartments wear string lights, carved pumpkins and cobwebs.',
+      'Every home has a candy bowl by its front door: search it for a candy.',
+      'A full bag leaves the bowl where it is for the next survivor.',
+    ],
+  },
+  {
     id: 'setup-titles',
     date: '2026-11-08',
     kind: 'better',

@@ -76,6 +76,9 @@ export const CANDY_ODDS: Partial<Record<Container['buildingKind'], number>> = {
   warehouse: 0.04,
   gun_shop: 0.03,
 };
+/** Halloween night: every home left a bowl out by the front door for the trick-or-treaters, and the dead don't eat candy. */
+export const DOORSTEP_HOMES: ReadonlySet<Container['buildingKind']> = new Set(['house', 'apartment']);
+export const BOWL_CANDY_ODDS = 1;
 const CANDY_SALT = 0x43414e44;
 const WEIGHTS: Partial<Record<CandyId, number>> = Object.fromEntries(CANDY_ORDER.map((id) => [id, CANDIES[id].weight]));
 
@@ -84,12 +87,13 @@ export interface SugarState {
   left: number;
 }
 
-/** The candy a container hides, if any. Cars never hold candy. */
+/** The candy a container hides, if any. Cars never hold candy; a bowl by a door always does. */
 export function candyIn(seed: number, container: Container): CandyId | null {
   const isCar = container.kind === 'car';
   if (isCar) return null;
   const rng = createRng((seed ^ CANDY_SALT ^ Math.imul(container.id + 1, 0x85ebca6b)) >>> 0);
-  const odds = CANDY_ODDS[container.buildingKind] ?? 0;
+  const isBowl = container.kind === 'bowl';
+  const odds = isBowl ? BOWL_CANDY_ODDS : CANDY_ODDS[container.buildingKind] ?? 0;
   const found = rng() < odds;
   return found ? pickWeighted(rng, WEIGHTS) : null;
 }
