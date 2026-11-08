@@ -68,7 +68,7 @@ const HEAL: PadGlyph = [
 ];
 
 /** A magnifying glass. */
-const SEARCH: PadGlyph = [
+export const SEARCH: PadGlyph = [
   '..####.....',
   '.#....#....',
   '#......#...',
@@ -98,7 +98,7 @@ const RELOAD: PadGlyph = [
 ];
 
 /** A burst of impact lines: the shove, or the stab with a knife. */
-const SHOVE: PadGlyph = [
+export const SHOVE: PadGlyph = [
   '.....#.....',
   '.#...#...#.',
   '..#..#..#..',
@@ -110,6 +110,21 @@ const SHOVE: PadGlyph = [
   '..#..#..#..',
   '.#...#...#.',
   '.....#.....',
+];
+
+/** A backpack with straps. */
+export const BACKPACK: PadGlyph = [
+  '...........',
+  '..##...##..',
+  '..##...##..',
+  '.#########.',
+  '.#.......#.',
+  '.#..###..#.',
+  '.#..###..#.',
+  '.#..###..#.',
+  '.#.......#.',
+  '.#########.',
+  '...........',
 ];
 
 /** Top to bottom on a wide screen and left to right on a tall one, so the busiest sit under the right thumb. */

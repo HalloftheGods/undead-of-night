@@ -21,6 +21,8 @@
         @input="onVolume"
       />
 
+      <GestureHints />
+
       <PixelButton class="pause-resume" primary silent @press="game.togglePause()">Resume</PixelButton>
       <p v-if="warning" class="px-error" role="alert">{{ warning }}</p>
       <PixelButton @press="game.toMenu()">Main menu</PixelButton>
@@ -33,6 +35,7 @@ import { computed } from 'vue';
 import { leaveWarning } from '../game/home-screens.ts';
 import type { UiState } from '../game/hud-state.ts';
 import type { TransportKind } from '../network/transport.ts';
+import GestureHints from './GestureHints.vue';
 import PixelButton from './PixelButton.vue';
 import { useRoomLink } from './use-room-link.ts';
 import { useGame } from './use-game.ts';

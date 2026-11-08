@@ -1,4 +1,6 @@
 import type { Point } from '../../shared/flow-field.ts';
+import { endSwipe, isSwipeZone, moveSwipe, startSwipe } from './swipe-gesture.ts';
+import type { SwipeDirection, SwipeTracker } from './swipe-gesture.ts';
 import { dragStick, inStickZone, startStick, stickAngle, stickDirection } from './touch-stick.ts';
 import type { Stick } from './touch-stick.ts';
 
@@ -16,6 +18,13 @@ export interface TouchHost {
   onGesture(): void;
   /** The first touch of the page, for a device that never said it was a touch screen. */
   onSeen(): void;
+  /** A swipe gesture completed outside the stick zone. */
+  onSwipe?(direction: SwipeDirection): void;
+  /**
+   * Called on initial tap to allow aim assist. Returns adjusted coordinates if
+   * aim assist should snap to a target, or null to use the original position.
+   */
+  aimAssist?(x: number, y: number): { x: number; y: number } | null;
 }
 
 interface Finger {
@@ -53,6 +62,8 @@ export class TouchInput {
   /** The last hand on the game was a finger, so the mouse's habits are off. */
   used = isTouchDevice();
   stick: Stick | null = null;
+  /** Sensitivity multiplier for swipe detection (0.5-2.0). Higher = easier to trigger. */
+  swipeSensitivity = 1;
 
   private readonly host: TouchHost;
   private fingers: Finger[] = [];
@@ -61,6 +72,8 @@ export class TouchInput {
   private liftedAt = -Infinity;
   private lastTouchAt = -Infinity;
   private seen = false;
+  /** Tracks a potential swipe gesture in the aim zone. */
+  private swipeTracker: SwipeTracker | null = null;
 
   constructor(host: TouchHost) {
     this.host = host;
@@ -86,6 +99,7 @@ export class TouchInput {
     this.fingers = [];
     this.dirX = 0;
     this.dirY = 0;
+    this.swipeTracker = null;
   }
 
   clearLatch(): void {
@@ -121,14 +135,24 @@ export class TouchInput {
 
   private place(touch: Touch): void {
     const { identifier: id, clientX: x, clientY: y } = touch;
-    const walking = this.stick === null && inStickZone(x, y, window.innerWidth, window.innerHeight);
+    const { innerWidth: viewW, innerHeight: viewH } = window;
+    const walking = this.stick === null && inStickZone(x, y, viewW, viewH);
     if (walking) {
       this.stick = startStick(id, x, y);
       return;
     }
-    this.fingers.push({ id, x, y });
+    // Track for potential swipe if in the swipe zone and no other fingers are aiming
+    const canSwipe = this.fingers.length === 0 && isSwipeZone(x, y, viewW, viewH);
+    if (canSwipe) {
+      this.swipeTracker = startSwipe(id, x, y);
+    }
+    // Try aim assist on initial tap
+    const assisted = this.host.aimAssist?.(x, y);
+    const aimX = assisted?.x ?? x;
+    const aimY = assisted?.y ?? y;
+    this.fingers.push({ id, x: aimX, y: aimY });
     this.fireLatch = true;
-    this.host.aimAt(x, y);
+    this.host.aimAt(aimX, aimY);
   }
 
   private track(touch: Touch): void {
@@ -141,6 +165,11 @@ export class TouchInput {
       this.dirX = dir.x;
       this.dirY = dir.y;
       return;
+    }
+    // Update swipe tracker if this is the swiping finger
+    const tracker = this.swipeTracker;
+    if (tracker?.id === id) {
+      this.swipeTracker = moveSwipe(tracker, x, y);
     }
     const finger = this.fingers.find((each) => each.id === id);
     if (!finger) return;
@@ -157,6 +186,17 @@ export class TouchInput {
       this.dirX = 0;
       this.dirY = 0;
       return;
+    }
+    // Check for completed swipe before removing the finger
+    const tracker = this.swipeTracker;
+    if (tracker?.id === id) {
+      const result = endSwipe(tracker, this.swipeSensitivity);
+      if (result) {
+        this.host.onSwipe?.(result.direction);
+        // Clear fire latch so the swipe doesn't also shoot
+        this.fireLatch = false;
+      }
+      this.swipeTracker = null;
     }
     const lifted = this.fingers.find((each) => each.id === id);
     if (!lifted) return;
