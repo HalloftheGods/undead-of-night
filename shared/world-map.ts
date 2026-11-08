@@ -113,7 +113,7 @@ function spreadTerrain(b: MapBuilder): void {
 /** The candles in the jack-o'-lanterns: an orange pool over a home's front step, centred on its door just right of the bowl. */
 const JACK_GLOW = '#ff8a2a';
 const JACK_RADIUS = 100;
-const JACK_TO_DOOR = 22;
+const JACK_TO_DOOR = 25;
 const JACK_UP = 10;
 
 function lightsFor(props: readonly PropInstance[], rng: Rng): MapLight[] {

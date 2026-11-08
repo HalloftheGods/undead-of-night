@@ -125,7 +125,7 @@ function backStep(b: MapBuilder, building: BuildingInstance): void {
 }
 
 /** The candy bowl stands on the step just left of the door, inside the clear apron, against the wall. */
-const BOWL_SIDE_GAP = 9;
+const BOWL_SIDE_GAP = 12;
 
 /** Halloween night: every home has a bowl out for the trick-or-treaters. Fixed by the door, so it takes no roll. */
 function setOutBowl(b: MapBuilder, building: BuildingInstance): void {

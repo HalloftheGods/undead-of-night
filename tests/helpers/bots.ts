@@ -232,7 +232,8 @@ export class ScavengerBot {
   private nextContainer(me: PlayerEntity, opened: ReadonlySet<number>): Container | null {
     const stocked = usableRounds(me) >= ROUNDS_ENOUGH && me.health >= HEAL_BELOW;
     if (stocked) return null;
-    const here = townContainers(this.map).filter((c) => (c.building ?? null) === me.indoors);
+    // Candy bowls hold no rounds or first aid, which is all this bot goes looking for.
+    const here = townContainers(this.map).filter((c) => (c.building ?? null) === me.indoors && c.kind !== 'bowl');
     const spent = me.indoors !== null && here.filter((c) => opened.has(c.id)).length >= SEARCHES_PER_BUILDING;
     if (spent) return null;
     let best: Container | null = null;
