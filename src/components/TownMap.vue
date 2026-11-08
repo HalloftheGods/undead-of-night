@@ -12,6 +12,11 @@
           <li class="town-cross">X: cleared & searched</li>
         </template>
       </ul>
+      <ul v-if="teammates.length > 0" class="town-legend town-team" aria-label="Your team">
+        <li v-for="mate in teammates" :key="mate.id" :style="{ '--swatch': mate.color }">
+          <span class="town-swatch" />{{ mate.name }}<span v-if="mate.status !== 'alive'" class="town-down">{{ mate.status }}</span>
+        </li>
+      </ul>
       <p class="px-note">{{ key.waitNote(mode) }} <span class="keys-only">Tab to close</span></p>
       <MenuLink class="touch-only town-close" @press="game.toggleMap()">Close</MenuLink>
     </aside>
@@ -21,6 +26,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue';
 import { mapKey } from '../game/map-key.ts';
+import type { TeammateHud } from '../game/hud-state.ts';
 import type { TransportKind } from '../network/transport.ts';
 import MenuLink from './MenuLink.vue';
 import { useGame } from './use-game.ts';
@@ -28,7 +34,7 @@ import { useGame } from './use-game.ts';
 const SCREEN_MARGIN = 24;
 const KEY_WIDTH = 260;
 
-const { inBunker } = defineProps<{ mode: TransportKind; inBunker: boolean }>();
+const { inBunker, teammates = [] } = defineProps<{ mode: TransportKind; inBunker: boolean; teammates?: readonly TeammateHud[] }>();
 
 const game = useGame();
 const key = computed(() => mapKey(inBunker));
@@ -103,6 +109,14 @@ onBeforeUnmount(() => {
   width: calc(var(--u) * 5);
   height: calc(var(--u) * 5);
   background: var(--swatch);
+}
+
+.town-team li {
+  color: var(--swatch);
+}
+
+.town-down {
+  color: var(--blood-bright);
 }
 
 .town-tick {

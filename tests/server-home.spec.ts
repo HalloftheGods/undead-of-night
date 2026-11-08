@@ -487,6 +487,8 @@ describe('home over sockets', () => {
       const body = bodyOf(tab);
       homeOf(body).jewels = { small: 0, large: 1 };
       hurtPlayer(state, body, body.maxHealth * 2);
+      // They set out together at the van, so the friend steps away, or the server's next tick could hand them the dropped jewel.
+      bodyOf(friend).x = body.x + REVIVE_RANGE * 4;
       tab.crash();
       await left(1);
       expect(state.pickups.filter((item) => item.type === 'jewel_large').map((item) => item.rounds)).toEqual([200]);
