@@ -1,6 +1,8 @@
 import { isDifficultyId } from '../../shared/difficulty.ts';
 import { GAME_EVENT_TYPES, GAME_PHASES, PICKUP_TYPES } from '../../shared/events.ts';
 import { isGameStyle } from '../../shared/game-style.ts';
+import { SUPPLY_KINDS } from '../../shared/leftovers.ts';
+import type { LeftoverView } from '../../shared/leftovers.ts';
 import { WEAPON_ORDER } from '../../shared/protocol.ts';
 import { EFFECT_ORDER } from '../../shared/round-effect-data.ts';
 import type {
@@ -136,6 +138,14 @@ export function isWelcomePacket(v: unknown): v is WelcomePacket {
     && isFlag(v.resumed);
 }
 
+const SUPPLIES: readonly string[] = SUPPLY_KINDS;
+
+function isLeftoverView(v: unknown): v is LeftoverView {
+  const isShaped = isFields(v) && isString(v.building) && isFields(v.supplies);
+  if (!isShaped) return false;
+  return Object.entries(v.supplies as Fields).every(([kind, count]) => SUPPLIES.includes(kind) && isNumber(count));
+}
+
 export function isSnapshotPacket(v: unknown): v is SnapshotPacket {
   return isFields(v)
     && v.type === 'snapshot'
@@ -149,6 +159,7 @@ export function isSnapshotPacket(v: unknown): v is SnapshotPacket {
     && (v.drop === undefined || (isFields(v.drop) && hasNumbers(v.drop, ['x', 'y']) && typeof v.drop.landed === 'boolean'))
     && Array.isArray(v.openedContainers)
     && v.openedContainers.every(isNumber)
+    && (v.leftovers === undefined || (Array.isArray(v.leftovers) && v.leftovers.every(isLeftoverView)))
     && (v.tracks === undefined || (Array.isArray(v.tracks) && v.tracks.every(isTrackEntity)))
     && Array.isArray(v.events) && v.events.every(isGameEvent)
     && (v.gameOver === null || isGameOverStats(v.gameOver))

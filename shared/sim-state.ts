@@ -303,6 +303,8 @@ export interface SimState {
   zombies: ZombieState[];
   bullets: BulletState[];
   pickups: PickupState[];
+  /** Town buildings, by ground floor, that any player has been inside: where the map marks supplies left behind. */
+  entered: Set<string>;
   /** At the same index as the town's container list. */
   containers: ContainerState[];
   events: GameEvent[];
