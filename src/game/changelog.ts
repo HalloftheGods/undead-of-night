@@ -20,6 +20,18 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'fireworks-spinners',
+    date: '2026-11-08',
+    kind: 'new',
+    title: 'Fireworks',
+    deck: 'Fuel is gone. Garages, warehouses and diners hide fireworks now, and T lights one.',
+    points: [
+      'A lit firework lands where you aim as a ground spinner, a flower of colored sparks whirling on the street for five seconds.',
+      'The sparks set alight any zombie that walks through, and you too if you stand in them. The whistle and crackle draw a crowd.',
+      'No bottle needed any more. Popping Eyeballs throw the sparks half as far again; the Pocket Lighter keeps them spinning longer.',
+    ],
+  },
+  {
     id: 'left-behind-marks',
     date: '2026-11-08',
     kind: 'new',

@@ -52,9 +52,9 @@
           <span>{{ hud.bottles }}</span>
           <span class="hud-slot-key keys-only">G</span>
         </div>
-        <div v-if="hud.fuel > 0" class="hud-chip hud-bottles" :class="{ 'is-none': hud.bottles === 0 }">
-          <SpriteImg :sprite="art.ui.fuelCan" />
-          <span>{{ hud.fuel }}</span>
+        <div v-if="hud.fireworks > 0" class="hud-chip hud-bottles">
+          <SpriteImg :sprite="art.ui.fireworks" />
+          <span>{{ hud.fireworks }}</span>
           <span class="hud-slot-key keys-only">T</span>
         </div>
         <div v-if="hud.flares > 0" class="hud-chip hud-bottles">
@@ -339,8 +339,7 @@ function slotClass(weapon: WeaponId): Record<string, boolean> {
   color: var(--bone);
 }
 
-.hud-medkits.is-none,
-.hud-bottles.is-none {
+.hud-medkits.is-none {
   color: var(--bone-dim);
 }
 

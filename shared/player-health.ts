@@ -26,7 +26,7 @@ function resetKit(p: PlayerState, spareRounds: number): void {
   p.medkits = 0;
   p.knife = false;
   p.bottles = START_BOTTLES;
-  p.fuel = 0;
+  p.fireworks = 0;
   p.flares = 0;
   p.candy = [];
   p.sugar = [];

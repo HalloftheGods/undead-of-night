@@ -1,6 +1,7 @@
-import { hasKeepsake, LIGHTER_FIRE } from './keepsakes.ts';
-// Molotovs and flares: two throws besides the bottle, both found in town and both left behind
-// when the town is. A molotov is a bottle with fuel in it, so it spends one of each.
+import { hasKeepsake, LIGHTER_SPIN } from './keepsakes.ts';
+// Fireworks and flares: two throws besides the bottle, both found in town and both left behind
+// when the town is. A firework is lit and tossed, and lands as a ground spinner: a flower of sparks
+// whirling on the street that sets alight whatever walks through it.
 
 import { landingSpot } from './bottles.ts';
 import { sugarOf } from './candy.ts';
@@ -14,21 +15,23 @@ import { emit } from './sim-state.ts';
 import { igniteZombie } from './zombie-status.ts';
 import { makeNoise } from './zombie-senses.ts';
 
-/** Most fuel and flares a survivor carries. */
-export const FUEL_CARRY = 2;
+/** Most fireworks and flares a survivor carries. */
+export const FIREWORK_CARRY = 2;
 export const FLARE_CARRY = 2;
 
-/** A molotov flies a little short of a bottle and leaves a pool of fire this wide for this long. */
-export const MOLOTOV_RANGE = 150;
-export const FIRE_RADIUS = 30;
-export const FIRE_SEC = 5;
-/** The smash and the whoomp are heard this far off; the flames crackle on every so often. */
-export const MOLOTOV_NOISE_RADIUS = 240;
-export const FIRE_NOISE_SEC = 1;
-export const FIRE_NOISE_RADIUS = 140;
-/** Anyone standing in it, survivors included, is burnt this much this often. */
-export const FIRE_PLAYER_DAMAGE = 4;
-export const FIRE_PLAYER_SEC = 0.5;
+/** A spinner flies a little short of a bottle and whirls sparks this far round it for this long. */
+export const SPINNER_RANGE = 150;
+export const SPINNER_RADIUS = 30;
+export const SPINNER_SEC = 5;
+/** Popping Eyeballs throw the sparks half as far again. */
+export const POPPING_REACH = 0.5;
+/** The fizz as it catches is heard this far off; the whistle and crackle carry on every so often. */
+export const SPINNER_NOISE_RADIUS = 240;
+export const SPARK_NOISE_SEC = 1;
+export const SPARK_NOISE_RADIUS = 140;
+/** Anyone standing in the sparks, survivors included, is burnt this much this often. */
+export const SPARK_PLAYER_DAMAGE = 4;
+export const SPARK_PLAYER_SEC = 0.5;
 
 /** A flare lands where it is thrown and burns red for this long, hissing loud enough to draw a crowd. */
 export const FLARE_RANGE = 190;
@@ -40,16 +43,17 @@ export const FLARE_NOISE_SEC = 1.5;
 export const THROW_COOLDOWN_SEC = 0.6;
 
 /** Where each is left, and how often a container there holds one. Rolled from the town's seed alone. */
-const FUEL_ODDS: Partial<Record<Container['buildingKind'], number>> = { garage: 0.3, warehouse: 0.2, diner: 0.12 };
+const FIREWORK_ODDS: Partial<Record<Container['buildingKind'], number>> = { garage: 0.3, warehouse: 0.2, diner: 0.12 };
 const FLARE_ODDS: Partial<Record<Container['buildingKind'], number>> = { police: 0.25, garage: 0.12 };
 const CAR_FLARE_ODDS = 0.1;
 const STASH_SALT = 0x464c4152;
 
-export type Stash = 'fuel' | 'flare';
+export type Stash = 'firework' | 'flare';
 
-export interface FireState {
+export interface SpinnerState {
   readonly x: number;
   readonly y: number;
+  readonly radius: number;
   readonly ownerId: EntityId;
   left: number;
   noiseLeft: number;
@@ -63,7 +67,7 @@ export interface FlareState {
 }
 
 /**
- * What a container hides besides its loot: fuel or a flare, or nothing. Picked from the town's seed and
+ * What a container hides besides its loot: a firework or a flare, or nothing. Picked from the town's seed and
  * the container's place in the list on a generator of its own, so the simulation's rolls never move.
  */
 export function stashIn(seed: number, container: Container): Stash | null {
@@ -72,15 +76,15 @@ export function stashIn(seed: number, container: Container): Stash | null {
   const flareOdds = container.kind === 'car' ? CAR_FLARE_ODDS : FLARE_ODDS[container.buildingKind] ?? 0;
   const isFlare = roll < flareOdds;
   if (isFlare) return 'flare';
-  const fuelOdds = FUEL_ODDS[container.buildingKind] ?? 0;
-  return roll < flareOdds + fuelOdds ? 'fuel' : null;
+  const fireworkOdds = FIREWORK_ODDS[container.buildingKind] ?? 0;
+  return roll < flareOdds + fireworkOdds ? 'firework' : null;
 }
 
 /** The searcher takes it if they have room; otherwise it stays where it was, and the container is searched all the same. */
 export function takeStash(p: PlayerState, stash: Stash | null): Stash | null {
-  const takesFuel = stash === 'fuel' && p.fuel < FUEL_CARRY;
-  if (takesFuel) {
-    p.fuel += 1;
+  const takesFirework = stash === 'firework' && p.fireworks < FIREWORK_CARRY;
+  if (takesFirework) {
+    p.fireworks += 1;
     return stash;
   }
   const takesFlare = stash === 'flare' && p.flares < FLARE_CARRY;
@@ -91,32 +95,29 @@ export function takeStash(p: PlayerState, stash: Stash | null): Stash | null {
   return null;
 }
 
-/** A molotov or flare asked for this tick. The bottle's own throw runs first and shares the cooldown. */
+/** A spinner or flare asked for this tick. The bottle's own throw runs first and shares the cooldown. */
 export function updateThrowables(sim: SimState, p: PlayerState): void {
-  const wantsMolotov = p.molotovQueued;
+  const wantsSpinner = p.spinnerQueued;
   const wantsFlare = p.flareQueued;
-  p.molotovQueued = false;
+  p.spinnerQueued = false;
   p.flareQueued = false;
   const isCoolingDown = p.throwCooldown > 0;
   if (isCoolingDown) return;
-  const fuelled = p.fuel > 0 || sugarOf(p, 'popping_eyeballs') > 0;
-  const canMolotov = wantsMolotov && fuelled && p.bottles > 0;
-  const canFlare = !canMolotov && wantsFlare && p.flares > 0;
-  if (canMolotov) throwMolotov(sim, p);
+  const canSpinner = wantsSpinner && p.fireworks > 0;
+  const canFlare = !canSpinner && wantsFlare && p.flares > 0;
+  if (canSpinner) lightSpinner(sim, p);
   if (canFlare) throwFlare(sim, p);
 }
 
-function throwMolotov(sim: SimState, p: PlayerState): void {
-  // Popping Eyeballs light the bottle without spending fuel.
-  const free = sugarOf(p, 'popping_eyeballs') > 0;
-  if (!free) p.fuel -= 1;
-  p.bottles -= 1;
+function lightSpinner(sim: SimState, p: PlayerState): void {
+  p.fireworks -= 1;
   p.throwCooldown = THROW_COOLDOWN_SEC;
-  const spot = landingSpot(sim, p, MOLOTOV_RANGE);
-  const sec = FIRE_SEC * (hasKeepsake(p, 'lighter') ? LIGHTER_FIRE : 1);
-  sim.fires.push({ x: spot.x, y: spot.y, ownerId: p.id, left: sec, noiseLeft: FIRE_NOISE_SEC });
-  makeNoise(sim, spot.x, spot.y, MOLOTOV_NOISE_RADIUS);
-  emit(sim, { type: 'molotov_burst', playerId: p.id, x: spot.x, y: spot.y, fromX: p.x, fromY: p.y, radius: FIRE_RADIUS, sec });
+  const spot = landingSpot(sim, p, SPINNER_RANGE);
+  const sec = SPINNER_SEC * (hasKeepsake(p, 'lighter') ? LIGHTER_SPIN : 1);
+  const radius = SPINNER_RADIUS * (1 + POPPING_REACH * sugarOf(p, 'popping_eyeballs'));
+  sim.spinners.push({ x: spot.x, y: spot.y, radius, ownerId: p.id, left: sec, noiseLeft: SPARK_NOISE_SEC });
+  makeNoise(sim, spot.x, spot.y, SPINNER_NOISE_RADIUS);
+  emit(sim, { type: 'spinner_lit', playerId: p.id, x: spot.x, y: spot.y, fromX: p.x, fromY: p.y, radius, sec });
 }
 
 function throwFlare(sim: SimState, p: PlayerState): void {
@@ -129,34 +130,34 @@ function throwFlare(sim: SimState, p: PlayerState): void {
 
 const caught: ZombieState[] = [];
 
-function burnPool(sim: SimState, fire: FireState, burnPlayers: boolean): void {
+function sparkSpinner(sim: SimState, spinner: SpinnerState, burnPlayers: boolean): void {
   caught.length = 0;
-  sim.grid.query(fire.x, fire.y, FIRE_RADIUS, caught);
+  sim.grid.query(spinner.x, spinner.y, spinner.radius, caught);
   for (const z of caught) {
-    const inside = z.health > 0 && Math.hypot(z.x - fire.x, z.y - fire.y) <= FIRE_RADIUS + z.radius;
-    if (inside) igniteZombie(sim, z, fire.ownerId);
+    const inside = z.health > 0 && Math.hypot(z.x - spinner.x, z.y - spinner.y) <= spinner.radius + z.radius;
+    if (inside) igniteZombie(sim, z, spinner.ownerId);
   }
   if (!burnPlayers) return;
   for (const p of sim.players) {
-    const inside = p.status === 'alive' && Math.hypot(p.x - fire.x, p.y - fire.y) <= FIRE_RADIUS;
-    if (inside) hurtPlayer(sim, p, FIRE_PLAYER_DAMAGE);
+    const inside = p.status === 'alive' && Math.hypot(p.x - spinner.x, p.y - spinner.y) <= spinner.radius;
+    if (inside) hurtPlayer(sim, p, SPARK_PLAYER_DAMAGE);
   }
 }
 
-/** Every pool of fire and every flare in town, burning down. Runs once a tick, after the players. */
-export function updateFires(sim: SimState): void {
-  const playerPulse = sim.tick % Math.round(FIRE_PLAYER_SEC / TICK_DT) === 0;
-  for (const fire of sim.fires) {
-    fire.left -= TICK_DT;
-    fire.noiseLeft -= TICK_DT;
-    const isDueToCrackle = fire.noiseLeft <= 1e-9;
+/** Every spinner and every flare in town, burning down. Runs once a tick, after the players. */
+export function updateSpinners(sim: SimState): void {
+  const playerPulse = sim.tick % Math.round(SPARK_PLAYER_SEC / TICK_DT) === 0;
+  for (const spinner of sim.spinners) {
+    spinner.left -= TICK_DT;
+    spinner.noiseLeft -= TICK_DT;
+    const isDueToCrackle = spinner.noiseLeft <= 1e-9;
     if (isDueToCrackle) {
-      fire.noiseLeft += FIRE_NOISE_SEC;
-      makeNoise(sim, fire.x, fire.y, FIRE_NOISE_RADIUS);
+      spinner.noiseLeft += SPARK_NOISE_SEC;
+      makeNoise(sim, spinner.x, spinner.y, SPARK_NOISE_RADIUS);
     }
-    burnPool(sim, fire, playerPulse);
+    sparkSpinner(sim, spinner, playerPulse);
   }
-  sim.fires = sim.fires.filter((fire) => fire.left > 1e-9);
+  sim.spinners = sim.spinners.filter((spinner) => spinner.left > 1e-9);
   for (const flare of sim.flares) {
     flare.left -= TICK_DT;
     flare.noiseLeft -= TICK_DT;

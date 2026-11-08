@@ -292,13 +292,13 @@ describe('fingers on the game', () => {
       });
     });
 
-    it('throw a bottle, a molotov and a flare, and eat a candy, from the item buttons', () => {
-      const items = touchItems({ bottles: 1, fuel: 1, flares: 1, candy: ['Ghost Gum'], sugar: [] });
+    it('throw a bottle, light a firework, throw a flare, and eat a candy, from the item buttons', () => {
+      const items = touchItems({ bottles: 1, fireworks: 1, flares: 1, candy: ['Ghost Gum'] });
       items.forEach((each) => {
         input.padDown(each.code);
         input.padUp(each.code);
       });
-      expect(input.sample(1, 0, null)).toMatchObject({ throw: true, molotov: true, flare: true, eat: true });
+      expect(input.sample(1, 0, null)).toMatchObject({ throw: true, spinner: true, flare: true, eat: true });
     });
 
     it('open the map and the pause menu', () => {

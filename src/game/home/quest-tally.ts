@@ -94,7 +94,7 @@ export class QuestTally {
     if (event.type === 'headshot') this.bump('headshots');
     else if (event.type === 'melee' && event.hit) this.bump('shoves');
     else if (event.type === 'container_opened') this.searched(event.found, event.noisy);
-    else if (event.type === 'bottle_smash' || event.type === 'molotov_burst') this.bump('bottles');
+    else if (event.type === 'bottle_smash') this.bump('bottles');
     else if (event.type === 'heal') this.bump('medkits');
     else if (event.type === 'player_hurt') this.bump('damage', event.damage);
     else if (event.type === 'shot' && event.suppressed) this.bump('suppressed');

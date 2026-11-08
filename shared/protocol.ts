@@ -75,8 +75,8 @@ export interface PlayerEntity {
   knife: boolean;
   /** Empty bottles to throw. Left off at none. */
   bottles?: number;
-  /** Fuel for molotovs, and flares, found in this town. Left off at none. */
-  fuel?: number;
+  /** Fireworks and flares found in this town. Left off at none. */
+  fireworks?: number;
   flares?: number;
   /** Candy carried, oldest first (shared/candy.ts). Left off at none. */
   candy?: CandyId[];
@@ -221,11 +221,11 @@ export type GameEvent =
   | { readonly type: 'pickup'; readonly playerId: EntityId; readonly pickup: PickupType; readonly x: number; readonly y: number }
   /** Someone took the stairs: x, y is where they came out, `to` what the stairs led to. */
   | { readonly type: 'stairs_taken'; readonly playerId: EntityId; readonly x: number; readonly y: number; readonly to: string }
-  | { readonly type: 'container_opened'; readonly playerId: EntityId; readonly container: number; readonly x: number; readonly y: number; readonly found: boolean; readonly noisy: boolean; readonly bottle?: boolean; readonly stash?: 'fuel' | 'flare' | 'candy'; readonly candy?: CandyId }
+  | { readonly type: 'container_opened'; readonly playerId: EntityId; readonly container: number; readonly x: number; readonly y: number; readonly found: boolean; readonly noisy: boolean; readonly bottle?: boolean; readonly stash?: 'firework' | 'flare' | 'candy'; readonly candy?: CandyId }
   /** A thrown bottle broke at x,y, thrown from fromX,fromY. */
   | { readonly type: 'bottle_smash'; readonly playerId: EntityId; readonly x: number; readonly y: number; readonly fromX: number; readonly fromY: number }
-  /** A molotov broke at x,y and left a pool of fire `radius` wide for `sec`. */
-  | { readonly type: 'molotov_burst'; readonly playerId: EntityId; readonly x: number; readonly y: number; readonly fromX: number; readonly fromY: number; readonly radius: number; readonly sec: number }
+  /** A firework landed at x,y as a ground spinner, throwing sparks `radius` round it for `sec`. */
+  | { readonly type: 'spinner_lit'; readonly playerId: EntityId; readonly x: number; readonly y: number; readonly fromX: number; readonly fromY: number; readonly radius: number; readonly sec: number }
   /** A flare landed at x,y and burns for `sec`. */
   | { readonly type: 'flare_lit'; readonly playerId: EntityId; readonly x: number; readonly y: number; readonly fromX: number; readonly fromY: number; readonly sec: number }
   | { readonly type: 'car_alarm'; readonly x: number; readonly y: number }
@@ -279,8 +279,8 @@ export interface ClientInputPacket {
   readonly search: boolean;
   /** Throw a bottle at the crosshair. Left off when not. */
   readonly throw?: boolean;
-  /** Light a bottle with fuel and throw it. Left off when not. */
-  readonly molotov?: boolean;
+  /** Light a firework and toss it down as a spinner. Left off when not. */
+  readonly spinner?: boolean;
   /** Throw a lit flare. Left off when not. */
   readonly flare?: boolean;
   /** Eat the next candy in the bag. Left off when not. */

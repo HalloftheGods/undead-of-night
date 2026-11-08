@@ -10,6 +10,7 @@ import {
   sugarOf,
   takeCandy,
 } from '../shared/candy.ts';
+import { POPPING_REACH, SPINNER_RADIUS } from '../shared/throwables.ts';
 import { townContainers } from '../shared/containers.ts';
 import { hurtPlayer } from '../shared/player-health.ts';
 import type { CandyId } from '../shared/protocol.ts';
@@ -130,19 +131,19 @@ describe('candy', () => {
     expect(p.status).toBe('downed');
   });
 
-  it('lights molotovs without fuel under Popping Eyeballs', () => {
+  it('throws a spinner\'s sparks half as far again under Popping Eyeballs', () => {
     const { sim, state } = quietSim();
     const [p] = state.players;
     carrying(p, 'popping_eyeballs');
     eat(sim, p, 1);
-    p.fuel = 0;
-    p.bottles = 2;
+    p.fireworks = 1;
     p.throwCooldown = 0;
-    sim.setInput('a', input({ seq: 3, molotov: true }));
+    sim.setInput('a', input({ seq: 3, spinner: true }));
     sim.step();
-    expect(eventsOf(sim.snapshot(), 'molotov_burst')).toHaveLength(1);
-    expect(p.bottles).toBe(1);
-    expect(p.fuel).toBe(0);
+    const [lit] = eventsOf(sim.snapshot(), 'spinner_lit');
+    expect(lit.radius).toBeCloseTo(SPINNER_RADIUS * (1 + POPPING_REACH));
+    expect(state.spinners[0].radius).toBeCloseTo(SPINNER_RADIUS * (1 + POPPING_REACH));
+    expect(p.fireworks).toBe(0);
   });
 
   it('gives everything at half strength, for a short while, from a Full-Size Bar', () => {

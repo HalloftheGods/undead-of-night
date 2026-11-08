@@ -4,7 +4,7 @@
       v-for="each in items"
       :key="each.code"
       class="touch-button touch-item"
-      :class="{ 'is-held': held.includes(each.code), 'is-none': !each.ready }"
+      :class="{ 'is-held': held.includes(each.code) }"
       type="button"
       :aria-label="each.label"
       :title="each.label"

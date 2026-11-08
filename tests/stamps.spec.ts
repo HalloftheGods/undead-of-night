@@ -11,7 +11,7 @@ function memoryStore(): Pick<Storage, 'getItem' | 'setItem'> {
 }
 
 const TODAY = '2026-11-07';
-const EMPTY: StampBook = { earned: {}, headshots: 0, molotovs: 0 };
+const EMPTY: StampBook = { earned: {}, headshots: 0, spinners: 0 };
 const ctx = (over: Partial<StampContext> = {}): StampContext => ({ localId: 'me', level: 1, mapSeed: 1, kills: 0, drop: null, ...over });
 const kill = (killerId: string | null, chain = 1): GameEvent =>
   ({ type: 'zombie_die', zombieId: 'z', zombieType: 'walker', killerId, x: 0, y: 0, points: 10, chain }) as GameEvent;
@@ -86,7 +86,7 @@ describe('stamps', () => {
   it('drops anything in storage that is not a stamp', () => {
     const store = memoryStore();
     store.setItem('outbreak.stamps', JSON.stringify({ earned: { first_blood: TODAY, made_up: TODAY, halfway: 3 }, headshots: 'x' }));
-    expect(loadStamps(store)).toEqual({ earned: { first_blood: TODAY }, headshots: 0, molotovs: 0 });
+    expect(loadStamps(store)).toEqual({ earned: { first_blood: TODAY }, headshots: 0, spinners: 0 });
   });
 
   it('lays every stamp across the two stamp leaves, dated once earned', () => {

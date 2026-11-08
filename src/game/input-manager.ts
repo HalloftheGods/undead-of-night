@@ -23,7 +23,7 @@ const SHOVE_CODE = 'KeyF';
 const HEAL_CODE = 'KeyH';
 const SEARCH_CODE = 'KeyE';
 const THROW_CODE = 'KeyG';
-const MOLOTOV_CODE = 'KeyT';
+const SPINNER_CODE = 'KeyT';
 const FLARE_CODE = 'KeyV';
 const EAT_CODE = 'KeyX';
 const SNEAK_CODES = ['KeyC'];
@@ -44,7 +44,7 @@ const GAME_CODES: ReadonlySet<string> = new Set([
   HEAL_CODE,
   SEARCH_CODE,
   THROW_CODE,
-  MOLOTOV_CODE,
+  SPINNER_CODE,
   FLARE_CODE,
   EAT_CODE,
   ...SNEAK_CODES,
@@ -126,7 +126,7 @@ export class InputManager {
   private shoveLatch = false;
   private healLatch = false;
   private throwLatch = false;
-  private molotovLatch = false;
+  private spinnerLatch = false;
   private flareLatch = false;
   private eatLatch = false;
   private keepsakeLatch: KeepsakeId | null = null;
@@ -217,7 +217,7 @@ export class InputManager {
     this.shoveLatch = false;
     this.healLatch = false;
     this.throwLatch = false;
-    this.molotovLatch = false;
+    this.spinnerLatch = false;
     this.flareLatch = false;
     this.eatLatch = false;
     this.keepsakeLatch = null;
@@ -287,7 +287,7 @@ export class InputManager {
       melee: this.shoveLatch || (this.enabled && this.shoving) || this.isHeld([SHOVE_CODE]),
       heal: this.healLatch,
       ...(this.throwLatch ? { throw: true } : {}),
-      ...(this.molotovLatch ? { molotov: true } : {}),
+      ...(this.spinnerLatch ? { spinner: true } : {}),
       ...(this.flareLatch ? { flare: true } : {}),
       ...(this.eatLatch ? { eat: true } : {}),
       ...(this.keepsakeLatch ? { keepsake: this.keepsakeLatch } : {}),
@@ -387,7 +387,7 @@ export class InputManager {
     this.shoveLatch ||= code === SHOVE_CODE;
     this.healLatch ||= code === HEAL_CODE;
     this.throwLatch ||= code === THROW_CODE;
-    this.molotovLatch ||= code === MOLOTOV_CODE;
+    this.spinnerLatch ||= code === SPINNER_CODE;
     this.flareLatch ||= code === FLARE_CODE;
     this.eatLatch ||= code === EAT_CODE;
     const weapon = WEAPON_KEYS[code];
