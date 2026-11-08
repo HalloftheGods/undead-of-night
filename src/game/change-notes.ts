@@ -22,6 +22,18 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'setup-portraits',
+    date: '2026-11-08',
+    kind: 'better',
+    title: 'Taller setup cards',
+    deck: 'The three Play cards stand tall now, and your survivor turns on theirs.',
+    points: [
+      'Mode, Difficulty and Survivor cards share one tall shape, with more night sky over each scene.',
+      'Point at an option to see it in its card before you pick it.',
+      'The lists show just names and pictures, and open without covering Start.',
+    ],
+  },
+  {
     id: 'menu-details-switch',
     date: '2026-11-08',
     kind: 'better',
