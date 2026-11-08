@@ -59,7 +59,7 @@ export const LICORICE_HEAD_MARGIN = 3;
 export const CARAMEL_HEALTH = 0.3;
 
 /** Candy is a Halloween night's loot, so homes hide the most. */
-const CANDY_ODDS: Partial<Record<Container['buildingKind'], number>> = {
+export const CANDY_ODDS: Partial<Record<Container['buildingKind'], number>> = {
   house: 0.3,
   // Bedrooms are where a night's haul gets hidden.
   upstairs: 0.45,

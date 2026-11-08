@@ -6,7 +6,7 @@ import type { BestRun, LeaderboardEntry } from './storage.ts';
 
 /** The title's menu, what each item opens, and the words its pages show. The components only lay these out. */
 /** Every title page. The changelog has no menu item: the version number in the corner opens it. */
-export type TitlePage = 'play' | 'daily' | 'levels' | 'howto' | 'records' | 'sound' | 'options' | 'changelog';
+export type TitlePage = 'play' | 'daily' | 'levels' | 'howto' | 'guide' | 'records' | 'sound' | 'options' | 'changelog';
 
 export interface TitleMenuItem {
   readonly page: TitlePage;
@@ -33,13 +33,14 @@ export function menuLine(item: TitleMenuItem, unlock: SoundUnlock): string {
   return hidden ? '' : item.line;
 }
 
-/** How to Play first, then Daily Night (the primary, where the menu opens), Arcade and Campaign. */
+/** How to Play first, then Daily Night (the primary, where the menu opens), Arcade and Campaign. The two books sit together after Levels. */
 export const TITLE_MENU: readonly TitleMenuItem[] = [
   { page: 'howto', label: 'How to Play', line: 'Controls and the rules of the night.' },
   { page: 'daily', label: 'Daily Night', line: 'A fresh night every day.', primary: true },
   { page: 'play', label: 'Arcade', style: 'arcade', line: 'Ten levels in a row. Die and the run ends.' },
   { page: 'play', label: 'Campaign', style: 'campaign', line: 'Live in a bunker. Run trips, haul treasure home.' },
   { page: 'levels', label: 'Levels', line: 'Jump to an Arcade level you have reached.' },
+  { page: 'guide', label: 'Town Guide', line: 'What each kind of building holds.' },
   { page: 'records', label: 'Records', line: 'Your best runs, trips and scores.' },
   { page: 'sound', label: 'Sound Test', line: 'Hear the music and effects.' },
   { page: 'options', label: 'Options', line: 'Sound, display, motion and controls.' },

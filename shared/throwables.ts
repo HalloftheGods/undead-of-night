@@ -40,9 +40,9 @@ export const FLARE_NOISE_SEC = 1.5;
 export const THROW_COOLDOWN_SEC = 0.6;
 
 /** Where each is left, and how often a container there holds one. Rolled from the town's seed alone. */
-const FUEL_ODDS: Partial<Record<Container['buildingKind'], number>> = { garage: 0.3, warehouse: 0.2, diner: 0.12 };
-const FLARE_ODDS: Partial<Record<Container['buildingKind'], number>> = { police: 0.25, garage: 0.12 };
-const CAR_FLARE_ODDS = 0.1;
+export const FUEL_ODDS: Partial<Record<Container['buildingKind'], number>> = { garage: 0.3, warehouse: 0.2, diner: 0.12 };
+export const FLARE_ODDS: Partial<Record<Container['buildingKind'], number>> = { police: 0.25, garage: 0.12 };
+export const CAR_FLARE_ODDS = 0.1;
 const STASH_SALT = 0x464c4152;
 
 export type Stash = 'fuel' | 'flare';
