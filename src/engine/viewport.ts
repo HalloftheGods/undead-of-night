@@ -44,6 +44,14 @@ export function viewReachCap(coop: boolean, touch: boolean, cssW: number, cssH: 
   return held ? COOP_VIEW_REACH : null;
 }
 
+/**
+ * Buffer pixels back to CSS pixels in the window: the inverse of the pointer mapping, so the
+ * Vue overlay can hang something off a spot in the drawn world. `edge` is the canvas's own left or top.
+ */
+export function clientFromBuffer(buffer: number, edge: number, scale: number, dpr: number): number {
+  return edge + (buffer * scale) / dpr;
+}
+
 /** CSS pixels per UI unit, so the Vue overlay grows in step with the game. */
 export function uiUnit(cssW: number, cssH: number): number {
   return Math.max(1.5, Math.round(Math.min(cssW / TARGET_VIEW_W, cssH / TARGET_VIEW_H)) / 2);

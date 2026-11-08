@@ -2,7 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { InputManager } from '../src/game/input-manager.ts';
 import type { InputCallbacks } from '../src/game/input-manager.ts';
 import { touchItems } from '../src/game/touch-items.ts';
-import { glyphPath, TOUCH_BUTTONS } from '../src/game/touch-pad.ts';
+import { BACKPACK, glyphPath, SEARCH, SHOVE, SPRINT, TOUCH_BUTTONS } from '../src/game/touch-pad.ts';
+import { weaponBar } from '../src/game/weapon-bar.ts';
 import { dragStick, inStickZone, startStick, stickAngle, stickDirection, STICK_TRAVEL } from '../src/game/touch-stick.ts';
 import { installFakeBrowser } from './client-fake-dom.ts';
 import type { FakeBrowser } from './client-fake-dom.ts';
@@ -289,6 +290,29 @@ describe('fingers on the game', () => {
       TOUCH_BUTTONS.forEach((each) => {
         expect(each.glyph.every((row) => row.length === each.glyph.length)).toBe(true);
         expect(glyphPath(each.glyph)).toMatch(/^M/);
+      });
+    });
+
+    it('sprint for as long as the thumb stays on it, as the Shift key does', () => {
+      input.padDown('ShiftLeft');
+      expect(input.sample(1, 0, null)).toMatchObject({ sprint: true });
+      expect(input.sample(2, 0, null)).toMatchObject({ sprint: true });
+      input.padUp('ShiftLeft');
+      expect(input.sample(3, 0, null).sprint).toBeUndefined();
+    });
+
+    it('pick a gun straight off the weapon bar', () => {
+      const bar = weaponBar({ weapon: 'pistol', owned: ['pistol', 'shotgun'], ammoBag: { pistol: 0, carbine: 0, shotgun: 0 }, mags: { pistol: 0, carbine: 0, shotgun: 0 } });
+      const shotgun = bar.find((slot) => slot.weapon === 'shotgun');
+      input.padDown(shotgun!.code);
+      input.padUp(shotgun!.code);
+      expect(input.sample(1, 0, { owned: ['pistol', 'shotgun'], weapon: 'pistol' }).weapon).toBe('shotgun');
+    });
+
+    it('wear a square picture on the action cluster too', () => {
+      [SEARCH, SHOVE, SPRINT, BACKPACK].forEach((glyph) => {
+        expect(glyph.every((row) => row.length === glyph.length)).toBe(true);
+        expect(glyphPath(glyph)).toMatch(/^M/);
       });
     });
 

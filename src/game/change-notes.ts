@@ -22,6 +22,41 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'hud-reorder',
+    date: '2026-11-08',
+    kind: 'better',
+    title: 'A HUD you can read at a glance',
+    deck: 'Health, kills and points down the right; the guns dead centre and tappable.',
+    points: [
+      'Health leads the top-right corner, with the kill count under it behind a zombie head, and points under that.',
+      'The gun bar sits in the middle of the foot of the screen at every width, and each slot is a button: tap it to bring that gun up.',
+      'The run log moved to the right edge, halfway down, clear of both.',
+    ],
+  },
+  {
+    id: 'backpack-ring',
+    date: '2026-11-08',
+    kind: 'better',
+    title: 'The backpack opens on you',
+    deck: 'Your own gear, rung around the survivor, following them as you move.',
+    points: [
+      'The ring shows what you are actually carrying, drawn as the game draws it: the medkit, the gun you would switch to, bottles, fireworks, flares, your candy and the town map.',
+      'It opens on the survivor and keeps up with them, and it closes the moment you pick something.',
+      'What would do nothing is greyed out: a medkit at full health, a candy already working.',
+    ],
+  },
+  {
+    id: 'sprint-button',
+    date: '2026-11-08',
+    kind: 'new',
+    title: 'A Sprint button',
+    deck: 'Four pixel buttons in the corner, Sprint under the thumb.',
+    points: [
+      'Hold Sprint to run, the same as holding Shift on a keyboard.',
+      'Search, Shove, Sprint and the backpack sit two by two in the bottom-right corner, in the game\'s own pixel style.',
+    ],
+  },
+  {
     id: 'streak-kit',
     date: '2026-11-08',
     kind: 'new',

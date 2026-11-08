@@ -1,22 +1,39 @@
 <template>
   <section class="hud">
     <header class="hud-top">
-      <div class="hud-chip">
+      <div class="hud-chip hud-night">
         <span class="hud-sub">{{ levelLine(hud.level) }}</span>
         <span class="hud-wave" :class="horde.loud ? 'is-threat' : 'is-quiet'">{{ horde.title }}</span>
         <span v-if="horde.detail" class="hud-sub is-threat">{{ horde.detail }}</span>
         <span class="hud-sub" :class="{ 'is-van': hud.exitOpen }">{{ levelGoal(hud) }}</span>
       </div>
-      <div class="hud-chip hud-score">
-        <span>{{ hud.score }}</span>
-        <span class="hud-sub">{{ hud.kills }} kills</span>
-        <span v-if="mode === 'coop'" class="hud-sub" :class="signalWeak ? 'is-threat' : 'is-good'">
-          {{ signalWeak ? 'Signal weak' : 'Linked' }}
-        </span>
-      </div>
+
       <div v-if="home" class="hud-home">
         <TreasureChip v-if="!home.inBunker" :home />
         <QuestTracker :home />
+      </div>
+
+      <!--
+        The three numbers a run is read by, in the order they are asked for: am I alive, how
+        many have I put down, what is it worth. Health leads, because it is the one that is
+        glanced at under fire.
+      -->
+      <div class="hud-stack">
+        <div class="hud-chip hud-health" :class="{ 'is-low': isLow }">
+          <SpriteImg :sprite="art.ui.heart" />
+          <div class="px-meter hud-health-meter" :style="fill(hud.health, hud.maxHealth)"><span /></div>
+          <span class="hud-health-value">{{ Math.ceil(hud.health) }}</span>
+        </div>
+        <div class="hud-chip hud-kills">
+          <SpriteImg :sprite="art.ui.zombieHead" />
+          <span>{{ hud.kills }}</span>
+        </div>
+        <div class="hud-chip hud-score">
+          <span>{{ hud.score }}</span>
+          <span v-if="mode === 'coop'" class="hud-sub" :class="signalWeak ? 'is-threat' : 'is-good'">
+            {{ signalWeak ? 'Signal weak' : 'Linked' }}
+          </span>
+        </div>
       </div>
     </header>
 
@@ -71,20 +88,27 @@
           <SpriteImg :sprite="art.ui.pickupIcons.knife" />
           <span class="hud-slot-key keys-only">F</span>
         </div>
-        <div class="hud-chip hud-health" :class="{ 'is-low': isLow }">
-          <SpriteImg :sprite="art.ui.heart" />
-          <div class="px-meter hud-health-meter" :style="fill(hud.health, hud.maxHealth)"><span /></div>
-          <span>{{ Math.ceil(hud.health) }}</span>
-        </div>
       </div>
 
+      <!-- Centred at every width, and every slot a real tap target that sends its number key. -->
       <div class="hud-chip hud-weapon">
         <ul class="hud-slots">
-          <li v-for="(weapon, index) in WEAPON_ORDER" :key="weapon" class="hud-slot" :class="slotClass(weapon)">
-            <span class="hud-slot-key keys-only">{{ index + 1 }}</span>
-            <SpriteImg :sprite="art.ui.weaponIcons[weapon]" />
-            <span v-if="hud.owned.includes(weapon)" class="hud-slot-rounds">{{ gunRounds(hud, weapon) }}</span>
-            <GunFitPips :fit="hud.gear?.fits[weapon]" />
+          <li v-for="slot in bar" :key="slot.weapon">
+            <button
+              class="hud-slot"
+              :class="{ 'is-active': slot.active, 'is-missing': !slot.owned }"
+              type="button"
+              :aria-label="slot.label"
+              :aria-pressed="slot.active"
+              @mousedown.stop
+              @touchstart.stop
+              @click="hold(slot)"
+            >
+              <span class="hud-slot-key keys-only">{{ slot.key }}</span>
+              <SpriteImg :sprite="art.ui.weaponIcons[slot.weapon]" />
+              <span v-if="slot.rounds !== null" class="hud-slot-rounds">{{ slot.rounds }}</span>
+              <GunFitPips :fit="hud.gear?.fits[slot.weapon]" />
+            </button>
           </li>
         </ul>
         <div class="hud-ammo" :class="`is-${ammo}`">
@@ -100,20 +124,22 @@
         <span v-else-if="swapKey !== null" class="hud-sub is-threat keys-only">Press {{ swapKey }}</span>
         <span v-else-if="hud.ammo === 0" class="hud-sub is-threat keys-only">Press R</span>
       </div>
-
-      <EventFeed v-if="log.length" class="hud-feed" :log />
     </footer>
+
+    <!-- Right of centre: clear of the numbers above and of the thumb's buttons below. -->
+    <EventFeed v-if="log.length" class="hud-feed" :log />
   </section>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { WEAPON_ORDER } from '../../shared/protocol.ts';
-import type { WeaponId } from '../../shared/protocol.ts';
 import type { ArtBook } from '../art/types.ts';
 import type { HomeUi } from '../game/home-hud.ts';
-import { ammoState, gunRounds, hordeStatus, switchKey } from '../game/hud-state.ts';
+import { ammoState, hordeStatus, switchKey } from '../game/hud-state.ts';
 import type { HudState, PlaceBanner } from '../game/hud-state.ts';
+import { weaponBar } from '../game/weapon-bar.ts';
+import type { BarSlot } from '../game/weapon-bar.ts';
+import { useGame } from './use-game.ts';
 import { levelGoal, levelLine } from '../game/level-hud.ts';
 import type { TransportKind } from '../network/transport.ts';
 import { effectOf } from '../../shared/gun-upgrades.ts';
@@ -140,8 +166,10 @@ interface HudOverlayProps {
 }
 
 const { hud } = defineProps<HudOverlayProps>();
+const { input } = useGame();
 
 const isLow = computed(() => hud.health / hud.maxHealth < LOW_HEALTH);
+const bar = computed(() => weaponBar(hud));
 const ammo = computed(() => ammoState(hud));
 const swapKey = computed(() => switchKey(hud));
 const horde = computed(() => hordeStatus(hud));
@@ -154,8 +182,10 @@ function fill(value: number, max: number): Record<string, string> {
   return { '--fill': `${Math.max(0, Math.min(100, (value / max) * 100))}%` };
 }
 
-function slotClass(weapon: WeaponId): Record<string, boolean> {
-  return { 'is-active': weapon === hud.weapon, 'is-missing': !hud.owned.includes(weapon) };
+/** A tap on a slot is that number key pressed and let go, which is what the sim answers to. */
+function hold(slot: BarSlot): void {
+  input.padDown(slot.code);
+  input.padUp(slot.code);
 }
 </script>
 
@@ -170,51 +200,73 @@ function slotClass(weapon: WeaponId): Record<string, boolean> {
   pointer-events: none;
 }
 
-.hud-top,
-.hud-bottom {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
+/* The town on the left, the trip in the middle, the run's numbers on the right. */
+.hud-top {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  grid-template-areas: 'night home stack';
+  align-items: start;
   gap: calc(var(--u) * 5);
 }
 
-.hud-top {
-  align-items: flex-start;
-}
-
-/* Vitals on the left, the guns in the middle, the run's log in the right corner. */
-.hud-bottom {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  grid-template-areas: 'vitals weapon feed';
-}
-
-.hud-vitals {
-  grid-area: vitals;
-}
-
-.hud-weapon {
-  grid-area: weapon;
-}
-
-.hud-feed {
-  grid-area: feed;
-  justify-self: end;
-}
-
-/* Too narrow for three across: the log sits over the guns on the right. */
-@media (max-width: 720px) {
-  .hud-bottom {
-    grid-template-columns: 1fr auto;
-    grid-template-areas: '. feed' 'vitals weapon';
-    row-gap: calc(var(--u) * 3);
-  }
+.hud-night {
+  grid-area: night;
+  justify-self: start;
 }
 
 .hud-home {
   display: flex;
   flex-direction: column;
+  grid-area: home;
+  justify-self: center;
   gap: var(--u);
+}
+
+/* Health, kills, points: one column down the right edge, each line as wide as it needs. */
+.hud-stack {
+  display: flex;
+  flex-direction: column;
+  grid-area: stack;
+  justify-self: end;
+  align-items: flex-end;
+  gap: calc(var(--u) * 2);
+}
+
+/* What is carried, bottom left, out of the way of the guns. */
+.hud-bottom {
+  display: flex;
+  align-items: flex-end;
+}
+
+/*
+ * The guns sit in the middle of the foot of the screen at every width, where the thumb and the
+ * eye both expect them. Pinned rather than laid out, so a long vitals column never shoves them.
+ */
+.hud-weapon {
+  position: absolute;
+  bottom: calc(var(--u) * 5);
+  left: 50%;
+  align-items: center;
+  transform: translateX(-50%);
+}
+
+/* The log reads down the right edge, between the numbers above and the buttons below. */
+.hud-feed {
+  position: absolute;
+  top: 50%;
+  right: calc(var(--u) * 5);
+  transform: translateY(-50%);
+}
+
+/*
+ * Fingers: the action cluster holds the bottom-right corner (--cluster, touch-ui.css). Held
+ * upright there is no room for the guns, what is carried and the cluster on one line, so the
+ * guns go above the cluster; on its side the screen is wide enough for all three.
+ */
+@media (orientation: portrait) {
+  .is-touch .hud-weapon {
+    bottom: calc(var(--cluster, 124px) + var(--safe-bottom) + var(--u) * 6);
+  }
 }
 
 .hud-chip {
@@ -275,6 +327,13 @@ function slotClass(weapon: WeaponId): Record<string, boolean> {
 .hud-score {
   align-items: flex-end;
   color: var(--amber);
+  font-weight: 700;
+}
+
+.hud-kills {
+  flex-direction: row;
+  align-items: center;
+  gap: calc(var(--u) * 2);
   font-weight: 700;
 }
 
@@ -363,6 +422,17 @@ function slotClass(weapon: WeaponId): Record<string, boolean> {
   height: calc(var(--u) * 4);
 }
 
+/* Fixed room for three digits, so the bar beside it does not shuffle on every hit. */
+.hud-health-value {
+  min-width: calc(var(--u) * 14);
+  font-weight: 700;
+  text-align: right;
+}
+
+.hud-health.is-low .hud-health-value {
+  color: var(--blood-bright);
+}
+
 .hud-health.is-low .px-meter > span {
   background: var(--blood-bright);
   animation: px-blink 0.6s steps(2) infinite;
@@ -382,8 +452,15 @@ function slotClass(weapon: WeaponId): Record<string, boolean> {
   display: flex;
   align-items: center;
   gap: var(--u);
+  border: 0;
   padding: var(--u);
+  background: none;
+  color: inherit;
+  font: inherit;
   opacity: 0.55;
+  /* The rest of the HUD is click-through; only these slots take a press. */
+  pointer-events: auto;
+  cursor: pointer;
 }
 
 .hud-slot.is-active {
@@ -393,6 +470,24 @@ function slotClass(weapon: WeaponId): Record<string, boolean> {
 
 .hud-slot.is-missing {
   opacity: 0.18;
+}
+
+.hud-slot:focus-visible {
+  outline: calc(var(--u) * 0.5) solid var(--amber);
+  outline-offset: var(--u);
+}
+
+/* A finger needs the whole tap target; a mouse does not, and the HUD stays small for it. */
+.is-touch .hud-slot {
+  justify-content: center;
+  min-width: var(--tap, 44px);
+  min-height: var(--tap, 44px);
+  background: rgba(23, 24, 31, 0.6);
+  touch-action: manipulation;
+}
+
+.is-touch .hud-slot.is-active {
+  background: var(--ink-line);
 }
 
 .hud-slot-key {

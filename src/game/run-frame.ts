@@ -9,6 +9,8 @@ import type { ClientWorld } from './client-world.ts';
 import { questMarks } from './home/quest-marks.ts';
 import { closedStalls } from './home/shop.ts';
 import { Heartbeat } from './heartbeat.ts';
+import { PlayerAnchor } from './player-anchor.ts';
+import type { Anchor } from './player-anchor.ts';
 import { tickRunAudio } from './run-audio.ts';
 import { deathFade, healthFraction } from './run-hud.ts';
 import type { RunHost } from './run-session.ts';
@@ -33,6 +35,8 @@ export class RunFrame {
   private heldUntilMs = 0;
   /** The low-health heart, one clock for its sound and the screen's red pulse. */
   private readonly heart = new Heartbeat();
+  /** Where the survivor stands, for the overlay to ring (player-anchor.ts). */
+  private readonly anchor = new PlayerAnchor();
 
   constructor(private readonly host: RunFrameHost) {}
 
@@ -93,6 +97,7 @@ export class RunFrame {
     renderer.effects.setHealth(healthFraction(world.localPlayer));
     renderer.effects.setDesaturation(deathFade(world.localPlayer?.status, over));
     renderer.render(scene, dt);
+    this.anchor.write(this.playerSpot(renderer, world));
 
     const beatOver = over && screen === 'game' && ms - state.gameOverAtMs > GAME_OVER_BEAT_MS;
     if (beatOver) this.host.parts.publish({ screen: 'gameover', result });
@@ -104,6 +109,25 @@ export class RunFrame {
       networked: transport?.kind === 'coop',
       lastSnapshotMs: state.lastSnapshotMs,
     });
+  }
+
+  /**
+   * The survivor's chest in window pixels, for the overlay to hang a ring off, or null off a run.
+   * The camera's own spot, not the shaken one: a blast must not throw the backpack across the screen.
+   */
+  private playerSpot(renderer: WorldRenderer, world: ClientWorld): Anchor | null {
+    const onRun = world.localPlayer !== null;
+    if (!onRun) return null;
+    const camera = renderer.camera;
+    return {
+      x: renderer.toClientX(camera.screenX(world.predictor.x)),
+      y: renderer.toClientY(camera.screenY(world.predictor.y) - CHEST_HEIGHT),
+    };
+  }
+
+  /** Nothing of the last run is left on screen for the next one to inherit. */
+  clear(): void {
+    this.anchor.clear();
   }
 
   /** The flashlight follows a stick, a touch look or the pointer, measured from the survivor's chest. */

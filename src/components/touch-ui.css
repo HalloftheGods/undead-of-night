@@ -9,6 +9,10 @@ body {
   --tap: 44px;
   --pad-size: 58px;
   --item-size: 52px;
+  /* The action cluster in the bottom-right corner: two buttons by two (TouchControls.vue). */
+  --fab-size: 56px;
+  --fab-gap: calc(var(--u) * 3);
+  --cluster: calc(var(--fab-size) * 2 + var(--fab-gap));
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -122,8 +126,9 @@ body {
     grid-auto-rows: 1fr;
   }
 
+  /* The buttons are a block in the corner, not a bar down the side: only the insets to keep off. */
   .is-touch .hud {
-    padding-right: calc(var(--pad-size) + var(--safe-right) + var(--u) * 3);
+    padding-right: calc(var(--safe-right) + var(--u) * 3);
     padding-left: calc(var(--safe-left) + var(--u) * 3);
   }
 
@@ -132,10 +137,6 @@ body {
     right: calc(var(--pad-size) + var(--safe-right) + 2px);
     bottom: var(--safe-bottom);
     flex-direction: column-reverse;
-  }
-
-  .is-touch.has-touch-items .hud {
-    padding-right: calc(var(--pad-size) + var(--item-size) + var(--safe-right) + var(--u) * 3);
   }
 }
 
@@ -152,7 +153,7 @@ body {
 
   .is-touch .hud {
     padding-top: calc(var(--safe-top) + var(--u) * 3);
-    padding-bottom: calc(var(--pad-size) + var(--safe-bottom) + var(--u) * 3);
+    padding-bottom: calc(var(--safe-bottom) + var(--u) * 3);
   }
 
   /* A row just over the bar, the first item rightmost where the thumb rests. */
@@ -160,10 +161,6 @@ body {
     right: var(--safe-right);
     bottom: calc(var(--pad-size) + var(--safe-bottom) + 2px);
     flex-direction: row-reverse;
-  }
-
-  .is-touch.has-touch-items .hud {
-    padding-bottom: calc(var(--pad-size) + var(--item-size) + var(--safe-bottom) + var(--u) * 3);
   }
 }
 

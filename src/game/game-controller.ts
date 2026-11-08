@@ -170,6 +170,7 @@ export class GameController {
     window.removeEventListener('blur', this.onAway);
     document.removeEventListener('visibilitychange', this.onVisibility);
     this.input.dispose();
+    this.runFrame.clear();
     this.homeLink.close();
     this.run.transport?.disconnect();
     this.run.transport = null;

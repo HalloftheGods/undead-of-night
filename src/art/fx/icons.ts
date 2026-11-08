@@ -13,11 +13,12 @@ import type { Grid } from './shared.ts';
 import { BANDAGE, CARBINE_AMMO, PISTOL_AMMO, SHELLS } from './pickups.ts';
 import { JEWEL_LARGE, JEWEL_SMALL, SILVER, TREASURE_LEGEND } from './treasure.ts';
 
-const { blood, bone, fire, ink, metal, olive, violet, wood } = RAMPS;
+const { blood, bone, fire, ink, metal, olive, rot, violet, wood } = RAMPS;
 
 const ICON: Legend = {
   k: ink[0], K: ink[1],
   e: bone[3], f: bone[2], g: bone[1], h: bone[0],
+  v: rot[0], d: rot[1], q: rot[2], Q: rot[3],
   r: blood[0], s: blood[1], t: blood[2], u: blood[3],
   m: metal[0], n: metal[1], o: metal[2], p: metal[3],
   a: olive[0], b: olive[1], c: olive[2],
@@ -232,6 +233,47 @@ const RADIO_SMALL: Grid = [
   'aaaaaaaaaaaaa',
 ];
 
+/**
+ * A walker's head, for the HUD's kill count. Rotten flesh, sunken sockets and a few teeth left:
+ * the same green the zombies are drawn in, so the number plainly counts them and not anything else.
+ */
+const ZOMBIE_HEAD: Grid = [
+  '...ddddd...',
+  '..dqQQqqd..',
+  '.dqqqqqqqd.',
+  '.dqkqqqkqd.',
+  '.dkkqqqkkd.',
+  '.dqqqvqqqd.',
+  '.dqqvvvqqd.',
+  '.dqkkkkkqd.',
+  '.dqeqeqeqd.',
+  '..dqqqqqd..',
+  '...ddddd...',
+];
+
+/** A twist-wrapped sweet: pale wrapper pinched either side of an amber body. */
+const CANDY: Grid = [
+  '.....CCC.....',
+  '.f..CBBBC..f.',
+  'ffgCBBYBBCgff',
+  'ffgCBBBBBCgff',
+  '.f..CCCCC..f.',
+  '.....CCC.....',
+];
+
+/** The town map, folded in three: paper, creases, blocks, and a mark where the van waits. */
+const TOWN_MAP: Grid = [
+  'eeegeeegeee',
+  'bbegbbegebb',
+  'bbegbbegebb',
+  'eeegeeegeee',
+  'ggggggggggg',
+  'eeegtetgeee',
+  'bbegetegebb',
+  'bbegtetgebb',
+  'eeegeeegeee',
+];
+
 /** Centres a body grid in a fixed cell, leaving room for the outline. */
 function outlined(rows: Grid, w: number, h: number): PixelSprite {
   const width = Math.max(...rows.map((row) => row.length));
@@ -301,4 +343,16 @@ export function buildFlare(): PixelSprite {
 
 export function buildSkull(): PixelSprite {
   return outlined(SKULL, 15, 14);
+}
+
+export function buildZombieHead(): PixelSprite {
+  return outlined(ZOMBIE_HEAD, 15, 14);
+}
+
+export function buildCandy(): PixelSprite {
+  return outlined(CANDY, 15, 14);
+}
+
+export function buildTownMap(): PixelSprite {
+  return outlined(TOWN_MAP, 15, 14);
 }

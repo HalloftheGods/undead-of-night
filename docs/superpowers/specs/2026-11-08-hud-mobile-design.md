@@ -1,6 +1,13 @@
 # HUD and mobile controls redesign
 
-Date: 2026-11-08. Status: awaiting review.
+Date: 2026-11-08. Status: pieces 1 and 2 built; piece 3 (the desktop wheel) still open.
+
+Built so far: the top-right health / kills / points stack with the new `art.ui.zombieHead`; the gun bar
+centred and tappable at every width; the feed at the right edge, halfway down; the four-button pixel
+cluster with Sprint; and the backpack ring on the survivor, carrying the game's own item sprites.
+Not built: piece 3, middle-click to open the ring on a desktop with the scroll wheel stepping the
+highlight. The Sprint button does not show the Sprint bar; the bar is already drawn under the
+survivor's feet in the world, so a second one on the button would say it twice.
 
 ## Intent
 

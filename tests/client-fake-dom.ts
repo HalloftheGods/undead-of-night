@@ -122,7 +122,8 @@ export function installFakeBrowser(): FakeBrowser {
   vi.stubGlobal('document', {
     hidden: false,
     createElement: () => fakeCanvas(),
-    documentElement: { style: { setProperty() {} } },
+    // The run writes the UI unit and the survivor's spot here (view-fit.ts, player-anchor.ts).
+    documentElement: { style: { setProperty() {}, removeProperty() {} }, dataset: {} },
     ...makeTarget(new Map()),
   });
   vi.stubGlobal('window', {

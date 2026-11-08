@@ -6,6 +6,11 @@
     @close="closeBackpack"
     @action="handleAction"
   />
+  <!--
+    Four buttons in a block under the right thumb. Sprint takes the corner, where the thumb
+    rests and where it can be held through a whole street; the backpack, which is opened and
+    left alone, sits furthest away.
+  -->
   <nav class="touch-fabs" data-touch-pad aria-label="Touch controls">
     <MobileFAB
       label="Search"
@@ -17,7 +22,6 @@
     <MobileFAB
       label="Backpack"
       :glyph="BACKPACK"
-      :held="held.includes('backpack')"
       :open="backpackOpen"
       @press="toggleBackpack"
       @release="() => {}"
@@ -29,19 +33,29 @@
       @press="press('KeyF')"
       @release="release('KeyF')"
     />
+    <MobileFAB
+      label="Sprint"
+      :glyph="SPRINT"
+      :held="held.includes(SPRINT_CODE)"
+      @press="press(SPRINT_CODE)"
+      @release="release(SPRINT_CODE)"
+    />
   </nav>
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, ref } from 'vue';
+import { onBeforeUnmount, ref, watch } from 'vue';
 import type { ArtBook } from '../art/types.ts';
 import type { HudState } from '../game/hud-state.ts';
-import { BACKPACK, SEARCH, SHOVE } from '../game/touch-pad.ts';
+import { BACKPACK, SEARCH, SHOVE, SPRINT } from '../game/touch-pad.ts';
 import BackpackWheel from './BackpackWheel.vue';
 import MobileFAB from './MobileFAB.vue';
 import { useGame } from './use-game.ts';
 
-defineProps<{ hud: HudState; art: ArtBook }>();
+/** Held to sprint, the same key the keyboard holds (game/input-manager.ts). */
+const SPRINT_CODE = 'ShiftLeft';
+
+const props = defineProps<{ hud: HudState; art: ArtBook }>();
 
 const { input } = useGame();
 const held = ref<string[]>([]);
@@ -73,6 +87,12 @@ function handleAction(code: string): void {
   closeBackpack();
 }
 
+/** Nobody rummages in a backpack on their back: going down shuts the ring. */
+watch(() => props.hud.status, (status) => {
+  const standing = status === 'alive';
+  if (!standing) closeBackpack();
+});
+
 onBeforeUnmount(() => {
   held.value.forEach((code) => input.padUp(code));
   backpackOpen.value = false;
@@ -80,29 +100,17 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+/* Two by two in the corner, the same block however the phone is held. */
 .touch-fabs {
+  display: grid;
   position: absolute;
-  display: flex;
-  gap: 12px;
+  right: calc(var(--safe-right) + var(--u) * 3);
+  bottom: calc(var(--safe-bottom) + var(--u) * 3);
+  grid-template-columns: repeat(2, auto);
+  gap: var(--fab-gap, 12px);
+  z-index: 10;
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
-  z-index: 10;
-}
-
-@media (orientation: landscape) {
-  .touch-fabs {
-    right: calc(var(--safe-right) + 12px);
-    bottom: calc(var(--safe-bottom) + 12px);
-    flex-direction: row-reverse;
-  }
-}
-
-@media (orientation: portrait) {
-  .touch-fabs {
-    right: calc(var(--safe-right) + 12px);
-    bottom: calc(var(--safe-bottom) + 12px);
-    flex-direction: row-reverse;
-  }
 }
 </style>

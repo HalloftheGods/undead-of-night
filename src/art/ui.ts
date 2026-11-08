@@ -1,7 +1,7 @@
 // The interface lane. The art lives in fx/icons.ts and fx/logo.ts.
 
 import type { UiArt } from './types.ts';
-import { buildBottle, buildFlare, buildFireworks, buildCrosshair, buildCrosshairHead, buildHeart, buildPickupIcons, buildSilverIcon, buildSkull, buildWeaponIcons } from './fx/icons.ts';
+import { buildBottle, buildCandy, buildFlare, buildFireworks, buildCrosshair, buildCrosshairHead, buildHeart, buildPickupIcons, buildSilverIcon, buildSkull, buildTownMap, buildWeaponIcons, buildZombieHead } from './fx/icons.ts';
 import { buildEmoteIcons } from './fx/emotes.ts';
 import { buildDifficultyCards } from './difficulty-cards.ts';
 import { buildLevelCards } from './level-cards.ts';
@@ -22,7 +22,10 @@ export function buildUi(): UiArt {
     bottle: buildBottle(),
     fireworks: buildFireworks(),
     flare: buildFlare(),
+    candy: buildCandy(),
+    townMap: buildTownMap(),
     skull: buildSkull(),
+    zombieHead: buildZombieHead(),
     emotes: buildEmoteIcons(),
     logo: buildLogo(),
     difficulty: buildDifficultyCards(),

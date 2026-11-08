@@ -178,7 +178,13 @@ export interface UiArt {
   /** The HUD's count of fireworks, and of flares. */
   readonly fireworks: PixelSprite;
   readonly flare: PixelSprite;
+  /** A wrapped sweet, for the candy carried: the HUD counts it and the backpack ring offers it. */
+  readonly candy: PixelSprite;
+  /** The town map folded in three, as the backpack ring offers it. */
+  readonly townMap: PixelSprite;
   readonly skull: PixelSprite;
+  /** A walker's head, for the HUD's kill count: the number plainly counts zombies. */
+  readonly zombieHead: PixelSprite;
   /** The six emote icons, 16x16 (shared/emotes.ts). */
   readonly emotes: Record<EmoteId, PixelSprite>;
   /** Title lockup for the menu and game over screens. */

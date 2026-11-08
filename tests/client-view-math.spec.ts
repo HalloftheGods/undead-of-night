@@ -4,7 +4,7 @@ import { aimAngle, Camera, clampCameraAxis } from '../src/engine/camera.ts';
 import { glyphRows, textWidth } from '../src/engine/bitmap-font.ts';
 import { edgePointer } from '../src/engine/overlay-renderer.ts';
 import { tileVariant } from '../src/engine/tile-layer.ts';
-import { computeViewport, TARGET_VIEW_H, TARGET_VIEW_W } from '../src/engine/viewport.ts';
+import { clientFromBuffer, computeViewport, TARGET_VIEW_H, TARGET_VIEW_W } from '../src/engine/viewport.ts';
 
 describe('viewport', () => {
   it('lands on 480x270 at 1080p', () => {
@@ -26,6 +26,21 @@ describe('viewport', () => {
     const viewport = computeViewport(200, 120, 1);
     expect(viewport.scale).toBe(1);
     expect(viewport.bufferW).toBe(200);
+  });
+
+  it('maps a buffer pixel back to the window pixel the pointer maths came from', () => {
+    const { scale, dpr, left, top } = computeViewport(1367, 769, 2);
+    const toBuffer = (client: number, edge: number) => ((client - edge) * dpr) / scale;
+    for (const client of [0, 37.5, 480, 1366]) {
+      expect(clientFromBuffer(toBuffer(client, left), left, scale, dpr)).toBeCloseTo(client);
+      expect(clientFromBuffer(toBuffer(client, top), top, scale, dpr)).toBeCloseTo(client);
+    }
+  });
+
+  it('counts a capped view bar in, so a spot is measured from the canvas and not the window', () => {
+    expect(clientFromBuffer(0, 24, 4, 1)).toBe(24);
+    expect(clientFromBuffer(10, 24, 4, 1)).toBe(64);
+    expect(clientFromBuffer(10, 24, 8, 2)).toBe(64);
   });
 
   it('stays near the target view across common windows', () => {

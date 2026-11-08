@@ -20,7 +20,7 @@ import type { SceneView } from './scene.ts';
 import { ScreenEffects } from './screen-effects.ts';
 import { paintPrints, paintTrackingMarks } from './snow-prints.ts';
 import { GroundLayer } from './tile-layer.ts';
-import { computeViewport } from './viewport.ts';
+import { clientFromBuffer, computeViewport } from './viewport.ts';
 import type { Viewport } from './viewport.ts';
 import { VisualStore } from './visuals.ts';
 
@@ -142,6 +142,15 @@ export class WorldRenderer {
 
   toBufferY(clientY: number): number {
     return ((clientY - this.canvasTop) * this.viewport.dpr) / this.viewport.scale;
+  }
+
+  /** Buffer pixels back to client pixels, for the overlay that hangs off a spot in the world. */
+  toClientX(bufferX: number): number {
+    return clientFromBuffer(bufferX, this.canvasLeft, this.viewport.scale, this.viewport.dpr);
+  }
+
+  toClientY(bufferY: number): number {
+    return clientFromBuffer(bufferY, this.canvasTop, this.viewport.scale, this.viewport.dpr);
   }
 
   /** Buffer pixels to the spot in the drawn world under them, shake included. */

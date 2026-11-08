@@ -1,6 +1,6 @@
 <template>
   <button
-    class="mobile-fab"
+    class="mobile-fab px-frame"
     :class="{ 'is-held': held, 'is-open': open }"
     type="button"
     :aria-label="label"
@@ -41,37 +41,34 @@ defineEmits<{
 </script>
 
 <style scoped>
+/* A pixel chip with the HUD's own notched edge, not a floating grey circle. */
 .mobile-fab {
+  --edge: var(--bone-dim);
   display: grid;
   place-items: center;
   width: var(--fab-size, 56px);
   height: var(--fab-size, 56px);
+  min-width: var(--tap, 44px);
+  min-height: var(--tap, 44px);
   border: 0;
-  border-radius: 50%;
   padding: 0;
-  background: rgba(23, 24, 31, 0.85);
+  background: rgba(11, 12, 16, 0.86);
   color: var(--bone);
   cursor: pointer;
   touch-action: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-  transition: background 0.1s, transform 0.1s;
 }
 
 .mobile-fab:active,
-.mobile-fab.is-held {
-  background: var(--amber);
-  color: var(--ink);
-  transform: scale(0.95);
-}
-
+.mobile-fab.is-held,
 .mobile-fab.is-open {
+  --edge: var(--bone);
   background: var(--amber);
   color: var(--ink);
 }
 
 .fab-glyph {
   display: block;
-  width: 24px;
-  height: 24px;
+  width: calc(var(--fab-size, 56px) * 0.46);
+  height: calc(var(--fab-size, 56px) * 0.46);
 }
 </style>

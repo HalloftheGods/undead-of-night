@@ -112,6 +112,21 @@ export const SHOVE: PadGlyph = [
   '.....#.....',
 ];
 
+/** Two chevrons at a run: the sprint. */
+export const SPRINT: PadGlyph = [
+  '...........',
+  '...........',
+  '.#....#....',
+  '.##...##...',
+  '.###..###..',
+  '.####.####.',
+  '.###..###..',
+  '.##...##...',
+  '.#....#....',
+  '...........',
+  '...........',
+];
+
 /** A backpack with straps. */
 export const BACKPACK: PadGlyph = [
   '...........',

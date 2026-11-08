@@ -2,6 +2,26 @@
 
 All notable changes to the Undead of Night: Last Round game are documented in this file.
 
+## [2026-11-08] - HUD order, the backpack ring and a Sprint button
+
+Builds pieces 1 and 2 of `docs/superpowers/specs/2026-11-08-hud-mobile-design.md`.
+
+### Added
+- A zombie head icon, `art.ui.zombieHead` (`src/art/fx/icons.ts`), for the HUD's kill count, plus a wrapped candy (`art.ui.candy`) and a folded town map (`art.ui.townMap`) so the backpack can draw them as the game draws everything else.
+- A Sprint button in the touch cluster, held like `ShiftLeft` (`src/game/touch-pad.ts` `SPRINT`, `src/components/TouchControls.vue`).
+- `src/game/player-anchor.ts`: the survivor's spot in the window, written onto `<html>` as `--player-x` and `--player-y` once a frame by `src/game/run-frame.ts`, so an overlay can follow them without Vue work per frame. `WorldRenderer.toClientX/toClientY` and `clientFromBuffer` (`src/engine/viewport.ts`) are the maths behind it.
+- `src/game/backpack-wheel.ts` and `src/game/weapon-bar.ts`: what the ring holds and what each gun slot stands for, with specs in `tests/`.
+
+### Changed
+- The HUD's top right is now health, then kills, then points, in that order; health leaves the bottom-left vitals column. The trip's treasure and quest chips move to the top centre.
+- The gun bar is pinned to the middle of the foot of the screen at every width (it used to be pushed aside under 720px), and each slot is a button of at least `--tap` that sends its number key through `input.padDown`/`padUp`. The rest of the HUD stays click-through.
+- The run log moves to the right edge, halfway down, clear of the numbers above and the buttons below.
+- The backpack ring is pixel chips carrying the real item sprites, opened on the survivor and following them, instead of grey circles over a dimmed screen. It holds the medkit, the gun `Q` hands over to, each throwable carried, the candy and the town map; a slot that would do nothing is greyed out. Esc, a tap outside, or picking anything closes it.
+- The touch buttons are the HUD's own pixel chips, two by two in the bottom-right corner, the same block in either orientation (`src/components/MobileFAB.vue`, `src/components/TouchControls.vue`).
+
+### Fixed
+- `.is-touch .hud` reserved room for the old rectangular touch bar and, while anything throwable was carried, for a row of item buttons that has not been rendered since the buttons became a corner cluster. The HUD no longer gives up that space (`src/components/touch-ui.css`).
+
 ## [2026-11-07] - Title screen layout
 
 ### Changed
