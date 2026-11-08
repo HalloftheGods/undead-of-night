@@ -45,7 +45,7 @@ export const TITLE_MENU: readonly TitleMenuItem[] = [
   { group: 'play', page: 'daily', label: 'Daily Night', line: 'A fresh night every day.', primary: true },
   { group: 'play', page: 'play', label: 'Arcade', style: 'arcade', line: 'Ten levels in a row. Die and the run ends.' },
   { group: 'play', page: 'play', label: 'Campaign', style: 'campaign', line: 'Live in a bunker. Run trips, haul treasure home.' },
-  { group: 'play', page: 'levels', label: 'Levels', line: 'Jump to an Arcade level you have reached.' },
+  { group: 'play', page: 'levels', label: 'Level Select', line: 'Jump to an Arcade level you have reached.' },
   { group: 'extras', page: 'sound', label: 'Sound Test', line: 'Hear the music and effects.' },
   { group: 'extras', page: 'options', label: 'Options', line: 'Sound, display, motion and controls.' },
 ];
@@ -59,7 +59,7 @@ export interface MenuSection {
 
 /** The three parents the title shows, Play on top. Each opens its children; Back returns here. */
 export const MENU_SECTIONS: readonly MenuSection[] = [
-  { group: 'play', label: 'Play', line: 'Daily Night, Arcade, Campaign and Levels.' },
+  { group: 'play', label: 'Play', line: 'Daily Night, Arcade, Campaign and Level Select.' },
   { group: 'books', label: 'Books', line: 'How to Play, the Town Guide and your Records.' },
   { group: 'extras', label: 'Extras', line: 'Sound Test and Options.' },
 ];

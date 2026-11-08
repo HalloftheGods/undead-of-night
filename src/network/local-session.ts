@@ -97,11 +97,14 @@ export class LocalSession implements GameTransport {
   }
 
   private beginRun(): void {
-    const { name, difficulty, character, startLevel, home } = this.options;
+    const { name, difficulty, character, startLevel, home, streakNight } = this.options;
     const seed = this.options.seed ?? Math.floor(Math.random() * 0x7fffffff);
     const overrun = overrunOn(globalThis.location?.search ?? '', import.meta.env.DEV);
     const sim = new GameSimulation({ seed, difficulty, workbench: 'hold', startLevel, home: this.playsHome, overrun });
     sim.addPlayer(LOCAL_PLAYER_ID, name, null, character, home);
+    // Campaign brings its own gear from the locker, so the streak kit is for town runs.
+    const getsStreakKit = !this.playsHome && streakNight !== undefined;
+    if (getsStreakKit) sim.giveStreakKit(LOCAL_PLAYER_ID, streakNight);
     this.sim = sim;
     this.paused = false;
     this.onWelcome({ type: 'welcome', yourId: LOCAL_PLAYER_ID, tickRate: TICK_RATE, mapSeed: sim.map.seed, level: sim.level, difficulty: sim.difficulty });

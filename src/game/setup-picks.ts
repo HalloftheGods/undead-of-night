@@ -1,19 +1,30 @@
 // The Play page's picks: how you play, how hard, and who. Each shows its current choice as a portrait and opens a list
 // of its options. The words and order live here; the pictures come from the art book in the component.
 
+import { STAT_SLOTS } from '../../shared/character-stats.ts';
 import { CHARACTERS } from '../../shared/characters.ts';
+import { MAX_PLAYERS } from '../../shared/constants.ts';
 import { DIFFICULTIES } from '../../shared/difficulty.ts';
-import type { DifficultyId } from '../../shared/difficulty.ts';
+import type { DifficultyDef, DifficultyId } from '../../shared/difficulty.ts';
+import { statBarsOf } from './character-select-view.ts';
 import { MODE_CARDS } from './mode-select-view.ts';
 import type { PlayMode } from './play-flow.ts';
 
 export type PickKey = 'mode' | 'difficulty' | 'who';
 
+/** One slotted bar under an option, out of STAT_SLOTS. `strong` marks what the option is good at. */
+export interface PickBar {
+  readonly key: string;
+  readonly label: string;
+  readonly filled: number;
+  readonly strong: boolean;
+}
+
 /** One entry in a pick's list. `id` is the mode, the difficulty id, or the survivor's index as text. */
 export interface PickOption {
   readonly id: string;
   readonly name: string;
-  readonly line: string;
+  readonly bars: readonly PickBar[];
 }
 
 export interface SetupPick {
@@ -32,9 +43,46 @@ export interface SetupChoices {
   readonly survivor: number;
 }
 
-const MODE_OPTIONS: readonly PickOption[] = MODE_CARDS.map((card) => ({ id: card.mode, name: card.label, line: card.line }));
-const DIFFICULTY_OPTIONS: readonly PickOption[] = DIFFICULTIES.map((each) => ({ id: each.id, name: each.label, line: each.blurb }));
-const SURVIVOR_OPTIONS: readonly PickOption[] = CHARACTERS.map((each, index) => ({ id: String(index), name: each.name, line: each.trait }));
+/** Solo seats one and keeps a Continue; Multiplayer seats a full room and starts fresh. */
+function modeBars(mode: PlayMode): readonly PickBar[] {
+  const isSolo = mode === 'solo';
+  return [
+    { key: 'players', label: 'Players', filled: isSolo ? 1 : MAX_PLAYERS, strong: !isSolo },
+    { key: 'continue', label: 'Continue', filled: isSolo ? STAT_SLOTS : 0, strong: isSolo },
+  ];
+}
+
+type DifficultyDial = 'ammo' | 'zombieSpeed' | 'zombieDamage' | 'hordeSize';
+
+const DIFFICULTY_DIALS: ReadonlyArray<{ readonly key: DifficultyDial; readonly label: string }> = [
+  { key: 'ammo', label: 'Ammo' },
+  { key: 'zombieSpeed', label: 'Speed' },
+  { key: 'zombieDamage', label: 'Bite' },
+  { key: 'hordeSize', label: 'Horde' },
+];
+
+/** Where a value sits between the easiest and hardest difficulty's, as 1 to STAT_SLOTS cells. */
+export function dialSlots(key: DifficultyDial, value: number): number {
+  const values = DIFFICULTIES.map((each) => each[key]);
+  const low = Math.min(...values);
+  const span = Math.max(...values) - low;
+  const isFlat = span === 0;
+  if (isFlat) return STAT_SLOTS;
+  return 1 + Math.round(((value - low) / span) * (STAT_SLOTS - 1));
+}
+
+/** Ammo is the player's side, so a full ammo bar is the one picked out; the rest measure the zombies. */
+function difficultyBars(def: DifficultyDef): readonly PickBar[] {
+  return DIFFICULTY_DIALS.map(({ key, label }) => {
+    const filled = dialSlots(key, def[key]);
+    const isAmmo = key === 'ammo';
+    return { key, label, filled, strong: isAmmo && filled === STAT_SLOTS };
+  });
+}
+
+const MODE_OPTIONS: readonly PickOption[] = MODE_CARDS.map((card) => ({ id: card.mode, name: card.label, bars: modeBars(card.mode) }));
+const DIFFICULTY_OPTIONS: readonly PickOption[] = DIFFICULTIES.map((each) => ({ id: each.id, name: each.label, bars: difficultyBars(each) }));
+const SURVIVOR_OPTIONS: readonly PickOption[] = CHARACTERS.map((each, index) => ({ id: String(index), name: each.name, bars: statBarsOf(index) }));
 
 /** Where `id` sits in `options`, or the first option when it is not there. */
 function indexOf(options: readonly PickOption[], id: string): number {

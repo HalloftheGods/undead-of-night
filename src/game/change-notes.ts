@@ -22,13 +22,48 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'streak-kit',
+    date: '2026-11-08',
+    kind: 'new',
+    title: 'Streak kit',
+    deck: 'Come back night after night and your runs start better armed.',
+    points: [
+      'Play the Daily Night on days in a row: night 2 starts you with a medkit and spare rounds, then a knife, a shotgun, a Jawbreaker and, by night 7, a carbine.',
+      'The Daily Night page shows tonight\'s kit and what tomorrow adds. Each run says its kit on the first title card.',
+      'Solo Arcade runs get the kit too. Campaign and co-op start as before. Miss a day and the streak starts again.',
+    ],
+  },
+  {
+    id: 'setup-portraits',
+    date: '2026-11-08',
+    kind: 'better',
+    title: 'Taller setup cards',
+    deck: 'The three Play cards stand tall now, with stat bars on every option.',
+    points: [
+      'Mode, Difficulty and Survivor cards share one tall shape, with more night sky over each scene.',
+      'Each option shows its bars: players for a mode, ammo and zombie speed, bite and horde for a difficulty, and each survivor\'s stats.',
+      'The survivor list shows them as they look in play, turning when you point at one. Point at any option to see it in its card.',
+    ],
+  },
+  {
+    id: 'menu-details-switch',
+    date: '2026-11-08',
+    kind: 'better',
+    title: 'A cleaner main menu',
+    deck: 'The main menu shows just the names now. The line under each one is a switch in Options.',
+    points: [
+      'Turn on Menu details under Options to bring back a line saying what each item opens.',
+      'On a short screen, like a phone on its side, the lines stay hidden either way so the menu fits.',
+    ],
+  },
+  {
     id: 'menu-sections',
     date: '2026-11-08',
     kind: 'better',
     title: 'Main menu in three parts',
     deck: 'Books, Play and Extras now sit side by side, so the whole menu fits under the logo, even on a phone on its side.',
     points: [
-      'Play is in the middle: Daily Night, Arcade, Campaign and Levels. The menu still opens on Daily Night.',
+      'Play is in the middle: Daily Night, Arcade, Campaign and Level Select. The menu still opens on Daily Night.',
       'Books holds How to Play, the Town Guide and Records; Extras holds the Sound Test and Options.',
       'Up and down move within a part; left and right (or A and D) hop to the next one.',
     ],

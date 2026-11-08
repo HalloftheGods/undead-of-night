@@ -14,13 +14,14 @@
       @click="open(index)"
     >
       <span class="px-menu-label">{{ menuRowLabel(row, unlock) }}</span>
-      <span class="px-menu-line">{{ menuRowLine(row, unlock) }}</span>
+      <span v-if="showInfo" class="px-menu-line">{{ menuRowLine(row, unlock) }}</span>
     </button>
   </nav>
 </template>
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, useTemplateRef } from 'vue';
+import { loadMenuInfo } from '../game/menu-info-pref.ts';
 import { loadSoundUnlock } from '../game/sound-unlock.ts';
 import { isBackKey, isConfirmKey, MENU_SECTIONS, menuOwnsKey, menuRows, menuStep, openingRow, steppedRow, TITLE_MENU } from '../game/title-menu.ts';
 import type { KeyFocus, MenuGroup, MenuRow, TitleMenuItem } from '../game/title-menu.ts';
@@ -38,6 +39,8 @@ const game = useGame();
 const unlock = loadSoundUnlock();
 const rows = computed(() => menuRows(section.value, entries));
 const heading = computed(() => MENU_SECTIONS.find((each) => each.group === section.value)?.label ?? '');
+/** The lines under the items, switched on in Options. Read on mount, so coming back from Options shows the change. */
+const showInfo = loadMenuInfo();
 const buttons: HTMLButtonElement[] = [];
 const menu = useTemplateRef<HTMLElement>('menu');
 const CONTROLS = 'button, a[href], input, select, textarea, summary, [role="button"]';

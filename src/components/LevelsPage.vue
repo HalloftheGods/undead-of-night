@@ -1,5 +1,5 @@
 <template>
-  <TitlePage heading="Levels" size="wide" class="levels-screen" @close="emit('close')">
+  <TitlePage heading="Level Select" size="wide" class="levels-screen" @close="emit('close')">
     <p class="px-label levels-note">{{ LEVELS_PAGE_NOTE }}</p>
     <div class="levels">
       <SceneCard :sprite="featured.scene" :name="featured.name" :line="featured.line" :class="{ 'is-locked': !featured.unlocked }">

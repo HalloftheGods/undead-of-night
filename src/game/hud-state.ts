@@ -131,6 +131,8 @@ export interface LevelCard {
   readonly event?: string;
   /** A boss night's warning (`shared/bosses.ts`). */
   readonly boss?: string;
+  /** The streak kit this run started with, on its first card only (`src/game/streak-reward.ts`). */
+  readonly streak?: string;
 }
 
 /** A small label for the place the player just walked into. */

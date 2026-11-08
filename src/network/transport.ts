@@ -19,6 +19,8 @@ export interface ConnectOptions {
   readonly style?: GameStyle;
   /** Solo only: the run's seed, so a Daily Night is the same town for everyone. Left off, a random one. */
   readonly seed?: number;
+  /** Solo Arcade and Daily Night only: the night of the player's streak, which picks the streak kit (`shared/streak-kit.ts`). */
+  readonly streakNight?: number;
 }
 
 /** The one seam between the game client and a simulation, in-browser or over ws. */

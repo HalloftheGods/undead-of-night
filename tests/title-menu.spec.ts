@@ -32,7 +32,7 @@ describe('title scale', () => {
 
 describe('title menu', () => {
   it('runs section by section: Books with How to Play on top, then Play, then Extras', () => {
-    expect(TITLE_MENU.map((item) => item.label)).toEqual(['How to Play', 'Town Guide', 'Records', 'Daily Night', 'Arcade', 'Campaign', 'Levels', 'Sound Test', 'Options']);
+    expect(TITLE_MENU.map((item) => item.label)).toEqual(['How to Play', 'Town Guide', 'Records', 'Daily Night', 'Arcade', 'Campaign', 'Level Select', 'Sound Test', 'Options']);
   });
 
   it('shows only three parents on the title, Play on top and pointed at', () => {
@@ -45,7 +45,7 @@ describe('title menu', () => {
 
   it('lists a parent\'s links with Back last, and opens Play at Daily Night', () => {
     const play = menuRows('play');
-    expect(play.map((row) => row.label)).toEqual(['Daily Night', 'Arcade', 'Campaign', 'Levels', 'Back']);
+    expect(play.map((row) => row.label)).toEqual(['Daily Night', 'Arcade', 'Campaign', 'Level Select', 'Back']);
     expect(play[openingRow(play)].label).toBe('Daily Night');
     expect(menuRows('books').map((row) => row.label)).toEqual(['How to Play', 'Town Guide', 'Records', 'Back']);
     expect(menuRows('extras').map((row) => row.label)).toEqual(['Sound Test', 'Options', 'Back']);
@@ -54,7 +54,7 @@ describe('title menu', () => {
 
   it('names the Sound Test from the start, with or without a Radio found', () => {
     const labels = (radio: boolean) => TITLE_MENU.map((item) => menuLabel(item, { radio, tracks: [] }));
-    expect(labels(false)).toEqual(['How to Play', 'Town Guide', 'Records', 'Daily Night', 'Arcade', 'Campaign', 'Levels', 'Sound Test', 'Options']);
+    expect(labels(false)).toEqual(['How to Play', 'Town Guide', 'Records', 'Daily Night', 'Arcade', 'Campaign', 'Level Select', 'Sound Test', 'Options']);
     expect(labels(true)).toEqual(TITLE_MENU.map((item) => item.label));
   });
 

@@ -28,6 +28,7 @@ import { NO_RUN_UI } from './run-hud.ts';
 import type { RunHud } from './run-hud.ts';
 import type { RunStage } from './run-stage.ts';
 import { loadLeaderboard } from './storage.ts';
+import { streakCardLine, tonightsStreakNight } from './streak-reward.ts';
 import { loadBests } from './trip-record.ts';
 
 /** What a run keeps between snapshots, shared by the session and the snapshot handler. */
@@ -292,8 +293,12 @@ export class RunSession {
     transport.onClosed = (reason) => this.onClosed(reason);
     this.followStyle(style);
     // No callsign (blank or refused) goes out as '': every screen then labels the player by survivor name.
-    const options = { name: cleanCallsign(ui.value.callsign), difficulty: fixed.difficulty ?? loadDifficulty(), character: loadCharacter(), style, ...(fixed.seed === undefined ? {} : { seed: fixed.seed }) };
     const roomDecides = transport.kind === 'coop';
+    // Co-op rooms start everyone equal, and Campaign brings its gear from the locker: the streak kit is for solo town runs.
+    const getsStreakKit = !roomDecides && !playsFromHome(style);
+    const streakNight = getsStreakKit ? tonightsStreakNight() : undefined;
+    this.host.runHud.setStreakLine(streakNight === undefined ? null : streakCardLine(streakNight));
+    const options = { name: cleanCallsign(ui.value.callsign), difficulty: fixed.difficulty ?? loadDifficulty(), character: loadCharacter(), style, streakNight, ...(fixed.seed === undefined ? {} : { seed: fixed.seed }) };
     const shouldConnect = roomDecides || !playsFromHome(style);
     if (shouldConnect) transport.connect({ ...options, startLevel });
     else this.readHome(transport, (home) => transport.connect({ ...options, home }));
