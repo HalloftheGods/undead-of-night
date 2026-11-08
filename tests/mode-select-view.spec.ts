@@ -19,7 +19,8 @@ describe('mode select view', () => {
     const keys = (mode: 'solo' | 'multi') => modeFacts(mode).map((fact) => fact.key);
     expect(keys('solo')).toEqual(keys('multi'));
     expect(modeFacts('solo').find((fact) => fact.key === 'continue')?.value).toBe('Yes');
-    expect(modeFacts('multi').find((fact) => fact.key === 'server')?.value).toBe('Needed');
+    expect(modeFacts('multi', 'arcade', false).find((fact) => fact.key === 'server')?.value).toBe('Needed');
+    expect(modeFacts('multi', 'arcade', true).find((fact) => fact.key === 'server')?.value).toBe('None');
   });
 
   it('makes no claim about a style the room has yet to pick: Continue says only that it is Arcade\'s', () => {

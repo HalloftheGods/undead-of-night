@@ -263,3 +263,17 @@ describe('RoomHost', () => {
     expect(clock.pending).toBe(0);
   });
 });
+
+describe('RoomHost in a public room', () => {
+  it('drops every callsign on the way in, so players show as their survivor', () => {
+    host = createRoomHost({ sim, clock, newId: () => `p${ids++}`, restartVoteMs: RESTART_VOTE_MS, joinDeadlineMs: JOIN_DEADLINE_MS, heartbeatMs: HEARTBEAT_MS, acceptUnversioned: true, anonymous: true });
+    joined('Rude Name', 'tok-a');
+    joined('Another', 'tok-b');
+    expect(stateOf(sim).players.map((each) => each.name)).toEqual(['', '']);
+  });
+
+  it('keeps callsigns in a private room', () => {
+    joined('Ann', 'tok-c');
+    expect(stateOf(sim).players.map((each) => each.name)).toEqual(['Ann']);
+  });
+});

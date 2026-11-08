@@ -24,7 +24,7 @@ import { InputSender } from './input-sender.ts';
 import { RunFrame } from './run-frame.ts';
 import { NO_RUN_UI, RunHud } from './run-hud.ts';
 import { newRunState, RunSession } from './run-session.ts';
-import type { RunHost, RunState } from './run-session.ts';
+import type { CoopEntry, RunHost, RunState } from './run-session.ts';
 import { RunStage } from './run-stage.ts';
 import { SnapshotHandler } from './snapshot-handler.ts';
 import { browserStore, DEFAULT_PREFS, loadLeaderboard, loadPrefs, savePrefs } from './storage.ts';
@@ -96,6 +96,7 @@ export class GameController {
       callsign: prefs.callsign || DEFAULT_PREFS.callsign,
       serverAddress: prefs.serverAddress,
       onlineRoom: null,
+      onlinePublic: false,
       volume: this.audio.volume,
       musicVolume: this.audio.musicVolume,
       sfxVolume: this.audio.sfxVolume,
@@ -303,8 +304,8 @@ export class GameController {
   }
 
   /** Co-op. `style`, by default the one the player last chose, goes to an empty room; a room in play keeps its own and the run follows it. */
-  startCoop(style: GameStyle = this.ui.value.style): void {
-    this.session.startCoop(style);
+  startCoop(style: GameStyle = this.ui.value.style, entry?: CoopEntry): void {
+    this.session.startCoop(style, entry);
   }
 
   /** A menu is over the game: solo stops, and co-op stands still while the town carries on. */

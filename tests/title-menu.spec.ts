@@ -79,6 +79,8 @@ describe('setup page button', () => {
   it('says Start for solo and Join for co-op', () => {
     expect(setupActionLabel(false, true, false)).toBe('Start');
     expect(setupActionLabel(true, true, false)).toBe('Join');
+    expect(setupActionLabel(true, true, false, 'host')).toBe('Host room');
+    expect(setupActionLabel(true, true, false, 'find')).toBe('Find a team');
   });
 
   it('says why it cannot be pressed yet', () => {

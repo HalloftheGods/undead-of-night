@@ -8,6 +8,7 @@ body {
 .game-root {
   --tap: 44px;
   --pad-size: 58px;
+  --item-size: 52px;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -66,6 +67,59 @@ body {
   color: var(--ink);
 }
 
+/* Drawn one art pixel to two css px, so it reads at arm's length and stays crisp. */
+.touch-glyph {
+  display: block;
+  width: 22px;
+  height: 22px;
+  margin: auto;
+}
+
+/* --- The throws and candy: only what is carried, beside the bar ------------ */
+
+.touch-items {
+  position: absolute;
+  display: flex;
+  gap: 2px;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.touch-item {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--item-size);
+  height: var(--item-size);
+  --sprite-px: 2px;
+}
+
+.touch-item-count {
+  position: absolute;
+  right: 4px;
+  bottom: 3px;
+  font-size: 10px;
+}
+
+.touch-item.is-none {
+  color: var(--bone-dim);
+}
+
+.touch-item.is-none .sprite-img {
+  opacity: 0.4;
+}
+
+/* The HUD's wrapped sweet, three times the size. */
+.touch-candy {
+  width: 24px;
+  height: 12px;
+  background:
+    linear-gradient(#e8742a, #e8742a) center / 12px 100% no-repeat,
+    linear-gradient(#f4d36b, #f4d36b) left center / 6px 6px no-repeat,
+    linear-gradient(#f4d36b, #f4d36b) right center / 6px 6px no-repeat;
+}
+
 @media (orientation: landscape) {
   .touch-pad {
     top: 0;
@@ -79,6 +133,17 @@ body {
   .is-touch .hud {
     padding-right: calc(var(--pad-size) + var(--safe-right) + var(--u) * 3);
     padding-left: calc(var(--safe-left) + var(--u) * 3);
+  }
+
+  /* A column just inside the bar, the first item lowest where the thumb rests. */
+  .touch-items {
+    right: calc(var(--pad-size) + var(--safe-right) + 2px);
+    bottom: var(--safe-bottom);
+    flex-direction: column-reverse;
+  }
+
+  .is-touch.has-touch-items .hud {
+    padding-right: calc(var(--pad-size) + var(--item-size) + var(--safe-right) + var(--u) * 3);
   }
 }
 
@@ -96,6 +161,17 @@ body {
   .is-touch .hud {
     padding-top: calc(var(--safe-top) + var(--u) * 3);
     padding-bottom: calc(var(--pad-size) + var(--safe-bottom) + var(--u) * 3);
+  }
+
+  /* A row just over the bar, the first item rightmost where the thumb rests. */
+  .touch-items {
+    right: var(--safe-right);
+    bottom: calc(var(--pad-size) + var(--safe-bottom) + 2px);
+    flex-direction: row-reverse;
+  }
+
+  .is-touch.has-touch-items .hud {
+    padding-bottom: calc(var(--pad-size) + var(--item-size) + var(--safe-bottom) + var(--u) * 3);
   }
 }
 

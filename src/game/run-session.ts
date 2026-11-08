@@ -6,12 +6,11 @@ import { cleanCallsign } from '../../shared/callsign.ts';
 import { playsFromHome } from '../../shared/game-style.ts';
 import type { GameStyle } from '../../shared/game-style.ts';
 import type { JoinHome } from '../../shared/home-protocol.ts';
-import type { SnapshotPacket, WelcomePacket, WorldMap } from '../../shared/protocol.ts';
+import { PROTOCOL_VERSION, type SnapshotPacket, type WelcomePacket, type WorldMap } from '../../shared/protocol.ts';
 import type { AudioEngine } from '../audio/audio-engine.ts';
 import type { WorldRenderer } from '../engine/world-renderer.ts';
 import { LocalSession } from '../network/local-session.ts';
-import { normalizeRoomCode } from '../../shared/lobby/room-code.ts';
-import { onlineRoomsLive } from '../network/play-api.ts';
+import { coopTarget, matchRoom, onlineRoomsLive } from '../network/play-api.ts';
 import type { RoomSession } from '../network/remote-session.ts';
 import { resolveServerUrl, SocketSession } from '../network/socket-session.ts';
 import type { GameTransport } from '../network/transport.ts';
@@ -71,6 +70,10 @@ export interface RunHost {
 
 const ONLINE_UNLOADED = 'Could not load online play. Check the connection and try again.';
 
+/** The Multiplayer choice on the setup page, in a build with online rooms. */
+export type CoopEntry = 'find' | 'host' | 'code';
+type OnlinePlan = { readonly kind: 'find' } | { readonly kind: 'host' } | { readonly kind: 'join'; readonly code: string };
+
 export function newRunState(): RunState {
   return { transport: null, world: null, runResult: null, welcomed: false, lastSnapshotMs: 0, gameOverAtMs: 0, levelNoted: 0, inBunker: null, daily: null, ghost: null };
 }
@@ -116,22 +119,36 @@ export class RunSession {
 
   /**
    * `style` is offered to an empty room. A room already playing keeps its own, and this run follows it.
-   * In a build with online rooms, a blank field hosts one from this tab and a room code joins one over WebRTC.
-   * Anything else, and every address in a build without them, is a LAN server.
+   * With online rooms, `entry` says which Multiplayer choice was made: Find a team (public), Host for friends
+   * (private), or Join with code, where the field is read by `coopTarget`. Left off, a blank field hosts.
+   * Every address in a build without online rooms is a LAN server.
    */
-  startCoop(style: GameStyle): void {
+  startCoop(style: GameStyle, entry?: CoopEntry): void {
     if (!this.canStart()) return;
     this.host.state.daily = null;
     this.host.state.ghost = null;
     this.host.audio.unlock();
-    const text = this.host.ui.value.serverAddress.trim();
-    const code = normalizeRoomCode(text);
-    const online = onlineRoomsLive() && (!text || code.ok);
-    if (online) {
-      void this.startOnline(style, code.ok ? code.code : null);
+    const online = onlineRoomsLive();
+    const isRoomChoice = online && (entry === 'find' || entry === 'host');
+    if (isRoomChoice) {
+      void this.startOnline(style, { kind: entry });
       return;
     }
-    const url = resolveServerUrl(text, window.location);
+    const target = coopTarget(this.host.ui.value.serverAddress, online);
+    const isBlankCode = entry === 'code' && target.kind === 'host';
+    if (isBlankCode) {
+      this.host.publish({ error: "Type your friend's room code, or choose Host for friends." });
+      return;
+    }
+    if (target.kind === 'bad') {
+      this.host.publish({ error: target.reason });
+      return;
+    }
+    if (target.kind !== 'lan') {
+      void this.startOnline(style, target.kind === 'join' ? { kind: 'join', code: target.code } : { kind: 'host' });
+      return;
+    }
+    const url = resolveServerUrl(target.address, window.location);
     const badAddress = url === null;
     if (badAddress) {
       this.host.publish({ error: 'That server address does not look right.' });
@@ -141,7 +158,7 @@ export class RunSession {
   }
 
   /** The online room code is fetched on first use, with the menu held in its connecting state meanwhile. */
-  private async startOnline(style: GameStyle, code: string | null): Promise<void> {
+  private async startOnline(style: GameStyle, plan: OnlinePlan): Promise<void> {
     this.host.publish({ connecting: true, error: null });
     let rooms: typeof import('../network/online-session.ts');
     try {
@@ -150,16 +167,28 @@ export class RunSession {
       this.host.publish({ connecting: false, error: ONLINE_UNLOADED });
       return;
     }
-    // Left the menu, or something else started, while the code was on its way.
-    const { screen, connecting } = this.host.ui.value;
-    const stillWanted = screen === 'title' && connecting && this.host.state.transport === null;
-    if (!stillWanted) return;
+    if (!this.stillWanted()) return;
     const events = {
-      onHosted: (room: string) => this.host.publish({ onlineRoom: room }),
+      onHosted: (room: string, isPublic: boolean) => this.host.publish({ onlineRoom: room, onlinePublic: isPublic }),
       onUnlisted: () => this.host.publish({ onlineRoom: null }),
     };
-    const session = code === null ? rooms.hostRoom(style, events) : rooms.joinRoom(code);
+    if (plan.kind === 'host') return this.openCoop(rooms.hostRoom(style, events), style);
+    if (plan.kind === 'join') return this.openCoop(rooms.joinRoom(plan.code), style);
+    const found = await matchRoom({ protocol: PROTOCOL_VERSION, style, difficulty: loadDifficulty(), character: loadCharacter(), device: rooms.hostDevice() });
+    if (!this.stillWanted()) return;
+    if (!found.ok) {
+      this.host.publish({ connecting: false, error: found.reason });
+      return;
+    }
+    const { match } = found;
+    const session = match.kind === 'join' ? rooms.joinRoom(match.code, true) : rooms.hostRoom(style, events, { public: true, preset: { code: match.code, hostKey: match.hostKey } });
     this.openCoop(session, style);
+  }
+
+  /** Still on the menu and waiting: the player has not left, and nothing else has started, while a fetch was out. */
+  private stillWanted(): boolean {
+    const { screen, connecting } = this.host.ui.value;
+    return screen === 'title' && connecting && this.host.state.transport === null;
   }
 
   private openCoop(session: RoomSession, style: GameStyle): void {

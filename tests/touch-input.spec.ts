@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { InputManager } from '../src/game/input-manager.ts';
 import type { InputCallbacks } from '../src/game/input-manager.ts';
-import { TOUCH_BUTTONS } from '../src/game/touch-pad.ts';
+import { touchItems } from '../src/game/touch-items.ts';
+import { glyphPath, TOUCH_BUTTONS } from '../src/game/touch-pad.ts';
 import { dragStick, inStickZone, startStick, stickAngle, stickDirection, STICK_TRAVEL } from '../src/game/touch-stick.ts';
 import { installFakeBrowser } from './client-fake-dom.ts';
 import type { FakeBrowser } from './client-fake-dom.ts';
@@ -9,7 +10,9 @@ import type { FakeBrowser } from './client-fake-dom.ts';
 const WIDE = { w: 800, h: 400 };
 const TALL = { w: 400, h: 800 };
 const PLAY_AREA = { closest: () => null };
-const PAD = { closest: () => ({}) };
+const PAD = { closest: (selector: string) => (selector === '[data-touch-pad]' ? {} : null) };
+/** A button laid over play, like the room card's Share invite link. */
+const UI = { closest: (selector: string) => (selector === '[data-touch-ui]' ? {} : null) };
 
 interface FakeTouch {
   identifier: number;
@@ -161,6 +164,14 @@ describe('fingers on the game', () => {
     expect(event.preventDefault).toHaveBeenCalled();
   });
 
+  it('leaves a tap on a button over play to the button: no shot, and the click still comes', () => {
+    const down = start(finger(1, 1500, 300, UI));
+    const dragged = move(finger(1, 1500, 290, UI));
+    expect(input.sample(1, 0, null).shoot).toBe(false);
+    expect(down.preventDefault).not.toHaveBeenCalled();
+    expect(dragged.preventDefault).not.toHaveBeenCalled();
+  });
+
   it('keeps the page still through play: no scroll, no zoom, no mouse made up from a tap', () => {
     const down = start(finger(1, 1500, 300));
     const dragged = move(finger(1, 1400, 300));
@@ -240,7 +251,7 @@ describe('fingers on the game', () => {
     const code = (label: string): string => TOUCH_BUTTONS.find((each) => each.label === label)!.code;
 
     it('are the six the player needs and a way to pause', () => {
-      expect(TOUCH_BUTTONS.map((each) => each.label).sort()).toEqual(['Heal', 'Map', 'Pause', 'Reload', 'Search', 'Shove', 'Weapon']);
+      expect(TOUCH_BUTTONS.map((each) => each.label).sort()).toEqual(['Heal', 'Map', 'Next weapon', 'Pause', 'Reload', 'Search', 'Shove']);
     });
 
     it('latch a press as its key does', () => {
@@ -269,9 +280,25 @@ describe('fingers on the game', () => {
     });
 
     it('step to the next gun', () => {
-      input.padDown(code('Weapon'));
-      input.padUp(code('Weapon'));
+      input.padDown(code('Next weapon'));
+      input.padUp(code('Next weapon'));
       expect(input.sample(1, 0, { owned: ['pistol', 'shotgun'], weapon: 'pistol' }).weapon).toBe('shotgun');
+    });
+
+    it('each wear a square picture with some ink in it', () => {
+      TOUCH_BUTTONS.forEach((each) => {
+        expect(each.glyph.every((row) => row.length === each.glyph.length)).toBe(true);
+        expect(glyphPath(each.glyph)).toMatch(/^M/);
+      });
+    });
+
+    it('throw a bottle, a molotov and a flare, and eat a candy, from the item buttons', () => {
+      const items = touchItems({ bottles: 1, fuel: 1, flares: 1, candy: ['Ghost Gum'], sugar: [] });
+      items.forEach((each) => {
+        input.padDown(each.code);
+        input.padUp(each.code);
+      });
+      expect(input.sample(1, 0, null)).toMatchObject({ throw: true, molotov: true, flare: true, eat: true });
     });
 
     it('open the map and the pause menu', () => {
