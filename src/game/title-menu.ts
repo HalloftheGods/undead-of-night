@@ -31,11 +31,12 @@ export function menuLine(item: TitleMenuItem, unlock: SoundUnlock): string {
   return hidden ? '' : item.line;
 }
 
+/** Daily Night first, so it is the default, then Arcade and Campaign. */
 export const TITLE_MENU: readonly TitleMenuItem[] = [
-  { page: 'play', label: 'Campaign', style: 'campaign', line: 'Live in a bunker. Run trips, haul treasure home.' },
-  { page: 'play', label: 'Arcade', style: 'arcade', line: 'Ten levels in a row. Die and the run ends.' },
-  { page: 'howto', label: 'How to Play', line: 'Controls and the rules of the night.' },
   { page: 'daily', label: 'Daily Night', line: 'A fresh night every day.' },
+  { page: 'play', label: 'Arcade', style: 'arcade', line: 'Ten levels in a row. Die and the run ends.' },
+  { page: 'play', label: 'Campaign', style: 'campaign', line: 'Live in a bunker. Run trips, haul treasure home.' },
+  { page: 'howto', label: 'How to Play', line: 'Controls and the rules of the night.' },
   { page: 'levels', label: 'Levels', line: 'Jump to an Arcade level you have reached.' },
   { page: 'records', label: 'Records', line: 'Your best runs, trips and scores.' },
   { page: 'sound', label: 'Sound Test', line: 'Hear the music and effects.' },

@@ -27,18 +27,18 @@ describe('title scale', () => {
 });
 
 describe('title menu', () => {
-  it('runs in the agreed order, with Campaign first so it is the default and Arcade right under it', () => {
-    expect(TITLE_MENU.map((item) => item.label)).toEqual(['Campaign', 'Arcade', 'How to Play', 'Daily Night', 'Levels', 'Records', 'Sound Test', 'Options']);
+  it('runs in the agreed order, with Daily Night first so it is the default, then Arcade and Campaign', () => {
+    expect(TITLE_MENU.map((item) => item.label)).toEqual(['Daily Night', 'Arcade', 'Campaign', 'How to Play', 'Levels', 'Records', 'Sound Test', 'Options']);
   });
 
   it('names the Sound Test from the start, with or without a Radio found', () => {
     const labels = (radio: boolean) => TITLE_MENU.map((item) => menuLabel(item, { radio, tracks: [] }));
-    expect(labels(false)).toEqual(['Campaign', 'Arcade', 'How to Play', 'Daily Night', 'Levels', 'Records', 'Sound Test', 'Options']);
+    expect(labels(false)).toEqual(['Daily Night', 'Arcade', 'Campaign', 'How to Play', 'Levels', 'Records', 'Sound Test', 'Options']);
     expect(labels(true)).toEqual(TITLE_MENU.map((item) => item.label));
   });
 
   it('opens the one Play setup from both Campaign and Arcade, each carrying its own style', () => {
-    const [campaign, arcade] = TITLE_MENU;
+    const [, arcade, campaign] = TITLE_MENU;
     expect([campaign.page, campaign.style]).toEqual(['play', 'campaign']);
     expect([arcade.page, arcade.style]).toEqual(['play', 'arcade']);
     expect(TITLE_MENU.filter((item) => item.style !== undefined)).toHaveLength(2);

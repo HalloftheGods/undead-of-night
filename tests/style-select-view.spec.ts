@@ -4,16 +4,16 @@ import { modeFacts } from '../src/game/mode-select-view.ts';
 import { STYLE_CARDS, styleFacts, styleIndex } from '../src/game/style-select-view.ts';
 
 describe('style select view', () => {
-  it('lists Campaign then Arcade, one card for each style', () => {
-    expect(STYLE_CARDS.map((each) => each.style)).toEqual(['campaign', 'arcade']);
+  it('lists Arcade then Campaign, one card for each style', () => {
+    expect(STYLE_CARDS.map((each) => each.style)).toEqual(['arcade', 'campaign']);
     expect([...STYLE_CARDS.map((each) => each.style)].sort()).toEqual([...GAME_STYLES].sort());
-    expect(STYLE_CARDS.map((each) => each.label)).toEqual(['Campaign', 'Arcade']);
-    expect(styleIndex('campaign')).toBe(0);
-    expect(styleIndex('arcade')).toBe(1);
+    expect(STYLE_CARDS.map((each) => each.label)).toEqual(['Arcade', 'Campaign']);
+    expect(styleIndex('arcade')).toBe(0);
+    expect(styleIndex('campaign')).toBe(1);
   });
 
   it('gives each card a line that names how it plays', () => {
-    const [campaign, arcade] = STYLE_CARDS;
+    const [arcade, campaign] = STYLE_CARDS;
     expect(campaign.line).toMatch(/bunker/i);
     expect(arcade.line).toMatch(/ten levels/i);
   });

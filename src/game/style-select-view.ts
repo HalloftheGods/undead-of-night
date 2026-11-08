@@ -17,10 +17,10 @@ export interface StyleFact {
   readonly value: string;
 }
 
-/** In roster order, Campaign first because it is what a first-time player gets. */
+/** In roster order: Arcade then Campaign, matching the title menu. */
 export const STYLE_CARDS: readonly StyleCard[] = [
-  { style: 'campaign', label: STYLE_LABELS.campaign, line: 'Live in a bunker. Go out on trips, bring treasure home, forge it and trade.' },
   { style: 'arcade', label: STYLE_LABELS.arcade, line: 'Ten levels in a row with a workbench in the van. The game as it always was.' },
+  { style: 'campaign', label: STYLE_LABELS.campaign, line: 'Live in a bunker. Go out on trips, bring treasure home, forge it and trade.' },
 ];
 
 const FACTS: Readonly<Record<GameStyle, readonly StyleFact[]>> = {

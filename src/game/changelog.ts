@@ -20,6 +20,17 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'mode-order',
+    date: '2026-11-08',
+    kind: 'better',
+    title: 'Daily Night up top',
+    deck: 'The main menu now opens on Daily Night, then Arcade, then Campaign.',
+    points: [
+      'Daily Night is the first button, so Enter on the menu starts the day\'s night.',
+      'The Play setup lists Arcade before Campaign to match.',
+    ],
+  },
+  {
     id: 'press-any-key',
     date: '2026-11-08',
     kind: 'new',
