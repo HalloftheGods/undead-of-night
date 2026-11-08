@@ -14,6 +14,7 @@ import { buildBed, buildCounter, buildShelf, buildSofa, buildTable, buildWorkben
 import { buildGarage } from './environment/garage.ts';
 import { buildGrocery } from './environment/grocery.ts';
 import { buildGunShop } from './environment/gun-shop.ts';
+import { buildCandyBowl } from './environment/halloween.ts';
 import { buildBungalow, buildGableHouse, buildHipHouse } from './environment/house.ts';
 import { buildMerchantProps } from './environment/merchants.ts';
 import { buildCactus, buildDeadTree, buildScrub } from './environment/desert.ts';
@@ -78,6 +79,7 @@ export function buildEnvironment(): EnvironmentArt {
       ...buildMerchantProps(),
       blast_door: buildBlastDoor(),
       chest: buildChest(),
+      candy_bowl: buildCandyBowl(),
     },
     overrun: { doorBuckling: buildBlastDoorBuckling(), doorBurst: buildBlastDoorBurst(), chestOpen: buildChestOpen() },
     buildings: {

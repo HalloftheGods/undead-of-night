@@ -152,7 +152,7 @@ describe('art book', () => {
   it('draws both states of every searchable prop whole, on its footprint, and tells them apart', () => {
     const props = {
       drawer: 'bed', locker: 'locker', fridge: 'fridge', cabinet: 'counter', bench: 'workbench', shelf: 'shelf',
-      box: 'crate_stack', car: 'car_sedan_h', car_v: 'car_sedan_v', wreck: 'car_wreck_h', van: 'van_h',
+      box: 'crate_stack', car: 'car_sedan_h', car_v: 'car_sedan_v', wreck: 'car_wreck_h', van: 'van_h', bowl: 'candy_bowl',
     } as const;
     expect(Object.keys(book.containers).sort()).toEqual(Object.keys(props).sort());
     for (const [look, prop] of Object.entries(props)) {

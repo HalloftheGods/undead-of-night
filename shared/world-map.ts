@@ -110,9 +110,17 @@ function spreadTerrain(b: MapBuilder): void {
   }
 }
 
+/** The candles in the jack-o'-lanterns: an orange pool over a home's front step, centred on its door just right of the bowl. */
+const JACK_GLOW = '#ff8a2a';
+const JACK_RADIUS = 100;
+const JACK_TO_DOOR = 25;
+const JACK_UP = 10;
+
 function lightsFor(props: readonly PropInstance[], rng: Rng): MapLight[] {
   const lights: MapLight[] = [];
   for (const prop of props) {
+    const isCandyBowl = prop.kind === 'candy_bowl';
+    if (isCandyBowl) lights.push({ x: prop.x + JACK_TO_DOOR, y: prop.y - JACK_UP, radius: JACK_RADIUS, color: JACK_GLOW, flicker: true });
     const isFireBarrel = prop.kind === 'fire_barrel';
     if (isFireBarrel) {
       lights.push({ x: prop.x, y: prop.y - 6, radius: 74, color: FIRE, flicker: true });

@@ -9,6 +9,7 @@ import { RAMPS } from '../palette.ts';
 import type { Color } from '../palette.ts';
 import { brickPatch, grime, streak, windowUnit } from './facade.ts';
 import type { Trim } from './facade.ts';
+import { dressForHalloween } from './halloween.ts';
 import { bakeShell, doorway, startShell } from './shell.ts';
 import type { Shell } from './shell.ts';
 
@@ -171,6 +172,7 @@ export function buildHipHouse(): PixelSprite {
   streak(c, left + 100, wallTop + 2, [3, 6, 2, 8, 1], olive[0]);
   porch(s, [ash[0], metal[1], metal[2]]);
   grime(c, left, ground - 4, 28, [2, 4, 1, 3], olive[0]);
+  dressForHalloween(s, { lightsY: wallTop + 2, pumpkins: [s.doorR + 6, s.doorR + 16], webs: [[left + 72, wallTop + 8]], ghost: [s.doorR - 3, wallTop + 3], spider: [left + 14, 52] });
   return bakeShell(s);
 }
 
@@ -218,6 +220,7 @@ export function buildGableHouse(): PixelSprite {
   porch(s, [grass[0], grass[1], grass[2]]);
   grime(c, left, ground - 4, 24, [2, 3, 1, 3], metal[0]);
   grime(c, right - 16, ground - 4, 16, [3, 1, 2], metal[0]);
+  dressForHalloween(s, { lightsY: wallTop + 2, pumpkins: [s.doorR + 6, s.doorR + 16, s.doorR + 23], webs: [[left + 8, wallTop + 8]], spider: [left + 70, 30] });
   return bakeShell(s);
 }
 
@@ -272,5 +275,6 @@ export function buildBungalow(): PixelSprite {
   windowUnit(c, left + 97, wallTop + 7, 9, 12, 'boarded', WHITE);
   porch(s, [wood[0], wood[1], wood[2]]);
   grime(c, left, ground - 4, 30, [2, 4, 1, 3], brick[0]);
+  dressForHalloween(s, { lightsY: wallTop + 2, pumpkins: [s.doorR + 6, s.doorR + 16], webs: [[left + 73, wallTop + 7]], ghost: [s.doorL + 2, wallTop + 3], spider: [left + 40, 14] });
   return bakeShell(s);
 }

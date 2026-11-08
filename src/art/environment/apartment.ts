@@ -6,6 +6,7 @@ import { RAMPS } from '../palette.ts';
 import { brickPatch, grime, streak, windowUnit } from './facade.ts';
 import type { Trim, WindowKind } from './facade.ts';
 import { acUnit, bulkhead, dish, roofVent, tarPatch, waterTank } from './roof-kit.ts';
+import { dressForHalloween } from './halloween.ts';
 import { bakeShell, caseLamp, doorway, startShell } from './shell.ts';
 import type { Shell } from './shell.ts';
 import { GREY_PARAPET, parapetRoof, puddle, rollSeams } from './shop.ts';
@@ -84,6 +85,7 @@ export function buildBrickApartment(): PixelSprite {
   const s = startShell('apartment', WALL);
   brickRoof(s);
   brickFront(s);
+  dressForHalloween(s, { lightsY: s.wallTop + 2, pumpkins: [s.doorR + 5, s.doorR + 15], webs: [[s.left + 30, s.wallTop + 22]] });
   return bakeShell(s);
 }
 
@@ -168,5 +170,6 @@ export function buildSlabApartment(): PixelSprite {
   const s = startShell('apartment', WALL);
   slabRoof(s);
   slabFront(s);
+  dressForHalloween(s, { lightsY: s.wallTop + 2, pumpkins: [s.doorR + 5, s.doorR + 15], webs: [[s.left + 42, s.ground - 15]] });
   return bakeShell(s);
 }

@@ -12,9 +12,10 @@ import { input, SEED } from './helpers/sim-harness.ts';
  * The town itself draws from the same rng, so a change to what a town is built from moves it too: furniture against the side
  * walls (#14) and rooms behind back doors (#17) took it from 4878 to 5337, and turning the overrun on (#4) left it alone.
  * Moving the house stairs into the back corner, with the bed and table shifted round them, took it to 5068.
+ * A candy bowl by every home's door (Halloween night) shifted which containers the town's rolls land on: 5026.
  * Re-record it only for a change like those, after checking the overrun code is not what moved it.
  */
-const OFF_PATH_DRAWS = 5068;
+const OFF_PATH_DRAWS = 5026;
 
 const BUNKER_TICKS = 200;
 const TOWN_TICKS = 600;

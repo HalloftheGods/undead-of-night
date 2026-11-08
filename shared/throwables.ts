@@ -71,6 +71,8 @@ export interface FlareState {
  * the container's place in the list on a generator of its own, so the simulation's rolls never move.
  */
 export function stashIn(seed: number, container: Container): Stash | null {
+  const isBowl = container.kind === 'bowl';
+  if (isBowl) return null;
   const rng = createRng((seed ^ STASH_SALT ^ Math.imul(container.id + 1, 0x9e3779b1)) >>> 0);
   const roll = rng();
   const flareOdds = container.kind === 'car' ? CAR_FLARE_ODDS : FLARE_ODDS[container.buildingKind] ?? 0;

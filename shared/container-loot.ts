@@ -57,11 +57,16 @@ function fill(sim: SimState, kind: BuildingKind | 'outdoors', rng: Rng): Contain
 
 /** Shuts and fills every container in the town. Those upstairs and in cellars roll on `upOrDown`, so the town's own rolls stay put. */
 export function stockContainers(sim: SimState, upOrDown: Rng = sim.rng): void {
-  sim.containers = townContainers(sim.map).map((container) => fill(sim, container.buildingKind, container.upOrDown ? upOrDown : sim.rng));
+  sim.containers = townContainers(sim.map).map((container) => {
+    // A candy bowl holds its candy and nothing else, so it takes no roll.
+    const isBowl = container.kind === 'bowl';
+    if (isBowl) return { opened: false, loot: null };
+    return fill(sim, container.buildingKind, container.upOrDown ? upOrDown : sim.rng);
+  });
 }
 
-/** The containers in the town itself, which its ammo budget and its homes' small finds are settled over. */
-const inTown = (sim: SimState) => townContainers(sim.map).filter((container) => !container.upOrDown);
+/** The containers in the town itself, which its ammo budget and its homes' small finds are settled over. Candy bowls hold candy alone. */
+const inTown = (sim: SimState) => townContainers(sim.map).filter((container) => !container.upOrDown && container.kind !== 'bowl');
 
 /**
  * Brings the ammo put away to what the town can spare, so a lucky roll never shows up as bare

@@ -8,6 +8,7 @@ import { buildBedArt, buildBenchArt, buildCounterArt } from './containers/fittin
 import { buildFridgeArt, buildLockerArt, buildShelfArt } from './containers/shelving.ts';
 import type { ContainerArt } from './containers/stage.ts';
 import { buildCarArt } from './containers/vehicles.ts';
+import { buildCandyBowlArt } from './environment/halloween.ts';
 import type { PixelSprite } from './types.ts';
 
 export type { ContainerArt } from './containers/stage.ts';
@@ -34,5 +35,6 @@ export function buildContainers(props: Record<PropKind, PixelSprite>): Record<Co
     shelf: buildShelfArt(),
     box: buildCrateArt(props.crate_stack),
     ...buildCarArt(props),
+    bowl: buildCandyBowlArt(props.candy_bowl),
   };
 }

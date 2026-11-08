@@ -1,6 +1,7 @@
 import { furnish } from './building-interiors.ts';
 import { backDoorBox } from './building-plans.ts';
-import { BUILDING_DEFS, DOOR_WIDTH, TILE_SIZE } from './protocol.ts';
+import { DOORSTEP_HOMES } from './candy.ts';
+import { BUILDING_DEFS, DOOR_WIDTH, PROP_DEFS, TILE_SIZE } from './protocol.ts';
 import type { BuildingInstance, BuildingKind, TileKind } from './protocol.ts';
 import type { MapBuilder } from './map-builder.ts';
 import { createRng, pick, randInt } from './rng.ts';
@@ -123,6 +124,17 @@ function backStep(b: MapBuilder, building: BuildingInstance): void {
   b.reserve({ ...step, x0: step.x0 - DOOR_WIDTH / 2, x1: step.x1 + DOOR_WIDTH / 2 });
 }
 
+/** The candy bowl stands on the step just left of the door, inside the clear apron, against the wall. */
+const BOWL_SIDE_GAP = 12;
+
+/** Halloween night: every home has a bowl out for the trick-or-treaters. Fixed by the door, so it takes no roll. */
+function setOutBowl(b: MapBuilder, building: BuildingInstance): void {
+  const isHome = DOORSTEP_HOMES.has(building.kind);
+  if (!isHome) return;
+  const door = doorBox(building);
+  b.fixture('candy_bowl', door.x0 - BOWL_SIDE_GAP, door.y1 + PROP_DEFS.candy_bowl.h);
+}
+
 function raise(b: MapBuilder, kind: BuildingKind, col: number, bottom: number, walkDown: number): void {
   const building = b.addBuilding(kind, col, bottom - heightOf(kind));
   const door = doorBox(building);
@@ -132,6 +144,7 @@ function raise(b: MapBuilder, kind: BuildingKind, col: number, bottom: number, w
   b.reserve({ x0: door.x0 - DOOR_WIDTH / 2, y0: door.y1, x1: door.x1 + DOOR_WIDTH / 2, y1: door.y1 + apronDepth });
   backStep(b, building);
   furnish(b, building);
+  setOutBowl(b, building);
   const isGarage = kind === 'garage';
   if (isGarage) forecourt(b, col + widthOf(kind) + 1, bottom);
 }
