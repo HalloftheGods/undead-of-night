@@ -26,11 +26,11 @@ export const CHANGE_NOTES: readonly ChangeNote[] = [
     date: '2026-11-08',
     kind: 'better',
     title: 'Taller setup cards',
-    deck: 'The three Play cards stand tall now, and your survivor turns on theirs.',
+    deck: 'The three Play cards stand tall now, with stat bars on every option.',
     points: [
       'Mode, Difficulty and Survivor cards share one tall shape, with more night sky over each scene.',
-      'Point at an option to see it in its card before you pick it.',
-      'The lists show just names and pictures, and open without covering Start.',
+      'Each option shows its bars: players for a mode, ammo and zombie speed, bite and horde for a difficulty, and each survivor\'s stats.',
+      'The survivor list shows them as they look in play, turning when you point at one. Point at any option to see it in its card.',
     ],
   },
   {
