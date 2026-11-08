@@ -11,6 +11,10 @@ export type TitlePage = 'play' | 'daily' | 'levels' | 'howto' | 'records' | 'sou
 export interface TitleMenuItem {
   readonly page: TitlePage;
   readonly label: string;
+  /** One line under the label, saying what the button opens. */
+  readonly line: string;
+  /** Set on Campaign and Arcade: the style this button starts a setup for. The page is Play; the style is the button. */
+  readonly style?: GameStyle;
   /** Shows as ??? until the player has found this. */
   readonly needs?: 'radio';
 }
@@ -21,14 +25,21 @@ export function menuLabel(item: TitleMenuItem, unlock: SoundUnlock): string {
   return hidden ? '???' : item.label;
 }
 
+/** The line under an item: hidden along with the name while what it needs has not been found. */
+export function menuLine(item: TitleMenuItem, unlock: SoundUnlock): string {
+  const hidden = item.needs === 'radio' && !unlock.radio;
+  return hidden ? '' : item.line;
+}
+
 export const TITLE_MENU: readonly TitleMenuItem[] = [
-  { page: 'play', label: 'Play' },
-  { page: 'daily', label: 'Daily Night' },
-  { page: 'levels', label: 'Levels' },
-  { page: 'howto', label: 'How to Play' },
-  { page: 'records', label: 'Records' },
-  { page: 'sound', label: 'Sound Test' },
-  { page: 'options', label: 'Options' },
+  { page: 'play', label: 'Campaign', style: 'campaign', line: 'Live in a bunker. Run trips, haul treasure home.' },
+  { page: 'play', label: 'Arcade', style: 'arcade', line: 'Ten levels in a row. Die and the run ends.' },
+  { page: 'howto', label: 'How to Play', line: 'Controls and the rules of the night.' },
+  { page: 'daily', label: 'Daily Night', line: 'A fresh night every day.' },
+  { page: 'levels', label: 'Levels', line: 'Jump to an Arcade level you have reached.' },
+  { page: 'records', label: 'Records', line: 'Your best runs, trips and scores.' },
+  { page: 'sound', label: 'Sound Test', line: 'Hear the music and effects.' },
+  { page: 'options', label: 'Options', line: 'Sound, display, motion and controls.' },
 ];
 
 /** The Levels page belongs to Arcade; Campaign picks its level at the garage map in the bunker. */

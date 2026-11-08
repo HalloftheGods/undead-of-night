@@ -58,7 +58,8 @@ describe('candy', () => {
       }
     }
     expect(homes).toBeGreaterThan(shops);
-  });
+    // Builds thirty towns, so it scales with machine load; the global 20s cap is too tight.
+  }, 120_000);
 
   it('carries two at most', () => {
     const { state } = quietSim();

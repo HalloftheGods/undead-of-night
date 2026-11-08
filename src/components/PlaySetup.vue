@@ -4,9 +4,7 @@
       <SetupStepper :stops="stepper" :thumbs @pick="jump" />
     </template>
 
-    <StyleSelect v-if="flow.step === 'style'" ref="styles" :art="ui.art" :game-style="ui.style" @choose="chooseStyle" />
-
-    <template v-else-if="flow.step === 'mode'">
+    <template v-if="flow.step === 'mode'">
       <ModeSelect :art="ui.art" :mode="flow.mode" :game-style="shownStyle" @choose="pick" />
 
       <!-- The server half keeps its room on Solo, hidden, so choosing a mode moves nothing. -->
@@ -103,7 +101,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue';
 import { DEFAULT_SERVER_PORT } from '../../shared/constants.ts';
-import type { GameStyle } from '../../shared/game-style.ts';
 import { trackTitlePage } from '../game/analytics/index.ts';
 import type { PixelSprite } from '../art/types.ts';
 import { loadCharacter } from '../game/character-pref.ts';
@@ -123,7 +120,6 @@ import DifficultySelect from './DifficultySelect.vue';
 import ModeSelect from './ModeSelect.vue';
 import PixelButton from './PixelButton.vue';
 import SetupStepper from './SetupStepper.vue';
-import StyleSelect from './StyleSelect.vue';
 import TitlePage from './TitlePage.vue';
 import { useGame } from './use-game.ts';
 
@@ -131,7 +127,7 @@ const { ui, join = false, level = null } = defineProps<{ ui: UiState; join?: boo
 const emit = defineEmits<{ close: [] }>();
 const game = useGame();
 const callsign = useTemplateRef<HTMLInputElement>('callsign');
-const styles = useTemplateRef<InstanceType<typeof StyleSelect>>('styles');
+
 const survivors = useTemplateRef<InstanceType<typeof CharacterSelect>>('survivors');
 const difficulty = useTemplateRef<InstanceType<typeof DifficultySelect>>('difficulty');
 const flow = ref(startFlow(join, level));
@@ -160,7 +156,6 @@ const thumbs = computed<Partial<Record<PlayStep, PixelSprite>>>(() => {
   const isArtLoading = art === null;
   if (isArtLoading) return {};
   return {
-    style: art.ui.style[runStyle.value],
     mode: art.ui.mode[flow.value.mode],
     difficulty: art.ui.difficulty[loadDifficulty()],
     who: art.survivors[loadCharacter()]?.select,
@@ -211,11 +206,6 @@ async function copyInvite(): Promise<void> {
   copiedTimer = setTimeout(() => (copied.value = 'idle'), 2000);
 }
 
-/** A method handed to the template loses its `this`, so the pick goes through here. */
-function chooseStyle(style: GameStyle): void {
-  game.chooseStyle(style);
-}
-
 function pick(mode: PlayMode): void {
   flow.value = chooseMode(flow.value, mode);
 }
@@ -230,10 +220,9 @@ function start(): void {
   else game.startSolo(runStyle.value);
 }
 
-/** Puts the keyboard where each step starts: the chosen style, the callsign, the chosen difficulty, or the chosen survivor. */
+/** Puts the keyboard where each step starts: the callsign, the chosen difficulty, or the chosen survivor. */
 function focusStep(): void {
   void nextTick(() => {
-    styles.value?.focus();
     callsign.value?.focus();
     difficulty.value?.focus();
     survivors.value?.focus();
@@ -267,7 +256,6 @@ function back(): void {
 }
 
 onMounted(() => {
-  styles.value?.focus();
   callsign.value?.focus();
   trackTitlePage('play');
 });

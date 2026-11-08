@@ -2,17 +2,18 @@
   <nav ref="menu" class="px-menu" aria-label="Main menu">
     <button
       v-for="(item, index) in entries"
-      :key="item.page"
+      :key="item.label"
       ref="items"
       class="px-menu-item"
-      :class="{ 'is-selected': index === selected }"
+      :class="{ 'is-selected': index === selected, 'is-primary': index === 0 }"
       type="button"
       :aria-current="index === selected"
       @mousemove="moveTo(index)"
       @focus="select(index)"
       @click="open(index)"
     >
-      {{ menuLabel(item, unlock) }}
+      <span class="px-menu-label">{{ menuLabel(item, unlock) }}</span>
+      <span class="px-menu-line">{{ menuLine(item, unlock) }}</span>
     </button>
   </nav>
 </template>
@@ -20,14 +21,13 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, useTemplateRef } from 'vue';
 import { loadSoundUnlock } from '../game/sound-unlock.ts';
-import { isConfirmKey, menuLabel, menuOwnsKey, menuStep, steppedIndex, TITLE_MENU } from '../game/title-menu.ts';
+import { isConfirmKey, menuLabel, menuLine, menuOwnsKey, menuStep, steppedIndex, TITLE_MENU } from '../game/title-menu.ts';
 import type { KeyFocus, TitleMenuItem } from '../game/title-menu.ts';
-import type { TitlePage } from '../game/title-menu.ts';
 import { useGame } from './use-game.ts';
 
 const { entries = TITLE_MENU } = defineProps<{ entries?: readonly TitleMenuItem[] }>();
 const selected = defineModel<number>({ required: true });
-const emit = defineEmits<{ open: [page: TitlePage] }>();
+const emit = defineEmits<{ open: [item: TitleMenuItem] }>();
 const game = useGame();
 const unlock = loadSoundUnlock();
 const buttons = useTemplateRef<HTMLButtonElement[]>('items');
@@ -53,7 +53,7 @@ function moveTo(index: number): void {
 
 function open(index: number): void {
   game.playUi('click');
-  emit('open', entries[index].page);
+  emit('open', entries[index]);
 }
 
 function focusOf(eventTarget: EventTarget | null): KeyFocus {

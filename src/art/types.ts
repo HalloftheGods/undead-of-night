@@ -107,7 +107,34 @@ export interface EnvironmentArt {
   readonly escapeVanLights: Clip;
 }
 
+/** Impact, weather, particle, debris and ground-mark extras (fx/ambient.ts). */
+export interface AmbientFxArt {
+  /** Metal sparks where a bullet hits a wall, car or door. Plays once. */
+  readonly hitSpark: Clip;
+  /** One falling rain streak, looped; the renderer moves it. */
+  readonly rainStreak: Clip;
+  /** A raindrop landing. Plays once. */
+  readonly rainSplash: Clip;
+  /** A rising, cooling ember for fire barrels and burning wrecks. */
+  readonly emberDrift: Clip;
+  /** A glowing spore for the blight biome. */
+  readonly sporeDrift: Clip;
+  /** A tumbling leaf for the evergreen and yard biomes. */
+  readonly leafFall: Clip;
+  /** Flesh, bone, rot, rib and scrap chunks thrown by a death. */
+  readonly gibs: readonly PixelSprite[];
+  /** Left, right and a faded left. */
+  readonly bloodFootprints: readonly PixelSprite[];
+  /** Burnt ground, small to large. */
+  readonly scorchDecals: readonly PixelSprite[];
+  readonly glassShards: readonly PixelSprite[];
+  readonly bulletHoles: readonly PixelSprite[];
+  /** A ring swelling under a pickup. */
+  readonly pickupRing: Clip;
+}
+
 export interface FxArt {
+  readonly ambient: AmbientFxArt;
   /** Muzzle flash per weapon, drawn at the barrel tip, one clip per direction. */
   readonly muzzle: Record<WeaponId, DirClips>;
   readonly tracer: DirClips;

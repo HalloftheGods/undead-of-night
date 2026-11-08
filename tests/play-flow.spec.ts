@@ -22,27 +22,27 @@ import {
 } from '../src/game/play-flow.ts';
 
 describe('play flow', () => {
-  it('opens on the Style step as solo, with no server field', () => {
-    expect(PLAY_START).toEqual({ step: 'style', mode: 'solo', styled: true });
+  it('opens on the mode step as solo, with no server field and no Style step: the title buttons chose the style', () => {
+    expect(PLAY_START).toEqual({ step: 'mode', mode: 'solo' });
+    expect(playSteps()).not.toContain('style');
     expect(showsServer(PLAY_START)).toBe(false);
   });
 
   it('shows the server address once Multiplayer is chosen, on the mode step only', () => {
-    const multi = chooseMode(advance(PLAY_START), 'multi');
+    const multi = chooseMode(PLAY_START, 'multi');
     expect(showsServer(multi)).toBe(true);
     expect(showsServer(advance(multi))).toBe(false);
     expect(showsServer(advance(advance(multi)))).toBe(false);
-    expect(showsServer(chooseMode(PLAY_START, 'multi'))).toBe(false);
   });
 
-  it('lands an invite link on the co-op setup step and skips the Style step', () => {
-    expect(PLAY_JOIN).toEqual({ step: 'mode', mode: 'multi', styled: false });
+  it('lands an invite link on the co-op setup step', () => {
+    expect(PLAY_JOIN).toEqual({ step: 'mode', mode: 'multi' });
     expect(showsServer(PLAY_JOIN)).toBe(true);
-    expect(playSteps(PLAY_JOIN)).toEqual(['mode', 'difficulty', 'who']);
+    expect(playSteps()).toEqual(['mode', 'difficulty', 'who']);
   });
 
-  it('lands a level picked on the Levels page on the mode step, solo, without the Style step', () => {
-    expect(PLAY_LEVEL).toEqual({ step: 'mode', mode: 'solo', styled: false });
+  it('lands a level picked on the Levels page on the mode step, solo', () => {
+    expect(PLAY_LEVEL).toEqual({ step: 'mode', mode: 'solo' });
     expect(retreat(PLAY_LEVEL)).toBeNull();
   });
 
@@ -53,40 +53,33 @@ describe('play flow', () => {
     expect(startFlow(true, 4)).toBe(PLAY_JOIN);
   });
 
-  it('walks style, mode, difficulty, survivor and stays on the last, keeping the mode', () => {
-    const second = advance(PLAY_START);
-    expect(second).toEqual({ step: 'mode', mode: 'solo', styled: true });
-    const third = advance(chooseMode(second, 'multi'));
-    expect(third).toEqual({ step: 'difficulty', mode: 'multi', styled: true });
+  it('walks mode, difficulty, survivor and stays on the last, keeping the mode', () => {
+    const second = chooseMode(PLAY_START, 'multi');
+    const third = advance(second);
+    expect(third).toEqual({ step: 'difficulty', mode: 'multi' });
     const fourth = advance(third);
-    expect(fourth).toEqual({ step: 'who', mode: 'multi', styled: true });
+    expect(fourth).toEqual({ step: 'who', mode: 'multi' });
     expect(advance(fourth)).toBe(fourth);
   });
 
-  it('walks three steps when the Style step is skipped', () => {
-    expect(playSteps(PLAY_START)).toEqual(['style', 'mode', 'difficulty', 'who']);
-    expect(advance(PLAY_LEVEL)).toEqual({ step: 'difficulty', mode: 'solo', styled: false });
-  });
-
   it('goes back one step at a time, then leaves', () => {
-    const fourth = advance(advance(advance(PLAY_START)));
-    expect(retreat(fourth)).toEqual({ step: 'difficulty', mode: 'solo', styled: true });
+    const third = advance(advance(PLAY_START));
+    expect(retreat(third)).toEqual({ step: 'difficulty', mode: 'solo' });
     expect(retreat(advance(PLAY_START))).toEqual(PLAY_START);
     expect(retreat(PLAY_START)).toBeNull();
   });
 
   it('puts Start on the survivor step only', () => {
     expect(startsRun(PLAY_START)).toBe(false);
-    expect(startsRun(advance(advance(PLAY_START)))).toBe(false);
-    expect(startsRun(advance(advance(advance(PLAY_START))))).toBe(true);
+    expect(startsRun(advance(PLAY_START))).toBe(false);
+    expect(startsRun(advance(advance(PLAY_START)))).toBe(true);
     expect(startsRun(advance(advance(PLAY_LEVEL)))).toBe(true);
   });
 
   it('titles each step', () => {
-    expect(playHeading(PLAY_START)).toBe('Choose Style');
-    expect(playHeading(advance(PLAY_START))).toBe('Choose Mode');
-    expect(playHeading(advance(advance(PLAY_START)))).toBe('Choose Difficulty');
-    expect(playHeading(advance(advance(advance(PLAY_START))))).toBe('Choose Survivor');
+    expect(playHeading(PLAY_START)).toBe('Choose Mode');
+    expect(playHeading(advance(PLAY_START))).toBe('Choose Difficulty');
+    expect(playHeading(advance(advance(PLAY_START)))).toBe('Choose Survivor');
   });
 
   it('plays Arcade when a level was picked and the remembered style otherwise', () => {
@@ -127,12 +120,11 @@ describe('play flow', () => {
   });
 
   it('lays out the stepper: done steps behind, the current one lit, the rest ahead', () => {
-    const third = advance(advance(PLAY_START));
-    expect(playStepper(third)).toEqual([
-      { step: 'style', label: 'Style', number: 1, state: 'done' },
-      { step: 'mode', label: 'Mode', number: 2, state: 'done' },
-      { step: 'difficulty', label: 'Difficulty', number: 3, state: 'current' },
-      { step: 'who', label: 'Survivor', number: 4, state: 'next' },
+    const second = advance(PLAY_START);
+    expect(playStepper(second)).toEqual([
+      { step: 'mode', label: 'Mode', number: 1, state: 'done' },
+      { step: 'difficulty', label: 'Difficulty', number: 2, state: 'current' },
+      { step: 'who', label: 'Survivor', number: 3, state: 'next' },
     ]);
   });
 
@@ -144,13 +136,11 @@ describe('play flow', () => {
     ]);
   });
 
-  it('jumps back to a done step from the stepper, but never forward or off the walk', () => {
-    const fourth = chooseMode(advance(advance(advance(PLAY_START))), 'multi');
-    expect(returnTo(fourth, 'mode')).toEqual({ step: 'mode', mode: 'multi', styled: true });
-    expect(returnTo(fourth, 'style')).toEqual({ step: 'style', mode: 'multi', styled: true });
-    expect(returnTo(fourth, 'who')).toBe(fourth);
-    const second = advance(PLAY_START);
-    expect(returnTo(second, 'difficulty')).toBe(second);
-    expect(returnTo(advance(PLAY_LEVEL), 'style')).toEqual(advance(PLAY_LEVEL));
+  it('jumps back to a done step from the stepper, but never forward', () => {
+    const third = chooseMode(advance(advance(PLAY_START)), 'multi');
+    expect(returnTo(third, 'mode')).toEqual({ step: 'mode', mode: 'multi' });
+    expect(returnTo(third, 'who')).toBe(third);
+    const first = PLAY_START;
+    expect(returnTo(first, 'difficulty')).toBe(first);
   });
 });

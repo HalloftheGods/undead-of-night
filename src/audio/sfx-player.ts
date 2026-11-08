@@ -114,6 +114,39 @@ export const pickupJewelLarge: Recipe = (v) => {
   tone(v, { at: 0.24, type: 'triangle', f0: 3136, f1: 3200, attack: 0.02, decay: 0.45, gain: 0.07 });
 };
 
+/** A gun part or kit going into the bag: a dull thump and a few hard steel clinks, no chime. */
+export const pickupPart: Recipe = (v) => {
+  tone(v, { type: 'sine', f0: 180, f1: 90, decay: 0.08, gain: 0.4, lp: 400 });
+  [0, 0.06, 0.13].forEach((at, i) => {
+    tone(v, { at, type: 'square', f0: 620 - i * 90, f1: 480 - i * 70, decay: 0.07, gain: 0.1, lp: 2400 });
+    noise(v, { at, filter: 'bandpass', freq: 2200 + i * 300, q: 5, decay: 0.05, gain: 0.25 });
+  });
+};
+
+/** A candy: the wrapper crinkling, two crunches, and a small bright lift as the sugar hits. */
+export const candyCrunch: Recipe = (v) => {
+  for (let i = 0; i < 5; i += 1) {
+    noise(v, { at: i * 0.03 + v.rand() * 0.015, filter: 'highpass', freq: 5000 + v.rand() * 2000, decay: 0.015, gain: 0.25 });
+  }
+  noise(v, { at: 0.2, filter: 'bandpass', freq: 1800, q: 1.5, decay: 0.05, gain: 0.45 });
+  noise(v, { at: 0.27, filter: 'bandpass', freq: 1400, q: 1.5, decay: 0.05, gain: 0.35 });
+  tone(v, { at: 0.36, type: 'triangle', f0: 880, f1: 1320, attack: 0.02, decay: 0.2, gain: 0.12 });
+};
+
+/** A keepsake chosen: a slow music-box rise, warm rather than bright, for something kept the whole run. */
+export const keepsake: Recipe = (v) => {
+  chime(v, [392, 493.9, 587.3, 784], 0.11, 'sine', 0.22, 0.6);
+  tone(v, { at: 0.33, type: 'triangle', f0: 1568, attack: 0.02, decay: 0.7, gain: 0.06 });
+};
+
+/** A supply crate landing: a heavy thump, the boards giving, and the crate settling. */
+export const crateLand: Recipe = (v) => {
+  tone(v, { type: 'sine', f0: 95, f1: 38, decay: 0.3, gain: 0.9 });
+  noise(v, { filter: 'lowpass', freq: 900, freq1: 160, decay: 0.25, gain: 0.6 });
+  noise(v, { at: 0.08, filter: 'bandpass', freq: 650, q: 4, decay: 0.12, gain: 0.25 });
+  tone(v, { at: 0.18, type: 'triangle', f0: 210, f1: 170, attack: 0.03, decay: 0.2, gain: 0.12, vib: { rate: 18, cents: 60 } });
+};
+
 /** A door or drawer coming open. */
 export const containerOpen: Recipe = (v) => {
   noise(v, { filter: 'bandpass', freq: 700, freq1: 1100, q: 2, attack: 0.02, decay: 0.12, gain: 0.3 });
@@ -142,6 +175,17 @@ export const waveClear: Recipe = (v) => {
     tone(v, { at: i * 0.16, type: 'sine', f0: f * 2, decay: 0.9, gain: 0.1 });
   });
   tone(v, { at: 0.64, type: 'sawtooth', f0: 110, lp: 600, decay: 1.0, gain: 0.3 });
+};
+
+/** The van left the last town: a rising D major run that opens onto a held chord, the defeat's answer. */
+export const runVictory: Recipe = (v) => {
+  const run = [293.7, 370, 440, 587.3];
+  run.forEach((f, i) => {
+    tone(v, { at: i * 0.2, type: 'sawtooth', f0: f, lp: 2200, attack: 0.02, decay: 0.6, gain: 0.18 });
+    tone(v, { at: i * 0.2, type: 'sine', f0: f * 2, decay: 0.7, gain: 0.08 });
+  });
+  for (const f of run) tone(v, { at: 0.8, type: 'triangle', f0: f, attack: 0.05, hold: 0.6, decay: 1.2, gain: 0.12 });
+  tone(v, { at: 0.8, type: 'sine', f0: 73.4, attack: 0.05, hold: 0.4, decay: 1.4, gain: 0.4 });
 };
 
 /** Slow, dark descent that settles onto a low D. */

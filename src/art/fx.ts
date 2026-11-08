@@ -2,6 +2,7 @@
 
 import type { PickupType } from '../../shared/protocol.ts';
 import type { Clip, FxArt } from './types.ts';
+import { buildAmbientFx } from './fx/ambient.ts';
 import { buildCasing, buildImpact, buildShell, buildSmoke } from './fx/debris.ts';
 import { buildAcidDecals, buildBloodDecals } from './fx/decals.ts';
 import { buildAcidBurst, buildBloodBurst } from './fx/gore.ts';
@@ -10,6 +11,7 @@ import { buildPickupClips } from './fx/pickups.ts';
 
 export function buildFx(): FxArt {
   return {
+    ambient: buildAmbientFx(),
     muzzle: buildMuzzle(),
     tracer: buildTracer(),
     bulletImpact: buildImpact(),

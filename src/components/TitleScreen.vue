@@ -4,7 +4,7 @@
     <h1 v-else class="px-heading">UNDEAD OF NIGHT: LAST ROUND</h1>
 
     <div class="title-columns">
-      <TitleMenu v-model="selected" :entries="TITLE_MENU" @open="nav = openPage(nav, $event)" />
+      <TitleMenu v-model="selected" :entries="TITLE_MENU" @open="openItem" />
       <InstallCartridge />
     </div>
 
@@ -37,6 +37,7 @@ import { setPendingRoomCode } from '../game/pending-room.ts';
 import { onlineRoomsLive } from '../network/play-api.ts';
 import { BRAND_MARK, STUDIO_LINE } from '../game/studio-splash.ts';
 import { TITLE_MENU } from '../game/title-menu.ts';
+import type { TitleMenuItem } from '../game/title-menu.ts';
 import { closePage, closePlay, INVITE_LANDING, openPage, pickLevel, TITLE_HOME } from '../game/title-nav.ts';
 import InstallCartridge from './InstallCartridge.vue';
 import { ChangelogPage, DailyPage, HowToPlay, LevelsPage, RecordsPage, SoundTestPage } from './lazy-pages.ts';
@@ -76,6 +77,12 @@ const selected = ref(0);
 
 function close(): void {
   nav.value = closePage(nav.value);
+}
+
+/** Campaign and Arcade each carry a style: pressing one remembers it, then opens the one Play setup, which no longer asks. */
+function openItem(item: TitleMenuItem): void {
+  if (item.style) game.chooseStyle(item.style);
+  nav.value = openPage(nav.value, item.page);
 }
 </script>
 

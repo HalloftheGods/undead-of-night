@@ -43,6 +43,16 @@ export const dieRunner: Recipe = (v) => {
   fall(0.3, 0.3)(v);
 };
 
+/** The screamer's last call: a shriek that chokes off and cracks down, a wet catch, then the fall. */
+export const dieScreamer: Recipe = (v) => {
+  tone(v, {
+    type: 'sawtooth', f0: 1100, path: [[0.12, 1400], [0.6, 260]], attack: 0.01, hold: 0.05, decay: 0.5, gain: 0.4,
+    formants: [[900, 5, 1], [2400, 7, 0.7]], vib: { rate: 30, cents: 160 },
+  });
+  noise(v, { at: 0.35, filter: 'bandpass', freq: 700, q: 3, decay: 0.15, gain: 0.25 });
+  fall(0.5, 0.35)(v);
+};
+
 export const dieBloater: Recipe = (v) => {
   tone(v, {
     type: 'sawtooth', f0: 95, f1: 42, attack: 0.04, decay: 0.8, gain: 0.5, lp: 520,

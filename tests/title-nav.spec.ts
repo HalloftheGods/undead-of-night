@@ -9,15 +9,15 @@ const walkOf = (nav: TitleNav) => startFlow(nav.invited, nav.startLevel);
 describe('title navigation', () => {
   it('an invite link lands on Play with the room deciding the style', () => {
     expect(INVITE_LANDING).toEqual({ page: 'play', invited: true, startLevel: null });
-    expect(walkOf(INVITE_LANDING).styled).toBe(false);
+    expect(walkOf(INVITE_LANDING)).toMatchObject({ step: 'mode', mode: 'multi' });
   });
 
-  it('backing out of an invited Play page settles the invite: Play from the menu is a plain visit that starts on Style', () => {
+  it('backing out of an invited Play page settles the invite: Play from a title button is a plain visit that starts on the mode, with no Style step', () => {
     const backAtTitle = closePlay(INVITE_LANDING);
     expect(backAtTitle).toEqual(TITLE_HOME);
     const playAgain = openPage(backAtTitle, 'play');
     expect(playAgain.invited).toBe(false);
-    expect(walkOf(playAgain)).toMatchObject({ step: 'style', styled: true });
+    expect(walkOf(playAgain)).toMatchObject({ step: 'mode', mode: 'solo' });
   });
 
   it('a level picked after an invite was backed out of starts Arcade at that level, not the invite\'s walk', () => {
@@ -25,7 +25,7 @@ describe('title navigation', () => {
     const levels = openPage(afterBack, 'levels');
     const picked = pickLevel(levels, 4);
     expect(picked).toEqual({ page: 'play', invited: false, startLevel: 4 });
-    expect(walkOf(picked)).toMatchObject({ step: 'mode', mode: 'solo', styled: false });
+    expect(walkOf(picked)).toMatchObject({ step: 'mode', mode: 'solo' });
   });
 
   it('any other page closing also settles an invite that was left standing', () => {

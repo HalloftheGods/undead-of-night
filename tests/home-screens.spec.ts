@@ -22,7 +22,7 @@ import {
   moveToLocker,
   setupLevelLines,
 } from '../src/game/home-screens.ts';
-import { picksStyle, setupStyle } from '../src/game/play-flow.ts';
+import { setupStyle } from '../src/game/play-flow.ts';
 import { recordRows, recordStats, TITLE_MENU } from '../src/game/title-menu.ts';
 
 function homeUi(patch: Partial<HomeUi> = {}): HomeUi {
@@ -249,13 +249,10 @@ describe('setup page', () => {
     expect(TITLE_MENU.some((item) => item.page === 'levels')).toBe(true);
   });
 
-  it('a picked level means Arcade, and an invite or a level leaves no style to pick', () => {
+  it('a picked level means Arcade, and otherwise the remembered style plays', () => {
     expect(setupStyle(null, 'campaign')).toBe('campaign');
     expect(setupStyle(null, 'arcade')).toBe('arcade');
     expect(setupStyle(3, 'campaign')).toBe('arcade');
     expect(setupStyle(1, 'campaign')).toBe('arcade');
-    expect(picksStyle(false, null)).toBe(true);
-    expect(picksStyle(true, null)).toBe(false);
-    expect(picksStyle(false, 2)).toBe(false);
   });
 });

@@ -5,6 +5,8 @@ import * as P from './sfx-player.ts';
 import * as U from './sfx-ui.ts';
 import * as FX from './sfx-effects.ts';
 import * as ST from './sfx-steps.ts';
+import * as B from './sfx-bosses.ts';
+import * as AMB from './sfx-ambience.ts';
 
 export interface SfxDef {
   readonly play: Recipe;
@@ -44,10 +46,16 @@ export const SFX = {
   die_runner: def(Z.dieRunner, 0.7, { gain: 1.8, voices: 4, cooldown: 0.08, vary: 0.1 }),
   die_bloater: def(Z.dieBloater, 1.4, { gain: 1.4, voices: 3, cooldown: 0.15, vary: 0.08 }),
   die_brute: def(Z.dieBrute, 1.6, { gain: 1, voices: 2, cooldown: 0.3, vary: 0.06 }),
+  die_screamer: def(Z.dieScreamer, 0.75, { gain: 1.8, voices: 3, cooldown: 0.1, vary: 0.1 }),
   groan_walker: def(Z.groanWalker, 1.0, { gain: 2, voices: 3, cooldown: 0.6, vary: 0.2 }),
   shriek_runner: def(Z.shriekRunner, 0.7, { gain: 3, voices: 2, cooldown: 1.5, vary: 0.12 }),
   gurgle_bloater: def(Z.gurgleBloater, 1.3, { gain: 0.9, voices: 2, cooldown: 1.5, vary: 0.15 }),
   boss_fall: def(Z.bossFall, 1.6, { gain: 1.3, voices: 1, cooldown: 1, vary: 0.03 }),
+  // Boss nights: the arrival is heard by everyone; each trick has a call of its own.
+  boss_arrive: def(B.bossArrive, 2.7, { gain: 1.2, voices: 1, cooldown: 3, vary: 0 }),
+  boss_howl: def(B.howl, 2.0, { gain: 2.2, voices: 1, cooldown: 2, vary: 0.05 }),
+  boss_brood: def(B.brood, 1.1, { gain: 1.4, voices: 1, cooldown: 2, vary: 0.08 }),
+  boss_charge: def(B.charge, 1.2, { gain: 1.1, voices: 1, cooldown: 2, vary: 0.05 }),
   roar_brute: def(Z.roarBrute, 1.4, { gain: 1, voices: 1, cooldown: 3, vary: 0.08 }),
   bloater_burst: def(Z.bloaterBurst, 0.9, { gain: 0.75, voices: 3, cooldown: 0.15 }),
   distant_groan: def(Z.distantGroan, 1.9, { gain: 4, voices: 1, cooldown: 5, vary: 0.2 }),
@@ -76,6 +84,10 @@ export const SFX = {
   pickup_radio: def(P.pickupRadio, 0.7, { gain: 1.6, voices: 1, cooldown: 1, vary: 0 }),
   pickup_jewel: def(P.pickupJewel, 0.6, { gain: 2, voices: 2, cooldown: 0.1, vary: 0.03 }),
   pickup_jewel_large: def(P.pickupJewelLarge, 0.95, { gain: 2, voices: 2, cooldown: 0.15, vary: 0.02 }),
+  pickup_part: def(P.pickupPart, 0.3, { gain: 1.8, voices: 2, cooldown: 0.1, vary: 0.05 }),
+  candy_crunch: def(P.candyCrunch, 0.65, { gain: 1.6, voices: 2, cooldown: 0.15, vary: 0.06 }),
+  keepsake: def(P.keepsake, 1.15, { gain: 1.6, voices: 1, cooldown: 0.5, vary: 0 }),
+  crate_land: def(P.crateLand, 0.5, { gain: 1.4, voices: 2, cooldown: 0.3, vary: 0.06 }),
   ignite: def(FX.ignite, 0.6, { gain: 1.2, voices: 4, cooldown: 0.08, vary: 0.08 }),
   corrode: def(FX.corrode, 0.4, { gain: 1.2, voices: 4, cooldown: 0.08, vary: 0.08 }),
   pierce: def(FX.pierce, 0.3, { gain: 1.2, voices: 4, cooldown: 0.05, vary: 0.08 }),
@@ -86,6 +98,13 @@ export const SFX = {
   wave_start: def(P.waveStart, 5.0, { gain: 1.1, voices: 1, cooldown: 2, vary: 0 }),
   wave_clear: def(P.waveClear, 2.0, { gain: 2, voices: 1, cooldown: 2, vary: 0 }),
   game_over: def(P.gameOver, 4.1, { gain: 0.95, voices: 1, cooldown: 4, vary: 0 }),
+  run_victory: def(P.runVictory, 2.8, { gain: 1.4, voices: 1, cooldown: 4, vary: 0 }),
+  // Biome beds: long, quiet layers that AmbienceBed overlaps; two voices so one fades as the next swells.
+  amb_marsh: def(AMB.ambMarsh, 6.5, { gain: 1, voices: 2, cooldown: 3, vary: 0.03 }),
+  amb_tundra: def(AMB.ambTundra, 6.5, { gain: 1, voices: 2, cooldown: 3, vary: 0.03 }),
+  amb_sludge: def(AMB.ambSludge, 6.5, { gain: 1, voices: 2, cooldown: 3, vary: 0.03 }),
+  amb_embers: def(AMB.ambEmbers, 6.5, { gain: 1, voices: 2, cooldown: 3, vary: 0.03 }),
+  amb_forest: def(AMB.ambForest, 6.5, { gain: 1, voices: 2, cooldown: 3, vary: 0.03 }),
   // Footsteps: short, dry and quiet. No cooldown to speak of, since several players step at once.
   step_hard: def(ST.stepHard, 0.12, { gain: 0.5, voices: 4, cooldown: 0.015, vary: 0.15 }),
   step_soft: def(ST.stepSoft, 0.14, { gain: 0.5, voices: 4, cooldown: 0.015, vary: 0.15 }),
@@ -103,6 +122,7 @@ export const SFX = {
   van_depart: def(U.vanDepart, 2.0, { gain: 1.2, voices: 1, cooldown: 0.5, vary: 0.02 }),
   van_arrive: def(U.vanArrive, 1.7, { gain: 1.2, voices: 1, cooldown: 0.5, vary: 0.02 }),
   van_door: def(U.vanDoor, 0.45, { gain: 1.4, voices: 1, cooldown: 0.3, vary: 0.04 }),
+  van_horn: def(U.vanHorn, 0.65, { gain: 1.6, voices: 1, cooldown: 1, vary: 0 }),
 } as const satisfies Record<string, SfxDef>;
 
 export type SfxName = keyof typeof SFX;

@@ -1,5 +1,7 @@
 import type { GameStyle } from '../../shared/game-style.ts';
 import type { Scene } from './music.ts';
+import { musicSrc, preferredFormat } from './music-format.ts';
+import type { MusicFormat } from './music-format.ts';
 import { playlistFor } from './playlists.ts';
 import type { Playlist } from './playlists.ts';
 
@@ -11,12 +13,15 @@ const SILENT_AFTER_MS = 1600;
 const firstTurn = (playlist: Playlist): number =>
   playlist.fromTop ? 0 : Math.floor(Math.random() * playlist.files.length);
 
-export type TrackElement = Pick<HTMLAudioElement, 'currentTime' | 'paused' | 'preload' | 'play' | 'pause' | 'addEventListener'>;
+export type TrackElement = Pick<HTMLAudioElement, 'currentTime' | 'paused' | 'preload' | 'play' | 'pause' | 'addEventListener' | 'src' | 'load'>;
 
 interface Track {
+  readonly file: string;
   readonly element: TrackElement;
   readonly gain: GainNode;
   silencing: ReturnType<typeof setTimeout> | null;
+  /** Set once an Ogg file failed to load and the MP3 took its place, so a failing MP3 is not retried forever. */
+  fellBack: boolean;
 }
 
 /**
@@ -24,6 +29,9 @@ interface Track {
  * minutes of each into memory would cost far more than the files, and pass through
  * the mixer so volume and mute still apply. If one will not load, onAvailable(false)
  * hands the scene back to the generated bed.
+ *
+ * A track is only fetched when a scene asks for it (an element is made on first use), so a level loads its own
+ * playlist and nothing else. The file is the Ogg where the browser can play it, the MP3 where it cannot.
  */
 export class Soundtrack {
   private readonly tracks = new Map<string, Track>();
@@ -42,6 +50,7 @@ export class Soundtrack {
     private readonly out: AudioNode,
     private readonly onAvailable: (available: boolean) => void,
     private readonly makeElement: (src: string) => TrackElement & HTMLMediaElement = (src) => new Audio(src),
+    private readonly format: MusicFormat = preferredFormat(),
   ) {}
 
   setScene(scene: Scene): void {
@@ -139,19 +148,30 @@ export class Soundtrack {
   private trackFor(file: string): Track {
     const known = this.tracks.get(file);
     if (known) return known;
-    const element = this.makeElement(`music/${file}`);
+    const element = this.makeElement(musicSrc(file, this.format));
     element.preload = 'auto';
     const gain = this.ctx.createGain();
     gain.gain.value = 0;
     this.ctx.createMediaElementSource(element).connect(gain);
     gain.connect(this.out);
-    const track: Track = { element, gain, silencing: null };
+    const track: Track = { file, element, gain, silencing: null, fellBack: false };
     const { signal } = this.listening;
     element.addEventListener('playing', () => this.onAvailable(true), { signal });
-    element.addEventListener('error', () => this.onAvailable(false), { signal });
+    element.addEventListener('error', () => this.onFailed(track), { signal });
     element.addEventListener('ended', () => this.onEnded(track), { signal });
     this.tracks.set(file, track);
     return track;
+  }
+
+  /** An Ogg that will not load (a browser that said yes and cannot, or a missing file) gets its MP3 once. */
+  private onFailed(track: Track): void {
+    const canFallBack = this.format === 'ogg' && !track.fellBack;
+    if (!canFallBack) return this.onAvailable(false);
+    track.fellBack = true;
+    track.element.src = musicSrc(track.file, 'mp3');
+    track.element.load();
+    const wanted = track === this.current;
+    if (wanted) this.start(track);
   }
 
   private onEnded(track: Track): void {

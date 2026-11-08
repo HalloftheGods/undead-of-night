@@ -3,6 +3,7 @@ import { titleUnit } from '../src/engine/viewport.ts';
 import {
   isConfirmKey,
   menuLabel,
+  menuLine,
   menuOwnsKey,
   menuStep,
   recordRows,
@@ -26,22 +27,37 @@ describe('title scale', () => {
 });
 
 describe('title menu', () => {
-  it('runs in the agreed order, with Play first so it is the default', () => {
-    expect(TITLE_MENU.map((item) => item.label)).toEqual(['Play', 'Daily Night', 'Levels', 'How to Play', 'Records', 'Sound Test', 'Options']);
+  it('runs in the agreed order, with Campaign first so it is the default and Arcade right under it', () => {
+    expect(TITLE_MENU.map((item) => item.label)).toEqual(['Campaign', 'Arcade', 'How to Play', 'Daily Night', 'Levels', 'Records', 'Sound Test', 'Options']);
   });
 
   it('names the Sound Test from the start, with or without a Radio found', () => {
     const labels = (radio: boolean) => TITLE_MENU.map((item) => menuLabel(item, { radio, tracks: [] }));
-    expect(labels(false)).toEqual(['Play', 'Daily Night', 'Levels', 'How to Play', 'Records', 'Sound Test', 'Options']);
+    expect(labels(false)).toEqual(['Campaign', 'Arcade', 'How to Play', 'Daily Night', 'Levels', 'Records', 'Sound Test', 'Options']);
     expect(labels(true)).toEqual(TITLE_MENU.map((item) => item.label));
+  });
+
+  it('opens the one Play setup from both Campaign and Arcade, each carrying its own style', () => {
+    const [campaign, arcade] = TITLE_MENU;
+    expect([campaign.page, campaign.style]).toEqual(['play', 'campaign']);
+    expect([arcade.page, arcade.style]).toEqual(['play', 'arcade']);
+    expect(TITLE_MENU.filter((item) => item.style !== undefined)).toHaveLength(2);
+  });
+
+  it('puts a one-line subtitle under every button, and hides none of them behind a missing Radio', () => {
+    for (const item of TITLE_MENU) {
+      expect(item.line.length).toBeGreaterThan(0);
+      expect(item.line).not.toContain('\n');
+      expect(menuLine(item, { radio: false, tracks: [] })).toBe(item.line);
+    }
   });
 
   it('has no Co-op item, since Multiplayer is chosen inside Play', () => {
     expect(TITLE_MENU.map((item) => item.page)).not.toContain('coop');
   });
 
-  it('gives every item its own page', () => {
-    expect(new Set(TITLE_MENU.map((item) => item.page)).size).toBe(TITLE_MENU.length);
+  it('gives every item its own label, which keys the buttons', () => {
+    expect(new Set(TITLE_MENU.map((item) => item.label)).size).toBe(TITLE_MENU.length);
   });
 
   it.each([

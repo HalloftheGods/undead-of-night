@@ -238,17 +238,22 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: calc(var(--u) * 3);
+  gap: calc(var(--u) * 2);
 }
 
 .px-menu-item {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--u);
+  min-height: 44px;
   border: 0;
   padding: var(--u) calc(var(--u) * 12);
   background: none;
   color: var(--bone-dim);
   font: inherit;
-  font-size: calc(var(--u) * 11);
+  font-size: calc(var(--u) * 9);
   line-height: 1;
   text-transform: uppercase;
   text-shadow: var(--u) var(--u) 0 var(--ink);
@@ -256,7 +261,26 @@ body {
   cursor: pointer;
 }
 
+/* The first item (Campaign) is the main road in, so it reads biggest. */
+.px-menu-item.is-primary {
+  font-size: calc(var(--u) * 13);
+}
+
+/* The subtitle: one plain line that says what the button does, quieter than the label. */
+.px-menu-line {
+  max-width: 100%;
+  color: var(--bone-dim);
+  font-size: calc(var(--u) * 5);
+  line-height: 1.3;
+  text-transform: none;
+  text-shadow: none;
+}
+
 .px-menu-item.is-selected {
+  color: var(--bone);
+}
+
+.px-menu-item.is-selected .px-menu-line {
   color: var(--bone);
 }
 
@@ -264,6 +288,7 @@ body {
   content: '>';
   position: absolute;
   left: calc(var(--u) * 3);
+  top: var(--u);
   color: var(--amber);
 }
 

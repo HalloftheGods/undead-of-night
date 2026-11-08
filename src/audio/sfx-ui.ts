@@ -42,6 +42,14 @@ export const vanArrive: Recipe = (v) => {
   tone(v, { at: 1.1, type: 'triangle', f0: 1800, f1: 1500, attack: 0.05, decay: 0.3, gain: 0.04, lp: 3000 });
 };
 
+/** The van waiting at the edge of town: two flat honks on a cheap two-note horn. */
+export const vanHorn: Recipe = (v) => {
+  for (const at of [0, 0.32]) {
+    tone(v, { at, type: 'sawtooth', f0: 330, attack: 0.01, hold: 0.18, decay: 0.06, gain: 0.2, lp: 1800 });
+    tone(v, { at, type: 'sawtooth', f0: 415, attack: 0.01, hold: 0.18, decay: 0.06, gain: 0.16, lp: 1800 });
+  }
+};
+
 /** The sliding door run along its rail and shut with a thunk. */
 export const vanDoor: Recipe = (v) => {
   noise(v, { filter: 'bandpass', freq: 900, freq1: 500, q: 1.5, attack: 0.02, hold: 0.12, decay: 0.08, gain: 0.25 });

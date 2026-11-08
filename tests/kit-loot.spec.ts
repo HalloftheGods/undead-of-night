@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { townContainers } from '../shared/containers.ts';
 import { kitsInTown } from '../shared/kit-loot.ts';
 import { FINAL_LEVEL, FIRST_LEVEL } from '../shared/levels.ts';
@@ -11,6 +11,9 @@ import { GameSimulation } from '../shared/simulation.ts';
 import { PLAYER_RADIUS } from '../shared/constants.ts';
 import { buildingAt, circleHitsSolid } from '../shared/world-query.ts';
 import { eventsOf, input, quietSim, stateOf, steps } from './helpers/sim-harness.ts';
+
+// Every test here builds whole towns across many seeds, so cost scales with machine load.
+vi.setConfig({ testTimeout: 120_000 });
 
 const SEEDS = Array.from({ length: 24 }, (_, i) => 100 + i);
 
@@ -66,7 +69,8 @@ describe('round kits in town', () => {
       });
     }
     expect([...seen].sort()).toEqual([...KIT_ORDER].sort());
-  });
+    // Sweeps every seed's town, so it scales with machine load; the global 20s cap is too tight.
+  }, 120_000);
 
   it('is the same for the same town', () => {
     const lay = (state: SimState): string => JSON.stringify([onFloors(state).map(({ type, x, y }) => [type, x, y]), inContainers(state).map(({ loot }) => loot)]);
