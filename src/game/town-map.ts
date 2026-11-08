@@ -8,6 +8,7 @@ import { drawOutlinedText, FONT_HEIGHT, textWidth } from '../engine/bitmap-font.
 import { drawCursor } from './map-cursor.ts';
 import type { CursorClock } from './map-cursor.ts';
 import { drawTeammateLocator } from './map-teammate.ts';
+import type { LabelBox } from './map-teammate.ts';
 import { isLandmark } from './run-notices.ts';
 
 /** Map pixels per world tile. 200 tiles makes a 400px map, which scales up by whole numbers. */
@@ -98,12 +99,6 @@ const TICK_PIXELS: readonly (readonly [number, number])[] = [[0, 2], [1, 3], [2,
 /** Label positions tried in turn around a building until one is clear. */
 const LABEL_NUDGES: readonly number[] = [0, 7, -7, 14, -14];
 
-interface LabelBox {
-  readonly x0: number;
-  readonly y0: number;
-  readonly x1: number;
-  readonly y1: number;
-}
 
 function overlaps(a: LabelBox, b: LabelBox): boolean {
   return a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
@@ -343,9 +338,9 @@ export class TownMapView {
     ctx.fillRect(midX, midY, 2, 2);
   }
 
-  private drawTeammate(ctx: CanvasRenderingContext2D, player: PlayerEntity, clock: CursorClock): void {
+  private drawTeammate(ctx: CanvasRenderingContext2D, player: PlayerEntity, clock: CursorClock, taken: LabelBox[]): void {
     const at = groundOf(this.map, player.x, player.y);
-    drawTeammateLocator(ctx, Math.round(at.x / this.worldPerPx), Math.round(at.y / this.worldPerPx), player, clock, this);
+    drawTeammateLocator(ctx, Math.round(at.x / this.worldPerPx), Math.round(at.y / this.worldPerPx), player, clock, this, taken);
   }
 
   /** A red box where the supply drop is coming down, or came down. */
@@ -390,9 +385,11 @@ export class TownMapView {
     if (exit) this.drawExit(ctx, exit);
     if (drop) this.drawDrop(ctx, drop);
     const onMap = players.filter((player) => player.status !== 'dead');
+    // Teammates' names keep off each other, so a squad standing together stays readable.
+    const teamLabels: LabelBox[] = [];
     for (const player of onMap) {
       const isTeammate = player.id !== localId;
-      if (isTeammate) this.drawTeammate(ctx, player, clock);
+      if (isTeammate) this.drawTeammate(ctx, player, clock, teamLabels);
     }
     // The local player goes last, so nobody's mark covers the cursor.
     const local = onMap.find((player) => player.id === localId);

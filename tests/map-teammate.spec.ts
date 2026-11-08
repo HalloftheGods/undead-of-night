@@ -1,8 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
 import { CHARACTERS } from '../shared/characters.ts';
-import { FONT_HEIGHT } from '../src/engine/bitmap-font.ts';
+import { drawOutlinedText, FONT_HEIGHT } from '../src/engine/bitmap-font.ts';
+
+vi.mock('../src/engine/bitmap-font.ts', async (importOriginal) => {
+  const real = await importOriginal<typeof import('../src/engine/bitmap-font.ts')>();
+  return { ...real, drawOutlinedText: vi.fn(real.drawOutlinedText) };
+});
 import { CURSOR_COLOR } from '../src/game/map-cursor.ts';
-import { drawTeammateLocator, pingRadius, teammateDownTop, teammateLabel, teammateLabelCenter, teammateLabelTop } from '../src/game/map-teammate.ts';
+import { DOWN_COLOR, drawTeammateLocator, pingRadius, teammateLabel, teammateLabelSpot } from '../src/game/map-teammate.ts';
+import type { LabelBox } from '../src/game/map-teammate.ts';
 import { TEAM_COLORS, TEAM_DIM_COLORS, teamColor, teamDimColor } from '../src/game/team-colors.ts';
 import { EXIT_COLOR } from '../src/game/town-map.ts';
 import { fakeCanvas, installFakeBrowser } from './client-fake-dom.ts';
@@ -42,26 +48,29 @@ describe('a teammate on the map', () => {
   });
 
   it('keeps the name on the map: above the marker, or below it at the top edge', () => {
-    expect(teammateLabelTop(100, 400)).toBeLessThan(100);
-    expect(teammateLabelTop(3, 400)).toBeGreaterThan(3);
-    expect(teammateLabelTop(399, 400)).toBeLessThanOrEqual(400 - FONT_HEIGHT);
-    expect(teammateLabelCenter(0, 20, 400)).toBeGreaterThanOrEqual(10);
-    expect(teammateLabelCenter(400, 20, 400)).toBeLessThanOrEqual(390);
-    expect(teammateLabelCenter(200, 20, 400)).toBe(200);
+    const size = { width: 400, height: 400 };
+    expect(teammateLabelSpot(100, 100, 20, size, []).top).toBeLessThan(100);
+    expect(teammateLabelSpot(100, 3, 20, size, []).top).toBeGreaterThan(3);
+    expect(teammateLabelSpot(100, 399, 20, size, []).top).toBeLessThanOrEqual(400 - FONT_HEIGHT);
+    expect(teammateLabelSpot(0, 100, 20, size, []).left).toBeGreaterThanOrEqual(0);
+    expect(teammateLabelSpot(400, 100, 20, size, []).left + 20).toBeLessThanOrEqual(400);
+    expect(teammateLabelSpot(200, 100, 20, size, []).left).toBe(190);
   });
 
-  it('puts DOWN on the free side of the marker, and over the name at the foot of the map', () => {
-    const nameTop = teammateLabelTop(100, 400);
-    expect(teammateDownTop(100, nameTop, 400)).toBeGreaterThan(100);
-    const footTop = teammateLabelTop(398, 400);
-    expect(teammateDownTop(398, footTop, 400)).toBeLessThan(footTop);
+  it('keeps teammates standing together from writing over each other', () => {
+    const size = { width: 400, height: 400 };
+    const taken: LabelBox[] = [];
+    const tops = [0, 1, 2].map((i) => teammateLabelSpot(200 + i, 200 + i, 30, size, taken).top);
+    expect(new Set(tops).size).toBe(3);
+    expect(taken).toHaveLength(3);
+    const [a, b, c] = taken;
+    const meet = (p: LabelBox, q: LabelBox) => p.x0 < q.x1 && q.x0 < p.x1 && p.y0 < q.y1 && q.y0 < p.y1;
+    expect([meet(a, b), meet(a, c), meet(b, c)]).toEqual([false, false, false]);
   });
 
-  it('is drawn on the town map in their own colour, with DOWN when downed', () => {
-    installFakeBrowser();
-    const styles: string[] = [];
+  function recordingContext(styles: string[]): CanvasRenderingContext2D {
     const base = fakeCanvas().getContext() as unknown as Record<string, unknown>;
-    const ctx = new Proxy(base, {
+    return new Proxy(base, {
       set: (object, key, value) => {
         const isFill = key === 'fillStyle';
         if (isFill) styles.push(value as string);
@@ -69,9 +78,31 @@ describe('a teammate on the map', () => {
         return true;
       },
     }) as unknown as CanvasRenderingContext2D;
-    const clock = { nowMs: 0, openedMs: 0, reducedMotion: true };
-    expect(() => drawTeammateLocator(ctx, 50, 2, { name: '', skin: 3, status: 'downed' }, clock, { width: 400, height: 400 })).not.toThrow();
+  }
+
+  function drawnColours(status: 'alive' | 'downed', nowMs: number, reducedMotion: boolean): string[] {
+    installFakeBrowser();
+    const styles: string[] = [];
+    const clock = { nowMs, openedMs: 0, reducedMotion };
+    drawTeammateLocator(recordingContext(styles), 50, 50, { name: '', skin: 3, status }, clock, { width: 400, height: 400 });
     vi.unstubAllGlobals();
-    expect(styles).toContain(TEAM_COLORS[3]);
+    return styles;
+  }
+
+  it('is drawn in their own colour, bright on the beat and dim off it', () => {
+    expect(drawnColours('alive', 0, true)).toContain(TEAM_COLORS[3]);
+    // Past the bright share of the beat, the ping and dot dim; the name stays in full colour.
+    const offBeat = drawnColours('alive', 500, false);
+    expect(offBeat).toContain(TEAM_DIM_COLORS[3]);
+  });
+
+  it('writes DOWN in red beside a downed teammate, and not beside a standing one', () => {
+    const words = () => vi.mocked(drawOutlinedText).mock.calls.map(([, text, , , color]) => [text, color]);
+    vi.mocked(drawOutlinedText).mockClear();
+    drawnColours('downed', 0, true);
+    expect(words()).toEqual([[CHARACTERS[3].name.toUpperCase(), TEAM_COLORS[3]], ['DOWN', DOWN_COLOR]]);
+    vi.mocked(drawOutlinedText).mockClear();
+    drawnColours('alive', 0, true);
+    expect(words()).toEqual([[CHARACTERS[3].name.toUpperCase(), TEAM_COLORS[3]]]);
   });
 });

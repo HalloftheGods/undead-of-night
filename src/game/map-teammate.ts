@@ -9,7 +9,7 @@ import type { CursorClock, MapSize } from './map-cursor.ts';
 import { teamColor, teamDimColor } from './team-colors.ts';
 
 const INK = '#0b0c10';
-const DOWN_COLOR = '#e0463a';
+export const DOWN_COLOR = '#e0463a';
 const PING_PERIOD_MS = 1000 / BLINK_HZ;
 /** The ping grows from just outside the dot to this far out, in map pixels, then starts again. */
 const PING_MIN = 4;
@@ -19,6 +19,9 @@ const PING_STILL = 6;
 const DOT_HALF = 2;
 const LABEL_GAP = 4;
 const LABEL_MARGIN = 2;
+/** A downed teammate's name is followed on the same row by this, in red. */
+export const DOWN_WORD = 'DOWN';
+const WORD_GAP = 4;
 
 /** What the map writes beside a teammate: their callsign, or their survivor's name in a public room. */
 export function teammateLabel(player: Pick<PlayerEntity, 'name' | 'skin'>): string {
@@ -32,26 +35,44 @@ export function pingRadius(nowMs: number, reducedMotion: boolean): number {
   return Math.round(PING_MIN + (PING_MAX - PING_MIN) * beat);
 }
 
-/** The name's top edge: above the marker, or below it when above would leave the map. */
-export function teammateLabelTop(y: number, mapHeight: number): number {
+/** A label's footprint on the map, so later labels can keep off it. */
+export interface LabelBox {
+  readonly x0: number;
+  readonly y0: number;
+  readonly x1: number;
+  readonly y1: number;
+}
+
+export interface LabelSpot {
+  /** Left edge of the label row. */
+  readonly left: number;
+  readonly top: number;
+}
+
+/** Rows a name may sit on, nearest first: above the marker, below it, then further out on each side. */
+const ROW_STEP = FONT_HEIGHT + 3;
+const ROW_TRIES = 3;
+
+function boxesMeet(a: LabelBox, b: LabelBox): boolean {
+  return a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
+}
+
+/**
+ * Where a teammate's label row goes: the nearest row around the marker that stays on the map and
+ * keeps off every label already in `taken`, which it then joins. With nowhere clear, the nearest row on the map.
+ */
+export function teammateLabelSpot(x: number, y: number, labelWidth: number, size: MapSize, taken: LabelBox[]): LabelSpot {
+  const left = Math.max(LABEL_MARGIN, Math.min(Math.round(x - labelWidth / 2), size.width - LABEL_MARGIN - labelWidth));
   const above = y - PING_STILL - LABEL_GAP - FONT_HEIGHT;
-  const fitsAbove = above >= LABEL_MARGIN;
-  const top = fitsAbove ? above : y + PING_STILL + LABEL_GAP;
-  return Math.min(top, mapHeight - FONT_HEIGHT - LABEL_MARGIN);
-}
-
-/** The name's centre, pulled in so the whole name stays on the map. */
-export function teammateLabelCenter(x: number, labelWidth: number, mapWidth: number): number {
-  const half = Math.ceil(labelWidth / 2);
-  return Math.max(LABEL_MARGIN + half, Math.min(x, mapWidth - LABEL_MARGIN - half));
-}
-
-/** Where DOWN goes: on the side of the marker the name left free, or over the name at the map's foot. */
-export function teammateDownTop(y: number, nameTop: number, mapHeight: number): number {
-  const isNameAbove = nameTop < y;
-  const below = isNameAbove ? y + PING_STILL + LABEL_GAP : nameTop + FONT_HEIGHT + LABEL_GAP;
-  const fitsBelow = below + FONT_HEIGHT + LABEL_MARGIN <= mapHeight;
-  return fitsBelow ? below : nameTop - FONT_HEIGHT - LABEL_GAP;
+  const below = y + PING_STILL + LABEL_GAP;
+  const rows: number[] = [];
+  for (let step = 0; step < ROW_TRIES; step += 1) rows.push(above - step * ROW_STEP, below + step * ROW_STEP);
+  const onMap = rows.filter((top) => top >= LABEL_MARGIN && top + FONT_HEIGHT + LABEL_MARGIN <= size.height);
+  const boxAt = (top: number): LabelBox => ({ x0: left - 1, y0: top - 1, x1: left + labelWidth + 1, y1: top + FONT_HEIGHT + 1 });
+  const clear = onMap.find((top) => !taken.some((other) => boxesMeet(boxAt(top), other)));
+  const top = clear ?? onMap[0] ?? Math.max(LABEL_MARGIN, Math.min(above, size.height - FONT_HEIGHT - LABEL_MARGIN));
+  taken.push(boxAt(top));
+  return { left, top };
 }
 
 function strokeSquare(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number): void {
@@ -70,7 +91,7 @@ function drawPing(ctx: CanvasRenderingContext2D, x: number, y: number, radius: n
   strokeSquare(ctx, x, y, radius);
 }
 
-/** Draws one teammate's locator at map pixel (x, y). */
+/** Draws one teammate's locator at map pixel (x, y). Their name keeps off the labels in `taken`, and joins them. */
 export function drawTeammateLocator(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -78,6 +99,7 @@ export function drawTeammateLocator(
   player: Pick<PlayerEntity, 'name' | 'skin' | 'status'>,
   clock: CursorClock,
   size: MapSize,
+  taken: LabelBox[] = [],
 ): void {
   const color = teamColor(player.skin);
   const isBright = blinkPhase(clock.nowMs, clock.reducedMotion) === 'bright';
@@ -90,10 +112,11 @@ export function drawTeammateLocator(
   ctx.fillRect(x - DOT_HALF, y - DOT_HALF, DOT_HALF * 2 + 1, DOT_HALF * 2 + 1);
 
   const isDown = player.status !== 'alive';
-  const text = teammateLabel(player);
-  const top = teammateLabelTop(y, size.height);
-  drawOutlinedText(ctx, text, teammateLabelCenter(x, textWidth(text), size.width), top, color, INK);
+  const name = teammateLabel(player);
+  const nameWidth = textWidth(name);
+  const downWidth = isDown ? WORD_GAP + textWidth(DOWN_WORD) : 0;
+  const spot = teammateLabelSpot(x, y, nameWidth + downWidth, size, taken);
+  drawOutlinedText(ctx, name, spot.left + nameWidth / 2, spot.top, color, INK);
   if (!isDown) return;
-  const downTop = teammateDownTop(y, top, size.height);
-  drawOutlinedText(ctx, 'DOWN', teammateLabelCenter(x, textWidth('DOWN'), size.width), downTop, DOWN_COLOR, INK);
+  drawOutlinedText(ctx, DOWN_WORD, spot.left + nameWidth + WORD_GAP + textWidth(DOWN_WORD) / 2, spot.top, DOWN_COLOR, INK);
 }
