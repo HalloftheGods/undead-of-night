@@ -72,6 +72,8 @@ export class RunFrame {
     const result = state.runResult;
     const over = result !== null;
     const touch = touchMarks(input.touch, renderer, ms);
+    // A stick aims by angle alone, so the mouse's last resting spot is no crosshair.
+    const padAims = input.lastDevice === 'gamepad';
     // A finger picks a spot on the picture, so the picture must not lean toward it and move the spot.
     const scene: SceneView = {
       ...entities,
@@ -79,8 +81,8 @@ export class RunFrame {
       closedStalls: this.closedStalls(),
       questMarks: this.questMarks(world),
       overrunOn: this.host.overrunOn,
-      pointerX: over || touch ? null : pointerX,
-      pointerY: over || touch ? null : pointerY,
+      pointerX: over || touch || padAims ? null : pointerX,
+      pointerY: over || touch || padAims ? null : pointerY,
       showCrosshair: this.host.playing() && !menuUp && !this.host.parts.bench.open,
       touch,
     };
@@ -104,9 +106,17 @@ export class RunFrame {
     });
   }
 
-  /** The flashlight follows a touch look or the pointer, measured from the survivor's chest. */
+  /** The flashlight follows a stick, a touch look or the pointer, measured from the survivor's chest. */
   private aimAt(renderer: WorldRenderer, world: ClientWorld, pointerX: number, pointerY: number): void {
     const { input, inputs } = this.host.parts;
+    const padLook = input.gamepad.look(this.aim);
+    if (padLook !== null) {
+      // No spot on the picture: the packet leaves aimX/aimY off, as it does with no crosshair.
+      // TODO(pad-reticle): a virtual crosshair along the stick would give headshots and throws a spot.
+      this.aim = padLook;
+      inputs.aimPoint = null;
+      return;
+    }
     const camera = renderer.camera;
     this.aim = input.touch.look(this.aim) ?? aimAngle(
       pointerX,

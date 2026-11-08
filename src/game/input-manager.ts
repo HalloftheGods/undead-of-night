@@ -1,6 +1,8 @@
 import type { KeepsakeId } from '../../shared/protocol.ts';
 import { WEAPON_ORDER } from '../../shared/protocol.ts';
 import type { ClientInputPacket, Stance, WeaponId } from '../../shared/protocol.ts';
+import { GamepadInput, PAD_FIRE, PAD_PREV_WEAPON } from './gamepad-input.ts';
+import type { NavDirection, PadConnection } from './gamepad-input.ts';
 import { TouchInput } from './touch-input.ts';
 
 const WHEEL_COOLDOWN_MS = 110;
@@ -50,6 +52,9 @@ const GAME_CODES: ReadonlySet<string> = new Set([
   ...Object.keys(WEAPON_KEYS),
 ]);
 
+/** The last hand on the game, for button prompts and for who steers the flashlight. */
+export type InputDevice = 'keyboard' | 'touch' | 'gamepad';
+
 export interface InputCallbacks {
   /** First key or click, the moment browsers allow audio to start. */
   onGesture(): void;
@@ -65,6 +70,12 @@ export interface InputCallbacks {
   onTouchSeen?(): void;
   /** L: the run's full log. True if the game took the key. */
   onLog?(): boolean;
+  /** The hand on the game changed: keys and mouse, a finger, or a gamepad. */
+  onDeviceChange?(device: InputDevice): void;
+  /** The D-pad or left stick behind a menu: move focus that way. */
+  onNavigate?(direction: NavDirection): void;
+  /** A gamepad came or went. */
+  onGamepadConnection?(change: PadConnection): void;
 }
 
 interface OwnedWeapons {
@@ -94,14 +105,17 @@ function isShortcut(event: KeyboardEvent): boolean {
 }
 
 /**
- * Keyboard and mouse. One-shot requests latch until sampled. Held state follows
- * the player's hands even while a menu is up, and only counts while enabled, so
- * a key held through a menu takes effect again the moment it closes.
+ * Keyboard, mouse, touch and gamepad. One-shot requests latch until sampled. Held state follows
+ * the player's hands even while a menu is up, and only counts while enabled, so a key held
+ * through a menu takes effect again the moment it closes.
  */
 export class InputManager {
   pointerClientX = 0;
   pointerClientY = 0;
   readonly touch: TouchInput;
+  readonly gamepad: GamepadInput;
+  /** The last hand on the game. */
+  lastDevice: InputDevice = 'keyboard';
 
   private readonly callbacks: InputCallbacks;
   private readonly held = new Set<string>();
@@ -131,8 +145,23 @@ export class InputManager {
         this.pointerClientX = x;
         this.pointerClientY = y;
       },
-      onGesture: () => this.callbacks.onGesture(),
+      onGesture: () => {
+        this.use('touch');
+        this.callbacks.onGesture();
+      },
       onSeen: () => this.callbacks.onTouchSeen?.(),
+    });
+    this.lastDevice = this.touch.used ? 'touch' : 'keyboard';
+    // A pad press is not a user activation, so it does not count as the gesture that lets audio start.
+    this.gamepad = new GamepadInput({
+      live: () => this.enabled,
+      inCharge: () => this.lastDevice === 'gamepad',
+      press: (code) => this.gamepadPress(code),
+      confirm: () => this.gamepadConfirm(),
+      back: () => this.callbacks.onPause(),
+      navigate: (direction) => this.callbacks.onNavigate?.(direction),
+      onActive: () => this.use('gamepad'),
+      onConnection: (change) => this.callbacks.onGamepadConnection?.(change),
     });
     window.addEventListener('keydown', this.onKeyDown);
     window.addEventListener('keyup', this.onKeyUp);
@@ -146,6 +175,7 @@ export class InputManager {
 
   dispose(): void {
     this.touch.dispose();
+    this.gamepad.dispose();
     window.removeEventListener('keydown', this.onKeyDown);
     window.removeEventListener('keyup', this.onKeyUp);
     window.removeEventListener('mousemove', this.onMouseMove);
@@ -154,6 +184,11 @@ export class InputManager {
     window.removeEventListener('wheel', this.onWheel);
     window.removeEventListener('contextmenu', this.onContextMenu);
     window.removeEventListener('blur', this.clearHeld);
+  }
+
+  /** Once a frame, menus included, so Start and the D-pad answer there too. */
+  pollGamepad(): void {
+    this.gamepad.poll();
   }
 
   /** Off while any menu is up; nothing typed or clicked there reaches the game. */
@@ -192,12 +227,18 @@ export class InputManager {
     this.touch.clearLatch();
   }
 
+  private use(device: InputDevice): void {
+    if (this.lastDevice === device) return;
+    this.lastDevice = device;
+    this.callbacks.onDeviceChange?.(device);
+  }
+
   private isHeld(codes: readonly string[]): boolean {
-    return this.enabled && codes.some((code) => this.held.has(code));
+    return this.enabled && codes.some((code) => this.held.has(code) || this.gamepad.holds(code));
   }
 
   get dirX(): number {
-    return Math.sign(Number(this.isHeld(RIGHT)) - Number(this.isHeld(LEFT)) + this.touch.dirX);
+    return Math.sign(Number(this.isHeld(RIGHT)) - Number(this.isHeld(LEFT)) + this.touch.dirX + this.gamepad.dirX);
   }
 
   /** Sneak wins over sprint, as it does in the sim. */
@@ -207,7 +248,7 @@ export class InputManager {
   }
 
   get dirY(): number {
-    return Math.sign(Number(this.isHeld(DOWN)) - Number(this.isHeld(UP)) + this.touch.dirY);
+    return Math.sign(Number(this.isHeld(DOWN)) - Number(this.isHeld(UP)) + this.touch.dirY + this.gamepad.dirY);
   }
 
   /** A touch button goes down as the key it stands for. */
@@ -234,13 +275,13 @@ export class InputManager {
     const cycled = weapons ? cycleWeapon(weapons, this.cycleLatch) : null;
     const packet: ClientInputPacket = {
       seq,
-      up: this.isHeld(UP) || this.touch.dirY < 0,
-      down: this.isHeld(DOWN) || this.touch.dirY > 0,
-      left: this.isHeld(LEFT) || this.touch.dirX < 0,
-      right: this.isHeld(RIGHT) || this.touch.dirX > 0,
+      up: this.isHeld(UP) || this.touch.dirY < 0 || this.gamepad.dirY < 0,
+      down: this.isHeld(DOWN) || this.touch.dirY > 0 || this.gamepad.dirY > 0,
+      left: this.isHeld(LEFT) || this.touch.dirX < 0 || this.gamepad.dirX < 0,
+      right: this.isHeld(RIGHT) || this.touch.dirX > 0 || this.gamepad.dirX > 0,
       angle,
       ...(this.touch.used ? { touch: true } : {}),
-      shoot: this.fireLatch || (this.enabled && this.firing) || this.touch.shooting,
+      shoot: this.fireLatch || (this.enabled && this.firing) || this.touch.shooting || this.isHeld([PAD_FIRE]),
       reload: this.reloadLatch,
       weapon: this.weaponLatch ?? cycled,
       melee: this.shoveLatch || (this.enabled && this.shoving) || this.isHeld([SHOVE_CODE]),
@@ -258,7 +299,32 @@ export class InputManager {
     return packet;
   }
 
+  /** A pad button in play, as the key it stands for. Start, View and R3 reach the panels whatever is up. */
+  private gamepadPress(code: string): void {
+    if (code === 'Escape') {
+      this.callbacks.onPause();
+      return;
+    }
+    if (MAP_CODES.has(code)) {
+      this.callbacks.onMap();
+      return;
+    }
+    if (code === LOG_CODE) {
+      this.callbacks.onLog?.();
+      return;
+    }
+    if (this.enabled) this.latch(code);
+  }
+
+  /** A behind a menu: the focused button answers it, as it answers Enter, else the screen's own confirm. */
+  private gamepadConfirm(): void {
+    const focused = typeof document === 'undefined' ? null : document.activeElement;
+    if (focused instanceof HTMLButtonElement) focused.click();
+    else this.callbacks.onConfirm();
+  }
+
   private readonly onKeyDown = (event: KeyboardEvent): void => {
+    this.use('keyboard');
     const isHandled = isShortcut(event) || this.menuKey(event);
     if (isHandled) return;
     if (isTyping(event.target)) return;
@@ -314,6 +380,10 @@ export class InputManager {
     if (isReload) this.reloadLatch = true;
     const isCycle = code === 'KeyQ';
     if (isCycle) this.cycleLatch += 1;
+    // Only a pad sends these two.
+    const isCycleBack = code === PAD_PREV_WEAPON;
+    if (isCycleBack) this.cycleLatch -= 1;
+    this.fireLatch ||= code === PAD_FIRE;
     this.shoveLatch ||= code === SHOVE_CODE;
     this.healLatch ||= code === HEAL_CODE;
     this.throwLatch ||= code === THROW_CODE;
@@ -330,6 +400,7 @@ export class InputManager {
 
   private readonly onMouseMove = (event: MouseEvent): void => {
     this.touch.mouseMoved();
+    if (!this.touch.used) this.use('keyboard');
     this.pointerClientX = event.clientX;
     this.pointerClientY = event.clientY;
     // A native drag or menu can swallow the release; this is the first honest word on the buttons.
@@ -338,6 +409,7 @@ export class InputManager {
   };
 
   private readonly onMouseDown = (event: MouseEvent): void => {
+    this.use('keyboard');
     this.callbacks.onGesture();
     this.pointerClientX = event.clientX;
     this.pointerClientY = event.clientY;
