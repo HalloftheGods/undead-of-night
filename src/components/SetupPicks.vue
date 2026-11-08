@@ -17,11 +17,12 @@
           <span class="pick-head">
             <span class="pick-number" aria-hidden="true">{{ pick.number }}</span>
             <span class="pick-label">{{ pick.label }}</span>
+            <span class="pick-caret" aria-hidden="true">▾</span>
           </span>
           <span class="pick-art">
             <img v-if="tileUrl(pick)" :src="tileUrl(pick)" alt="" draggable="false" />
+            <span :key="shownOption(pick).id" class="pick-title" :class="`is-${pick.key}`">{{ shownOption(pick).name }}</span>
           </span>
-          <span class="pick-name">{{ shownOption(pick).name }}<span class="pick-caret" aria-hidden="true">▾</span></span>
         </button>
       </li>
     </ol>
@@ -53,14 +54,7 @@
             <img v-if="optionUrl(openPick.key, option.id)" :src="optionUrl(openPick.key, option.id)" alt="" draggable="false" />
           </span>
           <span class="pick-option-name">{{ option.name }}</span>
-          <span class="pick-bars">
-            <span v-for="bar in option.bars" :key="bar.key" class="pick-bar" :class="{ 'is-strong': bar.strong }">
-              <span class="pick-bar-label">{{ bar.label }}</span>
-              <span class="pick-bar-cells" role="img" :aria-label="`${bar.label} ${bar.filled} of ${STAT_SLOTS}`">
-                <span v-for="n in STAT_SLOTS" :key="n" class="pick-bar-cell" :class="{ 'is-on': n <= bar.filled }" />
-              </span>
-            </span>
-          </span>
+          <PickBars :bars="option.bars" />
         </button>
       </li>
     </ul>
@@ -83,9 +77,9 @@ import { spriteDataUrl } from '../engine/sprite-cache.ts';
 import type { PlayMode } from '../game/play-flow.ts';
 import { chosenOption, stepFocus } from '../game/setup-picks.ts';
 import type { PickKey, PickOption, SetupPick } from '../game/setup-picks.ts';
-import { STAT_SLOTS } from '../../shared/character-stats.ts';
 import { motion } from '../game/motion.ts';
 import { createSpinner, FRONT_FACING } from '../game/survivor-spin.ts';
+import PickBars from './PickBars.vue';
 import { useGame } from './use-game.ts';
 
 const { picks, art } = defineProps<{ picks: readonly SetupPick[]; art: ArtBook | null }>();
@@ -278,6 +272,7 @@ defineExpose({ focus: () => tiles.get('mode')?.focus(), isOpen: () => open.value
 
 .pick {
   --edge: var(--ink-line);
+  container-type: inline-size;
   display: flex;
   flex-direction: column;
   gap: calc(var(--u) * 2);
@@ -323,6 +318,7 @@ defineExpose({ focus: () => tiles.get('mode')?.focus(), isOpen: () => open.value
 
 /* Every portrait shares the cards' portrait shape (CARD_W by TALL_H in src/art/difficulty-card.ts). */
 .pick-art {
+  position: relative;
   display: block;
   aspect-ratio: 56 / 72;
   overflow: hidden;
@@ -343,22 +339,54 @@ defineExpose({ focus: () => tiles.get('mode')?.focus(), isOpen: () => open.value
   image-rendering: pixelated;
 }
 
-.pick-name {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: calc(var(--u) * 2);
-  min-width: 0;
-  overflow: hidden;
-  color: var(--amber);
-  font-size: calc(var(--u) * 7);
+/* The choice's name stands over the bottom of its picture like a film title: big, spaced, lit from below, with a drop shadow. */
+.pick-title {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: calc(var(--u) * 16) calc(var(--u) * 3) calc(var(--u) * 4);
+  background: linear-gradient(to top, rgba(7, 8, 12, 0.92) 0%, rgba(7, 8, 12, 0.6) 55%, transparent 100%);
+  color: var(--bone);
+  font-size: clamp(calc(var(--u) * 7), 12cqi, calc(var(--u) * 20));
   font-weight: 700;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  line-height: 1;
+  letter-spacing: 0.12em;
+  /* Spacing trails the last letter too; the indent evens it up so the title sits centred. */
+  text-indent: 0.12em;
+  text-align: center;
+  text-transform: uppercase;
+  text-wrap: balance;
+  text-shadow:
+    0 calc(var(--u) * 0.75) 0 var(--blood),
+    0 calc(var(--u) * 1.5) 0 var(--ink),
+    0 0 calc(var(--u) * 6) rgba(232, 163, 61, 0.45);
+  animation: pick-title-in 360ms steps(6);
 }
+
+/* The survivor is the star: their name runs biggest and glows amber. */
+.pick-title.is-who {
+  color: var(--amber);
+  font-size: clamp(calc(var(--u) * 9), 17cqi, calc(var(--u) * 26));
+  letter-spacing: 0.16em;
+  text-indent: 0.16em;
+}
+
+@keyframes pick-title-in {
+  from {
+    opacity: 0;
+    letter-spacing: 0.5em;
+  }
+}
+
+:root[data-motion='reduced'] .pick-title {
+  animation: none;
+}
+
 
 .pick-caret {
   flex: none;
+  margin-left: auto;
   color: var(--bone-dim);
 }
 
@@ -400,50 +428,6 @@ defineExpose({ focus: () => tiles.get('mode')?.focus(), isOpen: () => open.value
   --edge: var(--amber);
 }
 
-.pick-bars {
-  display: grid;
-  grid-template-columns: max-content max-content;
-  justify-content: center;
-  gap: max(1px, calc(var(--u) / 2)) calc(var(--u) * 2);
-}
-
-.pick-bar {
-  display: grid;
-  grid-column: 1 / -1;
-  grid-template-columns: subgrid;
-  align-items: center;
-}
-
-.pick-bar-label {
-  color: var(--bone-dim);
-  font-size: calc(var(--u) * 3);
-  text-align: left;
-  text-transform: uppercase;
-}
-
-.pick-bar.is-strong .pick-bar-label {
-  color: var(--amber);
-}
-
-.pick-bar-cells {
-  display: flex;
-  gap: max(1px, calc(var(--u) / 2));
-}
-
-.pick-bar-cell {
-  width: calc(var(--u) * 4);
-  height: calc(var(--u) * 2);
-  background: var(--ink-line);
-}
-
-.pick-bar-cell.is-on {
-  background: var(--sick);
-}
-
-.pick-bar.is-strong .pick-bar-cell.is-on {
-  background: var(--amber);
-}
-
 .pick-option.is-chosen {
   --edge: var(--amber);
   background: rgba(232, 163, 61, 0.18);
@@ -474,10 +458,6 @@ defineExpose({ focus: () => tiles.get('mode')?.focus(), isOpen: () => open.value
 
   .pick {
     padding: calc(var(--u) * 2);
-  }
-
-  .pick-name {
-    font-size: calc(var(--u) * 5);
   }
 
   .picks-list {
