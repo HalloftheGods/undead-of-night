@@ -1,9 +1,9 @@
 <template>
   <aside class="room px-frame" aria-live="polite">
-    <span class="px-label room-title">Your room</span>
+    <span class="px-label room-title">{{ isPublic ? 'Public game' : 'Your room' }}</span>
     <span class="room-code">{{ room }}</span>
     <PixelButton class="room-copy" @press="copy">{{ COPY_LABELS[copied] }}</PixelButton>
-    <span class="room-note">Send the link, or have friends type the code under Multiplayer. It stays in the menu (Esc) too.</span>
+    <span class="room-note">{{ isPublic ? PUBLIC_NOTE : PRIVATE_NOTE }}</span>
   </aside>
 </template>
 
@@ -12,7 +12,9 @@ import PixelButton from './PixelButton.vue';
 import { COPY_LABELS, useRoomLink } from './use-room-link.ts';
 
 /** Shown while the host waits for friends; once someone joins it goes, and the code stays in the pause menu. */
-const { room } = defineProps<{ room: string }>();
+const { room, isPublic = false } = defineProps<{ room: string; isPublic?: boolean }>();
+const PRIVATE_NOTE = 'Send the link, or have friends type the code under Join with code. It stays in the menu (Esc) too.';
+const PUBLIC_NOTE = 'Survivors using Find a team can be matched in. Friends can still join with the link.';
 const { copied, copy } = useRoomLink(() => room);
 </script>
 

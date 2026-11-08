@@ -16,7 +16,7 @@ import type { Visibility } from '../../shared/lobby/types.ts';
 import { IP_KEY_HEADER, lobbyOf, logEvent, ROLE_HEADER, type Env } from './env.ts';
 import { closedSocket, echoable } from './http.ts';
 import { sha256Hex } from './lobby.ts';
-import { iceServersFor } from './turn.ts';
+import { iceServersFor, turnConfigured } from './turn.ts';
 
 /** The host must send `auth` this soon after its socket opens. */
 export const HOST_AUTH_MS = 5_000;
@@ -185,7 +185,7 @@ export class Room extends DurableObject<Env> {
     const now = Date.now();
     this.ctx.acceptWebSocket(pair[1], ['guest', `peer:${peerId}`]);
     pair[1].serializeAttachment({ role: 'guest', openedAt: now, peerId, messages: 0 } satisfies Attachment);
-    send(pair[1], { type: 'admitted', peerId, iceServers, relayOnly: meta.visibility === 'public' });
+    send(pair[1], { type: 'admitted', peerId, iceServers, relayOnly: this.relayOnly(meta) });
     await this.wakeBy(now + GUEST_WINDOW_MS);
     return new Response(null, { status: 101, webSocket: pair[0] });
   }
@@ -233,8 +233,16 @@ export class Room extends DurableObject<Env> {
     meta.touchedAt = now;
     await this.save(meta);
     await lobbyOf(this.env).roomSeen(meta.code, false);
-    send(ws, { type: 'ready', iceServers: await this.iceServers(), relayOnly: meta.visibility === 'public' });
+    send(ws, { type: 'ready', iceServers: await this.iceServers(), relayOnly: this.relayOnly(meta) });
     logEvent('host_ready');
+  }
+
+  /**
+   * Public rooms are relay only, so strangers see Cloudflare's addresses instead of each other's. That needs
+   * TURN: a Worker without it (local dev) lets public rooms connect directly rather than not at all.
+   */
+  private relayOnly(meta: RoomMeta): boolean {
+    return meta.visibility === 'public' && turnConfigured(this.env);
   }
 
   private async fromHost(meta: RoomMeta, ws: WebSocket, at: Extract<Attachment, { role: 'host' }>, text: string): Promise<void> {

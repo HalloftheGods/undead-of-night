@@ -10,7 +10,7 @@
         <DownedOverlay v-if="ui.hud.status !== 'alive'" :hud="ui.hud" :mode="ui.mode" />
         <TouchControls v-if="ui.touch" />
         <EmoteWheel :art="ui.art" :enabled="emotesOn" />
-        <RoomInvite v-if="ui.onlineRoom && !ui.paused && ui.hud.teammates.length === 0" :room="ui.onlineRoom" />
+        <RoomInvite v-if="ui.onlineRoom && !ui.paused && ui.hud.teammates.length === 0" :room="ui.onlineRoom" :is-public="ui.onlinePublic" />
       </template>
       <LevelCard v-if="ui.levelCard" :key="ui.levelCard.key" :card="ui.levelCard" />
       <WaveBanner v-if="ui.banner" :key="ui.banner.key" :banner="ui.banner" />

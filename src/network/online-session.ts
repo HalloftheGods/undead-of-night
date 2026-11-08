@@ -13,20 +13,27 @@ const ONLINE_CONNECT_TIMEOUT_MS = 20_000;
 const GUEST_WORDS = { badAddress: 'That room code does not look right.', noAnswer: 'Could not reach that game. Ask the host to check it is still open.', unreachable: 'Could not reach that game.' };
 
 export interface HostEvents {
-  onHosted(code: string): void;
+  /** The room's code, and whether anyone may be matched into it. */
+  onHosted(code: string, isPublic: boolean): void;
   /** The game goes on, but nobody new can join. */
   onUnlisted(): void;
 }
 
+/** How a hosted room is open: private (friends with the code), or public, made here or handed over by Find a team. */
+export type HostOpening = { readonly public: false } | { readonly public: true; readonly preset?: { code: string; hostKey: string } };
+
+export { hostDevice } from './host-session.ts';
+
 /** Hosts a room from this tab. */
-export function hostRoom(style: GameStyle, events: HostEvents): RoomSession {
+export function hostRoom(style: GameStyle, events: HostEvents, opening: HostOpening = { public: false }): RoomSession {
   const hosting = new HostSession(style);
-  hosting.onHosted = events.onHosted;
+  if (opening.public) hosting.openToAnyone(opening.preset);
+  hosting.onHosted = (code) => events.onHosted(code, hosting.isPublic);
   hosting.onUnlisted = events.onUnlisted;
   return hosting;
 }
 
-/** Joins the room with this (already normalized) code. */
-export function joinRoom(code: string): RoomSession {
-  return new RemoteSession(new RtcGuestPipe(PLAY_API, code), GUEST_WORDS, ONLINE_CONNECT_TIMEOUT_MS);
+/** Joins the room with this (already normalized) code. A public room it was matched into sends and shows no callsigns. */
+export function joinRoom(code: string, isPublic = false): RoomSession {
+  return new RemoteSession(new RtcGuestPipe(PLAY_API, code), GUEST_WORDS, ONLINE_CONNECT_TIMEOUT_MS, isPublic);
 }

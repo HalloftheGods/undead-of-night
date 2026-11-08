@@ -27,24 +27,53 @@
           />
         </div>
 
-        <div class="setup-field" :class="{ 'is-hidden': !serverShown }" :aria-hidden="!serverShown || undefined">
-          <label class="px-label" :for="SERVER_FIELD_ID">{{ online ? "Friend's room code" : 'Server address' }}</label>
+        <div v-if="online" class="setup-field" :class="{ 'is-hidden': !serverShown }" :aria-hidden="!serverShown || undefined">
+          <span class="px-label" id="coop-entry">Play with</span>
+          <div class="setup-entries" role="group" aria-labelledby="coop-entry">
+            <PixelButton
+              v-for="choice in COOP_ENTRIES"
+              :key="choice.entry"
+              class="setup-entry"
+              :primary="entry === choice.entry"
+              :aria-pressed="entry === choice.entry"
+              @press="entry = choice.entry"
+            >
+              {{ choice.label }}
+            </PixelButton>
+          </div>
+          <input
+            v-if="entry === 'code'"
+            :id="SERVER_FIELD_ID"
+            class="px-input px-frame setup-code"
+            :value="ui.serverAddress"
+            placeholder="ROOM CODE, E.G. BCDFG"
+            aria-label="Friend's room code"
+            maxlength="64"
+            autocomplete="off"
+            spellcheck="false"
+            @input="game.setServerAddress(textOf($event))"
+            @keydown.enter.prevent="next"
+          />
+          <p v-else class="setup-hint">{{ ENTRY_HINTS[entry] }}</p>
+        </div>
+
+        <div v-else class="setup-field" :class="{ 'is-hidden': !serverShown }" :aria-hidden="!serverShown || undefined">
+          <label class="px-label" :for="SERVER_FIELD_ID">Server address</label>
           <div class="setup-server">
             <input
               :id="SERVER_FIELD_ID"
               class="px-input px-frame"
               :value="ui.serverAddress"
-              :placeholder="online ? 'LEAVE BLANK TO HOST' : defaultServer"
+              :placeholder="defaultServer"
               autocomplete="off"
               spellcheck="false"
               @input="game.setServerAddress(textOf($event))"
               @keydown.enter.prevent="next"
             />
-            <PixelButton v-if="!online" class="setup-invite" :disabled="!inviteLink" @press="copyInvite">
+            <PixelButton class="setup-invite" :disabled="!inviteLink" @press="copyInvite">
               {{ INVITE_LABELS[copied] }}
             </PixelButton>
           </div>
-          <p v-if="online" class="setup-hint">To host, leave it blank: your room code and invite link show on screen once you are in town.</p>
         </div>
       </div>
     </template>
@@ -82,12 +111,13 @@ import { loadDifficulty } from '../game/difficulty-pref.ts';
 import { setupLevelLines } from '../game/home-screens.ts';
 import { SERVER_FIELD_ID } from '../game/hud-state.ts';
 import type { UiState } from '../game/hud-state.ts';
-import { buildInviteLink, buildRoomLink } from '../game/invite-link.ts';
-import { coopTarget, onlineRoomsLive } from '../network/play-api.ts';
+import { buildInviteLink } from '../game/invite-link.ts';
+import { onlineRoomsLive } from '../network/play-api.ts';
+import type { CoopEntry } from '../game/run-session.ts';
 import { chosenStartLevel, continueLevel, isLevelUnlocked, loadLevelProgress } from '../game/level-progress.ts';
 import { advance, chooseMode, claimedStyle, playHeading, playStepper, retreat, returnTo, setupFailure, setupStyle, showsServer, showsStyleLabel, startFlow, startsRun, STYLE_LABELS } from '../game/play-flow.ts';
 import type { PlayMode, PlayStep } from '../game/play-flow.ts';
-import { setupActionLabel } from '../game/title-menu.ts';
+import { COOP_ACTIONS, setupActionLabel, type CoopAction } from '../game/title-menu.ts';
 import CharacterSelect from './CharacterSelect.vue';
 import DifficultySelect from './DifficultySelect.vue';
 import ModeSelect from './ModeSelect.vue';
@@ -142,16 +172,23 @@ const serverShown = computed(() => showsServer(flow.value));
 const ready = computed(() => ui.art !== null && !ui.connecting);
 /** A build with online rooms takes a room code in the same field, and a blank one hosts a new room. */
 const online = onlineRoomsLive();
-const hosts = computed(() => coopTarget(ui.serverAddress, online).kind === 'host');
-const actionLabel = computed(() => setupActionLabel(multi.value, ui.art !== null, ui.connecting, hosts.value));
+/** Online only: Find a team (public), Host for friends (private) or Join with code. An invite link lands on the code. */
+const entry = ref<CoopEntry>(join ? 'code' : 'host');
+const COOP_ENTRIES: readonly { entry: CoopEntry; label: string }[] = [
+  { entry: 'find', label: 'Find a team' },
+  { entry: 'host', label: 'Host for friends' },
+  { entry: 'code', label: 'Join with code' },
+];
+const ENTRY_HINTS: Readonly<Record<'find' | 'host', string>> = {
+  find: 'Joins an open public game near your difficulty, or opens one. Public games show survivor names, never callsigns.',
+  host: 'A private game. Your room code and invite link show on screen once you are in town.',
+};
+const coopAction = computed<CoopAction>(() => (online ? COOP_ACTIONS[entry.value] : 'join'));
+const actionLabel = computed(() => setupActionLabel(multi.value, ui.art !== null, ui.connecting, coopAction.value));
 const failure = computed(() => setupFailure(flow.value.mode, runStyle.value, ui.error));
 const defaultServer = `${window.location.hostname}:${DEFAULT_SERVER_PORT}`;
 /** The address friends need: what is typed, or this host's default when the field is blank. */
-const inviteLink = computed(() => {
-  const typed = ui.serverAddress.trim();
-  if (online) return typed ? (buildRoomLink(window.location.href, typed) ?? buildInviteLink(window.location.href, typed)) : null;
-  return buildInviteLink(window.location.href, typed || defaultServer);
-});
+const inviteLink = computed(() => buildInviteLink(window.location.href, ui.serverAddress.trim() || defaultServer));
 
 function textOf(event: Event): string {
   return (event.target as HTMLInputElement).value;
@@ -185,7 +222,7 @@ function pick(mode: PlayMode): void {
 
 function start(): void {
   if (multi.value) {
-    game.startCoop(runStyle.value);
+    game.startCoop(runStyle.value, online ? entry.value : undefined);
     return;
   }
   const isContinuing = chosen !== null;
@@ -263,6 +300,21 @@ onMounted(() => {
 .setup-invite {
   flex: none;
   width: auto;
+}
+
+.setup-entries {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: calc(var(--u) * 2);
+}
+
+.setup-entry {
+  width: auto;
+  min-width: 0;
+}
+
+.setup-code {
+  margin-top: calc(var(--u) * 2);
 }
 
 .setup-hint {

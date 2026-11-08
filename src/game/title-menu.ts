@@ -80,12 +80,18 @@ export function isConfirmKey(code: string): boolean {
   return code === 'Enter' || code === 'NumpadEnter';
 }
 
-/** The setup page's one button, which also says why it cannot be pressed yet. `hosts`: co-op with a blank field makes a new online room. */
-export function setupActionLabel(coop: boolean, artReady: boolean, connecting: boolean, hosts: boolean = false): string {
+/** What the co-op button does: join a room or server, host a private room, or find a public team. */
+export type CoopAction = 'join' | 'host' | 'find';
+const COOP_LABELS: Readonly<Record<CoopAction, string>> = { join: 'Join', host: 'Host room', find: 'Find a team' };
+/** Each Multiplayer choice's button (the choices are CoopEntry in run-session.ts). */
+export const COOP_ACTIONS: Readonly<Record<'find' | 'host' | 'code', CoopAction>> = { find: 'find', host: 'host', code: 'join' };
+
+/** The setup page's one button, which also says why it cannot be pressed yet. */
+export function setupActionLabel(coop: boolean, artReady: boolean, connecting: boolean, action: CoopAction = 'join'): string {
   if (!artReady) return 'Loading...';
   if (connecting) return 'Connecting...';
   if (!coop) return 'Start';
-  return hosts ? 'Host room' : 'Join';
+  return COOP_LABELS[action];
 }
 
 export interface RecordStat {

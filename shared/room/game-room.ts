@@ -34,6 +34,8 @@ export interface GameRoomOptions {
   /** A fresh player id for each join. */
   readonly newId: () => string;
   readonly restartVoteMs: number;
+  /** A public room: every callsign is dropped on the way in, so players show as their survivor (shared/callsign.ts). */
+  readonly anonymous?: boolean;
 }
 
 export interface GameRoom {
@@ -47,7 +49,7 @@ export interface GameRoom {
   shutdown(): void;
 }
 
-export function createGameRoom({ sim, clock, newId, restartVoteMs }: GameRoomOptions): GameRoom {
+export function createGameRoom({ sim, clock, newId, restartVoteMs, anonymous = false }: GameRoomOptions): GameRoom {
   const clients = new Set<RoomClient>();
   let tickTimer: unknown = null;
   let nextTickAt = 0;
@@ -148,7 +150,7 @@ export function createGameRoom({ sim, clock, newId, restartVoteMs }: GameRoomOpt
     if (setsDifficulty) sim.setDifficulty(difficulty);
     // After that restart, which lets every body go, and before addPlayer takes this one back.
     const resumed = sim.hasBodyFor(token);
-    sim.addPlayer(id, name, token, character, home);
+    sim.addPlayer(id, anonymous ? '' : name, token, character, home);
     client.playerId = id;
     clock.cancel(client.joinDeadline);
     send(client, { type: 'welcome', yourId: id, tickRate: TICK_RATE, mapSeed: sim.map.seed, level: sim.level, difficulty: sim.difficulty, ...(resumed ? { resumed } : {}) });
