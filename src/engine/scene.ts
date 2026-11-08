@@ -1,4 +1,5 @@
 import type { Container } from '../../shared/containers.ts';
+import type { LeftoverView } from '../../shared/leftovers.ts';
 import type { BulletEntity, DropView, EntityId, ExitEntity, GamePhase, PickupEntity, PlayerEntity, TrackEntity, ZombieEntity } from '../../shared/protocol.ts';
 import type { MerchantId, OverrunView, StationId } from '../../shared/home-protocol.ts';
 
@@ -45,6 +46,8 @@ export interface SceneView {
   readonly drop: DropView | null;
   /** Ids of the town's containers that have been opened. */
   readonly openedContainers: readonly number[];
+  /** Buildings the team has been in that still hold supplies, for the map. Absent when there are none. */
+  readonly leftovers?: readonly LeftoverView[];
   /** Footprints in the snow, drawn on the ground. Absent outside a snowy town. */
   readonly tracks?: readonly TrackEntity[];
   /** What the local player could search from where they stand, if anything. */
