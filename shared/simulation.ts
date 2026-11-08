@@ -27,7 +27,7 @@ import { diedOnLeaving } from './overrun-fight.ts';
 import { arriveInRoom, keepsBodyOnLeaving, leaveRoom, updateLeftBodies } from './trip-roster.ts';
 import { updateWaves } from './waves.ts';
 import { updateZombieStatuses } from './zombie-burn.ts';
-import { updateFires } from './throwables.ts';
+import { updateSpinners } from './throwables.ts';
 import { updateSupplyDrop } from './supply-drop.ts';
 import { updateBosses } from './bosses.ts';
 import { benchCommand, updateBench } from './workbench.ts';
@@ -205,7 +205,7 @@ export class GameSimulation {
     for (const p of sim.players) updatePlayer(sim, p);
     noteEntered(sim);
     ageFootprints(sim);
-    updateFires(sim);
+    updateSpinners(sim);
     updateBullets(sim);
     updateZombieStatuses(sim);
     updateZombies(sim);

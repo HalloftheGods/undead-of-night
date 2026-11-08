@@ -23,7 +23,7 @@ export const STAMPS: readonly StampDef[] = [
   { id: 'headhunter', name: 'Headhunter', how: 'Land 50 headshots, across every run.' },
   { id: 'massacre', name: 'Massacre', how: 'Chain five kills, each within a breath of the last.' },
   { id: 'crowd_control', name: 'Crowd Control', how: 'Kill 100 in a single run.' },
-  { id: 'firestarter', name: 'Firestarter', how: 'Throw 10 molotovs, across every run.' },
+  { id: 'firestarter', name: 'Firestarter', how: 'Light 10 spinners, across every run.' },
   { id: 'flare_up', name: 'Flare Up', how: 'Light a flare.' },
   { id: 'special_delivery', name: 'Special Delivery', how: 'Grab something from a supply drop.' },
   { id: 'close_shave', name: 'Close Shave', how: 'Make a kill with almost no health left.' },
@@ -40,7 +40,7 @@ export const STAMPS: readonly StampDef[] = [
 
 const STAMPS_KEY = 'outbreak.stamps';
 const HEADSHOTS_FOR_STAMP = 50;
-const MOLOTOVS_FOR_STAMP = 10;
+const SPINNERS_FOR_STAMP = 10;
 const KILLS_FOR_STAMP = 100;
 const CHAIN_FOR_STAMP = 5;
 const HALFWAY_LEVEL = 5;
@@ -53,10 +53,10 @@ export interface StampBook {
   readonly earned: Readonly<Partial<Record<StampId, string>>>;
   /** Lifetime counts the counting stamps need. */
   readonly headshots: number;
-  readonly molotovs: number;
+  readonly spinners: number;
 }
 
-const EMPTY: StampBook = { earned: {}, headshots: 0, molotovs: 0 };
+const EMPTY: StampBook = { earned: {}, headshots: 0, spinners: 0 };
 
 export function loadStamps(store: Store | null = browserStore()): StampBook {
   const raw = readJson(store, STAMPS_KEY);
@@ -70,8 +70,9 @@ export function loadStamps(store: Store | null = browserStore()): StampBook {
     const valid = known.has(id) && typeof day === 'string';
     if (valid) earned[id as StampId] = day as string;
   }
+  // Books saved before fireworks counted the same throws as molotovs.
   const count = (v: unknown): number => (Number.isFinite(v) ? Number(v) : 0);
-  return { earned, headshots: count(r.headshots), molotovs: count(r.molotovs) };
+  return { earned, headshots: count(r.headshots), spinners: count(r.spinners ?? r.molotovs) };
 }
 
 /** What a run's reader needs to know besides the events. */
@@ -94,7 +95,7 @@ export function readStamps(book: StampBook, events: readonly GameEvent[], ctx: S
     has.add(id);
     earned.push(id);
   };
-  let { headshots, molotovs } = book;
+  let { headshots, spinners } = book;
   const mine = (id: EntityId | null): boolean => id !== null && id === ctx.localId;
   const event = nightEventFor(ctx.mapSeed, ctx.level)?.id ?? null;
   const bloodMoon = event === 'blood_moon';
@@ -113,9 +114,9 @@ export function readStamps(book: StampBook, events: readonly GameEvent[], ctx: S
         if (isMyHeadshot) headshots += 1;
         break;
       }
-      case 'molotov_burst': {
-        const isMyMolotov = mine(e.playerId);
-        if (isMyMolotov) molotovs += 1;
+      case 'spinner_lit': {
+        const isMySpinner = mine(e.playerId);
+        if (isMySpinner) spinners += 1;
         break;
       }
       case 'flare_lit': {
@@ -153,12 +154,12 @@ export function readStamps(book: StampBook, events: readonly GameEvent[], ctx: S
   }
   const isHeadhunter = headshots >= HEADSHOTS_FOR_STAMP;
   if (isHeadhunter) earn('headhunter');
-  const isFirestarter = molotovs >= MOLOTOVS_FOR_STAMP;
+  const isFirestarter = spinners >= SPINNERS_FOR_STAMP;
   if (isFirestarter) earn('firestarter');
   const isCrowdControl = ctx.kills >= KILLS_FOR_STAMP;
   if (isCrowdControl) earn('crowd_control');
   const stamped = Object.fromEntries(earned.map((id) => [id, today]));
-  return { book: { earned: { ...book.earned, ...stamped }, headshots, molotovs }, earned };
+  return { book: { earned: { ...book.earned, ...stamped }, headshots, spinners }, earned };
 }
 
 /** Stamps given outright, off a moment rather than an event: a close call, a Daily Night counted, a streak. */
@@ -196,7 +197,7 @@ export class StampKeeper {
   private keep(next: { book: StampBook; earned: StampId[] }): StampId[] {
     const before = this.book;
     this.book = next.book;
-    const changed = next.earned.length > 0 || next.book.headshots !== before.headshots || next.book.molotovs !== before.molotovs;
+    const changed = next.earned.length > 0 || next.book.headshots !== before.headshots || next.book.spinners !== before.spinners;
     if (changed) writeJson(this.store, STAMPS_KEY, next.book);
     return next.earned;
   }

@@ -24,7 +24,7 @@
     <KeepsakeOffer v-if="hud.keepsakeOffer" :offer="hud.keepsakeOffer" />
 
     <ul v-if="hud.teammates.length" class="hud-team">
-      <li v-for="mate in hud.teammates" :key="mate.id" class="hud-chip">
+      <li v-for="mate in hud.teammates" :key="mate.id" class="hud-chip hud-mate" :style="{ '--mate': mate.color }">
         <span :class="{ 'is-threat': mate.status !== 'alive' }">{{ mate.name }}</span>
         <span class="hud-sub">{{ mate.character }}</span>
         <span v-if="mate.status !== 'alive'" class="hud-sub is-threat">{{ mate.status }}</span>
@@ -52,9 +52,9 @@
           <span>{{ hud.bottles }}</span>
           <span class="hud-slot-key keys-only">G</span>
         </div>
-        <div v-if="hud.fuel > 0" class="hud-chip hud-bottles" :class="{ 'is-none': hud.bottles === 0 }">
-          <SpriteImg :sprite="art.ui.fuelCan" />
-          <span>{{ hud.fuel }}</span>
+        <div v-if="hud.fireworks > 0" class="hud-chip hud-bottles">
+          <SpriteImg :sprite="art.ui.fireworks" />
+          <span>{{ hud.fireworks }}</span>
           <span class="hud-slot-key keys-only">T</span>
         </div>
         <div v-if="hud.flares > 0" class="hud-chip hud-bottles">
@@ -288,6 +288,11 @@ function slotClass(weapon: WeaponId): Record<string, boolean> {
   list-style: none;
 }
 
+/* The same colour marks this teammate on the map. */
+.hud-mate {
+  border-left: calc(var(--u) * 1.5) solid var(--mate);
+}
+
 .hud-team-meter {
   width: calc(var(--u) * 36);
   height: calc(var(--u) * 2);
@@ -339,8 +344,7 @@ function slotClass(weapon: WeaponId): Record<string, boolean> {
   color: var(--bone);
 }
 
-.hud-medkits.is-none,
-.hud-bottles.is-none {
+.hud-medkits.is-none {
   color: var(--bone-dim);
 }
 

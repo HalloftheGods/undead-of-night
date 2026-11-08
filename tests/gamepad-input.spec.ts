@@ -188,9 +188,9 @@ describe('a gamepad on the game', () => {
       expect(input.sample(2, 0, loadout).weapon).toBe('shotgun');
     });
 
-    it('throws, lights a molotov or a flare, and eats a candy', () => {
+    it('throws, lights a firework or a flare, and eats a candy', () => {
       frame(pad({ buttons: { [PAD.rb]: 1, [PAD.up]: 1, [PAD.down]: 1, [PAD.y]: 1 } }));
-      expect(input.sample(1, 0, null)).toMatchObject({ throw: true, molotov: true, flare: true, eat: true });
+      expect(input.sample(1, 0, null)).toMatchObject({ throw: true, spinner: true, flare: true, eat: true });
     });
 
     it('sprints on LB held, toggles sneak on L3, and a sprint ends the sneak', () => {

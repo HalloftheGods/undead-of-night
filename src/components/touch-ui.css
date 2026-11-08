@@ -102,14 +102,6 @@ body {
   font-size: 10px;
 }
 
-.touch-item.is-none {
-  color: var(--bone-dim);
-}
-
-.touch-item.is-none .sprite-img {
-  opacity: 0.4;
-}
-
 /* The HUD's wrapped sweet, three times the size. */
 .touch-candy {
   width: 24px;

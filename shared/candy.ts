@@ -35,7 +35,7 @@ export const CANDIES: Readonly<Record<CandyId, CandyDef>> = {
   jawbreaker: { id: 'jawbreaker', name: 'Jawbreaker', stat: 'ARMOR', blurb: 'Take half damage.', weight: 10 },
   licorice_lash: { id: 'licorice_lash', name: 'Black Licorice Lash', stat: 'AIM', blurb: 'Heads are easier to hit.', weight: 10 },
   caramel_apple: { id: 'caramel_apple', name: 'Caramel Apple', stat: 'REVIVE', blurb: 'Go down while it lasts and you get straight back up.', weight: 6 },
-  popping_eyeballs: { id: 'popping_eyeballs', name: 'Popping Eyeballs', stat: 'FIRE', blurb: 'Molotovs need no fuel.', weight: 8 },
+  popping_eyeballs: { id: 'popping_eyeballs', name: 'Popping Eyeballs', stat: 'SPARKS', blurb: 'Spinners throw sparks half as far again.', weight: 8 },
   full_size_bar: { id: 'full_size_bar', name: 'Full-Size Bar', stat: 'ALL', blurb: 'A little of everything, but not for long.', weight: 2 },
 };
 

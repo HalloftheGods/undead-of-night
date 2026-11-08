@@ -87,7 +87,7 @@ export function receiveInput(p: PlayerState, input: ClientInputPacket): void {
   const wantsHeal = input.heal === true;
   if (wantsHeal) p.healQueued = true;
   p.throwQueued ||= input.throw === true;
-  p.molotovQueued ||= input.molotov === true;
+  p.spinnerQueued ||= input.spinner === true;
   p.flareQueued ||= input.flare === true;
   p.eatQueued ||= input.eat === true;
   if (input.keepsake) p.keepsakeQueued = input.keepsake;
@@ -111,7 +111,7 @@ function holdFire(p: PlayerState): void {
   p.shootQueued = false;
   p.meleeQueued = false;
   p.throwQueued = false;
-  p.molotovQueued = false;
+  p.spinnerQueued = false;
   p.flareQueued = false;
 }
 
@@ -128,7 +128,7 @@ export function updatePlayer(sim: SimState, p: PlayerState): void {
     p.healQueued = false;
     p.shootQueued = false;
     p.throwQueued = false;
-    p.molotovQueued = false;
+    p.spinnerQueued = false;
     p.flareQueued = false;
     stopSearch(p);
     return;

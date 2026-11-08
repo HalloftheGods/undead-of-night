@@ -31,6 +31,30 @@ export const CHANGE_NOTES: readonly ChangeNote[] = [
     ],
   },
   {
+    id: 'fireworks-spinners',
+    date: '2026-11-08',
+    kind: 'new',
+    title: 'Fireworks',
+    deck: 'Fuel is gone. Garages, warehouses and diners hide fireworks now, and T lights one.',
+    points: [
+      'A lit firework lands where you aim as a ground spinner, a flower of colored sparks whirling on the street for five seconds.',
+      'The sparks set alight any zombie that walks through, and you too if you stand in them. The whistle and crackle draw a crowd.',
+      'No bottle needed any more. Popping Eyeballs throw the sparks half as far again; the Pocket Lighter keeps them spinning longer.',
+    ],
+  },
+  {
+    id: 'team-on-map',
+    date: '2026-11-08',
+    kind: 'new',
+    title: 'Find your team on the map',
+    deck: 'In co-op, every teammate shows on the map with a flashing locator in their own colour and their name.',
+    points: [
+      'Each survivor has a team colour, so no two players look alike. The team chips in the corner wear it too.',
+      'Private rooms show callsigns. Public games show survivor names, as always.',
+      'A downed teammate says DOWN beside their name, so you know who to run to. With Motion set to Reduced, the locators hold still.',
+    ],
+  },
+  {
     id: 'town-guide',
     date: '2026-11-08',
     kind: 'new',

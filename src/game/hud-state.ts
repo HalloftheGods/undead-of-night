@@ -24,6 +24,7 @@ import type { TransportKind } from '../network/transport.ts';
 import { benchHud } from './bench-view.ts';
 import type { BenchHud } from './bench-view.ts';
 import type { LogEntry } from './event-log.ts';
+import { teamColor } from './team-colors.ts';
 import type { HomeUi } from './home-hud.ts';
 import type { BestRun, LeaderboardEntry } from './storage.ts';
 
@@ -40,6 +41,8 @@ export interface TeammateHud {
   readonly name: string;
   /** Which survivor they are playing. */
   readonly character: string;
+  /** Their team colour, the same one that marks them on the map. */
+  readonly color: string;
   readonly health: number;
   readonly maxHealth: number;
   readonly status: PlayerStatus;
@@ -65,8 +68,8 @@ export interface HudState {
   readonly medkits: number;
   /** Empty bottles to throw. */
   readonly bottles: number;
-  /** Fuel for molotovs (each also takes a bottle), and flares. */
-  readonly fuel: number;
+  /** Fireworks to light as spinners, and flares. */
+  readonly fireworks: number;
   readonly flares: number;
   /** Candy carried, by name, oldest first: the next eaten is the first not already working. */
   readonly candy: readonly string[];
@@ -211,7 +214,7 @@ export function buildHud(snapshot: SnapshotPacket, local: PlayerEntity, spectati
     mags: local.mags,
     medkits: local.medkits,
     bottles: local.bottles ?? 0,
-    fuel: local.fuel ?? 0,
+    fireworks: local.fireworks ?? 0,
     flares: local.flares ?? 0,
     candy: (local.candy ?? []).map((id) => CANDIES[id].name),
     sugar: (local.sugar ?? []).map((sugar) => ({ name: CANDIES[sugar.id].name, left: Math.ceil(sugar.left) })),
@@ -231,7 +234,7 @@ export function buildHud(snapshot: SnapshotPacket, local: PlayerEntity, spectati
     hostiles: snapshot.hostiles,
     teammates: snapshot.players
       .filter((player) => player.id !== local.id)
-      .map(({ id, name, skin, health, maxHealth, status }) => ({ id, name: displayName(name, skin), character: characterOf(skin).name, health, maxHealth, status })),
+      .map(({ id, name, skin, health, maxHealth, status }) => ({ id, name: displayName(name, skin), character: characterOf(skin).name, color: teamColor(skin), health, maxHealth, status })),
     spectating,
     gear: local.gear ?? null,
     bench: benchHud(snapshot, local),
