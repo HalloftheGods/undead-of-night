@@ -20,6 +20,18 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'menu-sections',
+    date: '2026-11-08',
+    kind: 'better',
+    title: 'Main menu in three parts',
+    deck: 'Books, Play and Extras now sit side by side, so the whole menu fits under the logo, even on a phone on its side.',
+    points: [
+      'Play is in the middle: Daily Night, Arcade, Campaign and Levels. The menu still opens on Daily Night.',
+      'Books holds How to Play, the Town Guide and Records; Extras holds the Sound Test and Options.',
+      'Up and down move within a part; left and right (or A and D) hop to the next one.',
+    ],
+  },
+  {
     id: 'diner-knives',
     date: '2026-11-08',
     kind: 'better',
