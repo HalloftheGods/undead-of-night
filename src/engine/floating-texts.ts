@@ -1,4 +1,5 @@
 import { drawOutlinedText, FONT_HEIGHT, textWidth } from './bitmap-font.ts';
+import type { KeepOut } from './sugar-tags.ts';
 
 /** How long a note stays up, counted again from each repeat that folds into it. */
 const TEXT_LIFE = 1.1;
@@ -132,6 +133,29 @@ export class FloatingTexts {
       drawOutlinedText(ctx, item.text, Math.round(item.x) - left, Math.round(this.topOf(item, item.lift)) - top, item.color);
     }
     ctx.globalAlpha = before;
+  }
+
+  /**
+   * Notes keep off the candy timers over survivors' heads. A note on a timer, or under one and still
+   * rising into it, is lifted straight over it (no easing, so it never slides across the words) and
+   * carries on rising from there.
+   */
+  keepClear(keepOuts: readonly KeepOut[]): void {
+    for (const item of this.items) {
+      for (const box of keepOuts) this.liftOver(item, box);
+    }
+  }
+
+  private liftOver(item: FloatingText, box: KeepOut): void {
+    const sideBySide = Math.abs(item.x - box.x) >= (item.width + box.width) / 2 + SIDE_GAP;
+    if (sideBySide) return;
+    const nowTop = this.topOf(item, item.lift);
+    const settledTop = item.y - TEXT_RISE - item.lift - FONT_HEIGHT;
+    const reachesBox = settledTop < box.bottom && nowTop + LINE_HEIGHT > box.top;
+    if (!reachesBox) return;
+    const overlap = nowTop + LINE_HEIGHT - box.top;
+    item.lift += overlap;
+    item.liftTarget = Math.max(item.liftTarget, item.lift);
   }
 
   private refresh(item: FloatingText): void {

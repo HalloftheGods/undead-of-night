@@ -60,6 +60,9 @@ export type HomeAction =
   | { kind: 'leave_station' }
   | { kind: 'highest'; highest: number };
 
+/** The primary input device used during the run, for separate leaderboards. */
+export type Platform = 'desktop' | 'touch' | 'gamepad';
+
 /** How a trip ended for one player. State, not an event, so a slow client cannot lose it. */
 export interface TripReceipt {
   simId: string;
@@ -82,6 +85,8 @@ export interface TripReceipt {
   ending: boolean;
   /** What came home, or null when nothing did. */
   gear: Loadout | null;
+  /** The primary input device used, for separate leaderboards. Left off for older runs. */
+  platform?: Platform;
 }
 
 /** Counting down to the breach, guns free near the end, the horde in, then the room held or fallen. */

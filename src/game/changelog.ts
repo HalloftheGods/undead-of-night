@@ -32,6 +32,29 @@ export const CHANGE_NOTES: readonly ChangeNote[] = [
     ],
   },
   {
+    id: 'option-switches',
+    date: '2026-11-08',
+    kind: 'better',
+    title: 'Flip switches',
+    deck: 'Analytics and haptic feedback on Options are now pixel switches instead of boxed buttons.',
+    points: [
+      'The knob snaps right and the track goes red when a setting is on.',
+      'Screen readers hear them as switches, and Space or Enter flips them.',
+    ],
+  },
+  {
+    id: 'candy-timer',
+    date: '2026-11-08',
+    kind: 'new',
+    title: 'Candy timer overhead',
+    deck: 'While a candy works, its boost and the seconds left float over your head.',
+    points: [
+      'A word for what it boosts (SPEED, ARMOR, RELOAD...) and a bar that drains for the whole boost.',
+      'It blinks in the last five seconds, so you know it is about to wear off.',
+      'In co-op you see your team\'s candy too. Pickup notes float clear of it.',
+    ],
+  },
+  {
     id: 'left-behind-marks',
     date: '2026-11-08',
     kind: 'new',
