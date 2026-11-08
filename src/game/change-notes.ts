@@ -22,6 +22,17 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'setup-titles',
+    date: '2026-11-08',
+    kind: 'better',
+    title: 'Names in lights',
+    deck: 'Your picks on the Play page now carry their names like a film title.',
+    points: [
+      'Each card\'s name stands big over the bottom of its picture.',
+      'Your survivor\'s name runs biggest, glowing amber, and changes as you point at others.',
+    ],
+  },
+  {
     id: 'setup-stage',
     date: '2026-11-08',
     kind: 'better',
