@@ -108,17 +108,20 @@ const visibleItems = computed<WheelItem[]>(() => {
   // Conditional items based on inventory
   const { bottles, fireworks, flares, candy } = props.hud;
   const hasBottle = bottles > 0;
+  const hasFirework = fireworks > 0;
+  const hasFlare = flares > 0;
+  const hasCandy = candy.length > 0;
 
   if (hasBottle) {
     items.push({ code: 'KeyG', label: 'Throw Bottle', sprite: props.art.ui.bottle, count: bottles, ready: true });
   }
-  if (fireworks > 0) {
+  if (hasFirework) {
     items.push({ code: 'KeyT', label: 'Firework', sprite: props.art.ui.fireworks, count: fireworks, ready: true });
   }
-  if (flares > 0) {
+  if (hasFlare) {
     items.push({ code: 'KeyV', label: 'Flare', sprite: props.art.ui.flare, count: flares, ready: true });
   }
-  if (candy.length > 0) {
+  if (hasCandy) {
     items.push({ code: 'KeyX', label: 'Eat Candy', icon: 'candy', count: candy.length, ready: true });
   }
 
