@@ -22,6 +22,17 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'setup-stage',
+    date: '2026-11-08',
+    kind: 'better',
+    title: 'Play setup takes the stage',
+    deck: 'The Play page has stepped out of its box: the three cards fill the screen.',
+    points: [
+      'Mode, Difficulty and Survivor stand big on the night scene, as large as the screen allows.',
+      'Your callsign and the Back and Start buttons sit centred under them.',
+    ],
+  },
+  {
     id: 'house-stairs-corner',
     date: '2026-11-08',
     kind: 'better',

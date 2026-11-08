@@ -102,7 +102,7 @@ body {
 }
 
 /* The sheet scrolls inside itself, by finger, whatever the browser's toolbars are doing. */
-.is-touch .px-sheet {
+.is-touch .px-sheet:not(.is-bare) {
   max-height: 100%;
 }
 
