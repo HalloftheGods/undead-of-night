@@ -68,7 +68,7 @@ const stats: GameOverStats = {
 
 describe('level wording', () => {
   it('names the level', () => {
-    expect(levelLine(3)).toBe('Level 3: Into the Breach');
+    expect(levelLine(3)).toBe('Three Country: Into the Breach');
   });
 
   it('counts only the hordes already seen off', () => {
@@ -83,8 +83,8 @@ describe('level wording', () => {
   });
 
   it('words a title card from the level table', () => {
-    expect(levelTitle(4)).toEqual({ heading: `Level 4 of ${FINAL_LEVEL}`, title: 'Abyssal Depths', goal: 'Survive 3 hordes, then reach the van', rule: 'Floodwater: Wading outdoors slows you down. Buildings are dry.' });
-    expect(levelTitle(FINAL_LEVEL).heading).toBe('Final level');
+    expect(levelTitle(4)).toEqual({ heading: `Town 4 of ${FINAL_LEVEL}: Abyssal Depths`, title: 'Four Corners', goal: 'Survive 3 hordes, then reach the van', rule: 'Floodwater: Wading outdoors slows you down. Buildings are dry.' });
+    expect(levelTitle(FINAL_LEVEL).heading).toBe('The last town: Final Stand');
   });
 
   it('banners the van when it comes', () => {
@@ -240,7 +240,7 @@ describe('levels in a run', () => {
     const setTheme = vi.spyOn(WorldRenderer.prototype, 'setTheme');
     game.startSolo('arcade');
     pump(300);
-    expect(game.ui.value.levelCard?.title).toBe(levelDef(1).title);
+    expect(game.ui.value.levelCard?.title).toBe(levelDef(1).town);
 
     const sim = stateOf(game.sim!);
     moveToNextTown(sim);
@@ -248,7 +248,7 @@ describe('levels in a run', () => {
     pump(300);
     expect(setMap.mock.lastCall?.[0].seed).toBe(sim.map.seed);
     expect(setTheme.mock.lastCall?.[0]).toBe(levelDef(3).theme);
-    expect(game.ui.value.levelCard?.title).toBe(levelDef(3).title);
+    expect(game.ui.value.levelCard?.title).toBe(levelDef(3).town);
     expect(game.ui.value.hud?.level).toBe(3);
   });
 
@@ -256,7 +256,7 @@ describe('levels in a run', () => {
     const setTheme = vi.spyOn(WorldRenderer.prototype, 'setTheme');
     joinRoom().receive(frame(1, { level: 6 }));
     expect(setTheme.mock.lastCall?.[0]).toBe('blackout');
-    expect(game.ui.value.levelCard?.title).toBe(levelDef(6).title);
+    expect(game.ui.value.levelCard?.title).toBe(levelDef(6).town);
   });
 
   it('takes the card down in its own time', () => {
@@ -284,7 +284,7 @@ describe('levels in a run', () => {
     socket.receive(frame(3));
     expect(setMap.mock.lastCall?.[0].seed).toBe(TOWN_A);
     expect(setTheme.mock.lastCall?.[0]).toBe('night');
-    expect(game.ui.value.levelCard?.title).toBe(levelDef(1).title);
+    expect(game.ui.value.levelCard?.title).toBe(levelDef(1).town);
   });
 
   it('gives a run that restarts in the same town its title card too', () => {
@@ -294,6 +294,6 @@ describe('levels in a run', () => {
     pump(5000);
     expect(game.ui.value.levelCard).toBeNull();
     socket.receive(frame(3));
-    expect(game.ui.value.levelCard?.title).toBe(levelDef(1).title);
+    expect(game.ui.value.levelCard?.title).toBe(levelDef(1).town);
   });
 });

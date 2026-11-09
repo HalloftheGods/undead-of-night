@@ -66,7 +66,7 @@ describe('the Town Guide', () => {
       for (const { id } of line.places) expect(placeOf(id).finds.some((find) => find.id === line.id)).toBe(true);
     }
     const medkits = whereToLook().find((line) => line.id === 'medkit');
-    expect(medkits?.places.map((place) => place.id).slice(0, 2).sort()).toEqual(['clinic', 'pharmacy']);
+    expect(medkits?.places.map((place) => place.id).slice(0, 2).sort()).toEqual(['clinic', 'hospital']);
     const parts = whereToLook().find((line) => line.id === 'parts');
     expect(parts?.places[0].id).toBe('gun_shop');
   });
@@ -75,6 +75,6 @@ describe('the Town Guide', () => {
     const leaves = guideLeaves();
     expect(leaves.map((leaf) => leaf.kind).slice(0, 2)).toEqual(['front', 'index']);
     expect(leaves).toHaveLength(2 + guidePlaces().length);
-    expect(placePage('pharmacy')).toBe(3);
+    expect(placePage('hospital')).toBe(3);
   });
 });

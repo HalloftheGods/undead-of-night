@@ -22,6 +22,9 @@ export const BACK_DOORS: Readonly<Partial<Record<BuildingKind, number>>> = {
   house: 80,
   apartment: 80,
   clinic: 48,
+  // Out the back of the hospital's supply room, and of the school's east classroom.
+  hospital: 160,
+  school: 208,
   police: 128,
   garage: 64,
   warehouse: 160,
@@ -39,6 +42,29 @@ const APARTMENT_HALL: readonly Rect[] = [
 ];
 
 /**
+ * Two wards and a supply room along the back, opening onto the lobby that runs the width of the front.
+ * The supply room's doorway lines up with the front door and the back, so a straight run goes right through.
+ */
+const HOSPITAL_WINGS: readonly Rect[] = [
+  { x0: T, y0: 96, x1: 48, y1: 96 + T },
+  { x0: 80, y0: 96, x1: 144, y1: 96 + T },
+  { x0: 176, y0: 96, x1: 240, y1: 96 + T },
+  { x0: 272, y0: 96, x1: 314, y1: 96 + T },
+  { x0: 106, y0: T, x1: 106 + T, y1: 96 },
+  { x0: 208, y0: T, x1: 208 + T, y1: 96 },
+];
+
+/** Two classrooms and the library between them along the back, all opening onto the hall along the front. */
+const SCHOOL_WINGS: readonly Rect[] = [
+  { x0: T, y0: 90, x1: 32, y1: 90 + T },
+  { x0: 64, y0: 90, x1: 128, y1: 90 + T },
+  { x0: 160, y0: 90, x1: 224, y1: 90 + T },
+  { x0: 256, y0: 90, x1: 282, y1: 90 + T },
+  { x0: 96, y0: T, x1: 96 + T, y1: 90 },
+  { x0: 186, y0: T, x1: 186 + T, y1: 90 },
+];
+
+/**
  * Inside walls. Every doorway between them is a door wide, so a brute can follow anyone through,
  * and lines up with the tile grid for the same reason as the back doors.
  */
@@ -49,6 +75,8 @@ export const PARTITIONS: Readonly<Partial<Record<BuildingKind, readonly Rect[]>>
   // A hall from the front door to the back, with a room on each side through a doorway.
   apartment: APARTMENT_HALL,
   apartment_upstairs: APARTMENT_HALL,
+  hospital: HOSPITAL_WINGS,
+  school: SCHOOL_WINGS,
 };
 
 /** The opening in the north wall, in the world, or null for a building without one. */

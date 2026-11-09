@@ -34,6 +34,9 @@ export const CONTAINER_LOOT: Record<BuildingKind | 'outdoors', ContainerLootRule
   discount: { odds: 0.22, table: { bandage: 3, pistol_ammo: 0.8, knife: 1, shells: 0.2 } },
   pharmacy: { odds: 0.35, table: { bandage: 3, medkit: 2 } },
   clinic: { odds: 0.35, table: { bandage: 3, medkit: 2 } },
+  hospital: { odds: 0.3, table: { bandage: 3, medkit: 2.5 } },
+  // Most desks and lockers hold nothing anyone needs, but there are a lot of them.
+  school: { odds: 0.18, table: { bandage: 3, knife: 1, pistol_ammo: 0.6 } },
   police: { odds: 0.3, table: { pistol_ammo: 3, carbine_ammo: 3, shells: 1 } },
   gun_shop: { odds: 0.3, table: { pistol_ammo: 2, shells: 2, carbine_ammo: 1 } },
   outdoors: { odds: 0.14, table: { bandage: 3, pistol_ammo: 1, knife: 1, shells: 0.2 } },

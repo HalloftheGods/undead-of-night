@@ -148,7 +148,7 @@ describe('the bunker music', () => {
     expect(home.map((each) => each.file)).toEqual(allTracks('campaign').map((track) => track.file));
 
     const arcade = musicEntries(NO_PROGRESS, 'arcade').find((each) => each.file === BUNKER_TRACK);
-    expect(arcade).toMatchObject({ unlocked: false, where: 'LEVEL 06' });
+    expect(arcade).toMatchObject({ unlocked: false, where: 'SIXBURG' });
   });
 });
 

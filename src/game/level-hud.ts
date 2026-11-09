@@ -1,5 +1,5 @@
 import { BUNKER_LEVEL } from '../../shared/home-protocol.ts';
-import { FINAL_LEVEL, levelDef } from '../../shared/levels.ts';
+import { BASE_NAME, FINAL_LEVEL, levelDef } from '../../shared/levels.ts';
 import { BOSS_LEVELS, BOSSES } from '../../shared/bosses.ts';
 import { nightEventFor } from '../../shared/night-events.ts';
 import { townRule } from '../../shared/town-rules.ts';
@@ -13,9 +13,9 @@ function hordesSurvived(hud: Pick<HudState, 'phase' | 'wave'>): number {
 /** Which level this is, for the HUD. */
 export function levelLine(level: number): string {
   const home = level === BUNKER_LEVEL;
-  if (home) return 'Home';
-  const { number, title } = levelDef(level);
-  return `Level ${number}: ${title}`;
+  if (home) return BASE_NAME;
+  const { town, title } = levelDef(level);
+  return `${town}: ${title}`;
 }
 
 /** What stands between the players and the next town. */
@@ -28,15 +28,15 @@ export function levelGoal(hud: Pick<HudState, 'level' | 'phase' | 'wave' | 'exit
 
 /** The words for a level's title card. With the town's map seed it also names the night's event, if any. */
 export function levelTitle(level: number, mapSeed: number | null = null): Omit<LevelCard, 'key'> {
-  const { number, title, hordes } = levelDef(level);
+  const { number, town, title, hordes } = levelDef(level);
   const isLast = number === FINAL_LEVEL;
   const rule = townRule(level);
   const event = mapSeed === null ? null : nightEventFor(mapSeed, level);
   const bossId = BOSS_LEVELS[level];
   const boss = bossId ? BOSSES[bossId] : null;
   return {
-    heading: isLast ? 'Final level' : `Level ${number} of ${FINAL_LEVEL}`,
-    title,
+    heading: isLast ? `The last town: ${title}` : `Town ${number} of ${FINAL_LEVEL}: ${title}`,
+    title: town,
     goal: `Survive ${hordes} hordes, then reach the van`,
     ...(rule ? { rule: `${rule.name}: ${rule.blurb}` } : {}),
     ...(event ? { event: `${event.name}. ${event.blurb}` } : {}),

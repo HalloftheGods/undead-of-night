@@ -1,6 +1,7 @@
 // Signaling between a host or guest tab and its Room DO. The DO relays SDP and ICE and never sees game packets.
 // Every message is JSON text of at most SIGNAL_MAX_BYTES; the guards return null for anything else.
 import { CHARACTERS } from '../characters.ts';
+import { MAX_PLAYERS } from '../constants.ts';
 
 export const SIGNAL_MAX_BYTES = 16 * 1024;
 const PEER_ID_MAX = 64;
@@ -99,7 +100,7 @@ export function parseReport(value: unknown): RoomReport | null {
   if (!isRaw(value)) return null;
   const { seats, taken, level, highest, phase, locked } = value;
   const phaseOk = phase === 'muster' || phase === 'playing' || phase === 'over';
-  const shapeOk = isCount(seats, 4) && isCount(taken, ALL_SURVIVORS_TAKEN) && isCount(level, 99) && isCount(highest, 99);
+  const shapeOk = isCount(seats, MAX_PLAYERS) && isCount(taken, ALL_SURVIVORS_TAKEN) && isCount(level, 99) && isCount(highest, 99);
   const isBadRoomInfo = !phaseOk || !shapeOk || typeof locked !== 'boolean';
   if (isBadRoomInfo) return null;
   return { seats, taken, level, highest, phase, locked };

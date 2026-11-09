@@ -42,6 +42,10 @@ export interface LootRule {
 export const LOOT_RULES: Record<BuildingKind, LootRule> = {
   pharmacy: { items: [2, 4], table: { bandage: 5, medkit: 3, pistol_ammo: 0.5 } },
   clinic: { items: [3, 4], table: { bandage: 4, medkit: 4 } },
+  // The town's biggest store of medicine, and the most guarded: a medkit in the emergency bay every time.
+  hospital: { items: [3, 5], fixed: ['medkit'], table: { bandage: 4, medkit: 3, pistol_ammo: 0.4 } },
+  // A nurse's office and a kitchen: first aid, the odd knife, and rounds confiscated from a locker.
+  school: { items: [1, 3], table: { bandage: 4, knife: 0.6, pistol_ammo: 0.8 }, smallAmmo: true },
   police: { items: [3, 4], fixed: ['carbine'], table: { pistol_ammo: 3, carbine_ammo: 4, shells: 1 } },
   gun_shop: { items: [3, 4], fixed: ['shotgun'], table: { pistol_ammo: 3, shells: 3, carbine_ammo: 1 } },
   garage: { items: [0, 2], table: { pistol_ammo: 3, shells: 1, bandage: 1, knife: 0.4 } },
@@ -159,7 +163,9 @@ function roundsIn(type: PickupType, rule: LootRule, difficulty: DifficultyId): n
 
 function stock(sim: SimState, building: BuildingInstance, items: readonly PickupType[], rng: Rng = sim.rng): void {
   const rule = LOOT_RULES[building.kind];
-  const spots = shuffle(rng, [...lootSpots(sim.map, building)]);
+  // A second pass over a building, such as the ammo top-up, keeps off the spots the first one filled.
+  const isTaken = (spot: Point): boolean => sim.pickups.some((item) => item.x === spot.x && item.y === spot.y);
+  const spots = shuffle(rng, lootSpots(sim.map, building).filter((spot) => !isTaken(spot)));
   items.slice(0, spots.length).forEach((type, index) => {
     spawnPickup(sim, type, spots[index].x, spots[index].y, roundsIn(type, rule, sim.difficulty));
   });

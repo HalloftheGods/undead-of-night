@@ -3,7 +3,7 @@
 
 import { difficultyDef } from '../../shared/difficulty.ts';
 import type { DifficultyId } from '../../shared/difficulty.ts';
-import { levelDef, levelSeed } from '../../shared/levels.ts';
+import { levelDef, levelSeed, townName } from '../../shared/levels.ts';
 import { nightEventFor } from '../../shared/night-events.ts';
 import { townRule } from '../../shared/town-rules.ts';
 import { browserStore, readJson, writeJson } from './storage.ts';
@@ -104,7 +104,7 @@ export function nightFacts(night: DailyNight): NightFacts {
   const event = nightEventFor(levelSeed(night.seed, night.level), night.level);
   return {
     title: levelDef(night.level).title,
-    level: `Level ${night.level}`,
+    level: townName(night.level),
     difficulty: difficultyDef(night.difficulty).label,
     rule: rule ? `${rule.name}: ${rule.blurb}` : null,
     event: event ? event.name : null,
@@ -191,12 +191,12 @@ const GAME_URL = 'https://undeadofnight.forthexp.com/';
 
 /**
  * A few lines a player can paste anywhere: the day, how far they got, and their streak.
- * Words only, no spoilers about the town beyond its level, so it reads the same to anyone who has not played yet.
+ * Words only, no spoilers about the town beyond its name, so it reads the same to anyone who has not played yet.
  */
 export function shareText(key: string, result: Pick<DailyResult, 'score' | 'kills' | 'level'>, streak: number, url: string = GAME_URL): string {
   const nights = streak === 1 ? '1 night' : `${streak} nights`;
   const streakLine = streak > 1 ? `\nStreak: ${nights} in a row` : '';
-  return `Undead of Night - Daily Night, ${dayLabel(key)}\nReached level ${result.level}: ${result.score} points, ${result.kills} kills${streakLine}\n${url}`;
+  return `Undead of Night - Daily Night, ${dayLabel(key)}\nReached ${townName(result.level)}: ${result.score} points, ${result.kills} kills${streakLine}\n${url}`;
 }
 
 /** The day's counted run, ready to share, or null before it is played. */

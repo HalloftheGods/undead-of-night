@@ -3,6 +3,7 @@
 
 import { SUPPLY_KINDS } from '../../shared/leftovers.ts';
 import type { SupplyKind } from '../../shared/leftovers.ts';
+import type { MapIcon } from './map-sprite.ts';
 
 const INK = '#0b0c10';
 /** Each mark is a 5 by 5 glyph on a dark square one pixel bigger all round. */
@@ -17,15 +18,13 @@ export const LEFTOVER_COLOR: Record<SupplyKind, string> = {
   gear: '#c58cff',
 };
 
+/** Each mark's line in the key, under its "Left behind" heading. */
 const LEFTOVER_LABEL: Record<SupplyKind, string> = {
-  med: 'Left behind: medical',
-  ammo: 'Left behind: ammo',
-  weapon: 'Left behind: a weapon',
-  gear: 'Left behind: parts and finds',
+  med: 'Medical',
+  ammo: 'Ammo',
+  weapon: 'A weapon',
+  gear: 'Parts and finds',
 };
-
-/** What the marks mean, for the key beside the map. */
-export const LEFTOVER_LEGEND: readonly (readonly [string, string])[] = SUPPLY_KINDS.map((kind) => [LEFTOVER_COLOR[kind], LEFTOVER_LABEL[kind]]);
 
 /** Pixels lit in each glyph, as [x, y] from its top left. */
 const GLYPH_PIXELS: Record<SupplyKind, readonly (readonly [number, number])[]> = {
@@ -52,10 +51,19 @@ export function drawLeftovers(
 ): void {
   const top = box.y1 - INSET - GLYPH;
   leftoverKinds(supplies).forEach((kind, index) => {
-    const left = box.x0 + INSET + index * STEP;
-    ctx.fillStyle = INK;
-    ctx.fillRect(left - 1, top - 1, GLYPH + 2, GLYPH + 2);
-    ctx.fillStyle = LEFTOVER_COLOR[kind];
-    for (const [dx, dy] of GLYPH_PIXELS[kind]) ctx.fillRect(left + dx, top + dy, 1, 1);
+    paintMark(ctx, box.x0 + INSET + index * STEP, top, kind);
   });
 }
+
+function paintMark(ctx: CanvasRenderingContext2D, left: number, top: number, kind: SupplyKind): void {
+  ctx.fillStyle = INK;
+  ctx.fillRect(left - 1, top - 1, GLYPH + 2, GLYPH + 2);
+  ctx.fillStyle = LEFTOVER_COLOR[kind];
+  for (const [dx, dy] of GLYPH_PIXELS[kind]) ctx.fillRect(left + dx, top + dy, 1, 1);
+}
+
+/** What the marks mean, for the key beside the map. */
+export const LEFTOVER_KEY: readonly { readonly icon: MapIcon; readonly label: string }[] = SUPPLY_KINDS.map((kind) => ({
+  label: LEFTOVER_LABEL[kind],
+  icon: { w: GLYPH + 2, h: GLYPH + 2, paint: (ctx) => paintMark(ctx, 1, 1, kind) },
+}));

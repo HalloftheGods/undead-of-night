@@ -27,7 +27,7 @@ export const STAMPS: readonly StampDef[] = [
   { id: 'flare_up', name: 'Flare Up', how: 'Light a flare.' },
   { id: 'special_delivery', name: 'Special Delivery', how: 'Grab something from a supply drop.' },
   { id: 'close_shave', name: 'Close Shave', how: 'Make a kill with almost no health left.' },
-  { id: 'halfway', name: 'Halfway Home', how: 'Reach level 5.' },
+  { id: 'halfway', name: 'Halfway Home', how: 'Reach Fiville, the fifth town.' },
   { id: 'howler_down', name: 'Howler Down', how: 'Kill the Howler.' },
   { id: 'mother_down', name: 'Mother Down', how: 'Kill Mother.' },
   { id: 'butcher_down', name: 'Butcher Down', how: 'Kill the Butcher.' },

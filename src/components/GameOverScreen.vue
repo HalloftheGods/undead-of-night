@@ -7,7 +7,7 @@
     <p v-if="result.daily" class="gameover-difficulty">{{ result.daily.label }}: {{ result.daily.counted ? 'this one counts' : 'practice' }}</p>
 
     <dl class="gameover-stats">
-      <div><dt>Level reached</dt><dd>{{ result.stats.level }}</dd></div>
+      <div><dt>Town reached</dt><dd>{{ townName(result.stats.level) }}</dd></div>
       <div><dt>Hordes survived</dt><dd>{{ result.stats.wave }}</dd></div>
       <div><dt>Time survived</dt><dd>{{ formatDuration(result.stats.durationSec) }}</dd></div>
       <div><dt>Kills</dt><dd>{{ result.kills }}</dd></div>
@@ -32,7 +32,7 @@
         {{ restarting ? 'Waiting...' : 'Play again' }}
       </PixelButton>
       <PixelButton v-if="resumeAt !== null" :disabled="restarting" @press="game.continueAgain()">
-        Continue from level {{ resumeAt }}
+        Continue from {{ townName(resumeAt) }}
       </PixelButton>
       <ShareButton v-if="result.daily" :text="result.daily.share" />
       <PixelButton @press="game.toMenu()">Main menu</PixelButton>
@@ -45,6 +45,7 @@ import { computed } from 'vue';
 import type { ArtBook } from '../art/types.ts';
 import { displayName } from '../../shared/callsign.ts';
 import { difficultyDef } from '../../shared/difficulty.ts';
+import { townName } from '../../shared/levels.ts';
 import { formatDuration } from '../game/hud-state.ts';
 import { continueLevel, loadLevelProgress } from '../game/level-progress.ts';
 import type { RunResult } from '../game/hud-state.ts';

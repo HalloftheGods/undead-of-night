@@ -5,7 +5,7 @@ import { GUN_SLOTS, UPGRADE_ORDER, UPGRADES } from '../../shared/gun-upgrade-dat
 import type { GunUpgrade, PartId } from '../../shared/gun-upgrade-data.ts';
 import { canFit, canMove, gunStats, noParts, rankOf } from '../../shared/gun-upgrades.ts';
 import type { GunFit, PlayerGear } from '../../shared/gun-upgrades.ts';
-import { levelDef } from '../../shared/levels.ts';
+import { levelDef, townName } from '../../shared/levels.ts';
 import { WEAPON_ORDER } from '../../shared/protocol.ts';
 import type { PlayerEntity, SnapshotPacket, WeaponId } from '../../shared/protocol.ts';
 
@@ -36,7 +36,7 @@ export function benchHud(snapshot: SnapshotPacket, local: PlayerEntity): BenchHu
   if (!bench) return walkUpBench(local);
   return {
     level: bench.level,
-    nextTitle: levelDef(bench.level + 1).title,
+    nextTitle: levelDef(bench.level + 1).town,
     secondsLeft: bench.secondsLeft,
     youReady: bench.ready.includes(local.id),
     waitingFor: bench.riders.length - bench.ready.length,
@@ -46,7 +46,7 @@ export function benchHud(snapshot: SnapshotPacket, local: PlayerEntity): BenchHu
 
 export function benchNote(bench: BenchHud): string {
   if (bench.walkUp) return 'Work on the gear in your hands.';
-  return `Town ${bench.level} is behind you. Next: ${bench.nextTitle}`;
+  return `${townName(bench.level)} is behind you. Next: ${bench.nextTitle}`;
 }
 
 /** The parts one rank of an upgrade takes, in the table's order. */

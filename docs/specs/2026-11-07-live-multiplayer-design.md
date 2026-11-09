@@ -18,7 +18,7 @@ Epic: chemx task #7272. This merges three design passes (architecture, matchmaki
   - Limits: 2048-byte packets, 120 packets/s with a burst of 240, a 10 s ping heartbeat and a 15 s restart vote.
   - When the last player leaves, the room stops ticking and calls `sim.restart()`.
   - Reconnect works by `tabToken()` in sessionStorage: `welcome.resumed` returns the same body.
-  - Co-op never shares a survivor: `freeCharacter`. There are 5 survivors and `MAX_PLAYERS = 4`.
+  - Co-op never shares a survivor: `freeCharacter`. There are 5 survivors and `MAX_PLAYERS = 5`, one seat each. Find a team only offers rooms where your survivor is free, and a code join looks the room up first (`seatRefusal`).
 - **Portability.** `shared/` imports nothing from Node and uses only `crypto.getRandomValues`. Solo play already runs the whole sim in the browser: `LocalSession` steps `GameSimulation` through `TickClock`. On the server, only `server.ts` and `room.ts` touch Node or `ws` (`node:crypto`, `ws`, `NodeJS.Timeout`), about 510 lines across 6 files. The same sim can therefore run in a host's tab, in Node or in a Durable Object.
 - **Client seam.** `GameTransport` (`src/network/transport.ts`). `SocketSession` touches its socket only through `new WebSocket(url)`, `send`, `onmessage` and `onclose(code)`.
 - **Play flow** (`src/game/play-flow.ts`): style, then mode (callsign; Multiplayer adds a server address and Copy invite link), then difficulty, then survivor. An invite skips Style.

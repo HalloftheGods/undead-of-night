@@ -14,9 +14,10 @@ import { input, SEED } from './helpers/sim-harness.ts';
  * Moving the house stairs into the back corner, with the bed and table shifted round them, took it to 5068.
  * A candy bowl by every home's door (Halloween night) shifted which containers the town's rolls land on: 5026.
  * More cars on the streets, with police cars and ambulances parked at the station and the clinic: 4989.
+ * Schools and hospitals, the two biggest buildings in town, with an ambulance outside the hospital: 5163.
  * Re-record it only for a change like those, after checking the overrun code is not what moved it.
  */
-const OFF_PATH_DRAWS = 4989;
+const OFF_PATH_DRAWS = 5163;
 
 const BUNKER_TICKS = 200;
 const TOWN_TICKS = 600;

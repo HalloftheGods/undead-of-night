@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CHARACTERS } from '../shared/characters.ts';
 import { DIFFICULTIES } from '../shared/difficulty.ts';
 import { statBarsOf } from '../src/game/character-select-view.ts';
-import { chosenOption, dialSlots, setupPicks, stepFocus } from '../src/game/setup-picks.ts';
+import { chosenOption, dialSlots, longestWord, setupPicks, stepFocus } from '../src/game/setup-picks.ts';
 
 describe('setup picks', () => {
   it('lays out mode, difficulty and survivor, numbered in that order', () => {
@@ -52,6 +52,12 @@ describe('setup picks', () => {
   it('shows Multiplayer seating more players than Solo', () => {
     const [solo, multi] = setupPicks({ mode: 'solo', difficulty: 'stay_close', survivor: 0 })[0].options;
     expect(multi.bars[0].filled).toBeGreaterThan(solo.bars[0].filled);
+  });
+
+  it('measures a title by its longest word', () => {
+    expect(longestWord('Night Light On')).toBe(5);
+    expect(longestWord('Multiplayer')).toBe(11);
+    expect(longestWord('')).toBe(1);
   });
 
   it('falls back to the first survivor for an index the table does not have', () => {

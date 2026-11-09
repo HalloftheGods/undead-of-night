@@ -68,7 +68,7 @@ function run(sim: GameSimulation, ticks: number): { sizes: Sizes; peak: number }
 }
 
 describe('snapshot size per guest', () => {
-  it('Arcade with four players deep in the hordes stays under the send buffer', () => {
+  it('Arcade with a full room deep in the hordes stays under the send buffer', () => {
     const sim = new GameSimulation({ seed: SEED });
     for (const id of IDS) sim.addPlayer(id, id);
     const { sizes, peak } = run(sim, ARENA_TICKS);

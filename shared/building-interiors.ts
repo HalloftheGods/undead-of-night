@@ -29,6 +29,26 @@ const LAYOUTS: Record<BuildingKind, readonly Slot[]> = {
     ['table', 16, 88],
     ['locker', 88, NORTH_WALL], ['shelf', 144, 96], ['locker', 16, 74, 0.5],
   ],
+  // Three beds to a ward and a cabinet by each ward's door; the supply room between them stays clear front to back.
+  // The lobby keeps the waiting room by the west wall and two trolleys of the emergency bay by the east.
+  hospital: [
+    ['bed', 8, NORTH_BED], ['bed', 34, NORTH_BED], ['bed', 60, NORTH_BED], ['locker', 16, 90],
+    ['locker', 116, NORTH_WALL], ['locker', 188, NORTH_WALL], ['shelf', 112, 70], ['shelf', 176, 70],
+    ['bed', 238, NORTH_BED], ['bed', 264, NORTH_BED], ['bed', 290, NORTH_BED, 0.7], ['locker', 296, 90],
+    ['shelf', 6, 112], ['locker', 298, 112, 0.6],
+    ['table', 96, 140], ['counter', 192, 146],
+    ['sofa', 16, 180], ['sofa', 60, 180, 0.6],
+    ['bed', 256, 180], ['bed', 288, 180, 0.6],
+  ],
+  // A row of desks and the teacher's desk in each classroom, books along the library's back wall, and the hall doubles as the lunch room.
+  school: [
+    ['table', 6, 28], ['table', 34, 28], ['table', 62, 28, 0.7], ['table', 66, 80],
+    ['shelf', 106, NORTH_WALL], ['shelf', 146, NORTH_WALL], ['table', 112, 56],
+    ['table', 232, 28, 0.7], ['table', 258, 28], ['table', 196, 80],
+    ['locker', 72, 104], ['locker', 88, 104], ['locker', 104, 104, 0.6],
+    ['locker', 176, 104], ['locker', 192, 104], ['locker', 208, 104, 0.6], ['fridge', 266, 104],
+    ['table', 10, 160], ['table', 36, 160], ['table', 176, 160], ['table', 202, 160], ['counter', 230, 160],
+  ],
   police: [
     ['locker', 16, NORTH_WALL], ['locker', 32, NORTH_WALL], ['locker', 48, NORTH_WALL], ['locker', 64, NORTH_WALL],
     ['locker', 160, NORTH_WALL], ['locker', 176, NORTH_WALL], ['locker', 192, NORTH_WALL],

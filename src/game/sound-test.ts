@@ -5,6 +5,7 @@ import { foundTracks } from './sound-unlock.ts';
 import { SFX_NAMES } from '../audio/sfx-registry.ts';
 import type { SfxName } from '../audio/sfx-registry.ts';
 import type { GameStyle } from '../../shared/game-style.ts';
+import { townName } from '../../shared/levels.ts';
 import { isLevelUnlocked } from './level-progress.ts';
 import type { LevelProgress } from './level-progress.ts';
 
@@ -89,7 +90,7 @@ function entryOf(base: Omit<EntryBase, 'label'>): EntryBase {
 export function musicEntries(progress: LevelProgress, style: GameStyle = 'arcade', found: ReadonlySet<string> = foundTracks()): readonly MusicEntry[] {
   return allTracks(style).map((info) => {
     const { file, group, level } = info;
-    const where = group === 'level' ? `LEVEL ${String(level).padStart(2, '0')}` : GROUP_WHERE[group];
+    const where = group === 'level' ? townName(level).toUpperCase() : GROUP_WHERE[group];
     const unlocked = trackUnlocked(info, progress, found);
     return { ...entryOf({ id: `music:${file}`, name: trackName(file), where, unlocked }), kind: 'music', file, find: info.find };
   });

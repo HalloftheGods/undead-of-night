@@ -7,8 +7,9 @@ import { viewFor } from '../shared/snapshot-view.ts';
 import { generateWorldMap } from '../shared/world-map.ts';
 import { buildingAt } from '../shared/world-query.ts';
 import { isSnapshotPacket } from '../src/network/packet-guards.ts';
-import { drawLeftovers, LEFTOVER_LEGEND, leftoverKinds } from '../src/game/map-leftovers.ts';
-import { TOWN_LEGEND, TownMapView } from '../src/game/town-map.ts';
+import { drawLeftovers, LEFTOVER_KEY, leftoverKinds } from '../src/game/map-leftovers.ts';
+import { mapKey } from '../src/game/map-key.ts';
+import { TownMapView } from '../src/game/town-map.ts';
 import { fakeCanvas, installFakeBrowser } from './client-fake-dom.ts';
 import { quietSim } from './helpers/sim-harness.ts';
 
@@ -117,7 +118,7 @@ describe('the map marks for supplies left behind', () => {
   beforeAll(() => installFakeBrowser());
 
   it('lists a mark per kind in the key, in order', () => {
-    expect(TOWN_LEGEND).toEqual(expect.arrayContaining([...LEFTOVER_LEGEND]));
+    expect(mapKey(false).groups.find((group) => group.title === 'Left behind')?.entries).toBe(LEFTOVER_KEY);
     expect(leftoverKinds({ gear: 1, med: 2, ammo: 0 })).toEqual(['med', 'gear']);
   });
 
