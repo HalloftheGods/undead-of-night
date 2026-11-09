@@ -5,6 +5,30 @@ import type { ChangeNote } from './change-notes.ts';
 
 export const EARLIER_NOTES: readonly ChangeNote[] = [
   {
+    id: 'smooth-hordes',
+    date: '2026-11-07',
+    kind: 'better',
+    title: 'Smoother big hordes',
+    deck: 'A full horde runs faster on slower computers and phones.',
+    points: [
+      'Score pop-ups and bloodstains cost far less to draw.',
+      'When frames start to drop, the game trims spare sparks and small flashes of light first.',
+      'If that is not enough, the lighting updates every other frame until the fight thins out.',
+    ],
+  },
+  {
+    id: 'motion-setting',
+    date: '2026-11-07',
+    kind: 'new',
+    title: 'Choose your motion',
+    deck: 'Options has a Motion setting, and a slider for screen shake.',
+    points: [
+      'System follows your device, as before. Full plays every animation, the van ride too, whatever your device says.',
+      'Reduced calms things down: no big flashes, still transitions, and only a nudge of shake.',
+      'Screen shake goes from 0 to 100%, so you can keep the motion and lose the wobble.',
+    ],
+  },
+  {
     id: 'readable-pickup-text',
     date: '2026-11-07',
     kind: 'better',

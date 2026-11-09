@@ -22,6 +22,17 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'level-select-stage',
+    date: '2026-11-09',
+    kind: 'better',
+    title: 'Level Select gets the big cards',
+    deck: 'Level Select now matches the Play screens: ten tall level cards out on the night scene.',
+    points: [
+      'Each card shows the town art with its level name in big letters. Locked levels stay grey.',
+      'Point at a card to see its story line and threat bars underneath, and the page fits on one screen.',
+    ],
+  },
+  {
     id: 'daily-stage',
     date: '2026-11-09',
     kind: 'better',
@@ -463,30 +474,6 @@ export const CHANGE_NOTES: readonly ChangeNote[] = [
       'Under Multiplayer, Find a team drops you into an open public game near your difficulty, or opens one.',
       'Public games show survivor names only, never callsigns.',
       'Host for friends gives you a room code and an invite link on screen while you wait.',
-    ],
-  },
-  {
-    id: 'smooth-hordes',
-    date: '2026-11-07',
-    kind: 'better',
-    title: 'Smoother big hordes',
-    deck: 'A full horde runs faster on slower computers and phones.',
-    points: [
-      'Score pop-ups and bloodstains cost far less to draw.',
-      'When frames start to drop, the game trims spare sparks and small flashes of light first.',
-      'If that is not enough, the lighting updates every other frame until the fight thins out.',
-    ],
-  },
-  {
-    id: 'motion-setting',
-    date: '2026-11-07',
-    kind: 'new',
-    title: 'Choose your motion',
-    deck: 'Options has a Motion setting, and a slider for screen shake.',
-    points: [
-      'System follows your device, as before. Full plays every animation, the van ride too, whatever your device says.',
-      'Reduced calms things down: no big flashes, still transitions, and only a nudge of shake.',
-      'Screen shake goes from 0 to 100%, so you can keep the motion and lose the wobble.',
     ],
   },
   ...EARLIER_NOTES,
