@@ -1,14 +1,17 @@
-// The four merchants: a figure behind each stall, a portrait for the How to Play book and a bust for
-// the shop screen. The figure and portrait are drawn on the survivor rig (merchant-people/), so the
+// The four merchants: a standing figure, the walking, shooting and falling clips they move about the
+// bunker in, a portrait for the How to Play book and a bust for the shop screen. The figure and portrait are drawn on the survivor rig (merchant-people/), so the
 // merchants share the playable cast's build, outline, palette and lighting.
 
 import { MERCHANT_IDS } from '../../../shared/home-protocol.ts';
 import type { MerchantId } from '../../../shared/home-protocol.ts';
-import type { MerchantArt, PixelSprite } from '../types.ts';
+import type { WeaponId } from '../../../shared/protocol.ts';
+import type { Clip, MerchantArt, PixelSprite, SurvivorWeaponArt } from '../types.ts';
 import type { BustDef } from '../survivors/bust.ts';
 import { bustOf } from '../survivors/bust.ts';
-import { standingFrame } from '../survivors/fallen.ts';
+import { weaponClips } from '../survivors/clips.ts';
+import { deadClip, downedClip, standingFrame } from '../survivors/fallen.ts';
 import { portraitOf } from '../survivors/portrait.ts';
+import { gunDrop } from '../survivors/rig.ts';
 import type { Person } from '../survivors/rig.ts';
 import { GUNSMITH_BUST } from './merchant-busts/gunsmith.ts';
 import { MEDIC_BUST } from './merchant-busts/medic.ts';
@@ -48,4 +51,26 @@ const BUSTS: Record<MerchantId, BustDef> = {
 
 export function buildMerchants(): Record<MerchantId, MerchantArt> {
   return eachMerchant((id) => ({ figure: figure(id), portrait: portrait(id), bust: bustOf(BUSTS[id]) }));
+}
+
+/** A merchant walking the bunker with their gun, drawn as a survivor is. */
+export interface MerchantBody {
+  readonly set: SurvivorWeaponArt;
+  readonly downed: Clip;
+  readonly dead: Clip;
+  /** Pixels their gun sits below the standard build's, for the muzzle flash. */
+  readonly gunDrop: number;
+}
+
+const bodies = new Map<string, MerchantBody>();
+
+/** Drawn the first time the bunker shows them, then kept: the title screen and the towns never pay for it. */
+export function merchantBody(id: MerchantId, weapon: WeaponId): MerchantBody {
+  const key = `${id}/${weapon}`;
+  const found = bodies.get(key);
+  if (found) return found;
+  const person = PEOPLE[id];
+  const body = { set: weaponClips(person, weapon), downed: downedClip(person), dead: deadClip(person, weapon), gunDrop: gunDrop(person) };
+  bodies.set(key, body);
+  return body;
 }

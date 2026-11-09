@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { fakeCanvas, installFakeBrowser } from './client-fake-dom.ts';
-import { generateBunkerMap } from '../shared/bunker-map.ts';
+import { MERCHANT_STARTS } from '../shared/bunker-map.ts';
 import { MERCHANT_IDS } from '../shared/home-protocol.ts';
 import type { MerchantId } from '../shared/home-protocol.ts';
 import { stationPrompt } from '../src/engine/station-labels.ts';
@@ -14,7 +14,7 @@ import { EMPTY_SCENE } from '../src/engine/scene.ts';
 import { buildArtBook } from '../src/art/index.ts';
 import { VisualStore } from '../src/engine/visuals.ts';
 
-const props = generateBunkerMap().props;
+const props = MERCHANT_IDS.map((id) => ({ id, ...MERCHANT_STARTS[id], status: 'alive' as const }));
 const fresh = (): HomeSave => emptySave(3);
 const without = (save: HomeSave, merchant: MerchantId): HomeSave => {
   const { [merchant]: _gone, ...rest } = save.quests.active;
@@ -42,7 +42,7 @@ describe('quest marks', () => {
     const marks = questMarks(finished(fresh(), 'gunsmith'), 10, props);
     expect(marks).toHaveLength(1);
     expect(marks[0]).toMatchObject({ merchant: 'gunsmith', ready: true });
-    const stall = props.find((prop) => prop.kind === 'gunsmith')!;
+    const stall = props.find((m) => m.id === 'gunsmith')!;
     expect([marks[0].x, marks[0].y]).toEqual([stall.x, stall.y]);
   });
 
@@ -52,8 +52,11 @@ describe('quest marks', () => {
     expect(questMarks(shut, 10, props)).toEqual([]);
   });
 
-  it('has a stall for every merchant in the bunker', () => {
-    for (const merchant of MERCHANT_IDS) expect(props.some((prop) => prop.kind === merchant)).toBe(true);
+  it('follows the merchant where they have walked, and leaves one the horde has downed unmarked', () => {
+    const walked = props.map((m) => (m.id === 'medic' ? { ...m, x: 300, y: 150 } : m));
+    expect(questMarks(without(fresh(), 'medic'), 10, walked)[0]).toMatchObject({ merchant: 'medic', x: 300, y: 150 });
+    const downed = props.map((m) => (m.id === 'medic' ? { ...m, status: 'downed' as const } : m));
+    expect(questMarks(without(fresh(), 'medic'), 10, downed)).toEqual([]);
   });
 });
 

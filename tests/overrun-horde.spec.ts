@@ -6,7 +6,7 @@ import type { DifficultyId } from '../shared/difficulty.ts';
 import type { Loadout } from '../shared/home-protocol.ts';
 import { levelDef } from '../shared/levels.ts';
 import { emptyLoadout, loadoutOf } from '../shared/loadout.ts';
-import { OVERRUN_ARM_FRACTION, OVERRUN_CLOCK_SEC, OVERRUN_HORDE_MAX } from '../shared/overrun.ts';
+import { OVERRUN_ARM_FRACTION, OVERRUN_CLOCK_SEC, OVERRUN_HORDE_MAX, OVERRUN_HORDE_SCALE } from '../shared/overrun.ts';
 import { hurtPlayer } from '../shared/player-health.ts';
 import { TILE_SIZE } from '../shared/protocol.ts';
 import type { GameEvent } from '../shared/protocol.ts';
@@ -90,8 +90,9 @@ describe('the breach', () => {
         const { sim, state } = overrunRoom({ difficulty });
         (state.homeRun as NonNullable<SimState['homeRun']>).roomHighest = highest;
         unkillable(state);
+        state.merchants = [];
         const level = levelDef(highest);
-        const size = Math.min(OVERRUN_HORDE_MAX, ZOMBIE_CAP, waveRoster(level.hordes, () => 0.5, level, difficulty).length);
+        const size = Math.min(OVERRUN_HORDE_MAX, ZOMBIE_CAP, waveRoster(level.hordes, () => 0.5, level, difficulty, OVERRUN_HORDE_SCALE).length);
         const events = breachNow(sim, state);
         expect(events).toContainEqual({ type: 'overrun_breach', hostiles: size });
         expect(overrunOf(state)).toMatchObject({ phase: 'breached', total: size });
@@ -111,6 +112,8 @@ describe('the breach', () => {
     me.x = state.map.spawn.x;
     me.y = state.map.spawn.y;
     unkillable(state);
+    // The merchants would hold the hall: this is about the way through it.
+    state.merchants = [];
     breachNow(sim, state);
     expect(overrunOf(state).total).toBeGreaterThan(0);
     const cameIn = new Map<string, boolean>();

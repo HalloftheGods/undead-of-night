@@ -30,7 +30,7 @@ describe('merchant view', () => {
   it('says why a line cannot be bought', () => {
     const refusalAt = (home: HomeUi) => merchantView(home, 'medic').lines[0].refusal;
     expect(refusalAt(homeAt('medic', 10))).toBe('Not enough silver');
-    expect(refusalAt(homeAt('gunsmith', 100))).toBe('Step up to the counter');
+    expect(refusalAt(homeAt('gunsmith', 100))).toBe('Walk up to them first');
     const home = homeAt('medic', 100);
     const save = home.save!;
     const full = { ...home, save: { ...save, locker: { ...save.locker, medkits: MEDKIT_MAX } } };

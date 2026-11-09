@@ -37,10 +37,12 @@ export const OVERRUN_WARNINGS: readonly number[] = [0.5, 0.25, 0.1];
 export const OVERRUN_ARM_FRACTION = 0.1;
 /** No clock until someone in the room has reached this level, so a first visit is in peace. */
 export const OVERRUN_FIRST_HIGHEST = 2;
-/** Most zombies one breach sends, for the bunker's floor space. */
-export const OVERRUN_HORDE_MAX = 40;
-/** Gap between zombies coming through the door. */
-export const OVERRUN_SPAWN_INTERVAL_SEC = 0.6;
+/** A break-in is this many times the size of the furthest town's hardest horde: the whole street comes for the bunker. */
+export const OVERRUN_HORDE_SCALE = 3.5;
+/** Most zombies one breach sends, for the bunker's floor space and the frame rate. */
+export const OVERRUN_HORDE_MAX = 140;
+/** Gap between zombies coming through the door: quick, so a horde this size is all in within half a minute or so. */
+export const OVERRUN_SPAWN_INTERVAL_SEC = 0.22;
 /** Most merchants one flight kills, so one stall always survives. */
 export const OVERRUN_MAX_KILLED = 3;
 /** Banked trips until a closed stall reopens or a thin stock is full again. */
@@ -53,7 +55,7 @@ export const OVERRUN_CHEST_STACKS = 6;
 /** Seconds of slack for the sum of many small ticks, as the van's wait allows. */
 const CLOCK_EPSILON = 1e-9;
 /** How far from `BLAST_DOOR_SPOT` a zombie comes through, so a crowd does not stack on one point. Inside the hall either way. */
-const DOOR_SCATTER = 12;
+const DOOR_SCATTER = 16;
 
 /** A fresh clock, as long as the run's difficulty says, for an arrival in the bunker, or none: the switch is off, or the room has not yet reached `OVERRUN_FIRST_HIGHEST`. The arrival clears the last overrun's receipts. */
 export function startOverrunClock(sim: SimState): void {
@@ -117,13 +119,13 @@ function tickClock(sim: SimState, overrun: OverrunState): void {
 }
 
 /**
- * The door bursts: the hardest horde of the furthest town the room has reached, cut to what the bunker has room for.
+ * The door bursts: the hardest horde of the furthest town the room has reached, `OVERRUN_HORDE_SCALE` times over, cut to what the bunker has room for.
  * `sim.wave` is set to match so `spawnZombie` scales health and speed as that town does, and `emptyWorld` puts it back when the van leaves.
  */
 function breach(sim: SimState, overrun: OverrunState): void {
   const level = levelDef(sim.homeRun?.roomHighest ?? FIRST_LEVEL);
   const room = Math.max(0, Math.min(ZOMBIE_CAP - sim.zombies.length, OVERRUN_HORDE_MAX));
-  const roster = waveRoster(level.hordes, sim.rng, level, sim.difficulty).slice(0, room);
+  const roster = waveRoster(level.hordes, sim.rng, level, sim.difficulty, OVERRUN_HORDE_SCALE).slice(0, room);
   sim.wave = level.hordes;
   overrun.phase = 'breached';
   overrun.queue = roster.reverse();

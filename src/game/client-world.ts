@@ -9,18 +9,25 @@ import { playerSpeed } from '../../shared/players.ts';
 import { effectiveStance } from '../../shared/stamina.ts';
 import { openableStation } from '../../shared/stations.ts';
 import { groundSpeedScale } from '../../shared/town-rules.ts';
-import type { EntityId, PlayerEntity, PropInstance, SnapshotPacket, Stance, WorldMap } from '../../shared/protocol.ts';
+import type { EntityId, PlayerEntity, SnapshotPacket, Stance, WorldMap } from '../../shared/protocol.ts';
 import { buildingAt, circleHitsSolid } from '../../shared/world-query.ts';
 import type { SceneView } from '../engine/scene.ts';
 import { LocalPredictor } from './prediction.ts';
-import { extrapolateBullets, interpolatePlayers, interpolateZombies, SnapshotBuffer } from './snapshot-buffer.ts';
+import { extrapolateBullets, interpolateMerchants, interpolatePlayers, interpolateZombies, SnapshotBuffer } from './snapshot-buffer.ts';
+import type { SnapshotSample } from './snapshot-buffer.ts';
 
 const MAX_BULLET_LEAD_SEC = 0.1;
 
 export type WorldEntities = Pick<
   SceneView,
-  'players' | 'zombies' | 'bullets' | 'pickups' | 'exit' | 'drop' | 'openedContainers' | 'leftovers' | 'tracks' | 'searchable' | 'station' | 'overrun' | 'localId' | 'viewerId' | 'focusX' | 'focusY' | 'phase' | 'hostiles'
+  'players' | 'zombies' | 'merchants' | 'bullets' | 'pickups' | 'exit' | 'drop' | 'openedContainers' | 'leftovers' | 'tracks' | 'searchable' | 'station' | 'overrun' | 'localId' | 'viewerId' | 'focusX' | 'focusY' | 'phase' | 'hostiles'
 >;
+
+/** The bunker's merchants where they are drawn; left off anywhere without them. */
+function merchantsField(sample: SnapshotSample): Pick<WorldEntities, 'merchants'> {
+  const merchants = interpolateMerchants(sample);
+  return merchants.length > 0 ? { merchants } : {};
+}
 
 /** What this client currently believes: buffered snapshots plus the predicted local player. */
 export class ClientWorld {
@@ -124,12 +131,8 @@ export class ClientWorld {
   /** The bunker station the local player could open from where they stand, by the sim's own rule: none once one is open, or anywhere but the bunker. */
   private stationBy(player: PlayerEntity | null, phase: OverrunPhase | undefined): StationId | undefined {
     const free = player !== null && player.status === 'alive' && !player.home?.station && isBunkerMap(this.map);
-    return free ? openableStation(this.map, player.x, player.y, player.home?.chest === true, phase)?.id : undefined;
-  }
-
-  /** The props standing in the bunker, which hold its stalls; none anywhere else. */
-  bunkerProps(): readonly PropInstance[] {
-    return isBunkerMap(this.map) ? this.map.props : [];
+    const merchants = this.latest?.merchants ?? [];
+    return free ? openableStation(this.map, player.x, player.y, player.home?.chest === true, phase, merchants)?.id : undefined;
   }
 
   /** Advances prediction by dt and returns this frame's entities, or null before any snapshot. */
@@ -151,6 +154,7 @@ export class ClientWorld {
     return {
       players,
       zombies: interpolateZombies(sample),
+      ...merchantsField(sample),
       bullets: extrapolateBullets(newest.snapshot.bullets, lead),
       pickups: newest.snapshot.pickups,
       exit: newest.snapshot.exit,

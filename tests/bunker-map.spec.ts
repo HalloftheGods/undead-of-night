@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { generateBunkerMap } from '../shared/bunker-map.ts';
+import { MERCHANT_ROAM, MERCHANT_STARTS, generateBunkerMap } from '../shared/bunker-map.ts';
 import { MERCHANT_IDS, STATION_IDS } from '../shared/home-protocol.ts';
 import { PLAYER_RADIUS } from '../shared/constants.ts';
 import { TILE_KINDS, TILE_SIZE } from '../shared/protocol.ts';
@@ -41,21 +41,27 @@ describe('the bunker map', () => {
     expect(reached.has(tileOf(map.exit?.x ?? 0, (map.exit?.y ?? 0) + 4))).toBe(true);
   });
 
-  it('has every station once but the chest, which stands only after a held overrun, and spawn on open ground', () => {
-    const standing = STATION_IDS.filter((id) => id !== 'chest');
+  it('has every station once but the chest and the merchants, who walk, and spawn on open ground', () => {
+    const standing = STATION_IDS.filter((id) => id !== 'chest' && !(MERCHANT_IDS as readonly string[]).includes(id));
     expect((map.stations ?? []).map((station) => station.id).sort()).toEqual([...standing].sort());
     expect(circleHitsSolid(map, map.spawn.x, map.spawn.y, PLAYER_RADIUS)).toBe(false);
   });
 
-  it('each merchant station sits on the customer\'s side of its counter', () => {
+  it('has no counters and no merchant props: the merchants start on open hall floor, reachable from spawn', () => {
+    const reached = reachableFrom(map, map.spawn.x, map.spawn.y);
+    expect(map.props.some((prop) => prop.kind === 'counter' || (MERCHANT_IDS as readonly string[]).includes(prop.kind))).toBe(false);
     for (const id of MERCHANT_IDS) {
-      const station = map.stations?.find((candidate) => candidate.id === id);
-      const merchant = map.props.find((prop) => prop.kind === id);
-      const counter = map.props.find((prop) => prop.kind === 'counter' && Math.abs(prop.x - (merchant?.x ?? -1)) < 1);
-      expect(station && merchant && counter).toBeTruthy();
-      if (!station || !merchant || !counter) continue;
-      expect(merchant.y).toBeLessThan(counter.y);
-      expect(station.y).toBeGreaterThan(counter.y);
+      const start = MERCHANT_STARTS[id];
+      expect(circleHitsSolid(map, start.x, start.y, PLAYER_RADIUS), id).toBe(false);
+      expect(reached.has(tileOf(start.x, start.y)), id).toBe(true);
+    }
+  });
+
+  it('lets the merchants roam only floor the van does not park on, all of it reachable', () => {
+    const reached = reachableFrom(map, map.spawn.x, map.spawn.y);
+    for (const box of MERCHANT_ROAM) {
+      expect(reached.has(tileOf((box.x0 + box.x1) / 2, (box.y0 + box.y1) / 2))).toBe(true);
+      expect(box.x1 < (map.exit?.x ?? 0)).toBe(true);
     }
   });
 

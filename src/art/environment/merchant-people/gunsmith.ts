@@ -39,6 +39,16 @@ export const GUNSMITH: Person = {
     '.KKwcccccbK.',
     '.KKccccabbK.',
     '.KK.cbbbb.K.',
+  ] }, { rows: [
+    '...hiiiih...',
+    '..hjjjiiih..',
+    '.hjjiiiiiih.',
+    '.hmmmmmmmmh.',
+    '.KKKKKKKKKK.',
+    '.KKKKKKKKKK.',
+    '.KKKKKKKKKK.',
+    '.KKKKKKKKKK.',
+    '..KKbbbbKK..',
   ] }),
   torsos: facingFront({ rows: [
     '..vvuuuu..',
@@ -49,5 +59,14 @@ export const GUNSMITH: Person = {
     'uuuljjjitt',
     'uuljjjjiit',
     '.ljjjjjii.',
+  ] }, { rows: [
+    '..vvuuuu..',
+    '.vvluuuult',
+    'vvuluuulut',
+    'vvuulluuut',
+    'uuuulluutt',
+    'uuuGjjGutt',
+    'uuuuuuuttt',
+    '.uuuuuuut.',
   ] }),
 };

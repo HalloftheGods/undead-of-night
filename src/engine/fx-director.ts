@@ -160,6 +160,8 @@ export class FxDirector {
     bloater_burst: (event) => this.onBurst(event.x, event.y, event.radius),
     player_hurt: (event, ctx) => this.onPlayerHurt(event.playerId, event.x, event.y, event.damage, ctx),
     player_downed: (event) => this.stampBlood(event.x, event.y),
+    merchant_hurt: (event, ctx) => this.onPlayerHurt(event.merchant, event.x, event.y, 0, ctx),
+    merchant_downed: (event) => this.stampBlood(event.x, event.y),
     player_revived: (event) => this.particles.addText('REVIVED', event.x, event.y - 14, hitPalette().safe),
     candy_eaten: (event) => this.particles.addText(event.saved ? 'SAVED BY CARAMEL' : CANDIES[event.candy].name.toUpperCase(), event.x, event.y - 14, hitPalette().safe),
     pickup: (event, ctx) => this.onPickup(event, ctx),

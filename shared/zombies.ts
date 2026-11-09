@@ -15,6 +15,9 @@ import { stepMovement } from './movement.ts';
 import { hurtPlayer } from './player-health.ts';
 import { TILE_SIZE } from './protocol.ts';
 import { randRange } from './rng.ts';
+import type { MerchantState } from './bunker-merchants.ts';
+import { standingMerchants } from './bunker-merchants.ts';
+import { hurtMerchant, merchantsFighting } from './merchant-fight.ts';
 import type { PlayerState, SimState, ZombieState } from './sim-state.ts';
 import { alivePlayers, emit, standingPlayers } from './sim-state.ts';
 import type { FlowField } from './flow-field.ts';
@@ -43,6 +46,12 @@ const WANDER_PAUSE_ODDS = 0.45;
 
 const crowd: ZombieState[] = [];
 
+/** Whoever a zombie can go for: a survivor, or a merchant fighting the horde in the bunker. */
+type Prey = PlayerState | MerchantState;
+
+/** The merchants on their feet while they are in the fight, and nobody otherwise. */
+const fightingMerchants = (sim: SimState): MerchantState[] => (merchantsFighting(sim) ? standingMerchants(sim) : []);
+
 export function rebuildZombieGrid(sim: SimState): void {
   sim.grid.clear();
   for (const z of sim.zombies) sim.grid.insert(z);
@@ -53,7 +62,8 @@ function refreshFields(sim: SimState): void {
   const chaseNeeded = chaseDue && sim.zombies.some((z) => z.mode === 'hunt');
   if (chaseNeeded) {
     const alive = alivePlayers(sim);
-    sim.flow.recompute(alive.length > 0 ? alive : standingPlayers(sim), FLOW_REACH_TILES);
+    const seeds: Prey[] = alive.length > 0 ? alive : standingPlayers(sim);
+    sim.flow.recompute([...seeds, ...fightingMerchants(sim)], FLOW_REACH_TILES);
   }
   // At once, not on a schedule: whoever heard this must not walk an older noise's field.
   const hasNoises = sim.noises.length > 0;
@@ -64,7 +74,7 @@ function refreshFields(sim: SimState): void {
 }
 
 /** Squared distance in the town's plan, so someone upstairs is as near as the house they are in. */
-function planDistance(sim: SimState, z: ZombieState, p: PlayerState): number {
+function planDistance(sim: SimState, z: ZombieState, p: Prey): number {
   const from = groundOf(sim.map, z.x, z.y);
   const to = groundOf(sim.map, p.x, p.y);
   return (to.x - from.x) ** 2 + (to.y - from.y) ** 2;
@@ -78,8 +88,8 @@ function takeStairs(z: ZombieState, field: FlowField): void {
   z.y = out.y;
 }
 
-function nearest(sim: SimState, z: ZombieState, players: readonly PlayerState[]): PlayerState | null {
-  let best: PlayerState | null = null;
+function nearest(sim: SimState, z: ZombieState, players: readonly Prey[]): Prey | null {
+  let best: Prey | null = null;
   let bestDistance = Infinity;
   for (const p of players) {
     const distance = planDistance(sim, z, p);
@@ -92,15 +102,15 @@ function nearest(sim: SimState, z: ZombieState, players: readonly PlayerState[])
   return best;
 }
 
-const bodyGap = (z: ZombieState, p: PlayerState): number =>
+const bodyGap = (z: ZombieState, p: Prey): number =>
   Math.hypot(p.x - z.x, p.y - z.y) - z.radius - PLAYER_RADIUS;
 
 /** A wall is thinner than a brute's reach, so a blow has to have a clear path as well as the range. */
-const canSee = (sim: SimState, z: ZombieState, p: PlayerState): boolean =>
+const canSee = (sim: SimState, z: ZombieState, p: Prey): boolean =>
   segmentHitsSolid(sim.map, z.x, z.y, p.x, p.y) === null;
 
 /** Rays down the middle and both edges of the body: anything thinner than that could slip between. */
-function hasClearLane(sim: SimState, z: ZombieState, p: PlayerState): boolean {
+function hasClearLane(sim: SimState, z: ZombieState, p: Prey): boolean {
   const distance = Math.hypot(p.x - z.x, p.y - z.y);
   const isOnTop = distance === 0;
   if (isOnTop) return true;
@@ -185,7 +195,7 @@ function stride(sim: SimState, z: ZombieState, dirX: number, dirY: number, pace 
   startSidestepIfBlocked(sim, z, progress / footing);
 }
 
-function walkToward(sim: SimState, z: ZombieState, prey: PlayerState): void {
+function walkToward(sim: SimState, z: ZombieState, prey: Prey): void {
   let dirX = prey.x - z.x;
   let dirY = prey.y - z.y;
   const distance = Math.hypot(dirX, dirY);
@@ -220,13 +230,19 @@ function startSwing(sim: SimState, z: ZombieState): void {
 }
 
 /** The range check happens here, at the end of the wind-up, so a sidestep can dodge the blow. */
-function landSwing(sim: SimState, z: ZombieState, prey: readonly PlayerState[]): void {
+function landSwing(sim: SimState, z: ZombieState, prey: readonly Prey[]): void {
   const target = nearest(sim, z, prey);
   const inReach = target !== null && bodyGap(z, target) <= z.reach + SWING_LEEWAY;
   const landsSwing = inReach && canSee(sim, z, target);
-  if (landsSwing) hurtPlayer(sim, target, z.damage);
+  if (landsSwing) hurtPrey(sim, target, z.damage);
   z.recoveryLeft = ZOMBIE_RECOVERY_SEC;
   z.cooldownLeft = z.cooldownSec;
+}
+
+function hurtPrey(sim: SimState, target: Prey, damage: number): void {
+  const isMerchant = 'kind' in target;
+  if (isMerchant) hurtMerchant(sim, target, damage);
+  else hurtPlayer(sim, target, damage);
 }
 
 function chooseWander(sim: SimState, z: ZombieState): void {
@@ -296,7 +312,7 @@ function track(sim: SimState, z: ZombieState): void {
   stride(sim, z, trail.x - z.x, trail.y - z.y, TRACKER_SPEED_SCALE);
 }
 
-function hunt(sim: SimState, z: ZombieState, prey: readonly PlayerState[], fallback: readonly PlayerState[]): void {
+function hunt(sim: SimState, z: ZombieState, prey: readonly Prey[], fallback: readonly Prey[]): void {
   const target = nearest(sim, z, prey.length > 0 ? prey : fallback);
   if (!target) return;
   const gap = bodyGap(z, target);
@@ -312,7 +328,15 @@ function hunt(sim: SimState, z: ZombieState, prey: readonly PlayerState[], fallb
   }
 }
 
-function updateZombie(sim: SimState, z: ZombieState, prey: readonly PlayerState[], fallback: readonly PlayerState[]): void {
+/** Who the zombies can go for this tick: survivors alone for sight and noise, and with any fighting merchant for the chase and the blow. */
+interface Quarry {
+  readonly seen: readonly PlayerState[];
+  readonly prey: readonly Prey[];
+  readonly fallback: readonly Prey[];
+}
+
+function updateZombie(sim: SimState, z: ZombieState, quarry: Quarry): void {
+  const { prey, fallback } = quarry;
   applyKnockback(sim, z);
   z.cooldownLeft = Math.max(0, z.cooldownLeft - TICK_DT);
   z.staggerImmuneLeft = Math.max(0, z.staggerImmuneLeft - TICK_DT);
@@ -338,7 +362,7 @@ function updateZombie(sim: SimState, z: ZombieState, prey: readonly PlayerState[
     return;
   }
 
-  updateAwareness(sim, z, prey);
+  updateAwareness(sim, z, quarry.seen);
   if (z.mode === 'hunt') hunt(sim, z, prey, fallback);
   else if (z.mode === 'alert' && z.trail) track(sim, z);
   else if (z.mode === 'alert') investigate(sim, z);
@@ -353,13 +377,15 @@ function isAsleep(sim: SimState, z: ZombieState, players: readonly PlayerState[]
 
 export function updateZombies(sim: SimState): void {
   refreshFields(sim);
-  const prey = alivePlayers(sim);
-  const fallback = standingPlayers(sim);
+  const seen = alivePlayers(sim);
+  const players = standingPlayers(sim);
+  const merchants = fightingMerchants(sim);
+  const quarry: Quarry = { seen, prey: [...seen, ...merchants], fallback: [...players, ...merchants] };
   for (const z of sim.zombies) {
     const isDead = z.health <= 0;
     if (isDead) continue;
-    if (!isAsleep(sim, z, fallback)) {
-      updateZombie(sim, z, prey, fallback);
+    if (!isAsleep(sim, z, players)) {
+      updateZombie(sim, z, quarry);
     } else {
       const isRoused = z.mode !== 'wander';
       if (isRoused) backToRoaming(sim, z);

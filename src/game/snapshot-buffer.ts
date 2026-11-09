@@ -1,3 +1,4 @@
+import type { MerchantEntity } from '../../shared/home-protocol.ts';
 import type { BulletEntity, EntityId, PlayerEntity, SnapshotPacket, ZombieEntity } from '../../shared/protocol.ts';
 
 const CAPACITY = 32;
@@ -138,6 +139,12 @@ function blendPlaced<T extends Placed>(from: T | undefined, to: T, alpha: number
 /** The target snapshot's entities at interpolated positions. Anything gone from it is simply gone. */
 export function interpolateZombies({ from, to, alpha }: SnapshotSample): ZombieEntity[] {
   return to.snapshot.zombies.map((zombie) => blendPlaced(from.zombies.get(zombie.id), zombie, alpha));
+}
+
+/** The bunker's merchants, walking as the zombies do between snapshots. */
+export function interpolateMerchants({ from, to, alpha }: SnapshotSample): MerchantEntity[] {
+  const before = new Map((from.snapshot.merchants ?? []).map((m) => [m.id, m]));
+  return (to.snapshot.merchants ?? []).map((m) => blendPlaced(before.get(m.id), m, alpha));
 }
 
 export function interpolatePlayers({ from, to, alpha }: SnapshotSample): PlayerEntity[] {

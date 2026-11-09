@@ -31,9 +31,10 @@ export function standAtVan(state: SimState, p: PlayerState): void {
   p.y = state.exit?.y ?? p.y;
 }
 
-/** Stands someone on a station's spot in the bunker. */
+/** Stands someone on a station's spot in the bunker, or right by a merchant, who stops for them. */
 export function standAtStation(state: SimState, p: PlayerState, id: StationId): void {
-  const station = state.map.stations?.find((spot) => spot.id === id);
+  const merchant = state.merchants.find((m) => m.id === id);
+  const station = merchant ?? state.map.stations?.find((spot) => spot.id === id);
   if (!station) throw new Error(`no station ${id}`);
   p.x = station.x;
   p.y = station.y;

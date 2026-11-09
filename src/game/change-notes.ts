@@ -22,6 +22,18 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'roaming-merchants',
+    date: '2026-11-09',
+    kind: 'new',
+    title: 'The merchants leave their desks',
+    deck: 'Mags, Sarge, Doc and Cinder now walk the bunker, and they fight when the blast door goes.',
+    points: [
+      'Walk up to a merchant anywhere in the bunker and they stop to trade.',
+      'The break-in horde is three to four times a town horde. The merchants shoot back beside you.',
+      'A merchant the horde puts down gets back up once it is over.',
+    ],
+  },
+  {
     id: 'fireballs',
     date: '2026-11-09',
     kind: 'new',

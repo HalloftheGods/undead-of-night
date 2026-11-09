@@ -13,7 +13,9 @@ import type {
   ZombieEntity,
   ZombieType,
 } from '../../shared/protocol.ts';
+import type { MerchantEntity } from '../../shared/home-protocol.ts';
 import { containerLook } from '../art/containers.ts';
+import { drawMerchant, MERCHANT_SHADOW_WIDTH } from './merchant-figures.ts';
 import { beaconsOn, drawBeacons, paintedContainer, propSprite } from './car-looks.ts';
 import type { Beacon } from './car-looks.ts';
 import type { ContainerArt } from '../art/containers.ts';
@@ -89,6 +91,7 @@ type DrawItem =
   | { readonly y: number; readonly kind: 'building'; readonly building: PlacedBuilding }
   | { readonly y: number; readonly kind: 'player'; readonly player: PlayerEntity }
   | { readonly y: number; readonly kind: 'zombie'; readonly zombie: ZombieEntity }
+  | { readonly y: number; readonly kind: 'merchant'; readonly merchant: MerchantEntity }
   | { readonly y: number; readonly kind: 'pickup'; readonly pickup: PickupEntity }
   | { readonly y: number; readonly kind: 'exit'; readonly exit: ExitEntity }
   | { readonly y: number; readonly kind: 'chest' };
@@ -119,6 +122,9 @@ function drawShadow(ctx: CanvasRenderingContext2D, x: number, y: number, width: 
   const sprite = shadowSprite(width);
   ctx.drawImage(sprite, x - Math.round(width / 2), y - Math.round(sprite.height / 2));
 }
+
+/** Where a point on the ground lands on screen, in whole pixels. */
+const onScreen = (at: Standing, left: number, top: number): Standing => ({ x: Math.round(at.x) - left, y: Math.round(at.y) - top });
 
 /** A stable offset per item, so the glints around a room do not blink in time. */
 function glintPhase(id: EntityId): number {
@@ -233,7 +239,7 @@ export class EntityRenderer {
     for (const placed of this.props) {
       const onScreen = placed.x1 > left && placed.x0 < right && placed.y1 > top && placed.y0 < bottom;
       const roomClosed = placed.room !== null && placed.room.reveal === 0;
-      const shown = onScreen && !roomClosed && !this.standsDown(placed, scene) && !hiddenProp(placed.prop.kind, scene.overrunOn === true);
+      const shown = onScreen && !roomClosed && !hiddenProp(placed.prop.kind, scene.overrunOn === true);
       if (shown) items.push({ y: placed.prop.y, kind: 'prop', prop: placed });
     }
     const local = scene.players.find((player) => player.id === scene.localId) ?? null;
@@ -249,6 +255,10 @@ export class EntityRenderer {
       const shown = !this.killed.has(zombie.id) && visible(zombie.x, zombie.y);
       if (shown) items.push({ y: zombie.y, kind: 'zombie', zombie });
     }
+    for (const merchant of scene.merchants ?? []) {
+      const shown = visible(merchant.x, merchant.y) && !this.standsDown(merchant, scene);
+      if (shown) items.push({ y: merchant.y, kind: 'merchant', merchant });
+    }
     for (const pickup of scene.pickups) {
       if (visible(pickup.x, pickup.y)) items.push({ y: pickup.y, kind: 'pickup', pickup });
     }
@@ -258,10 +268,9 @@ export class EntityRenderer {
     return items.sort((a, b) => a.y - b.y);
   }
 
-  /** A merchant whose stall the overrun emptied is not at it: this player's save says so, and a teammate's may differ. */
-  private standsDown(placed: PlacedProp, scene: SceneView): boolean {
-    const stalls = scene.closedStalls ?? [];
-    return stalls.some((merchant) => merchant === placed.prop.kind);
+  /** A merchant whose stall the overrun emptied is away: this player's save says so, and a teammate's may differ. */
+  private standsDown(merchant: MerchantEntity, scene: SceneView): boolean {
+    return (scene.closedStalls ?? []).includes(merchant.id);
   }
 
   /** The blast door's frame for how far the overrun has come; every other prop keeps its own sprite. */
@@ -297,6 +306,7 @@ export class EntityRenderer {
       else if (item.kind === 'building') this.buildings.drawShell(ctx, item.building, left, top);
       else if (item.kind === 'player') this.drawPlayer(ctx, item.player, left, top, time);
       else if (item.kind === 'zombie') this.drawZombie(ctx, item.zombie, left, top, time);
+      else if (item.kind === 'merchant') drawMerchant(ctx, this.visuals, this.survivorFrames, item.merchant, onScreen(item.merchant, left, top), time);
       else if (item.kind === 'exit') drawSprite(ctx, this.art.environment.escapeVan, Math.round(item.exit.x) - left, Math.round(item.exit.y) - top);
       else if (item.kind === 'chest') drawSprite(ctx, this.art.environment.props.chest, CHEST_SPOT.x - left, CHEST_SPOT.y - top);
       else this.drawPickup(ctx, item.pickup, left, top, time);
@@ -349,16 +359,16 @@ export class EntityRenderer {
   }
 
   private drawShadowOf(ctx: CanvasRenderingContext2D, item: DrawItem, left: number, top: number, time: number): void {
-    switch (item.kind) {
-      case 'player':
-        this.drawPlayerShadow(ctx, item.player, left, top, time);
-        break;
-      case 'zombie':
-        this.drawZombieShadow(ctx, item.zombie, left, top);
-        break;
-      default:
-        break;
-    }
+    if (item.kind === 'player') this.drawPlayerShadow(ctx, item.player, left, top, time);
+    else if (item.kind === 'zombie') this.drawZombieShadow(ctx, item.zombie, left, top);
+    else if (item.kind === 'merchant') this.drawMerchantShadow(ctx, item.merchant, left, top);
+  }
+
+  private drawMerchantShadow(ctx: CanvasRenderingContext2D, merchant: MerchantEntity, left: number, top: number): void {
+    const standing = merchant.status === 'alive';
+    if (!standing) return;
+    const spot = onScreen(merchant, left, top);
+    drawShadow(ctx, spot.x, spot.y, MERCHANT_SHADOW_WIDTH);
   }
 
   private drawPlayerShadow(ctx: CanvasRenderingContext2D, player: PlayerEntity, left: number, top: number, time: number): void {

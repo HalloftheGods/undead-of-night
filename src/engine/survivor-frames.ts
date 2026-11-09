@@ -18,6 +18,11 @@ interface Fall {
 
 const NO_FALL: Fall = { from: null, held: null };
 
+/** How someone on the rig stands this frame. */
+export type Figure = Pick<PlayerEntity, 'angle' | 'moving' | 'status' | 'reload'>;
+/** The clips someone on the rig falls through. */
+type FallingArt = Pick<SurvivorArt, 'downed' | 'dead'>;
+
 /** Seconds of the death clip already behind a survivor when their death is first shown. */
 function deathLead(from: PlayerStatus | null, dead: Clip): number {
   const leads: Record<PlayerStatus, number> = { alive: 0, downed: FIRST_LYING_FRAME / dead.fps, dead: clipDuration(dead) };
@@ -48,14 +53,18 @@ export class SurvivorFrames {
    */
   frame(player: PlayerEntity, visual: EntityVisual, time: number): PixelSprite {
     const art = this.art.survivors[player.skin % this.art.survivors.length];
-    const set = art.weapons[player.weapon];
+    return this.figureFrame(art, art.weapons[player.weapon], player, playerSpeed(player.skin), visual, time);
+  }
+
+  /** The same choice for anyone drawn on the survivor rig, such as a merchant: their clips, how they stand, and their walking pace. */
+  figureFrame(art: FallingArt, set: SurvivorWeaponArt, player: Figure, speed: number, visual: EntityVisual, time: number): PixelSprite {
     const standing = player.status === 'alive';
     if (!standing) return this.fallen(art, set, player.status, visual, time);
     const dir = dirFromAngle(player.angle);
     const fire = set.fire[dir];
     const reload = set.reload[dir];
     const walk = set.walk[dir];
-    const step = player.moving ? strideIndex(walk, visual.walked, playerSpeed(player.skin) / walk.fps) : null;
+    const step = player.moving ? strideIndex(walk, visual.walked, speed / walk.fps) : null;
     const frameOf = (kind: 'fire' | 'reload', clip: Clip, frame: number): PixelSprite =>
       step === null ? clip.frames[frame] : movingFrame(set, kind, dir, frame, step);
     const sinceShove = time - visual.meleeAt;
@@ -77,7 +86,7 @@ export class SurvivorFrames {
    * frames. Bleeding out from the crawl starts the death where the body already lies. A
    * survivor first seen already fallen shows the crawl, or the corpse, with nothing replayed.
    */
-  private fallen(art: SurvivorArt, set: SurvivorWeaponArt, status: PlayerStatus, visual: EntityVisual, time: number): PixelSprite {
+  private fallen(art: FallingArt, set: SurvivorWeaponArt, status: PlayerStatus, visual: EntityVisual, time: number): PixelSprite {
     const since = time - visual.statusAt;
     const fall = this.falls.get(visual) ?? NO_FALL;
     const dead = deathWith(set, art.dead);
