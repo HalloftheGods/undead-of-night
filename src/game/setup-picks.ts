@@ -115,3 +115,8 @@ export function stepFocus(at: number, count: number, key: string): number {
   if (isNotAMove) return at;
   return (to + count) % count;
 }
+
+/** The longest word in a name, in letters, so a title can shrink until that word fits on one line. */
+export function longestWord(name: string): number {
+  return Math.max(1, ...name.split(/\s+/).map((word) => word.length));
+}

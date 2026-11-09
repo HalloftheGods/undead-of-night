@@ -21,43 +21,46 @@
           </span>
           <span class="pick-art">
             <img v-if="tileUrl(pick)" :src="tileUrl(pick)" alt="" draggable="false" />
-            <span :key="shownOption(pick).id" class="pick-title" :class="`is-${pick.key}`">{{ shownOption(pick).name }}</span>
+            <span :key="shownOption(pick).id" class="pick-title" :class="`is-${pick.key}`" :style="{ '--chars': longestWord(shownOption(pick).name) }">{{ shownOption(pick).name }}</span>
           </span>
         </button>
       </li>
     </ol>
 
-    <ul
-      v-if="openPick"
-      ref="list"
-      :id="listId(openPick.key)"
-      class="picks-list px-frame"
-      :class="`is-${openPick.key}`"
-      role="listbox"
-      :aria-label="openPick.label"
-      @keydown="onListKey"
-    >
-      <li v-for="(option, index) in openPick.options" :key="option.id" role="presentation">
-        <button
-          :ref="(el) => setOption(index, el)"
-          class="pick-option"
-          :class="{ 'is-chosen': index === openPick.chosen }"
-          type="button"
-          role="option"
-          :aria-selected="index === openPick.chosen"
-          @mouseenter="preview(option.id, true)"
-          @focus="preview(option.id, false)"
-          @mouseleave="unpreview"
-          @click="choose(openPick.key, option.id)"
-        >
-          <span class="pick-option-art" :class="{ 'is-figure': openPick.key === 'who' }">
-            <img v-if="optionUrl(openPick.key, option.id)" :src="optionUrl(openPick.key, option.id)" alt="" draggable="false" />
-          </span>
-          <span class="pick-option-name">{{ option.name }}</span>
-          <PickBars :bars="option.bars" />
-        </button>
-      </li>
-    </ul>
+    <div v-if="openPick" class="picks-overlay" @click.self="close()">
+      <p class="picks-overlay-label" aria-hidden="true">Choose {{ openPick.label }}</p>
+      <ul
+        :id="listId(openPick.key)"
+        class="picks-list"
+        :class="`is-${openPick.key}`"
+        :style="{ '--count': openPick.options.length }"
+        role="listbox"
+        :aria-label="openPick.label"
+        @keydown="onListKey"
+        @click.self="close()"
+      >
+        <li v-for="(option, index) in openPick.options" :key="option.id" role="presentation">
+          <button
+            :ref="(el) => setOption(index, el)"
+            class="pick-option"
+            :class="{ 'is-chosen': index === openPick.chosen }"
+            type="button"
+            role="option"
+            :aria-selected="index === openPick.chosen"
+            @mouseenter="preview(option.id, true)"
+            @focus="preview(option.id, false)"
+            @mouseleave="unpreview"
+            @click="choose(openPick.key, option.id)"
+          >
+            <span class="pick-option-art" :class="{ 'is-figure': openPick.key === 'who' }">
+              <img v-if="optionUrl(openPick.key, option.id)" :src="optionUrl(openPick.key, option.id)" alt="" draggable="false" />
+              <span class="pick-option-name" :style="{ '--chars': longestWord(option.name) }">{{ option.name }}</span>
+            </span>
+            <PickBars :bars="option.bars" />
+          </button>
+        </li>
+      </ul>
+    </div>
   </div>
 </template>
 
@@ -75,11 +78,12 @@ import type { DifficultyId } from '../../shared/difficulty.ts';
 import type { ArtBook, PixelSprite } from '../art/types.ts';
 import { spriteDataUrl } from '../engine/sprite-cache.ts';
 import type { PlayMode } from '../game/play-flow.ts';
-import { chosenOption, stepFocus } from '../game/setup-picks.ts';
+import { chosenOption, longestWord, stepFocus } from '../game/setup-picks.ts';
 import type { PickKey, PickOption, SetupPick } from '../game/setup-picks.ts';
 import { motion } from '../game/motion.ts';
 import { createSpinner, FRONT_FACING } from '../game/survivor-spin.ts';
 import PickBars from './PickBars.vue';
+import './setup-picks-overlay.css';
 import { useGame } from './use-game.ts';
 
 const { picks, art } = defineProps<{ picks: readonly SetupPick[]; art: ArtBook | null }>();
@@ -256,7 +260,7 @@ defineExpose({ focus: () => tiles.get('mode')?.focus(), isOpen: () => open.value
   flex: 1 1 0;
   min-width: 0;
   /* As big as the screen allows, leaving room under the row for the callsign and the buttons. */
-  max-width: min(calc(var(--u) * 150), calc((100vh - var(--u) * 150) * 0.66));
+  max-width: min(calc(var(--u) * 150), calc((100vh - var(--u) * 150 ) * 0.66));
 }
 
 /* The rule that joins one step to the next, drawn in the gap so every portrait is the same width. */
@@ -348,7 +352,8 @@ defineExpose({ focus: () => tiles.get('mode')?.focus(), isOpen: () => open.value
   padding: calc(var(--u) * 16) calc(var(--u) * 3) calc(var(--u) * 4);
   background: linear-gradient(to top, rgba(7, 8, 12, 0.92) 0%, rgba(7, 8, 12, 0.6) 55%, transparent 100%);
   color: var(--bone);
-  font-size: clamp(calc(var(--u) * 7), 12cqi, calc(var(--u) * 20));
+  /* Shrinks so the longest word (--chars letters, each about 1.3em with its spacing) still fits the card's width. */
+  font-size: min(clamp(calc(var(--u) * 7), 12cqi, calc(var(--u) * 20)), calc(90cqi / (var(--chars) * 1.3)));
   font-weight: 700;
   line-height: 1;
   letter-spacing: 0.12em;
@@ -367,7 +372,7 @@ defineExpose({ focus: () => tiles.get('mode')?.focus(), isOpen: () => open.value
 /* The survivor is the star: their name runs biggest and glows amber. */
 .pick-title.is-who {
   color: var(--amber);
-  font-size: clamp(calc(var(--u) * 9), 17cqi, calc(var(--u) * 26));
+  font-size: min(clamp(calc(var(--u) * 9), 17cqi, calc(var(--u) * 26)), calc(90cqi / (var(--chars) * 1.4)));
   letter-spacing: 0.16em;
   text-indent: 0.16em;
 }
@@ -383,74 +388,13 @@ defineExpose({ focus: () => tiles.get('mode')?.focus(), isOpen: () => open.value
   animation: none;
 }
 
-
 .pick-caret {
   flex: none;
   margin-left: auto;
   color: var(--bone-dim);
 }
 
-/* The open list opens in the page under the row, pushing the fields and buttons below it down rather than covering them. */
-.picks-list {
-  --edge: var(--amber);
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(calc(var(--u) * 40), calc(var(--u) * 56)));
-  justify-content: center;
-  gap: calc(var(--u) * 3);
-  width: fit-content;
-  max-width: 100%;
-  margin: calc(var(--u) * 4) auto 0;
-  padding: calc(var(--u) * 3);
-  background: rgba(11, 12, 16, 0.97);
-  list-style: none;
-}
-
-.pick-option {
-  --edge: var(--ink-line);
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: calc(var(--u) * 2);
-  width: 100%;
-  border: 0;
-  padding: calc(var(--u) * 2);
-  background: var(--ink-raised);
-  box-shadow: 0 0 0 var(--u) var(--edge);
-  color: var(--bone);
-  font: inherit;
-  text-align: center;
-  cursor: pointer;
-  outline: none;
-}
-
-.pick-option:hover,
-.pick-option:focus-visible {
-  --edge: var(--amber);
-}
-
-.pick-option.is-chosen {
-  --edge: var(--amber);
-  background: rgba(232, 163, 61, 0.18);
-}
-
-.pick-option-art {
-  display: block;
-  aspect-ratio: 56 / 72;
-  overflow: hidden;
-  background: var(--ink);
-}
-
-.pick-option-name {
-  overflow: hidden;
-  color: var(--amber);
-  font-size: calc(var(--u) * 5);
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-/* A phone keeps the three portraits in a row and lets the list run one per line. */
+/* A phone keeps the three portraits in a row. */
 @media (max-width: 600px) {
   .picks-row {
     --join: calc(var(--u) * 3);
@@ -458,10 +402,6 @@ defineExpose({ focus: () => tiles.get('mode')?.focus(), isOpen: () => open.value
 
   .pick {
     padding: calc(var(--u) * 2);
-  }
-
-  .picks-list {
-    grid-template-columns: repeat(auto-fit, minmax(calc(var(--u) * 34), 1fr));
   }
 }
 </style>

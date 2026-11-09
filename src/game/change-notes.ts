@@ -22,6 +22,18 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'setup-overlay',
+    date: '2026-11-09',
+    kind: 'better',
+    title: 'Pick from the big cards',
+    deck: 'Clicking a Play card now lays its choices across the screen as big portrait cards.',
+    points: [
+      'Each choice is its own tall card with its name along the bottom and its stat bars under it.',
+      'Survivors stand as they look in play and turn when you point at them.',
+      'The Play page fits on one screen, with nothing to scroll.',
+    ],
+  },
+  {
     id: 'five-survivors',
     date: '2026-11-09',
     kind: 'better',
