@@ -168,6 +168,8 @@ export interface UiState {
   readonly error: string | null;
   readonly paused: boolean;
   readonly mapOpen: boolean;
+  /** The candy bag is open over the run (game/candy-bag-panel.ts). */
+  readonly bagOpen: boolean;
   /** The backpack ring is open on the survivor: a middle-click on a desktop, the button on a phone. */
   readonly backpackOpen: boolean;
   readonly hud: HudState | null;
@@ -256,13 +258,13 @@ export function buildHud(snapshot: SnapshotPacket, local: PlayerEntity, spectati
  * On their feet in a town with nothing up over the game: the moment a survivor can reach into
  * their own backpack. Not paused, not behind the map, not at the workbench, not down, not off a run.
  */
-export function standingInTown(ui: Pick<UiState, 'screen' | 'paused' | 'mapOpen' | 'hud' | 'home'>): boolean {
+export function standingInTown(ui: Pick<UiState, 'screen' | 'paused' | 'mapOpen' | 'hud' | 'home'> & Partial<Pick<UiState, 'bagOpen'>>): boolean {
   const onRun = ui.screen === 'game' && ui.hud !== null;
   if (!onRun) return false;
   // A station, the death summary or an opened chest has the screen and the keys (game/home-link.ts).
   const { home } = ui;
   const homeScreenUp = home !== null && (home.station !== null || home.death !== null || home.chest !== null);
-  const nothingUp = !ui.paused && !ui.mapOpen && !homeScreenUp && ui.hud.bench === null;
+  const nothingUp = !ui.paused && !ui.mapOpen && ui.bagOpen !== true && !homeScreenUp && ui.hud.bench === null;
   return nothingUp && ui.hud.status === 'alive' && ui.hud.phase !== 'gameover';
 }
 

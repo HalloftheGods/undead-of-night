@@ -32,6 +32,7 @@ const SIGNAL_WEAK_MS = 1500;
 export const NO_RUN_UI = {
   paused: false,
   mapOpen: false,
+  bagOpen: false,
   backpackOpen: false,
   hud: null,
   banner: null,
@@ -100,6 +101,8 @@ export class RunHud {
   private lastHudMs = 0;
   /** When the open map first painted, so its cursor's long label knows how old it is. */
   private mapOpenedMs: number | null = null;
+  /** The last tick shown while a solo run is held. */
+  private heldTick = -1;
   private lastMapPaintMs = 0;
   /** The town the run is in, which is where a Radio's track belongs. */
   private level = 1;
@@ -148,6 +151,19 @@ export class RunHud {
     const interval = motion.reduced.value ? MAP_STILL_REPAINT_MS : MAP_BLINK_REPAINT_MS;
     const due = this.townCanvas !== null && ms - this.lastMapPaintMs >= interval;
     if (due) this.paintTown(ms);
+  }
+
+  /**
+   * A solo run stands still behind the candy bag, but eating one steps it a tick
+   * (game/candy-bag-panel.ts). Asked every frame, this shows that tick's HUD once.
+   */
+  repaintHeld(world: ClientWorld): void {
+    const snapshot = world.latest;
+    const local = world.localPlayer;
+    const isNewTick = snapshot !== null && local !== null && snapshot.tick !== this.heldTick;
+    if (!isNewTick) return;
+    this.heldTick = snapshot.tick;
+    this.publish({ hud: buildHud(snapshot, local, null) });
   }
 
   private paintTown(ms: number = this.lastHudMs): void {
@@ -263,6 +279,7 @@ export class RunHud {
     const hasRun = snapshot !== null && local !== null;
     if (!hasRun) return;
     tapLocalPlayer(local.id);
+    this.heldTick = snapshot.tick;
     const viewer = scene.viewerId === local.id ? null : scene.players.find((player) => player.id === scene.viewerId);
     this.publish({
       hud: buildHud(snapshot, local, viewer ? displayName(viewer.name, viewer.skin) : null),

@@ -36,6 +36,7 @@
         <OverrunClock :overrun="ui.home.overrun" />
       </template>
       <TownMap v-if="ui.mapOpen" :mode="ui.mode" :in-bunker="ui.home?.inBunker === true" :teammates="ui.hud?.teammates ?? []" />
+      <CandyBag v-if="ui.bagOpen && ui.hud && ui.art" :hud="ui.hud" :art="ui.art" :mode="ui.mode" />
       <PauseMenu v-if="ui.paused" :ui :mode="ui.mode" />
       <VanTransition :in-bunker="ui.home?.inBunker ?? null" :art="ui.art" />
     </template>
@@ -82,6 +83,7 @@ import StudioSplash from './components/StudioSplash.vue';
 import TitleScreen from './components/TitleScreen.vue';
 import TouchControls from './components/TouchControls.vue';
 import TownMap from './components/TownMap.vue';
+import CandyBag from './components/CandyBag.vue';
 import { GAME_KEY } from './components/use-game.ts';
 import VanTransition from './components/VanTransition.vue';
 import WaveBanner from './components/WaveBanner.vue';
@@ -100,7 +102,7 @@ const aiming = computed(() =>
   aimsCursor({
     screen: ui.value.screen,
     paused: ui.value.paused,
-    mapOpen: ui.value.mapOpen,
+    mapOpen: ui.value.mapOpen || ui.value.bagOpen,
     bench: !!ui.value.hud?.bench,
     home: ui.value.home,
     backpackOpen: ui.value.backpackOpen,

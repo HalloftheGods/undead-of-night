@@ -65,7 +65,7 @@ describe('the floating stick', () => {
 
 describe('fingers on the game', () => {
   let browser: FakeBrowser;
-  let calls: { onGesture: number; onMap: number; onPause: number; onTouchSeen: number; onBackpack: number };
+  let calls: { onGesture: number; onMap: number; onPause: number; onTouchSeen: number; onBackpack: number; onBag: number };
   let input: InputManager;
 
   const start = (...touches: FakeTouch[]) => {
@@ -82,7 +82,7 @@ describe('fingers on the game', () => {
 
   beforeEach(() => {
     browser = installFakeBrowser();
-    calls = { onGesture: 0, onMap: 0, onPause: 0, onTouchSeen: 0, onBackpack: 0 };
+    calls = { onGesture: 0, onMap: 0, onPause: 0, onTouchSeen: 0, onBackpack: 0, onBag: 0 };
     const callbacks: InputCallbacks = {
       onGesture: () => { calls.onGesture += 1; },
       onPause: () => { calls.onPause += 1; },
@@ -90,6 +90,7 @@ describe('fingers on the game', () => {
       onConfirm() {},
       onMap: () => { calls.onMap += 1; return true; },
       onBackpack: () => { calls.onBackpack += 1; return true; },
+      onBag: () => { calls.onBag += 1; return true; },
       mapUsable: () => true,
       onTouchSeen: () => { calls.onTouchSeen += 1; },
     };
@@ -294,7 +295,7 @@ describe('fingers on the game', () => {
     });
 
     /** Every slot of a full backpack reaches the sim through the key the ring sends. */
-    it('heal, switch gun, throw, light, flare and eat, every one off the backpack ring', () => {
+    it('heal, switch gun, throw, light and flare off the backpack ring, and the candy opens the bag', () => {
       const slots = wheelSlots(fullBackpack());
       expect(slots.map((slot) => slot.code)).toEqual(['KeyH', 'KeyQ', 'KeyG', 'KeyT', 'KeyV', 'KeyX', 'KeyN']);
       for (const slot of slots) {
@@ -306,9 +307,10 @@ describe('fingers on the game', () => {
         throw: true,
         spinner: true,
         flare: true,
-        eat: true,
         weapon: 'shotgun',
       });
+      // The candy is not an input either: it opens the candy bag, through the same callback X uses.
+      expect(calls.onBag).toBe(1);
       // The map is not an input: it opens a screen, through the same callback Tab and N use.
       expect(calls.onMap).toBe(1);
     });

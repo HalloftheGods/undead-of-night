@@ -169,6 +169,6 @@ export class SnapshotHandler {
     state.gameOverAtMs = now;
     input.setEnabled(false);
     audio.setScene(won ? 'victory' : 'gameover');
-    this.host.publish({ paused: false, mapOpen: false, banner: null, place: null, ...loadBests(), leaderboard: loadLeaderboard() });
+    this.host.publish({ paused: false, mapOpen: false, bagOpen: false, banner: null, place: null, ...loadBests(), leaderboard: loadLeaderboard() });
   }
 }
