@@ -8,6 +8,7 @@ import { DIFFICULTIES } from '../../shared/difficulty.ts';
 import type { DifficultyDef, DifficultyId } from '../../shared/difficulty.ts';
 import { statBarsOf } from './character-select-view.ts';
 import { MODE_CARDS } from './mode-select-view.ts';
+import type { PixelSprite } from '../art/types.ts';
 import type { PlayMode } from './play-flow.ts';
 
 export type PickKey = 'mode' | 'difficulty' | 'who';
@@ -94,8 +95,22 @@ export function setupPicks(choices: SetupChoices): readonly SetupPick[] {
   return [
     { key: 'mode', number: 1, label: 'Mode', options: MODE_OPTIONS, chosen: indexOf(MODE_OPTIONS, choices.mode) },
     { key: 'difficulty', number: 2, label: 'Difficulty', options: DIFFICULTY_OPTIONS, chosen: indexOf(DIFFICULTY_OPTIONS, choices.difficulty) },
-    { key: 'who', number: 3, label: 'Survivor', options: SURVIVOR_OPTIONS, chosen: indexOf(SURVIVOR_OPTIONS, String(choices.survivor)) },
+    survivorPick(choices.survivor),
   ];
+}
+
+/** The survivor pick on its own, as the Daily Night page offers it beside the cards the day has already chosen. */
+export function survivorPick(survivor: number, number: number = 3): SetupPick {
+  return { key: 'who', number, label: 'Survivor', options: SURVIVOR_OPTIONS, chosen: indexOf(SURVIVOR_OPTIONS, String(survivor)) };
+}
+
+/** A card in the picks row that shows a choice already made for you, such as Daily Night's town: no list behind it. */
+export interface FixedCard {
+  readonly key: string;
+  readonly number: number;
+  readonly label: string;
+  readonly name: string;
+  readonly sprite: PixelSprite | null;
 }
 
 /** The option a pick is set to. */

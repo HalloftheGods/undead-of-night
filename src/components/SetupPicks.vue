@@ -1,6 +1,18 @@
 <template>
   <div ref="root" class="picks">
     <ol class="picks-row" aria-label="Setup">
+      <li v-for="card in fixed" :key="card.key" class="picks-stop">
+        <div class="pick px-frame is-fixed" role="group" :aria-label="`${card.label}: ${card.name}`">
+          <span class="pick-head">
+            <span class="pick-number" aria-hidden="true">{{ card.number }}</span>
+            <span class="pick-label">{{ card.label }}</span>
+          </span>
+          <span class="pick-art">
+            <img v-if="card.sprite" :src="spriteDataUrl(card.sprite)" alt="" draggable="false" />
+            <span class="pick-title" :style="{ '--chars': longestWord(card.name) }">{{ card.name }}</span>
+          </span>
+        </div>
+      </li>
       <li v-for="pick in picks" :key="pick.key" class="picks-stop">
         <button
           :ref="(el) => setTile(pick.key, el)"
@@ -79,14 +91,14 @@ import type { ArtBook, PixelSprite } from '../art/types.ts';
 import { spriteDataUrl } from '../engine/sprite-cache.ts';
 import type { PlayMode } from '../game/play-flow.ts';
 import { chosenOption, longestWord, stepFocus } from '../game/setup-picks.ts';
-import type { PickKey, PickOption, SetupPick } from '../game/setup-picks.ts';
+import type { FixedCard, PickKey, PickOption, SetupPick } from '../game/setup-picks.ts';
 import { motion } from '../game/motion.ts';
 import { createSpinner, FRONT_FACING } from '../game/survivor-spin.ts';
 import PickBars from './PickBars.vue';
 import './setup-picks-overlay.css';
 import { useGame } from './use-game.ts';
 
-const { picks, art } = defineProps<{ picks: readonly SetupPick[]; art: ArtBook | null }>();
+const { picks, art, fixed = [] } = defineProps<{ picks: readonly SetupPick[]; art: ArtBook | null; fixed?: readonly FixedCard[] }>();
 const emit = defineEmits<{ choose: [key: PickKey, id: string] }>();
 const game = useGame();
 const root = useTemplateRef<HTMLElement>('root');
@@ -234,7 +246,7 @@ onBeforeUnmount(() => {
   spinner.stop();
 });
 
-defineExpose({ focus: () => tiles.get('mode')?.focus(), isOpen: () => open.value !== null });
+defineExpose({ focus: () => tiles.get(picks[0]?.key ?? 'mode')?.focus(), isOpen: () => open.value !== null });
 </script>
 
 <style scoped>
@@ -259,8 +271,8 @@ defineExpose({ focus: () => tiles.get('mode')?.focus(), isOpen: () => open.value
   align-items: stretch;
   flex: 1 1 0;
   min-width: 0;
-  /* As big as the screen allows, leaving room under the row for the callsign and the buttons. */
-  max-width: min(calc(var(--u) * 150), calc((100vh - var(--u) * 150 ) * 0.66));
+  /* As big as the screen allows, leaving --under for what the page puts below the row (callsign, buttons). */
+  max-width: min(calc(var(--u) * 150), calc((100vh - var(--under, calc(var(--u) * 150))) * 0.66));
 }
 
 /* The rule that joins one step to the next, drawn in the gap so every portrait is the same width. */
@@ -296,6 +308,12 @@ defineExpose({ focus: () => tiles.get('mode')?.focus(), isOpen: () => open.value
 .pick:focus-visible,
 .pick.is-open {
   --edge: var(--amber);
+}
+
+.pick.is-fixed,
+.pick.is-fixed:hover {
+  --edge: var(--ink-line);
+  cursor: default;
 }
 
 .pick.is-open {

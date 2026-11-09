@@ -1,23 +1,24 @@
 <template>
-  <TitlePage heading="Daily Night" size="extra-wide" boxed steady @close="emit('close')">
-    <header class="daily-ticket px-frame">
-      <span class="daily-scene"><SpriteImg v-if="scene" :sprite="scene" /></span>
-      <div class="daily-title">
-        <p class="px-label daily-kicker">{{ dayLabel(night.key) }} - {{ facts.level }} - {{ facts.difficulty }}<template v-if="facts.event"> - {{ facts.event }}</template></p>
-        <p class="daily-name">{{ facts.title }}</p>
-        <p v-if="facts.rule" class="daily-rule">{{ facts.rule }}</p>
-      </div>
+  <TitlePage heading="Daily Night" bare boxed @close="emit('close')">
+    <template #lead>
+      <SetupPicks ref="picker" :picks :fixed :art="ui.art" :style="{ '--under': 'calc(var(--u) * 215)' }" @choose="choose" />
+    </template>
+
+    <div class="daily-lines">
+      <p class="px-label daily-kicker">
+        {{ dayLabel(night.key) }} - {{ facts.level }}<template v-if="facts.event"> - {{ facts.event }}</template> - same town for everyone, first run counts
+      </p>
+      <p v-if="facts.rule" class="daily-rule">{{ facts.rule }}</p>
       <dl class="daily-facts">
         <div class="daily-fact"><dt class="px-label">Your run</dt><dd>{{ todayLine }}</dd></div>
         <div class="daily-fact"><dt class="px-label">Streak</dt><dd>{{ streak === 1 ? '1 night' : `${streak} nights` }}</dd></div>
         <div class="daily-fact"><dt class="px-label">New town in</dt><dd>{{ countdown }}</dd></div>
-        <div class="daily-fact"><dt class="px-label">Rules</dt><dd>Solo, Arcade, same town for all. First run counts</dd></div>
       </dl>
-    </header>
-
-    <StreakKit :reward="reward" />
-
-    <CharacterSelect ref="survivors" :art="ui.art" :bust-scale="2" />
+      <p class="daily-kit">
+        <span class="px-label">Tonight's kit</span> {{ reward.tonight ?? 'The usual pistol' }}
+        <template v-if="reward.next"><span class="px-label daily-next">{{ nextLabel }}</span> + {{ reward.next.words }}</template>
+      </p>
+    </div>
 
     <template #actions>
       <ShareButton v-if="share" :text="share" />
@@ -27,24 +28,29 @@
 </template>
 
 <script setup lang="ts">
-/** Today's town, what it is, how you did, and the survivor to take in. Start skips the rest of the Play page: the day has already chosen. */
+/**
+ * Today's town, laid out like the Play page: the day's town and difficulty as fixed cards, the survivor as the one
+ * pick, and how you did and the streak kit in a few lines under them. Start skips the rest: the day has already chosen.
+ */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue';
+import { difficultyDef } from '../../shared/difficulty.ts';
 import { townName } from '../../shared/levels.ts';
+import { loadCharacter, saveCharacter } from '../game/character-pref.ts';
 import { countdownText, dailyShare, dayLabel, loadDailyLog, msUntilTomorrow, nightFacts, streakOf, todaysNight } from '../game/daily-night.ts';
 import type { UiState } from '../game/hud-state.ts';
+import { survivorPick } from '../game/setup-picks.ts';
+import type { FixedCard, PickKey } from '../game/setup-picks.ts';
 import { streakReward } from '../game/streak-reward.ts';
-import CharacterSelect from './CharacterSelect.vue';
 import PixelButton from './PixelButton.vue';
+import SetupPicks from './SetupPicks.vue';
 import ShareButton from './ShareButton.vue';
-import SpriteImg from './SpriteImg.vue';
-import StreakKit from './StreakKit.vue';
 import TitlePage from './TitlePage.vue';
 import { useGame } from './use-game.ts';
 
 const { ui } = defineProps<{ ui: UiState }>();
 const emit = defineEmits<{ close: [] }>();
 const game = useGame();
-const survivors = useTemplateRef<InstanceType<typeof CharacterSelect>>('survivors');
+const picker = useTemplateRef<InstanceType<typeof SetupPicks>>('picker');
 
 const night = todaysNight();
 const facts = nightFacts(night);
@@ -55,8 +61,27 @@ const share = dailyShare(night.key);
 const streak = streakOf(log, night.key);
 const reward = streakReward(log, night.key);
 const todayLine = today ? `${today.score} points, ${townName(today.level)}${today.attempts > 1 ? `, ${today.attempts - 1} practice` : ''}` : 'Not played yet';
-const scene = computed(() => ui.art?.ui.levelScenes[night.level - 1] ?? null);
 const ready = computed(() => ui.art !== null && !ui.connecting);
+
+const nextLabel = computed(() => {
+  const next = reward.next;
+  const isTomorrow = next !== null && next.night === reward.night + 1;
+  return isTomorrow ? 'Tomorrow' : `Night ${next?.night ?? ''}`;
+});
+
+const survivor = ref(loadCharacter());
+const picks = computed(() => [survivorPick(survivor.value)]);
+const fixed = computed<readonly FixedCard[]>(() => [
+  { key: 'town', number: 1, label: 'Tonight', name: facts.title, sprite: ui.art?.ui.levelScenes[night.level - 1] ?? null },
+  { key: 'difficulty', number: 2, label: 'Difficulty', name: difficultyDef(night.difficulty).label, sprite: ui.art?.ui.difficulty[night.difficulty] ?? null },
+]);
+
+function choose(key: PickKey, id: string): void {
+  const isSurvivor = key === 'who';
+  if (!isSurvivor) return;
+  survivor.value = Number(id);
+  saveCharacter(survivor.value);
+}
 
 const left = ref(msUntilTomorrow());
 const countdown = computed(() => countdownText(left.value));
@@ -64,7 +89,7 @@ let timer: ReturnType<typeof setInterval> | null = null;
 
 onMounted(() => {
   timer = setInterval(() => (left.value = msUntilTomorrow()), 30_000);
-  void nextTick(() => survivors.value?.focus());
+  void nextTick(() => picker.value?.focus());
 });
 onBeforeUnmount(() => {
   if (timer) clearInterval(timer);
@@ -72,36 +97,16 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.daily-ticket {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: calc(var(--u) * 6);
-  padding: calc(var(--u) * 4);
-}
-
-.daily-scene {
-  display: block;
-  width: calc(var(--u) * 64);
-  height: calc(var(--u) * 36);
-  overflow: hidden;
-}
-
-.daily-scene :deep(img),
-.daily-scene :deep(canvas) {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.daily-title {
+/* What the day is and how you stand, a few centred lines under the cards. */
+.daily-lines {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: calc(var(--u) * 2);
-  min-width: 0;
+  text-align: center;
 }
 
-.daily-title p {
+.daily-lines p {
   margin: 0;
 }
 
@@ -109,37 +114,21 @@ onBeforeUnmount(() => {
   color: var(--amber);
 }
 
-.daily-name {
-  font-size: calc(var(--u) * 12);
-  font-weight: 700;
-  line-height: 1;
-  color: var(--bone);
-}
-
 .daily-rule {
   color: var(--bone-dim);
 }
 
 .daily-facts {
-  display: grid;
-  grid-template-columns: auto auto;
-  column-gap: calc(var(--u) * 4);
-  row-gap: calc(var(--u) * 2);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: calc(var(--u) * 2) calc(var(--u) * 8);
   margin: 0;
 }
 
 .daily-fact {
-  display: contents;
-}
-
-@media (max-width: 720px) {
-  .daily-ticket {
-    grid-template-columns: 1fr;
-  }
-
-  .daily-scene {
-    width: 100%;
-  }
+  display: flex;
+  gap: calc(var(--u) * 3);
 }
 
 .daily-fact dd {
@@ -147,8 +136,22 @@ onBeforeUnmount(() => {
   color: var(--bone);
 }
 
-.daily-fact .px-label {
+.daily-fact .px-label,
+.daily-kit .px-label {
   color: var(--amber);
 }
 
+.daily-kit {
+  color: var(--bone);
+}
+
+.daily-kit .px-label,
+.daily-fact .px-label {
+  display: inline;
+  margin: 0 calc(var(--u) * 2) 0 0;
+}
+
+.daily-next {
+  margin-left: calc(var(--u) * 6);
+}
 </style>

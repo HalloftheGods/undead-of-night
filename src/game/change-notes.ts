@@ -22,6 +22,17 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'daily-stage',
+    date: '2026-11-09',
+    kind: 'better',
+    title: 'Daily Night takes the stage',
+    deck: 'The Daily Night page now looks like Arcade and Campaign: three big cards on the night scene.',
+    points: [
+      'Tonight\'s town and difficulty stand beside your survivor. Click the survivor to pick from the big cards.',
+      'Your run, the streak, the new-town timer and tonight\'s kit sit in a few lines under them, and the page fits on one screen.',
+    ],
+  },
+  {
     id: 'fireworks-bus',
     date: '2026-11-09',
     kind: 'new',
@@ -464,31 +475,6 @@ export const CHANGE_NOTES: readonly ChangeNote[] = [
       'System follows your device, as before. Full plays every animation, the van ride too, whatever your device says.',
       'Reduced calms things down: no big flashes, still transitions, and only a nudge of shake.',
       'Screen shake goes from 0 to 100%, so you can keep the motion and lose the wobble.',
-    ],
-  },
-  {
-    id: 'readable-pickup-text',
-    date: '2026-11-07',
-    kind: 'better',
-    title: 'Pickup words you can read',
-    deck: 'The little words over your head no longer pile on top of each other.',
-    points: [
-      'Grab several things at once and each word gets its own line, newest at the bottom.',
-      'Grab the same thing twice and the numbers add up: two boxes of shells read +8 SHELLS.',
-      'Words hold still for a moment once they rise, then fade out instead of blinking away.',
-    ],
-  },
-  {
-    id: 'combat-feel',
-    date: '2026-11-07',
-    kind: 'better',
-    title: 'Fights hit harder',
-    deck: 'You can hear a brute coming, and a boss going down feels like it.',
-    points: [
-      'Brutes and bosses stomp as they walk, so you hear a big one before you see it.',
-      'Every gun reloads its own way: the pistol slide snaps, the carbine racks, the shotgun loads shell by shell.',
-      'When you are badly hurt the red at the edge of the screen beats with your heart, and the world goes muffled.',
-      'A boss kill freezes the moment with a flash and the biggest shake in the game. Reduced motion keeps it calm.',
     ],
   },
   ...EARLIER_NOTES,
