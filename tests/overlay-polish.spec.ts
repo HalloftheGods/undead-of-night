@@ -52,4 +52,13 @@ describe('overlay polish', () => {
     expect(foot.indexOf('hud-night')).toBeLessThan(foot.indexOf('hud-weapon'));
     expect(foot).not.toContain('hud-medkits');
   });
+
+  it('aligns carried items vertically starting with shortcut keycaps', () => {
+    const hud = source('../src/components/HudOverlay.vue');
+    const items = hud.slice(hud.indexOf('<div class="hud-items">'), hud.indexOf('</div>\n        <ul'));
+    expect(items.indexOf("glyph('KeyH')")).toBeLessThan(items.indexOf('art.ui.pickupIcons.medkit'));
+    expect(items.indexOf("glyph('KeyG')")).toBeLessThan(items.indexOf('art.ui.bottle'));
+    expect(items.indexOf("glyph('KeyX')")).toBeLessThan(items.indexOf('hud-candy-icon'));
+    expect(items.indexOf("glyph('KeyF')")).toBeLessThan(items.indexOf('art.ui.pickupIcons.knife'));
+  });
 });

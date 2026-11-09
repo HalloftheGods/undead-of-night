@@ -5,33 +5,33 @@
       <div class="hud-vitals">
         <div class="hud-items">
           <div class="hud-chip hud-medkits" :class="{ 'is-none': hud.medkits === 0 }">
+            <kbd v-if="glyph('KeyH')" class="hud-keycap keys-only">{{ glyph('KeyH') }}</kbd>
             <SpriteImg :sprite="art.ui.pickupIcons.medkit" />
             <span>{{ hud.medkits }}</span>
-            <kbd v-if="glyph('KeyH')" class="hud-keycap keys-only">{{ glyph('KeyH') }}</kbd>
           </div>
           <div v-if="hud.bottles > 0" class="hud-chip hud-bottles">
+            <kbd v-if="glyph('KeyG')" class="hud-keycap keys-only">{{ glyph('KeyG') }}</kbd>
             <SpriteImg :sprite="art.ui.bottle" />
             <span>{{ hud.bottles }}</span>
-            <kbd v-if="glyph('KeyG')" class="hud-keycap keys-only">{{ glyph('KeyG') }}</kbd>
           </div>
           <div v-if="hud.fireworks > 0" class="hud-chip hud-bottles">
+            <kbd v-if="glyph('KeyT')" class="hud-keycap keys-only">{{ glyph('KeyT') }}</kbd>
             <SpriteImg :sprite="art.ui.fireworks" />
             <span>{{ hud.fireworks }}</span>
-            <kbd v-if="glyph('KeyT')" class="hud-keycap keys-only">{{ glyph('KeyT') }}</kbd>
           </div>
           <div v-if="hud.fountains > 0" class="hud-chip hud-bottles">
+            <kbd v-if="glyph('KeyV')" class="hud-keycap keys-only">{{ glyph('KeyV') }}</kbd>
             <SpriteImg :sprite="art.ui.fountain" />
             <span>{{ hud.fountains }}</span>
-            <kbd v-if="glyph('KeyV')" class="hud-keycap keys-only">{{ glyph('KeyV') }}</kbd>
           </div>
           <div v-if="hud.candyCount > 0" class="hud-chip hud-bottles hud-candy" :title="hud.bag.map((stack) => `${stack.name} x${stack.count}`).join(', ')">
+            <kbd v-if="glyph('KeyX')" class="hud-keycap keys-only">{{ glyph('KeyX') }}</kbd>
             <span class="hud-candy-icon" aria-hidden="true" />
             <span>Candy {{ hud.candyCount }}</span>
-            <kbd v-if="glyph('KeyX')" class="hud-keycap keys-only">{{ glyph('KeyX') }}</kbd>
           </div>
           <div v-if="hud.knife" class="hud-chip hud-knife">
-            <SpriteImg :sprite="art.ui.pickupIcons.knife" />
             <kbd v-if="glyph('KeyF')" class="hud-keycap keys-only">{{ glyph('KeyF') }}</kbd>
+            <SpriteImg :sprite="art.ui.pickupIcons.knife" />
           </div>
         </div>
         <ul v-if="hud.sugar.length > 0" class="hud-chip hud-sugar" aria-label="Candy working">
@@ -397,11 +397,16 @@ function hold(slot: BarSlot): void {
 }
 
 .hud-keycap {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-width: calc(var(--u) * 6);
   padding: 0 var(--u);
   border: calc(var(--u) * 0.5) solid var(--amber);
   color: var(--amber);
   font: inherit;
   line-height: 1.1;
+  text-align: center;
 }
 
 /* Fingers: the bottom cluster stands on the tab bar across the foot of the screen (--tabbar, touch-ui.css). */
@@ -510,7 +515,7 @@ function hold(slot: BarSlot): void {
 .hud-team {
   position: absolute;
   left: calc(var(--u) * 5);
-  top: calc(var(--u) * 56);
+  top: calc(var(--u) * 72);
   display: flex;
   flex-direction: column;
   gap: calc(var(--u) * 2);
@@ -534,12 +539,12 @@ function hold(slot: BarSlot): void {
   gap: calc(var(--u) * 2);
 }
 
-/* One row of icon, count and key; it wraps rather than run under the town block. */
+/* Vertical stack of carried items going down the screen, starting with shortcut keycap */
 .hud-items {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: calc(var(--u) * 2);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: calc(var(--u) * 1.5);
 }
 
 .hud-medkits,
