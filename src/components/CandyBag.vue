@@ -1,12 +1,8 @@
 <template>
-  <section class="px-screen bag" aria-label="Candy bag" @mousedown.stop @pointerdown.stop @touchstart.stop>
-    <header class="bag-head">
-      <SpriteImg :sprite="art.ui.candy" :scale="3" />
-      <h2 class="bag-title">Candy bag</h2>
-      <span class="bag-total">{{ hud.candyCount }}</span>
-    </header>
+  <section class="px-screen px-title-scale bag" aria-label="Candy bag" @mousedown.stop @pointerdown.stop @touchstart.stop>
+    <h2 class="px-heading bag-heading">Candy Bag <span class="bag-total">{{ hud.candyCount }}</span></h2>
 
-    <ul v-if="hud.bag.length > 0" class="bag-grid">
+    <ol v-if="hud.bag.length > 0" class="bag-cards" :style="layout" aria-label="Candy">
       <li v-for="(stack, index) in hud.bag" :key="stack.id">
         <button
           ref="cards"
@@ -16,62 +12,105 @@
           :disabled="!canEat"
           :aria-label="`Eat ${stack.name}, ${stack.count} left. ${stack.blurb}`"
           @click="eat(stack.id)"
+          @mouseenter="point(stack.id)"
+          @mouseleave="pointed = null"
+          @focus="pointed = stack.id"
         >
-          <span v-if="index < PICK_KEYS.length" class="bag-key keys-only">{{ PICK_KEYS[index] }}</span>
-          <span class="bag-art"><SpriteImg :sprite="art.ui.candies[stack.id]" :scale="4" /></span>
-          <span class="bag-count">x{{ stack.count }}</span>
-          <strong class="bag-name">{{ stack.name }}</strong>
-          <span class="bag-stat">{{ stack.stat }}</span>
-          <span class="bag-blurb">{{ stack.blurb }}</span>
-          <span v-if="stack.left > 0" class="bag-left">{{ stack.left }}s left. Eat another for more.</span>
+          <span class="bag-head">
+            <span class="bag-number" aria-hidden="true">{{ index < PICK_KEYS.length ? PICK_KEYS[index] : '' }}</span>
+            <span class="bag-stat">{{ stack.stat }}</span>
+            <span class="bag-count">x{{ stack.count }}</span>
+          </span>
+          <span class="bag-art">
+            <img :src="spriteDataUrl(art.ui.candies[stack.id])" alt="" draggable="false" />
+            <span v-if="stack.left > 0" class="bag-left">{{ stack.left }}s</span>
+            <span class="bag-title" :style="titleStyle(stack)"><span class="bag-brand">{{ stack.name }}</span></span>
+          </span>
         </button>
       </li>
-    </ul>
-    <p v-else class="px-note bag-empty">Your bag is empty. Search homes, and the candy bowls by every front door.</p>
+    </ol>
 
-    <ul v-if="working.length > 0" class="bag-working" aria-label="Candy working">
-      <li v-for="sugar in working" :key="sugar.id">
-        <SpriteImg :sprite="art.ui.candies[sugar.id]" :scale="2" />
-        <span>{{ sugar.name }}</span>
-        <span class="bag-working-left">{{ sugar.left }}s</span>
-      </li>
-    </ul>
-
-    <p class="px-note">
-      {{ waitNote }} Eating a candy that is already working adds its time.
-      <span class="keys-only">Click one or press its number. X to close.</span>
-    </p>
-    <MenuLink class="touch-only bag-close" @press="game.toggleBag()">Close</MenuLink>
+    <div class="bag-info" aria-live="polite">
+      <template v-if="featured">
+        <p class="bag-info-name" :style="brandStyle(featured.id)"><span class="bag-brand">{{ featured.name }}</span></p>
+        <p class="bag-info-line">{{ featured.blurb }}</p>
+        <p class="bag-info-time" :class="{ 'is-working': featured.left > 0 }">{{ featuredTime }}</p>
+      </template>
+      <template v-else>
+        <p class="bag-info-name">Empty</p>
+        <p class="bag-info-line">Search homes, and the candy bowls by every front door.</p>
+      </template>
+      <p class="px-label bag-info-note">
+        {{ waitNote }} <span class="keys-only">Click a candy or press its number to eat it. X to close.</span><span class="touch-only">Tap a candy to eat it.</span>
+      </p>
+    </div>
+    <MenuLink class="bag-close" @press="game.toggleBag()">Close</MenuLink>
   </section>
 </template>
 
 <script setup lang="ts">
 /**
- * The candy bag: every candy carried, with its picture, how many and what it does. A click, a tap
- * or its number eats one. In solo the run waits behind it; in co-op the town carries on.
+ * The candy bag, laid out like the Play page and Level Select: no box, every candy carried as a portrait card with
+ * its name along the bottom, and the one pointed at told in a few centred lines under them. A click, a tap or its
+ * number eats one. In solo the run waits behind it; in co-op the town carries on.
  */
-import { computed, nextTick, onBeforeUnmount, onMounted, useTemplateRef } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue';
 import type { ArtBook } from '../art/types.ts';
 import type { CandyId } from '../../shared/protocol.ts';
+import { CANDY_SEC } from '../../shared/candy.ts';
+import { spriteDataUrl } from '../engine/sprite-cache.ts';
+import type { CandyStack } from '../game/candy-bag.ts';
 import type { HudState } from '../game/hud-state.ts';
+import { brandStyle } from '../game/candy-brands.ts';
+import { longestWord } from '../game/setup-picks.ts';
 import type { TransportKind } from '../network/transport.ts';
 import MenuLink from './MenuLink.vue';
-import SpriteImg from './SpriteImg.vue';
 import { useGame } from './use-game.ts';
 
 const PICK_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
+/** Most cards to a row: twelve kinds make two rows of six on a wide screen, four rows of three on a tall one. */
+const WIDE_COLUMNS = 6;
+const TALL_COLUMNS = 3;
 
 const { hud, art, mode } = defineProps<{ hud: HudState; art: ArtBook; mode: TransportKind }>();
 
 const game = useGame();
 const cards = useTemplateRef<HTMLButtonElement[]>('cards');
+const pointed = ref<CandyId | null>(null);
+const tall = ref(window.innerHeight > window.innerWidth);
 
 const canEat = computed(() => hud.status === 'alive');
 const waitNote = computed(() => (mode === 'solo' ? 'Paused.' : 'The town does not wait.'));
-/** Boosts working whose candy is not in the bag any more: the cards already show the rest. */
-const working = computed(() => hud.sugar.filter((sugar) => !hud.bag.some((stack) => stack.id === sugar.id)));
+
+/** As many to a row as fit six, and the rows that takes, so the cards size to fill the screen without scrolling. */
+const layout = computed(() => {
+  const most = tall.value ? TALL_COLUMNS : WIDE_COLUMNS;
+  const columns = Math.min(most, Math.max(1, hud.bag.length));
+  const rows = Math.ceil(hud.bag.length / columns);
+  return { '--columns': columns, '--rows': rows };
+});
+
+/** The candy the lines under the cards tell: the one pointed at, else the first in the bag. */
+const featured = computed(() => hud.bag.find((stack) => stack.id === pointed.value) ?? hud.bag[0] ?? null);
+const featuredTime = computed(() => {
+  const stack = featured.value;
+  if (!stack) return '';
+  const working = stack.left > 0;
+  return working ? `Working: ${stack.left}s left. Eat another for more.` : `Lasts about a horde (${CANDY_SEC}s).`;
+});
+
+/** A name's custom properties: how long its longest word is, for the fit, and its brand's lettering. */
+function titleStyle(stack: CandyStack): Record<string, string | number> {
+  return { '--chars': longestWord(stack.name), ...brandStyle(stack.id) };
+}
+
+function point(id: CandyId): void {
+  game.playUi('hover');
+  pointed.value = id;
+}
 
 function eat(id: CandyId): void {
+  game.playUi('click');
   game.eatCandy(id);
 }
 
@@ -85,190 +124,266 @@ function onKey(event: KeyboardEvent): void {
   eat(stack.id);
 }
 
+function measure(): void {
+  tall.value = window.innerHeight > window.innerWidth;
+}
+
 onMounted(() => {
   window.addEventListener('keydown', onKey);
+  window.addEventListener('resize', measure);
   // A pad or the arrow keys start on the first card.
   void nextTick(() => cards.value?.[0]?.focus({ preventScroll: true }));
 });
-onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKey);
+  window.removeEventListener('resize', measure);
+});
 </script>
 
 <style scoped>
 .bag {
-  justify-content: flex-start;
-  overflow-y: auto;
-  background: rgba(7, 8, 12, 0.92);
+  gap: calc(var(--u) * 5);
+  background: rgba(7, 8, 12, 0.88);
   pointer-events: auto;
 }
 
-.bag-head {
+.bag-heading {
   display: flex;
   align-items: center;
   gap: calc(var(--u) * 4);
-}
-
-.bag-title {
-  font-size: calc(var(--u) * 10);
-  line-height: 1;
-  color: #f4d36b;
+  margin: 0;
 }
 
 .bag-total {
   padding: 0 calc(var(--u) * 2);
-  border: calc(var(--u) * 0.5) solid var(--bone-dim);
-  color: var(--bone);
-  font-size: calc(var(--u) * 6);
+  background: var(--amber);
+  color: var(--ink);
+  font-size: 0.5em;
+  line-height: 1.4;
 }
 
-.bag-grid {
+/* Up to six to a row, as big as the screen allows with the heading above and the lines and Close below. */
+.bag-cards {
+  --card: min(
+    calc(var(--u) * 72),
+    calc((100vw - var(--u) * 24) / var(--columns) - var(--u) * 4),
+    calc(((100vh - var(--u) * 120) / var(--rows) - var(--u) * 14) * 0.78)
+  );
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(calc(var(--u) * 64), 1fr));
-  gap: calc(var(--u) * 4);
-  width: min(100%, calc(var(--u) * 340));
-  margin: 0;
-  padding: var(--u);
-  list-style: none;
-}
-
-.bag-card {
-  position: relative;
-  display: grid;
-  justify-items: center;
-  gap: calc(var(--u) * 1.5);
-  width: 100%;
-  height: 100%;
-  padding: calc(var(--u) * 4) calc(var(--u) * 3);
-  background: var(--ink-raised);
-  border: none;
-  color: var(--bone);
-  font: inherit;
-  text-align: center;
-  cursor: pointer;
-}
-
-.bag-card:hover,
-.bag-card:focus-visible {
-  --edge: #f4d36b;
-  background: rgba(244, 211, 107, 0.14);
-  outline: none;
-}
-
-.bag-card:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
-.bag-card.is-working {
-  --edge: var(--sick);
-}
-
-.bag-key {
-  position: absolute;
-  top: calc(var(--u) * 2);
-  left: calc(var(--u) * 2);
-  padding: 0 var(--u);
-  border: calc(var(--u) * 0.5) solid currentColor;
-  color: #f4d36b;
-  font-size: calc(var(--u) * 4);
-}
-
-.bag-count {
-  position: absolute;
-  top: calc(var(--u) * 2);
-  right: calc(var(--u) * 3);
-  color: var(--bone);
-  font-size: calc(var(--u) * 6);
-}
-
-.bag-name {
-  color: #f4d36b;
-  font-size: calc(var(--u) * 5);
-}
-
-.bag-stat {
-  padding: 0 calc(var(--u) * 1.5);
-  background: rgba(244, 211, 107, 0.16);
-  color: #f4d36b;
-  font-size: calc(var(--u) * 4);
-  letter-spacing: 0.05em;
-}
-
-.bag-blurb {
-  color: var(--bone-dim);
-  font-size: calc(var(--u) * 4);
-  line-height: 1.3;
-}
-
-.bag-left {
-  color: var(--sick);
-  font-size: calc(var(--u) * 4);
-}
-
-.bag-working {
-  display: flex;
-  flex-wrap: wrap;
+  grid-template-columns: repeat(var(--columns), var(--card));
   justify-content: center;
   gap: calc(var(--u) * 4);
   margin: 0;
   padding: 0;
   list-style: none;
-  color: var(--sick);
-  font-size: calc(var(--u) * 5);
 }
 
-.bag-working li {
+.bag-card {
+  --edge: var(--ink-line);
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 1.5);
+  width: 100%;
+  border: 0;
+  padding: calc(var(--u) * 1.5);
+  background: var(--ink-raised);
+  color: var(--bone);
+  font: inherit;
+  text-transform: uppercase;
+  cursor: pointer;
+  outline: none;
+}
+
+.bag-card:hover,
+.bag-card:focus-visible {
+  --edge: var(--amber);
+}
+
+.bag-card:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.bag-head {
   display: flex;
   align-items: center;
+  gap: calc(var(--u) * 1.5);
+  min-width: 0;
+  color: var(--bone-dim);
+  font-size: calc(var(--u) * 3.5);
+  white-space: nowrap;
+}
+
+.bag-number {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: calc(var(--u) * 6);
+  height: calc(var(--u) * 6);
+  background: var(--amber);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.bag-number:empty {
+  background: var(--ink-line);
+}
+
+.bag-stat {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bag-count {
+  margin-left: auto;
+  color: var(--bone);
+}
+
+/* The candy big in a dark frame, lit from below like a porch at night. */
+.bag-art {
+  position: relative;
+  display: grid;
+  place-items: start center;
+  aspect-ratio: 56 / 72;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 45%, rgba(232, 163, 61, 0.18), transparent 65%), var(--ink);
+}
+
+.bag-art img {
+  width: 76%;
+  margin-top: 12%;
+  image-rendering: pixelated;
+}
+
+.is-working .bag-art {
+  background: radial-gradient(ellipse at 50% 45%, rgba(143, 191, 58, 0.22), transparent 65%), var(--ink);
+}
+
+.bag-left {
+  position: absolute;
+  top: calc(var(--u) * 1.5);
+  right: calc(var(--u) * 1.5);
+  padding: 0 var(--u);
+  background: var(--sick);
+  color: var(--ink);
+  font-size: calc(var(--u) * 3.5);
+}
+
+/* The candy's name along the bottom of its picture, lettered like the logo on its wrapper (game/candy-brands.ts). */
+.bag-title {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: calc(var(--u) * 6) var(--u) calc(var(--u) * 2.5);
+  background: linear-gradient(to top, rgba(7, 8, 12, 0.92) 0%, rgba(7, 8, 12, 0.55) 60%, transparent 100%);
+  font-size: min(clamp(calc(var(--u) * 4), 11cqi, calc(var(--u) * 10)), calc(88cqi / (var(--chars) * 1.35)));
+  line-height: 1.4;
+  text-align: center;
+  text-wrap: balance;
+}
+
+/* A one-pixel edge all round, then a drop: each brand's own colours. */
+.bag-brand {
+  --px: max(1px, calc(var(--u) * 0.5));
+  display: inline-block;
+  color: var(--brand-fill, var(--bone));
+  font-weight: 700;
+  letter-spacing: var(--brand-spread, 0.1em);
+  text-indent: var(--brand-spread, 0.1em);
+  text-shadow:
+    var(--px) 0 0 var(--brand-edge, var(--ink)),
+    calc(var(--px) * -1) 0 0 var(--brand-edge, var(--ink)),
+    0 var(--px) 0 var(--brand-edge, var(--ink)),
+    0 calc(var(--px) * -1) 0 var(--brand-edge, var(--ink)),
+    var(--px) var(--px) 0 var(--brand-edge, var(--ink)),
+    calc(var(--px) * -1) var(--px) 0 var(--brand-edge, var(--ink)),
+    var(--px) calc(var(--px) * -1) 0 var(--brand-edge, var(--ink)),
+    calc(var(--px) * -1) calc(var(--px) * -1) 0 var(--brand-edge, var(--ink)),
+    0 calc(var(--px) * 2.5) 0 var(--brand-drop, var(--ink));
+  transform: rotate(var(--brand-turn, 0deg)) skewX(var(--brand-lean, 0deg));
+}
+
+.bag-card:hover .bag-brand,
+.bag-card:focus-visible .bag-brand {
+  transform: rotate(var(--brand-turn, 0deg)) skewX(var(--brand-lean, 0deg)) scale(1.06);
+}
+
+/* The pointed-at candy, told in a few centred lines. */
+.bag-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: calc(var(--u) * 2);
+  text-align: center;
 }
 
-.bag-close {
-  margin-top: calc(var(--u) * 2);
+.bag-info p {
+  margin: 0;
 }
 
-/* A phone on its side: smaller pictures, each card a row with its words beside the picture. */
+.bag-info-name {
+  font-size: calc(var(--u) * 9);
+  text-transform: uppercase;
+}
+
+/* What it does, plain and big enough to read at a glance: no spread letters, on a dark band. */
+.bag-info-line {
+  padding: calc(var(--u) * 1.5) calc(var(--u) * 4);
+  background: rgba(7, 8, 12, 0.9);
+  color: var(--bone);
+  font-size: calc(var(--u) * 8);
+  letter-spacing: 0.03em;
+  line-height: 1.35;
+  text-transform: none;
+}
+
+.bag-info-time {
+  color: var(--bone);
+  font-size: calc(var(--u) * 6);
+  letter-spacing: 0.03em;
+  text-transform: none;
+}
+
+.bag-info-time.is-working {
+  color: var(--sick);
+}
+
+.bag-info-note {
+  color: var(--bone-dim);
+}
+
+/* A phone on its side: the lines under the cards shrink to make room. */
 @media (max-height: 520px) {
   .bag {
-    gap: calc(var(--u) * 3);
-    padding: calc(var(--u) * 3);
-  }
-
-  .bag-grid {
-    grid-template-columns: repeat(auto-fill, minmax(calc(var(--u) * 110), 1fr));
     gap: calc(var(--u) * 2);
-    width: 100%;
+    padding: calc(var(--u) * 2);
   }
 
-  .bag-card {
-    grid-template-columns: auto 1fr;
-    grid-template-rows: auto auto auto;
-    justify-items: start;
-    align-items: center;
-    column-gap: calc(var(--u) * 3);
-    row-gap: var(--u);
-    padding: calc(var(--u) * 2) calc(var(--u) * 3);
-    text-align: left;
+  .bag-cards {
+    --card: min(
+      calc(var(--u) * 72),
+      calc((100vw - var(--u) * 16) / var(--columns) - var(--u) * 3),
+      calc(((100vh - var(--u) * 80) / var(--rows) - var(--u) * 12) * 0.78)
+    );
+    gap: calc(var(--u) * 2);
   }
 
-  .bag-art {
-    --sprite-px: calc(var(--u) * 2);
-    grid-row: 1 / span 3;
+  .bag-info {
+    gap: var(--u);
   }
 
-  .bag-key {
-    display: none;
+  .bag-info-name {
+    font-size: calc(var(--u) * 6);
   }
 
-  .bag-name {
-    padding-right: calc(var(--u) * 10);
+  .bag-info-line {
+    padding: var(--u) calc(var(--u) * 3);
+    font-size: calc(var(--u) * 7);
   }
 
-  .bag-blurb,
-  .bag-left {
-    grid-column: 2;
-  }
-
-  .bag-left {
+  .bag-info-time {
     display: none;
   }
 }

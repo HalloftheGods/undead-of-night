@@ -22,6 +22,18 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'candy-bag-cards',
+    date: '2026-11-09',
+    kind: 'better',
+    title: 'Candy on the big cards',
+    deck: 'The candy bag now looks like the Play page and Level Select.',
+    points: [
+      'Every candy you carry is a tall card with its picture big and its name along the bottom.',
+      'Each name is lettered like its own wrapper, in its own colours.',
+      'Point at one to read what it does, in big plain words, and how long it lasts.',
+    ],
+  },
+  {
     id: 'level-select-stage',
     date: '2026-11-09',
     kind: 'better',
