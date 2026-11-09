@@ -6,6 +6,7 @@ All notable changes to the Undead of Night: Last Round game are documented in th
 
 ### Added
 - The Radio on the Extras menu: finding a radio in any run now adds a dedicated **Radio** option to the Extras menu on the title screen (`RadioPage.vue`).
+- Invisible container arcade presentation (`bare` on `TitlePage`) with floating large pixel heading, centered boxed Back button, and wide centered presentation directly over the scene.
 - An authentic in-game pixel art boombox overlay (`RadioDeck.vue` in `src/components/radio/`), placed horizontally across the top with olive case, FM stereo frequency tuner with animated red needle, cassette bay with rotating spools, and tactile tape deck transport buttons with crisp pixel SVG icons and zero text labels.
 - Interactive mode switches for Shuffle, Repeat (`off`, `all`, `one`), and Favorites directly integrated on the radio faceplate with colored status LEDs.
 - Full-width scrollable tape playlist underneath the radio (`RadioPlaylist.vue`) with quick filter tabs (`ALL`, `FAVORITES`, `FINDS`), live search, and favorite toggles persisted to browser storage (`outbreak.radio-favorites`).

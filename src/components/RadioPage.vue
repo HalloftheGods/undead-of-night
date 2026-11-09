@@ -1,5 +1,5 @@
 <template>
-  <TitlePage heading="Radio" size="extra-wide" boxed class="radio-screen" @close="emit('close')">
+  <TitlePage heading="Radio" bare boxed class="radio-screen" @close="emit('close')">
     <div class="radio-layout">
       <!-- Top: In-game pixel art radio / tape deck with transport controls -->
       <section class="radio-deck-section" aria-label="Tape Deck">
@@ -250,8 +250,11 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .radio-screen :deep(.px-sheet) {
-  width: min(calc(var(--u) * 480), 96vw);
+  width: min(calc(var(--u) * 360), 96vw);
   max-height: calc(100vh - calc(var(--u) * 12));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .radio-layout {

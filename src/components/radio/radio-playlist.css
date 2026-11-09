@@ -1,18 +1,13 @@
 .radio-playlist {
+  --edge: var(--bone-dim);
   display: flex;
   flex-direction: column;
   background: var(--ink);
-  border: 1px solid var(--ink-line);
-  box-shadow:
-    calc(var(--u) * -1) 0 0 0 var(--ink-line),
-    var(--u) 0 0 0 var(--ink-line),
-    0 calc(var(--u) * -1) 0 0 var(--ink-line),
-    0 var(--u) 0 0 var(--ink-line);
   overflow: hidden;
   width: 100%;
   flex: 1;
-  min-height: calc(var(--u) * 90);
-  max-height: calc(var(--u) * 135);
+  min-height: calc(var(--u) * 85);
+  max-height: calc(var(--u) * 120);
   box-sizing: border-box;
 }
 
