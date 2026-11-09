@@ -5,6 +5,26 @@ import type { ChangeNote } from './change-notes.ts';
 
 export const EARLIER_NOTES: readonly ChangeNote[] = [
   {
+    id: 'setup-stepper-thumbs',
+    date: '2026-11-07',
+    kind: 'better',
+    title: 'Setup shows your picks',
+    deck: 'Each finished step in the setup stepper shows a little picture of what you chose.',
+    points: ['Your style, mode and difficulty sit in the stepper as thumbnails. Tap one to go back and change it.'],
+  },
+  {
+    id: 'sound-color-size-options',
+    date: '2026-11-07',
+    kind: 'better',
+    title: 'Options for your ears and eyes',
+    deck: 'Set music and sound effects apart, pick colorblind hit colors and make the UI bigger.',
+    points: [
+      'Music and Sound effects each get their own slider under Volume.',
+      'Hit colors: Colorblind swaps red and green for magenta and blue on health bars, callouts and the HUD.',
+      'UI size: Large and Larger make the HUD and menus easier to read on a phone.',
+    ],
+  },
+  {
     id: 'apartment-floors',
     date: '2026-11-07',
     kind: 'new',
