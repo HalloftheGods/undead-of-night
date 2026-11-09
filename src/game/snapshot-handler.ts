@@ -148,7 +148,7 @@ export class SnapshotHandler {
     };
     runHud.onEvent(event, now, { localId: world.localId, nameOf, ...(note ? { pickupNote: note } : {}) });
     const ateIt = event.type === 'candy_eaten' && event.playerId === world.localId;
-    if (ateIt) runHud.say(candyBanner(event.candy, event.saved === true), now);
+    if (ateIt) runHud.say(candyBanner(event.candy, event.saved === true, event.stacked === true), now);
     const keptIt = event.type === 'keepsake_taken' && event.playerId === world.localId;
     if (keptIt) runHud.say({ title: KEEPSAKES[event.keepsake].name.toUpperCase(), subtitle: 'KEPT FOR THE RUN', tone: 'hope' }, now);
   }
@@ -169,6 +169,6 @@ export class SnapshotHandler {
     state.gameOverAtMs = now;
     input.setEnabled(false);
     audio.setScene(won ? 'victory' : 'gameover');
-    this.host.publish({ paused: false, mapOpen: false, banner: null, place: null, ...loadBests(), leaderboard: loadLeaderboard() });
+    this.host.publish({ paused: false, mapOpen: false, bagOpen: false, banner: null, place: null, ...loadBests(), leaderboard: loadLeaderboard() });
   }
 }

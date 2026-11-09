@@ -1,4 +1,4 @@
-import type { KeepsakeId } from '../../shared/protocol.ts';
+import type { CandyId, KeepsakeId } from '../../shared/protocol.ts';
 import { WEAPON_ORDER } from '../../shared/protocol.ts';
 import type { ClientInputPacket, Stance, WeaponId } from '../../shared/protocol.ts';
 import { GamepadInput, PAD_FIRE, PAD_PREV_WEAPON } from './gamepad-input.ts';
@@ -27,7 +27,8 @@ const SEARCH_CODE = 'KeyE';
 const THROW_CODE = 'KeyG';
 const SPINNER_CODE = 'KeyT';
 const FOUNTAIN_CODE = 'KeyV';
-const EAT_CODE = 'KeyX';
+/** X opens the candy bag, where the candy to eat is picked. */
+const BAG_CODE = 'KeyX';
 const SNEAK_CODES = ['KeyC'];
 const SPRINT_CODES = ['ShiftLeft', 'ShiftRight'];
 const MAP_CODES: ReadonlySet<string> = new Set(['Tab', 'KeyN']);
@@ -50,7 +51,6 @@ const GAME_CODES: ReadonlySet<string> = new Set([
   THROW_CODE,
   SPINNER_CODE,
   FOUNTAIN_CODE,
-  EAT_CODE,
   ...SNEAK_CODES,
   ...SPRINT_CODES,
   ...Object.keys(WEAPON_KEYS),
@@ -77,6 +77,8 @@ export interface InputCallbacks {
   onConfirm(): void;
   /** Tab or N. True if the game took the key, so Tab does not also move focus. */
   onMap(): boolean;
+  /** X: the candy bag. True if the game took the key. */
+  onBag?(): boolean;
   /** A middle-click: the backpack ring. True if the game took it. */
   onBackpack?(): boolean;
   /** The map is open or could open, so a Tab held down must stay away from the browser. */
@@ -145,7 +147,8 @@ export class InputManager {
   private throwLatch = false;
   private spinnerLatch = false;
   private fountainLatch = false;
-  private eatLatch = false;
+  /** The candy picked out of the bag, sent with the next input. */
+  private eatLatch: CandyId | null = null;
   private keepsakeLatch: KeepsakeId | null = null;
   private reloadLatch = false;
   private weaponLatch: WeaponId | null = null;
@@ -237,6 +240,11 @@ export class InputManager {
     this.shoveLatch = false;
   }
 
+  /** The candy the player picked out of the bag, sent with the next input. */
+  pickCandy(id: CandyId): void {
+    this.eatLatch = id;
+  }
+
   /** The keepsake card the player chose, sent with the next input. */
   pickKeepsake(id: KeepsakeId): void {
     this.keepsakeLatch = id;
@@ -249,7 +257,7 @@ export class InputManager {
     this.throwLatch = false;
     this.spinnerLatch = false;
     this.fountainLatch = false;
-    this.eatLatch = false;
+    this.eatLatch = null;
     this.keepsakeLatch = null;
     this.reloadLatch = false;
     this.weaponLatch = null;
@@ -299,19 +307,31 @@ export class InputManager {
     return Math.sign(Number(this.isHeld(DOWN)) - Number(this.isHeld(UP)) + this.touch.dirY + this.gamepad.dirY);
   }
 
+  /**
+   * A touch or pad press that opens a screen rather than reaching the sim: the pause menu, the map,
+   * the candy bag and, off a pad, the log. True if it was one.
+   */
+  private pressPanel(code: string, withLog: boolean): boolean {
+    const isMap = MAP_CODES.has(code);
+    const panels: Readonly<Record<string, () => unknown>> = {
+      Escape: () => this.callbacks.onPause(),
+      [BAG_CODE]: () => this.callbacks.onBag?.(),
+      ...(isMap ? { [code]: () => this.callbacks.onMap() } : {}),
+      ...(withLog ? { [LOG_CODE]: () => this.callbacks.onLog?.() } : {}),
+    };
+    const open = panels[code];
+    const isPanelKey = open !== undefined;
+    if (isPanelKey) open();
+    return isPanelKey;
+  }
+
   /** A touch button goes down as the key it stands for. */
   padDown(code: string): void {
-    const isEscape = code === 'Escape';
-    if (isEscape) {
-      this.callbacks.onPause();
-      return;
-    }
-    if (MAP_CODES.has(code)) {
-      this.callbacks.onMap();
-      return;
-    }
+    const tookPanel = this.pressPanel(code, false);
+    if (tookPanel) return;
     this.held.add(code);
-    if (this.enabled) this.latch(code);
+    const isLive = this.enabled;
+    if (isLive) this.latch(code);
   }
 
   padUp(code: string): void {
@@ -337,7 +357,7 @@ export class InputManager {
       ...(this.throwLatch ? { throw: true } : {}),
       ...(this.spinnerLatch ? { spinner: true } : {}),
       ...(this.fountainLatch ? { fountain: true } : {}),
-      ...(this.eatLatch ? { eat: true } : {}),
+      ...(this.eatLatch ? { eat: this.eatLatch } : {}),
       ...(this.keepsakeLatch ? { keepsake: this.keepsakeLatch } : {}),
       search: this.isHeld([SEARCH_CODE]),
       ...(this.stance === 'sneak' ? { sneak: true } : {}),
@@ -349,19 +369,9 @@ export class InputManager {
 
   /** A pad button in play, as the key it stands for. Start, View and R3 reach the panels whatever is up. */
   private gamepadPress(code: string): void {
-    if (code === 'Escape') {
-      this.callbacks.onPause();
-      return;
-    }
-    if (MAP_CODES.has(code)) {
-      this.callbacks.onMap();
-      return;
-    }
-    if (code === LOG_CODE) {
-      this.callbacks.onLog?.();
-      return;
-    }
-    if (this.enabled) this.latch(code);
+    const tookPanel = this.pressPanel(code, true);
+    const isLive = !tookPanel && this.enabled;
+    if (isLive) this.latch(code);
   }
 
   /** A behind a menu: the focused button answers it, as it answers Enter, else the screen's own confirm. */
@@ -399,19 +409,21 @@ export class InputManager {
     return isEnter;
   }
 
-  /** Mute, the log and the map. True if the key was one of them. */
+  /** Mute, the log, the map and the candy bag. True if the key was one of them. */
   private panelKey(event: KeyboardEvent): boolean {
     const { code, repeat } = event;
     const isMute = code === 'KeyM';
     const isLog = code === LOG_CODE;
     const isMap = MAP_CODES.has(code);
+    const isBag = code === BAG_CODE;
     const shouldMute = isMute && !repeat;
     if (shouldMute) this.callbacks.onMute();
     let taken = false;
     if (isLog) taken = !repeat && (this.callbacks.onLog?.() ?? false);
     if (isMap) taken = repeat ? this.callbacks.mapUsable() : this.callbacks.onMap();
+    if (isBag) taken = !repeat && (this.callbacks.onBag?.() ?? false);
     if (taken) event.preventDefault();
-    return isMute || isLog || isMap;
+    return isMute || isLog || isMap || isBag;
   }
 
   /** A movement or action key: held for movement, latched for one-shot actions while input is on. */
@@ -437,7 +449,6 @@ export class InputManager {
     this.throwLatch ||= code === THROW_CODE;
     this.spinnerLatch ||= code === SPINNER_CODE;
     this.fountainLatch ||= code === FOUNTAIN_CODE;
-    this.eatLatch ||= code === EAT_CODE;
     const weapon = WEAPON_KEYS[code];
     if (weapon) this.weaponLatch = weapon;
   }

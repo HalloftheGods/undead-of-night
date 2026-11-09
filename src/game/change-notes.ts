@@ -34,6 +34,19 @@ export const CHANGE_NOTES: readonly ChangeNote[] = [
     ],
   },
   {
+    id: 'candy-bag',
+    date: '2026-11-09',
+    kind: 'new',
+    title: 'The candy bag',
+    deck: 'Trick-or-treat as hard as you shoot: your bag has no bottom now.',
+    points: [
+      'Carry as much candy as you can find. No bowl is ever left behind.',
+      'Press X, or tap the candy in your backpack, to open your candy bag and pick one to eat.',
+      'Every candy has its own picture, its count and what it does.',
+      'Eat one that is already working and its time stacks: the boost lasts longer.',
+    ],
+  },
+  {
     id: 'map-art',
     date: '2026-11-09',
     kind: 'better',
@@ -114,7 +127,6 @@ export const CHANGE_NOTES: readonly ChangeNote[] = [
     points: [
       'Houses and apartments wear string lights, carved pumpkins and cobwebs.',
       'Every home has a candy bowl by its front door: search it for a candy.',
-      'A full bag leaves the bowl where it is for the next survivor.',
     ],
   },
   {
@@ -474,18 +486,6 @@ export const CHANGE_NOTES: readonly ChangeNote[] = [
     title: 'Setup shows your picks',
     deck: 'Each finished step in the setup stepper shows a little picture of what you chose.',
     points: ['Your style, mode and difficulty sit in the stepper as thumbnails. Tap one to go back and change it.'],
-  },
-  {
-    id: 'sound-color-size-options',
-    date: '2026-11-07',
-    kind: 'better',
-    title: 'Options for your ears and eyes',
-    deck: 'Set music and sound effects apart, pick colorblind hit colors and make the UI bigger.',
-    points: [
-      'Music and Sound effects each get their own slider under Volume.',
-      'Hit colors: Colorblind swaps red and green for magenta and blue on health bars, callouts and the HUD.',
-      'UI size: Large and Larger make the HUD and menus easier to read on a phone.',
-    ],
   },
   ...EARLIER_NOTES,
 ];

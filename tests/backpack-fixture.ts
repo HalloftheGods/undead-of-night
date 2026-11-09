@@ -18,7 +18,8 @@ export function aHud(patch: Partial<HudState> = {}): HudState {
     bottles: 0,
     fireworks: 0,
     fountains: 0,
-    candy: [],
+    bag: [],
+    candyCount: 0,
     sugar: [],
     keepsakes: [],
     keepsakeOffer: null,
@@ -50,7 +51,7 @@ export function fullBackpack(): HudState {
     bottles: 2,
     fireworks: 1,
     fountains: 3,
-    candy: ['Sour Skulls'],
+    candyCount: 1,
     owned: ['pistol', 'shotgun'],
   });
 }

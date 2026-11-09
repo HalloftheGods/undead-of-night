@@ -43,5 +43,7 @@ export interface GameTransport {
   setPaused(paused: boolean): void;
   /** Solo only: stop the clock for a beat (a hit-stop), then carry on unless paused meanwhile. */
   hold?(ms: number): void;
+  /** Solo only: one tick while paused, so a candy picked behind the bag is eaten there and then. */
+  stepHeld?(): void;
   disconnect(): void;
 }

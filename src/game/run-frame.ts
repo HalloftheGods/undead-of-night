@@ -54,6 +54,7 @@ export class RunFrame {
     if (frozen) {
       renderer.render({ ...this.lastScene, showCrosshair: false }, 0);
       runHud.repaintMap(ms);
+      runHud.repaintHeld(world);
       return;
     }
     const isStillHeld = ms < this.heldUntilMs;

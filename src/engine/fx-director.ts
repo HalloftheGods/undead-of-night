@@ -315,9 +315,7 @@ export class FxDirector {
   private onContainerOpened(event: Extract<GameEvent, { type: 'container_opened' }>, ctx: FxContext): void {
     const emptyHanded = !event.found && event.playerId === ctx.localId;
     const gotBottle = event.bottle === true && event.playerId === ctx.localId;
-    const bagFull = event.full === true && event.playerId === ctx.localId;
-    if (bagFull) this.note('BAG FULL', event.x, event.y);
-    else if (event.noisy) this.particles.addText('CLATTER', event.x, event.y - NOTE_HEIGHT, SCORE_COLOR);
+    if (event.noisy) this.particles.addText('CLATTER', event.x, event.y - NOTE_HEIGHT, SCORE_COLOR);
     else if (gotBottle) this.note('BOTTLE', event.x, event.y);
     else if (event.stash && event.playerId === ctx.localId) this.particles.addText(stashLabel(event), event.x, event.y - NOTE_HEIGHT, hitPalette().safe);
     else if (emptyHanded) this.note('NOTHING', event.x, event.y);

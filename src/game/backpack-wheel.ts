@@ -5,7 +5,6 @@
 // here: a slot shows up because the HUD says it is carried, and it greys out when the pick would
 // do nothing.
 
-import { CANDIES } from '../../shared/candy.ts';
 import { WEAPONS } from '../../shared/constants.ts';
 import type { WeaponId } from '../../shared/protocol.ts';
 import { cycleWeapon } from './input-manager.ts';
@@ -33,17 +32,8 @@ export interface WheelSlot {
 
 type WheelHud = Pick<
   HudState,
-  'medkits' | 'health' | 'maxHealth' | 'bottles' | 'fireworks' | 'fountains' | 'candy' | 'sugar' | 'weapon' | 'owned' | 'ammoBag' | 'mags'
+  'medkits' | 'health' | 'maxHealth' | 'bottles' | 'fireworks' | 'fountains' | 'candyCount' | 'weapon' | 'owned' | 'ammoBag' | 'mags'
 >;
-
-/** The candy eaten next: the oldest one carried that is not already working (shared/candy.ts). */
-export function nextCandy(hud: Pick<HudState, 'candy' | 'sugar'>): string | null {
-  const working = new Set(hud.sugar.map((sugar) => sugar.name));
-  return hud.candy.find((name) => !working.has(name)) ?? null;
-}
-
-/** The candy name every CANDIES entry carries, so a name off a snapshot is one the game knows. */
-const CANDY_NAMES: ReadonlySet<string> = new Set(Object.values(CANDIES).map((candy) => candy.name));
 
 function medkitSlot(hud: WheelHud): WheelSlot {
   const hurt = hud.health < hud.maxHealth;
@@ -59,7 +49,8 @@ function medkitSlot(hud: WheelHud): WheelSlot {
 
 function gunSlot(hud: WheelHud): WheelSlot | null {
   const next = cycleWeapon(hud, 1);
-  if (next === null) return null;
+  const hasNoOtherGun = next === null;
+  if (hasNoOtherGun) return null;
   return {
     code: 'KeyQ',
     name: WEAPONS[next].label,
@@ -71,20 +62,11 @@ function gunSlot(hud: WheelHud): WheelSlot | null {
   };
 }
 
+/** The candy opens the candy bag, where the survivor picks which one to eat. */
 function candySlot(hud: WheelHud): WheelSlot | null {
-  const nothingCarried = hud.candy.length === 0;
+  const nothingCarried = hud.candyCount === 0;
   if (nothingCarried) return null;
-  const next = nextCandy(hud);
-  // A name off a snapshot the client does not know is still carried; it just gets no name of its own.
-  const named = next !== null && CANDY_NAMES.has(next);
-  return {
-    code: 'KeyX',
-    name: named ? next : 'Candy',
-    label: named ? `Eat ${next}` : 'Eat a candy',
-    art: 'candy',
-    count: hud.candy.length,
-    ready: next !== null,
-  };
+  return { code: 'KeyX', name: 'Candy bag', label: 'Open the candy bag', art: 'candy', count: hud.candyCount, ready: true };
 }
 
 /**
@@ -97,7 +79,7 @@ export function wheelSlots(hud: WheelHud): WheelSlot[] {
     medkitSlot(hud),
     gunSlot(hud),
     hud.bottles > 0 ? { code: 'KeyG', name: 'Bottle', label: 'Throw a bottle', art: 'bottle', count: hud.bottles, ready: true } : null,
-    hud.fireworks > 0 ? { code: 'KeyT', name: 'Spinner', label: 'Light a spinner', art: 'fireworks', count: hud.fireworks, ready: true } : null,
+    hud.fireworks > 0 ? { code: 'KeyT', name: 'Firework', label: 'Light a firework', art: 'fireworks', count: hud.fireworks, ready: true } : null,
     hud.fountains > 0 ? { code: 'KeyV', name: 'Fountain', label: 'Light a fountain', art: 'fountain', count: hud.fountains, ready: true } : null,
     candySlot(hud),
     { code: 'KeyN', name: 'Town map', label: 'Open the town map', art: 'map', count: null, ready: true },

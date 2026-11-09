@@ -86,7 +86,7 @@ export function placeAtEntry(sim: SimState, p: PlayerState): void {
   p.throwQueued = false;
   p.spinnerQueued = false;
   p.fountainQueued = false;
-  p.eatQueued = false;
+  p.eatQueued = [];
   // Candy is carried on, and what is working keeps working. Fireworks are the town's: they stay behind when the van leaves it.
   p.fireworks = 0;
   p.fountains = 0;

@@ -23,7 +23,7 @@ export const KEEPSAKES: Readonly<Record<KeepsakeId, KeepsakeDef>> = {
   rosary: { id: 'rosary', name: 'Rosary', blurb: 'Downed, you hold on half as long again.' },
   lighter: { id: 'lighter', name: 'Pocket Lighter', blurb: 'Spinners whirl half as long again.' },
   old_watch: { id: 'old_watch', name: 'Old Watch', blurb: 'Reload a tenth faster, every gun.' },
-  treat_bag: { id: 'treat_bag', name: 'Trick-or-Treat Bag', blurb: 'Carry three candies instead of two.' },
+  treat_bag: { id: 'treat_bag', name: 'Trick-or-Treat Bag', blurb: 'Every candy you eat lasts half as long again.' },
   dog_tags: { id: 'dog_tags', name: 'Dog Tags', blurb: 'Revive a downed teammate twice as fast.' },
 };
 
@@ -42,7 +42,7 @@ export const BANDOLIER_AMMO = 1.25;
 export const ROSARY_BLEEDOUT = 1.5;
 export const LIGHTER_SPIN = 1.5;
 export const WATCH_RELOAD = 1.1;
-export const TREAT_BAG_CANDY = 3;
+export const TREAT_BAG_TIME = 1.5;
 export const DOG_TAG_REVIVE = 2;
 
 /** Spare rounds a survivor can carry for a gun. Shared with the client's "no room" note. */

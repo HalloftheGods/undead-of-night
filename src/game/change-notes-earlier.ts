@@ -5,6 +5,18 @@ import type { ChangeNote } from './change-notes.ts';
 
 export const EARLIER_NOTES: readonly ChangeNote[] = [
   {
+    id: 'sound-color-size-options',
+    date: '2026-11-07',
+    kind: 'better',
+    title: 'Options for your ears and eyes',
+    deck: 'Set music and sound effects apart, pick colorblind hit colors and make the UI bigger.',
+    points: [
+      'Music and Sound effects each get their own slider under Volume.',
+      'Hit colors: Colorblind swaps red and green for magenta and blue on health bars, callouts and the HUD.',
+      'UI size: Large and Larger make the HUD and menus easier to read on a phone.',
+    ],
+  },
+  {
     id: 'apartment-floors',
     date: '2026-11-07',
     kind: 'new',

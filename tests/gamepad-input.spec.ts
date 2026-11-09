@@ -63,7 +63,7 @@ describe('the stick dead zone', () => {
 describe('a gamepad on the game', () => {
   let browser: FakeBrowser;
   let pads: (Gamepad | null)[];
-  let calls: { onConfirm: number; onPause: number; onMap: number; navigate: string[]; devices: string[] };
+  let calls: { onConfirm: number; onPause: number; onMap: number; onBag: number; navigate: string[]; devices: string[] };
   let input: InputManager;
 
   /** Puts these pads in the browser's hands and runs one frame's poll. */
@@ -76,13 +76,14 @@ describe('a gamepad on the game', () => {
     browser = installFakeBrowser();
     pads = [];
     vi.stubGlobal('navigator', { getGamepads: () => pads });
-    calls = { onConfirm: 0, onPause: 0, onMap: 0, navigate: [], devices: [] };
+    calls = { onConfirm: 0, onPause: 0, onMap: 0, onBag: 0, navigate: [], devices: [] };
     const callbacks: InputCallbacks = {
       onGesture() {},
       onPause: () => { calls.onPause += 1; },
       onMute() {},
       onConfirm: () => { calls.onConfirm += 1; },
       onMap: () => { calls.onMap += 1; return true; },
+      onBag: () => { calls.onBag += 1; return true; },
       mapUsable: () => true,
       onNavigate: (direction) => { calls.navigate.push(direction); },
       onDeviceChange: (device) => { calls.devices.push(device); },
@@ -188,9 +189,12 @@ describe('a gamepad on the game', () => {
       expect(input.sample(2, 0, loadout).weapon).toBe('shotgun');
     });
 
-    it('throws, lights a spinner or a fountain, and eats a candy', () => {
+    it('throws, lights a spinner or a fountain, and opens the candy bag', () => {
       frame(pad({ buttons: { [PAD.rb]: 1, [PAD.up]: 1, [PAD.down]: 1, [PAD.y]: 1 } }));
-      expect(input.sample(1, 0, null)).toMatchObject({ throw: true, spinner: true, fountain: true, eat: true });
+      const packet = input.sample(1, 0, null);
+      expect(packet).toMatchObject({ throw: true, spinner: true, fountain: true });
+      expect(packet.eat).toBeUndefined();
+      expect(calls.onBag).toBe(1);
     });
 
     it('sprints on LB held, toggles sneak on L3, and a sprint ends the sneak', () => {

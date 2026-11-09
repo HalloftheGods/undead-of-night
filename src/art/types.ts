@@ -2,7 +2,7 @@ import type { DifficultyId } from '../../shared/difficulty.ts';
 import type { EmoteId } from '../../shared/emotes.ts';
 import type { GameStyle } from '../../shared/game-style.ts';
 import type { MerchantId } from '../../shared/home-protocol.ts';
-import type { BuildingKind, PickupType, PropKind, TileKind, WeaponId, ZombieType } from '../../shared/protocol.ts';
+import type { BuildingKind, CandyId, PickupType, PropKind, TileKind, WeaponId, ZombieType } from '../../shared/protocol.ts';
 import type { ContainerArt, ContainerLook } from './containers.ts';
 
 /**
@@ -187,6 +187,8 @@ export interface UiArt {
   readonly fountain: PixelSprite;
   /** A wrapped sweet, for the candy carried: the HUD counts it and the backpack ring offers it. */
   readonly candy: PixelSprite;
+  /** Every candy's own picture, 16x16, for the candy bag screen (fx/candies.ts). */
+  readonly candies: Readonly<Record<CandyId, PixelSprite>>;
   /** The town map folded in three, as the backpack ring offers it. */
   readonly townMap: PixelSprite;
   readonly skull: PixelSprite;

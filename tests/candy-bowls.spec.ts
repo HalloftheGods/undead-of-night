@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CANDY_CARRY, candyIn, DOORSTEP_HOMES } from '../shared/candy.ts';
+import { candyIn, DOORSTEP_HOMES } from '../shared/candy.ts';
 import { containerInReach, SEARCH_SEC, townContainers } from '../shared/containers.ts';
 import type { Container } from '../shared/containers.ts';
 import { PLAYER_RADIUS, TICK_RATE } from '../shared/constants.ts';
@@ -71,14 +71,12 @@ describe('Halloween night candy bowls', () => {
     expect(opened.candy).toBe(p.candy[0]);
   });
 
-  it('stays out for the next survivor when the searcher\'s bag is full', () => {
+  it('gives its candy however much is in the bag already: the bag has no bottom', () => {
     const { sim, state, p, bowl } = atAFullBowl();
-    p.candy = Array.from({ length: CANDY_CARRY }, () => 'ghost_gum' as const);
+    p.candy = Array.from({ length: 40 }, () => 'ghost_gum' as const);
     searchFor(sim, bowl);
-    expect(p.candy).toHaveLength(CANDY_CARRY);
-    expect(state.containers[bowl.id].opened).toBe(false);
-    const [refused] = eventsOf(sim.snapshot(), 'container_opened');
-    expect(refused.full).toBe(true);
+    expect(p.candy).toHaveLength(41);
+    expect(state.containers[bowl.id].opened).toBe(true);
   });
 
   it('lights its front step like a jack-o\'-lantern', () => {

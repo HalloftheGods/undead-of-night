@@ -79,9 +79,9 @@
           <span>{{ hud.fountains }}</span>
           <span class="hud-slot-key keys-only">V</span>
         </div>
-        <div v-if="hud.candy.length > 0" class="hud-chip hud-bottles hud-candy" :title="hud.candy.join(', ')">
+        <div v-if="hud.candyCount > 0" class="hud-chip hud-bottles hud-candy" :title="hud.bag.map((stack) => `${stack.name} x${stack.count}`).join(', ')">
           <span class="hud-candy-icon" aria-hidden="true" />
-          <span>{{ hud.candy[0] }}<template v-if="hud.candy.length > 1"> +{{ hud.candy.length - 1 }}</template></span>
+          <span>Candy {{ hud.candyCount }}</span>
           <span class="hud-slot-key keys-only">X</span>
         </div>
         <div v-if="hud.knife" class="hud-chip hud-knife">

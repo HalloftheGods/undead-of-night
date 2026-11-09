@@ -1,6 +1,6 @@
 {
   "name": "zombie-survival",
-  "version": "26.11.9-26",
+  "version": "26.11.9-30",
   "private": true,
   "type": "module",
   "scripts": {
