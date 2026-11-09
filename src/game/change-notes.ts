@@ -22,6 +22,18 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'five-survivors',
+    date: '2026-11-09',
+    kind: 'better',
+    title: 'Room for all five',
+    deck: 'A co-op room now holds five players, one for every survivor.',
+    points: [
+      'Night, Bear, Kat, Rex and Kai can all be out on the same night.',
+      'Nobody plays the same survivor twice. Joining with a code tells you who is free if yours is taken.',
+      'Find a team only puts you in rooms where your survivor is still free.',
+    ],
+  },
+  {
     id: 'more-cars',
     date: '2026-11-08',
     kind: 'new',

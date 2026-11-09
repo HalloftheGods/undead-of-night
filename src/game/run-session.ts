@@ -10,7 +10,7 @@ import { PROTOCOL_VERSION, type SnapshotPacket, type WelcomePacket, type WorldMa
 import type { AudioEngine } from '../audio/audio-engine.ts';
 import type { WorldRenderer } from '../engine/world-renderer.ts';
 import { LocalSession } from '../network/local-session.ts';
-import { coopTarget, matchRoom, onlineRoomsLive } from '../network/play-api.ts';
+import { coopTarget, lookupRoom, matchRoom, onlineRoomsLive } from '../network/play-api.ts';
 import type { RoomSession } from '../network/remote-session.ts';
 import { resolveServerUrl, SocketSession } from '../network/socket-session.ts';
 import type { GameTransport } from '../network/transport.ts';
@@ -28,6 +28,7 @@ import { NO_RUN_UI } from './run-hud.ts';
 import type { RunHud } from './run-hud.ts';
 import type { RunStage } from './run-stage.ts';
 import { loadLeaderboard } from './storage.ts';
+import { seatRefusal } from './seat-check.ts';
 import { streakCardLine, tonightsStreakNight } from './streak-reward.ts';
 import { loadBests } from './trip-record.ts';
 
@@ -174,7 +175,7 @@ export class RunSession {
       onUnlisted: () => this.host.publish({ onlineRoom: null }),
     };
     if (plan.kind === 'host') return this.openCoop(rooms.hostRoom(style, events), style);
-    if (plan.kind === 'join') return this.openCoop(rooms.joinRoom(plan.code), style);
+    if (plan.kind === 'join') return this.joinByCode(rooms.joinRoom, plan.code, style);
     const found = await matchRoom({ protocol: PROTOCOL_VERSION, style, difficulty: loadDifficulty(), character: loadCharacter(), device: rooms.hostDevice() });
     if (!this.stillWanted()) return;
     if (!found.ok) {
@@ -184,6 +185,20 @@ export class RunSession {
     const { match } = found;
     const session = match.kind === 'join' ? rooms.joinRoom(match.code, true) : rooms.hostRoom(style, events, { public: true, preset: { code: match.code, hostKey: match.hostKey } });
     this.openCoop(session, style);
+  }
+
+  /** A code join looks the room up first, so a survivor already in it is turned away here rather than swapped. A failed lookup leaves the join to report its own error. */
+  private async joinByCode(join: (code: string) => RoomSession, code: string, style: GameStyle): Promise<void> {
+    const found = await lookupRoom(code);
+    const hasLeft = !this.stillWanted();
+    if (hasLeft) return;
+    const refusal = found.ok ? seatRefusal(found.card, loadCharacter()) : null;
+    const isTurnedAway = refusal !== null;
+    if (isTurnedAway) {
+      this.host.publish({ connecting: false, error: refusal });
+      return;
+    }
+    this.openCoop(join(code), style);
   }
 
   /** Still on the menu and waiting: the player has not left, and nothing else has started, while a fetch was out. */
