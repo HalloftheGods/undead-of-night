@@ -22,6 +22,18 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'map-art',
+    date: '2026-11-09',
+    kind: 'better',
+    title: 'A town map drawn in pixel art',
+    deck: 'Press Tab and the town looks like a town: roofs, signs, trees and parked cars.',
+    points: [
+      'Every building has a little roof in its colour, with a sign on top: a cross for medicine, a star for the police, a pistol for guns.',
+      'The van and the supply drop are drawn as a van and a crate on its parachute.',
+      'The key beside the map shows the same pictures, sorted under Your marks, Places, On the way and Left behind.',
+    ],
+  },
+  {
     id: 'town-names',
     date: '2026-11-09',
     kind: 'better',
