@@ -9,6 +9,7 @@ import {
   sugarOf,
   takeCandy,
   bagOf,
+  MAX_CANDY_BAG,
 } from '../shared/candy.ts';
 import { POPPING_REACH, SPINNER_RADIUS } from '../shared/throwables.ts';
 import { townContainers } from '../shared/containers.ts';
@@ -62,14 +63,18 @@ describe('candy', () => {
     // Builds thirty towns, so it scales with machine load; the global 20s cap is too tight.
   }, 120_000);
 
-  it('carries as much as it finds: the bag has no bottom', () => {
+  it('limits the candy bag to 100 pieces of candy', () => {
     const { sim, state } = quietSim();
     const [p] = state.players;
-    for (let i = 0; i < 30; i++) expect(takeCandy(p, 'jawbreaker')).toBe('jawbreaker');
+    expect(MAX_CANDY_BAG).toBe(100);
+    for (let i = 0; i < 99; i++) expect(takeCandy(p, 'jawbreaker')).toBe('jawbreaker');
     expect(takeCandy(p, 'ghost_gum')).toBe('ghost_gum');
-    expect(p.candy).toHaveLength(31);
-    expect(bagOf(p.candy)).toEqual({ jawbreaker: 30, ghost_gum: 1 });
-    expect(sim.snapshot().players[0].bag).toEqual({ jawbreaker: 30, ghost_gum: 1 });
+    expect(p.candy).toHaveLength(100);
+    expect(bagOf(p.candy)).toEqual({ jawbreaker: 99, ghost_gum: 1 });
+    expect(sim.snapshot().players[0].bag).toEqual({ jawbreaker: 99, ghost_gum: 1 });
+    // Attempting to pick up more when bag is full at 100 returns null
+    expect(takeCandy(p, 'sour_skulls')).toBeNull();
+    expect(p.candy).toHaveLength(100);
   });
 
   it('eats the candy picked out of the bag, not the first one in it', () => {

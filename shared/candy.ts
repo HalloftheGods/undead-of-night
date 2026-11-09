@@ -110,10 +110,15 @@ export function candyIn(seed: number, container: Container): CandyId | null {
   return found ? pickWeighted(rng, WEIGHTS) : null;
 }
 
-/** Into the bag, which always has room. */
+/** Maximum candy pieces one survivor can carry in their bag. */
+export const MAX_CANDY_BAG = 100;
+
+/** Into the bag, capped at MAX_CANDY_BAG (100 pieces). */
 export function takeCandy(p: PlayerState, candy: CandyId | null): CandyId | null {
   const foundNone = candy === null;
   if (foundNone) return null;
+  const isBagFull = p.candy.length >= MAX_CANDY_BAG;
+  if (isBagFull) return null;
   p.candy.push(candy);
   return candy;
 }

@@ -1,6 +1,6 @@
 <template>
   <section class="px-screen px-title-scale bag" aria-label="Candy bag" @mousedown.stop @pointerdown.stop @touchstart.stop>
-    <h2 class="px-heading bag-heading">Candy Bag <span class="bag-total">{{ hud.candyCount }}</span></h2>
+    <h2 class="px-heading bag-heading">Candy Bag <span class="bag-total">{{ hud.candyCount }} / {{ MAX_CANDY_BAG }}</span></h2>
 
     <ol v-if="hud.bag.length > 0" class="bag-cards" :style="layout" aria-label="Candy">
       <li v-for="(stack, index) in hud.bag" :key="stack.id">
@@ -69,7 +69,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue';
 import type { ArtBook } from '../art/types.ts';
 import type { CandyId } from '../../shared/protocol.ts';
-import { CANDY_SEC } from '../../shared/candy.ts';
+import { CANDY_SEC, MAX_CANDY_BAG } from '../../shared/candy.ts';
 import { spriteDataUrl } from '../engine/sprite-cache.ts';
 import type { CandyStack } from '../game/candy-bag.ts';
 import type { HudState } from '../game/hud-state.ts';
