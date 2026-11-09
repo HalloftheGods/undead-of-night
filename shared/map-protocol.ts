@@ -114,6 +114,9 @@ export const WALL_THICKNESS = 6;
 export const BUILDING_DEFS = {
   pharmacy: { label: 'Pharmacy', w: 160, h: 112, doorX: 80, floor: 'floor_tile' },
   clinic: { label: 'Clinic', w: 192, h: 128, doorX: 96, floor: 'floor_tile' },
+  // The two biggest buildings in town: wards off a long lobby, and classrooms off the school hall.
+  hospital: { label: 'Hospital', w: 320, h: 192, doorX: 160, floor: 'floor_tile' },
+  school: { label: 'School', w: 288, h: 176, doorX: 144, floor: 'floor_wood' },
   police: { label: 'Police Station', w: 224, h: 144, doorX: 112, floor: 'floor_concrete' },
   gun_shop: { label: 'Gun Shop', w: 144, h: 112, doorX: 48, floor: 'floor_wood' },
   grocery: { label: 'Grocery', w: 208, h: 128, doorX: 64, floor: 'floor_tile' },

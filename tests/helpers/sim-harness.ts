@@ -7,6 +7,7 @@ import type { ExitState, SimState, ZombieState } from '../../shared/sim-state.ts
 import { alivePlayers } from '../../shared/sim-state.ts';
 import { GameSimulation } from '../../shared/simulation.ts';
 import { spawnZombie } from '../../shared/waves.ts';
+import { circleHitsSolid, segmentHitsSolid } from '../../shared/world-query.ts';
 
 export const SEED = 4242;
 
@@ -46,6 +47,24 @@ export function quietSim(players: readonly string[] = ['a']): { sim: GameSimulat
   state.populationTarget = 0;
   sim.snapshot();
   return { sim, state };
+}
+
+/**
+ * A direction from the player with open ground out to `reach`: nothing solid on the way, and room for a
+ * body along it. The town round the spawn changes as buildings are added, so a test that sets zombies
+ * out in a line takes whichever way is clear rather than assuming east is.
+ */
+export function clearWay(state: SimState, reach: number, room = 10): { dx: number; dy: number } {
+  const [p] = state.players;
+  for (const angle of [0, Math.PI, Math.PI / 2, -Math.PI / 2, Math.PI / 4, (3 * Math.PI) / 4, -Math.PI / 4, (-3 * Math.PI) / 4]) {
+    const dx = Math.cos(angle);
+    const dy = Math.sin(angle);
+    const blocked = segmentHitsSolid(state.map, p.x, p.y, p.x + dx * reach, p.y + dy * reach) !== null;
+    const cramped = Array.from({ length: 8 }, (_, k) => ((k + 1) / 8) * reach).some((d) => circleHitsSolid(state.map, p.x + dx * d, p.y + dy * d, room));
+    const isClear = !blocked && !cramped;
+    if (isClear) return { dx, dy };
+  }
+  throw new Error('no clear way out from the player');
 }
 
 /** A zombie that knows where everyone is and will not lose interest. */

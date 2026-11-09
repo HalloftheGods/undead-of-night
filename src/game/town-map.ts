@@ -59,12 +59,15 @@ const LAW = '#4a78a8';
 const FOOD = '#5c9450';
 const WORK = '#86745a';
 const HOMES = '#4c4c56';
+const SCHOOL = '#8a62a8';
 const DROP_COLOR = '#e0463a';
 export const EXIT_COLOR = '#ffc03c';
 
 const BUILDING_COLOR: Record<BuildingKind, string> = {
   pharmacy: MEDICAL,
   clinic: MEDICAL,
+  hospital: MEDICAL,
+  school: SCHOOL,
   police: LAW,
   gun_shop: ARMS,
   grocery: FOOD,
@@ -86,6 +89,7 @@ export const TOWN_LEGEND: readonly (readonly [string, string])[] = [
   [ARMS, 'Guns'],
   [WORK, 'Garages and yards'],
   [FOOD, 'Food'],
+  [SCHOOL, 'School'],
   [HOMES, 'Homes'],
   [EXIT_COLOR, 'The van, once it comes'],
   [DROP_COLOR, 'A supply drop'],
