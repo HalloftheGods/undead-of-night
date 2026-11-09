@@ -1,16 +1,59 @@
 <template>
   <section class="hud">
     <header class="hud-top">
-      <div class="hud-chip hud-night">
-        <span class="hud-sub">{{ levelLine(hud.level) }}</span>
-        <span class="hud-wave" :class="horde.loud ? 'is-threat' : 'is-quiet'">{{ horde.title }}</span>
-        <span v-if="horde.detail" class="hud-sub is-threat">{{ horde.detail }}</span>
-        <span class="hud-sub hud-goal" :class="{ 'is-van': hud.exitOpen }">{{ levelGoal(hud) }}</span>
+      <!-- What is carried, across the top left like the item row of a Zelda screen. -->
+      <div class="hud-vitals">
+        <div class="hud-items">
+          <div class="hud-chip hud-medkits" :class="{ 'is-none': hud.medkits === 0 }">
+            <SpriteImg :sprite="art.ui.pickupIcons.medkit" />
+            <span>{{ hud.medkits }}</span>
+            <kbd v-if="glyph('KeyH')" class="hud-keycap keys-only">{{ glyph('KeyH') }}</kbd>
+          </div>
+          <div v-if="hud.bottles > 0" class="hud-chip hud-bottles">
+            <SpriteImg :sprite="art.ui.bottle" />
+            <span>{{ hud.bottles }}</span>
+            <kbd v-if="glyph('KeyG')" class="hud-keycap keys-only">{{ glyph('KeyG') }}</kbd>
+          </div>
+          <div v-if="hud.fireworks > 0" class="hud-chip hud-bottles">
+            <SpriteImg :sprite="art.ui.fireworks" />
+            <span>{{ hud.fireworks }}</span>
+            <kbd v-if="glyph('KeyT')" class="hud-keycap keys-only">{{ glyph('KeyT') }}</kbd>
+          </div>
+          <div v-if="hud.fountains > 0" class="hud-chip hud-bottles">
+            <SpriteImg :sprite="art.ui.fountain" />
+            <span>{{ hud.fountains }}</span>
+            <kbd v-if="glyph('KeyV')" class="hud-keycap keys-only">{{ glyph('KeyV') }}</kbd>
+          </div>
+          <div v-if="hud.candyCount > 0" class="hud-chip hud-bottles hud-candy" :title="hud.bag.map((stack) => `${stack.name} x${stack.count}`).join(', ')">
+            <span class="hud-candy-icon" aria-hidden="true" />
+            <span>Candy {{ hud.candyCount }}</span>
+            <kbd v-if="glyph('KeyX')" class="hud-keycap keys-only">{{ glyph('KeyX') }}</kbd>
+          </div>
+          <div v-if="hud.knife" class="hud-chip hud-knife">
+            <SpriteImg :sprite="art.ui.pickupIcons.knife" />
+            <kbd v-if="glyph('KeyF')" class="hud-keycap keys-only">{{ glyph('KeyF') }}</kbd>
+          </div>
+        </div>
+        <ul v-if="hud.sugar.length > 0" class="hud-chip hud-sugar" aria-label="Candy working">
+          <li v-for="sugar in hud.sugar" :key="sugar.name">
+            <span>{{ sugar.name }}</span>
+            <span class="hud-sugar-left">{{ sugar.left }}s</span>
+          </li>
+        </ul>
       </div>
 
-      <div v-if="home" class="hud-home">
-        <TreasureChip v-if="!home.inBunker" :home />
-        <QuestTracker :home />
+      <div class="hud-centre">
+        <div class="hud-chip hud-night">
+          <span class="hud-sub">{{ levelLine(hud.level) }}</span>
+          <span class="hud-wave" :class="horde.loud ? 'is-threat' : 'is-quiet'">{{ horde.title }}</span>
+          <span v-if="horde.detail" class="hud-sub is-threat">{{ horde.detail }}</span>
+          <span class="hud-sub hud-goal" :class="{ 'is-van': hud.exitOpen }">{{ levelGoal(hud) }}</span>
+        </div>
+
+        <div v-if="home" class="hud-home">
+          <TreasureChip v-if="!home.inBunker" :home />
+          <QuestTracker :home />
+        </div>
       </div>
 
       <!--
@@ -52,44 +95,6 @@
     <p v-if="place" :key="place.key" class="hud-place">{{ place.label }}</p>
 
     <footer class="hud-bottom">
-      <div class="hud-vitals">
-        <ul v-if="hud.sugar.length > 0" class="hud-chip hud-sugar" aria-label="Candy working">
-          <li v-for="sugar in hud.sugar" :key="sugar.name">
-            <span>{{ sugar.name }}</span>
-            <span class="hud-sugar-left">{{ sugar.left }}s</span>
-          </li>
-        </ul>
-        <div class="hud-chip hud-medkits" :class="{ 'is-none': hud.medkits === 0 }">
-          <SpriteImg :sprite="art.ui.pickupIcons.medkit" />
-          <span>{{ hud.medkits }}</span>
-          <kbd v-if="glyph('KeyH')" class="hud-keycap keys-only">{{ glyph('KeyH') }}</kbd>
-        </div>
-        <div v-if="hud.bottles > 0" class="hud-chip hud-bottles">
-          <SpriteImg :sprite="art.ui.bottle" />
-          <span>{{ hud.bottles }}</span>
-          <kbd v-if="glyph('KeyG')" class="hud-keycap keys-only">{{ glyph('KeyG') }}</kbd>
-        </div>
-        <div v-if="hud.fireworks > 0" class="hud-chip hud-bottles">
-          <SpriteImg :sprite="art.ui.fireworks" />
-          <span>{{ hud.fireworks }}</span>
-          <kbd v-if="glyph('KeyT')" class="hud-keycap keys-only">{{ glyph('KeyT') }}</kbd>
-        </div>
-        <div v-if="hud.fountains > 0" class="hud-chip hud-bottles">
-          <SpriteImg :sprite="art.ui.fountain" />
-          <span>{{ hud.fountains }}</span>
-          <kbd v-if="glyph('KeyV')" class="hud-keycap keys-only">{{ glyph('KeyV') }}</kbd>
-        </div>
-        <div v-if="hud.candyCount > 0" class="hud-chip hud-bottles hud-candy" :title="hud.bag.map((stack) => `${stack.name} x${stack.count}`).join(', ')">
-          <span class="hud-candy-icon" aria-hidden="true" />
-          <span>Candy {{ hud.candyCount }}</span>
-          <kbd v-if="glyph('KeyX')" class="hud-keycap keys-only">{{ glyph('KeyX') }}</kbd>
-        </div>
-        <div v-if="hud.knife" class="hud-chip hud-knife">
-          <SpriteImg :sprite="art.ui.pickupIcons.knife" />
-          <kbd v-if="glyph('KeyF')" class="hud-keycap keys-only">{{ glyph('KeyF') }}</kbd>
-        </div>
-      </div>
-
       <!-- Centred at every width, and every slot a real tap target that sends its number key. -->
       <div class="hud-chip hud-weapon">
         <ul class="hud-slots">
@@ -231,25 +236,39 @@ function hold(slot: BarSlot): void {
   pointer-events: none;
 }
 
-/* The town on the left, the trip in the middle, the run's numbers on the right. */
+/*
+ * The item row on the left, the town and the horde in the middle, the run's numbers on the right:
+ * the same split as a Zelda screen. The side columns share what the middle leaves, and may shrink.
+ */
 .hud-top {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  grid-template-areas: 'night home stack';
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-areas: 'vitals centre stack';
   align-items: start;
   gap: calc(var(--u) * 5);
 }
 
-.hud-night {
-  grid-area: night;
+.hud-vitals {
+  grid-area: vitals;
   justify-self: start;
+}
+
+.hud-centre {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  grid-area: centre;
+  gap: calc(var(--u) * 2);
+}
+
+.hud-night {
+  align-items: center;
+  text-align: center;
 }
 
 .hud-home {
   display: flex;
   flex-direction: column;
-  grid-area: home;
-  justify-self: center;
   gap: var(--u);
 }
 
@@ -263,7 +282,7 @@ function hold(slot: BarSlot): void {
   gap: calc(var(--u) * 2);
 }
 
-/* What is carried, bottom left, out of the way of the guns. */
+/* The foot of the screen is the guns' alone; the pickups moved to the top. */
 .hud-bottom {
   display: flex;
   align-items: flex-end;
@@ -346,6 +365,11 @@ function hold(slot: BarSlot): void {
   align-items: baseline;
   gap: calc(var(--u) * 3);
   white-space: nowrap;
+}
+
+/* On a phone the item chips lose their key cap (keys-only) and sit tight, so the row stays short. */
+.is-touch .hud-items {
+  gap: var(--u);
 }
 
 .is-touch .hud-night .hud-goal:not(.is-van) {
@@ -457,6 +481,14 @@ function hold(slot: BarSlot): void {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  gap: calc(var(--u) * 2);
+}
+
+/* One row of icon, count and key; it wraps rather than run under the town block. */
+.hud-items {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: calc(var(--u) * 2);
 }
 
