@@ -7,6 +7,7 @@ import { buildBloater } from './zombies/bloater.ts';
 import { buildBrute } from './zombies/brute.ts';
 import { buildRunner } from './zombies/runner.ts';
 import { buildScreamer } from './zombies/screamer.ts';
+import { rimZombie } from './zombies/rim.ts';
 import { buildWalker } from './zombies/walker.ts';
 
 export { referenceWalker } from './zombies/walker.ts';
@@ -22,7 +23,7 @@ export { referenceWalker } from './zombies/walker.ts';
 const FOOT_DROP: Readonly<Record<ZombieType, number>> = { walker: 3, runner: 3, bloater: 4, brute: 4, screamer: 3 };
 
 function grounded(type: ZombieType, art: ZombieArt): ZombieArt {
-  return { ...art, footDrop: FOOT_DROP[type] };
+  return rimZombie({ ...art, footDrop: FOOT_DROP[type] });
 }
 
 export function buildZombies(): Record<ZombieType, ZombieArt> {
