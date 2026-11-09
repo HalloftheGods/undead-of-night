@@ -4,21 +4,26 @@
     :class="[`is-${phase}`, { 'is-static': reduced }]"
     :style="fades"
     role="img"
-    aria-label="Presented by Hall of the Gods, Inc."
+    :aria-label="currentCard.ariaLabel"
   >
     <div class="splash-mark">
-      <img class="splash-logo" :src="BRAND_MARK" alt="" />
-      <p class="splash-presents">Presented by</p>
-      <p class="splash-name">Hall of the Gods, Inc.</p>
+      <img
+        class="splash-logo"
+        :class="{ 'is-banner': !currentCard.title }"
+        :src="currentCard.image"
+        :alt="currentCard.ariaLabel"
+      />
+      <p v-if="currentCard.kicker" class="splash-presents">{{ currentCard.kicker }}</p>
+      <p v-if="currentCard.title" class="splash-name">{{ currentCard.title }}</p>
     </div>
     <div class="splash-scanlines" aria-hidden="true" />
   </section>
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { motion } from '../game/motion.ts';
-import { BRAND_MARK, splashTimings } from '../game/studio-splash.ts';
+import { SPLASH_CARDS, splashTimings } from '../game/studio-splash.ts';
 import { useGame } from './use-game.ts';
 
 const emit = defineEmits<{ done: [] }>();
@@ -29,7 +34,10 @@ const reduced = motion.reduced.value;
 const timings = splashTimings(reduced);
 const fades = { '--fade-in': `${timings.fadeIn}ms`, '--fade-out': `${timings.fadeOut}ms` };
 const phase = ref<'in' | 'hold' | 'out'>('in');
+const currentIndex = ref(0);
 const timers = new Set<ReturnType<typeof setTimeout>>();
+
+const currentCard = computed(() => SPLASH_CARDS[currentIndex.value] ?? SPLASH_CARDS[0]);
 
 function after(ms: number, then: () => void): void {
   const timer = setTimeout(() => {
@@ -44,29 +52,43 @@ function clearTimers(): void {
   timers.clear();
 }
 
+function startCard(): void {
+  clearTimers();
+  phase.value = 'in';
+  after(timings.fadeIn, () => {
+    phase.value = 'hold';
+  });
+  after(timings.fadeIn + timings.hold, fadeOut);
+}
+
+function advanceOrFinish(): void {
+  const isLast = currentIndex.value >= SPLASH_CARDS.length - 1;
+  if (isLast) {
+    emit('done');
+  } else {
+    currentIndex.value += 1;
+    startCard();
+  }
+}
+
 function fadeOut(): void {
   clearTimers();
   phase.value = 'out';
-  after(timings.fadeOut, () => emit('done'));
+  after(timings.fadeOut, advanceOrFinish);
 }
 
 /** A skip is the first gesture the page gets, so it is also what wakes the sound. */
 function skip(event: Event): void {
   // Ahead of the game's own listeners: Enter here must not start a run behind the splash.
   event.stopPropagation();
-  const leaving = phase.value === 'out';
-  if (leaving) return;
   game.greet();
-  fadeOut();
+  advanceOrFinish();
 }
 
 onMounted(() => {
   window.addEventListener('keydown', skip, { capture: true });
   window.addEventListener('pointerdown', skip, { capture: true });
-  after(timings.fadeIn, () => {
-    phase.value = 'hold';
-  });
-  after(timings.fadeIn + timings.hold, fadeOut);
+  startCard();
 });
 
 onBeforeUnmount(() => {
@@ -128,6 +150,12 @@ onBeforeUnmount(() => {
   width: clamp(9rem, 38vmin, 16rem);
   height: auto;
   filter: drop-shadow(0 0 10px rgba(255, 215, 94, 0.6)) drop-shadow(0 0 28px rgba(224, 160, 32, 0.3));
+}
+
+.splash-logo.is-banner {
+  width: clamp(18rem, 80vmin, 38rem);
+  max-width: 92vw;
+  filter: drop-shadow(0 0 16px rgba(0, 0, 0, 0.8));
 }
 
 .splash-presents {

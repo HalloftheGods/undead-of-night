@@ -7,8 +7,37 @@ export interface SplashTimings {
   readonly fadeOut: number;
 }
 
+export interface SplashCard {
+  readonly id: string;
+  readonly image: string;
+  readonly kicker?: string;
+  readonly title?: string;
+  readonly ariaLabel: string;
+}
+
 /** Served from public/, relative so the build works from any folder. */
 export const BRAND_MARK = 'brand/hall-of-the-gods.webp';
+
+/** The sequence of studio and platform cards shown on game boot. */
+export const SPLASH_CARDS: readonly SplashCard[] = [
+  {
+    id: 'hall-of-the-gods',
+    image: BRAND_MARK,
+    kicker: 'Presented by',
+    title: 'Hall of the Gods, Inc.',
+    ariaLabel: 'Presented by Hall of the Gods, Inc.',
+  },
+  {
+    id: 'for-the-xp',
+    image: 'brand/forthexp-powered.webp',
+    ariaLabel: 'Powered by For The XP!',
+  },
+  {
+    id: 'majora-d',
+    image: 'brand/majora-d-music.webp',
+    ariaLabel: 'Music by Majora D.',
+  },
+];
 
 /** Year of the build, injected by Vite (`define`), so the line never follows the visitor's clock. */
 declare const __BUILD_YEAR__: number;
