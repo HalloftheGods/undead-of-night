@@ -31,7 +31,9 @@ interface Track {
  * hands the scene back to the generated bed.
  *
  * A track is only fetched when a scene asks for it (an element is made on first use), so a level loads its own
- * playlist and nothing else. The file is the Ogg where the browser can play it, the MP3 where it cannot.
+ * take and nothing else: the menu asks for its one track, a town for the one take it plays. The horde's track is
+ * asked for a little early by prefetch(), at the horde warning, so it is ready when the horde comes.
+ * The file is the Ogg where the browser can play it, the MP3 where it cannot.
  */
 export class Soundtrack {
   private readonly tracks = new Map<string, Track>();
@@ -120,6 +122,15 @@ export class Soundtrack {
     if (stalled) this.start(this.current as Track);
   }
 
+  /** Starts fetching the track a scene will open with, without playing it: the horde's, ahead of the horde. */
+  prefetch(scene: Scene): void {
+    if (this.auditionEnd) return;
+    const playlist = playlistFor(scene, this.level, this.style);
+    const nothingToFetch = playlist.files.length === 0 || playlist === this.playlist;
+    if (nothingToFetch) return;
+    this.trackFor(this.upcoming(playlist));
+  }
+
   dispose(): void {
     this.listening.abort();
     for (const track of this.tracks.values()) {
@@ -136,13 +147,18 @@ export class Soundtrack {
     const playlist = this.playlist;
     const nothingToPlay = !playlist || playlist.files.length === 0;
     if (nothingToPlay) return;
-    // A level's first track is a random one of its takes; the rest follow in turn so the music never stops.
-    const turn = this.turns.get(playlist) ?? firstTurn(playlist);
-    this.turns.set(playlist, turn + 1);
-    const track = this.trackFor(playlist.files[turn % playlist.files.length]);
+    const track = this.trackFor(this.upcoming(playlist));
+    this.turns.set(playlist, (this.turns.get(playlist) ?? 0) + 1);
     if (playlist.fromTop) track.element.currentTime = 0;
     this.current = track;
     this.start(track);
+  }
+
+  /** The file a playlist plays next. A level's first is a random one of its takes, chosen once; the rest follow in turn. */
+  private upcoming(playlist: Playlist): string {
+    const turn = this.turns.get(playlist) ?? firstTurn(playlist);
+    this.turns.set(playlist, turn);
+    return playlist.files[turn % playlist.files.length];
   }
 
   private trackFor(file: string): Track {

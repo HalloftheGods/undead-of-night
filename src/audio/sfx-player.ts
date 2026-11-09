@@ -64,6 +64,21 @@ export const waveStart: Recipe = (v) => {
   noise(v, { filter: 'lowpass', freq: 300, freq1: 120, attack: 0.5, decay: 3, gain: 0.15 });
 };
 
+/**
+ * Ten seconds before a horde: war drums closing in, quickening to a heavy last hit, under a far-off siren
+ * only starting to wind up. Told apart from wave_start's full wail, which marks the horde itself.
+ */
+export const hordeWarning: Recipe = (v) => {
+  const hits = [0, 0.62, 1.12, 1.5, 1.8, 2.04, 2.24];
+  hits.forEach((at, i) => {
+    const last = i === hits.length - 1;
+    const swell = 0.35 + (0.4 * i) / (hits.length - 1);
+    tone(v, { at, type: 'sine', f0: 96, f1: 44, attack: 0.004, decay: last ? 0.9 : 0.38, gain: last ? 0.85 : swell, lp: 320 });
+    noise(v, { at, filter: 'lowpass', freq: 520, attack: 0.002, decay: 0.07, gain: swell * 0.45 });
+  });
+  tone(v, { type: 'sawtooth', f0: 200, path: [[2.6, 470]], attack: 1.2, hold: 1.0, decay: 0.9, gain: 0.07, lp: 650 });
+};
+
 export const meleeSwing: Recipe = (v) => {
   noise(v, { filter: 'bandpass', freq: 500, freq1: 2200, q: 1.2, attack: 0.02, decay: 0.09, gain: 0.3 });
 };

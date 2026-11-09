@@ -19,6 +19,8 @@ export function tickRunAudio(audio: AudioEngine, world: ClientWorld, scene: Scen
   audio.setIntensity(Math.min(1, threat * 0.75 + (1 - health) * 0.25));
   const isHeartbeat = heart.tick(dt, health);
   if (isHeartbeat) audio.heartbeat(health);
+  const latest = world.latest;
+  audio.setHordeClock(latest?.phase === 'intermission' ? latest.intermission : null);
   audio.tick(dt, scene.zombies);
   audio.stepPlayers(scene.players, world.localId, world.worldMap, dt);
   audio.stompZombies(scene.zombies);

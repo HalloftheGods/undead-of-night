@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GameEvent } from '../shared/protocol.ts';
-import { AudioEngine } from '../src/audio/audio-engine.ts';
+import { AudioEngine, HORDE_WARNING_LEAD } from '../src/audio/audio-engine.ts';
 import { Mixer } from '../src/audio/mixer.ts';
 import { TILE_KINDS } from '../shared/protocol.ts';
 import type { PlayerEntity, WorldMap } from '../shared/protocol.ts';
@@ -155,6 +155,34 @@ describe('AudioEngine without Web Audio', () => {
     a.dispose();
   });
 
+  it('tells horde-warning listeners in a lull even with no sound to play, and stops when they let go', () => {
+    const a = new AudioEngine();
+    const heard: number[] = [];
+    const stop = a.onHordeWarning((seconds) => heard.push(seconds));
+    a.setScene('intermission');
+    for (const clock of [30, 12, 9.9, 9.8]) a.setHordeClock(clock);
+    expect(heard).toEqual([HORDE_WARNING_LEAD]);
+    a.setScene('wave');
+    a.setHordeClock(null);
+    a.setScene('intermission');
+    stop();
+    a.setHordeClock(50);
+    a.setHordeClock(9);
+    expect(heard).toHaveLength(1);
+  });
+
+  it('gives no horde warning outside a town lull: the bunker and menus have clocks of their own', () => {
+    const a = new AudioEngine();
+    const heard: number[] = [];
+    a.onHordeWarning((seconds) => heard.push(seconds));
+    for (const scene of ['bunker', 'menu', 'wave'] as const) {
+      a.setScene(scene);
+      a.setHordeClock(30);
+      a.setHordeClock(5);
+    }
+    expect(heard).toEqual([]);
+  });
+
   it('keeps volume clamped and mute settable when storage is missing', () => {
     const a = new AudioEngine();
     a.volume = 3;
@@ -207,6 +235,50 @@ describe('AudioEngine with a fake AudioContext', () => {
     a.handleEvent({ type: 'bullet_impact', x: 100, y: 0, angle: 0 }, P);
     expect(stats.created).toBeGreaterThan(before);
     a.dispose();
+  });
+
+  it('lays the town\'s ambience bed on its own bus out in town, and none in the bunker', async () => {
+    const play = vi.spyOn(Mixer.prototype, 'play');
+    const a = new AudioEngine();
+    await a.unlock();
+    a.setLevel(4);
+    a.setScene('intermission');
+    a.tick(0.016, []);
+    expect(play).toHaveBeenCalledWith('amb_marsh', { bus: 'ambience' });
+    play.mockClear();
+    a.setScene('bunker');
+    a.tick(30, []);
+    expect(play.mock.calls.filter(([name]) => name.startsWith('amb_'))).toEqual([]);
+    a.dispose();
+    play.mockRestore();
+  });
+
+  it('ducks the beds by scene: full in the lull, low under a horde, out in the menus', async () => {
+    const duck = vi.spyOn(Mixer.prototype, 'setAmbience');
+    const a = new AudioEngine();
+    await a.unlock();
+    a.setScene('intermission');
+    expect(duck).toHaveBeenLastCalledWith(1);
+    a.setScene('wave');
+    expect(duck.mock.lastCall?.[0]).toBeLessThan(1);
+    expect(duck.mock.lastCall?.[0]).toBeGreaterThan(0);
+    a.setScene('menu');
+    expect(duck).toHaveBeenLastCalledWith(0);
+    a.dispose();
+    duck.mockRestore();
+  });
+
+  it('beats the war drums at the horde warning', async () => {
+    const play = vi.spyOn(Mixer.prototype, 'play');
+    const a = new AudioEngine();
+    await a.unlock();
+    a.setScene('intermission');
+    a.setHordeClock(11);
+    expect(play).not.toHaveBeenCalledWith('horde_warning', expect.anything());
+    a.setHordeClock(9.9);
+    expect(play).toHaveBeenCalledWith('horde_warning', { local: true });
+    a.dispose();
+    play.mockRestore();
   });
 
   it('never culls the local player\'s own shots', async () => {

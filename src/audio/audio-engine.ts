@@ -3,13 +3,16 @@ import type { GameEvent, PlayerEntity, WeaponId, WorldMap, ZombieType } from '..
 import { LOW_HEALTH } from '../game/heartbeat.ts';
 import { playEventSound } from './event-sounds.ts';
 import { FootstepTracker, StompTracker, type StepPlayer, type Stomper } from './footsteps.ts';
+import { HORDE_WARNING_LEAD, HordeWarning } from './horde-warning.ts';
 import { HEARING_RANGE, Mixer, type BusLevels } from './mixer.ts';
 import { Music, type Scene } from './music.ts';
 import { Soundtrack } from './soundtrack.ts';
+import { AmbienceBed, ambienceLevel, bedFor } from './sfx-ambience.ts';
 import { SFX } from './sfx-registry.ts';
 import type { SfxName } from './sfx-registry.ts';
 
 export { PICKUP_SFX } from './event-sounds.ts';
+export { HORDE_WARNING_LEAD } from './horde-warning.ts';
 export { renderSfx } from './render.ts';
 export { SFX_NAMES } from './sfx-registry.ts';
 export type { SfxName } from './sfx-registry.ts';
@@ -42,6 +45,9 @@ interface ShellLoad { x: number; y: number; local: boolean; next: number; loaded
 interface Prefs { volume: number; muted: boolean; music: number; sfx: number }
 
 const DEFAULT_PREFS: Prefs = { volume: 0.7, muted: false, music: 1, sfx: 1 };
+
+/** Told the moment a horde is HORDE_WARNING_LEAD seconds out, with those seconds; the drums sound at the same moment. */
+export type HordeWarningListener = (secondsLeft: number) => void;
 
 /** A saved level in 0..1, or the fallback when it is missing or not a number. */
 function level(raw: unknown, fallback: number): number {
@@ -87,6 +93,11 @@ export class AudioEngine {
   private readonly playStep: StepPlayer = (name, opts) => this.mixer?.play(name, opts);
   private unlocking: Promise<void> | null = null;
   private previewTimer: ReturnType<typeof setTimeout> | null = null;
+  /** True while a recorded track is playing, which ducks the biome beds under it. */
+  private trackPlaying = false;
+  private readonly beds = new AmbienceBed();
+  private readonly hordeWarning = new HordeWarning();
+  private readonly hordeListeners = new Set<HordeWarningListener>();
 
   async unlock(): Promise<void> {
     if (!hasWebAudio()) return;
@@ -100,6 +111,7 @@ export class AudioEngine {
         this.soundtrack?.setLevel(this.town);
         this.soundtrack?.setStyle(this.style);
         this.soundtrack?.setScene(this.scene);
+        this.applyAmbience();
       } catch {
         this.mixer = null;
         this.music = null;
@@ -121,7 +133,11 @@ export class AudioEngine {
   private makeSoundtrack(mixer: Mixer): Soundtrack | null {
     const canStream = typeof Audio !== 'undefined';
     if (!canStream) return null;
-    return new Soundtrack(mixer.ctx, mixer.tracks, (available) => this.music?.setBedOn(!available));
+    return new Soundtrack(mixer.ctx, mixer.tracks, (available) => {
+      this.trackPlaying = available;
+      this.music?.setBedOn(!available);
+      this.applyAmbience();
+    });
   }
 
   setListener(x: number, y: number): void {
@@ -194,6 +210,30 @@ export class AudioEngine {
     this.scene = scene;
     this.music?.setScene(scene);
     this.soundtrack?.setScene(scene);
+    this.applyAmbience();
+  }
+
+  /**
+   * Seconds to the next horde while a lull counts down, or null outside one; read every frame. At
+   * HORDE_WARNING_LEAD seconds out the war drums sound, the horde's track starts loading, and every
+   * onHordeWarning listener is told. Listeners hear it even before the audio has unlocked or while muted.
+   */
+  setHordeClock(clock: number | null): void {
+    const inLull = this.scene === 'intermission';
+    const due = this.hordeWarning.read(inLull ? clock : null);
+    if (due) this.warnHorde();
+  }
+
+  /** The hook for anything that marks the horde warning (a screen-edge pulse). Returns the call that stops listening. */
+  onHordeWarning(listener: HordeWarningListener): () => void {
+    this.hordeListeners.add(listener);
+    return () => this.hordeListeners.delete(listener);
+  }
+
+  private warnHorde(): void {
+    this.mixer?.play('horde_warning', { local: true });
+    this.soundtrack?.prefetch('wave');
+    for (const listener of this.hordeListeners) listener(HORDE_WARNING_LEAD);
   }
 
   setIntensity(value: number): void {
@@ -273,6 +313,7 @@ export class AudioEngine {
     if (!mixer) return;
     this.alertIn -= dt;
     this.loadShells(mixer, dt);
+    this.beds.tick(dt, bedFor(this.scene, this.town), (name) => mixer.play(name, { bus: 'ambience' }));
     this.groanIn -= dt;
     const isGroanQuiet = this.groanIn > 0 || zombies.length === 0;
     if (isGroanQuiet) return;
@@ -347,6 +388,9 @@ export class AudioEngine {
   dispose(): void {
     this.shellLoads.clear();
     this.clearPreviewTimer();
+    this.beds.reset();
+    this.hordeWarning.reset();
+    this.trackPlaying = false;
     this.soundtrack?.dispose();
     this.music?.dispose();
     this.mixer?.dispose();
@@ -376,6 +420,13 @@ export class AudioEngine {
   private applyLevel(): void {
     this.mixer?.setLevel(this.level);
     this.mixer?.setBuses(this.buses);
+    this.applyAmbience();
+  }
+
+  /** The beds sit under the music: ducked by how loud a recorded track is playing now. */
+  private applyAmbience(): void {
+    const music = this.trackPlaying ? this.prefs.music : 0;
+    this.mixer?.setAmbience(ambienceLevel(this.scene, music));
   }
 
   private persist(): void {

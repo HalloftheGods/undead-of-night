@@ -104,6 +104,43 @@ describe('the soundtrack', () => {
     expect(firstHorde.currentTime).toBe(0);
   });
 
+  it('fetches only the menu track up front, then only the one take a town plays', () => {
+    music.setScene('menu');
+    expect(made.map((element) => element.src)).toEqual(['music/silent-ruins-variation.mp3']);
+    music.setLevel(3);
+    music.setScene('intermission');
+    expect(made.map((element) => element.src)).toEqual(['music/silent-ruins-variation.mp3', 'music/level-03-into-the-breach.mp3']);
+  });
+
+  it('fetches the horde track ahead of the horde without playing it, and plays that same file when it comes', () => {
+    music.setScene('intermission');
+    music.prefetch('wave');
+    expect(made).toHaveLength(2);
+    expect(made[1]).toMatchObject({ src: 'music/horde-attack.mp3', paused: true, preload: 'auto' });
+    music.setScene('wave');
+    expect(made).toHaveLength(2);
+    expect(made[1].paused).toBe(false);
+  });
+
+  it('prefetches the take a lull will pick at random, so what loads is what plays', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.6);
+    music.setScene('menu');
+    music.prefetch('intermission');
+    const fetched = made[1].src;
+    music.setScene('intermission');
+    expect(made).toHaveLength(2);
+    expect(playing()).toContain(fetched);
+  });
+
+  it('prefetches nothing for the scene already playing, or while the Sound Test holds the music', () => {
+    music.setScene('wave');
+    music.prefetch('wave');
+    expect(made).toHaveLength(1);
+    music.hush();
+    music.prefetch('intermission');
+    expect(made).toHaveLength(1);
+  });
+
   it('falls silent for game over', () => {
     music.setScene('wave');
     music.setScene('gameover');

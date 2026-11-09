@@ -41,6 +41,8 @@ export interface PlayOpts {
   delay?: number;
   pitch?: number;
   gain?: number;
+  /** 'ambience' sends a biome bed through its own duckable level instead of straight to the effects. */
+  bus?: 'ambience';
 }
 
 /** Master chain plus the polyphony-limited voice player. */
@@ -49,6 +51,8 @@ export class Mixer {
   readonly music: GainNode;
   /** The recorded soundtrack, mixed well under the effects so shots and groans still read. */
   readonly tracks: GainNode;
+  /** The biome beds: part of the world (effects volume, muffled near death), ducked under the music by setAmbience. */
+  readonly ambience: GainNode;
   private readonly master: GainNode;
   /** Low-pass on the effects only: the world dulls as the player bleeds out, the music does not. */
   private readonly muffle: BiquadFilterNode;
@@ -67,6 +71,9 @@ export class Mixer {
     this.music.gain.value = BED_LEVEL * buses.music;
     this.tracks = ctx.createGain();
     this.tracks.gain.value = TRACK_LEVEL * buses.music;
+    this.ambience = ctx.createGain();
+    this.ambience.gain.value = 0;
+    this.ambience.connect(this.sfx);
     const bus = ctx.createGain();
     const comp = ctx.createDynamicsCompressor();
     comp.threshold.value = -16;
@@ -126,6 +133,11 @@ export class Mixer {
     this.muffle.frequency.setTargetAtTime(hz, this.ctx.currentTime, 0.15);
   }
 
+  /** The beds' level, 0..1 (see ambienceLevel), eased over about a second so a duck never jumps. */
+  setAmbience(level: number): void {
+    this.ambience.gain.setTargetAtTime(Math.max(0, Math.min(1, level)), this.ctx.currentTime, 0.4);
+  }
+
   play(name: SfxName, o: PlayOpts = {}): void {
     const def = SFX[name];
     const { ctx } = this;
@@ -151,7 +163,7 @@ export class Mixer {
       trim.connect(pan);
       tail = pan;
     }
-    tail.connect(this.sfx);
+    tail.connect(o.bus === 'ambience' ? this.ambience : this.sfx);
     def.play(makeVoice(ctx, trim, now + delay + 0.005, pitch, Math.random));
 
     this.total++;

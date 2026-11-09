@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { GameEvent } from '../shared/protocol.ts';
 import { playEventSound, type SoundCue } from '../src/audio/event-sounds.ts';
 import { HEARING_RANGE, spatialize, type Mixer, type PlayOpts } from '../src/audio/mixer.ts';
-import { AmbienceBed, ambienceFor, BED_EVERY, type AmbienceName } from '../src/audio/sfx-ambience.ts';
+import { AMBIENCE_DUCK, AmbienceBed, ambienceFor, ambienceLevel, BED_EVERY, bedFor, type AmbienceName } from '../src/audio/sfx-ambience.ts';
 import { SFX, SFX_NAMES, type SfxName } from '../src/audio/sfx-registry.ts';
 import { makeVoice, seeded } from '../src/audio/voice-kit.ts';
 
@@ -51,6 +51,7 @@ describe('sfx registry', () => {
     'die_screamer', 'boss_arrive', 'boss_howl', 'boss_brood', 'boss_charge', 'pickup_part', 'candy_crunch',
     'keepsake', 'crate_land', 'run_victory', 'van_horn',
     'amb_marsh', 'amb_tundra', 'amb_sludge', 'amb_embers', 'amb_forest',
+    'horde_warning',
   ];
 
   /** The latest time any source in a recipe is told to stop, over a few seeds. */
@@ -189,6 +190,23 @@ describe('biome ambience', () => {
     expect(played).toHaveLength(2);
     bed.tick(0.016, 'amb_sludge', (n) => played.push(n));
     expect(played).toHaveLength(2);
+  });
+
+  it('lays the town bed out in town, in the lull and under a horde, and none in the bunker or the menus', () => {
+    expect(bedFor('intermission', 4)).toBe('amb_marsh');
+    expect(bedFor('wave', 4)).toBe('amb_marsh');
+    for (const scene of ['menu', 'bunker', 'gameover', 'victory', 'credits'] as const) expect(bedFor(scene, 4)).toBeNull();
+    expect(bedFor('intermission', 1)).toBeNull();
+  });
+
+  it('sits full in a quiet lull, ducks under a playing track, and stays low under a horde', () => {
+    expect(ambienceLevel('intermission', 0)).toBe(1);
+    expect(ambienceLevel('intermission', 1)).toBeCloseTo(1 - AMBIENCE_DUCK);
+    expect(ambienceLevel('intermission', 0.5)).toBeGreaterThan(ambienceLevel('intermission', 1));
+    expect(ambienceLevel('wave', 0)).toBeLessThan(ambienceLevel('intermission', 1));
+    expect(ambienceLevel('wave', 1)).toBeLessThan(ambienceLevel('wave', 0));
+    expect(ambienceLevel('menu', 0)).toBe(0);
+    expect(ambienceLevel('bunker', 0)).toBe(0);
   });
 });
 
