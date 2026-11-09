@@ -189,10 +189,10 @@ describe('a gamepad on the game', () => {
       expect(input.sample(2, 0, loadout).weapon).toBe('shotgun');
     });
 
-    it('throws, lights a firework or a flare, and opens the candy bag', () => {
+    it('throws, lights a spinner or a fountain, and opens the candy bag', () => {
       frame(pad({ buttons: { [PAD.rb]: 1, [PAD.up]: 1, [PAD.down]: 1, [PAD.y]: 1 } }));
       const packet = input.sample(1, 0, null);
-      expect(packet).toMatchObject({ throw: true, spinner: true, flare: true });
+      expect(packet).toMatchObject({ throw: true, spinner: true, fountain: true });
       expect(packet.eat).toBeUndefined();
       expect(calls.onBag).toBe(1);
     });

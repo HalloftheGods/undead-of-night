@@ -190,18 +190,20 @@ const FIREWORKS: Grid = [
   '..rrsssst..',
 ];
 
-/** A road flare: a red stick with its cap struck and burning. */
-const FLARE: Grid = [
-  '....Y',
-  '...YB',
-  '..CBY',
-  '..sC.',
-  '.sts.',
-  '.st..',
-  'sts..',
-  'st...',
-  'ts...',
-  'p....',
+/** A fountain firework: a striped cone on a card base, lit and spraying sparks straight up. */
+const FOUNTAIN: Grid = [
+  '.Y...B...Y.',
+  '...Y.Y.Y...',
+  '.B..YBY..B.',
+  '....YYY....',
+  '....gfe....',
+  '....HHI....',
+  '...rsstt...',
+  '...GHHHI...',
+  '..rssssst..',
+  '..GHHHHHI..',
+  '.rsssssstt.',
+  '.ggfffffee.',
 ];
 
 const SKULL: Grid = [
@@ -337,8 +339,8 @@ export function buildFireworks(): PixelSprite {
   return outlined(FIREWORKS, 15, 14);
 }
 
-export function buildFlare(): PixelSprite {
-  return outlined(FLARE, 15, 14);
+export function buildFountain(): PixelSprite {
+  return outlined(FOUNTAIN, 15, 14);
 }
 
 export function buildSkull(): PixelSprite {

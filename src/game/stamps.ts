@@ -24,7 +24,7 @@ export const STAMPS: readonly StampDef[] = [
   { id: 'massacre', name: 'Massacre', how: 'Chain five kills, each within a breath of the last.' },
   { id: 'crowd_control', name: 'Crowd Control', how: 'Kill 100 in a single run.' },
   { id: 'firestarter', name: 'Firestarter', how: 'Light 10 spinners, across every run.' },
-  { id: 'flare_up', name: 'Flare Up', how: 'Light a flare.' },
+  { id: 'flare_up', name: 'Light Show', how: 'Light a fountain.' },
   { id: 'special_delivery', name: 'Special Delivery', how: 'Grab something from a supply drop.' },
   { id: 'close_shave', name: 'Close Shave', how: 'Make a kill with almost no health left.' },
   { id: 'halfway', name: 'Halfway Home', how: 'Reach Fiville, the fifth town.' },
@@ -119,9 +119,9 @@ export function readStamps(book: StampBook, events: readonly GameEvent[], ctx: S
         if (isMySpinner) spinners += 1;
         break;
       }
-      case 'flare_lit': {
-        const isMyFlare = mine(e.playerId);
-        if (isMyFlare) earn('flare_up');
+      case 'fountain_lit': {
+        const isMyFountain = mine(e.playerId);
+        if (isMyFountain) earn('flare_up');
         break;
       }
       case 'pickup': {

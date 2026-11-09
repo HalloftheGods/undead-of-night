@@ -108,7 +108,7 @@ const EVENT_SOUNDS: EventSounds = {
     mixer.play('ignite', { x: e.x, y: e.y, pitch: 1.2 });
     mixer.play('ignite', { x: e.x, y: e.y, pitch: 1.9 });
   },
-  flare_lit: (e, { mixer }) => mixer.play('ignite', { x: e.x, y: e.y, pitch: 1.4 }),
+  fountain_lit: (e, { mixer }) => mixer.play('ignite', { x: e.x, y: e.y, pitch: 1.4 }),
   drop_called: (e, { mixer }) => mixer.play('ignite', { x: e.x, y: e.y, pitch: 1.4 }),
   drop_landed: (e, { mixer }) => mixer.play('crate_land', { x: e.x, y: e.y }),
   car_alarm: (e, { mixer }) => mixer.play('car_alarm', { x: e.x, y: e.y }),

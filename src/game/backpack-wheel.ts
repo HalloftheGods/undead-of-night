@@ -12,7 +12,7 @@ import { gunRounds } from './hud-state.ts';
 import type { HudState } from './hud-state.ts';
 
 /** Which of the game's pictures a slot wears. `gun` wears the icon of the gun it hands over. */
-export type SlotArt = 'medkit' | 'gun' | 'bottle' | 'fireworks' | 'flare' | 'candy' | 'map';
+export type SlotArt = 'medkit' | 'gun' | 'bottle' | 'fireworks' | 'fountain' | 'candy' | 'map';
 
 export interface WheelSlot {
   /** The key the game answers to, sent through the touch pad as a press and a release. */
@@ -32,7 +32,7 @@ export interface WheelSlot {
 
 type WheelHud = Pick<
   HudState,
-  'medkits' | 'health' | 'maxHealth' | 'bottles' | 'fireworks' | 'flares' | 'candyCount' | 'weapon' | 'owned' | 'ammoBag' | 'mags'
+  'medkits' | 'health' | 'maxHealth' | 'bottles' | 'fireworks' | 'fountains' | 'candyCount' | 'weapon' | 'owned' | 'ammoBag' | 'mags'
 >;
 
 function medkitSlot(hud: WheelHud): WheelSlot {
@@ -80,7 +80,7 @@ export function wheelSlots(hud: WheelHud): WheelSlot[] {
     gunSlot(hud),
     hud.bottles > 0 ? { code: 'KeyG', name: 'Bottle', label: 'Throw a bottle', art: 'bottle', count: hud.bottles, ready: true } : null,
     hud.fireworks > 0 ? { code: 'KeyT', name: 'Firework', label: 'Light a firework', art: 'fireworks', count: hud.fireworks, ready: true } : null,
-    hud.flares > 0 ? { code: 'KeyV', name: 'Flare', label: 'Throw a flare', art: 'flare', count: hud.flares, ready: true } : null,
+    hud.fountains > 0 ? { code: 'KeyV', name: 'Fountain', label: 'Light a fountain', art: 'fountain', count: hud.fountains, ready: true } : null,
     candySlot(hud),
     { code: 'KeyN', name: 'Town map', label: 'Open the town map', art: 'map', count: null, ready: true },
   ];

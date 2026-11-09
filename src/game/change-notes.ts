@@ -22,6 +22,18 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'fountain-fireworks',
+    date: '2026-11-09',
+    kind: 'new',
+    title: 'Fountains',
+    deck: 'The road flare is now a fountain firework: a cone that sprays gold sparks straight up.',
+    points: [
+      'Press V to light one. It sprays and hisses for twenty seconds, pulling every zombie in earshot to it.',
+      'Any zombie that reaches it catches fire, so a fountain is a lure and a trap at once.',
+      'Cars, garages and the police station hide them. The supply drop still comes down on a red flare.',
+    ],
+  },
+  {
     id: 'candy-bag',
     date: '2026-11-09',
     kind: 'new',
@@ -474,18 +486,6 @@ export const CHANGE_NOTES: readonly ChangeNote[] = [
     title: 'Setup shows your picks',
     deck: 'Each finished step in the setup stepper shows a little picture of what you chose.',
     points: ['Your style, mode and difficulty sit in the stepper as thumbnails. Tap one to go back and change it.'],
-  },
-  {
-    id: 'sound-color-size-options',
-    date: '2026-11-07',
-    kind: 'better',
-    title: 'Options for your ears and eyes',
-    deck: 'Set music and sound effects apart, pick colorblind hit colors and make the UI bigger.',
-    points: [
-      'Music and Sound effects each get their own slider under Volume.',
-      'Hit colors: Colorblind swaps red and green for magenta and blue on health bars, callouts and the HUD.',
-      'UI size: Large and Larger make the HUD and menus easier to read on a phone.',
-    ],
   },
   ...EARLIER_NOTES,
 ];
