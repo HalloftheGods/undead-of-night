@@ -13,6 +13,8 @@ export interface SplashCard {
   readonly kicker?: string;
   readonly title?: string;
   readonly ariaLabel: string;
+  readonly bg?: string;
+  readonly hold?: number;
 }
 
 /** Served from public/, relative so the build works from any folder. */
@@ -26,16 +28,22 @@ export const SPLASH_CARDS: readonly SplashCard[] = [
     kicker: 'Presented by',
     title: 'Hall of the Gods, Inc.',
     ariaLabel: 'Presented by Hall of the Gods, Inc.',
+    bg: '#000000',
+    hold: 400,
   },
   {
     id: 'for-the-xp',
     image: 'brand/forthexp-powered.webp',
     ariaLabel: 'Powered by For The XP!',
+    bg: '#000000',
+    hold: 1400,
   },
   {
     id: 'majora-d',
     image: 'brand/majora-d-music.webp',
     ariaLabel: 'Music by Majora D.',
+    bg: '#110a25',
+    hold: 1600,
   },
 ];
 

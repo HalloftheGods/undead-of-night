@@ -11,6 +11,16 @@ describe('the studio splash', () => {
     expect(SPLASH_CARDS.map(card => card.id)).toEqual(['hall-of-the-gods', 'for-the-xp', 'majora-d']);
   });
 
+  it('sets matching purple background for Majora D', () => {
+    const majora = SPLASH_CARDS.find(card => card.id === 'majora-d');
+    expect(majora?.bg).toBe('#110a25');
+  });
+
+  it('configures short hold for Hall of the Gods transition', () => {
+    const hog = SPLASH_CARDS.find(card => card.id === 'hall-of-the-gods');
+    expect(hog?.hold).toBe(400);
+  });
+
   it('carries one studio line, from 2006 to the build year', () => {
     expect(studioLine(2031)).toBe('© 2006–2031 Hall of the Gods, Inc.');
     // vitest.config.ts stamps __BUILD_YEAR__ as 2026; the line follows the build, not the clock.
