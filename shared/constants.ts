@@ -152,7 +152,8 @@ export const INTERMISSION_SEC = 100;
 export const LEVEL_ONE_LEAD_IN_SEC = 60;
 /** Level 1 only: slow shamblers placed near the spawn so the first fight comes within about 20 s. */
 export const OPENING_SHAMBLERS = 3;
-export const OPENING_SHAMBLER_RINGS: readonly number[] = [75, 110, 145];
+/** The first walker is in sight at once; the others start beyond sight range and join as the fight makes noise. */
+export const OPENING_SHAMBLER_RINGS: readonly number[] = [110, 150, 195];
 export const OPENING_SHAMBLER_SPEED_SCALE = 0.85;
 /** Level 1 only: Horde 1 brings this share of its usual size, one body every few seconds. */
 export const LEVEL_ONE_HORDE_ONE_SHARE = 0.6;

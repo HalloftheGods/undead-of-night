@@ -40,9 +40,10 @@ describe('level 1 opening', () => {
   it.each(SEEDS)('seed %i: slow walkers stand near the spawn, inside the usual population', (seed) => {
     const { state } = townAt(seed, 1);
     const { spawn } = state.map;
-    const near = state.zombies.filter((z) => Math.hypot(z.x - spawn.x, z.y - spawn.y) <= 160);
+    const near = state.zombies.filter((z) => Math.hypot(z.x - spawn.x, z.y - spawn.y) <= 300);
     expect(near.length).toBeGreaterThanOrEqual(2);
     expect(near.length).toBeLessThanOrEqual(OPENING_SHAMBLERS);
+    expect(near.some((z) => Math.hypot(z.x - spawn.x, z.y - spawn.y) <= 160)).toBe(true);
     for (const z of near) {
       expect(z.type).toBe('walker');
       expect(z.speed).toBeLessThan(30);
@@ -59,6 +60,12 @@ describe('level 1 opening', () => {
       contact = p.health < p.maxHealth || state.zombies.some((z) => z.mode !== 'wander' && Math.hypot(z.x - p.x, z.y - p.y) < 40);
     }
     expect(contact).toBe(true);
+  });
+
+  it.each(SEEDS)('seed %i: a player who stands still is still alive after 9 s', (seed) => {
+    const { sim, state } = townAt(seed, 1);
+    for (let t = 0; t < 9 * TICK_RATE; t++) sim.step();
+    expect(state.players[0].health).toBeGreaterThan(0);
   });
 
   it('leaves later levels without opening shamblers', () => {
