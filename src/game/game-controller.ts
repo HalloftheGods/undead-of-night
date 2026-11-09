@@ -35,7 +35,16 @@ import { loadStyle, saveStyle } from './style-pref.ts';
 import { loadBests } from './trip-record.ts';
 import { isTouchDevice } from './touch-input.ts';
 import { fitWindow, watchDpr } from './view-fit.ts';
-import { applyPalette, loadDisplayPrefs, saveDisplayPrefs, UI_SCALES, type PaletteId, type UiScale } from './display-prefs.ts';
+import {
+  applyPalette,
+  brightness,
+  brightnessLift,
+  loadDisplayPrefs,
+  saveDisplayPrefs,
+  UI_SCALES,
+  type PaletteId,
+  type UiScale,
+} from './display-prefs.ts';
 
 
 const MAX_FRAME_DT = 0.05;
@@ -173,6 +182,8 @@ export class GameController {
     // Baking the art blocks for a moment: let the title paint first.
     this.artTimer = setTimeout(() => this.loadArt(), ART_DELAY_MS);
     this.stopMotionWatch = watch([motion.reduced, motion.shake], ([reduced, shake]) => this.renderer?.setMotion(reduced, shake));
+    // The Brightness slider moves the picture as it moves, from the pause card as much as from Options.
+    this.stopBrightnessWatch = watch(brightness, () => this.renderer?.setBrightness(brightnessLift()));
     this.audio.setScene('menu');
   }
 
@@ -182,6 +193,7 @@ export class GameController {
     window.removeEventListener('resize', this.onResize);
     this.stopDprWatch();
     this.stopMotionWatch();
+    this.stopBrightnessWatch();
     window.removeEventListener('blur', this.onAway);
     document.removeEventListener('visibilitychange', this.onVisibility);
     this.input.dispose();
@@ -216,6 +228,7 @@ export class GameController {
 
   private stopDprWatch: () => void = () => {};
   private stopMotionWatch: () => void = () => {};
+  private stopBrightnessWatch: () => void = () => {};
 
   private readonly onResize = (): void => {
     fitWindow(this.renderer, this.run.transport?.kind === 'coop', this.ui.value.touch, UI_SCALES[this.ui.value.uiScale]);

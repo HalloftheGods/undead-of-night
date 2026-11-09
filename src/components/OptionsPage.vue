@@ -2,14 +2,14 @@
   <TitlePage heading="Options" size="wide" @close="emit('close')">
     <div class="options-cards">
       <div class="options-columns">
-        <section class="options-card px-frame" aria-labelledby="options-sound">
-          <h3 id="options-sound" class="options-card-head">Sound</h3>
-          <SoundOptions :ui />
-        </section>
-
         <section class="options-card px-frame" aria-labelledby="options-display">
           <h3 id="options-display" class="options-card-head">Display</h3>
           <DisplayOptions :ui />
+        </section>
+
+        <section class="options-card px-frame" aria-labelledby="options-sound">
+          <h3 id="options-sound" class="options-card-head">Sound</h3>
+          <SoundOptions :ui />
         </section>
 
         <section class="options-card px-frame" aria-labelledby="options-motion">

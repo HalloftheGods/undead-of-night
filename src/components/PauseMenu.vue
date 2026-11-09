@@ -1,5 +1,5 @@
 <template>
-  <section class="px-screen px-title-scale pause-screen" aria-labelledby="pause-heading">
+  <section class="px-screen px-title-scale pause-screen" :class="{ 'is-previewing': previewing }" aria-labelledby="pause-heading">
     <div class="pause px-frame">
       <p class="pause-head">
         <template v-if="inBunker">The bunker</template>
@@ -16,22 +16,26 @@
         <p class="px-note pause-note">Leaving ends the game for everyone in it.</p>
       </template>
 
-      <div>
-        <label class="px-label pause-volume-label" for="pause-volume">
-          <span>Volume</span>
-          <span class="pause-volume-value" aria-hidden="true">{{ volumeShown }}</span>
-        </label>
-        <input
-          id="pause-volume"
-          class="px-slider"
-          type="range"
-          min="0"
-          max="1"
-          step="0.05"
-          :value="ui.volume"
-          :aria-valuetext="volumeShown"
-          @input="onVolume"
-        />
+      <div class="pause-sliders">
+        <div>
+          <label class="px-label pause-volume-label" for="pause-volume">
+            <span>Volume</span>
+            <span class="pause-volume-value" aria-hidden="true">{{ volumeShown }}</span>
+          </label>
+          <input
+            id="pause-volume"
+            class="px-slider"
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            :value="ui.volume"
+            :aria-valuetext="volumeShown"
+            @input="onVolume"
+          />
+        </div>
+        <!-- Right here, so a player who cannot see the zombies never has to quit to the title for it. -->
+        <BrightnessSlider id="pause" :note="false" @preview="previewing = $event" />
       </div>
 
       <div ref="resumeBox" class="pause-resume">
@@ -50,11 +54,12 @@
  * The pause card, framed like the Game Over and Level Select cards: where you are on a strip along its top,
  * then volume, Resume (focused, so Enter or a pad's A goes straight back in) and the way out.
  */
-import { computed, nextTick, onMounted, useTemplateRef } from 'vue';
+import { computed, nextTick, onMounted, ref, useTemplateRef } from 'vue';
 import { townName } from '../../shared/levels.ts';
 import { leaveWarning } from '../game/home-screens.ts';
 import type { UiState } from '../game/hud-state.ts';
 import type { TransportKind } from '../network/transport.ts';
+import BrightnessSlider from './BrightnessSlider.vue';
 import GestureHints from './GestureHints.vue';
 import MenuLink from './MenuLink.vue';
 import PixelButton from './PixelButton.vue';
@@ -64,6 +69,8 @@ import { useGame } from './use-game.ts';
 const { ui } = defineProps<{ ui: UiState; mode: TransportKind }>();
 const game = useGame();
 const resumeBox = useTemplateRef<HTMLElement>('resumeBox');
+/** While the Brightness thumb is held the backdrop and the rest of the card fade, so the town shows what it does. */
+const previewing = ref(false);
 const warning = computed(() => leaveWarning(ui.home));
 const inBunker = computed(() => ui.home?.inBunker === true);
 const level = computed(() => ui.hud?.level ?? null);
@@ -81,6 +88,14 @@ onMounted(() => void nextTick(() => resumeBox.value?.querySelector('button')?.fo
 <style scoped>
 .pause-screen {
   background: rgba(7, 8, 12, 0.82);
+}
+
+.pause-screen.is-previewing {
+  background: transparent;
+}
+
+.pause-screen.is-previewing .pause {
+  opacity: 0.35;
 }
 
 .pause {
@@ -143,6 +158,12 @@ onMounted(() => void nextTick(() => resumeBox.value?.querySelector('button')?.fo
 
 .pause-code {
   color: var(--amber);
+}
+
+.pause-sliders {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 4);
 }
 
 .pause-volume-label {
