@@ -22,6 +22,17 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'daily-stage',
+    date: '2026-11-09',
+    kind: 'better',
+    title: 'Daily Night takes the stage',
+    deck: 'The Daily Night page now looks like Arcade and Campaign: three big cards on the night scene.',
+    points: [
+      'Tonight\'s town and difficulty stand beside your survivor. Click the survivor to pick from the big cards.',
+      'Your run, the streak, the new-town timer and tonight\'s kit sit in a few lines under them, and the page fits on one screen.',
+    ],
+  },
+  {
     id: 'big-buildings-upstairs',
     date: '2026-11-09',
     kind: 'better',
