@@ -8,6 +8,7 @@
 import { BOTTLE_FIND_CHANCE, CAR_ALARM_CHANCE } from '../../shared/bottles.ts';
 import { CANDY_ODDS, DOORSTEP_HOMES } from '../../shared/candy.ts';
 import { CONTAINER_LOOT } from '../../shared/container-loot.ts';
+import { BOOTH_FIREWORKS } from '../../shared/fireworks-booth.ts';
 import { OUTDOOR_CONTAINERS, ROOM_CONTAINERS } from '../../shared/containers.ts';
 import type { ContainerKind } from '../../shared/containers.ts';
 import { KITCHEN_KNIFE_ODDS, KITCHENS } from '../../shared/kitchen-knives.ts';
@@ -18,7 +19,7 @@ import type { BuildingKind, PickupType } from '../../shared/protocol.ts';
 import { CAR_RADIO_ODDS, RADIO_ODDS, RADIO_PLACES } from '../../shared/radio.ts';
 import { GUN_EFFECTS, KIT_SOURCES } from '../../shared/round-effect-data.ts';
 import type { GunEffect } from '../../shared/round-effect-data.ts';
-import { CAR_FLARE_ODDS, FLARE_ODDS, FIREWORK_ODDS } from '../../shared/throwables.ts';
+import { CAR_FLARE_ODDS, FIREWORK_CARRY, FLARE_ODDS, FIREWORK_ODDS } from '../../shared/throwables.ts';
 import { HOME_BUILDINGS } from '../../shared/treasure.ts';
 import type { LeafColor } from './changelog.ts';
 
@@ -43,7 +44,7 @@ export interface GuideFind {
 }
 
 /** A house's upstairs and an apartment's share a page, under `upstairs`. */
-export type PlaceId = Exclude<BuildingKind, 'apartment_upstairs'> | 'cars';
+export type PlaceId = Exclude<BuildingKind, 'apartment_upstairs'> | 'cars' | 'fireworks_bus';
 
 export interface GuidePlace {
   readonly id: PlaceId;
@@ -73,7 +74,7 @@ const KIT_NAMES: Readonly<Record<GunEffect, string>> = { incendiary: 'flame', ac
 
 /** The order pages run in: medicine, guns, the workshops, the shops, then where people lived, then the street. */
 const PLACE_ORDER: readonly PlaceId[] = [
-  'hospital', 'pharmacy', 'clinic', 'police', 'gun_shop', 'garage', 'warehouse', 'grocery', 'discount', 'diner', 'school', 'house', 'apartment', 'upstairs', 'cellar', 'cars',
+  'hospital', 'pharmacy', 'clinic', 'police', 'gun_shop', 'garage', 'warehouse', 'grocery', 'discount', 'diner', 'school', 'house', 'apartment', 'upstairs', 'cellar', 'cars', 'fireworks_bus',
 ];
 
 /** Each place's line under its name: the magazine's voice, never a rule the tables do not hold. */
@@ -94,6 +95,7 @@ const BLURBS: Readonly<Record<PlaceId, string>> = {
   upstairs: 'Bedrooms: where a night\'s candy haul gets hidden.',
   cellar: 'Worth the trip down for first aid, and the noise it brings.',
   cars: 'Every car has a radio, and a few still work. Searching one can set its alarm off.',
+  fireworks_bus: 'An old city bus in the downtown car park, turned fireworks stand. Fill your hands, then come back for more.',
 };
 
 const tierRank = (tier: FindTier): number => TIER_ORDER.indexOf(tier);
@@ -205,7 +207,7 @@ function mergeFinds(first: readonly GuideFind[], second: readonly GuideFind[]): 
 /** Floors above and below are only ever seen from inside, so their pages show what is searched there. */
 const PICTURES: Partial<Record<PlaceId, GuidePlace['picture']>> = { upstairs: { container: 'drawer' }, cellar: { container: 'shelf' }, cars: { container: 'car' } };
 
-const CONTAINER_ORDER: readonly ContainerKind[] = ['bowl', 'drawer', 'fridge', 'cabinet', 'shelf', 'locker', 'box', 'car'];
+const CONTAINER_ORDER: readonly ContainerKind[] = ['bowl', 'drawer', 'fridge', 'cabinet', 'shelf', 'locker', 'box', 'car', 'booth'];
 
 function searchSpots(kinds: readonly Partial<Record<string, ContainerKind>>[]): ContainerKind[] {
   const found = new Set(kinds.flatMap((spots) => Object.values(spots)));
@@ -233,10 +235,17 @@ function buildingFinds(kind: BuildingKind): GuideFind[] {
 function carsPlace(): GuidePlace {
   const radio: GuideFind = { id: 'radio', name: 'Radio', icon: 'radio', tier: stashTier(CAR_RADIO_ODDS), weight: CAR_RADIO_ODDS, note: 'Cars only' };
   const finds = [...stockFinds('outdoors'), ...stashFinds('outdoors', true), radio];
-  return { id: 'cars', name: 'Cars & Streets', picture: { container: 'car' }, blurb: BLURBS.cars, searchIn: searchSpots([OUTDOOR_CONTAINERS]).filter((spot) => spot !== 'bowl'), finds: ranked(finds) };
+  return { id: 'cars', name: 'Cars & Streets', picture: { container: 'car' }, blurb: BLURBS.cars, searchIn: searchSpots([OUTDOOR_CONTAINERS]).filter((spot) => spot !== 'bowl' && spot !== 'booth'), finds: ranked(finds) };
 }
 
-function buildingPlace(kind: Exclude<PlaceId, 'cars'>): GuidePlace {
+/** The S.O.S. Fireworks bus: fireworks and nothing else, an armful a search, till it sells out. */
+function fireworksBusPlace(): GuidePlace {
+  const note = `${BOOTH_FIREWORKS} a town, ${FIREWORK_CARRY} at a time`;
+  const fireworks: GuideFind = { id: 'firework', name: 'Fireworks', icon: 'firework', tier: 'always', weight: BOOTH_FIREWORKS, note };
+  return { id: 'fireworks_bus', name: 'S.O.S. Fireworks', picture: { container: 'booth' }, blurb: BLURBS.fireworks_bus, searchIn: ['booth'], finds: [fireworks] };
+}
+
+function buildingPlace(kind: Exclude<PlaceId, 'cars' | 'fireworks_bus'>): GuidePlace {
   const isUpstairs = kind === 'upstairs';
   // A house's upstairs and an apartment's read as one page: their tables only differ in a fridge.
   const finds = isUpstairs ? mergeFinds(buildingFinds('upstairs'), buildingFinds('apartment_upstairs')) : buildingFinds(kind);
@@ -248,7 +257,11 @@ function buildingPlace(kind: Exclude<PlaceId, 'cars'>): GuidePlace {
 
 /** Every place in the book, in page order. */
 export function guidePlaces(): readonly GuidePlace[] {
-  return PLACE_ORDER.map((id) => (id === 'cars' ? carsPlace() : buildingPlace(id)));
+  return PLACE_ORDER.map((id) => {
+    const isStreet = id === 'cars';
+    if (isStreet) return carsPlace();
+    return id === 'fireworks_bus' ? fireworksBusPlace() : buildingPlace(id);
+  });
 }
 
 /** One line of the front index: a find, and the places best for it. */

@@ -13,6 +13,7 @@ import { maybeCarAlarm, scroungeBottle } from './bottles.ts';
 import { stashIn, takeStash } from './throwables.ts';
 import { candyIn, takeCandy } from './candy.ts';
 import { hasKeepsake, RABBIT_LUCK } from './keepsakes.ts';
+import { isBooth, sellFireworks } from './fireworks-booth.ts';
 
 /** Odds that a search knocks something over. */
 export const CLATTER_CHANCE = 0.1;
@@ -54,6 +55,13 @@ function findIn(sim: SimState, p: PlayerState, id: number): Finds {
 
 /** Whatever was in it falls at the searcher's feet, for them or for whoever has room for it. */
 function finishSearch(sim: SimState, p: PlayerState, id: number): void {
+  const isFireworksBus = isBooth(townContainers(sim.map)[id]);
+  if (isFireworksBus) {
+    sellFireworks(sim, p, id);
+    stopSearch(p);
+    p.searchSpent = true;
+    return;
+  }
   const state = sim.containers[id];
   const { treasure, ordinary } = findIn(sim, p, id);
   state.opened = true;

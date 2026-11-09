@@ -2,7 +2,7 @@ import { townContainers } from '../../shared/containers.ts';
 import { isBunkerMap } from '../../shared/home-protocol.ts';
 import { isStorey } from '../../shared/storeys.ts';
 import { groundOf } from '../../shared/world-query.ts';
-import { BUILDING_DEFS, TILE_SIZE } from '../../shared/protocol.ts';
+import { BUILDING_DEFS, PROP_DEFS, TILE_SIZE } from '../../shared/protocol.ts';
 import type { LeftoverView } from '../../shared/leftovers.ts';
 import type { BuildingInstance, DropView, EntityId, ExitEntity, PlayerEntity, TileKind, WorldMap } from '../../shared/protocol.ts';
 import { drawOutlinedText, FONT_HEIGHT, textWidth } from '../engine/bitmap-font.ts';
@@ -13,7 +13,7 @@ import type { Rgb } from './map-ground.ts';
 import { drawLeftovers } from './map-leftovers.ts';
 import type { CursorClock } from './map-cursor.ts';
 import {
-  CROSS_COLOR, DROP_COLOR, DROP_LABEL_RISE, drawDropSprite, drawStation, drawTickMark, drawVan, EXIT_COLOR, VAN_LABEL_RISE,
+  CROSS_COLOR, DROP_COLOR, DROP_LABEL_RISE, drawDropSprite, drawFireworksBus, drawStation, drawTickMark, drawVan, EXIT_COLOR, VAN_LABEL_RISE,
 } from './map-markers.ts';
 import { MAP_INK } from './map-sprite.ts';
 import { drawTeammateLocator } from './map-teammate.ts';
@@ -198,6 +198,7 @@ export class TownMapView {
     paintBuildings(ctx, this.map);
     this.paintStations(ctx);
     const placed: LabelBox[] = [];
+    if (town) this.paintFireworksBus(ctx, placed);
     for (const building of this.map.buildings) {
       const named = isLandmark(building.kind) && !isStorey(building);
       if (!named) continue;
@@ -209,6 +210,19 @@ export class TownMapView {
       const y = Math.round(district.y / this.worldPerPx);
       const isLabelPlaced = placeLabel(ctx, district.name, x, y, DISTRICT_COLOR, placed);
       if (isLabelPlaced) this.roomLabels.push(district.name);
+    }
+  }
+
+  /** The S.O.S. Fireworks bus where it is parked, named under it. */
+  private paintFireworksBus(ctx: CanvasRenderingContext2D, placed: LabelBox[]): void {
+    const rise = PROP_DEFS.fireworks_bus.h / 2;
+    for (const prop of this.map.props) {
+      const isBus = prop.kind === 'fireworks_bus';
+      if (!isBus) continue;
+      const x = Math.round(prop.x / this.worldPerPx);
+      const y = Math.round((prop.y - rise) / this.worldPerPx);
+      drawFireworksBus(ctx, x, y);
+      placeLabel(ctx, 'Fireworks', x, y + 6, LABEL_COLOR, placed);
     }
   }
 

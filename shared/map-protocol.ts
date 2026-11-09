@@ -100,6 +100,8 @@ export const PROP_DEFS = {
   chest: { w: 16, h: 10 },
   /** A carved pumpkin of candy by a home's front door on Halloween night: searched, it gives one. */
   candy_bowl: { w: 10, h: 6 },
+  /** The S.O.S. Fireworks stand: an old city bus, side-on, with a hatch cut in its side. */
+  fireworks_bus: { w: 96, h: 24 },
 } as const;
 export type PropKind = keyof typeof PROP_DEFS;
 export const PROP_KINDS = Object.keys(PROP_DEFS) as PropKind[];

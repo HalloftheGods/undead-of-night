@@ -1,6 +1,7 @@
 import type { ContainerLoot, ContainerState } from './containers.ts';
 import { townContainers } from './containers.ts';
 import { AMMO_PICKUPS } from './constants.ts';
+import { BOOTH_FIREWORKS, isBooth } from './fireworks-booth.ts';
 import { scaleRounds } from './difficulty.ts';
 import type { DifficultyId } from './difficulty.ts';
 import { isAmmoPickup } from './pickups.ts';
@@ -64,12 +65,14 @@ export function stockContainers(sim: SimState, upOrDown: Rng = sim.rng): void {
     // A candy bowl holds its candy and nothing else, so it takes no roll.
     const isBowl = container.kind === 'bowl';
     if (isBowl) return { opened: false, loot: null };
+    // The fireworks bus is stocked with fireworks alone.
+    if (isBooth(container)) return { opened: false, loot: null, fireworks: BOOTH_FIREWORKS };
     return fill(sim, container.stock, container.upOrDown ? upOrDown : sim.rng);
   });
 }
 
-/** The containers in the town itself, which its ammo budget and its homes' small finds are settled over. Candy bowls hold candy alone. */
-const inTown = (sim: SimState) => townContainers(sim.map).filter((container) => !container.upOrDown && container.kind !== 'bowl');
+/** The containers in the town itself, which its ammo budget and its homes' small finds are settled over. Bowls and the bus hold their own. */
+const inTown = (sim: SimState) => townContainers(sim.map).filter((container) => !container.upOrDown && container.kind !== 'bowl' && !isBooth(container));
 
 /**
  * Brings the ammo put away to what the town can spare, so a lucky roll never shows up as bare

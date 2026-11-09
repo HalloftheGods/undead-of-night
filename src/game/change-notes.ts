@@ -22,6 +22,18 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'fireworks-bus',
+    date: '2026-11-09',
+    kind: 'new',
+    title: 'S.O.S. Fireworks bus',
+    deck: 'An old city bus in the downtown car park has been turned into a fireworks stand.',
+    points: [
+      'Search it to fill your hands with fireworks, then come back for more until it sells out.',
+      'Look for its sign and its string of bulbs. It is drawn on the town map, under Places in the key.',
+      'The Town Guide has a page for it.',
+    ],
+  },
+  {
     id: 'candy-bag',
     date: '2026-11-09',
     kind: 'new',
