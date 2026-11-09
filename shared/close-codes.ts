@@ -32,6 +32,8 @@ export const UPDATE_REASON = {
 
 export const NEEDS_UPDATE_TEXT = 'This game needs an update: reload';
 export const FRIEND_NEEDS_UPDATE_TEXT = 'Your friend needs to update their game';
+/** A guest built a different town from the host's seed: one of the two runs an older build. */
+export const DIFFERENT_TOWN_TEXT = 'You and the host have different versions of the game: both reload';
 
 const TEXT: Readonly<Record<Exclude<CloseCode, typeof CLOSE.needsUpdate>, string>> = {
   [CLOSE.roomFull]: 'That room is full.',
