@@ -32,7 +32,7 @@ describe('title scale', () => {
 
 describe('title menu', () => {
   it('runs section by section: Books with How to Play on top, then Play, then Extras', () => {
-    expect(TITLE_MENU.map((item) => item.label)).toEqual(['How to Play', 'Town Guide', 'Records', 'Daily Night', 'Arcade', 'Campaign', 'Level Select', 'Sound Test', 'Options']);
+    expect(TITLE_MENU.map((item) => item.label)).toEqual(['How to Play', 'Town Guide', 'Records', 'Daily Night', 'Arcade', 'Campaign', 'Level Select', 'Radio', 'Sound Test', 'Options']);
   });
 
   it('shows only three parents on the title, Play on top and pointed at', () => {
@@ -52,9 +52,16 @@ describe('title menu', () => {
     expect(menuRows('extras')[2].kind).toBe('back');
   });
 
-  it('names the Sound Test from the start, with or without a Radio found', () => {
+  it('adds Radio to Extras once a Radio has been found', () => {
+    const locked = menuRows('extras', TITLE_MENU, { radio: false, tracks: [] });
+    expect(locked.map((row) => row.label)).toEqual(['Sound Test', 'Options', 'Back']);
+    const unlocked = menuRows('extras', TITLE_MENU, { radio: true, tracks: [] });
+    expect(unlocked.map((row) => row.label)).toEqual(['Radio', 'Sound Test', 'Options', 'Back']);
+  });
+
+  it('names the Sound Test from the start, and masks Radio as ??? until found', () => {
     const labels = (radio: boolean) => TITLE_MENU.map((item) => menuLabel(item, { radio, tracks: [] }));
-    expect(labels(false)).toEqual(['How to Play', 'Town Guide', 'Records', 'Daily Night', 'Arcade', 'Campaign', 'Level Select', 'Sound Test', 'Options']);
+    expect(labels(false)).toEqual(['How to Play', 'Town Guide', 'Records', 'Daily Night', 'Arcade', 'Campaign', 'Level Select', '???', 'Sound Test', 'Options']);
     expect(labels(true)).toEqual(TITLE_MENU.map((item) => item.label));
   });
 
@@ -66,11 +73,16 @@ describe('title menu', () => {
     expect(TITLE_MENU.filter((item) => item.style !== undefined)).toHaveLength(2);
   });
 
-  it('puts a one-line subtitle under every button, and hides none of them behind a missing Radio', () => {
+  it('puts a one-line subtitle under every button, and hides the Radio line until found', () => {
     for (const item of TITLE_MENU) {
       expect(item.line.length).toBeGreaterThan(0);
       expect(item.line).not.toContain('\n');
-      expect(menuLine(item, { radio: false, tracks: [] })).toBe(item.line);
+      if (item.needs === 'radio') {
+        expect(menuLine(item, { radio: false, tracks: [] })).toBe('');
+        expect(menuLine(item, { radio: true, tracks: [] })).toBe(item.line);
+      } else {
+        expect(menuLine(item, { radio: false, tracks: [] })).toBe(item.line);
+      }
     }
   });
 

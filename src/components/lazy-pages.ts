@@ -27,6 +27,7 @@ export const ChangelogPage = lazy(() => import('./ChangelogPage.vue'));
 export const DailyPage = lazy(() => import('./DailyPage.vue'));
 export const LevelsPage = lazy(() => import('./LevelsPage.vue'));
 export const SoundTestPage = lazy(() => import('./SoundTestPage.vue'));
+export const RadioPage = lazy(() => import('./RadioPage.vue'));
 export const JukeboxScreen = lazy(() => import('./JukeboxScreen.vue'));
 export const EndingFlow = lazy(() => import('./EndingFlow.vue'));
 

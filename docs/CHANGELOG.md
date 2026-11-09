@@ -2,6 +2,22 @@
 
 All notable changes to the Undead of Night: Last Round game are documented in this file.
 
+## [2026-11-09] - Pixel art Radio player with tape deck controls
+
+### Added
+- The Radio on the Extras menu: finding a radio in any run now adds a dedicated **Radio** option to the Extras menu on the title screen (`RadioPage.vue`).
+- A pixel art cassette tape deck overlay matching the Arcade and Campaign presentation (`RadioDeck.vue` in `src/components/radio/`), with stereo speakers, a cassette well with animated rotating tape reels, and an illuminated cyan digital LCD screen with track title, elapsed time, duration, and animated VU meter equalizer bars.
+- Tactile tape transport controls: Play, Pause, Stop, Previous, Next, Rewind 5 seconds, Fast-Forward 5 seconds, and a progress scrubber slider.
+- Media player continuous playback: automatically advances to the next track on song completion according to Repeat (`off`, `all`, `one`) and Shuffle modes (`src/game/radio-player.ts`).
+- An interactive playlist panel (`RadioPlaylist.vue`) with quick filter tabs (`All`, `Favorites`, `Radio Finds`), live search, and favorite toggles persisted to browser storage (`outbreak.radio-favorites`).
+- Extended `Soundtrack` and `AudioEngine` with `pausePreview()`, `resumePreview()`, `seekPreview()`, and `getPreviewStatus()`.
+- Comprehensive Vitest unit tests in `tests/radio-player.spec.ts` covering favorites persistence, shuffle exhaustion queues, repeat modes, and manual navigation, plus updated menu tests in `tests/title-menu.spec.ts`.
+
+## [2026-11-09] - The dry-gun call over the head
+
+### Added
+- When the gun in hand runs its magazine dry, a flashing red call over the local survivor's head says what to press next (`ammoPrompt` in `src/engine/ammo-prompt.ts`, drawn by `OverlayRenderer.drawSearch`): `R: RELOAD!` while that gun has spares, the number key and name of the first carried gun that still fires when it has none (`1: PISTOL`), and `F: SHOVE` (`F: STAB` with a knife) when every gun is empty. Touch players read the word without the key. It goes quiet once a reload starts, when not alive, and in the bunker; it sits one line above a search bar or a search/station prompt rather than over it. The HUD footer's `Press R` / `Press 1` stays as it was.
+
 ## [2026-11-08] - The backpack ring on a desktop, and the old touch bar removed
 
 Finishes `docs/superpowers/specs/2026-11-08-hud-mobile-design.md`: piece 3, and the spec's open questions answered in it.

@@ -27,6 +27,7 @@
   <RecordsPage v-else-if="nav.page === 'records'" :ui @close="close" />
   <ChangelogPage v-else-if="nav.page === 'changelog'" :version="APP_VERSION" @close="close" />
   <SoundTestPage v-else-if="nav.page === 'sound'" @close="close" />
+  <RadioPage v-else-if="nav.page === 'radio'" :ui @close="close" />
   <OptionsPage v-else :ui @close="close" />
 </template>
 
@@ -43,7 +44,7 @@ import { TITLE_MENU } from '../game/title-menu.ts';
 import type { MenuGroup, TitleMenuItem } from '../game/title-menu.ts';
 import { closePage, closePlay, INVITE_LANDING, openPage, pickLevel, TITLE_HOME } from '../game/title-nav.ts';
 import InstallCartridge from './InstallCartridge.vue';
-import { ChangelogPage, DailyPage, HowToPlay, LevelsPage, RecordsPage, SoundTestPage, TownGuidePage } from './lazy-pages.ts';
+import { ChangelogPage, DailyPage, HowToPlay, LevelsPage, RadioPage, RecordsPage, SoundTestPage, TownGuidePage } from './lazy-pages.ts';
 import MenuLink from './MenuLink.vue';
 import OptionsPage from './OptionsPage.vue';
 import PlaySetup from './PlaySetup.vue';

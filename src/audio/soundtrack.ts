@@ -13,7 +13,7 @@ const SILENT_AFTER_MS = 1600;
 const firstTurn = (playlist: Playlist): number =>
   playlist.fromTop ? 0 : Math.floor(Math.random() * playlist.files.length);
 
-export type TrackElement = Pick<HTMLAudioElement, 'currentTime' | 'paused' | 'preload' | 'play' | 'pause' | 'addEventListener' | 'src' | 'load'>;
+export type TrackElement = Pick<HTMLAudioElement, 'currentTime' | 'duration' | 'paused' | 'preload' | 'play' | 'pause' | 'addEventListener' | 'src' | 'load'>;
 
 interface Track {
   readonly file: string;
@@ -93,6 +93,36 @@ export class Soundtrack {
   silence(): void {
     if (this.auditionEnd) this.auditionEnd = () => undefined;
     this.hush();
+  }
+
+  /** Pauses the currently auditioning track without clearing its progress. */
+  pauseAudition(): void {
+    if (!this.current) return;
+    this.current.element.pause();
+  }
+
+  /** Resumes playing the paused audition track. */
+  resumeAudition(): void {
+    if (!this.current) return;
+    void this.current.element.play().catch(() => undefined);
+  }
+
+  /** Seeks the audition track to a given time in seconds. */
+  seekAudition(seconds: number): void {
+    if (!this.current) return;
+    const duration = this.current.element.duration || 0;
+    this.current.element.currentTime = Math.max(0, Math.min(seconds, duration || seconds));
+  }
+
+  /** Current playback status of the auditioned track. */
+  getAuditionStatus(): { readonly paused: boolean; readonly currentTime: number; readonly duration: number } | null {
+    if (!this.current) return null;
+    const el = this.current.element;
+    return {
+      paused: el.paused,
+      currentTime: el.currentTime || 0,
+      duration: Number.isFinite(el.duration) ? el.duration : 0,
+    };
   }
 
   /** Ends the Sound Test's hold and brings the scene's music back. */

@@ -10,6 +10,7 @@ const probe = (answer: string) => ({ canPlayType: vi.fn(() => answer) });
 
 class FakeElement {
   currentTime = 0;
+  duration = 180;
   paused = true;
   preload = '';
   loads = 0;

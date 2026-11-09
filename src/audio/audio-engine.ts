@@ -183,6 +183,26 @@ export class AudioEngine {
     this.soundtrack?.silence();
   }
 
+  /** Pauses current track preview without clearing playback state. */
+  pausePreview(): void {
+    this.soundtrack?.pauseAudition();
+  }
+
+  /** Resumes paused track preview. */
+  resumePreview(): void {
+    this.soundtrack?.resumeAudition();
+  }
+
+  /** Seeks current track preview to seconds. */
+  seekPreview(seconds: number): void {
+    this.soundtrack?.seekAudition(seconds);
+  }
+
+  /** Current track preview status (paused, time, duration). */
+  getPreviewStatus(): { readonly paused: boolean; readonly currentTime: number; readonly duration: number } | null {
+    return this.soundtrack?.getAuditionStatus() ?? null;
+  }
+
   /** Leaving the Sound Test: the scene's music, the title's, comes back. */
   leavePreview(): void {
     this.clearPreviewTimer();
