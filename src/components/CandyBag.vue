@@ -225,4 +225,51 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
 .bag-close {
   margin-top: calc(var(--u) * 2);
 }
+
+/* A phone on its side: smaller pictures, each card a row with its words beside the picture. */
+@media (max-height: 520px) {
+  .bag {
+    gap: calc(var(--u) * 3);
+    padding: calc(var(--u) * 3);
+  }
+
+  .bag-grid {
+    grid-template-columns: repeat(auto-fill, minmax(calc(var(--u) * 110), 1fr));
+    gap: calc(var(--u) * 2);
+    width: 100%;
+  }
+
+  .bag-card {
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto auto;
+    justify-items: start;
+    align-items: center;
+    column-gap: calc(var(--u) * 3);
+    row-gap: var(--u);
+    padding: calc(var(--u) * 2) calc(var(--u) * 3);
+    text-align: left;
+  }
+
+  .bag-art {
+    --sprite-px: calc(var(--u) * 2);
+    grid-row: 1 / span 3;
+  }
+
+  .bag-key {
+    display: none;
+  }
+
+  .bag-name {
+    padding-right: calc(var(--u) * 10);
+  }
+
+  .bag-blurb,
+  .bag-left {
+    grid-column: 2;
+  }
+
+  .bag-left {
+    display: none;
+  }
+}
 </style>

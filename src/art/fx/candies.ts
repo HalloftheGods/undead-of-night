@@ -65,10 +65,10 @@ const GHOST_GUM: Grid = [
   '.WW.WW.Wl.l.',
 ];
 
-/** A jack-o'-lantern bubbling over with fizz. */
+/** A jack-o'-lantern of orange fizz. */
 const PUMPKIN_FIZZ: Grid = [
-  'W....wx...W.',
-  '.W...xw.....',
+  '.....wx.....',
+  '.....xw.....',
   '..CCCBBCCC..',
   '.CBBCBBCBBC.',
   'CBBkBBBBkBBC',
