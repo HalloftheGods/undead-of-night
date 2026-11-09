@@ -14,6 +14,8 @@
         :weapon-icons="art.ui.weaponIcons"
         @fit="ask(option)"
         @move="move"
+        @peek="emit('peek', option)"
+        @unpeek="emit('peek', null)"
       />
     </ul>
     <div v-if="pending" ref="confirmBox" class="bench-effect-confirm" role="alertdialog" aria-live="assertive">
@@ -50,6 +52,7 @@ interface EffectProps {
 }
 
 const { weapon, owned, gear } = defineProps<EffectProps>();
+const emit = defineEmits<{ peek: [option: EffectOption | null] }>();
 const game = useGame();
 const confirmBox = useTemplateRef<HTMLElement>('confirmBox');
 

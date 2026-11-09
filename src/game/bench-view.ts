@@ -1,9 +1,9 @@
 import { STAT_SLOTS } from '../../shared/character-stats.ts';
 import { WEAPONS } from '../../shared/constants.ts';
 import type { WeaponStats } from '../../shared/constants.ts';
-import { GUN_SLOTS, UPGRADE_ORDER, UPGRADES } from '../../shared/gun-upgrade-data.ts';
+import { GUN_SLOTS, PART_LABELS, UPGRADE_ORDER, UPGRADES } from '../../shared/gun-upgrade-data.ts';
 import type { GunUpgrade, PartId } from '../../shared/gun-upgrade-data.ts';
-import { canFit, canMove, gunStats, noParts, rankOf } from '../../shared/gun-upgrades.ts';
+import { canFit, canMove, gunStats, noParts, rankOf, slotsUsed } from '../../shared/gun-upgrades.ts';
 import type { GunFit, PlayerGear } from '../../shared/gun-upgrades.ts';
 import { levelDef, townName } from '../../shared/levels.ts';
 import { WEAPON_ORDER } from '../../shared/protocol.ts';
@@ -49,8 +49,53 @@ export function benchNote(bench: BenchHud): string {
   return `${townName(bench.level)} is behind you. Next: ${bench.nextTitle}`;
 }
 
+/** What the bench says when nothing is pointed at: the three steps' last one, and where the van goes. */
+export function benchHint(bench: BenchHud): string {
+  if (bench.walkUp) return 'Pick a gun, fit parts to it, then press Close when you are done.';
+  return `Press Ready when you are done. Next stop: ${bench.nextTitle}.`;
+}
+
 /** The parts one rank of an upgrade takes, in the table's order. */
 export const upgradeParts = (upgrade: GunUpgrade): PartId[] => Object.keys(UPGRADES[upgrade].cost) as PartId[];
+
+/** One rank's gain, in the words a player would use. */
+const EFFECT_WORDS: Readonly<Record<GunUpgrade, string>> = {
+  damage: 'damage',
+  fireRate: 'fire rate',
+  magazine: 'magazine',
+  reload: 'reload time',
+  suppressor: 'noise',
+};
+
+/** What one rank of an upgrade does to the gun, as a signed percentage of the stock stat. */
+export function upgradeEffect(upgrade: GunUpgrade): string {
+  const { gain } = UPGRADES[upgrade];
+  const lowers = upgrade === 'reload' || upgrade === 'suppressor';
+  return `${lowers ? '-' : '+'}${Math.round(gain * 100)}% ${EFFECT_WORDS[upgrade]}`;
+}
+
+/** What one rank costs, e.g. "1 Grip + 1 Magazine". */
+export function upgradeCost(upgrade: GunUpgrade): string {
+  return upgradeParts(upgrade)
+    .map((part) => `${UPGRADES[upgrade].cost[part] ?? 0} ${PART_LABELS[part]}`)
+    .join(' + ');
+}
+
+/** Why a rank cannot go on this gun right now, or null when it can: exactly when canFit says yes. */
+export function upgradeBlock(weapon: WeaponId, fit: GunFit | undefined, parts: Readonly<Record<PartId, number>>, upgrade: GunUpgrade): string | null {
+  if (rankOf(fit, upgrade) >= UPGRADES[upgrade].maxRank) return 'Maxed out';
+  if (slotsUsed(fit) >= GUN_SLOTS[weapon]) return 'No slots left';
+  const missing = upgradeParts(upgrade).filter((part) => parts[part] < (UPGRADES[upgrade].cost[part] ?? 0));
+  return missing.length > 0 ? `Need ${missing.map((part) => PART_LABELS[part]).join(' + ')}` : null;
+}
+
+/** Slots on a gun with nothing in them. */
+export const slotsFree = (weapon: WeaponId, fit: GunFit | undefined): number => GUN_SLOTS[weapon] - slotsUsed(fit);
+
+/** True when some gun in hand could take some rank with the parts carried: the bench still has work to do. */
+export function hasWorkLeft(owned: readonly WeaponId[], gear: PlayerGear): boolean {
+  return owned.some((weapon) => UPGRADE_ORDER.some((upgrade) => canFit(gear.parts, weapon, gear.fits[weapon], upgrade)));
+}
 
 export interface BenchRow {
   readonly upgrade: GunUpgrade;
@@ -58,6 +103,10 @@ export interface BenchRow {
   readonly rank: number;
   readonly maxRank: number;
   readonly cost: readonly PartId[];
+  readonly costText: string;
+  readonly effect: string;
+  /** Why it cannot be fitted now, or null when it can. */
+  readonly blocked: string | null;
   readonly fittable: boolean;
   /** Guns a toolkit could carry a rank of this to. */
   readonly moves: readonly WeaponId[];
@@ -75,6 +124,9 @@ export function benchRows(weapon: WeaponId, owned: readonly WeaponId[], gear: Pl
       maxRank,
       rank: rankOf(here.fit, upgrade),
       cost: upgradeParts(upgrade),
+      costText: upgradeCost(upgrade),
+      effect: upgradeEffect(upgrade),
+      blocked: upgradeBlock(weapon, here.fit, gear.parts, upgrade),
       fittable: canFit(gear.parts, weapon, here.fit, upgrade),
       moves: owned.filter(accepts),
     };
@@ -140,6 +192,18 @@ export function gunBars(weapon: WeaponId, fit: GunFit | undefined): readonly Gun
     const value = text(now, stock);
     return { label, value, filled, gained: Math.max(0, filled - cellsOf(of(stock) / best)), changed: value !== text(stock, stock) };
   });
+}
+
+/** The bars the gun would have with one more rank of this upgrade, to set beside its bars now. */
+export function previewBars(weapon: WeaponId, fit: GunFit | undefined, upgrade: GunUpgrade): readonly GunBar[] {
+  const base = fit ?? { ranks: {}, quirk: null };
+  return gunBars(weapon, { ...base, ranks: { ...base.ranks, [upgrade]: rankOf(fit, upgrade) + 1 } });
+}
+
+/** The line under the bench while an upgrade tile is pointed at. */
+export function upgradeHint(row: BenchRow): string {
+  if (row.blocked) return `${row.label} (${row.effect} a rank): ${row.blocked}.`;
+  return `${row.label}: ${row.effect}. Costs ${row.costText}. It stays on this gun unless a toolkit moves it.`;
 }
 
 /** A gun's slots in order: the upgrade each fitted rank took, then null for each one still empty. */

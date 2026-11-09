@@ -1,6 +1,16 @@
 <template>
   <li class="work">
-    <PixelButton class="work-tile" :class="{ 'is-fitted': fitted }" :disabled :aria-label="aria" @press="emit('fit')">
+    <PixelButton
+      class="work-tile"
+      :class="{ 'is-fitted': fitted }"
+      :disabled
+      :aria-label="aria"
+      @press="emit('fit')"
+      @mouseenter="emit('peek')"
+      @focus="emit('peek')"
+      @mouseleave="emit('unpeek')"
+      @blur="emit('unpeek')"
+    >
       <span class="work-art">
         <SpriteImg v-for="(each, index) in sprites" :key="index" :sprite="each" />
       </span>
@@ -9,6 +19,7 @@
       </span>
       <strong v-else class="work-count" :class="{ 'is-none': count === 0 }">x{{ count }}</strong>
       <span class="work-name">{{ label }}</span>
+      <span v-if="sub" class="work-sub" :class="`is-${tone}`">{{ sub }}</span>
     </PixelButton>
     <span class="work-moves">
       <PixelButton
@@ -30,7 +41,8 @@
 /**
  * One framed tile on the bench, in the shelf's tile language: the in-game icons of what it takes, its ranks
  * (or the count carried), its name, and under the frame a fixed foot for the guns a toolkit could carry it to.
- * Pressing the tile fits it to the gun in focus.
+ * Pressing the tile fits it to the gun in focus; pointing at it, or tabbing to it, tells the screen so it can
+ * say what the tile does.
  */
 import { WEAPONS } from '../../shared/constants.ts';
 import type { WeaponId } from '../../shared/protocol.ts';
@@ -45,6 +57,9 @@ interface TileProps {
   /** Ranks fitted out of the most, for an upgrade; null for a kit, which shows its count instead. */
   pips?: { on: number; of: number } | null;
   count?: number;
+  /** A line under the name that is on the tile for a touch screen too: what it costs, or why it cannot be fitted. */
+  sub?: string;
+  tone?: 'cost' | 'blocked' | 'done';
   disabled: boolean;
   /** On the gun in focus already. */
   fitted: boolean;
@@ -52,8 +67,8 @@ interface TileProps {
   weaponIcons: UiArt['weaponIcons'];
 }
 
-const { sprites, label, aria, pips = null, count = 0, disabled, fitted, moves, weaponIcons } = defineProps<TileProps>();
-const emit = defineEmits<{ fit: []; move: [to: WeaponId] }>();
+const { sprites, label, aria, pips = null, count = 0, sub = '', tone = 'cost', disabled, fitted, moves, weaponIcons } = defineProps<TileProps>();
+const emit = defineEmits<{ fit: []; move: [to: WeaponId]; peek: []; unpeek: [] }>();
 </script>
 
 <style scoped>
@@ -68,7 +83,7 @@ const emit = defineEmits<{ fit: []; move: [to: WeaponId] }>();
   --edge: var(--ink-line);
   display: grid;
   grid-template-columns: 1fr auto;
-  grid-template-areas: 'art mark' 'name name';
+  grid-template-areas: 'art mark' 'name name' 'sub sub';
   align-items: center;
   gap: var(--u) calc(var(--u) * 2);
   padding: calc(var(--u) * 2) calc(var(--u) * 3);
@@ -131,6 +146,25 @@ const emit = defineEmits<{ fit: []; move: [to: WeaponId] }>();
 
 .work-count.is-none {
   opacity: 0.4;
+}
+
+.work-sub {
+  grid-area: sub;
+  overflow: hidden;
+  color: var(--bone-dim);
+  font-size: calc(var(--u) * 5);
+  text-align: left;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.work-sub.is-blocked {
+  color: var(--blood-bright);
+}
+
+.work-sub.is-done {
+  color: var(--amber);
 }
 
 .work-name {

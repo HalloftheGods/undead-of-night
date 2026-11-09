@@ -1,11 +1,11 @@
 <template>
   <ul class="gun-bars">
-    <li v-for="bar in bars" :key="bar.label" class="gun-bar">
+    <li v-for="(bar, at) in bars" :key="bar.label" class="gun-bar">
       <span class="gun-bar-label">{{ bar.label }}</span>
       <span class="gun-bar-cells" role="img" :aria-label="`${bar.label} ${bar.value}, ${bar.filled} of ${BAR_SLOTS}`">
-        <span v-for="n in BAR_SLOTS" :key="n" class="gun-bar-cell" :class="cellClass(bar, n)" />
+        <span v-for="n in BAR_SLOTS" :key="n" class="gun-bar-cell" :class="cellClass(bar, n, next?.[at])" />
       </span>
-      <span class="gun-bar-value" :class="{ 'is-changed': bar.changed }">{{ bar.value }}</span>
+      <span class="gun-bar-value" :class="{ 'is-changed': bar.changed, 'is-next': moves(bar, next?.[at]) }">{{ valueText(bar, next?.[at]) }}</span>
     </li>
   </ul>
 </template>
@@ -18,11 +18,20 @@
 import { BAR_SLOTS } from '../game/bench-view.ts';
 import type { GunBar } from '../game/bench-view.ts';
 
-defineProps<{ bars: readonly GunBar[] }>();
+defineProps<{ bars: readonly GunBar[]; next?: readonly GunBar[] }>();
 
-function cellClass(bar: GunBar, n: number): Record<string, boolean> {
+/** Cells the pointed-at upgrade would light are outlined, not filled: a promise, not a fact. */
+function cellClass(bar: GunBar, n: number, after: GunBar | undefined): Record<string, boolean> {
   const lit = n <= bar.filled;
-  return { 'is-on': lit, 'is-gained': lit && n > bar.filled - bar.gained };
+  return { 'is-on': lit, 'is-gained': lit && n > bar.filled - bar.gained, 'is-next': !lit && after !== undefined && n <= after.filled };
+}
+
+const moves = (bar: GunBar, after: GunBar | undefined): boolean => after !== undefined && after.value !== bar.value;
+const short = (value: string): string => value.replace(' noise', '');
+
+/** The number now, and with an arrow the number after, when the upgrade would move it. */
+function valueText(bar: GunBar, after: GunBar | undefined): string {
+  return after !== undefined && moves(bar, after) ? `${short(bar.value)} > ${short(after.value)}` : bar.value;
 }
 </script>
 
@@ -78,7 +87,16 @@ function cellClass(bar: GunBar, n: number): Record<string, boolean> {
   white-space: nowrap;
 }
 
+.gun-bar-cell.is-next {
+  background: transparent;
+  box-shadow: inset 0 0 0 var(--u) var(--amber);
+}
+
 .gun-bar-value.is-changed {
+  color: var(--amber);
+}
+
+.gun-bar-value.is-next {
   color: var(--amber);
 }
 </style>
