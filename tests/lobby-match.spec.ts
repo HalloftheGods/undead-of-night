@@ -7,7 +7,7 @@ const NOW = 1_000_000;
 function room(over: Partial<RoomListing> = {}): RoomListing {
   return {
     code: 'BCDFG', protocol: 1, style: 'arcade', difficulty: 'lights_out', visibility: 'public', device: 'desktop',
-    continent: 'EU', level: 1, highest: 1, seats: 1, maxSeats: 4, taken: 0b0001, phase: 'playing', locked: false,
+    continent: 'EU', level: 1, highest: 1, seats: 1, maxSeats: 5, taken: 0b0001, phase: 'playing', locked: false,
     createdAt: NOW - 60_000, seenAt: NOW - 1000, ...over,
   };
 }
@@ -25,7 +25,7 @@ describe('which rooms are open', () => {
 
   it('refuses private, locked, full, stale, avoided, other protocol and other style', () => {
     const refused = [
-      room({ visibility: 'private' }), room({ locked: true }), room({ seats: 4 }), room({ seenAt: NOW - 90_000 }),
+      room({ visibility: 'private' }), room({ locked: true }), room({ seats: 5 }), room({ seenAt: NOW - 90_000 }),
       room({ protocol: 2 }), room({ style: 'campaign' }),
     ];
     for (const each of refused) expect(isOpenTo(each, ask(), NOW)).toBe(false);
@@ -68,13 +68,15 @@ describe('ranking', () => {
     expect(codes(rankRooms(rooms, ask(), NOW, 'EU'))).toEqual(['BBBBB', 'AAAAA']);
   });
 
-  it('prefers an exact difficulty, then a free survivor, then a desktop host', () => {
+  it('never offers a room that already has your survivor', () => {
+    expect(isOpenTo(room({ taken: 0b0010 }), ask(), NOW)).toBe(false);
+    expect(isOpenTo(room({ taken: 0b1101 }), ask(), NOW)).toBe(true);
+  });
+
+  it('prefers an exact difficulty, then a desktop host', () => {
     const exact = room({ code: 'EXACT' });
     const close = room({ code: 'CLOSE', difficulty: 'stay_close' });
     expect(codes(rankRooms([close, exact], ask(), NOW, 'EU'))).toEqual(['EXACT', 'CLOSE']);
-    const clash = room({ code: 'CLASH', taken: 0b0010 });
-    const free = room({ code: 'FREE' });
-    expect(codes(rankRooms([clash, free], ask(), NOW, 'EU'))).toEqual(['FREE', 'CLASH']);
     const phone = room({ code: 'PHONE', device: 'phone' });
     const desk = room({ code: 'DESK' });
     expect(codes(rankRooms([phone, desk], ask(), NOW, 'EU'))).toEqual(['DESK', 'PHONE']);
