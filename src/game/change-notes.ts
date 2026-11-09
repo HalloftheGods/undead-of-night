@@ -33,6 +33,18 @@ export const CHANGE_NOTES: readonly ChangeNote[] = [
     ],
   },
   {
+    id: 'fountain-fireworks',
+    date: '2026-11-09',
+    kind: 'new',
+    title: 'Fountains',
+    deck: 'The road flare is now a fountain firework: a cone that sprays gold sparks straight up.',
+    points: [
+      'Press V to light one. It sprays and hisses for twenty seconds, pulling every zombie in earshot to it.',
+      'Any zombie that reaches it catches fire, so a fountain is a lure and a trap at once.',
+      'Cars, garages and the police station hide them. The supply drop still comes down on a red flare.',
+    ],
+  },
+  {
     id: 'candy-bag',
     date: '2026-11-09',
     kind: 'new',

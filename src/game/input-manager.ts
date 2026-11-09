@@ -26,7 +26,7 @@ const HEAL_CODE = 'KeyH';
 const SEARCH_CODE = 'KeyE';
 const THROW_CODE = 'KeyG';
 const SPINNER_CODE = 'KeyT';
-const FLARE_CODE = 'KeyV';
+const FOUNTAIN_CODE = 'KeyV';
 /** X opens the candy bag, where the candy to eat is picked. */
 const BAG_CODE = 'KeyX';
 const SNEAK_CODES = ['KeyC'];
@@ -50,7 +50,7 @@ const GAME_CODES: ReadonlySet<string> = new Set([
   SEARCH_CODE,
   THROW_CODE,
   SPINNER_CODE,
-  FLARE_CODE,
+  FOUNTAIN_CODE,
   ...SNEAK_CODES,
   ...SPRINT_CODES,
   ...Object.keys(WEAPON_KEYS),
@@ -146,7 +146,7 @@ export class InputManager {
   private healLatch = false;
   private throwLatch = false;
   private spinnerLatch = false;
-  private flareLatch = false;
+  private fountainLatch = false;
   /** The candy picked out of the bag, sent with the next input. */
   private eatLatch: CandyId | null = null;
   private keepsakeLatch: KeepsakeId | null = null;
@@ -256,7 +256,7 @@ export class InputManager {
     this.healLatch = false;
     this.throwLatch = false;
     this.spinnerLatch = false;
-    this.flareLatch = false;
+    this.fountainLatch = false;
     this.eatLatch = null;
     this.keepsakeLatch = null;
     this.reloadLatch = false;
@@ -356,7 +356,7 @@ export class InputManager {
       heal: this.healLatch,
       ...(this.throwLatch ? { throw: true } : {}),
       ...(this.spinnerLatch ? { spinner: true } : {}),
-      ...(this.flareLatch ? { flare: true } : {}),
+      ...(this.fountainLatch ? { fountain: true } : {}),
       ...(this.eatLatch ? { eat: this.eatLatch } : {}),
       ...(this.keepsakeLatch ? { keepsake: this.keepsakeLatch } : {}),
       search: this.isHeld([SEARCH_CODE]),
@@ -448,7 +448,7 @@ export class InputManager {
     this.healLatch ||= code === HEAL_CODE;
     this.throwLatch ||= code === THROW_CODE;
     this.spinnerLatch ||= code === SPINNER_CODE;
-    this.flareLatch ||= code === FLARE_CODE;
+    this.fountainLatch ||= code === FOUNTAIN_CODE;
     const weapon = WEAPON_KEYS[code];
     if (weapon) this.weaponLatch = weapon;
   }

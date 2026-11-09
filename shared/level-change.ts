@@ -39,7 +39,7 @@ function emptyWorld(sim: SimState, level: number): void {
   sim.tracks = [];
   sim.spinners = [];
   sim.killChains.clear();
-  sim.flares = [];
+  sim.lures = [];
   sim.drop = null;
   sim.dropDone = false;
   sim.zombies = [];
@@ -85,11 +85,11 @@ export function placeAtEntry(sim: SimState, p: PlayerState): void {
   p.healQueued = false;
   p.throwQueued = false;
   p.spinnerQueued = false;
-  p.flareQueued = false;
+  p.fountainQueued = false;
   p.eatQueued = [];
-  // Candy is carried on, and what is working keeps working. Fireworks and flares are the town's: they stay behind when the van leaves it.
+  // Candy is carried on, and what is working keeps working. Fireworks are the town's: they stay behind when the van leaves it.
   p.fireworks = 0;
-  p.flares = 0;
+  p.fountains = 0;
   p.shootQueued = false;
   stopSearch(p);
 }

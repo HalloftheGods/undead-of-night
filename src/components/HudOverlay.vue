@@ -74,9 +74,9 @@
           <span>{{ hud.fireworks }}</span>
           <span class="hud-slot-key keys-only">T</span>
         </div>
-        <div v-if="hud.flares > 0" class="hud-chip hud-bottles">
-          <SpriteImg :sprite="art.ui.flare" />
-          <span>{{ hud.flares }}</span>
+        <div v-if="hud.fountains > 0" class="hud-chip hud-bottles">
+          <SpriteImg :sprite="art.ui.fountain" />
+          <span>{{ hud.fountains }}</span>
           <span class="hud-slot-key keys-only">V</span>
         </div>
         <div v-if="hud.candyCount > 0" class="hud-chip hud-bottles hud-candy" :title="hud.bag.map((stack) => `${stack.name} x${stack.count}`).join(', ')">

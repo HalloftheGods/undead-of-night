@@ -37,7 +37,7 @@ describe('supply drop', () => {
     const away = Math.hypot(p.x - drop.x, p.y - drop.y);
     expect(away).toBeGreaterThanOrEqual(DROP_MIN_DISTANCE);
     expect(away).toBeLessThanOrEqual(DROP_MAX_DISTANCE);
-    expect(state.flares).toHaveLength(1);
+    expect(state.lures).toHaveLength(1);
     expect(sim.snapshot().drop).toMatchObject({ landed: false });
 
     const before = state.pickups.length;

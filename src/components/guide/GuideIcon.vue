@@ -4,7 +4,7 @@
 </template>
 
 <script setup lang="ts">
-/** A find's picture: the pickup's own icon, the HUD's flare or fireworks, or a wrapped candy drawn in CSS. */
+/** A find's picture: the pickup's own icon, the HUD's fireworks, or a wrapped candy drawn in CSS. */
 import { computed } from 'vue';
 import type { ArtBook, PixelSprite } from '../../art/types.ts';
 import { spriteDataUrl } from '../../engine/sprite-cache.ts';
@@ -13,8 +13,8 @@ import type { FindIcon } from '../../game/town-guide.ts';
 const { icon, art } = defineProps<{ icon: FindIcon; art: ArtBook }>();
 
 function spriteOf(find: Exclude<FindIcon, 'candy'>): PixelSprite {
-  const isFlare = find === 'flare';
-  if (isFlare) return art.ui.flare;
+  const isFountain = find === 'fountain';
+  if (isFountain) return art.ui.fountain;
   const isFirework = find === 'firework';
   return isFirework ? art.ui.fireworks : art.ui.pickupIcons[find];
 }

@@ -206,7 +206,7 @@ function scorch(size: number, seed: number): PixelSprite {
   return canvas.toSprite(size, size, Math.floor(size / 2), Math.floor(size / 2));
 }
 
-/** Burnt ground left by a spinner, a flare or a blast, small to large. */
+/** Burnt ground left by a firework, a flare or a blast, small to large. */
 function buildScorchDecals(): PixelSprite[] {
   return SCORCH_SIZES.map((size, i) => scorch(size, 31 + i));
 }

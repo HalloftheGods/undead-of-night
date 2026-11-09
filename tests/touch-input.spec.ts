@@ -295,7 +295,7 @@ describe('fingers on the game', () => {
     });
 
     /** Every slot of a full backpack reaches the sim through the key the ring sends. */
-    it('heal, switch gun, throw, light and flare off the backpack ring, and the candy opens the bag', () => {
+    it('heal, switch gun, throw and light a spinner or a fountain off the backpack ring, and the candy opens the bag', () => {
       const slots = wheelSlots(fullBackpack());
       expect(slots.map((slot) => slot.code)).toEqual(['KeyH', 'KeyQ', 'KeyG', 'KeyT', 'KeyV', 'KeyX', 'KeyN']);
       for (const slot of slots) {
@@ -306,7 +306,7 @@ describe('fingers on the game', () => {
         heal: true,
         throw: true,
         spinner: true,
-        flare: true,
+        fountain: true,
         weapon: 'shotgun',
       });
       // The candy is not an input either: it opens the candy bag, through the same callback X uses.
