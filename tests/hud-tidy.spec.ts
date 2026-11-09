@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ammoState, ammoWarning } from '../src/game/hud-state.ts';
+import { ammoState, ammoWarning, reloadPrompt } from '../src/game/hud-state.ts';
 import { BiteTracker, angleGap, isUnseen } from '../src/game/bite-marker.ts';
 
 const dry = { owned: ['pistol'], ammoBag: { pistol: 0 }, mags: { pistol: 0 } } as unknown as Parameters<typeof ammoState>[0];
@@ -44,5 +44,13 @@ describe('bite marker', () => {
     const stale = new BiteTracker();
     stale.attacked(-30, 0, 0, 0);
     expect(stale.hurtLocal(0, 0, 1000, 0)).toBeNull();
+  });
+});
+
+describe('reloadPrompt', () => {
+  it('asks for a reload with a dry gun in a town, never in the bunker', () => {
+    expect(reloadPrompt({ ammo: 0, level: 1 })).toBe(true);
+    expect(reloadPrompt({ ammo: 3, level: 1 })).toBe(false);
+    expect(reloadPrompt({ ammo: 0, level: 0 })).toBe(false);
   });
 });

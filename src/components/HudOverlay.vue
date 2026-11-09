@@ -122,7 +122,7 @@
           <span class="hud-sub"><span class="keys-only">F: </span>{{ hud.knife ? 'Shove & Stab' : 'Shove' }}</span>
         </template>
         <span v-else-if="swapKey !== null" class="hud-sub is-threat keys-only">Press {{ swapKey }}</span>
-        <span v-else-if="hud.ammo === 0" class="hud-sub is-threat keys-only">Press R</span>
+        <span v-else-if="reloadPrompt(hud)" class="hud-sub is-threat keys-only">Press R</span>
       </div>
     </footer>
 
@@ -145,7 +145,7 @@ import { hintText as wordHint } from '../game/first-run-hints.ts';
 import { controlDevice, keyGlyph } from '../game/hud-keys.ts';
 import type { ArtBook } from '../art/types.ts';
 import type { HomeUi } from '../game/home-hud.ts';
-import { ammoWarning, hordeStatus, switchKey } from '../game/hud-state.ts';
+import { ammoWarning, hordeStatus, reloadPrompt, switchKey } from '../game/hud-state.ts';
 import type { HudState, PlaceBanner } from '../game/hud-state.ts';
 import { weaponBar } from '../game/weapon-bar.ts';
 import type { BarSlot } from '../game/weapon-bar.ts';
