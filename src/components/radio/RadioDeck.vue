@@ -1,84 +1,121 @@
 <template>
-  <div class="radio-deck px-frame" :class="{ 'is-playing': isPlaying, 'is-paused': isPaused }">
-    <!-- Top boombox handle and antenna -->
-    <div class="radio-top-bar" aria-hidden="true">
-      <div class="radio-handle">
-        <div class="radio-handle-grip" />
+  <div class="radio-unit" :class="{ 'is-playing': isPlaying, 'is-paused': isPaused }">
+    <!-- Top handle & antenna -->
+    <div class="deck-top" aria-hidden="true">
+      <div class="deck-antenna">
+        <div class="antenna-segment" />
+        <div class="antenna-tip" />
       </div>
-      <div class="radio-antenna" />
+      <div class="deck-handle">
+        <div class="handle-bracket is-left" />
+        <div class="handle-bar" />
+        <div class="handle-bracket is-right" />
+      </div>
     </div>
 
-    <!-- Main radio faceplate -->
-    <div class="radio-body">
+    <!-- Main radio chassis -->
+    <div class="deck-chassis px-frame">
       <!-- Left stereo speaker -->
-      <div class="radio-speaker is-left" aria-hidden="true">
-        <div class="speaker-cone">
-          <div class="speaker-core" />
+      <div class="deck-speaker is-left" aria-hidden="true">
+        <div class="speaker-grille">
+          <div class="speaker-core">
+            <div class="speaker-dust-cap" />
+          </div>
         </div>
       </div>
 
-      <!-- Center deck console -->
-      <div class="radio-console">
-        <!-- Neon LCD display -->
-        <div class="radio-lcd px-frame">
-          <div class="lcd-header">
-            <span class="lcd-status-badge" :class="statusClass">{{ statusLabel }}</span>
-            <div class="lcd-modes">
-              <span class="lcd-pill" :class="{ 'is-active': isShuffle }">SHUFFLE</span>
-              <span class="lcd-pill" :class="{ 'is-active': repeatMode !== 'off' }">
-                {{ repeatMode === 'one' ? 'REP 1' : repeatMode === 'all' ? 'REP ALL' : 'REP' }}
-              </span>
-              <span v-if="isFavorite" class="lcd-pill is-fav" aria-label="Favorited">♥ FAV</span>
+      <!-- Center section: Tuner, Cassette Bay, Scrubber & Controls -->
+      <div class="deck-center">
+        <!-- Frequency Tuner / Dial across top of center -->
+        <div class="tuner-box">
+          <div class="tuner-header">
+            <span class="tuner-label">FM STEREO TUNER</span>
+            <div class="tuner-indicators">
+              <span class="tuner-led" :class="{ 'is-lit': isPlaying }" title="Tuned signal" />
+              <span class="tuner-indicator-text">{{ isPlaying && !isPaused ? 'STEREO' : 'IDLE' }}</span>
             </div>
+            <span class="tuner-time">{{ formatTrackTime(currentTime) }} / {{ formatTrackTime(duration) }}</span>
           </div>
 
-          <div class="lcd-track-title" :title="track?.name ?? 'No tape loaded'">
-            {{ track?.name ?? 'INSERT CASSETTE TAPE' }}
-          </div>
-
-          <div class="lcd-sub-line">
-            <span class="lcd-origin">{{ track?.where ?? 'EXTRAS // RADIO' }}</span>
-            <span class="lcd-time">{{ formatTrackTime(currentTime) }} / {{ formatTrackTime(duration) }}</span>
-          </div>
-
-          <!-- Pixel VU meter equalizer -->
-          <div class="lcd-vu-meter" aria-hidden="true">
-            <div v-for="bar in 8" :key="bar" class="vu-bar" :style="{ '--bar-idx': bar }" />
+          <!-- Tuner glass with frequency scale and moving red needle -->
+          <div class="tuner-glass" @click="onTunerClick">
+            <div class="tuner-scale" aria-hidden="true">
+              <span class="scale-mark">88</span>
+              <span class="scale-tick" />
+              <span class="scale-mark">92</span>
+              <span class="scale-tick" />
+              <span class="scale-mark">96</span>
+              <span class="scale-tick" />
+              <span class="scale-mark">100</span>
+              <span class="scale-tick" />
+              <span class="scale-mark">104</span>
+              <span class="scale-tick" />
+              <span class="scale-mark">108</span>
+            </div>
+            <!-- Red tuning needle that travels across the scale with track progress -->
+            <div class="tuner-needle" :style="{ left: needlePosition }" />
           </div>
         </div>
 
-        <!-- Cassette deck compartment -->
-        <div class="cassette-bay px-frame">
+        <!-- Cassette Tape Well & Readout -->
+        <div class="cassette-well">
+          <!-- Digital readout above tape -->
+          <div class="cassette-readout">
+            <div class="readout-title" :title="track?.name ?? 'No tape loaded'">
+              {{ track?.name ?? 'NO CASSETTE LOADED' }}
+            </div>
+            <div class="readout-sub">
+              <span>{{ track?.where ?? 'RADIO' }}</span>
+              <span v-if="track?.find" class="readout-find">RADIO FIND</span>
+            </div>
+          </div>
+
+          <!-- Tape compartment with window and rotating reels -->
           <div class="cassette-tape">
-            <!-- Cassette label -->
-            <div class="tape-label">
-              <span class="tape-side">SIDE A</span>
-              <span class="tape-title">{{ track?.name ?? 'SURVIVAL MIX TAPE' }}</span>
-              <span class="tape-type">HQ CrO2</span>
+            <div class="tape-screws" aria-hidden="true">
+              <span class="screw is-tl" />
+              <span class="screw is-tr" />
             </div>
 
-            <!-- Tape window with rotating reels -->
-            <div class="tape-window">
-              <div class="tape-spool is-left">
-                <div class="spool-core" />
+            <div class="tape-label-strip">
+              <span class="tape-side">A</span>
+              <span class="tape-brand">TYPE II // CrO2</span>
+            </div>
+
+            <!-- Tape window showing spools and magnetic ribbon -->
+            <div class="tape-window" aria-hidden="true">
+              <!-- Left spool -->
+              <div class="spool is-left">
+                <div class="spool-hub" />
                 <div class="spool-teeth" />
+                <div class="spool-tape-pack" :style="{ '--fill': spoolLeftFill }" />
               </div>
+
+              <!-- Magnetic tape ribbon bridge -->
               <div class="tape-bridge">
                 <div class="tape-ribbon" />
               </div>
-              <div class="tape-spool is-right">
-                <div class="spool-core" />
+
+              <!-- Right spool -->
+              <div class="spool is-right">
+                <div class="spool-hub" />
                 <div class="spool-teeth" />
+                <div class="spool-tape-pack" :style="{ '--fill': spoolRightFill }" />
               </div>
+            </div>
+
+            <div class="tape-screws is-bottom" aria-hidden="true">
+              <span class="screw is-bl" />
+              <span class="screw is-br" />
             </div>
           </div>
         </div>
 
-        <!-- Scrubber progress slider -->
-        <div class="radio-scrubber-row">
+        <!-- Scrubber track slider -->
+        <div class="scrubber-bar">
           <input
             type="range"
-            class="radio-slider"
+            class="scrubber-slider"
             min="0"
             :max="sliderMax"
             :value="currentTime"
@@ -88,118 +125,160 @@
           />
         </div>
 
-        <!-- Primary tape deck tactile buttons -->
-        <div class="radio-buttons-row" role="toolbar" aria-label="Tape deck controls">
+        <!-- Tactile Tape Deck Transport Buttons -->
+        <div class="transport-strip" role="toolbar" aria-label="Tape deck controls">
+          <!-- Previous track -->
           <button
-            class="tape-btn"
+            class="deck-btn"
             type="button"
-            title="Previous track"
+            title="Previous"
             aria-label="Previous track"
             @click="emit('prev')"
           >
-            |&lt;&lt;
+            <svg class="pixel-icon" viewBox="0 0 12 12" shape-rendering="crispEdges" aria-hidden="true">
+              <rect x="2" y="2" width="2" height="8" fill="currentColor" />
+              <polygon points="10,2 10,10 4,6" fill="currentColor" />
+            </svg>
           </button>
+
+          <!-- Rewind 5s -->
           <button
-            class="tape-btn"
+            class="deck-btn"
             type="button"
             title="Rewind 5 seconds"
             aria-label="Rewind 5 seconds"
             @click="onStep(-5)"
           >
-            &lt;&lt;
+            <svg class="pixel-icon" viewBox="0 0 12 12" shape-rendering="crispEdges" aria-hidden="true">
+              <polygon points="6,2 6,10 1,6" fill="currentColor" />
+              <polygon points="11,2 11,10 6,6" fill="currentColor" />
+            </svg>
           </button>
+
+          <!-- Play / Pause toggle -->
           <button
             v-if="!isPlaying || isPaused"
-            class="tape-btn is-play is-primary"
+            class="deck-btn is-play"
             type="button"
             title="Play"
             aria-label="Play"
             @click="emit('play')"
           >
-            PLAY &#9654;
+            <svg class="pixel-icon" viewBox="0 0 12 12" shape-rendering="crispEdges" aria-hidden="true">
+              <polygon points="3,2 3,10 10,6" fill="currentColor" />
+            </svg>
           </button>
           <button
             v-else
-            class="tape-btn is-pause is-active"
+            class="deck-btn is-pause is-active"
             type="button"
             title="Pause"
             aria-label="Pause"
             @click="emit('pause')"
           >
-            PAUSE ||
+            <svg class="pixel-icon" viewBox="0 0 12 12" shape-rendering="crispEdges" aria-hidden="true">
+              <rect x="3" y="2" width="2" height="8" fill="currentColor" />
+              <rect x="7" y="2" width="2" height="8" fill="currentColor" />
+            </svg>
           </button>
+
+          <!-- Stop -->
           <button
-            class="tape-btn is-stop"
+            class="deck-btn is-stop"
             type="button"
             :disabled="!isPlaying && !isPaused"
             title="Stop"
             aria-label="Stop"
             @click="emit('stop')"
           >
-            STOP &#9632;
+            <svg class="pixel-icon" viewBox="0 0 12 12" shape-rendering="crispEdges" aria-hidden="true">
+              <rect x="3" y="3" width="6" height="6" fill="currentColor" />
+            </svg>
           </button>
+
+          <!-- Fast-Forward 5s -->
           <button
-            class="tape-btn"
+            class="deck-btn"
             type="button"
             title="Fast forward 5 seconds"
             aria-label="Fast forward 5 seconds"
             @click="onStep(5)"
           >
-            &gt;&gt;
+            <svg class="pixel-icon" viewBox="0 0 12 12" shape-rendering="crispEdges" aria-hidden="true">
+              <polygon points="1,2 1,10 6,6" fill="currentColor" />
+              <polygon points="6,2 6,10 11,6" fill="currentColor" />
+            </svg>
           </button>
+
+          <!-- Next track -->
           <button
-            class="tape-btn"
+            class="deck-btn"
             type="button"
-            title="Next track"
+            title="Next"
             aria-label="Next track"
             @click="emit('next')"
           >
-            &gt;&gt;|
-          </button>
-        </div>
-
-        <!-- Secondary deck options: Shuffle, Repeat, Favorite -->
-        <div class="radio-modes-row">
-          <button
-            class="mode-btn"
-            :class="{ 'is-toggled': isShuffle }"
-            type="button"
-            :aria-pressed="isShuffle"
-            @click="emit('toggleShuffle')"
-          >
-            <span class="mode-icon" aria-hidden="true">&#128256;</span>
-            SHUFFLE {{ isShuffle ? 'ON' : 'OFF' }}
-          </button>
-
-          <button
-            class="mode-btn"
-            :class="{ 'is-toggled': repeatMode !== 'off' }"
-            type="button"
-            :aria-label="`Repeat mode: ${repeatMode}`"
-            @click="emit('toggleRepeat')"
-          >
-            <span class="mode-icon" aria-hidden="true">&#128257;</span>
-            REPEAT {{ repeatMode.toUpperCase() }}
-          </button>
-
-          <button
-            v-if="track"
-            class="mode-btn is-fav-btn"
-            :class="{ 'is-favorited': isFavorite }"
-            type="button"
-            :aria-pressed="isFavorite"
-            @click="emit('toggleFavorite')"
-          >
-            <span class="mode-icon">{{ isFavorite ? '♥' : '♡' }}</span>
-            FAVORITE
+            <svg class="pixel-icon" viewBox="0 0 12 12" shape-rendering="crispEdges" aria-hidden="true">
+              <polygon points="2,2 2,10 8,6" fill="currentColor" />
+              <rect x="8" y="2" width="2" height="8" fill="currentColor" />
+            </svg>
           </button>
         </div>
       </div>
 
-      <!-- Right stereo speaker -->
-      <div class="radio-speaker is-right" aria-hidden="true">
-        <div class="speaker-cone">
-          <div class="speaker-core" />
+      <!-- Right speaker & Option Knobs -->
+      <div class="deck-speaker is-right" aria-hidden="true">
+        <div class="speaker-grille">
+          <div class="speaker-core">
+            <div class="speaker-dust-cap" />
+          </div>
+        </div>
+
+        <!-- Mode Switches directly integrated on the radio faceplate -->
+        <div class="deck-side-switches" aria-hidden="false">
+          <!-- Shuffle button with LED pip -->
+          <button
+            class="side-btn"
+            :class="{ 'is-active': isShuffle }"
+            type="button"
+            :title="`Shuffle: ${isShuffle ? 'ON' : 'OFF'}`"
+            :aria-label="`Shuffle: ${isShuffle ? 'ON' : 'OFF'}`"
+            @click="emit('toggleShuffle')"
+          >
+            <svg class="pixel-icon" viewBox="0 0 12 12" shape-rendering="crispEdges" aria-hidden="true">
+              <path d="M1 3h3l4 6h3 M8 3h3 M1 9h3l1.5-2.2 M10 1l2 2-2 2 M10 7l2 2-2 2" stroke="currentColor" stroke-width="1.5" fill="none" />
+            </svg>
+            <span class="switch-led" :class="{ 'is-lit': isShuffle }" />
+          </button>
+
+          <!-- Repeat button with multi-state LED pip -->
+          <button
+            class="side-btn"
+            :class="{ 'is-active': repeatMode !== 'off' }"
+            type="button"
+            :title="`Repeat: ${repeatMode}`"
+            :aria-label="`Repeat mode: ${repeatMode}`"
+            @click="emit('toggleRepeat')"
+          >
+            <svg class="pixel-icon" viewBox="0 0 12 12" shape-rendering="crispEdges" aria-hidden="true">
+              <path d="M2 5V3h7v3 M10 7v2H3V6 M1 7l2-2 2 2 M11 5l-2 2-2-2" stroke="currentColor" stroke-width="1.5" fill="none" />
+            </svg>
+            <span v-if="repeatMode === 'one'" class="repeat-one-badge" aria-hidden="true">1</span>
+            <span class="switch-led" :class="repeatLedClass" />
+          </button>
+
+          <!-- Favorite heart button -->
+          <button
+            class="side-btn is-fav-side"
+            :class="{ 'is-favorited': isFavorite }"
+            type="button"
+            :title="isFavorite ? 'Favorited' : 'Favorite track'"
+            :aria-label="isFavorite ? 'Favorited' : 'Favorite track'"
+            @click="emit('toggleFavorite')"
+          >
+            <span class="fav-heart">{{ isFavorite ? '♥' : '♡' }}</span>
+            <span class="switch-led is-fav-led" :class="{ 'is-lit': isFavorite }" />
+          </button>
         </div>
       </div>
     </div>
@@ -247,15 +326,27 @@ const emit = defineEmits<{
 
 const sliderMax = computed(() => (duration > 0 ? duration : 100));
 
-const statusLabel = computed(() => {
-  if (isPaused) return 'PAUSED';
-  if (isPlaying) return 'PLAYING';
-  return 'STANDBY';
+const needlePosition = computed(() => {
+  if (duration <= 0) return '0%';
+  const ratio = Math.max(0, Math.min(currentTime / duration, 1));
+  return `${(ratio * 96).toFixed(1)}%`;
 });
 
-const statusClass = computed(() => ({
-  'is-active': isPlaying && !isPaused,
-  'is-paused': isPaused,
+const spoolLeftFill = computed(() => {
+  if (duration <= 0) return 0.8;
+  const ratio = Math.max(0, Math.min(currentTime / duration, 1));
+  return (0.85 - ratio * 0.55).toFixed(2);
+});
+
+const spoolRightFill = computed(() => {
+  if (duration <= 0) return 0.3;
+  const ratio = Math.max(0, Math.min(currentTime / duration, 1));
+  return (0.3 + ratio * 0.55).toFixed(2);
+});
+
+const repeatLedClass = computed(() => ({
+  'is-lit': repeatMode === 'all',
+  'is-lit-alt': repeatMode === 'one',
 }));
 
 function onSeek(event: Event): void {
@@ -264,431 +355,17 @@ function onSeek(event: Event): void {
   emit('seek', targetSeconds);
 }
 
+function onTunerClick(event: MouseEvent): void {
+  if (duration <= 0) return;
+  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+  const ratio = Math.max(0, Math.min((event.clientX - rect.left) / rect.width, 1));
+  emit('seek', ratio * duration);
+}
+
 function onStep(deltaSeconds: number): void {
   const target = Math.max(0, Math.min(currentTime + deltaSeconds, duration || 999));
   emit('seek', target);
 }
 </script>
 
-<style scoped>
-.radio-deck {
-  display: flex;
-  flex-direction: column;
-  background: #11151c;
-  padding: calc(var(--u) * 6);
-  border-radius: 4px;
-  box-shadow: inset 0 0 calc(var(--u) * 4) rgba(0, 0, 0, 0.8), 0 8px 24px rgba(0, 0, 0, 0.5);
-  user-select: none;
-}
-
-/* Boombox handle & antenna */
-.radio-top-bar {
-  display: flex;
-  position: relative;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: calc(var(--u) * 4);
-  height: calc(var(--u) * 8);
-}
-
-.radio-handle {
-  display: flex;
-  position: relative;
-  align-items: center;
-  justify-content: center;
-  border: calc(var(--u) * 2) solid #3a424e;
-  border-bottom: none;
-  border-radius: 6px 6px 0 0;
-  width: 50%;
-  height: 100%;
-}
-
-.radio-handle-grip {
-  background: #202630;
-  border-radius: 2px;
-  width: 70%;
-  height: calc(var(--u) * 3);
-}
-
-.radio-antenna {
-  position: absolute;
-  top: 0;
-  right: calc(var(--u) * 4);
-  transform: rotate(45deg);
-  transform-origin: bottom center;
-  background: linear-gradient(to top, #4b5563, #cbd5e1);
-  border-radius: 1px;
-  width: calc(var(--u) * 2);
-  height: calc(var(--u) * 12);
-}
-
-/* Main chassis layout */
-.radio-body {
-  display: flex;
-  gap: calc(var(--u) * 5);
-  align-items: stretch;
-}
-
-/* Speakers */
-.radio-speaker {
-  display: flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  background: radial-gradient(circle, #090c10 20%, #171d25 80%);
-  border: calc(var(--u) * 1) solid #28303d;
-  border-radius: 4px;
-  width: calc(var(--u) * 32);
-}
-
-.speaker-cone {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: calc(var(--u) * 2) solid #2d3748;
-  border-radius: 50%;
-  width: calc(var(--u) * 24);
-  height: calc(var(--u) * 24);
-  background: repeating-radial-gradient(circle, #1a202c, #1a202c 2px, #0f141c 4px);
-}
-
-.is-playing .speaker-cone {
-  animation: speaker-vibrate 0.15s ease-in-out infinite alternate;
-}
-
-@keyframes speaker-vibrate {
-  from { transform: scale(0.98); }
-  to { transform: scale(1.02); }
-}
-
-.speaker-core {
-  background: #0d1117;
-  border: calc(var(--u) * 1) solid #62c9ff;
-  border-radius: 50%;
-  width: calc(var(--u) * 8);
-  height: calc(var(--u) * 8);
-}
-
-/* Console */
-.radio-console {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: calc(var(--u) * 4);
-  min-width: 0;
-}
-
-/* Backlit LCD */
-.radio-lcd {
-  display: flex;
-  flex-direction: column;
-  gap: calc(var(--u) * 2);
-  background: #05101a;
-  padding: calc(var(--u) * 3) calc(var(--u) * 4);
-  border-color: #1e3a5f;
-  box-shadow: inset 0 0 12px rgba(14, 165, 233, 0.25);
-  font-family: inherit;
-}
-
-.lcd-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.lcd-status-badge {
-  color: #64748b;
-  font-size: calc(var(--u) * 4);
-  font-weight: bold;
-  letter-spacing: 1px;
-}
-
-.lcd-status-badge.is-active {
-  color: #38bdf8;
-  text-shadow: 0 0 6px #0ea5e9;
-}
-
-.lcd-status-badge.is-paused {
-  color: #facc15;
-}
-
-.lcd-modes {
-  display: flex;
-  gap: calc(var(--u) * 2);
-}
-
-.lcd-pill {
-  color: #334155;
-  font-size: calc(var(--u) * 3.5);
-  font-weight: bold;
-}
-
-.lcd-pill.is-active {
-  color: #38bdf8;
-  text-shadow: 0 0 4px #0ea5e9;
-}
-
-.lcd-pill.is-fav {
-  color: #f43f5e;
-}
-
-.lcd-track-title {
-  overflow: hidden;
-  color: #e0f2fe;
-  font-size: calc(var(--u) * 5.5);
-  font-weight: bold;
-  text-overflow: ellipsis;
-  text-shadow: 0 0 8px rgba(98, 201, 255, 0.6);
-  white-space: nowrap;
-}
-
-.lcd-sub-line {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  color: #7dd3fc;
-  font-size: calc(var(--u) * 4);
-}
-
-.lcd-origin {
-  opacity: 0.8;
-  letter-spacing: 0.5px;
-}
-
-.lcd-time {
-  font-variant-numeric: tabular-nums;
-}
-
-/* LCD VU Meter */
-.lcd-vu-meter {
-  display: flex;
-  gap: calc(var(--u) * 1.5);
-  align-items: flex-end;
-  height: calc(var(--u) * 3.5);
-}
-
-.vu-bar {
-  flex: 1;
-  background: #1e293b;
-  border-radius: 1px;
-  height: 20%;
-}
-
-.is-playing .vu-bar {
-  background: #38bdf8;
-  animation: vu-dance 0.4s ease-in-out infinite alternate;
-  animation-delay: calc(var(--bar-idx) * 0.05s);
-}
-
-@keyframes vu-dance {
-  0% { height: 15%; background: #0284c7; }
-  50% { height: 75%; background: #38bdf8; }
-  100% { height: 100%; background: #7dd3fc; }
-}
-
-/* Cassette Bay */
-.cassette-bay {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #090c10;
-  padding: calc(var(--u) * 3);
-  border-color: #273142;
-  box-shadow: inset 0 0 8px #000;
-}
-
-.cassette-tape {
-  display: flex;
-  flex-direction: column;
-  background: #1e2530;
-  border: calc(var(--u) * 1) solid #374151;
-  border-radius: 4px;
-  width: 100%;
-  padding: calc(var(--u) * 2);
-}
-
-.tape-label {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: #f1f5f9;
-  color: #0f172a;
-  padding: calc(var(--u) * 1) calc(var(--u) * 2);
-  border-radius: 2px;
-  font-size: calc(var(--u) * 3.5);
-  font-weight: bold;
-}
-
-.tape-title {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 60%;
-}
-
-.tape-window {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: rgba(0, 0, 0, 0.7);
-  margin-top: calc(var(--u) * 2);
-  padding: calc(var(--u) * 2) calc(var(--u) * 4);
-  border-radius: 2px;
-}
-
-.tape-spool {
-  display: flex;
-  position: relative;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid #cbd5e1;
-  border-radius: 50%;
-  width: calc(var(--u) * 9);
-  height: calc(var(--u) * 9);
-  background: #111827;
-}
-
-.spool-core {
-  background: #fff;
-  border-radius: 50%;
-  width: calc(var(--u) * 3);
-  height: calc(var(--u) * 3);
-}
-
-.spool-teeth {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #94a3b8;
-  width: 2px;
-  height: 100%;
-}
-
-.is-playing .tape-spool {
-  animation: spin-reel 2s linear infinite;
-}
-
-.is-paused .tape-spool {
-  animation-play-state: paused;
-}
-
-@keyframes spin-reel {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-.tape-bridge {
-  flex: 1;
-  height: calc(var(--u) * 2);
-  background: #374151;
-  margin-inline: calc(var(--u) * 2);
-  border-radius: 1px;
-}
-
-/* Scrubber */
-.radio-scrubber-row {
-  display: flex;
-  align-items: center;
-  width: 100%;
-}
-
-.radio-slider {
-  width: 100%;
-  height: calc(var(--u) * 2);
-  background: #1e293b;
-  accent-color: #38bdf8;
-  cursor: pointer;
-}
-
-/* Tape Buttons */
-.radio-buttons-row {
-  display: flex;
-  gap: calc(var(--u) * 2);
-}
-
-.tape-btn {
-  flex: 1;
-  background: #1e2530;
-  color: #cbd5e1;
-  padding: calc(var(--u) * 2) 0;
-  border: calc(var(--u) * 1) solid #374151;
-  border-radius: 3px;
-  font-family: inherit;
-  font-size: calc(var(--u) * 4);
-  font-weight: bold;
-  cursor: pointer;
-  transition: background 0.1s, transform 0.05s;
-}
-
-.tape-btn:hover:not(:disabled) {
-  background: #283344;
-  color: #fff;
-}
-
-.tape-btn:active:not(:disabled) {
-  transform: translateY(1px);
-}
-
-.tape-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.tape-btn.is-primary {
-  background: #0369a1;
-  border-color: #38bdf8;
-  color: #fff;
-}
-
-.tape-btn.is-active {
-  background: #b45309;
-  border-color: #facc15;
-  color: #fff;
-}
-
-/* Mode toggles */
-.radio-modes-row {
-  display: flex;
-  gap: calc(var(--u) * 3);
-  justify-content: center;
-}
-
-.mode-btn {
-  display: inline-flex;
-  gap: calc(var(--u) * 1.5);
-  align-items: center;
-  background: #161e29;
-  color: #94a3b8;
-  padding: calc(var(--u) * 1.5) calc(var(--u) * 3);
-  border: 1px solid #283548;
-  border-radius: 3px;
-  font-family: inherit;
-  font-size: calc(var(--u) * 3.5);
-  font-weight: bold;
-  cursor: pointer;
-}
-
-.mode-btn:hover {
-  background: #1e293b;
-  color: #e2e8f0;
-}
-
-.mode-btn.is-toggled {
-  background: rgba(14, 165, 233, 0.2);
-  border-color: #38bdf8;
-  color: #38bdf8;
-}
-
-.mode-btn.is-favorited {
-  background: rgba(244, 63, 94, 0.2);
-  border-color: #fb7185;
-  color: #fb7185;
-}
-
-@media (max-width: 640px) {
-  .radio-speaker {
-    display: none;
-  }
-}
-</style>
+<style scoped src="./radio-deck.css"></style>

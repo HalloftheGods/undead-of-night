@@ -2,14 +2,13 @@
 
 All notable changes to the Undead of Night: Last Round game are documented in this file.
 
-## [2026-11-09] - Pixel art Radio player with tape deck controls
+## [2026-11-09] - In-game pixel art Radio player with tape deck controls
 
 ### Added
 - The Radio on the Extras menu: finding a radio in any run now adds a dedicated **Radio** option to the Extras menu on the title screen (`RadioPage.vue`).
-- A pixel art cassette tape deck overlay matching the Arcade and Campaign presentation (`RadioDeck.vue` in `src/components/radio/`), with stereo speakers, a cassette well with animated rotating tape reels, and an illuminated cyan digital LCD screen with track title, elapsed time, duration, and animated VU meter equalizer bars.
-- Tactile tape transport controls: Play, Pause, Stop, Previous, Next, Rewind 5 seconds, Fast-Forward 5 seconds, and a progress scrubber slider.
-- Media player continuous playback: automatically advances to the next track on song completion according to Repeat (`off`, `all`, `one`) and Shuffle modes (`src/game/radio-player.ts`).
-- An interactive playlist panel (`RadioPlaylist.vue`) with quick filter tabs (`All`, `Favorites`, `Radio Finds`), live search, and favorite toggles persisted to browser storage (`outbreak.radio-favorites`).
+- An authentic in-game pixel art boombox overlay (`RadioDeck.vue` in `src/components/radio/`), placed horizontally across the top with olive case, FM stereo frequency tuner with animated red needle, cassette bay with rotating spools, and tactile tape deck transport buttons with crisp pixel SVG icons and zero text labels.
+- Interactive mode switches for Shuffle, Repeat (`off`, `all`, `one`), and Favorites directly integrated on the radio faceplate with colored status LEDs.
+- Full-width scrollable tape playlist underneath the radio (`RadioPlaylist.vue`) with quick filter tabs (`ALL`, `FAVORITES`, `FINDS`), live search, and favorite toggles persisted to browser storage (`outbreak.radio-favorites`).
 - Extended `Soundtrack` and `AudioEngine` with `pausePreview()`, `resumePreview()`, `seekPreview()`, and `getPreviewStatus()`.
 - Comprehensive Vitest unit tests in `tests/radio-player.spec.ts` covering favorites persistence, shuffle exhaustion queues, repeat modes, and manual navigation, plus updated menu tests in `tests/title-menu.spec.ts`.
 

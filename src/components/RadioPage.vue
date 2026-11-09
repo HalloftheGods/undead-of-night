@@ -1,7 +1,7 @@
 <template>
   <TitlePage heading="Radio" size="extra-wide" boxed class="radio-screen" @close="emit('close')">
     <div class="radio-layout">
-      <!-- Left side: Pixel art tape deck with controls -->
+      <!-- Top: In-game pixel art radio / tape deck with transport controls -->
       <section class="radio-deck-section" aria-label="Tape Deck">
         <RadioDeck
           :track="currentTrack"
@@ -24,7 +24,7 @@
         />
       </section>
 
-      <!-- Right side: Playlist panel -->
+      <!-- Bottom: Playlist panel spanning full width -->
       <section class="radio-playlist-section" aria-label="Tape Playlist">
         <RadioPlaylist
           :tracks
@@ -250,37 +250,29 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .radio-screen :deep(.px-sheet) {
-  max-width: calc(var(--u) * 280);
+  width: min(calc(var(--u) * 480), 96vw);
+  max-height: calc(100vh - calc(var(--u) * 12));
 }
 
 .radio-layout {
   display: flex;
-  gap: calc(var(--u) * 5);
+  flex-direction: column;
+  gap: calc(var(--u) * 3);
   align-items: stretch;
-  min-height: calc(var(--u) * 90);
+  width: 100%;
 }
 
 .radio-deck-section {
-  flex: 1.1;
-  min-width: 0;
+  width: 100%;
   display: flex;
-  flex-direction: column;
+  justify-content: center;
 }
 
 .radio-playlist-section {
-  flex: 0.9;
+  width: 100%;
   min-width: 0;
   display: flex;
   flex-direction: column;
-}
-
-@media (max-width: 840px) {
-  .radio-layout {
-    flex-direction: column;
-  }
-
-  .radio-playlist-section {
-    max-height: calc(var(--u) * 80);
-  }
+  flex: 1;
 }
 </style>
