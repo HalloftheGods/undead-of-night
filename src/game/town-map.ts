@@ -2,13 +2,20 @@ import { townContainers } from '../../shared/containers.ts';
 import { isBunkerMap } from '../../shared/home-protocol.ts';
 import { isStorey } from '../../shared/storeys.ts';
 import { groundOf } from '../../shared/world-query.ts';
-import { BUILDING_DEFS, TILE_KINDS, TILE_SIZE } from '../../shared/protocol.ts';
+import { BUILDING_DEFS, TILE_SIZE } from '../../shared/protocol.ts';
 import type { LeftoverView } from '../../shared/leftovers.ts';
-import type { BuildingInstance, BuildingKind, DropView, EntityId, ExitEntity, PlayerEntity, TileKind, WorldMap } from '../../shared/protocol.ts';
+import type { BuildingInstance, DropView, EntityId, ExitEntity, PlayerEntity, TileKind, WorldMap } from '../../shared/protocol.ts';
 import { drawOutlinedText, FONT_HEIGHT, textWidth } from '../engine/bitmap-font.ts';
+import { paintBuilding } from './map-buildings.ts';
 import { drawCursor } from './map-cursor.ts';
-import { drawLeftovers, LEFTOVER_LEGEND } from './map-leftovers.ts';
+import { paintGround, paintScenery } from './map-ground.ts';
+import type { Rgb } from './map-ground.ts';
+import { drawLeftovers } from './map-leftovers.ts';
 import type { CursorClock } from './map-cursor.ts';
+import {
+  CROSS_COLOR, DROP_COLOR, DROP_LABEL_RISE, drawDropSprite, drawStation, drawTickMark, drawVan, EXIT_COLOR, VAN_LABEL_RISE,
+} from './map-markers.ts';
+import { MAP_INK } from './map-sprite.ts';
 import { drawTeammateLocator } from './map-teammate.ts';
 import type { LabelBox } from './map-teammate.ts';
 import { isLandmark } from './run-notices.ts';
@@ -18,15 +25,14 @@ const TILE_PX = 2;
 const WORLD_PER_PX = TILE_SIZE / TILE_PX;
 /** The bunker is 40 tiles across, so it can afford to be drawn big enough to carry its room names. */
 const BUNKER_TILE_PX = 6;
-const BUNKER_FLOOR: readonly [number, number, number] = [70, 58, 46];
-const BUNKER_WALL: readonly [number, number, number] = [22, 20, 24];
-const STATION_COLOR = '#ffb066';
-/** What the bunker map's one colour means: the machines you hold E at. The rooms are named on the map itself. */
-export const BUNKER_LEGEND: readonly (readonly [string, string])[] = [[STATION_COLOR, 'Stations']];
+const BUNKER_FLOOR: Rgb = [70, 58, 46];
+const BUNKER_WALL: Rgb = [22, 20, 24];
 
-const ROAD: readonly [number, number, number] = [40, 41, 47];
-const PAVEMENT: readonly [number, number, number] = [62, 62, 66];
-const TILE_RGB: Record<TileKind, readonly [number, number, number]> = {
+export { EXIT_COLOR };
+
+const ROAD: Rgb = [40, 41, 47];
+const PAVEMENT: Rgb = [62, 62, 66];
+const TILE_RGB: Record<TileKind, Rgb> = {
   asphalt: ROAD,
   asphalt_cracked: ROAD,
   lane_h: ROAD,
@@ -53,56 +59,9 @@ const TILE_RGB: Record<TileKind, readonly [number, number, number]> = {
   void: [0, 0, 0],
 };
 
-const MEDICAL = '#b04a42';
-const ARMS = '#c8923a';
-const LAW = '#4a78a8';
-const FOOD = '#5c9450';
-const WORK = '#86745a';
-const HOMES = '#4c4c56';
-const SCHOOL = '#8a62a8';
-const DROP_COLOR = '#e0463a';
-export const EXIT_COLOR = '#ffc03c';
-
-const BUILDING_COLOR: Record<BuildingKind, string> = {
-  pharmacy: MEDICAL,
-  clinic: MEDICAL,
-  hospital: MEDICAL,
-  school: SCHOOL,
-  police: LAW,
-  gun_shop: ARMS,
-  grocery: FOOD,
-  discount: FOOD,
-  diner: FOOD,
-  garage: WORK,
-  warehouse: WORK,
-  house: HOMES,
-  apartment: HOMES,
-  upstairs: HOMES,
-  cellar: HOMES,
-  apartment_upstairs: HOMES,
-};
-
-/** What the colours mean, for the key beside the map. */
-export const TOWN_LEGEND: readonly (readonly [string, string])[] = [
-  [MEDICAL, 'Medical'],
-  [LAW, 'Police'],
-  [ARMS, 'Guns'],
-  [WORK, 'Garages and yards'],
-  [FOOD, 'Food'],
-  [SCHOOL, 'School'],
-  [HOMES, 'Homes'],
-  [EXIT_COLOR, 'The van, once it comes'],
-  [DROP_COLOR, 'A supply drop'],
-  ...LEFTOVER_LEGEND,
-];
-
-const EDGE_COLOR = '#0b0c10';
+const EDGE_COLOR = MAP_INK;
 const DISTRICT_COLOR = '#938d7a';
 const LABEL_COLOR = '#e4dcc3';
-export const TICK_COLOR = '#b6e04a';
-export const CROSS_COLOR = '#e0463a';
-
-const TICK_PIXELS: readonly (readonly [number, number])[] = [[0, 2], [1, 3], [2, 2], [3, 1], [4, 0]];
 /** Label positions tried in turn around a building until one is clear. */
 const LABEL_NUDGES: readonly number[] = [0, 7, -7, 14, -14];
 
@@ -112,21 +71,9 @@ function overlaps(a: LabelBox, b: LabelBox): boolean {
 }
 
 /** What a tile looks like on the map: the town's greys, or the bunker's warm floor and dark walls. */
-function tileColor(map: WorldMap, kind: TileKind): readonly [number, number, number] {
+function tileColor(map: WorldMap, kind: TileKind): Rgb {
   if (!isBunkerMap(map)) return TILE_RGB[kind];
   return kind === 'bunker_wall' ? BUNKER_WALL : BUNKER_FLOOR;
-}
-
-function paintTiles(ctx: CanvasRenderingContext2D, map: WorldMap, width: number, height: number, tilePx: number): void {
-  const image = ctx.createImageData(width, height);
-  for (let y = 0; y < height; y += 1) {
-    const row = Math.floor(y / tilePx) * map.cols;
-    for (let x = 0; x < width; x += 1) {
-      const [r, g, b] = tileColor(map, TILE_KINDS[map.tiles[row + Math.floor(x / tilePx)]]);
-      image.data.set([r, g, b, 255], (y * width + x) * 4);
-    }
-  }
-  ctx.putImageData(image, 0, 0);
 }
 
 function footprint(building: BuildingInstance): LabelBox {
@@ -173,11 +120,8 @@ function drawPixelLine(
 
 function paintBuildings(ctx: CanvasRenderingContext2D, map: WorldMap): void {
   for (const building of map.buildings) {
-    const box = footprint(building);
-    ctx.fillStyle = EDGE_COLOR;
-    ctx.fillRect(box.x0 - 1, box.y0 - 1, box.x1 - box.x0 + 2, box.y1 - box.y0 + 2);
-    ctx.fillStyle = BUILDING_COLOR[building.kind];
-    ctx.fillRect(box.x0, box.y0, box.x1 - box.x0, box.y1 - box.y0);
+    const doorPx = Math.round(BUILDING_DEFS[building.kind].doorX / WORLD_PER_PX);
+    paintBuilding(ctx, footprint(building), building.kind, doorPx, Math.round(building.x) ^ Math.round(building.y));
   }
 }
 
@@ -247,7 +191,10 @@ export class TownMapView {
 
   private paintBase(): void {
     const ctx = this.base.getContext('2d')!;
-    paintTiles(ctx, this.map, this.width, this.height, this.pixelsPerTile);
+    const town = !isBunkerMap(this.map);
+    const size = { width: this.width, height: this.height, tilePx: this.pixelsPerTile, textured: town };
+    paintGround(ctx, this.map, size, (kind) => tileColor(this.map, kind));
+    if (town) paintScenery(ctx, this.map.props, this.pixelsPerTile);
     paintBuildings(ctx, this.map);
     this.paintStations(ctx);
     const placed: LabelBox[] = [];
@@ -265,15 +212,10 @@ export class TownMapView {
     }
   }
 
-  /** A lamp-coloured dot where each bunker station stands. The town has none. */
+  /** A lamp-lit machine where each bunker station stands. The town has none. */
   private paintStations(ctx: CanvasRenderingContext2D): void {
     for (const station of this.map.stations ?? []) {
-      const x = Math.round(station.x / this.worldPerPx);
-      const y = Math.round(station.y / this.worldPerPx);
-      ctx.fillStyle = EDGE_COLOR;
-      ctx.fillRect(x - 2, y - 2, 5, 5);
-      ctx.fillStyle = STATION_COLOR;
-      ctx.fillRect(x - 1, y - 1, 3, 3);
+      drawStation(ctx, Math.round(station.x / this.worldPerPx), Math.round(station.y / this.worldPerPx));
     }
   }
 
@@ -317,12 +259,7 @@ export class TownMapView {
 
   private drawTick(ctx: CanvasRenderingContext2D, building: BuildingInstance): void {
     const box = footprint(building);
-    const x = box.x1 - 7;
-    const y = box.y0 + 1;
-    ctx.fillStyle = EDGE_COLOR;
-    ctx.fillRect(x - 1, y - 1, 7, 6);
-    ctx.fillStyle = TICK_COLOR;
-    for (const [dx, dy] of TICK_PIXELS) ctx.fillRect(x + dx, y + dy, 1, 1);
+    drawTickMark(ctx, box.x1, box.y0);
   }
 
   private drawCross(ctx: CanvasRenderingContext2D, building: BuildingInstance): void {
@@ -358,25 +295,19 @@ export class TownMapView {
     }
   }
 
-  /** A red box where the supply drop is coming down, or came down. */
+  /** The crate on its parachute where the supply drop is coming down, or on the ground where it came down. */
   private drawDrop(ctx: CanvasRenderingContext2D, drop: DropView): void {
     const x = Math.round(drop.x / this.worldPerPx);
     const y = Math.round(drop.y / this.worldPerPx);
-    ctx.fillStyle = EDGE_COLOR;
-    ctx.fillRect(x - 4, y - 4, 9, 9);
-    ctx.fillStyle = DROP_COLOR;
-    ctx.fillRect(x - 3, y - 3, 7, 7);
-    drawOutlinedText(ctx, drop.landed ? 'SUPPLIES' : 'DROP', x, y - 5 - FONT_HEIGHT, DROP_COLOR);
+    drawDropSprite(ctx, x, y, drop.landed);
+    drawOutlinedText(ctx, drop.landed ? 'SUPPLIES' : 'DROP', x, y - DROP_LABEL_RISE - FONT_HEIGHT, DROP_COLOR);
   }
 
   private drawExit(ctx: CanvasRenderingContext2D, exit: ExitEntity): void {
     const x = Math.round(exit.x / this.worldPerPx);
     const y = Math.round(exit.y / this.worldPerPx);
-    ctx.fillStyle = EDGE_COLOR;
-    ctx.fillRect(x - 5, y - 3, 11, 7);
-    ctx.fillStyle = EXIT_COLOR;
-    ctx.fillRect(x - 4, y - 2, 9, 5);
-    drawOutlinedText(ctx, 'VAN', x, y - 4 - FONT_HEIGHT, EXIT_COLOR);
+    drawVan(ctx, x, y);
+    drawOutlinedText(ctx, 'VAN', x, y - VAN_LABEL_RISE - FONT_HEIGHT, EXIT_COLOR);
   }
 
   paint(

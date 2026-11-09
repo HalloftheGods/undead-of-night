@@ -3,15 +3,14 @@
     <canvas ref="canvasRef" class="town-canvas px-frame" :style="{ '--side': canvasSide }" />
     <aside class="town-key">
       <h2 class="town-title">{{ key.title }}</h2>
-      <ul class="town-legend">
-        <li v-for="[color, label] in key.legend" :key="label">
-          <span class="town-swatch" :style="{ '--swatch': color }" />{{ label }}
-        </li>
-        <template v-if="key.marks">
-          <li class="town-tick">Check: been inside</li>
-          <li class="town-cross">X: cleared & searched</li>
-        </template>
-      </ul>
+      <section v-for="group in key.groups" :key="group.title" class="town-group">
+        <h3 class="town-group-title">{{ group.title }}</h3>
+        <ul class="town-legend">
+          <li v-for="entry in group.entries" :key="entry.label" :class="entry.tone && `town-${entry.tone}`">
+            <span class="town-icon"><MapKeyIcon :icon="entry.icon" /></span>{{ entry.label }}
+          </li>
+        </ul>
+      </section>
       <ul v-if="teammates.length > 0" class="town-legend town-team" aria-label="Your team">
         <li v-for="mate in teammates" :key="mate.id" :style="{ '--swatch': mate.color }">
           <span class="town-swatch" />{{ mate.name }}<span v-if="mate.status !== 'alive'" class="town-down">{{ mate.status }}</span>
@@ -28,11 +27,12 @@ import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue';
 import { mapKey } from '../game/map-key.ts';
 import type { TeammateHud } from '../game/hud-state.ts';
 import type { TransportKind } from '../network/transport.ts';
+import MapKeyIcon from './MapKeyIcon.vue';
 import MenuLink from './MenuLink.vue';
 import { useGame } from './use-game.ts';
 
 const SCREEN_MARGIN = 24;
-const KEY_WIDTH = 260;
+const KEY_WIDTH = 280;
 
 const { inBunker, teammates = [] } = defineProps<{ mode: TransportKind; inBunker: boolean; teammates?: readonly TeammateHud[] }>();
 
@@ -83,7 +83,56 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: calc(var(--u) * 4);
-  max-width: calc(var(--u) * 100);
+  max-width: calc(var(--u) * 110);
+}
+
+/* A short screen, a phone on its side: the groups run on into a second column rather than off the bottom. */
+@media (max-height: 520px) {
+  .town-key {
+    flex-wrap: wrap;
+    align-content: flex-start;
+    column-gap: calc(var(--u) * 8);
+    max-width: none;
+    max-height: calc(100dvh - var(--u) * 8);
+  }
+
+  .town-group {
+    width: calc(var(--u) * 100);
+  }
+}
+
+.town-group {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 2);
+}
+
+/* A heading ruled off from its group, quieter than the lines under it. */
+.town-group-title {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 2);
+  color: var(--bone-dim);
+  opacity: 0.7;
+  font-size: calc(var(--u) * 5);
+  line-height: 1;
+}
+
+.town-group-title::after {
+  content: '';
+  flex: 1;
+  height: var(--u);
+  background: currentColor;
+  opacity: 0.4;
+}
+
+/* Every picture centred in the same width, so the words line up down the key. */
+.town-icon {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--u) * 20);
 }
 
 .town-title {
