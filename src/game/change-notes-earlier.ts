@@ -5,6 +5,17 @@ import type { ChangeNote } from './change-notes.ts';
 
 export const EARLIER_NOTES: readonly ChangeNote[] = [
   {
+    id: 'faster-first-load',
+    date: '2026-11-07',
+    kind: 'better',
+    title: 'A faster first load',
+    deck: 'The game downloads less before the title screen shows.',
+    points: [
+      'The books, the jukebox and the ending now load in the background after the title is up.',
+      'Online rooms load their code only when you host or join one.',
+    ],
+  },
+  {
     id: 'setup-stepper-thumbs',
     date: '2026-11-07',
     kind: 'better',

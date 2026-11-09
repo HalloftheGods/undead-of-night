@@ -361,6 +361,8 @@ export interface WelcomePacket {
   readonly difficulty?: DifficultyId;
   /** This join took back a body the room was still holding. Left off for a new one. */
   readonly resumed?: boolean;
+  /** townPrint of the host's town. A guest whose own build lays that town out differently leaves. */
+  readonly town?: number;
 }
 
 /**
@@ -372,8 +374,12 @@ export interface RoomPacket {
   readonly style: GameStyle | null;
 }
 
-/** Bumped by any change to a packet. A host closes a join from another version with 4014. */
-export const PROTOCOL_VERSION = 2;
+/**
+ * Bumped by any change to a packet. A host closes a join from another version with 4014.
+ * 3: the welcome carries the town's print, and towns laid out on 2026-11-08 no longer match version 2's.
+ * 4: the fireworks bus parks in the downtown car park, and container_opened can say how many fireworks were taken.
+ */
+export const PROTOCOL_VERSION = 4;
 
 /**
  * Sent just before a link is closed on purpose, because a data channel has no close code.

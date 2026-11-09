@@ -1,4 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { DIFFERENT_TOWN_TEXT } from '../shared/close-codes.ts';
+import { townPrint } from '../shared/town-print.ts';
+import { generateWorldMap } from '../shared/world-map.ts';
 import { GameController } from '../src/game/game-controller.ts';
 import { fakeCanvas, installFakeBrowser } from './client-fake-dom.ts';
 import type { FakeBrowser } from './client-fake-dom.ts';
@@ -15,6 +18,7 @@ const rooms = vi.hoisted(() => ({
   publicJoins: [] as boolean[],
   matches: [] as unknown[],
   answer: { ok: true, match: { kind: 'join', code: 'KMPRT', card: {} } } as unknown,
+  lastGuest: null as ReturnType<typeof quietRoom> | null,
 }));
 
 vi.mock('../src/network/play-api.ts', async (real) => ({
@@ -37,7 +41,8 @@ vi.mock('../src/network/online-session.ts', () => {
     joinRoom: (code: string, isPublic = false) => {
       rooms.joined.push(code);
       rooms.publicJoins.push(isPublic);
-      return quietRoom('guest');
+      rooms.lastGuest = quietRoom('guest');
+      return rooms.lastGuest;
     },
   };
 });
@@ -80,6 +85,26 @@ describe('online co-op loads its room code on demand', () => {
     await settle();
     expect(rooms.hosted).toEqual(['arcade']);
     expect(game.ui.value).toMatchObject({ mode: 'coop', connecting: true });
+  });
+
+  it('leaves a room whose town this build lays out differently, rather than walk through its walls', async () => {
+    game.setServerAddress('bcdfg');
+    game.startCoop('arcade');
+    await settle();
+    const guest = rooms.lastGuest as unknown as { onWelcome: (packet: unknown) => void; disconnect: ReturnType<typeof vi.fn> };
+    guest.onWelcome({ type: 'welcome', yourId: 'p2', tickRate: 20, mapSeed: 7, level: 1, town: townPrint(generateWorldMap(7, 1)) + 1 });
+    expect(guest.disconnect).toHaveBeenCalled();
+    expect(game.ui.value).toMatchObject({ screen: 'lost', lostReason: DIFFERENT_TOWN_TEXT });
+  });
+
+  it('plays a room whose town matches', async () => {
+    game.setServerAddress('bcdfg');
+    game.startCoop('arcade');
+    await settle();
+    const guest = rooms.lastGuest as unknown as { onWelcome: (packet: unknown) => void; disconnect: ReturnType<typeof vi.fn> };
+    guest.onWelcome({ type: 'welcome', yourId: 'p2', tickRate: 20, mapSeed: 7, level: 1, town: townPrint(generateWorldMap(7, 1)) });
+    expect(guest.disconnect).not.toHaveBeenCalled();
+    expect(game.ui.value.screen).toBe('game');
   });
 
   it('a room code joins that room, upper-cased', async () => {

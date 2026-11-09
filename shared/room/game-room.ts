@@ -9,6 +9,7 @@ import { viewFor } from '../snapshot-view.ts';
 import { MAX_CATCH_UP_TICKS, MAX_LAG_MS, ROOM_FULL_CODE } from './limits.ts';
 import type { HostClock, PeerSocket } from './peer.ts';
 import { createRestartVote } from './restart-vote.ts';
+import { townPrint } from '../town-print.ts';
 
 const TICK_MS = 1000 / TICK_RATE;
 
@@ -153,7 +154,7 @@ export function createGameRoom({ sim, clock, newId, restartVoteMs, anonymous = f
     sim.addPlayer(id, anonymous ? '' : name, token, character, home);
     client.playerId = id;
     clock.cancel(client.joinDeadline);
-    send(client, { type: 'welcome', yourId: id, tickRate: TICK_RATE, mapSeed: sim.map.seed, level: sim.level, difficulty: sim.difficulty, ...(resumed ? { resumed } : {}) });
+    send(client, { type: 'welcome', yourId: id, tickRate: TICK_RATE, mapSeed: sim.map.seed, level: sim.level, difficulty: sim.difficulty, town: townPrint(sim.map), ...(resumed ? { resumed } : {}) });
     stale?.peer.drop();
     startTicking();
   }

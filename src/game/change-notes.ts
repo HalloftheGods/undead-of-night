@@ -34,6 +34,17 @@ export const CHANGE_NOTES: readonly ChangeNote[] = [
     ],
   },
   {
+    id: 'coop-same-town',
+    date: '2026-11-09',
+    kind: 'fixed',
+    title: 'No more walking through walls in co-op',
+    deck: 'A friend on an older copy of the game saw a different town.',
+    points: [
+      'If you and the host are on different versions, you are told to reload instead of joining.',
+      'Joining checks that you built the same town as the host.',
+    ],
+  },
+  {
     id: 'fountain-fireworks',
     date: '2026-11-09',
     kind: 'new',
@@ -478,17 +489,6 @@ export const CHANGE_NOTES: readonly ChangeNote[] = [
       'Every gun reloads its own way: the pistol slide snaps, the carbine racks, the shotgun loads shell by shell.',
       'When you are badly hurt the red at the edge of the screen beats with your heart, and the world goes muffled.',
       'A boss kill freezes the moment with a flash and the biggest shake in the game. Reduced motion keeps it calm.',
-    ],
-  },
-  {
-    id: 'faster-first-load',
-    date: '2026-11-07',
-    kind: 'better',
-    title: 'A faster first load',
-    deck: 'The game downloads less before the title screen shows.',
-    points: [
-      'The books, the jukebox and the ending now load in the background after the title is up.',
-      'Online rooms load their code only when you host or join one.',
     ],
   },
   ...EARLIER_NOTES,

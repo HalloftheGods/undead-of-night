@@ -28,6 +28,8 @@ import { NO_RUN_UI } from './run-hud.ts';
 import type { RunHud } from './run-hud.ts';
 import type { RunStage } from './run-stage.ts';
 import { loadLeaderboard } from './storage.ts';
+import { DIFFERENT_TOWN_TEXT } from '../../shared/close-codes.ts';
+import { townPrint } from '../../shared/town-print.ts';
 import { seatRefusal } from './seat-check.ts';
 import { streakCardLine, tonightsStreakNight } from './streak-reward.ts';
 import { loadBests } from './trip-record.ts';
@@ -254,7 +256,15 @@ export class RunSession {
     const { state, stage } = this.host;
     state.welcomed = true;
     this.host.home.welcomed(packet);
-    state.world = new ClientWorld(stage.open(packet.mapSeed, packet.level), packet.yourId);
+    const map = stage.open(packet.mapSeed, packet.level);
+    // Walls and cars that only this copy of the town has would be walked straight through.
+    const builtAnotherTown = packet.town !== undefined && packet.town !== townPrint(map);
+    if (builtAnotherTown) {
+      state.transport?.disconnect();
+      this.onClosed(DIFFERENT_TOWN_TEXT);
+      return;
+    }
+    state.world = new ClientWorld(map, packet.yourId);
     this.beginRun();
   }
 
