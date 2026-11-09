@@ -3,13 +3,14 @@
 import type { PixelSprite } from '../types.ts';
 import type { PixelCanvas } from '../kit.ts';
 import { RAMPS } from '../palette.ts';
+import { carryGlow } from '../glow.ts';
 
 /**
  * Bakes a prop. left is the footprint's left edge on the canvas and ground its bottom
  * edge, so the anchor lands on the footprint's bottom centre whatever the art does.
  */
 export function bake(canvas: PixelCanvas, left: number, footprintW: number, ground: number): PixelSprite {
-  return canvas.toSprite(canvas.w, canvas.h, left + footprintW / 2, ground);
+  return carryGlow(canvas, canvas.toSprite(canvas.w, canvas.h, left + footprintW / 2, ground));
 }
 
 /**

@@ -7,6 +7,7 @@ import { RAMPS } from '../palette.ts';
 import type { Color } from '../palette.ts';
 import type { PixelSprite } from '../types.ts';
 import type { ContainerArt } from '../containers/stage.ts';
+import { markGlow } from '../glow.ts';
 import { bake, groundShadow } from './common.ts';
 import type { Shell } from './shell.ts';
 
@@ -32,11 +33,21 @@ export function stringLights(c: PixelCanvas, x0: number, x1: number, y: number):
 const PUMPKIN = ['....g....', '.OoOoOod.', 'OoYYoYYdd', 'OoooYoodd', 'OYoYoYodd', '.OYYYYdd.', '..Ooood..'];
 const SMALL_PUMPKIN = ['..g..', '.OoOd', 'OYoYd', 'OoYdd', '.ood.'];
 const PUMPKIN_INK = { g: olive[1], o: fire[1], O: fire[2], d: fire[0], Y: fire[3] };
+/** The letter the pumpkin grids use for the lit cut-outs of the face. */
+const FACE = 'Y';
 
 /** A carved pumpkin sitting on the step, its bottom row on `base`. Lit from inside, so the face glows. */
 export function jackOLantern(c: PixelCanvas, x: number, base: number, small = false): void {
   const rows = small ? SMALL_PUMPKIN : PUMPKIN;
   c.grid(x, base - rows.length + 1, rows, PUMPKIN_INK);
+  litFace(c, x, base - rows.length + 1, rows);
+}
+
+/** The carved face is where the candle shows through: those pixels burn by themselves after dark. */
+function litFace(c: PixelCanvas, x: number, y: number, rows: readonly string[]): void {
+  rows.forEach((row, j) => {
+    for (let i = 0; i < row.length; i++) if (row[i] === FACE) markGlow(c, x + i, y + j, fire[3], fire[1]);
+  });
 }
 
 /** A web strung across a window's top corner. */
@@ -113,6 +124,7 @@ function bowlBase(): PixelCanvas {
   const c = new PixelCanvas(BOWL_FOOT_W + 6, BOWL_GROUND + 2);
   groundShadow(c, BOWL_LEFT, BOWL_GROUND - 1, BOWL_FOOT_W, 2);
   c.grid(BOWL_LEFT - 1, BOWL_GROUND - PAIL.length, PAIL, PAIL_INK);
+  litFace(c, BOWL_LEFT - 1, BOWL_GROUND - PAIL.length, PAIL);
   return c;
 }
 
