@@ -340,6 +340,7 @@ export class WorldRenderer {
 
     this.entities.drawEmissive(ctx, scene, left, top, viewW, viewH, time);
     paintTrackingMarks(ctx, scene.zombies, left, top, viewW, viewH, time, this.reducedMotion);
+    this.entities.drawSelfLit(ctx, scene, left, top, viewW, viewH, lightAt);
     this.entities.drawEyes(ctx, scene, left, top, viewW, viewH, time, lightAt);
     this.entities.drawGlints(ctx, scene, left, top, viewW, viewH, time, lightAt);
     this.fx.particles.drawEmissive(ctx, left, top);

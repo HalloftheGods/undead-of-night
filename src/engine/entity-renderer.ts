@@ -29,6 +29,9 @@ import { bodyHeight, clipFrame, drawSilhouette, drawSprite, drawSpriteScaled, sp
 import { beginStatusFrame, paintBurn, paintEffectTrail, paintTint } from './status-fx.ts';
 import { SurvivorFrames } from './survivor-frames.ts';
 import { trackWalking } from './visuals.ts';
+import { glowOf } from '../art/glow.ts';
+import { paintSelfLit } from './self-lit.ts';
+import type { Body } from './self-lit.ts';
 import { blinking, eyeGlow, eyePhase, eyesOf, paintEyes } from './zombie-eyes.ts';
 import type { EntityVisual, VisualStore } from './visuals.ts';
 
@@ -475,6 +478,39 @@ export class EntityRenderer {
       const y = Math.round(zombie.y) - top;
       const scale = zombie.boss ? BOSSES[zombie.boss].scale : 1;
       paintEyes(ctx, eyes, sprite, x, y, scale, eyeGlow(lightAt(x, y - CHEST_HEIGHT * scale)));
+    }
+  }
+
+  /**
+   * What burns by itself, after the lightmap: a jack-o'-lantern's carved face on a house step or in a
+   * candy pail. The dark stays as dark as it was; only the lit cut-outs shine, and a figure standing
+   * in front of one hides it. A house that has opened around the player stops shining with its shell,
+   * and a searched pail has put its candle out.
+   */
+  drawSelfLit(ctx: CanvasRenderingContext2D, scene: SceneView, left: number, top: number, viewW: number, viewH: number, lightAt: (x: number, y: number) => number): void {
+    const bodies: Body[] = [];
+    for (const player of scene.players) bodies.push({ x: Math.round(player.x) - left, y: Math.round(player.y) - top });
+    for (const zombie of scene.zombies) {
+      if (!this.killed.has(zombie.id)) bodies.push({ x: Math.round(zombie.x) - left, y: Math.round(zombie.y) - top });
+    }
+    const shine = (sprite: PixelSprite, x: number, y: number, strength: number): void => {
+      const pixels = glowOf(sprite);
+      if (pixels.length === 0) return;
+      const spot = pixels[Math.floor(pixels.length / 2)];
+      const light = lightAt(Math.round(x - sprite.ax + spot.x), Math.round(y - sprite.ay + spot.y));
+      paintSelfLit(ctx, pixels, sprite, x, y, light, strength, bodies);
+    };
+    for (const placed of this.buildings.placed) {
+      const onScreen = placed.x1 > left && placed.x0 < left + viewW && placed.y1 > top && placed.y0 < top + viewH;
+      if (onScreen && placed.reveal < 1) shine(placed.sprite, placed.x0 + placed.sprite.ax - left, placed.y0 + placed.sprite.ay - top, 1 - placed.reveal);
+    }
+    for (const placed of this.props) {
+      const { container } = placed;
+      if (container === null) continue;
+      const onScreen = placed.x1 > left && placed.x0 < left + viewW && placed.y1 > top && placed.y0 < top + viewH;
+      const roomClosed = placed.room !== null && placed.room.reveal === 0;
+      const lit = onScreen && !roomClosed && !scene.openedContainers.includes(container.id);
+      if (lit) shine(container.art.closed, Math.round(placed.prop.x) - left, Math.round(placed.prop.y) - top, 1);
     }
   }
 
