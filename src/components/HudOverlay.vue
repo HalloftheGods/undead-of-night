@@ -42,20 +42,6 @@
         </ul>
       </div>
 
-      <div class="hud-centre">
-        <div class="hud-chip hud-night">
-          <span class="hud-sub">{{ levelLine(hud.level) }}</span>
-          <span class="hud-wave" :class="horde.loud ? 'is-threat' : 'is-quiet'">{{ horde.title }}</span>
-          <span v-if="horde.detail" class="hud-sub is-threat">{{ horde.detail }}</span>
-          <span class="hud-sub hud-goal" :class="{ 'is-van': hud.exitOpen }">{{ levelGoal(hud) }}</span>
-        </div>
-
-        <div v-if="home" class="hud-home">
-          <TreasureChip v-if="!home.inBunker" :home />
-          <QuestTracker :home />
-        </div>
-      </div>
-
       <!--
         The three numbers a run is read by, in the order they are asked for: am I alive, how
         many have I put down, what is it worth. Health leads, because it is the one that is
@@ -95,39 +81,56 @@
     <p v-if="place" :key="place.key" class="hud-place">{{ place.label }}</p>
 
     <footer class="hud-bottom">
-      <!-- Centred at every width, and every slot a real tap target that sends its number key. -->
-      <div class="hud-chip hud-weapon">
-        <ul class="hud-slots">
-          <li v-for="slot in bar" :key="slot.weapon">
-            <button
-              class="hud-slot"
-              :class="{ 'is-active': slot.active, 'is-missing': !slot.owned }"
-              type="button"
-              :aria-label="slot.label"
-              :aria-pressed="slot.active"
-              @mousedown.stop
-              @touchstart.stop
-              @click="hold(slot)"
-            >
-              <span class="hud-slot-key keys-only">{{ slot.key }}</span>
-              <SpriteImg :sprite="art.ui.weaponIcons[slot.weapon]" />
-              <span v-if="slot.rounds !== null" class="hud-slot-rounds">{{ slot.rounds }}</span>
-              <GunFitPips :fit="hud.gear?.fits[slot.weapon]" />
-            </button>
-          </li>
-        </ul>
-        <div class="hud-ammo" :class="`is-${ammo}`">
-          <span class="hud-ammo-mag">{{ hud.ammo }}</span>
-          <span class="hud-ammo-spare">/ {{ hud.reserve }}</span>
+      <div class="hud-bottom-centre">
+        <!-- Horde information and town goals positioned above the weapons for central visibility -->
+        <div class="hud-centre">
+          <div class="hud-chip hud-night">
+            <span class="hud-sub">{{ levelLine(hud.level) }}</span>
+            <span class="hud-wave" :class="horde.loud ? 'is-threat' : 'is-quiet'">{{ horde.title }}</span>
+            <span v-if="horde.detail" class="hud-sub is-threat">{{ horde.detail }}</span>
+            <span class="hud-sub hud-goal" :class="{ 'is-van': hud.exitOpen }">{{ levelGoal(hud) }}</span>
+          </div>
+
+          <div v-if="home" class="hud-home">
+            <TreasureChip v-if="!home.inBunker" :home />
+            <QuestTracker :home />
+          </div>
         </div>
-        <span v-if="effect" class="hud-effect" :class="`is-${effect.effect}`">{{ effect.label }}</span>
-        <div v-if="hud.reload > 0" class="px-meter hud-reload" :style="fill(hud.reload, 1)"><span /></div>
-        <template v-else-if="ammo === 'empty'">
-          <strong class="hud-empty">Empty</strong>
-          <span class="hud-sub"><span class="keys-only">F: </span>{{ hud.knife ? 'Shove & Stab' : 'Shove' }}</span>
-        </template>
-        <span v-else-if="swapKey !== null" class="hud-sub is-threat keys-only">Press {{ swapKey }}</span>
-        <span v-else-if="reloadPrompt(hud)" class="hud-sub is-threat keys-only">Press R</span>
+
+        <!-- Centred at every width, and every slot a real tap target that sends its number key. -->
+        <div class="hud-chip hud-weapon">
+          <ul class="hud-slots">
+            <li v-for="slot in bar" :key="slot.weapon">
+              <button
+                class="hud-slot"
+                :class="{ 'is-active': slot.active, 'is-missing': !slot.owned }"
+                type="button"
+                :aria-label="slot.label"
+                :aria-pressed="slot.active"
+                @mousedown.stop
+                @touchstart.stop
+                @click="hold(slot)"
+              >
+                <span class="hud-slot-key keys-only">{{ slot.key }}</span>
+                <SpriteImg :sprite="art.ui.weaponIcons[slot.weapon]" />
+                <span v-if="slot.rounds !== null" class="hud-slot-rounds">{{ slot.rounds }}</span>
+                <GunFitPips :fit="hud.gear?.fits[slot.weapon]" />
+              </button>
+            </li>
+          </ul>
+          <div class="hud-ammo" :class="`is-${ammo}`">
+            <span class="hud-ammo-mag">{{ hud.ammo }}</span>
+            <span class="hud-ammo-spare">/ {{ hud.reserve }}</span>
+          </div>
+          <span v-if="effect" class="hud-effect" :class="`is-${effect.effect}`">{{ effect.label }}</span>
+          <div v-if="hud.reload > 0" class="px-meter hud-reload" :style="fill(hud.reload, 1)"><span /></div>
+          <template v-else-if="ammo === 'empty'">
+            <strong class="hud-empty">Empty</strong>
+            <span class="hud-sub"><span class="keys-only">F: </span>{{ hud.knife ? 'Shove & Stab' : 'Shove' }}</span>
+          </template>
+          <span v-else-if="swapKey !== null" class="hud-sub is-threat keys-only">Press {{ swapKey }}</span>
+          <span v-else-if="reloadPrompt(hud)" class="hud-sub is-threat keys-only">Press R</span>
+        </div>
       </div>
     </footer>
 
@@ -237,28 +240,65 @@ function hold(slot: BarSlot): void {
 }
 
 /*
- * The item row on the left, the town and the horde in the middle, the run's numbers on the right:
- * the same split as a Zelda screen. The side columns share what the middle leaves, and may shrink.
+ * The top bar keeps vitals on the left and run numbers on the right, keeping
+ * the upper center completely open for clear gameplay vision.
  */
 .hud-top {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  grid-template-areas: 'vitals centre stack';
-  align-items: start;
-  gap: calc(var(--u) * 5);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+  gap: calc(var(--u) * 4);
 }
 
 .hud-vitals {
-  grid-area: vitals;
-  justify-self: start;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: calc(var(--u) * 2);
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+/* Health, kills, points: stacked down the right edge */
+.hud-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: calc(var(--u) * 2);
+  min-width: 0;
+  flex: 0 0 auto;
+}
+
+/*
+ * Bottom foot of the screen: centers the horde info, town goals, and weapon bar.
+ */
+.hud-bottom {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  width: 100%;
+}
+
+.hud-bottom-centre {
+  position: absolute;
+  bottom: calc(var(--u) * 5);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--u) * 2);
+  max-width: calc(100vw - var(--u) * 10);
+  pointer-events: none;
 }
 
 .hud-centre {
   display: flex;
   flex-direction: column;
   align-items: center;
-  grid-area: centre;
   gap: calc(var(--u) * 2);
+  max-width: 100%;
 }
 
 .hud-night {
@@ -269,35 +309,13 @@ function hold(slot: BarSlot): void {
 .hud-home {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: var(--u);
 }
 
-/* Health, kills, points: one column down the right edge, each line as wide as it needs. */
-.hud-stack {
-  display: flex;
-  flex-direction: column;
-  grid-area: stack;
-  justify-self: end;
-  align-items: flex-end;
-  gap: calc(var(--u) * 2);
-}
-
-/* The foot of the screen is the guns' alone; the pickups moved to the top. */
-.hud-bottom {
-  display: flex;
-  align-items: flex-end;
-}
-
-/*
- * The guns sit in the middle of the foot of the screen at every width, where the thumb and the
- * eye both expect them. Pinned rather than laid out, so a long vitals column never shoves them.
- */
 .hud-weapon {
-  position: absolute;
-  bottom: calc(var(--u) * 5);
-  left: 50%;
   align-items: center;
-  transform: translateX(-50%);
+  pointer-events: auto;
 }
 
 /*
@@ -359,11 +377,13 @@ function hold(slot: BarSlot): void {
   100% { opacity: 0; }
 }
 
-/* A phone gives the town and the horde one line: the goal is the van's to say, or the pause menu's. */
+/* A phone gives the town and the horde one compact line centered above the weapons */
 .is-touch .hud-night {
   flex-direction: row;
   align-items: baseline;
-  gap: calc(var(--u) * 3);
+  justify-content: center;
+  gap: calc(var(--u) * 2);
+  padding: var(--u) calc(var(--u) * 3);
   white-space: nowrap;
 }
 
@@ -384,9 +404,39 @@ function hold(slot: BarSlot): void {
   line-height: 1.1;
 }
 
-/* Fingers: the guns stand on the tab bar across the foot of the screen (--tabbar, touch-ui.css). */
-.is-touch .hud-weapon {
-  bottom: calc(var(--tabbar) + var(--u) * 3);
+/* Fingers: the bottom cluster stands on the tab bar across the foot of the screen (--tabbar, touch-ui.css). */
+.is-touch .hud-bottom-centre {
+  bottom: calc(var(--tabbar) + var(--u) * 2);
+  max-width: calc(100vw - var(--u) * 4);
+  gap: var(--u);
+}
+
+.is-touch .hud-stack {
+  gap: var(--u);
+}
+
+.is-touch .hud-chip {
+  padding: var(--u) calc(var(--u) * 2.5);
+}
+
+.is-touch .hud-health-meter {
+  width: min(calc(var(--u) * 40), 24vw);
+}
+
+.is-touch .hud-slots {
+  gap: var(--u);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.is-touch .hud-slot {
+  min-width: var(--tap, 40px);
+  min-height: var(--tap, 40px);
+  padding: calc(var(--u) * 0.5);
+}
+
+.is-touch .hud-ammo-mag {
+  font-size: calc(var(--u) * 9);
 }
 
 .hud-chip {
