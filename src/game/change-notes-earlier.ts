@@ -5,6 +5,30 @@ import type { ChangeNote } from './change-notes.ts';
 
 export const EARLIER_NOTES: readonly ChangeNote[] = [
   {
+    id: 'touch-icons-items',
+    date: '2026-11-08',
+    kind: 'better',
+    title: 'Phone buttons with pictures',
+    deck: 'The touch bar shows icons, and bottles, molotovs, flares and candy finally have buttons.',
+    points: [
+      'Pause, map, next weapon, heal, search, reload and shove each wear a picture instead of a word.',
+      'Carry a bottle, fuel, a flare or candy and a button for it appears just over the bar, with how many you have.',
+      'Throws go where you are facing: the way you walk, or where your finger last aimed.',
+    ],
+  },
+  {
+    id: 'find-a-team',
+    date: '2026-11-08',
+    kind: 'new',
+    title: 'Find a team',
+    deck: 'Play online with strangers, or host a private game for friends.',
+    points: [
+      'Under Multiplayer, Find a team drops you into an open public game near your difficulty, or opens one.',
+      'Public games show survivor names only, never callsigns.',
+      'Host for friends gives you a room code and an invite link on screen while you wait.',
+    ],
+  },
+  {
     id: 'smooth-hordes',
     date: '2026-11-07',
     kind: 'better',

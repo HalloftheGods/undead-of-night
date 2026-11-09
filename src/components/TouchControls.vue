@@ -1,64 +1,60 @@
 <template>
   <!--
-    Four buttons in a block under the right thumb. Sprint takes the corner, where the thumb
-    rests and where it can be held through a whole street; the backpack, which is opened and
-    left alone, sits furthest away.
+    The phone's actions as a tab bar across the foot of the screen, each an icon over its word.
+    Pause sits under the left thumb and Sprint at the right end, under the right one.
   -->
-  <nav class="touch-fabs" data-touch-pad aria-label="Touch controls">
-    <MobileFAB
-      label="Search"
-      :glyph="SEARCH"
-      :held="held.includes('KeyE')"
-      @press="press('KeyE')"
-      @release="release('KeyE')"
-    />
-    <MobileFAB
-      label="Backpack"
-      :glyph="BACKPACK"
-      :open="game.ui.value.backpackOpen"
-      @press="game.toggleBackpack()"
-      @release="() => {}"
-    />
-    <MobileFAB
-      label="Shove"
-      :glyph="SHOVE"
-      :held="held.includes('KeyF')"
-      @press="press('KeyF')"
-      @release="release('KeyF')"
-    />
-    <MobileFAB
-      label="Sprint"
-      :glyph="SPRINT"
-      :held="held.includes(SPRINT_CODE)"
-      @press="press(SPRINT_CODE)"
-      @release="release(SPRINT_CODE)"
+  <nav class="touch-tabs" data-touch-pad aria-label="Touch controls">
+    <TouchTab
+      v-for="tab in TOUCH_TABS"
+      :key="tab.id"
+      :label="tabLabel(tab, hasKnife)"
+      :glyph="tab.glyph"
+      :lit="isLit(tab)"
+      @press="press(tab)"
+      @release="release(tab)"
     />
   </nav>
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, ref } from 'vue';
-import { BACKPACK, SEARCH, SHOVE, SPRINT } from '../game/touch-pad.ts';
-import MobileFAB from './MobileFAB.vue';
+import { computed, onBeforeUnmount, ref } from 'vue';
+import { TOUCH_TABS, tabLabel } from '../game/touch-tabs.ts';
+import type { TouchTab as Tab } from '../game/touch-tabs.ts';
+import TouchTab from './TouchTab.vue';
 import { useGame } from './use-game.ts';
-
-/** Held to sprint, the same key the keyboard holds (game/input-manager.ts). */
-const SPRINT_CODE = 'ShiftLeft';
 
 const game = useGame();
 const input = game.input;
 const held = ref<string[]>([]);
+const hasKnife = computed(() => game.ui.value.hud?.knife === true);
 
-function press(code: string): void {
-  held.value = [...held.value, code];
-  input.padDown(code);
+function isLit(tab: Tab): boolean {
+  const isHold = tab.kind === 'hold';
+  if (isHold) return held.value.includes(tab.code);
+  const isPack = tab.id === 'backpack';
+  return isPack && game.ui.value.backpackOpen;
 }
 
-function release(code: string): void {
-  const wasDown = held.value.includes(code);
+function tapTab(id: 'pause' | 'backpack'): void {
+  const isPause = id === 'pause';
+  if (isPause) game.togglePause();
+  else game.toggleBackpack();
+}
+
+function press(tab: Tab): void {
+  const isTap = tab.kind === 'tap';
+  if (isTap) return tapTab(tab.id);
+  held.value = [...held.value, tab.code];
+  input.padDown(tab.code);
+}
+
+function release(tab: Tab): void {
+  const isTap = tab.kind === 'tap';
+  if (isTap) return;
+  const wasDown = held.value.includes(tab.code);
   if (!wasDown) return;
-  held.value = held.value.filter((each) => each !== code);
-  input.padUp(code);
+  held.value = held.value.filter((each) => each !== tab.code);
+  input.padUp(tab.code);
 }
 
 onBeforeUnmount(() => {
@@ -68,14 +64,21 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-/* Two by two in the corner, the same block however the phone is held. */
-.touch-fabs {
+/*
+ * Full width, flush with the bottom edge, its own floor under the home bar: the safe area is
+ * padding inside the bar, so the bar's dark reaches the glass and the tabs stay above the bar.
+ */
+.touch-tabs {
   display: grid;
   position: absolute;
-  right: calc(var(--safe-right) + var(--u) * 3);
-  bottom: calc(var(--safe-bottom) + var(--u) * 3);
-  grid-template-columns: repeat(2, auto);
-  gap: var(--fab-gap, 12px);
+  right: 0;
+  bottom: 0;
+  left: 0;
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
+  padding: 0 var(--safe-right) var(--safe-bottom) var(--safe-left);
+  border-top: calc(var(--u) * 1) solid var(--ink-line);
+  background: rgba(11, 12, 16, 0.92);
   z-index: 10;
   touch-action: none;
   user-select: none;

@@ -258,15 +258,9 @@ function hold(slot: BarSlot): void {
   transform: translateY(-50%);
 }
 
-/*
- * Fingers: the action cluster holds the bottom-right corner (--cluster, touch-ui.css). Held
- * upright there is no room for the guns, what is carried and the cluster on one line, so the
- * guns go above the cluster; on its side the screen is wide enough for all three.
- */
-@media (orientation: portrait) {
-  .is-touch .hud-weapon {
-    bottom: calc(var(--cluster, 124px) + var(--safe-bottom) + var(--u) * 6);
-  }
+/* Fingers: the guns stand on the tab bar across the foot of the screen (--tabbar, touch-ui.css). */
+.is-touch .hud-weapon {
+  bottom: calc(var(--tabbar) + var(--u) * 3);
 }
 
 .hud-chip {

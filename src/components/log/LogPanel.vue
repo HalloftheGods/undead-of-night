@@ -131,7 +131,7 @@ watch(filter, async () => {
 
 .is-touch .log-panel {
   top: calc(var(--safe-top, 0px) + var(--u) * 3);
-  bottom: calc(var(--safe-bottom, 0px) + var(--u) * 3);
+  bottom: calc(var(--tabbar, 0px) + var(--u) * 3);
   right: calc(var(--safe-right, 0px) + var(--u) * 3);
 }
 </style>
