@@ -71,6 +71,9 @@ export const CANDY_ODDS: Partial<Record<Container['buildingKind'], number>> = {
   diner: 0.15,
   pharmacy: 0.08,
   clinic: 0.05,
+  hospital: 0.05,
+  // Confiscated in class, stuffed in lockers: a school is second only to bedrooms.
+  school: 0.32,
   police: 0.05,
   garage: 0.04,
   warehouse: 0.04,

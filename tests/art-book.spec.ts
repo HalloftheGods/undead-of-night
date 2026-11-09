@@ -151,7 +151,7 @@ describe('art book', () => {
 
   it('draws both states of every searchable prop whole, on its footprint, and tells them apart', () => {
     const props = {
-      drawer: 'bed', locker: 'locker', fridge: 'fridge', cabinet: 'counter', bench: 'workbench', shelf: 'shelf',
+      drawer: 'bed', locker: 'locker', fridge: 'fridge', cabinet: 'counter', bench: 'workbench', desk: 'table', shelf: 'shelf',
       box: 'crate_stack', car: 'car_sedan_h', car_v: 'car_sedan_v', wreck: 'car_wreck_h', van: 'van_h', bowl: 'candy_bowl',
       hatch: 'car_hatch_h', hatch_v: 'car_hatch_v', pickup: 'pickup_h', police: 'police_h', police_v: 'police_v', ambulance: 'ambulance_h',
     } as const;

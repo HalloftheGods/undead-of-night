@@ -29,7 +29,7 @@ const BRUTE_FROM_WAVE = 4;
 /** Share of roamers that are brutes once they have started to appear. */
 const BRUTE_SHARE = 0.03;
 /** Places worth raiding start with something in the way. */
-const GUARDS: Partial<Record<BuildingKind, number>> = { police: 4, gun_shop: 3, clinic: 2, pharmacy: 2 };
+const GUARDS: Partial<Record<BuildingKind, number>> = { police: 4, hospital: 5, gun_shop: 3, school: 3, clinic: 2, pharmacy: 2 };
 
 /** Share of a level's roamers that are screamers. */
 export function screamerShare(level: number): number {

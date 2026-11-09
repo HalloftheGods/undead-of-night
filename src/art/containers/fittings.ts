@@ -13,6 +13,7 @@ const { ink, metal, wood, bone, denim, teal, blood, brick } = RAMPS;
 const BED_RISE = 6;
 const COUNTER_RISE = 12;
 const BENCH_RISE = 10;
+const DESK_RISE = 7;
 
 function drawerFront(c: PixelCanvas, x: number, y: number, w: number): void {
   c.rect(x, y, w, 4, wood[2]).rect(x, y, w, 1, wood[3]).rect(x + Math.floor(w / 2) - 1, y + 2, 2, 1, metal[3]);
@@ -132,4 +133,30 @@ function benchOpened(bench: PixelSprite): PixelSprite {
 
 export function buildBenchArt(bench: PixelSprite): ContainerArt {
   return { closed: benchClosed(bench), opened: benchOpened(bench) };
+}
+
+/** A school desk: the table with a shallow drawer slung under its front edge. */
+function deskClosed(table: PixelSprite): PixelSprite {
+  const s = stage('table', table, 0, 0);
+  drawerFront(s.c, s.left + 7, s.ground - DESK_RISE + 1, 10);
+  return bakeStage(s);
+}
+
+function deskOpened(table: PixelSprite): PixelSprite {
+  const s = stage('table', table, 2, 7);
+  const { c, left, ground } = s;
+  const y = ground - DESK_RISE + 1;
+  c.rect(left + 7, y, 10, 4, ink[0]);
+  over(c, (layer) => {
+    // Pulled out and left, the homework slid off onto the floor.
+    layer.rect(left + 6, y + 2, 12, 5, wood[2]).rect(left + 7, y + 2, 10, 3, ink[0]).rect(left + 6, y + 6, 12, 1, wood[3]);
+    layer.rect(left + 8, y + 3, 3, 1, blood[2]).rect(left + 12, y + 3, 4, 1, teal[1]);
+    paper(layer, left + 1, ground + 3);
+    paper(layer, left + 17, ground + 2);
+  });
+  return bakeStage(s);
+}
+
+export function buildDeskArt(table: PixelSprite): ContainerArt {
+  return { closed: deskClosed(table), opened: deskOpened(table) };
 }
