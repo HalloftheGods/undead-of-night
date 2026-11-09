@@ -96,7 +96,7 @@ export function placeTownTreasure(sim: SimState): void {
   if (!run) return;
   const rng = createRng(sim.map.seed ^ TREASURE_SALT);
   const counts = treasureCounts(sim.level, sim.level < run.roomHighest);
-  const empty = townContainers(sim.map).filter((container) => container.kind !== 'bowl' && sim.containers[container.id].loot === null);
+  const empty = townContainers(sim.map).filter((container) => container.kind !== 'bowl' && container.kind !== 'booth' && sim.containers[container.id].loot === null);
   const byJewelRank = shuffle(rng, [...empty]).sort((a, b) => jewelRank(a) - jewelRank(b));
   putAway(sim, byJewelRank, 'jewel_large', counts.large, LARGE_JEWEL_SILVER);
   putAway(sim, byJewelRank, 'jewel_small', counts.small, SMALL_JEWEL_SILVER);

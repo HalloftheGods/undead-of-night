@@ -22,6 +22,18 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'fireworks-bus',
+    date: '2026-11-09',
+    kind: 'new',
+    title: 'S.O.S. Fireworks bus',
+    deck: 'An old city bus in the downtown car park has been turned into a fireworks stand.',
+    points: [
+      'Search it to fill your hands with fireworks, then come back for more until it sells out.',
+      'Look for its sign and its string of bulbs. It is drawn on the town map, under Places in the key.',
+      'The Town Guide has a page for it.',
+    ],
+  },
+  {
     id: 'coop-same-town',
     date: '2026-11-09',
     kind: 'fixed',
@@ -477,17 +489,6 @@ export const CHANGE_NOTES: readonly ChangeNote[] = [
       'Every gun reloads its own way: the pistol slide snaps, the carbine racks, the shotgun loads shell by shell.',
       'When you are badly hurt the red at the edge of the screen beats with your heart, and the world goes muffled.',
       'A boss kill freezes the moment with a flash and the biggest shake in the game. Reduced motion keeps it calm.',
-    ],
-  },
-  {
-    id: 'faster-first-load',
-    date: '2026-11-07',
-    kind: 'better',
-    title: 'A faster first load',
-    deck: 'The game downloads less before the title screen shows.',
-    points: [
-      'The books, the jukebox and the ending now load in the background after the title is up.',
-      'Online rooms load their code only when you host or join one.',
     ],
   },
   ...EARLIER_NOTES,

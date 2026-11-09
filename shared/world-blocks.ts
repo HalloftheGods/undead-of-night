@@ -20,7 +20,22 @@ const inset = (area: Box, by: number): Box => ({
   y1: area.y1 - by,
 });
 
-/** Painted bays with every other space at most occupied. */
+/** Down from the lot's top edge to the bus's footprint: in the first aisle, clear of the stalls either side. */
+const BUS_DROP = 124;
+const BUS_GAP = 8;
+/** Steps tried from the middle of the aisle out, in pixels, till the bus finds room. */
+const BUS_NUDGES: readonly number[] = [0, -64, 64, -128, 128];
+
+/** The S.O.S. Fireworks stand, an old city bus, parked across the first aisle. Placed before the cars, it takes no roll. */
+function parkFireworksBus(b: MapBuilder, lot: Box): void {
+  const mid = Math.round((lot.x0 + lot.x1) / 2);
+  for (const nudge of BUS_NUDGES) {
+    const parked = b.place('fireworks_bus', mid + nudge, lot.y0 + BUS_DROP, BUS_GAP);
+    if (parked) return;
+  }
+}
+
+/** Painted bays with every other space at most occupied, and the fireworks bus in the first aisle. */
 export function fillParking(b: MapBuilder, lot: Box): void {
   b.fill(lot, 'asphalt');
   const col0 = lot.x0 / TILE_SIZE;
@@ -31,6 +46,7 @@ export function fillParking(b: MapBuilder, lot: Box): void {
   for (let i = 0; i < 40; i++) {
     b.setTile(col0 + Math.floor(b.rng() * cols), row0 + Math.floor(b.rng() * rows), 'asphalt_cracked');
   }
+  parkFireworksBus(b, lot);
   for (let bayRow = 2; bayRow + STALL_DEPTH_TILES < rows; bayRow += BAY_PITCH_TILES) {
     for (let row = bayRow; row < bayRow + STALL_DEPTH_TILES; row++) {
       for (let col = 1; col < cols - 1; col += 2) b.setTile(col0 + col, row0 + row, 'parking_line');

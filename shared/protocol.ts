@@ -226,7 +226,7 @@ export type GameEvent =
   | { readonly type: 'pickup'; readonly playerId: EntityId; readonly pickup: PickupType; readonly x: number; readonly y: number }
   /** Someone took the stairs: x, y is where they came out, `to` what the stairs led to. */
   | { readonly type: 'stairs_taken'; readonly playerId: EntityId; readonly x: number; readonly y: number; readonly to: string }
-  | { readonly type: 'container_opened'; readonly playerId: EntityId; readonly container: number; readonly x: number; readonly y: number; readonly found: boolean; readonly noisy: boolean; readonly bottle?: boolean; readonly stash?: 'firework' | 'fountain' | 'candy'; readonly candy?: CandyId }
+  | { readonly type: 'container_opened'; readonly playerId: EntityId; readonly container: number; readonly x: number; readonly y: number; readonly found: boolean; readonly noisy: boolean; readonly bottle?: boolean; readonly stash?: 'firework' | 'fountain' | 'candy'; readonly candy?: CandyId; readonly full?: true; readonly fireworks?: number }
   /** A thrown bottle broke at x,y, thrown from fromX,fromY. */
   | { readonly type: 'bottle_smash'; readonly playerId: EntityId; readonly x: number; readonly y: number; readonly fromX: number; readonly fromY: number }
   /** A firework landed at x,y as a ground spinner, throwing sparks `radius` round it for `sec`. */
@@ -377,8 +377,9 @@ export interface RoomPacket {
 /**
  * Bumped by any change to a packet. A host closes a join from another version with 4014.
  * 3: the welcome carries the town's print, and towns laid out on 2026-11-08 no longer match version 2's.
+ * 4: the fireworks bus parks in the downtown car park, and container_opened can say how many fireworks were taken.
  */
-export const PROTOCOL_VERSION = 3;
+export const PROTOCOL_VERSION = 4;
 
 /**
  * Sent just before a link is closed on purpose, because a data channel has no close code.

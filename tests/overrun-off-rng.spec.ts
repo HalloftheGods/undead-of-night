@@ -15,9 +15,10 @@ import { input, SEED } from './helpers/sim-harness.ts';
  * A candy bowl by every home's door (Halloween night) shifted which containers the town's rolls land on: 5026.
  * More cars on the streets, with police cars and ambulances parked at the station and the clinic: 4989.
  * Schools and hospitals, the two biggest buildings in town, with an ambulance outside the hospital: 5163.
+ * The S.O.S. Fireworks bus parked in the downtown car park: 5134.
  * Re-record it only for a change like those, after checking the overrun code is not what moved it.
  */
-const OFF_PATH_DRAWS = 5163;
+const OFF_PATH_DRAWS = 5134;
 
 const BUNKER_TICKS = 200;
 const TOWN_TICKS = 600;

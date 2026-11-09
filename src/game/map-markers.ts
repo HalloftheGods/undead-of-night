@@ -66,6 +66,25 @@ const CURSOR: readonly string[] = [
   'CCC...CCC',
 ];
 
+/** The S.O.S. Fireworks bus, pink like the sparks it sells. */
+export const FIREWORKS_COLOR = '#ff7ad0';
+const BUS_LEGEND: SpriteLegend = { K: MAP_INK, Y: EXIT_COLOR, P: FIREWORKS_COLOR, p: '#b04a90', c: '#9fd8ff', W: '#ece2c6', R: '#e0463a', m: '#7c8494' };
+/** The bus side on, its sign on the roof and its striped awning out over the hatch. */
+const FIREWORKS_BUS: readonly string[] = [
+  '...KKKKKKKK...',
+  '...KYYYYYYK...',
+  'KKKKKKKKKKKKKK',
+  'KcPPRWRWRWPPPK',
+  'KcPPKKKKKKPcPK',
+  'KppppppppppppK',
+  'KKmKKKKKKKKmKK',
+  '.KKK......KKK.',
+];
+
+export function drawFireworksBus(ctx: CanvasRenderingContext2D, x: number, y: number): void {
+  drawRowsCentred(ctx, x, y, FIREWORKS_BUS, BUS_LEGEND);
+}
+
 export function drawVan(ctx: CanvasRenderingContext2D, x: number, y: number): void {
   drawRowsCentred(ctx, x, y, VAN, VAN_LEGEND);
 }
@@ -86,6 +105,7 @@ export const VAN_LABEL_RISE = 5;
 export const DROP_LABEL_RISE = 9;
 
 export const VAN_ICON: MapIcon = rowsIcon(VAN, VAN_LEGEND);
+export const FIREWORKS_BUS_ICON: MapIcon = rowsIcon(FIREWORKS_BUS, BUS_LEGEND);
 export const DROP_ICON: MapIcon = rowsIcon(CHUTE, DROP_LEGEND);
 export const TICK_ICON: MapIcon = rowsIcon(TICK, TICK_LEGEND);
 export const CROSS_ICON: MapIcon = rowsIcon(CROSS, CROSS_LEGEND);

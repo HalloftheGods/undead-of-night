@@ -23,6 +23,9 @@ const DUST = ['#8a7a5c', '#b3a27a', '#5e523e'];
 /** What a searcher is told they found besides the loot. */
 function stashLabel(event: Extract<GameEvent, { type: 'container_opened' }>): string {
   if (event.candy) return CANDIES[event.candy].name.toUpperCase();
+  const armful = event.fireworks ?? 1;
+  const tookSeveral = armful > 1;
+  if (tookSeveral) return `+${armful} SPINNERS`;
   return event.stash === 'firework' ? 'SPINNER' : 'FOUNTAIN';
 }
 
@@ -315,7 +318,9 @@ export class FxDirector {
   private onContainerOpened(event: Extract<GameEvent, { type: 'container_opened' }>, ctx: FxContext): void {
     const emptyHanded = !event.found && event.playerId === ctx.localId;
     const gotBottle = event.bottle === true && event.playerId === ctx.localId;
-    if (event.noisy) this.particles.addText('CLATTER', event.x, event.y - NOTE_HEIGHT, SCORE_COLOR);
+    const handsFull = event.full === true && event.playerId === ctx.localId;
+    if (handsFull) this.note('HANDS FULL', event.x, event.y);
+    else if (event.noisy) this.particles.addText('CLATTER', event.x, event.y - NOTE_HEIGHT, SCORE_COLOR);
     else if (gotBottle) this.note('BOTTLE', event.x, event.y);
     else if (event.stash && event.playerId === ctx.localId) this.particles.addText(stashLabel(event), event.x, event.y - NOTE_HEIGHT, hitPalette().safe);
     else if (emptyHanded) this.note('NOTHING', event.x, event.y);

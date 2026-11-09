@@ -22,7 +22,9 @@ interface Lane {
 /** A clear straight run of print spots heading away from the player, so a tracker never sees them. */
 function laneAway(state: SimState): Lane {
   const [p] = state.players;
-  for (const angle of [0, Math.PI, Math.PI / 2, -Math.PI / 2, Math.PI / 4, (3 * Math.PI) / 4, -Math.PI / 4, (-3 * Math.PI) / 4]) {
+  // Sixteen headings round the player, so a tree or a parked car the town happens to put in one lane never sinks the scene.
+  const headings = Array.from({ length: 16 }, (_, k) => (k * Math.PI) / 8);
+  for (const angle of headings) {
     const points = Array.from({ length: PRINTS + 3 }, (_, k) => ({
       x: p.x + Math.cos(angle) * (START + k * SPACING),
       y: p.y + Math.sin(angle) * (START + k * SPACING),

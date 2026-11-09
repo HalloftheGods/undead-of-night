@@ -15,7 +15,7 @@ describe('the map key', () => {
     expect(titles(false)).toEqual(['Your marks', 'Places', 'On the way', 'Left behind']);
     expect(labels(false)).toEqual([
       'You are here', 'Been inside', 'Cleared and searched',
-      'Medical', 'Police', 'Guns', 'Food', 'Garages and yards', 'School', 'Homes',
+      'Medical', 'Police', 'Guns', 'Food', 'Garages and yards', 'School', 'Homes', 'S.O.S. Fireworks bus',
       'The van, once it comes', 'A supply drop',
       'Medical', 'Ammo', 'A weapon', 'Parts and finds',
     ]);

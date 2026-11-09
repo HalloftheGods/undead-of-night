@@ -21,6 +21,7 @@ const BLOCKS_LIGHT: ReadonlySet<PropKind> = new Set<PropKind>([
   'police_h',
   'police_v',
   'ambulance_h',
+  'fireworks_bus',
   'dumpster',
   'crate_stack',
   'shelf',
