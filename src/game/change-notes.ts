@@ -22,6 +22,18 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'dry-gun-call',
+    date: '2026-11-09',
+    kind: 'better',
+    title: 'Click. Now What?',
+    deck: 'An empty magazine flashes what to press right over your head.',
+    points: [
+      'R: RELOAD! when there are spares for the gun in hand.',
+      'Out of rounds for it? The key and name of a gun that still fires, like 1: PISTOL.',
+      'Every gun dry? F: SHOVE, or F: STAB with a knife.',
+    ],
+  },
+  {
     id: 'phone-tab-bar',
     date: '2026-11-09',
     kind: 'better',
