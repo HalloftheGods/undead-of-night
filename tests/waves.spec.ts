@@ -4,6 +4,7 @@ import {
   HORDE_SPEED_SCALE,
   INTERMISSION_SEC,
   LEAD_IN_SEC,
+  LEVEL_ONE_LEAD_IN_SEC,
   POPULATION_TOPUP_SEC,
   SPAWN_MIN_DISTANCE,
   SPAWN_SAFE_RADIUS,
@@ -70,7 +71,12 @@ describe('the standing population', () => {
     const indoors = state.zombies.filter((z) => buildingAt(state.map, z.x, z.y) !== null).length;
     expect(indoors).toBeGreaterThan(STANDING_POPULATION * 0.25);
     expect(indoors).toBeLessThan(STANDING_POPULATION * 0.75);
-    for (const z of state.zombies) {
+    // Level 1 opens with a few slow walkers in sight of the spawn; everyone else keeps clear of it.
+    const opening = state.zombies.filter((z) => Math.hypot(z.x - p.x, z.y - p.y) < SPAWN_SAFE_RADIUS - 30);
+    expect(opening.length).toBeGreaterThanOrEqual(2);
+    expect(opening.length).toBeLessThanOrEqual(3);
+    for (const z of opening) expect(z.type).toBe('walker');
+    for (const z of state.zombies.filter((each) => !opening.includes(each))) {
       expect(z.mode).toBe('wander');
       expect(z.horde).toBe(false);
       expect(circleHitsSolid(state.map, z.x, z.y, z.radius)).toBe(false);
@@ -126,13 +132,13 @@ describe('horde flow', () => {
     const first = sim.snapshot();
     expect(first.phase).toBe('intermission');
     expect(first.wave).toBe(0);
-    expect(first.intermission).toBeCloseTo(LEAD_IN_SEC, 1);
+    expect(first.intermission).toBeCloseTo(LEVEL_ONE_LEAD_IN_SEC, 1);
     expect(LEAD_IN_SEC).toBeGreaterThan(INTERMISSION_SEC);
     expect(first.hostiles).toBe(0);
-    expect(eventsOf(first, 'wave_intermission')).toEqual([{ type: 'wave_intermission', wave: 1, seconds: LEAD_IN_SEC }]);
+    expect(eventsOf(first, 'wave_intermission')).toEqual([{ type: 'wave_intermission', wave: 1, seconds: LEVEL_ONE_LEAD_IN_SEC }]);
 
     state.players[0].health = 1e9;
-    steps(sim, LEAD_IN_SEC * TICK_RATE + 1);
+    steps(sim, LEVEL_ONE_LEAD_IN_SEC * TICK_RATE + 1);
     const started = sim.snapshot();
     expect(started.phase).toBe('wave');
     expect(started.wave).toBe(1);
@@ -168,7 +174,7 @@ describe('horde flow', () => {
       },
       2000,
     );
-    expect(seen.size).toBe(8);
+    expect(seen.size).toBe(5);
   });
 
   it('knows where the players are, with no need to see them', () => {

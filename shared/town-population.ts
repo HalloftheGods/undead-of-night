@@ -1,4 +1,7 @@
 import {
+  OPENING_SHAMBLERS,
+  OPENING_SHAMBLER_RINGS,
+  OPENING_SHAMBLER_SPEED_SCALE,
   POPULATION_TOPUP_SEC,
   ROAMER_MIX,
   SCREAMER_FROM_LEVEL,
@@ -11,14 +14,14 @@ import {
   ZOMBIE_CAP,
 } from './constants.ts';
 import type { Point } from './flow-field.ts';
-import { levelDef } from './levels.ts';
+import { FIRST_LEVEL, levelDef } from './levels.ts';
 import { lootSpots } from './loot.ts';
 import type { BuildingInstance, BuildingKind, ZombieType } from './protocol.ts';
 import { pick, randRange } from './rng.ts';
 import type { SimState } from './sim-state.ts';
 import { hiddenFromEveryone } from './sim-state.ts';
 import { spawnZombie } from './waves.ts';
-import { buildingAt, circleHitsSolid, isBlockedAt } from './world-query.ts';
+import { buildingAt, circleHitsSolid, isBlockedAt, segmentHitsSolid } from './world-query.ts';
 import { townBuildings, townHeight } from './storeys.ts';
 
 /** Share of the standing population that sits inside buildings. */
@@ -96,8 +99,35 @@ function placeGuards(sim: SimState): void {
   }
 }
 
+/** Angles tried around the spawn, in order, for each opening shambler. No rng: the placement is the same on every seed's rolls. */
+const OPENING_ANGLE_STEPS = 24;
+
+/**
+ * Level 1 only: a few slow walkers in clear sight of the spawn, so the first fight lands within about 20 s.
+ * They count toward the standing population, so the town holds the same number of roamers as before.
+ */
+function placeOpeningShamblers(sim: SimState): void {
+  const { spawn } = sim.map;
+  for (let i = 0; i < OPENING_SHAMBLERS; i++) {
+    const ring = OPENING_SHAMBLER_RINGS[i % OPENING_SHAMBLER_RINGS.length];
+    // Spread the three round the compass, then walk the circle until one spot is open ground in sight of the spawn.
+    const first = (i / OPENING_SHAMBLERS) * OPENING_ANGLE_STEPS;
+    for (let step = 0; step < OPENING_ANGLE_STEPS; step++) {
+      const angle = (((first + step) % OPENING_ANGLE_STEPS) / OPENING_ANGLE_STEPS) * Math.PI * 2;
+      const spot = { x: spawn.x + Math.cos(angle) * ring, y: spawn.y + Math.sin(angle) * ring };
+      const open = buildingAt(sim.map, spot.x, spot.y) === null && clearFor(sim, 'walker', spot);
+      const seen = open && segmentHitsSolid(sim.map, spawn.x, spawn.y, spot.x, spot.y) === null;
+      if (!seen) continue;
+      spawnZombie(sim, 'walker', spot.x, spot.y);
+      sim.zombies[sim.zombies.length - 1].speed *= OPENING_SHAMBLER_SPEED_SCALE;
+      break;
+    }
+  }
+}
+
 /** Fills the town for a new run, leaving the ground around the spawn empty. */
 export function seedPopulation(sim: SimState): void {
+  if (sim.level === FIRST_LEVEL) placeOpeningShamblers(sim);
   placeGuards(sim);
   while (sim.zombies.length < sim.populationTarget) {
     const type = rollType(sim);
