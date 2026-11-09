@@ -6,7 +6,7 @@ import { FloatingTexts } from '../src/engine/floating-texts.ts';
 import { SUGAR_WARN_SEC, sugarTags } from '../src/engine/sugar-tags.ts';
 import type { KeepOut } from '../src/engine/sugar-tags.ts';
 
-function eater(sugar: { id: CandyId; left: number }[], status: 'alive' | 'downed' | 'dead' = 'alive') {
+function eater(sugar: { id: CandyId; left: number; total?: number }[], status: 'alive' | 'downed' | 'dead' = 'alive') {
   return { status, sugar };
 }
 

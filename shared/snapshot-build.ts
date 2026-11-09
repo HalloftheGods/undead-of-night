@@ -1,4 +1,5 @@
 import { openedContainers } from './container-search.ts';
+import { bagOf } from './candy.ts';
 import { SNAPSHOT_RANGE } from './constants.ts';
 import { exitEntity } from './level-exit.ts';
 import { gearField } from './gun-upgrades.ts';
@@ -103,10 +104,10 @@ export function playerSnapshot(p: PlayerState): PlayerEntity {
     ...(p.bottles > 0 ? { bottles: p.bottles } : {}),
     ...(p.fireworks > 0 ? { fireworks: p.fireworks } : {}),
     ...(p.flares > 0 ? { flares: p.flares } : {}),
-    ...(p.candy.length > 0 ? { candy: [...p.candy] } : {}),
+    ...(p.candy.length > 0 ? { bag: bagOf(p.candy) } : {}),
     ...(p.keepsakes.length > 0 ? { keepsakes: [...p.keepsakes] } : {}),
     ...(p.keepsakeOffer ? { keepsakeOffer: [...p.keepsakeOffer] } : {}),
-    ...(p.sugar.length > 0 ? { sugar: p.sugar.map((sugar) => ({ id: sugar.id, left: round2(sugar.left) })) } : {}),
+    ...(p.sugar.length > 0 ? { sugar: p.sugar.map((sugar) => ({ id: sugar.id, left: round2(sugar.left), total: round2(sugar.total) })) } : {}),
     ...staminaField(p),
     search: round2(p.search),
     indoors: p.indoors,

@@ -37,7 +37,12 @@ export interface SugarView {
   readonly id: CandyId;
   /** Seconds left. */
   readonly left: number;
+  /** Seconds it had when last eaten, stacked time and all, so the timer's bar drains over the whole of it. */
+  readonly total?: number;
 }
+
+/** How many of each candy a survivor carries. A kind not carried is left off. */
+export type CandyBag = Partial<Record<CandyId, number>>;
 export type GamePhase = (typeof GAME_PHASES)[number];
 /** How a survivor is moving: sneaking is slow and hard to spot, sprinting is fast and loud. */
 export type Stance = 'walk' | 'sneak' | 'sprint';
@@ -78,8 +83,8 @@ export interface PlayerEntity {
   /** Fireworks and flares found in this town. Left off at none. */
   fireworks?: number;
   flares?: number;
-  /** Candy carried, oldest first (shared/candy.ts). Left off at none. */
-  candy?: CandyId[];
+  /** Candy carried, counted by kind (shared/candy.ts). Left off at none. */
+  bag?: CandyBag;
   /** Candy working on this survivor now, with the seconds each has left. Left off at none. */
   sugar?: SugarView[];
   /** Keepsakes kept this run. Left off at none. */
@@ -215,13 +220,13 @@ export type GameEvent =
   | { readonly type: 'player_revived'; readonly playerId: EntityId; readonly x: number; readonly y: number }
   /** A survivor chose a keepsake. */
   | { readonly type: 'keepsake_taken'; readonly playerId: EntityId; readonly keepsake: KeepsakeId }
-  /** A survivor ate a candy. `saved` marks a Caramel Apple spent picking them back up. */
-  | { readonly type: 'candy_eaten'; readonly playerId: EntityId; readonly candy: CandyId; readonly x: number; readonly y: number; readonly saved?: boolean }
+  /** A survivor ate a candy. `stacked` marks one already working, its time added on. `saved` marks a Caramel Apple spent picking them back up. */
+  | { readonly type: 'candy_eaten'; readonly playerId: EntityId; readonly candy: CandyId; readonly x: number; readonly y: number; readonly stacked?: boolean; readonly saved?: boolean }
   | { readonly type: 'player_dead'; readonly playerId: EntityId; readonly x: number; readonly y: number }
   | { readonly type: 'pickup'; readonly playerId: EntityId; readonly pickup: PickupType; readonly x: number; readonly y: number }
   /** Someone took the stairs: x, y is where they came out, `to` what the stairs led to. */
   | { readonly type: 'stairs_taken'; readonly playerId: EntityId; readonly x: number; readonly y: number; readonly to: string }
-  | { readonly type: 'container_opened'; readonly playerId: EntityId; readonly container: number; readonly x: number; readonly y: number; readonly found: boolean; readonly noisy: boolean; readonly bottle?: boolean; readonly stash?: 'firework' | 'flare' | 'candy'; readonly candy?: CandyId; readonly full?: true }
+  | { readonly type: 'container_opened'; readonly playerId: EntityId; readonly container: number; readonly x: number; readonly y: number; readonly found: boolean; readonly noisy: boolean; readonly bottle?: boolean; readonly stash?: 'firework' | 'flare' | 'candy'; readonly candy?: CandyId }
   /** A thrown bottle broke at x,y, thrown from fromX,fromY. */
   | { readonly type: 'bottle_smash'; readonly playerId: EntityId; readonly x: number; readonly y: number; readonly fromX: number; readonly fromY: number }
   /** A firework landed at x,y as a ground spinner, throwing sparks `radius` round it for `sec`. */
@@ -283,8 +288,8 @@ export interface ClientInputPacket {
   readonly spinner?: boolean;
   /** Throw a lit flare. Left off when not. */
   readonly flare?: boolean;
-  /** Eat the next candy in the bag. Left off when not. */
-  readonly eat?: boolean;
+  /** Eat this candy out of the bag, or `true` for the first one in it. Left off when not. */
+  readonly eat?: true | CandyId;
   /** Take this keepsake from the three on offer. Left off when not. */
   readonly keepsake?: KeepsakeId;
   /** The sneak key is held. Left off when not. Wins over sprint when both are held. */

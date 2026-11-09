@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   CANDIES,
-  CANDY_CARRY,
   CANDY_ORDER,
   CANDY_SEC,
   candyIn,
@@ -9,6 +8,7 @@ import {
   FULL_SIZE_SEC,
   sugarOf,
   takeCandy,
+  bagOf,
 } from '../shared/candy.ts';
 import { POPPING_REACH, SPINNER_RADIUS } from '../shared/throwables.ts';
 import { townContainers } from '../shared/containers.ts';
@@ -23,8 +23,8 @@ import { TICK_RATE } from '../shared/constants.ts';
 const HOMES = new Set(['house', 'apartment']);
 const SHOPS = new Set(['gun_shop', 'warehouse']);
 
-function eat(sim: GameSimulation, p: PlayerState, seq: number): void {
-  sim.setInput(p.id, input({ seq, eat: true }));
+function eat(sim: GameSimulation, p: PlayerState, seq: number, pick: true | CandyId = true): void {
+  sim.setInput(p.id, input({ seq, eat: pick }));
   sim.step();
   sim.setInput(p.id, input({ seq: seq + 1 }));
 }
@@ -62,15 +62,28 @@ describe('candy', () => {
     // Builds thirty towns, so it scales with machine load; the global 20s cap is too tight.
   }, 120_000);
 
-  it('carries two at most', () => {
-    const { state } = quietSim();
+  it('carries as much as it finds: the bag has no bottom', () => {
+    const { sim, state } = quietSim();
     const [p] = state.players;
-    for (let i = 0; i < CANDY_CARRY; i++) expect(takeCandy(p, 'jawbreaker')).toBe('jawbreaker');
-    expect(takeCandy(p, 'ghost_gum')).toBeNull();
-    expect(p.candy).toEqual(['jawbreaker', 'jawbreaker']);
+    for (let i = 0; i < 30; i++) expect(takeCandy(p, 'jawbreaker')).toBe('jawbreaker');
+    expect(takeCandy(p, 'ghost_gum')).toBe('ghost_gum');
+    expect(p.candy).toHaveLength(31);
+    expect(bagOf(p.candy)).toEqual({ jawbreaker: 30, ghost_gum: 1 });
+    expect(sim.snapshot().players[0].bag).toEqual({ jawbreaker: 30, ghost_gum: 1 });
   });
 
-  it('eats the first candy on X, which works for about a horde and then wears off', () => {
+  it('eats the candy picked out of the bag, not the first one in it', () => {
+    const { sim, state } = quietSim();
+    const [p] = state.players;
+    carrying(p, 'pumpkin_fizz', 'jawbreaker', 'ghost_gum');
+    eat(sim, p, 1, 'ghost_gum');
+    expect(p.candy).toEqual(['pumpkin_fizz', 'jawbreaker']);
+    expect(p.sugar.map((s) => s.id)).toEqual(['ghost_gum']);
+    eat(sim, p, 3, 'bat_bites');
+    expect(p.candy).toEqual(['pumpkin_fizz', 'jawbreaker']);
+  });
+
+  it('eats the first candy in the bag on a plain eat, which works for about a horde and then wears off', () => {
     const { sim, state } = quietSim();
     const [p] = state.players;
     carrying(p, 'pumpkin_fizz', 'jawbreaker');
@@ -85,16 +98,31 @@ describe('candy', () => {
     expect(sugarOf(p, 'pumpkin_fizz')).toBe(0);
   });
 
-  it('never stacks: a candy already working is skipped for the next one in the bag', () => {
+  it('stacks time, not strength: the same candy again makes its boost last longer', () => {
     const { sim, state } = quietSim();
     const [p] = state.players;
     carrying(p, 'jawbreaker', 'jawbreaker', 'ghost_gum');
-    eat(sim, p, 1);
-    eat(sim, p, 3);
-    expect(p.sugar.map((s) => s.id)).toEqual(['jawbreaker', 'ghost_gum']);
-    expect(p.candy).toEqual(['jawbreaker']);
-    eat(sim, p, 5);
-    expect(p.candy).toEqual(['jawbreaker']);
+    eat(sim, p, 1, 'jawbreaker');
+    eat(sim, p, 3, 'jawbreaker');
+    expect(p.sugar).toHaveLength(1);
+    expect(p.sugar[0].left).toBeCloseTo(CANDY_SEC * 2, 0);
+    expect(p.sugar[0].total).toBeCloseTo(p.sugar[0].left, 5);
+    expect(sugarOf(p, 'jawbreaker')).toBe(1);
+    expect(p.candy).toEqual(['ghost_gum']);
+    const eaten = eventsOf(sim.snapshot(), 'candy_eaten');
+    expect(eaten.map((each) => each.stacked === true)).toEqual([false, true]);
+  });
+
+  it('eats several picks made between two ticks, in the order picked', () => {
+    const { sim, state } = quietSim();
+    const [p] = state.players;
+    carrying(p, 'jawbreaker', 'ghost_gum', 'jawbreaker');
+    sim.setInput(p.id, input({ seq: 1, eat: 'ghost_gum' }));
+    sim.setInput(p.id, input({ seq: 2, eat: 'jawbreaker' }));
+    sim.setInput(p.id, input({ seq: 3, eat: 'jawbreaker' }));
+    sim.step();
+    expect(p.candy).toEqual([]);
+    expect(p.sugar.map((s) => s.id)).toEqual(['ghost_gum', 'jawbreaker']);
   });
 
   it('halves damage under a Jawbreaker', () => {

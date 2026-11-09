@@ -11,7 +11,7 @@ import { emit } from './sim-state.ts';
 import { makeNoise } from './zombie-senses.ts';
 import { maybeCarAlarm, scroungeBottle } from './bottles.ts';
 import { stashIn, takeStash } from './throwables.ts';
-import { candyCarry, candyIn, takeCandy } from './candy.ts';
+import { candyIn, takeCandy } from './candy.ts';
 import { hasKeepsake, RABBIT_LUCK } from './keepsakes.ts';
 
 /** Odds that a search knocks something over. */
@@ -52,24 +52,8 @@ function findIn(sim: SimState, p: PlayerState, id: number): Finds {
   return { treasure, ordinary };
 }
 
-/**
- * A bowl's candy only goes into a bag with room. Full, the searcher is told so and the bowl stays out
- * for whoever comes next. True if it did.
- */
-function bowlLeftFor(sim: SimState, p: PlayerState, id: number): boolean {
-  const container = townContainers(sim.map)[id];
-  const isFullAtBowl = container.kind === 'bowl' && p.candy.length >= candyCarry(p);
-  if (!isFullAtBowl) return false;
-  emit(sim, { type: 'container_opened', playerId: p.id, container: id, x: p.x, y: p.y, found: false, noisy: false, full: true });
-  stopSearch(p);
-  p.searchSpent = true;
-  return true;
-}
-
 /** Whatever was in it falls at the searcher's feet, for them or for whoever has room for it. */
 function finishSearch(sim: SimState, p: PlayerState, id: number): void {
-  const leftOut = bowlLeftFor(sim, p, id);
-  if (leftOut) return;
   const state = sim.containers[id];
   const { treasure, ordinary } = findIn(sim, p, id);
   state.opened = true;

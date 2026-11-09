@@ -2,6 +2,9 @@ import type { PaletteId, UiScale } from './display-prefs.ts';
 import { KEEPSAKES } from '../../shared/keepsakes.ts';
 import type { KeepsakeId } from '../../shared/protocol.ts';
 import { CANDIES } from '../../shared/candy.ts';
+import type { CandyId } from '../../shared/candy.ts';
+import { candyBag } from './candy-bag.ts';
+import type { CandyStack } from './candy-bag.ts';
 import { BOSSES } from '../../shared/bosses.ts';
 import type { CalloutTone } from './kill-juice.ts';
 import { displayName } from '../../shared/callsign.ts';
@@ -71,10 +74,12 @@ export interface HudState {
   /** Fireworks to light as spinners, and flares. */
   readonly fireworks: number;
   readonly flares: number;
-  /** Candy carried, by name, oldest first: the next eaten is the first not already working. */
-  readonly candy: readonly string[];
+  /** The candy bag: one stack per kind carried, in the bag's order (`candyBag`). */
+  readonly bag: readonly CandyStack[];
+  /** How many candies are in the bag, every kind together. */
+  readonly candyCount: number;
   /** Candy working now, with whole seconds left. */
-  readonly sugar: readonly { readonly name: string; readonly left: number }[];
+  readonly sugar: readonly { readonly id: CandyId; readonly name: string; readonly left: number }[];
   /** Keepsakes kept this run, by name. */
   readonly keepsakes: readonly string[];
   /** The three to choose one from, while the choice is open. */
@@ -220,8 +225,9 @@ export function buildHud(snapshot: SnapshotPacket, local: PlayerEntity, spectati
     bottles: local.bottles ?? 0,
     fireworks: local.fireworks ?? 0,
     flares: local.flares ?? 0,
-    candy: (local.candy ?? []).map((id) => CANDIES[id].name),
-    sugar: (local.sugar ?? []).map((sugar) => ({ name: CANDIES[sugar.id].name, left: Math.ceil(sugar.left) })),
+    bag: candyBag(local.bag, local.sugar),
+    candyCount: Object.values(local.bag ?? {}).reduce((sum, count) => sum + count, 0),
+    sugar: (local.sugar ?? []).map((sugar) => ({ id: sugar.id, name: CANDIES[sugar.id].name, left: Math.ceil(sugar.left) })),
     keepsakes: (local.keepsakes ?? []).map((id) => KEEPSAKES[id].name),
     keepsakeOffer: local.keepsakeOffer ? local.keepsakeOffer.map((id) => ({ id, name: KEEPSAKES[id].name, blurb: KEEPSAKES[id].blurb })) : null,
     knife: local.knife,

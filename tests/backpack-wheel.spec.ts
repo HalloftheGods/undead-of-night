@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { nextCandy, slotAngle, stepSlot, wheelSlots } from '../src/game/backpack-wheel.ts';
+import { slotAngle, stepSlot, wheelSlots } from '../src/game/backpack-wheel.ts';
 import type { HudState } from '../src/game/hud-state.ts';
 import { aHud as hud, fullBackpack } from './backpack-fixture.ts';
 
@@ -16,12 +16,12 @@ describe('wheelSlots', () => {
   });
 
   it('adds each throwable and the candy as it is picked up, in reach order', () => {
-    const full = hud({ bottles: 2, fireworks: 1, flares: 3, candy: ['Sour Skulls'], owned: ['pistol', 'shotgun'] });
+    const full = hud({ bottles: 2, fireworks: 1, flares: 3, candyCount: 1, owned: ['pistol', 'shotgun'] });
     expect(codes(full)).toEqual(['KeyH', 'KeyQ', 'KeyG', 'KeyT', 'KeyV', 'KeyX', 'KeyN']);
   });
 
   it('counts what is carried, and leaves the map uncounted', () => {
-    const slots = wheelSlots(hud({ medkits: 3, bottles: 2, candy: ['Sour Skulls', 'Fang Taffy'] }));
+    const slots = wheelSlots(hud({ medkits: 3, bottles: 2, candyCount: 2 }));
     const count = (code: string) => slots.find((slot) => slot.code === code)?.count;
     expect(count('KeyH')).toBe(3);
     expect(count('KeyG')).toBe(2);
@@ -59,36 +59,14 @@ describe('wheelSlots', () => {
     expect(wheelSlots(state).find((slot) => slot.code === 'KeyQ')?.count).toBe(25);
   });
 
-  it('names the candy that would be eaten next', () => {
-    const slot = wheelSlots(hud({ candy: ['Sour Skulls', 'Fang Taffy'] })).find((each) => each.code === 'KeyX');
-    expect(slot).toMatchObject({ name: 'Sour Skulls', label: 'Eat Sour Skulls', ready: true });
-  });
-
-  it('greys the candy out while every one carried is already working', () => {
-    const working = hud({ candy: ['Sour Skulls'], sugar: [{ name: 'Sour Skulls', left: 12 }] });
-    expect(wheelSlots(working).find((slot) => slot.code === 'KeyX')).toMatchObject({ ready: false, name: 'Candy' });
-  });
-
-  it('keeps a candy name it does not know off the slot', () => {
-    const slot = wheelSlots(hud({ candy: ['Mystery Lump'] })).find((each) => each.code === 'KeyX');
-    expect(slot).toMatchObject({ name: 'Candy', label: 'Eat a candy', ready: true });
+  it('opens the candy bag with X, counting every candy carried', () => {
+    const slot = wheelSlots(hud({ candyCount: 14 })).find((each) => each.code === 'KeyX');
+    expect(slot).toMatchObject({ name: 'Candy bag', label: 'Open the candy bag', count: 14, ready: true });
   });
 
   it('gives every slot a phrase for a screen reader', () => {
-    const full = wheelSlots(hud({ bottles: 1, fireworks: 1, flares: 1, candy: ['Jawbreaker'], owned: ['pistol', 'carbine'] }));
+    const full = wheelSlots(hud({ bottles: 1, fireworks: 1, flares: 1, candyCount: 1, owned: ['pistol', 'carbine'] }));
     for (const slot of full) expect(slot.label.length).toBeGreaterThan(3);
-  });
-});
-
-describe('nextCandy', () => {
-  it('skips what is already working and keeps the oldest of the rest', () => {
-    const state = { candy: ['Sour Skulls', 'Fang Taffy'], sugar: [{ name: 'Sour Skulls', left: 8 }] } as const;
-    expect(nextCandy(state)).toBe('Fang Taffy');
-  });
-
-  it('is null with nothing carried, and null with everything working', () => {
-    expect(nextCandy({ candy: [], sugar: [] })).toBe(null);
-    expect(nextCandy({ candy: ['Jawbreaker'], sugar: [{ name: 'Jawbreaker', left: 3 }] })).toBe(null);
   });
 });
 

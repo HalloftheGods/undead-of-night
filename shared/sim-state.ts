@@ -72,10 +72,11 @@ export interface PlayerState extends Omit<PlayerEntity, 'mags' | 'gear' | 'bottl
   spinnerQueued: boolean;
   flareQueued: boolean;
   throwCooldown: number;
-  /** Candy carried, oldest first, and candy working now (`shared/candy.ts`). */
+  /** Candy carried, oldest first, and candy working now (`shared/candy.ts`). The bag has no bottom. */
   candy: CandyId[];
   sugar: SugarState[];
-  eatQueued: boolean;
+  /** Candy picked out of the bag and not yet eaten, in the order picked. `true` is the first in the bag. */
+  eatQueued: (true | CandyId)[];
   /** Kept for the run, and the three on offer while the choice is open (`shared/keepsakes.ts`). */
   keepsakes: KeepsakeId[];
   keepsakeOffer: KeepsakeId[] | null;

@@ -89,9 +89,10 @@ const SET_BANNERS: Partial<Record<GameEvent['type'], Omit<Banner, 'key'>>> = {
 export const HORDE_WIPED_BANNER: Omit<Banner, 'key'> = { title: 'HORDE WIPED OUT', subtitle: 'FOR NOW', tone: 'quiet' };
 
 /** Said to whoever ate it: what the candy does. */
-export function candyBanner(candy: CandyId, saved: boolean): Omit<Banner, 'key'> {
+export function candyBanner(candy: CandyId, saved: boolean, stacked = false): Omit<Banner, 'key'> {
   const def = CANDIES[candy];
   if (saved) return { title: 'CARAMEL APPLE', subtitle: 'BACK ON YOUR FEET', tone: 'hope' };
+  if (stacked) return { title: def.name.toUpperCase(), subtitle: `${def.stat} LASTS LONGER`, tone: 'hope' };
   return { title: def.name.toUpperCase(), subtitle: def.blurb.replace(/\.$/, '').toUpperCase(), tone: 'hope' };
 }
 

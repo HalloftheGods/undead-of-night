@@ -35,7 +35,7 @@ export function sugarTags(player: Pick<PlayerEntity, 'status' | 'sugar'>, time: 
     const wearingOff = sugar.left <= SUGAR_WARN_SEC;
     return {
       label: `${CANDIES[sugar.id].stat} ${seconds}`,
-      fraction: Math.max(0, Math.min(1, sugar.left / candySeconds(sugar.id))),
+      fraction: Math.max(0, Math.min(1, sugar.left / Math.max(sugar.total ?? candySeconds(sugar.id), 1e-9))),
       lit: !wearingOff || blinkOn,
     };
   });

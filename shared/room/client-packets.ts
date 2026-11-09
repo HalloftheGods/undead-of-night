@@ -1,3 +1,4 @@
+import { isCandyId } from '../candy.ts';
 import { isKeepsakeId } from '../keepsakes.ts';
 import { cleanCallsign } from '../callsign.ts';
 import { isCharacterIndex } from '../characters.ts';
@@ -37,7 +38,7 @@ function parseInput(value: unknown): ClientInputPacket | null {
   const numbersValid = typeof seq === 'number' && Number.isFinite(seq) && seq >= 0 && typeof angle === 'number' && Number.isFinite(angle);
   const flags = [up, down, left, right, shoot, reload, melee, heal, search];
   const aim = parseAim(aimX, aimY);
-  const optionalFlags = [touch, sneak, sprint, toss, spinner, flare, eat];
+  const optionalFlags = [touch, sneak, sprint, toss, spinner, flare];
   const optionalValid = optionalFlags.every((flag) => flag === undefined || typeof flag === 'boolean');
   const isMalformedInput = !numbersValid || !aim || !optionalValid || !flags.every((flag) => typeof flag === 'boolean') || !isWeaponRequest(weapon);
   if (isMalformedInput) return null;
@@ -51,7 +52,7 @@ function parseInput(value: unknown): ClientInputPacket | null {
     ...(toss === true ? { throw: true } : {}),
     ...(spinner === true ? { spinner: true } : {}),
     ...(flare === true ? { flare: true } : {}),
-    ...(eat === true ? { eat: true } : {}),
+    ...(eat === true || isCandyId(eat) ? { eat } : {}),
     ...(isKeepsakeId(keepsake) ? { keepsake } : {}),
     weapon,
     up: up as boolean,
