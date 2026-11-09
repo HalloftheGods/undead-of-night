@@ -32,13 +32,13 @@ describe('the Town Guide', () => {
     expect(tierOf('gun_shop', 'shotgun')).toBe('always');
   });
 
-  it('sends players for medkits to the pharmacy and clinic, and flares to the station, garage and cars', () => {
+  it('sends players for medkits to the pharmacy and clinic, and fountains to the station, garage and cars', () => {
     expect(tierOf('pharmacy', 'medkit')).toBe('often');
     expect(tierOf('clinic', 'medkit')).toBe('often');
-    expect(tierOf('police', 'flare')).toBe('often');
-    expect(tierOf('garage', 'flare')).toBeDefined();
-    expect(tierOf('cars', 'flare')).toBeDefined();
-    expect(tierOf('house', 'flare')).toBeUndefined();
+    expect(tierOf('police', 'fountain')).toBe('often');
+    expect(tierOf('garage', 'fountain')).toBeDefined();
+    expect(tierOf('cars', 'fountain')).toBeDefined();
+    expect(tierOf('house', 'fountain')).toBeUndefined();
   });
 
   it('sends players to the diner for a knife first', () => {

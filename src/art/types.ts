@@ -182,9 +182,9 @@ export interface UiArt {
   readonly heart: PixelSprite;
   /** The HUD's count of bottles to throw. */
   readonly bottle: PixelSprite;
-  /** The HUD's count of fireworks, and of flares. */
+  /** The HUD's counts of fireworks: spinners, and fountains. */
   readonly fireworks: PixelSprite;
-  readonly flare: PixelSprite;
+  readonly fountain: PixelSprite;
   /** A wrapped sweet, for the candy carried: the HUD counts it and the backpack ring offers it. */
   readonly candy: PixelSprite;
   /** Every candy's own picture, 16x16, for the candy bag screen (fx/candies.ts). */

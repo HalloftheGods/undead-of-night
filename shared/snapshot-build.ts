@@ -103,7 +103,7 @@ export function playerSnapshot(p: PlayerState): PlayerEntity {
     knife: p.knife,
     ...(p.bottles > 0 ? { bottles: p.bottles } : {}),
     ...(p.fireworks > 0 ? { fireworks: p.fireworks } : {}),
-    ...(p.flares > 0 ? { flares: p.flares } : {}),
+    ...(p.fountains > 0 ? { fountains: p.fountains } : {}),
     ...(p.candy.length > 0 ? { bag: bagOf(p.candy) } : {}),
     ...(p.keepsakes.length > 0 ? { keepsakes: [...p.keepsakes] } : {}),
     ...(p.keepsakeOffer ? { keepsakeOffer: [...p.keepsakeOffer] } : {}),

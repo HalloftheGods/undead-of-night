@@ -71,9 +71,9 @@ export interface HudState {
   readonly medkits: number;
   /** Empty bottles to throw. */
   readonly bottles: number;
-  /** Fireworks to light as spinners, and flares. */
+  /** Fireworks: spinners and fountains. */
   readonly fireworks: number;
-  readonly flares: number;
+  readonly fountains: number;
   /** The candy bag: one stack per kind carried, in the bag's order (`candyBag`). */
   readonly bag: readonly CandyStack[];
   /** How many candies are in the bag, every kind together. */
@@ -226,7 +226,7 @@ export function buildHud(snapshot: SnapshotPacket, local: PlayerEntity, spectati
     medkits: local.medkits,
     bottles: local.bottles ?? 0,
     fireworks: local.fireworks ?? 0,
-    flares: local.flares ?? 0,
+    fountains: local.fountains ?? 0,
     bag: candyBag(local.bag, local.sugar),
     candyCount: Object.values(local.bag ?? {}).reduce((sum, count) => sum + count, 0),
     sugar: (local.sugar ?? []).map((sugar) => ({ id: sugar.id, name: CANDIES[sugar.id].name, left: Math.ceil(sugar.left) })),

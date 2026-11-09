@@ -12,11 +12,11 @@ describe('wheelSlots', () => {
 
   it('never invents a throwable that is not carried', () => {
     const empty = wheelSlots(hud());
-    expect(empty.some((slot) => slot.art === 'bottle' || slot.art === 'fireworks' || slot.art === 'flare')).toBe(false);
+    expect(empty.some((slot) => slot.art === 'bottle' || slot.art === 'fireworks' || slot.art === 'fountain')).toBe(false);
   });
 
   it('adds each throwable and the candy as it is picked up, in reach order', () => {
-    const full = hud({ bottles: 2, fireworks: 1, flares: 3, candyCount: 1, owned: ['pistol', 'shotgun'] });
+    const full = hud({ bottles: 2, fireworks: 1, fountains: 3, candyCount: 1, owned: ['pistol', 'shotgun'] });
     expect(codes(full)).toEqual(['KeyH', 'KeyQ', 'KeyG', 'KeyT', 'KeyV', 'KeyX', 'KeyN']);
   });
 
@@ -65,7 +65,7 @@ describe('wheelSlots', () => {
   });
 
   it('gives every slot a phrase for a screen reader', () => {
-    const full = wheelSlots(hud({ bottles: 1, fireworks: 1, flares: 1, candyCount: 1, owned: ['pistol', 'carbine'] }));
+    const full = wheelSlots(hud({ bottles: 1, fireworks: 1, fountains: 1, candyCount: 1, owned: ['pistol', 'carbine'] }));
     for (const slot of full) expect(slot.label.length).toBeGreaterThan(3);
   });
 });

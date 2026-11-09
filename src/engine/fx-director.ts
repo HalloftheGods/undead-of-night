@@ -6,6 +6,7 @@ import type { EntityId, GameEvent, PickupType, WeaponId, ZombieType } from '../.
 import { dirFromAngle } from '../art/types.ts';
 import type { ArtBook, PixelSprite } from '../art/types.ts';
 import { barrelOffset } from './barrel.ts';
+import { BurningFx, FLARE_SPARKS, FOUNTAIN_SPARKS, SPINNER_PETALS } from './burning-fx.ts';
 import { ParticleSystem } from './particles.ts';
 import { burstFor } from './status-bursts.ts';
 import { CHEST_HEIGHT } from './scene.ts';
@@ -19,25 +20,15 @@ const ACID = ['#a9d94a', '#6d9c22', '#d4f07a'];
 const SPARK = ['#fff0b8', '#ffc04a', '#ff8e2e'];
 const BOTTLE_GLASS = ['#8c8c56', '#c4f048', '#e4f0c0'];
 const DUST = ['#8a7a5c', '#b3a27a', '#5e523e'];
-const FLARE_SPARKS = ['#ffd0d0', '#ff4a3c', '#ff7a5c'];
-/** A ground spinner's spouts, one color each, so the flower it throws has petals. */
-const SPINNER_PETALS = ['#ffe066', '#ff5ad2', '#6dff8a', '#5ad8ff'];
-const SPINNER_SPOUTS = 4;
-/** Turns a second, and how long its sparks fly out before they die. */
-const SPINNER_TURN = 15;
-const SPINNER_SPARK_LIFE = 0.45;
 /** What a searcher is told they found besides the loot. */
 function stashLabel(event: Extract<GameEvent, { type: 'container_opened' }>): string {
   if (event.candy) return CANDIES[event.candy].name.toUpperCase();
   const armful = event.fireworks ?? 1;
   const tookSeveral = armful > 1;
-  if (tookSeveral) return `+${armful} FIREWORKS`;
-  return event.stash === 'firework' ? 'FIREWORK' : 'FLARE';
+  if (tookSeveral) return `+${armful} SPINNERS`;
+  return event.stash === 'firework' ? 'SPINNER' : 'FOUNTAIN';
 }
 
-/** Sparks a second for a spinner and for a flare. */
-const SPINNER_DOTS_PER_SEC = 260;
-const FLARE_DOTS_PER_SEC = 24;
 const SKULL_CHIPS = ['#e4dcc3', '#c9bd9c', '#a8231a'];
 /** The word goes over the head it names. */
 const HEADSHOT_NOTE_GAP = 10;
@@ -85,18 +76,6 @@ const PICKUP_LABEL: Record<PickupType, string> = {
   jewel_large: 'LARGE JEWEL',
 };
 
-/** A pool of fire or a lit flare, drawn from its event alone until it burns out. */
-interface Burning {
-  readonly kind: 'spinner' | 'flare';
-  readonly x: number;
-  readonly y: number;
-  readonly radius: number;
-  left: number;
-  owed: number;
-  /** Which way a spinner's spouts face now, turning every frame. */
-  spin: number;
-}
-
 export interface PulseLight {
   x: number;
   y: number;
@@ -137,7 +116,7 @@ type FxHandlers = { readonly [K in GameEvent['type']]?: FxHandler<K> };
 export class FxDirector {
   readonly particles: ParticleSystem;
   readonly pulses: PulseLight[] = [];
-  private readonly burning: Burning[] = [];
+  private readonly burns: BurningFx;
   private readonly art: ArtBook;
   private readonly visuals: VisualStore;
   private readonly effects: ScreenEffects;
@@ -149,12 +128,13 @@ export class FxDirector {
     this.effects = effects;
     this.hooks = hooks;
     this.particles = new ParticleSystem((sprite, x, y) => hooks.stamp(sprite, x, y));
+    this.burns = new BurningFx(this.particles, this.pulses);
   }
 
   clear(): void {
     this.particles.clear();
     this.pulses.length = 0;
-    this.burning.length = 0;
+    this.burns.clear();
   }
 
   update(dt: number): void {
@@ -165,7 +145,7 @@ export class FxDirector {
       if (isPulseSpent) this.pulses.splice(i, 1);
     }
     // After the pulses age, so this frame's glow is drawn at full strength and gone by the next.
-    this.burnOn(dt);
+    this.burns.update(dt);
   }
 
   /** What each event draws; an event with no entry draws nothing. */
@@ -186,7 +166,7 @@ export class FxDirector {
     container_opened: (event, ctx) => this.onContainerOpened(event, ctx),
     bottle_smash: (event) => this.onBottleSmash(event.x, event.y),
     spinner_lit: (event) => this.onSpinner(event.x, event.y, event.radius, event.sec),
-    flare_lit: (event) => this.onFlare(event.x, event.y, event.sec),
+    fountain_lit: (event) => this.onFountain(event.x, event.y, event.sec),
     drop_called: (event) => this.onFlare(event.x, event.y, FLARE_SEC),
     drop_landed: (event) => this.onDropLanded(event.x, event.y),
     car_alarm: (event) => this.particles.addText('CAR ALARM', event.x, event.y - NOTE_HEIGHT, SCORE_COLOR),
@@ -356,7 +336,7 @@ export class FxDirector {
   private onSpinner(x: number, y: number, radius: number, sec: number): void {
     this.burstDots(x, y, -Math.PI / 2, SPINNER_PETALS, 24, 110, true, Math.PI);
     this.pulses.push({ x, y, radius: radius * 4, color: '#ff9ae8', life: 0.3, maxLife: 0.3 });
-    this.burning.push({ kind: 'spinner', x, y, radius, left: sec, owed: 0, spin: Math.random() * Math.PI * 2 });
+    this.burns.light('spinner', x, y, radius, sec);
     this.effects.addShake(0.15);
   }
 
@@ -380,68 +360,14 @@ export class FxDirector {
 
   private onFlare(x: number, y: number, sec: number): void {
     this.burstDots(x, y, -Math.PI / 2, FLARE_SPARKS, 12, 90, true, Math.PI);
-    this.burning.push({ kind: 'flare', x, y, radius: 4, left: sec, owed: 0, spin: 0 });
+    this.burns.light('flare', x, y, 4, sec);
   }
 
-  /** Keeps every spinner turning and every flare alight: sparks and a flickering glow each frame. */
-  private burnOn(dt: number): void {
-    for (let i = this.burning.length - 1; i >= 0; i -= 1) {
-      const burn = this.burning[i];
-      burn.left -= dt;
-      const isBurnOver = burn.left <= 0;
-      if (isBurnOver) {
-        this.burning.splice(i, 1);
-        continue;
-      }
-      const isSpinner = burn.kind === 'spinner';
-      const fade = isSpinner ? Math.min(1, burn.left / 1.2) : Math.min(1, burn.left / 3);
-      burn.spin += dt * SPINNER_TURN * (0.6 + fade * 0.4);
-      burn.owed += dt * (isSpinner ? SPINNER_DOTS_PER_SEC : FLARE_DOTS_PER_SEC) * fade;
-      for (; burn.owed >= 1; burn.owed -= 1) {
-        if (isSpinner) this.spinnerSpark(burn, fade);
-        else this.flareSpark(burn);
-      }
-      const flicker = 0.85 + Math.random() * 0.15;
-      const radius = (isSpinner ? burn.radius * 3.4 : 130) * flicker * (0.5 + fade * 0.5);
-      const glow = isSpinner ? SPINNER_PETALS[Math.floor(burn.spin / (Math.PI / 2)) % SPINNER_PETALS.length] : '#ff3a2a';
-      this.pulses.push({ x: burn.x, y: burn.y, radius, color: glow, life: dt * 1.01, maxLife: dt * 1.01 });
-    }
-  }
-
-  /** One spark off a spinning spout: flung out along the ground and swept round, so the spouts draw petals. */
-  private spinnerSpark(burn: Burning, fade: number): void {
-    const spout = Math.floor(Math.random() * SPINNER_SPOUTS);
-    const heading = burn.spin + (spout * Math.PI * 2) / SPINNER_SPOUTS + spread(0.25);
-    const pace = (burn.radius / SPINNER_SPARK_LIFE) * (0.6 + Math.random() * 0.5) * (0.6 + fade * 0.4);
-    // The spout points along the turn, so the spark leaves sideways as well as out.
-    const sideways = heading + Math.PI / 2;
-    this.particles.addDot({
-      x: burn.x,
-      y: burn.y,
-      z: 2,
-      vx: Math.cos(heading) * pace + Math.cos(sideways) * pace * 0.5,
-      vy: (Math.sin(heading) * pace + Math.sin(sideways) * pace * 0.5) * 0.7,
-      vz: 5 + Math.random() * 12,
-      life: SPINNER_SPARK_LIFE * (0.6 + Math.random() * 0.6),
-      color: SPINNER_PETALS[spout % SPINNER_PETALS.length],
-      size: Math.random() < 0.5 ? 2 : 1,
-      emissive: true,
-    });
-  }
-
-  private flareSpark(burn: Burning): void {
-    this.particles.addDot({
-      x: burn.x + spread(1),
-      y: burn.y + spread(0.7),
-      z: 1,
-      vx: spread(30),
-      vy: spread(30),
-      vz: 40 + Math.random() * 60,
-      life: 0.25 + Math.random() * 0.35,
-      color: pick(FLARE_SPARKS),
-      size: Math.random() < 0.3 ? 2 : 1,
-      emissive: true,
-    });
+  /** A fountain lands and catches: a puff of gold, then it sprays straight up until it is spent. */
+  private onFountain(x: number, y: number, sec: number): void {
+    this.burstDots(x, y, -Math.PI / 2, FOUNTAIN_SPARKS, 16, 80, true, Math.PI);
+    this.pulses.push({ x, y, radius: 90, color: '#ffd27a', life: 0.25, maxLife: 0.25 });
+    this.burns.light('fountain', x, y, 4, sec);
   }
 
   /** Over the local player's head, for what the sim says nothing about: an item left where it lay. */

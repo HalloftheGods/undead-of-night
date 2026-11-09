@@ -70,8 +70,8 @@ function spriteOf(slot: WheelSlot): PixelSprite {
       return ui.bottle;
     case 'fireworks':
       return ui.fireworks;
-    case 'flare':
-      return ui.flare;
+    case 'fountain':
+      return ui.fountain;
     case 'candy':
       return ui.candy;
     case 'map':
