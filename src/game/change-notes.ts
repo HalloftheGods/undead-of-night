@@ -22,6 +22,17 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'fireballs',
+    date: '2026-11-09',
+    kind: 'new',
+    title: 'Fireballs',
+    deck: 'A new candy in the bag, red-hot and cinnamon.',
+    points: [
+      'While Fireballs work, every shot is a flame round and sets zombies alight, whatever your gun is fitted with.',
+      'Eat more to keep the fire going longer. Fire is loud, so expect company.',
+    ],
+  },
+  {
     id: 'candy-bag-cards',
     date: '2026-11-09',
     kind: 'better',

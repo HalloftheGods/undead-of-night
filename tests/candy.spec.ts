@@ -34,8 +34,8 @@ function carrying(p: PlayerState, ...ids: CandyId[]): void {
 }
 
 describe('candy', () => {
-  it('has twelve kinds, all named and described', () => {
-    expect(CANDY_ORDER).toHaveLength(12);
+  it('has thirteen kinds, all named and described', () => {
+    expect(CANDY_ORDER).toHaveLength(13);
     for (const id of CANDY_ORDER) expect(CANDIES[id].blurb.length).toBeGreaterThan(0);
   });
 
@@ -172,6 +172,23 @@ describe('candy', () => {
     expect(lit.radius).toBeCloseTo(SPINNER_RADIUS * (1 + POPPING_REACH));
     expect(state.spinners[0].radius).toBeCloseTo(SPINNER_RADIUS * (1 + POPPING_REACH));
     expect(p.fireworks).toBe(0);
+  });
+
+  it('turns every shot to flame under Fireballs, and only while they work', () => {
+    const { sim, state } = quietSim();
+    const [p] = state.players;
+    carrying(p, 'fireballs');
+    eat(sim, p, 1, 'fireballs');
+    sim.setInput('a', input({ seq: 3, shoot: true }));
+    sim.step();
+    expect(state.bullets.length).toBeGreaterThan(0);
+    expect(state.bullets.every((b) => b.effect === 'incendiary')).toBe(true);
+    p.sugar = [];
+    state.bullets.length = 0;
+    steps(sim, TICK_RATE);
+    sim.setInput('a', input({ seq: 5, shoot: true }));
+    sim.step();
+    expect(state.bullets.some((b) => b.effect === 'incendiary')).toBe(false);
   });
 
   it('gives everything at half strength, for a short while, from a Full-Size Bar', () => {

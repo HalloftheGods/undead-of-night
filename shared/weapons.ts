@@ -71,7 +71,9 @@ function advanceReload(sim: SimState, p: PlayerState): void {
 
 function fire(sim: SimState, p: PlayerState): void {
   const stats = heldStats(p);
-  const effect = effectOf(p.guns[p.weapon]?.fit);
+  // Fireballs turn every round to flame while they work, whatever the gun was fitted with. A Full-Size Bar's half does not.
+  const fiery = sugarOf(p, 'fireballs') >= 1;
+  const effect = fiery ? 'incendiary' : effectOf(p.guns[p.weapon]?.fit);
   const carried = effect ? { effect } : {};
   // Pellets scatter past the crosshair, so a spread gun never claims a head.
   const headTarget = stats.pellets === 1 ? headUnderAim(sim, p, stats.range) : null;
