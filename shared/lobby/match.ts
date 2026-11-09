@@ -26,6 +26,9 @@ function levelFits(room: RoomListing, request: MatchRequest): boolean {
   return room.highest >= mine - CAMPAIGN_REACH_BELOW && room.highest <= mine + CAMPAIGN_REACH_ABOVE;
 }
 
+/** Co-op never shares a survivor, so a room that already has this player's is never offered. */
+const hasFreeSurvivor = (room: RoomListing, character: number): boolean => (room.taken & (1 << character)) === 0;
+
 /** Whether this room may be offered to this player at all. */
 export function isOpenTo(room: RoomListing, request: MatchRequest, now: number): boolean {
   const isUnlisted = room.visibility !== 'public' || room.locked || isStale(room.seenAt, now);
@@ -35,19 +38,18 @@ export function isOpenTo(room: RoomListing, request: MatchRequest, now: number):
   const isOtherGame = room.protocol !== request.protocol || room.style !== request.style;
   if (isOtherGame) return false;
   if (request.avoid?.includes(room.code)) return false;
+  const isSurvivorTaken = !hasFreeSurvivor(room, request.character);
+  if (isSurvivorTaken) return false;
   const isTooFarInDifficulty = difficultyGap(room.difficulty, request.difficulty) > MAX_DIFFICULTY_GAP;
   if (isTooFarInDifficulty) return false;
   return levelFits(room, request);
 }
-
-const hasFreeSurvivor = (room: RoomListing, character: number): boolean => (room.taken & (1 << character)) === 0;
 
 /** Lower sorts first. Each term is 0 for the better side, and the earlier terms outweigh the later ones. */
 function rankKey(room: RoomListing, request: MatchRequest, mine: Continent): readonly number[] {
   return [
     room.continent === mine && mine !== 'unknown' ? 0 : 1,
     difficultyGap(room.difficulty, request.difficulty),
-    hasFreeSurvivor(room, request.character) ? 0 : 1,
     room.device === 'desktop' ? 0 : 1,
     -room.seats,
     -room.createdAt,

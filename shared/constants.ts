@@ -2,7 +2,8 @@ import type { WeaponId, ZombieType } from './protocol.ts';
 
 export const TICK_RATE = 30;
 export const TICK_DT = 1 / TICK_RATE;
-export const MAX_PLAYERS = 4;
+/** One seat per survivor: co-op never shares one, so the room fills when every survivor is out. */
+export const MAX_PLAYERS = 5;
 /** Injected by vite.config.js from ZOMBIE_PORT for the browser build; undefined under plain node. */
 declare const __ZOMBIE_SERVER_PORT__: number | undefined;
 /** Server port. Browser: ZOMBIE_PORT at dev start (default 8097). Node server: reads ZOMBIE_PORT itself, same fallback. */
