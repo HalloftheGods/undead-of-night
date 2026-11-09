@@ -38,4 +38,15 @@ describe('overlay polish', () => {
       expect(tag, banner).toContain('v-show="!overlayUp"');
     }
   });
+
+  it('lays the HUD out like a Zelda screen: pickups top left, town and horde top centre, run numbers top right', () => {
+    const hud = source('../src/components/HudOverlay.vue');
+    expect(hud).toContain("grid-template-areas: 'vitals centre stack';");
+    const top = hud.slice(hud.indexOf('<header class="hud-top">'), hud.indexOf('</header>'));
+    expect(top.indexOf('hud-medkits')).toBeGreaterThan(-1);
+    expect(top.indexOf('hud-medkits')).toBeLessThan(top.indexOf('hud-night'));
+    expect(top.indexOf('hud-night')).toBeLessThan(top.indexOf('hud-health'));
+    const foot = hud.slice(hud.indexOf('<footer class="hud-bottom">'), hud.indexOf('</footer>'));
+    expect(foot).not.toContain('hud-medkits');
+  });
 });
