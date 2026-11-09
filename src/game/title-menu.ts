@@ -6,7 +6,7 @@ import type { BestRun, LeaderboardEntry } from './storage.ts';
 
 /** The title's menu, what each item opens, and the words its pages show. The components only lay these out. */
 /** Every title page. The changelog has no menu item: the version number in the corner opens it. */
-export type TitlePage = 'play' | 'daily' | 'levels' | 'howto' | 'guide' | 'records' | 'sound' | 'options' | 'changelog';
+export type TitlePage = 'play' | 'daily' | 'levels' | 'howto' | 'guide' | 'records' | 'sound' | 'radio' | 'options' | 'changelog';
 
 /** The menu's three parents. */
 export type MenuGroup = 'books' | 'play' | 'extras';
@@ -46,6 +46,7 @@ export const TITLE_MENU: readonly TitleMenuItem[] = [
   { group: 'play', page: 'play', label: 'Arcade', style: 'arcade', line: 'Ten levels in a row. Die and the run ends.' },
   { group: 'play', page: 'play', label: 'Campaign', style: 'campaign', line: 'Live in a bunker. Run trips, haul treasure home.' },
   { group: 'play', page: 'levels', label: 'Level Select', line: 'Jump to an Arcade level you have reached.' },
+  { group: 'extras', page: 'radio', label: 'Radio', line: 'Tapes, tunes and radio finds.', needs: 'radio' },
   { group: 'extras', page: 'sound', label: 'Sound Test', line: 'Hear the music and effects.' },
   { group: 'extras', page: 'options', label: 'Options', line: 'Sound, display, motion and controls.' },
 ];
@@ -77,11 +78,16 @@ export interface MenuRow {
 }
 
 /** The rows for the title (section null) or for one opened section, which ends in Back. */
-export function menuRows(section: MenuGroup | null, entries: readonly TitleMenuItem[] = TITLE_MENU): readonly MenuRow[] {
+export function menuRows(section: MenuGroup | null, entries: readonly TitleMenuItem[] = TITLE_MENU, unlock?: SoundUnlock): readonly MenuRow[] {
   if (section === null) {
     return MENU_SECTIONS.map((each, index) => ({ kind: 'section', label: each.label, line: each.line, primary: index === 0, group: each.group }));
   }
-  const links = entries.filter((item) => item.group === section);
+  const links = entries.filter((item) => {
+    const isSection = item.group === section;
+    if (!isSection) return false;
+    const isLockedRadio = item.needs === 'radio' && !unlock?.radio;
+    return !isLockedRadio;
+  });
   const rows: MenuRow[] = links.map((item) => ({ kind: 'item', label: item.label, line: item.line, primary: item.primary === true, item }));
   return [...rows, { kind: 'back', label: 'Back', line: '', primary: false }];
 }

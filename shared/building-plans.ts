@@ -33,7 +33,7 @@ export const BACK_DOORS: Readonly<Partial<Record<BuildingKind, number>>> = {
 
 const T = WALL_THICKNESS;
 
-/** A hall from the front door to the back, with a flat on each side through a doorway. The floor above has the same. */
+/** A hall from the front door to the back, with a flat on each side through a doorway. */
 const APARTMENT_HALL: readonly Rect[] = [
   { x0: 58, y0: T, x1: 64, y1: 48 },
   { x0: 58, y0: 80, x1: 64, y1: 90 },
@@ -101,7 +101,9 @@ export const PARTITIONS: Readonly<Partial<Record<BuildingKind, readonly Rect[]>>
   house: [{ x0: 54, y0: T, x1: 54 + T, y1: 56 }],
   // A hall from the front door to the back, with a room on each side through a doorway.
   apartment: APARTMENT_HALL,
-  apartment_upstairs: APARTMENT_HALL,
+  // The floor above is one open floor. The hall below runs from the front door to the back door; up here there is
+  // neither, so the same walls were a dead-end corridor and two stubs to snag on. The furniture sets the flats apart.
+  apartment_upstairs: [],
   hospital: HOSPITAL_FLOOR,
   hospital_upstairs: HOSPITAL_WARDS,
   school: SCHOOL_FLOOR,

@@ -37,7 +37,7 @@ const section = defineModel<MenuGroup | null>('section', { default: null });
 const emit = defineEmits<{ open: [item: TitleMenuItem] }>();
 const game = useGame();
 const unlock = loadSoundUnlock();
-const rows = computed(() => menuRows(section.value, entries));
+const rows = computed(() => menuRows(section.value, entries, unlock));
 const heading = computed(() => MENU_SECTIONS.find((each) => each.group === section.value)?.label ?? '');
 /** The lines under the items, switched on in Options. Read on mount, so coming back from Options shows the change. */
 const showInfo = loadMenuInfo();
@@ -78,7 +78,7 @@ function moveTo(index: number): void {
 /** Opens a parent's list pointed at its primary row; the title remembers which parent it came from. */
 function enter(group: MenuGroup): void {
   section.value = group;
-  selected.value = openingRow(menuRows(group, entries));
+  selected.value = openingRow(menuRows(group, entries, unlock));
 }
 
 function leave(): void {

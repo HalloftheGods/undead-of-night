@@ -6,6 +6,7 @@ import type { DropView, EntityId, ExitEntity, PlayerEntity, ZombieEntity } from 
 import { dirFromAngle } from '../art/types.ts';
 import type { ArtBook } from '../art/types.ts';
 import { drawOutlinedText, FONT_HEIGHT } from './bitmap-font.ts';
+import { ammoPrompt } from './ammo-prompt.ts';
 import type { SceneView } from './scene.ts';
 import { stationPrompt } from './station-labels.ts';
 import { SUGAR_BAR_WIDTH, SUGAR_LINE_GAP, SUGAR_ROW_HEIGHT, sugarTags, sugarTagsWidth } from './sugar-tags.ts';
@@ -254,8 +255,11 @@ export class OverlayRenderer {
     }
   }
 
-  /** A bar over anyone searching, and for the local player the key to hold: for a container, or a bunker station. */
-  private drawSearch(ctx: CanvasRenderingContext2D, scene: SceneView, left: number, top: number): void {
+  /**
+   * A bar over anyone searching, and for the local player the key to hold: for a container, or a bunker station.
+   * Over all of that, the local player's dry-gun call: reload, swap guns, or shove.
+   */
+  private drawSearch(ctx: CanvasRenderingContext2D, scene: SceneView, left: number, top: number, time: number): void {
     for (const player of scene.players) {
       const x = Math.round(player.x) - left;
       const under = Math.round(player.y) - top - this.heightOf(player.id) - SEARCH_TAG_HEIGHT;
@@ -267,6 +271,11 @@ export class OverlayRenderer {
       if (player.search > 0) drawBar(ctx, x - SEARCH_BAR_WIDTH / 2, y, SEARCH_BAR_WIDTH, player.search, BONE);
       else if (prompted) drawOutlinedText(ctx, `${scene.touch ? 'SEARCH' : 'HOLD E'}: ${CONTAINER_LABEL[scene.searchable.kind]}`, x, y, AMBER);
       else if (atStation) drawOutlinedText(ctx, stationPrompt(scene.station, Boolean(scene.touch), this.payFrom(scene)), x, y, AMBER);
+      if (!isLocal) continue;
+      const call = ammoPrompt(player, { touch: Boolean(scene.touch), atHome: scene.merchants !== undefined, time });
+      if (!call?.lit) continue;
+      const lineTaken = player.search > 0 || prompted || atStation;
+      drawOutlinedText(ctx, call.text, x, lineTaken ? y - FONT_HEIGHT - 3 : y, hitPalette().danger);
     }
   }
 
@@ -351,7 +360,7 @@ export class OverlayRenderer {
       this.drawStamina(ctx, player, player.id === scene.localId, left, top, time);
     }
     this.drawQuestMarks(ctx, scene, left, top);
-    this.drawSearch(ctx, scene, left, top);
+    this.drawSearch(ctx, scene, left, top, time);
     this.drawPointers(ctx, scene, left, top, viewW, viewH);
     const exitShown = scene.exit !== null && scene.phase !== 'gameover';
     if (exitShown) this.drawExit(ctx, scene.exit, left, top, viewW, viewH);

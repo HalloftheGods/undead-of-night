@@ -9,6 +9,7 @@ const SCENES: readonly Scene[] = ['menu', 'intermission', 'wave', 'gameover', 'v
 
 class FakeElement {
   currentTime = 0;
+  duration = 180;
   paused = true;
   preload = '';
   refuses = false;

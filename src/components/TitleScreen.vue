@@ -1,9 +1,11 @@
 <template>
-  <section v-if="nav.page === null" class="px-screen px-title-scale title">
-    <SpriteImg v-if="ui.art" class="title-logo" :sprite="ui.art.ui.logo" />
-    <h1 v-else class="px-heading">UNDEAD OF NIGHT: LAST ROUND</h1>
+  <section v-if="nav.page === null" class="px-screen px-title-scale title" :class="{ 'is-revealed': !splashing }">
+    <div class="title-hero">
+      <SpriteImg v-if="ui.art" class="title-logo" :sprite="ui.art.ui.logo" />
+      <h1 v-else class="px-heading">UNDEAD OF NIGHT: LAST ROUND</h1>
+    </div>
 
-    <PressAnyKey v-if="asking" :touch="ui.touch" :splashing @wake="answer" />
+    <PressAnyKey v-if="asking" class="title-press" :touch="ui.touch" :splashing @wake="answer" />
     <div v-else class="title-columns" :class="{ 'title-arrive': arrived }">
       <TitleMenu v-model="selected" v-model:section="section" :entries="TITLE_MENU" @open="openItem" />
       <InstallCartridge />
@@ -27,6 +29,7 @@
   <RecordsPage v-else-if="nav.page === 'records'" :ui @close="close" />
   <ChangelogPage v-else-if="nav.page === 'changelog'" :version="APP_VERSION" @close="close" />
   <SoundTestPage v-else-if="nav.page === 'sound'" @close="close" />
+  <RadioPage v-else-if="nav.page === 'radio'" :ui @close="close" />
   <OptionsPage v-else :ui @close="close" />
 </template>
 
@@ -43,7 +46,7 @@ import { TITLE_MENU } from '../game/title-menu.ts';
 import type { MenuGroup, TitleMenuItem } from '../game/title-menu.ts';
 import { closePage, closePlay, INVITE_LANDING, openPage, pickLevel, TITLE_HOME } from '../game/title-nav.ts';
 import InstallCartridge from './InstallCartridge.vue';
-import { ChangelogPage, DailyPage, HowToPlay, LevelsPage, RecordsPage, SoundTestPage, TownGuidePage } from './lazy-pages.ts';
+import { ChangelogPage, DailyPage, HowToPlay, LevelsPage, RadioPage, RecordsPage, SoundTestPage, TownGuidePage } from './lazy-pages.ts';
 import MenuLink from './MenuLink.vue';
 import OptionsPage from './OptionsPage.vue';
 import PlaySetup from './PlaySetup.vue';
@@ -108,6 +111,13 @@ function openItem(item: TitleMenuItem): void {
   gap: calc(var(--u) * 10);
   padding-bottom: calc(var(--u) * 20);
   background: radial-gradient(ellipse at center, rgba(7, 8, 12, 0.5), rgba(7, 8, 12, 0.08));
+  overflow: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.title::-webkit-scrollbar {
+  display: none;
 }
 
 .title-logo {
@@ -197,5 +207,78 @@ function openItem(item: TitleMenuItem): void {
 .title-omega {
   width: calc(var(--u) * 7);
   height: auto;
+}
+
+/* Cinematic Title Entrance (Trenchess-style lockup intro) */
+.title-hero {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-width: 100%;
+}
+
+.is-revealed .title-hero {
+  animation: title-drop 0.85s cubic-bezier(0.18, 0.95, 0.28, 1.15) both;
+}
+
+.is-revealed .title-press,
+.is-revealed .title-columns {
+  animation: title-slide-up 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.32s both;
+}
+
+.is-revealed .title-foot {
+  animation: title-fade-up 0.5s ease-out 0.6s both;
+}
+
+.is-revealed .title-version {
+  animation: title-fade-up 0.5s ease-out 0.7s both;
+}
+
+@keyframes title-drop {
+  0% {
+    opacity: 0;
+    transform: translateY(calc(var(--u) * -24)) scale(0.92);
+    filter: drop-shadow(0 0 24px rgba(220, 38, 38, 0.9)) brightness(1.6);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(calc(var(--u) * 2)) scale(1.02);
+    filter: drop-shadow(0 0 16px rgba(220, 38, 38, 0.5)) brightness(1.15);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.9));
+  }
+}
+
+@keyframes title-slide-up {
+  0% {
+    opacity: 0;
+    transform: translateY(calc(var(--u) * 12));
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes title-fade-up {
+  0% {
+    opacity: 0;
+    transform: translateY(calc(var(--u) * 4));
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+:root[data-motion='reduced'] .is-revealed .title-hero,
+:root[data-motion='reduced'] .is-revealed .title-press,
+:root[data-motion='reduced'] .is-revealed .title-columns,
+:root[data-motion='reduced'] .is-revealed .title-foot,
+:root[data-motion='reduced'] .is-revealed .title-version {
+  animation: none !important;
 }
 </style>
