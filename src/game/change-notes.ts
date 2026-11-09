@@ -28,8 +28,8 @@ export const CHANGE_NOTES: readonly ChangeNote[] = [
     title: 'Schools and hospitals',
     deck: 'The two biggest buildings in town, and nearly every town has both.',
     points: [
-      'The hospital stands Downtown: wards along the back, an emergency bay out front, and a medkit there every time. It is the best-guarded building in town.',
-      'The school sits out in Riverside: classrooms, a library and a long hall of lockers. Most of them are empty, but it hides more candy than any shop.',
+      'The hospital usually stands Downtown: wards along the back, an emergency bay out front, and a medkit there every time. It is the best-guarded building in town.',
+      'The school usually sits out in Riverside: classrooms, a library and a long hall of lockers. Most of them are empty, but it hides more candy than any shop.',
       'An ambulance waits outside the hospital, lights going. Both have back doors and look different on the Tab map. The Town Guide has a page for each.',
     ],
   },
