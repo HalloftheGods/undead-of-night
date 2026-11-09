@@ -146,6 +146,26 @@ describe('InputManager', () => {
     expect(ignored.preventDefault).not.toHaveBeenCalled();
   });
 
+  it('offers X to the candy bag, with the game keys on or off, and sends the candy picked there', () => {
+    const onBag = vi.fn(() => true);
+    const bagged = new InputManager({ ...noop, onBag });
+    bagged.setEnabled(true);
+    const opened = key('KeyX');
+    browser.dispatch('keydown', opened);
+    expect(onBag).toHaveBeenCalledTimes(1);
+    expect(opened.preventDefault).toHaveBeenCalled();
+    expect(bagged.sample(1, 0, null).eat).toBeUndefined();
+    bagged.setEnabled(false);
+    browser.dispatch('keydown', key('KeyX'));
+    expect(onBag).toHaveBeenCalledTimes(2);
+    browser.dispatch('keydown', key('KeyX', { repeat: true }));
+    expect(onBag).toHaveBeenCalledTimes(2);
+    bagged.pickCandy('ghost_gum');
+    expect(bagged.sample(2, 0, null).eat).toBe('ghost_gum');
+    expect(bagged.sample(3, 0, null).eat).toBeUndefined();
+    bagged.dispose();
+  });
+
   it('still closes the map with the game keys turned off', () => {
     const onMap = vi.fn(() => true);
     const mapped = new InputManager({ ...noop, onMap });

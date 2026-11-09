@@ -3,7 +3,7 @@ import type { ShallowRef } from 'vue';
 import { capCallsign } from '../../shared/callsign.ts';
 import type { EmoteId } from '../../shared/emotes.ts';
 import type { GameStyle } from '../../shared/game-style.ts';
-import type { WorldMap } from '../../shared/protocol.ts';
+import type { CandyId, WorldMap } from '../../shared/protocol.ts';
 import { generateWorldMap } from '../../shared/world-map.ts';
 import { buildArtBook } from '../art/index.ts';
 import { AudioEngine } from '../audio/audio-engine.ts';
@@ -11,6 +11,7 @@ import { EMPTY_SCENE } from '../engine/scene.ts';
 import { WorldRenderer } from '../engine/world-renderer.ts';
 import { LocalSession } from '../network/local-session.ts';
 import { BenchLink } from './bench-link.ts';
+import { CandyBagPanel } from './candy-bag-panel.ts';
 import { todaysNight } from './daily-night.ts';
 import { HomeLink } from './home-link.ts';
 import type { HomeLinkHost } from './home-link.ts';
@@ -61,6 +62,7 @@ export class GameController {
   readonly audio = new AudioEngine();
   private readonly inputs: InputSender;
   private readonly runHud: RunHud;
+  private readonly bag: CandyBagPanel;
   private readonly stage: RunStage;
   private readonly run: RunState = newRunState();
   private readonly session: RunSession;
@@ -114,12 +116,23 @@ export class GameController {
       onMute: () => this.toggleMute(),
       onConfirm: () => this.confirm(),
       onMap: () => this.toggleMap(),
+      onBag: () => this.bag.toggle(),
       onBackpack: () => this.toggleBackpack(),
       mapUsable: () => this.canUseMap(),
       onLog: () => this.toggleLog(),
       onTouchSeen: () => { this.publish({ touch: true }); this.onResize(); },
     });
     this.inputs = new InputSender(this.input);
+    this.bag = new CandyBagPanel({
+      ui: () => this.ui.value,
+      publish: (patch) => this.publish(patch),
+      canOpen: () => this.canUseMap(),
+      holdRun: (held) => this.holdRun(held),
+      closeBackpack: () => this.closeBackpack(),
+      input: this.input,
+      sendNow: () => this.sendNeutralInput(),
+      transport: () => this.run.transport,
+    });
     this.bench = new BenchLink({
       transport: () => this.run.transport,
       menuUp: () => this.isMenuUp(),
@@ -226,7 +239,7 @@ export class GameController {
   }
 
   private isMenuUp(): boolean {
-    return this.ui.value.paused || this.ui.value.mapOpen;
+    return this.ui.value.paused || this.ui.value.mapOpen || this.ui.value.bagOpen;
   }
 
   // --- Commands from the menus ---------------------------------------------
@@ -360,12 +373,13 @@ export class GameController {
     this.publish({ paused });
   }
 
-  /** Esc shuts the log, or else the map, before it reaches the pause menu. True if either was open. */
+  /** Esc shuts the log, or else the map or the candy bag, before it reaches the pause menu. True if one was open. */
   private shutOverlay(): boolean {
-    const { logOpen, mapOpen } = this.ui.value;
+    const { logOpen, mapOpen, bagOpen } = this.ui.value;
     if (logOpen) this.publish({ logOpen: false });
     else if (mapOpen) this.toggleMap();
-    return logOpen || mapOpen;
+    else if (bagOpen) this.bag.close();
+    return logOpen || mapOpen || bagOpen;
   }
 
   /** An icon over this survivor for the team; the wheel is only offered in co-op. */
@@ -381,10 +395,22 @@ export class GameController {
   toggleMap(): boolean {
     if (!this.canUseMap()) return false;
     const mapOpen = !this.ui.value.mapOpen;
-    this.holdRun(mapOpen);
+    // From the candy bag the map takes its place, and the run is held already.
+    const fromBag = this.ui.value.bagOpen;
+    if (!fromBag) this.holdRun(mapOpen);
     this.closeBackpack();
-    this.publish({ mapOpen });
+    this.publish({ mapOpen, bagOpen: false });
     return true;
+  }
+
+  /** X, or the candy in the backpack ring. */
+  toggleBag(): boolean {
+    return this.bag.toggle();
+  }
+
+  /** A candy picked out of the open bag. */
+  eatCandy(id: CandyId): void {
+    this.bag.eat(id);
   }
 
   /**
@@ -423,7 +449,7 @@ export class GameController {
 
   /** The run's full log, over the run, which keeps going. Not behind a menu or the map. */
   toggleLog(): boolean {
-    const free = this.isPlaying() && !this.ui.value.paused && !this.ui.value.mapOpen;
+    const free = this.isPlaying() && !this.isMenuUp();
     return free && this.runHud.toggleLog();
   }
 

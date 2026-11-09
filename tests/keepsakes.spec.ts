@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { candyCarry, takeCandy } from '../shared/candy.ts';
+import { CANDY_SEC, candySeconds } from '../shared/candy.ts';
 import { WEAPONS } from '../shared/constants.ts';
 import { ammoCapOf, KEEPSAKE_ORDER, offerDue, offerFor, OFFER_SIZE } from '../shared/keepsakes.ts';
 import { hurtPlayer } from '../shared/player-health.ts';
@@ -47,14 +47,13 @@ describe('keepsakes', () => {
     expect(eventsOf(sim.snapshot(), 'keepsake_taken')).toEqual([{ type: 'keepsake_taken', playerId: 'a', keepsake: offer[1] }]);
   });
 
-  it('carries more ammo with a Bandolier and a third candy with the bag', () => {
+  it('carries more ammo with a Bandolier, and candy lasts half as long again with the bag', () => {
     const { state } = quietSim();
     const [p] = state.players;
     expect(ammoCapOf(p, 'pistol')).toBe(WEAPONS.pistol.reserveCap);
     p.keepsakes = ['bandolier', 'treat_bag'];
     expect(ammoCapOf(p, 'pistol')).toBeGreaterThan(WEAPONS.pistol.reserveCap);
-    expect(candyCarry(p)).toBe(3);
-    for (let i = 0; i < 3; i++) expect(takeCandy(p, 'ghost_gum')).toBe('ghost_gum');
+    expect(candySeconds('ghost_gum', p)).toBeCloseTo(CANDY_SEC * 1.5);
   });
 
   it('bleeds out slower with a Rosary', () => {
@@ -70,6 +69,10 @@ describe('keepsakes', () => {
     const base = input({ seq: 1 });
     const packet = parseClientPacket(JSON.stringify({ type: 'input', input: { ...base, eat: true, keepsake: 'rosary' } }));
     expect(packet).toMatchObject({ type: 'input', input: { eat: true, keepsake: 'rosary' } });
+    const picked = parseClientPacket(JSON.stringify({ type: 'input', input: { ...base, eat: 'jawbreaker' } }));
+    expect(picked).toMatchObject({ type: 'input', input: { eat: 'jawbreaker' } });
+    const madeCandy = parseClientPacket(JSON.stringify({ type: 'input', input: { ...base, eat: 'toffee' } }));
+    expect(madeCandy && 'input' in madeCandy ? madeCandy.input.eat : 'missing').toBeUndefined();
     const made = parseClientPacket(JSON.stringify({ type: 'input', input: { ...base, keepsake: 'horseshoe' } }));
     expect(made && 'input' in made ? made.input.keepsake : 'missing').toBeUndefined();
   });

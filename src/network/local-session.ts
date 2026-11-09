@@ -84,6 +84,12 @@ export class LocalSession implements GameTransport {
     }, ms);
   }
 
+  stepHeld(): void {
+    const isRunning = !this.paused;
+    if (isRunning) return;
+    this.tick();
+  }
+
   disconnect(): void {
     if (this.holdTimer) clearTimeout(this.holdTimer);
     this.holdTimer = null;

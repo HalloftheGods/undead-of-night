@@ -1,17 +1,18 @@
-// Halloween candy: short boosts found in town. Each lasts about a horde, a survivor carries two at most,
-// and a candy already working cannot be eaten again until it wears off, so boosts never stack.
+// Halloween candy: short boosts found in town. Each lasts about a horde. The bag has no bottom, so a
+// night is as much trick-or-treating as shooting, and the survivor picks which candy to eat out of it.
+// Eating one that is already working adds its time to the boost: the boost lasts longer, never grows stronger.
 // Where it is hidden comes off the town's seed on a generator of its own, so every other roll stays put
 // and a Daily Night hides the same candy in the same places for everyone.
 
 import { TICK_DT } from './constants.ts';
 import type { Container } from './containers.ts';
-import type { CandyId, EntityId } from './protocol.ts';
-import { hasKeepsake, TREAT_BAG_CANDY } from './keepsakes.ts';
+import type { CandyBag, CandyId, EntityId } from './protocol.ts';
+import { hasKeepsake, TREAT_BAG_TIME } from './keepsakes.ts';
 import { createRng, pickWeighted } from './rng.ts';
 import type { PlayerState, SimState } from './sim-state.ts';
 import { emit } from './sim-state.ts';
 
-export type { CandyId } from './protocol.ts';
+export type { CandyBag, CandyId } from './protocol.ts';
 
 export interface CandyDef {
   readonly id: CandyId;
@@ -41,8 +42,6 @@ export const CANDIES: Readonly<Record<CandyId, CandyDef>> = {
 
 export const CANDY_ORDER = Object.keys(CANDIES) as CandyId[];
 
-/** Most candy a survivor carries; the next one stays where it was. */
-export const CANDY_CARRY = 2;
 /** About a horde. */
 export const CANDY_SEC = 75;
 export const FULL_SIZE_SEC = 20;
@@ -88,7 +87,14 @@ const WEIGHTS: Partial<Record<CandyId, number>> = Object.fromEntries(CANDY_ORDER
 export interface SugarState {
   readonly id: CandyId;
   left: number;
+  /** Seconds it had when last eaten, stacked time and all. */
+  total: number;
 }
+
+/** Most picks one survivor can have waiting for the next tick: a client cannot queue up a flood. */
+const EAT_QUEUE_MAX = 8;
+
+export const isCandyId = (value: unknown): value is CandyId => typeof value === 'string' && Object.hasOwn(CANDIES, value);
 
 /** The candy a container hides, if any. Cars never hold candy; a bowl by a door always does. */
 export function candyIn(seed: number, container: Container): CandyId | null {
@@ -101,18 +107,19 @@ export function candyIn(seed: number, container: Container): CandyId | null {
   return found ? pickWeighted(rng, WEIGHTS) : null;
 }
 
-/** Two, or three with a Trick-or-Treat Bag. */
-export function candyCarry(p: Pick<PlayerState, 'keepsakes'>): number {
-  return hasKeepsake(p, 'treat_bag') ? TREAT_BAG_CANDY : CANDY_CARRY;
-}
-
-/** Into the bag if it has room. */
+/** Into the bag, which always has room. */
 export function takeCandy(p: PlayerState, candy: CandyId | null): CandyId | null {
-  const room = p.candy.length < candyCarry(p);
-  const taken = candy !== null && room;
-  if (!taken) return null;
+  const foundNone = candy === null;
+  if (foundNone) return null;
   p.candy.push(candy);
   return candy;
+}
+
+/** The bag counted by kind, in the order kinds are listed, for snapshots. */
+export function bagOf(candy: readonly CandyId[]): CandyBag {
+  const bag: CandyBag = {};
+  for (const id of candy) bag[id] = (bag[id] ?? 0) + 1;
+  return bag;
 }
 
 /** How strongly a candy works on this survivor now: 1 eaten, a half under a Full-Size Bar, 0 otherwise. */
@@ -137,28 +144,45 @@ export function candySpeed(p: Pick<PlayerState, 'sugar'>): number {
   return 1 + SPEED_BOOST * sugarOf(p, 'pumpkin_fizz');
 }
 
-/** The first candy in the bag that is not working already: eating one twice would only waste it. */
-function nextToEat(p: PlayerState): number {
-  return p.candy.findIndex((id) => !p.sugar.some((sugar) => sugar.id === id));
+/** A pick off the bag, from an input packet, waits for the next tick. */
+export function queueEat(p: PlayerState, pick: true | CandyId | undefined): void {
+  const hasRoom = pick !== undefined && p.eatQueued.length < EAT_QUEUE_MAX;
+  if (hasRoom) p.eatQueued.push(pick);
 }
 
-/** How long a candy works once eaten. */
-export function candySeconds(id: CandyId): number {
-  return id === 'full_size_bar' ? FULL_SIZE_SEC : CANDY_SEC;
+/** How long a candy works once eaten: a Trick-or-Treat Bag makes every one last half as long again. */
+export function candySeconds(id: CandyId, p?: Pick<PlayerState, 'keepsakes'>): number {
+  const base = id === 'full_size_bar' ? FULL_SIZE_SEC : CANDY_SEC;
+  const bagged = p !== undefined && hasKeepsake(p, 'treat_bag');
+  return bagged ? base * TREAT_BAG_TIME : base;
 }
 
-/** Once a tick: eats a candy if asked, and wears the rest down. */
+/** Eats one candy out of the bag, if it is there. A candy already working gets the new one's time on top. */
+function eat(sim: SimState, p: PlayerState, pick: true | CandyId): void {
+  const index = pick === true ? 0 : p.candy.indexOf(pick);
+  const notInBag = index < 0 || index >= p.candy.length;
+  if (notInBag) return;
+  const [id] = p.candy.splice(index, 1);
+  const seconds = candySeconds(id, p);
+  const working = p.sugar.find((sugar) => sugar.id === id);
+  if (working) {
+    working.left += seconds;
+    working.total = working.left;
+  } else {
+    p.sugar.push({ id, left: seconds, total: seconds });
+  }
+  emit(sim, { type: 'candy_eaten', playerId: p.id, candy: id, x: p.x, y: p.y, ...(working ? { stacked: true } : {}) });
+}
+
+/** Once a tick: eats whatever was picked out of the bag, and wears the rest down. */
 export function updateCandy(sim: SimState, p: PlayerState): void {
-  const wantsToEat = p.eatQueued;
-  p.eatQueued = false;
+  const picks = p.eatQueued;
+  p.eatQueued = [];
   for (const sugar of p.sugar) sugar.left -= TICK_DT;
   p.sugar = p.sugar.filter((sugar) => sugar.left > 1e-9);
-  const index = wantsToEat && p.status === 'alive' ? nextToEat(p) : -1;
-  const hasNothingToEat = index < 0;
-  if (hasNothingToEat) return;
-  const [id] = p.candy.splice(index, 1);
-  p.sugar.push({ id, left: candySeconds(id) });
-  emit(sim, { type: 'candy_eaten', playerId: p.id, candy: id, x: p.x, y: p.y });
+  const canEat = p.status === 'alive';
+  if (!canEat) return;
+  for (const pick of picks) eat(sim, p, pick);
 }
 
 /** A Caramel Apple catches a survivor about to go down, and is spent doing it. True if it did. */

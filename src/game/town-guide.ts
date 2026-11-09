@@ -278,6 +278,7 @@ export const GUIDE_TIPS: readonly string[] = [
   `Any search can turn up an empty bottle, about ${Math.round(BOTTLE_FIND_CHANCE * 100)} times in 100, even when there is nothing else.`,
   `About one car in ${Math.round(1 / CAR_ALARM_CHANCE)} sets its alarm off when searched. Everything nearby hears it.`,
   'Gun parts, round kits and Radios are few to a town. When one turns up, take it.',
+  'Your candy bag has no bottom: empty every bowl. X opens it to pick a candy, and eating one already working makes it last longer.',
 ];
 
 export type GuideLeaf =

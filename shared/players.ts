@@ -15,7 +15,7 @@ import { stepMovement } from './movement.ts';
 import { useMedkit } from './player-health.ts';
 import { updateThrow } from './bottles.ts';
 import { updateThrowables } from './throwables.ts';
-import { candySpeed, sugarOf, updateCandy } from './candy.ts';
+import { candySpeed, queueEat, sugarOf, updateCandy } from './candy.ts';
 import { takeKeepsake } from './keepsakes.ts';
 import { isBunkerMap } from './home-protocol.ts';
 import { gunsFree } from './overrun.ts';
@@ -90,7 +90,7 @@ export function receiveInput(p: PlayerState, input: ClientInputPacket): void {
   p.throwQueued ||= input.throw === true;
   p.spinnerQueued ||= input.spinner === true;
   p.flareQueued ||= input.flare === true;
-  p.eatQueued ||= input.eat === true;
+  queueEat(p, input.eat);
   if (input.keepsake) p.keepsakeQueued = input.keepsake;
   p.searchHeld = input.search === true;
   p.stanceWanted = stanceOf(input);

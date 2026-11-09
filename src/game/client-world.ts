@@ -85,7 +85,7 @@ export class ClientWorld {
     const local = this.localPlayer;
     if (local) this.skin = local.skin;
     this.winded = local?.winded === true;
-    this.sugarSpeed = candySpeed({ sugar: (local?.sugar ?? []).map((sugar) => ({ ...sugar })) });
+    this.sugarSpeed = candySpeed({ sugar: (local?.sugar ?? []).map((sugar) => ({ ...sugar, total: sugar.total ?? sugar.left })) });
     this.refreshSpeed();
     const isPredictingLocal = local?.status === 'alive' && this.predicting;
     if (isPredictingLocal) {

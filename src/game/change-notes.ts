@@ -22,6 +22,19 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'candy-bag',
+    date: '2026-11-09',
+    kind: 'new',
+    title: 'The candy bag',
+    deck: 'Trick-or-treat as hard as you shoot: your bag has no bottom now.',
+    points: [
+      'Carry as much candy as you can find. No bowl is ever left behind.',
+      'Press X, or tap the candy in your backpack, to open your candy bag and pick one to eat.',
+      'Every candy has its own picture, its count and what it does.',
+      'Eat one that is already working and its time stacks: the boost lasts longer.',
+    ],
+  },
+  {
     id: 'map-art',
     date: '2026-11-09',
     kind: 'better',
@@ -102,7 +115,6 @@ export const CHANGE_NOTES: readonly ChangeNote[] = [
     points: [
       'Houses and apartments wear string lights, carved pumpkins and cobwebs.',
       'Every home has a candy bowl by its front door: search it for a candy.',
-      'A full bag leaves the bowl where it is for the next survivor.',
     ],
   },
   {

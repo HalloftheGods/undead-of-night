@@ -2,6 +2,7 @@
 
 import type { UiArt } from './types.ts';
 import { buildBottle, buildCandy, buildFlare, buildFireworks, buildCrosshair, buildCrosshairHead, buildHeart, buildPickupIcons, buildSilverIcon, buildSkull, buildTownMap, buildWeaponIcons, buildZombieHead } from './fx/icons.ts';
+import { buildCandyArt } from './fx/candies.ts';
 import { buildEmoteIcons } from './fx/emotes.ts';
 import { buildDifficultyCards } from './difficulty-cards.ts';
 import { buildLevelCards } from './level-cards.ts';
@@ -23,6 +24,7 @@ export function buildUi(): UiArt {
     fireworks: buildFireworks(),
     flare: buildFlare(),
     candy: buildCandy(),
+    candies: buildCandyArt(),
     townMap: buildTownMap(),
     skull: buildSkull(),
     zombieHead: buildZombieHead(),
