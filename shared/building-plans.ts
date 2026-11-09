@@ -22,9 +22,9 @@ export const BACK_DOORS: Readonly<Partial<Record<BuildingKind, number>>> = {
   house: 80,
   apartment: 80,
   clinic: 48,
-  // Out the back of the hospital's supply room, and of the school's east classroom.
-  hospital: 160,
-  school: 208,
+  // Out the back of the hospital's supply room, and of the school's gym.
+  hospital: 64,
+  school: 64,
   police: 128,
   garage: 64,
   warehouse: 160,
@@ -41,27 +41,54 @@ const APARTMENT_HALL: readonly Rect[] = [
   { x0: 96, y0: 80, x1: 102, y1: 90 },
 ];
 
+/** A wall along a corridor at `y`, solid over each span and open in the doorways between them. */
+function corridorWall(y: number, spans: readonly (readonly [number, number])[]): Rect[] {
+  return spans.map(([x0, x1]) => ({ x0, y0: y, x1, y1: y + T }));
+}
+
+/** Walls between rooms off a corridor, from `y0` to `y1`, at each `x`. */
+function roomWalls(xs: readonly number[], y0: number, y1: number): Rect[] {
+  return xs.map((x) => ({ x0: x, y0, x1: x + T, y1 }));
+}
+
 /**
- * Two wards and a supply room along the back, opening onto the lobby that runs the width of the front.
- * The supply room's doorway lines up with the front door and the back, so a straight run goes right through.
+ * The hospital's ground floor: a corridor from the stairs at the west end to the east wall. Along the
+ * back, the supply room (out the back door), the operating room and two exam rooms. Along the front,
+ * imaging, the lobby with reception straight in from the front door, and the emergency bay.
  */
-const HOSPITAL_WINGS: readonly Rect[] = [
-  { x0: T, y0: 96, x1: 48, y1: 96 + T },
-  { x0: 80, y0: 96, x1: 144, y1: 96 + T },
-  { x0: 176, y0: 96, x1: 240, y1: 96 + T },
-  { x0: 272, y0: 96, x1: 314, y1: 96 + T },
-  { x0: 106, y0: T, x1: 106 + T, y1: 96 },
-  { x0: 208, y0: T, x1: 208 + T, y1: 96 },
+const HOSPITAL_FLOOR: readonly Rect[] = [
+  ...corridorWall(74, [[T, 64], [96, 144], [176, 224], [256, 272], [304, 314]]),
+  ...roomWalls([106, 208, 256], T, 74),
+  ...corridorWall(128, [[T, 48], [80, 144], [176, 240], [272, 314]]),
+  ...roomWalls([96, 218], 134, 186),
 ];
 
-/** Two classrooms and the library between them along the back, all opening onto the hall along the front. */
-const SCHOOL_WINGS: readonly Rect[] = [
-  { x0: T, y0: 90, x1: 32, y1: 90 + T },
-  { x0: 64, y0: 90, x1: 128, y1: 90 + T },
-  { x0: 160, y0: 90, x1: 224, y1: 90 + T },
-  { x0: 256, y0: 90, x1: 282, y1: 90 + T },
-  { x0: 96, y0: T, x1: 96 + T, y1: 90 },
-  { x0: 186, y0: T, x1: 186 + T, y1: 90 },
+/** The wards upstairs: four patient rooms each side of the same corridor. */
+const HOSPITAL_WARDS: readonly Rect[] = [
+  ...corridorWall(74, [[T, 32], [64, 112], [144, 192], [224, 272], [304, 314]]),
+  ...roomWalls([80, 160, 240], T, 74),
+  ...corridorWall(128, [[T, 32], [64, 112], [144, 192], [224, 272], [304, 314]]),
+  ...roomWalls([80, 160, 240], 134, 186),
+];
+
+/**
+ * The school's ground floor: the main hall runs the width of it, lined with lockers. The gym (out the
+ * back door) and two classrooms open off the back of it; the office, the entrance lobby from the front
+ * door and the cafeteria off the front.
+ */
+const SCHOOL_FLOOR: readonly Rect[] = [
+  ...corridorWall(58, [[T, 96], [128, 160], [192, 224], [256, 282]]),
+  ...roomWalls([138, 208], T, 58),
+  ...corridorWall(112, [[T, 64], [96, 128], [160, 176], [208, 282]]),
+  ...roomWalls([112, 170], 118, 170),
+];
+
+/** Upstairs, the same hall: two classrooms and the science lab along the back, the library and a classroom along the front. */
+const SCHOOL_UPSTAIRS: readonly Rect[] = [
+  ...corridorWall(58, [[T, 32], [64, 128], [160, 224], [256, 282]]),
+  ...roomWalls([96, 186], T, 58),
+  ...corridorWall(112, [[T, 64], [96, 192], [224, 282]]),
+  ...roomWalls([138], 118, 170),
 ];
 
 /**
@@ -75,8 +102,10 @@ export const PARTITIONS: Readonly<Partial<Record<BuildingKind, readonly Rect[]>>
   // A hall from the front door to the back, with a room on each side through a doorway.
   apartment: APARTMENT_HALL,
   apartment_upstairs: APARTMENT_HALL,
-  hospital: HOSPITAL_WINGS,
-  school: SCHOOL_WINGS,
+  hospital: HOSPITAL_FLOOR,
+  hospital_upstairs: HOSPITAL_WARDS,
+  school: SCHOOL_FLOOR,
+  school_upstairs: SCHOOL_UPSTAIRS,
 };
 
 /** The opening in the north wall, in the world, or null for a building without one. */

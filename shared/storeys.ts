@@ -4,7 +4,7 @@
 // and the dark between the floors is solid, so nothing crosses it but by the stairs.
 
 import type { Point } from './flow-field.ts';
-import { TILE_SIZE } from './protocol.ts';
+import { BUILDING_DEFS, TILE_SIZE } from './protocol.ts';
 import type { BuildingInstance, BuildingKind, WorldMap } from './protocol.ts';
 import { createRng } from './rng.ts';
 
@@ -16,7 +16,7 @@ interface Rect {
   readonly y1: number;
 }
 
-export type StoreyKind = 'upstairs' | 'cellar' | 'apartment_upstairs';
+export type StoreyKind = 'upstairs' | 'cellar' | 'apartment_upstairs' | 'hospital_upstairs' | 'school_upstairs';
 
 /** Its own generator, so the town and the run roll exactly as they did before there were floors. */
 const STOREY_SALT = 0x53545259;
@@ -24,9 +24,10 @@ export const UPSTAIRS_ODDS = 0.3;
 export const CELLAR_ODDS = 0.2;
 /** Dark kept between the town's south fence and the first floor, so nothing in town is drawn or heard there. */
 export const ANNEX_GAP_TILES = 6;
-/** The largest floor, an apartment's, is 10 by 8 tiles: each floor gets a cell with three tiles of dark around it. */
+/** Each floor gets a cell with three tiles of dark around it, at least the size an apartment's floor needs. */
 const CELL_COLS = 13;
 const CELL_ROWS = 11;
+const CELL_DARK_TILES = 3;
 const ANNEX_MARGIN_TILES = 2;
 
 /**
@@ -37,20 +38,30 @@ const ANNEX_MARGIN_TILES = 2;
 const HOUSE_STAIRS = { col: 1, row: 1 } as const;
 /** In an apartment block, the lobby's east end, below the east flat's doorway. */
 const APARTMENT_STAIRS = { col: 7, row: 5 } as const;
+/** In the hospital, the west end of the main corridor, past the nurses' station. */
+const HOSPITAL_STAIRS = { col: 1, row: 6 } as const;
+/** In the school, the east end of the main hall. */
+const SCHOOL_STAIRS = { col: 16, row: 5 } as const;
 export const STAIRS: Readonly<Partial<Record<BuildingKind, { readonly col: number; readonly row: number }>>> = {
   house: HOUSE_STAIRS,
   upstairs: HOUSE_STAIRS,
   cellar: HOUSE_STAIRS,
   apartment: APARTMENT_STAIRS,
   apartment_upstairs: APARTMENT_STAIRS,
+  hospital: HOSPITAL_STAIRS,
+  hospital_upstairs: HOSPITAL_STAIRS,
+  school: SCHOOL_STAIRS,
+  school_upstairs: SCHOOL_STAIRS,
 };
 
 export function isStorey(building: BuildingInstance): boolean {
   return building.of !== undefined;
 }
 
+const STOREY_KINDS: ReadonlySet<BuildingKind> = new Set<StoreyKind>(['upstairs', 'cellar', 'apartment_upstairs', 'hospital_upstairs', 'school_upstairs']);
+
 export function isStoreyKind(kind: BuildingKind): boolean {
-  return kind === 'upstairs' || kind === 'cellar' || kind === 'apartment_upstairs';
+  return STOREY_KINDS.has(kind);
 }
 
 /** The ids of every building with a flight of stairs in it: each floor, and each house a floor belongs to. */
@@ -82,9 +93,12 @@ export interface StoreyPlan {
   readonly rows: number;
 }
 
-function apartmentStorey(building: BuildingInstance): StoreyKind | null {
-  return building.kind === 'apartment' ? 'apartment_upstairs' : null;
-}
+/** The buildings that always have a second floor. */
+const ALWAYS_UPSTAIRS: Partial<Record<BuildingKind, StoreyKind>> = {
+  apartment: 'apartment_upstairs',
+  hospital: 'hospital_upstairs',
+  school: 'school_upstairs',
+};
 
 function storeyKind(roll: number): StoreyKind | null {
   const goesUpstairs = roll < UPSTAIRS_ODDS;
@@ -92,23 +106,43 @@ function storeyKind(roll: number): StoreyKind | null {
   return roll < UPSTAIRS_ODDS + CELLAR_ODDS ? 'cellar' : null;
 }
 
+/** Which buildings get a floor above or below. */
+function storeysOf(seed: number, buildings: readonly BuildingInstance[]): { house: BuildingInstance; kind: StoreyKind }[] {
+  const rng = createRng(seed ^ STOREY_SALT);
+  const found: { house: BuildingInstance; kind: StoreyKind }[] = [];
+  for (const house of buildings) {
+    // Every apartment block, hospital and school has a second floor. A house rolls for one, and nothing else does.
+    const isHouse = house.kind === 'house';
+    const kind = isHouse ? storeyKind(rng()) : ALWAYS_UPSTAIRS[house.kind] ?? null;
+    if (kind) found.push({ house, kind });
+  }
+  return found;
+}
+
 /** Which houses get a floor above or below, and where each floor lies in the strip under the town. */
 export function planStoreys(seed: number, buildings: readonly BuildingInstance[], cols: number, townRows: number): StoreyPlan {
-  const rng = createRng(seed ^ STOREY_SALT);
-  const perRow = Math.max(1, Math.floor((cols - ANNEX_MARGIN_TILES * 2) / CELL_COLS));
   const storeys: BuildingInstance[] = [];
-  for (const house of buildings) {
-    // Every apartment block has a second floor. A house rolls for one, and nothing else does.
-    const isHouse = house.kind === 'house';
-    const kind = isHouse ? storeyKind(rng()) : apartmentStorey(house);
-    if (!kind) continue;
-    const slot = storeys.length;
-    const col = ANNEX_MARGIN_TILES + (slot % perRow) * CELL_COLS + 1;
-    const row = townRows + ANNEX_GAP_TILES + Math.floor(slot / perRow) * CELL_ROWS + 1;
-    storeys.push({ id: `${house.id}${kind === 'cellar' ? 'c' : 'u'}`, kind, x: col * TILE_SIZE, y: row * TILE_SIZE, variant: house.variant, of: house.id });
+  const right = cols - ANNEX_MARGIN_TILES;
+  // Cells go along a band left to right, and a new band starts below when one will not fit.
+  let col = ANNEX_MARGIN_TILES;
+  let bandTop = townRows + ANNEX_GAP_TILES;
+  let bandRows = 0;
+  for (const { house, kind } of storeysOf(seed, buildings)) {
+    const def = BUILDING_DEFS[kind];
+    const cellCols = Math.max(CELL_COLS, def.w / TILE_SIZE + CELL_DARK_TILES);
+    const cellRows = Math.max(CELL_ROWS, def.h / TILE_SIZE + CELL_DARK_TILES);
+    const bandIsFull = col > ANNEX_MARGIN_TILES && col + cellCols > right;
+    if (bandIsFull) {
+      bandTop += bandRows;
+      bandRows = 0;
+      col = ANNEX_MARGIN_TILES;
+    }
+    storeys.push({ id: `${house.id}${kind === 'cellar' ? 'c' : 'u'}`, kind, x: (col + 1) * TILE_SIZE, y: (bandTop + 1) * TILE_SIZE, variant: house.variant, of: house.id });
+    col += cellCols;
+    bandRows = Math.max(bandRows, cellRows);
   }
-  const bands = Math.ceil(storeys.length / perRow);
-  return { storeys, rows: bands === 0 ? 0 : ANNEX_GAP_TILES + bands * CELL_ROWS + 1 };
+  const used = bandTop + bandRows - townRows;
+  return { storeys, rows: storeys.length === 0 ? 0 : used + 1 };
 }
 
 /** One way up or down a flight of stairs. */
@@ -136,6 +170,8 @@ const FLIGHT_LABEL: Record<StoreyKind, { readonly there: string; readonly back: 
   upstairs: { there: 'UPSTAIRS', back: 'DOWNSTAIRS' },
   cellar: { there: 'CELLAR', back: 'UPSTAIRS' },
   apartment_upstairs: { there: 'UPSTAIRS', back: 'DOWNSTAIRS' },
+  hospital_upstairs: { there: 'UPSTAIRS', back: 'DOWNSTAIRS' },
+  school_upstairs: { there: 'UPSTAIRS', back: 'DOWNSTAIRS' },
 };
 
 const flightCache = new WeakMap<readonly BuildingInstance[], ReadonlyMap<number, Flight>>();

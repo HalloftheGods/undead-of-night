@@ -61,6 +61,9 @@ export const LOOT_RULES: Record<BuildingKind, LootRule> = {
   upstairs: { items: [0, 1], table: { bandage: 3, knife: 0.3 } },
   cellar: { items: [0, 2], table: { bandage: 2, medkit: 1, knife: 0.5 } },
   apartment_upstairs: { items: [0, 1], table: { bandage: 3, knife: 0.3 } },
+  // The wards keep their own first aid; the classrooms upstairs, a nurse's kit and a confiscated knife.
+  hospital_upstairs: { items: [1, 3], table: { bandage: 4, medkit: 2 } },
+  school_upstairs: { items: [0, 2], table: { bandage: 3, knife: 0.5 } },
 };
 
 const STOREY_LOOT_SALT = 0x55504457;

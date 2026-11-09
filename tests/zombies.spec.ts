@@ -194,7 +194,10 @@ describe('awareness', () => {
     p.weapon = weapon;
     const room = buildingBox(findBuilding(sim, 'warehouse'));
     p.x = room.x1 + noiseRadius - 40;
-    p.y = (room.y0 + room.y1) / 2;
+    // Level with the warehouse, on a row where nothing in town stands on the shooter's spot.
+    const rows = Array.from({ length: 9 }, (_, i) => room.y0 + 12 + ((room.y1 - room.y0 - 24) * i) / 8);
+    rows.sort((a, b) => Math.abs(a - (room.y0 + room.y1) / 2) - Math.abs(b - (room.y0 + room.y1) / 2));
+    p.y = rows.find((y) => !circleHitsSolid(state.map, p.x, y, 12)) ?? rows[0];
     const near = addRoamer(state, 'walker', room.x1 - 12, p.y);
     const far = addRoamer(state, 'walker', p.x + noiseRadius + 30, p.y);
     near.speed = 0;

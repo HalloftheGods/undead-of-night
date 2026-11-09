@@ -22,6 +22,18 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'big-buildings-upstairs',
+    date: '2026-11-09',
+    kind: 'better',
+    title: 'Hospitals and schools go upstairs',
+    deck: 'Both now have a second floor, and rooms laid out like the real thing.',
+    points: [
+      'The hospital has a corridor with a nurses\' station, an operating room, exam rooms, imaging, and reception off the lobby. The patient wards are upstairs.',
+      'The school has a long hall of lockers with the gym, classrooms, the office and the cafeteria off it. Upstairs there are more classrooms, a science lab and the library.',
+      'The stairs are at the end of the main corridor. Walk onto them to go up, and anything chasing you follows.',
+    ],
+  },
+  {
     id: 'fireworks-bus',
     date: '2026-11-09',
     kind: 'new',
@@ -464,31 +476,6 @@ export const CHANGE_NOTES: readonly ChangeNote[] = [
       'System follows your device, as before. Full plays every animation, the van ride too, whatever your device says.',
       'Reduced calms things down: no big flashes, still transitions, and only a nudge of shake.',
       'Screen shake goes from 0 to 100%, so you can keep the motion and lose the wobble.',
-    ],
-  },
-  {
-    id: 'readable-pickup-text',
-    date: '2026-11-07',
-    kind: 'better',
-    title: 'Pickup words you can read',
-    deck: 'The little words over your head no longer pile on top of each other.',
-    points: [
-      'Grab several things at once and each word gets its own line, newest at the bottom.',
-      'Grab the same thing twice and the numbers add up: two boxes of shells read +8 SHELLS.',
-      'Words hold still for a moment once they rise, then fade out instead of blinking away.',
-    ],
-  },
-  {
-    id: 'combat-feel',
-    date: '2026-11-07',
-    kind: 'better',
-    title: 'Fights hit harder',
-    deck: 'You can hear a brute coming, and a boss going down feels like it.',
-    points: [
-      'Brutes and bosses stomp as they walk, so you hear a big one before you see it.',
-      'Every gun reloads its own way: the pistol slide snaps, the carbine racks, the shotgun loads shell by shell.',
-      'When you are badly hurt the red at the edge of the screen beats with your heart, and the world goes muffled.',
-      'A boss kill freezes the moment with a flash and the biggest shake in the game. Reduced motion keeps it calm.',
     ],
   },
   ...EARLIER_NOTES,

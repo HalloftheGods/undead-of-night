@@ -133,6 +133,9 @@ export const BUILDING_DEFS = {
   cellar: { label: 'Cellar', w: 112, h: 96, doorX: 48, floor: 'floor_concrete' },
   // The second floor of an apartment block: two more flats off the same hall.
   apartment_upstairs: { label: 'Upstairs', w: 160, h: 128, doorX: 80, floor: 'floor_carpet' },
+  // The wards over the hospital and the classrooms over the school, the same size as the floor below.
+  hospital_upstairs: { label: 'Wards', w: 320, h: 192, doorX: 160, floor: 'floor_tile' },
+  school_upstairs: { label: 'Upstairs', w: 288, h: 176, doorX: 144, floor: 'floor_wood' },
 } as const;
 export type BuildingKind = keyof typeof BUILDING_DEFS;
 export const BUILDING_KINDS = Object.keys(BUILDING_DEFS) as BuildingKind[];

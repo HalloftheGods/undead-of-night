@@ -57,6 +57,8 @@ export const BUILDING_LOOK: Record<BuildingKind, BuildingLook> = {
   upstairs: { group: 'homes', roof: 'gable' },
   cellar: { group: 'homes', roof: 'gable' },
   apartment_upstairs: { group: 'homes', roof: 'flat' },
+  hospital_upstairs: { group: 'medical', roof: 'flat', extra: 'vents' },
+  school_upstairs: { group: 'school', roof: 'flat', extra: 'vents' },
 };
 
 const SHADOW = '#050609';
