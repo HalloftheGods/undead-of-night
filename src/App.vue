@@ -20,9 +20,10 @@
         <EmoteWheel :art="ui.art" :enabled="emotesOn" />
         <RoomInvite v-if="ui.onlineRoom && !ui.paused && ui.hud.teammates.length === 0" :room="ui.onlineRoom" :is-public="ui.onlinePublic" />
       </template>
-      <LevelCard v-if="ui.levelCard" :key="ui.levelCard.key" :card="ui.levelCard" />
-      <WaveBanner v-if="ui.banner" :key="ui.banner.key" :banner="ui.banner" />
-      <KillCallout v-if="ui.callout" :key="ui.callout.key" :callout="ui.callout" />
+      <!-- Banners step aside for any overlay (v-show, so a card does not replay when the overlay closes). -->
+      <LevelCard v-if="ui.levelCard" v-show="!overlayUp" :key="ui.levelCard.key" :card="ui.levelCard" />
+      <WaveBanner v-if="ui.banner" v-show="!overlayUp" :key="ui.banner.key" :banner="ui.banner" />
+      <KillCallout v-if="ui.callout" v-show="!overlayUp" :key="ui.callout.key" :callout="ui.callout" />
       <LogPanel v-if="ui.logOpen && ui.hud" :log="ui.log" />
       <WorkbenchScreen v-if="ui.hud?.bench && ui.art" :hud="ui.hud" :bench="ui.hud.bench" :art="ui.art" />
       <template v-if="ui.home">
@@ -108,6 +109,8 @@ const aiming = computed(() =>
     backpackOpen: ui.value.backpackOpen,
   })
 );
+/** The pause card, the town map and the candy bag each clear the level card and the banners off the screen. */
+const overlayUp = computed(() => ui.value.paused || ui.value.mapOpen || ui.value.bagOpen);
 /** The emote wheel is for a team, and only while the keys are the game's. */
 const emotesOn = computed(() => aiming.value && ui.value.mode === 'coop');
 

@@ -30,6 +30,18 @@
       </li>
     </ol>
 
+    <div v-else class="bag-empty px-frame" role="img" aria-label="An empty candy bag">
+      <svg class="bag-empty-art" viewBox="0 0 16 18" shape-rendering="crispEdges" aria-hidden="true">
+        <!-- A paper bag, slumped and flat, in the same dark and amber as the rest of the card. -->
+        <path d="M3 5h10v1H3z M2 6h12v10H2z" fill="#2b2d38" />
+        <path d="M3 5h10v1H3z M2 6h1v10H2z M13 6h1v10h-1z M2 15h12v1H2z" fill="#4a4d5e" />
+        <path d="M2 3h3v2H2z M6 4h4v1H6z M11 3h3v2h-3z" fill="#4a4d5e" />
+        <path d="M2 8h12v1H2z" fill="#e8a33d" opacity="0.55" />
+        <path d="M5 10h2v2H5z M9 10h2v2H9z" fill="#07080c" />
+        <path d="M6 13h4v1H6z" fill="#07080c" />
+      </svg>
+    </div>
+
     <div class="bag-info" aria-live="polite">
       <template v-if="featured">
         <p class="bag-info-name" :style="brandStyle(featured.id)"><span class="bag-brand">{{ featured.name }}</span></p>
@@ -44,7 +56,7 @@
         {{ waitNote }} <span class="keys-only">Click a candy or press its number to eat it. X to close.</span><span class="touch-only">Tap a candy to eat it.</span>
       </p>
     </div>
-    <MenuLink class="bag-close" @press="game.toggleBag()">Close</MenuLink>
+    <MenuLink ref="closeLink" class="bag-close" @press="game.toggleBag()">Close</MenuLink>
   </section>
 </template>
 
@@ -76,6 +88,8 @@ const { hud, art, mode } = defineProps<{ hud: HudState; art: ArtBook; mode: Tran
 
 const game = useGame();
 const cards = useTemplateRef<HTMLButtonElement[]>('cards');
+const closeLink = useTemplateRef<InstanceType<typeof MenuLink>>('closeLink');
+const closeButton = computed(() => closeLink.value?.$el as HTMLElement | undefined);
 const pointed = ref<CandyId | null>(null);
 const tall = ref(window.innerHeight > window.innerWidth);
 
@@ -132,7 +146,8 @@ onMounted(() => {
   window.addEventListener('keydown', onKey);
   window.addEventListener('resize', measure);
   // A pad or the arrow keys start on the first card.
-  void nextTick(() => cards.value?.[0]?.focus({ preventScroll: true }));
+  // With nothing in it, Close takes the focus so Enter or a pad's A shuts the bag.
+  void nextTick(() => (cards.value?.[0] ?? closeButton.value)?.focus({ preventScroll: true }));
 });
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKey);
@@ -308,6 +323,20 @@ onBeforeUnmount(() => {
 .bag-card:hover .bag-brand,
 .bag-card:focus-visible .bag-brand {
   transform: rotate(var(--brand-turn, 0deg)) skewX(var(--brand-lean, 0deg)) scale(1.06);
+}
+
+/* An empty bag drawn where the cards would be, framed like one so the screen keeps its shape. */
+.bag-empty {
+  --edge: var(--ink-line);
+  display: grid;
+  place-items: center;
+  padding: calc(var(--u) * 6);
+  background: var(--ink-raised);
+}
+
+.bag-empty-art {
+  width: min(calc(var(--u) * 56), 36vh, 40vw);
+  image-rendering: pixelated;
 }
 
 /* The pointed-at candy, told in a few centred lines. */

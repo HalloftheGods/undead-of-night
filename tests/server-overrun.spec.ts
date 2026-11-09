@@ -296,10 +296,16 @@ describe('the overrun over sockets', () => {
       expect(total).toBeGreaterThan(0);
       while (overrunOf(state).queue.length > 0) steps(sim, TICK_RATE);
       await waitFor(() => party.every((tab) => viewOf(tab)?.hostiles === total));
+      // Stepping the sim by hand builds no snapshot, so every event of the drain waits in sim.events for the
+      // next broadcast. That first frame is the test's own backlog, not what a live room sends (a snapshot
+      // empties the list, shared/snapshot-build.ts), so let one go by unmeasured and size the frames after it.
+      for (const tab of party) await tab.nextFrame();
       for (const tab of party) {
-        await tab.nextFrame();
-        const bytes = Buffer.byteLength(JSON.stringify(tab.client.lastSnapshot));
-        expect(bytes).toBeLessThan(MAX_BUFFERED_BYTES);
+        for (let frame = 0; frame < 5; frame++) {
+          await tab.nextFrame();
+          const bytes = Buffer.byteLength(JSON.stringify(tab.client.lastSnapshot));
+          expect(bytes).toBeLessThan(MAX_BUFFERED_BYTES);
+        }
       }
     });
   });
