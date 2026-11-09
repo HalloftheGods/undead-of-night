@@ -475,3 +475,14 @@ body {
 :root[data-motion='reduced'] .px-screen, :root[data-motion='reduced'] .px-page, :root[data-motion='reduced'] .px-blink {
   animation: none !important;
 }
+
+/*
+ * An overlay over the run (pause, candy bag, town map) takes the screen to itself: the level's title
+ * card, banners, kill callouts and the place name step out of sight while it is up, so nothing ghosts through it.
+ * They are hidden rather than cleared, so a card with time left on it is still there when the overlay shuts.
+ * The run log is left out: the run goes on beside it, and its banners are live news.
+ */
+.game-root:has(> .pause-screen, > .bag, > .px-screen.town) > :is(.level-card, .banner, .callout),
+.game-root:has(> .pause-screen, > .bag, > .px-screen.town) .hud-place {
+  visibility: hidden;
+}

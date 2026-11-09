@@ -5,6 +5,7 @@ import type { SnapshotPacket, WorldMap } from '../../shared/protocol.ts';
 import { generateWorldMap } from '../../shared/world-map.ts';
 import type { WorldRenderer } from '../engine/world-renderer.ts';
 import type { ClientWorld } from './client-world.ts';
+import { brightnessLift } from './display-prefs.ts';
 import type { RunHud } from './run-hud.ts';
 import { noteStageCut } from './stage-cut.ts';
 
@@ -46,10 +47,12 @@ export class RunStage {
     const home = isBunkerSeed(snapshot.mapSeed);
     if (home) {
       this.renderer()?.setTheme('bunker');
+      this.renderer()?.setBrightness(brightnessLift());
       this.hud.clearNotices();
       return;
     }
     this.renderer()?.setTheme(levelDef(snapshot.level).theme, nightEventFor(snapshot.mapSeed, snapshot.level)?.id ?? null);
+    this.renderer()?.setBrightness(brightnessLift());
     this.hud.showLevel(snapshot.level, nowMs, snapshot.mapSeed);
   }
 }

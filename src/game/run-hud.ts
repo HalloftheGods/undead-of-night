@@ -7,7 +7,7 @@ import type { ClientWorld } from './client-world.ts';
 import { homeUi } from './home-hud.ts';
 import { motion } from './motion.ts';
 import type { HomeFacts } from './home-hud.ts';
-import { buildHud } from './hud-state.ts';
+import { buildHud, standingInTown } from './hud-state.ts';
 import type { Banner, RunResult, UiState } from './hud-state.ts';
 import type { CalloutWords } from './kill-juice.ts';
 import { bannerLine, calloutLine, eventLine, EventLog, levelLines } from './event-log.ts';
@@ -20,6 +20,13 @@ import { foundTracks, isRadioFound, recordRadioFound } from './sound-unlock.ts';
 import { recordRun } from './storage.ts';
 import { dailyShare, dayLabel, recordDaily } from './daily-night.ts';
 import { TownMapView } from './town-map.ts';
+import { containerInReach } from '../../shared/containers.ts';
+import { BUNKER_LEVEL } from '../../shared/home-protocol.ts';
+import { levelDef } from '../../shared/levels.ts';
+import { BITE_MS, BiteTracker } from './bite-marker.ts';
+import { deathWitness } from './death-cause.ts';
+import { HintTracker } from './first-run-hints.ts';
+import type { HintFacts } from './first-run-hints.ts';
 
 const HUD_INTERVAL_MS = 100;
 /** How often a held map repaints: fast enough for a 1.5 Hz blink, and rarely when nothing blinks. */
@@ -44,6 +51,8 @@ export const NO_RUN_UI = {
   restarting: false,
   log: [],
   logOpen: false,
+  hint: null,
+  bite: null,
 } as const satisfies Partial<UiState>;
 
 /** 0..1 for the low-health effects. Anyone not on their feet has no use for them. */
@@ -110,6 +119,10 @@ export class RunHud {
   /** The streak kit's line for the run's first title card, and whether that card has gone up yet. */
   private streakLine: string | null = null;
   private streakShown = false;
+  private readonly hints = new HintTracker();
+  private readonly bites = new BiteTracker();
+  private map: WorldMap | null = null;
+  private biteUntilMs = 0;
 
   constructor(ui: () => UiState, publish: (patch: Partial<UiState>) => void, homeFacts: () => HomeFacts) {
     this.ui = ui;
@@ -119,12 +132,15 @@ export class RunHud {
 
   setMap(map: WorldMap): void {
     this.town = new TownMapView(map);
+    this.map = map;
   }
 
   /** A new run, on this map or the next. */
   reset(): void {
     this.streakShown = false;
     this.notices.reset();
+    this.bites.reset();
+    deathWitness.reset();
     this.log.reset();
     this.town?.clearVisited();
     this.town?.clearOpened();
@@ -179,11 +195,49 @@ export class RunHud {
 
   onEvent(event: GameEvent, now: number, ctx?: LogContext): void {
     tapGameEvent(event);
+    deathWitness.see(event, ctx?.localId ?? null, now);
     const track = isRadioFound(event) ? this.giveUpTrack() : null;
     const banner = hordeBanner(event) ?? overrunBanner(event) ?? radioBanner(event, track === null ? null : trackName(track));
     if (banner) this.say(banner, now);
     const line = ctx ? eventLine(event, ctx) : null;
     if (line) this.note(line, now);
+    this.noticeBite(event, now, ctx?.localId ?? null);
+  }
+
+  /** A bite from outside the player's facing: a short red mark on that edge of the screen. */
+  private noticeBite(event: GameEvent, now: number, localId: string | null): void {
+    const isAttack = event.type === 'zombie_attack';
+    const isLocalHurt = event.type === 'player_hurt' && localId !== null && event.playerId === localId;
+    if (!isAttack && !isLocalHurt) return;
+    const facing = this.lastScene?.players.find((player) => player.id === localId)?.angle ?? null;
+    const mark = isAttack ? this.bites.attacked(event.x, event.y, now, facing) : this.bites.hurtLocal(event.x, event.y, now, facing);
+    if (!mark) return;
+    this.biteUntilMs = now + BITE_MS;
+    this.publish({ bite: mark });
+  }
+
+  /** Puts a first-run hint up, or takes one down, from what the player is standing at. */
+  private stepHints(world: ClientWorld, scene: SceneView, ms: number): void {
+    const snapshot = world.latest;
+    const local = world.localPlayer;
+    const hud = this.ui().hud;
+    if (!snapshot || !local || !hud) return;
+    const ui = this.ui();
+    const free = standingInTown({ ...ui, hud }) && ui.levelCard === null && ui.banner === null;
+    const reach = this.map && free ? containerInReach(this.map, local.x, local.y, (id) => scene.openedContainers.includes(id)) : null;
+    const facts: HintFacts = {
+      level: hud.level,
+      phase: hud.phase,
+      wave: hud.wave,
+      intermission: hud.intermission,
+      hordes: hud.level === BUNKER_LEVEL ? 0 : levelDef(hud.level).hordes,
+      exitOpen: hud.exitOpen,
+      free,
+      near: reach === null ? null : reach.kind === 'bowl' ? 'bowl' : 'container',
+    };
+    const next = this.hints.step(facts, ms, (ui.hint ?? null) !== null);
+    if (next === null) return;
+    this.publish({ hint: next === 'clear' ? null : next });
   }
 
   /** Writes a line in the run's log, which outlasts every toast. */
@@ -286,6 +340,8 @@ export class RunHud {
       home: homeUi(snapshot, local, this.homeFacts()),
       signalWeak: frame.networked && ms - frame.lastSnapshotMs > SIGNAL_WEAK_MS,
       ...this.notices.expired(this.ui(), ms),
+      ...(this.ui().bite && ms > this.biteUntilMs ? { bite: null } : {}),
     });
+    this.stepHints(world, scene, ms);
   }
 }

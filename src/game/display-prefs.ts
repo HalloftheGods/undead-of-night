@@ -1,5 +1,6 @@
+import { readonly, ref } from 'vue';
 import { setHitPalette, type PaletteId } from '../engine/hit-palette.ts';
-import { readJson, writeJson, type Store } from './storage.ts';
+import { browserStore, readJson, writeJson, type Store } from './storage.ts';
 
 export type { PaletteId } from '../engine/hit-palette.ts';
 
@@ -37,7 +38,14 @@ export function loadDisplayPrefs(store: Store | null): DisplayPrefs {
 }
 
 export function saveDisplayPrefs(store: Store | null, prefs: DisplayPrefs): void {
-  writeJson(store, DISPLAY_KEY, prefs);
+  writeJson(store, DISPLAY_KEY, { ...savedDisplay(store), ...prefs });
+}
+
+/** Everything already in `outbreak.display`, so saving one setting never drops another. */
+function savedDisplay(store: Store | null): Record<string, unknown> {
+  const raw = readJson(store, DISPLAY_KEY);
+  const isObject = typeof raw === 'object' && raw !== null && !Array.isArray(raw);
+  return isObject ? (raw as Record<string, unknown>) : {};
 }
 
 /** Points the canvas and the CSS tokens at one palette. */
@@ -45,4 +53,46 @@ export function applyPalette(palette: PaletteId): void {
   setHitPalette(palette);
   const root = typeof document === 'undefined' ? null : document.documentElement;
   root?.setAttribute?.('data-palette', palette);
+}
+
+// --- Brightness ------------------------------------------------------------
+
+/** The slider's own scale: 0 is today's look, 1 the most it lifts. */
+export const DEFAULT_BRIGHTNESS = 0;
+/** How far the top of the slider lifts the lighting layer: about +40%, as the Nov 7 backlog (item 5) asks. */
+export const MAX_BRIGHTNESS_LIFT = 0.4;
+
+/** Any number to the slider's 0..1, and anything that is not a number to today's look. */
+export function clampBrightness(value: unknown): number {
+  const isNumber = typeof value === 'number' && Number.isFinite(value);
+  return isNumber ? Math.min(1, Math.max(0, value)) : DEFAULT_BRIGHTNESS;
+}
+
+/** The saved slider position, kept in `outbreak.display` beside the palette and UI size. */
+export function loadBrightness(store: Store | null): number {
+  return clampBrightness(savedDisplay(store).brightness);
+}
+
+export function saveBrightness(store: Store | null, value: number): void {
+  writeJson(store, DISPLAY_KEY, { ...savedDisplay(store), brightness: clampBrightness(value) });
+}
+
+const brightnessLevel = ref(loadBrightness(browserStore()));
+
+/** The slider position, live, for the Options page. */
+export const brightness = readonly(brightnessLevel);
+
+/** Moves the slider: takes effect on the next frame and is saved at once. */
+export function setBrightness(value: number, store: Store | null = browserStore()): void {
+  brightnessLevel.value = clampBrightness(value);
+  saveBrightness(store, brightnessLevel.value);
+}
+
+/**
+ * What the renderer reads, once a frame: how much to lift the lighting layer, from 0 (today's look) up to
+ * MAX_BRIGHTNESS_LIFT. A lit pixel at brightness b would draw at about b + (1 - b) * lift, so the darkest
+ * corners gain most and the lamps stay as they are.
+ */
+export function brightnessLift(): number {
+  return brightnessLevel.value * MAX_BRIGHTNESS_LIFT;
 }

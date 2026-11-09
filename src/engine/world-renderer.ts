@@ -11,7 +11,7 @@ import { FrameBudget } from './frame-budget.ts';
 import { FxDirector } from './fx-director.ts';
 import { GroundMotion } from './ground-motion.ts';
 import type { FxContext } from './fx-director.ts';
-import type { ScreenRect } from './light-field.ts';
+import type { Rgb, ScreenRect } from './light-field.ts';
 import { lampWorks } from './level-look.ts';
 import { flicker, Lighting } from './lighting.ts';
 import { OcclusionGrid } from './occlusion.ts';
@@ -66,6 +66,7 @@ export class WorldRenderer {
   private readonly emotes: EmoteOverlay;
   private readonly buildings: BuildingLayer;
   private readonly lighting = new Lighting();
+  private brightness = 0;
   private readonly atmosphere: Atmosphere;
   private readonly groundMotion: GroundMotion;
   private readonly fx: FxDirector;
@@ -176,8 +177,22 @@ export class WorldRenderer {
   setTheme(theme: LevelTheme, event: NightEventId | null = null): void {
     this.atmosphere.setTheme(theme, event);
     this.groundMotion.setTheme(theme);
+    this.applyLook();
+  }
+
+  /** The player's Brightness setting: 0 is the look the game was made with, up to 0.4 lifts the sky toward white. */
+  setBrightness(lift: number): void {
+    const isSame = lift === this.brightness;
+    if (isSame) return;
+    this.brightness = lift;
+    this.applyLook();
+  }
+
+  private applyLook(): void {
     const { ambient, ground } = this.atmosphere.look;
-    this.lighting.setAmbient(ambient);
+    const lift = (c: number): number => Math.round(c + (255 - c) * this.brightness);
+    const lifted: Rgb = this.brightness === 0 ? ambient : [lift(ambient[0]), lift(ambient[1]), lift(ambient[2])];
+    this.lighting.setAmbient(lifted);
     this.ground?.setTint(ground);
   }
 

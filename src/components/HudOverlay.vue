@@ -5,7 +5,7 @@
         <span class="hud-sub">{{ levelLine(hud.level) }}</span>
         <span class="hud-wave" :class="horde.loud ? 'is-threat' : 'is-quiet'">{{ horde.title }}</span>
         <span v-if="horde.detail" class="hud-sub is-threat">{{ horde.detail }}</span>
-        <span class="hud-sub" :class="{ 'is-van': hud.exitOpen }">{{ levelGoal(hud) }}</span>
+        <span class="hud-sub hud-goal" :class="{ 'is-van': hud.exitOpen }">{{ levelGoal(hud) }}</span>
       </div>
 
       <div v-if="home" class="hud-home">
@@ -62,31 +62,31 @@
         <div class="hud-chip hud-medkits" :class="{ 'is-none': hud.medkits === 0 }">
           <SpriteImg :sprite="art.ui.pickupIcons.medkit" />
           <span>{{ hud.medkits }}</span>
-          <span class="hud-slot-key keys-only">H</span>
+          <kbd v-if="glyph('KeyH')" class="hud-keycap keys-only">{{ glyph('KeyH') }}</kbd>
         </div>
         <div v-if="hud.bottles > 0" class="hud-chip hud-bottles">
           <SpriteImg :sprite="art.ui.bottle" />
           <span>{{ hud.bottles }}</span>
-          <span class="hud-slot-key keys-only">G</span>
+          <kbd v-if="glyph('KeyG')" class="hud-keycap keys-only">{{ glyph('KeyG') }}</kbd>
         </div>
         <div v-if="hud.fireworks > 0" class="hud-chip hud-bottles">
           <SpriteImg :sprite="art.ui.fireworks" />
           <span>{{ hud.fireworks }}</span>
-          <span class="hud-slot-key keys-only">T</span>
+          <kbd v-if="glyph('KeyT')" class="hud-keycap keys-only">{{ glyph('KeyT') }}</kbd>
         </div>
         <div v-if="hud.fountains > 0" class="hud-chip hud-bottles">
           <SpriteImg :sprite="art.ui.fountain" />
           <span>{{ hud.fountains }}</span>
-          <span class="hud-slot-key keys-only">V</span>
+          <kbd v-if="glyph('KeyV')" class="hud-keycap keys-only">{{ glyph('KeyV') }}</kbd>
         </div>
         <div v-if="hud.candyCount > 0" class="hud-chip hud-bottles hud-candy" :title="hud.bag.map((stack) => `${stack.name} x${stack.count}`).join(', ')">
           <span class="hud-candy-icon" aria-hidden="true" />
           <span>Candy {{ hud.candyCount }}</span>
-          <span class="hud-slot-key keys-only">X</span>
+          <kbd v-if="glyph('KeyX')" class="hud-keycap keys-only">{{ glyph('KeyX') }}</kbd>
         </div>
         <div v-if="hud.knife" class="hud-chip hud-knife">
           <SpriteImg :sprite="art.ui.pickupIcons.knife" />
-          <span class="hud-slot-key keys-only">F</span>
+          <kbd v-if="glyph('KeyF')" class="hud-keycap keys-only">{{ glyph('KeyF') }}</kbd>
         </div>
       </div>
 
@@ -127,15 +127,25 @@
     </footer>
 
     <!-- Right of centre: clear of the numbers above and of the thumb's buttons below. -->
-    <EventFeed v-if="log.length" class="hud-feed" :log />
+    <div v-if="log.length" :key="log[log.length - 1].key" class="hud-feed">
+      <EventFeed :log />
+    </div>
+
+    <!-- A first-run hint: said once, then gone (game/first-run-hints.ts). -->
+    <p v-if="hintText" :key="hint?.key" class="hud-hint" role="status">{{ hintText }}</p>
+
+    <!-- A bite from where the player was not looking: a short red bar on that edge. -->
+    <span v-if="bite" :key="bite.key" class="hud-bite" :style="biteStyle" aria-hidden="true" />
   </section>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { hintText as wordHint } from '../game/first-run-hints.ts';
+import { controlDevice, keyGlyph } from '../game/hud-keys.ts';
 import type { ArtBook } from '../art/types.ts';
 import type { HomeUi } from '../game/home-hud.ts';
-import { ammoState, hordeStatus, switchKey } from '../game/hud-state.ts';
+import { ammoWarning, hordeStatus, switchKey } from '../game/hud-state.ts';
 import type { HudState, PlaceBanner } from '../game/hud-state.ts';
 import { weaponBar } from '../game/weapon-bar.ts';
 import type { BarSlot } from '../game/weapon-bar.ts';
@@ -166,11 +176,32 @@ interface HudOverlayProps {
 }
 
 const { hud } = defineProps<HudOverlayProps>();
-const { input } = useGame();
+const { input, ui } = useGame();
+
+/** Who is playing, read as the HUD repaints (a hud beat lands every 100 ms). */
+const device = computed(() => {
+  void hud;
+  return controlDevice(ui.value.touch, input.lastDevice);
+});
+const hint = computed(() => ui.value.hint ?? null);
+const bite = computed(() => ui.value.bite ?? null);
+const hintText = computed(() => (hint.value ? wordHint(hint.value.id, { hordes: hint.value.hordes }, { device: device.value, padId: input.gamepad.id }) : ''));
+
+/** The mark sits on the screen edge in the bite's direction: an ellipse just inside the frame, turned to point out. */
+const biteStyle = computed(() => {
+  const angle = bite.value?.angle ?? 0;
+  const x = 50 + Math.cos(angle) * 49;
+  const y = 50 + Math.sin(angle) * 49;
+  return { left: `${x}%`, top: `${y}%`, '--turn': `${angle}rad` };
+});
+
+function glyph(code: string): string | null {
+  return keyGlyph(code, device.value, input.gamepad.id);
+}
 
 const isLow = computed(() => hud.health / hud.maxHealth < LOW_HEALTH);
 const bar = computed(() => weaponBar(hud));
-const ammo = computed(() => ammoState(hud));
+const ammo = computed(() => ammoWarning(hud));
 const swapKey = computed(() => switchKey(hud));
 const horde = computed(() => hordeStatus(hud));
 const effect = computed(() => {
@@ -250,12 +281,83 @@ function hold(slot: BarSlot): void {
   transform: translateX(-50%);
 }
 
-/* The log reads down the right edge, between the numbers above and the buttons below. */
+/*
+ * The run log is docked bottom right, clear of the centred guns, and fades a few seconds after its
+ * last line. It is click-through once faded; L (or the tab bar) still opens the full log.
+ */
 .hud-feed {
   position: absolute;
-  top: 50%;
   right: calc(var(--u) * 5);
-  transform: translateY(-50%);
+  bottom: calc(var(--u) * 5);
+  animation: feed-life 6s steps(12) forwards;
+}
+
+.is-touch .hud-feed {
+  bottom: calc(var(--tabbar) + var(--u) * 3);
+  max-width: 30vw;
+}
+
+@keyframes feed-life {
+  0%, 66% { opacity: 1; }
+  100% { opacity: 0; visibility: hidden; }
+}
+
+.hud-hint {
+  position: absolute;
+  top: 24%;
+  left: 0;
+  right: 0;
+  width: fit-content;
+  max-width: 90%;
+  margin: 0 auto;
+  padding: var(--u) calc(var(--u) * 5);
+  background: rgba(11, 12, 16, 0.78);
+  color: var(--amber);
+  text-align: center;
+  animation: hint-life 6s steps(12) both;
+}
+
+@keyframes hint-life {
+  0% { opacity: 0; }
+  8% { opacity: 1; }
+  88% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* A short red bar on the screen edge the bite came from. */
+.hud-bite {
+  position: absolute;
+  width: calc(var(--u) * 24);
+  height: calc(var(--u) * 4);
+  margin: calc(var(--u) * -2) 0 0 calc(var(--u) * -12);
+  background: var(--blood-bright);
+  transform: translate(-50%, -50%) rotate(calc(var(--turn) + 90deg));
+  animation: bite-life 0.7s steps(7) both;
+}
+
+@keyframes bite-life {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* A phone gives the town and the horde one line: the goal is the van's to say, or the pause menu's. */
+.is-touch .hud-night {
+  flex-direction: row;
+  align-items: baseline;
+  gap: calc(var(--u) * 3);
+  white-space: nowrap;
+}
+
+.is-touch .hud-night .hud-goal:not(.is-van) {
+  display: none;
+}
+
+.hud-keycap {
+  padding: 0 var(--u);
+  border: calc(var(--u) * 0.5) solid var(--amber);
+  color: var(--amber);
+  font: inherit;
+  line-height: 1.1;
 }
 
 /* Fingers: the guns stand on the tab bar across the foot of the screen (--tabbar, touch-ui.css). */

@@ -30,6 +30,8 @@ import type { LogEntry } from './event-log.ts';
 import { teamColor } from './team-colors.ts';
 import type { HomeUi } from './home-hud.ts';
 import type { BestRun, LeaderboardEntry } from './storage.ts';
+import type { HintLine } from './first-run-hints.ts';
+import type { BiteMark } from './bite-marker.ts';
 
 export type Screen = 'title' | 'game' | 'gameover' | 'lost';
 
@@ -181,6 +183,10 @@ export interface UiState {
   readonly log: readonly LogEntry[];
   /** The full log is open over the run. */
   readonly logOpen: boolean;
+  /** A first-run hint, said once (game/first-run-hints.ts). */
+  readonly hint?: HintLine | null;
+  /** A short red edge mark for a bite from where the player was not looking (game/bite-marker.ts). */
+  readonly bite?: BiteMark | null;
   /** The bunker and the trip, on a Campaign run. */
   readonly home: HomeUi | null;
   /** The style the player last chose: what the Play page offers, and what an empty room is given. */
@@ -283,6 +289,14 @@ export function ammoState(hud: Loadout): AmmoState {
   const allDry = rounds === 0;
   if (allDry) return 'empty';
   return rounds <= LOW_AMMO_ROUNDS ? 'low' : 'ok';
+}
+
+/**
+ * What the ammo readout warns of. The bunker has no horde and nothing to shoot, so an empty gun
+ * there is not news: no red.
+ */
+export function ammoWarning(hud: Loadout & Partial<Pick<HudState, 'level'>>): AmmoState {
+  return hud.level === BUNKER_LEVEL ? 'ok' : ammoState(hud);
 }
 
 /** The number key of a gun with rounds, when the one in hand has none, or null. */
