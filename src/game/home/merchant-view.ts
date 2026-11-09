@@ -78,7 +78,7 @@ function refusalOf(save: HomeSave, merchant: MerchantId, row: ShopRow, context: 
   const offCounter = context.station !== merchant;
   const short = save.silver < row.price;
   if (away) return 'Not while out on a trip';
-  if (offCounter) return 'Step up to the counter';
+  if (offCounter) return 'Walk up to them first';
   if (short) return 'Not enough silver';
   return 'You carry all you can';
 }

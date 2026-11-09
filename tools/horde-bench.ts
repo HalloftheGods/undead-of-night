@@ -72,16 +72,24 @@ await page.evaluate(async ({ scene, zombies }: { scene: string; zombies: number 
   const waves = await load('/shared/waves.ts');
   const constants = await load('/shared/constants.ts');
   const bosses = await load('/shared/bosses.ts');
+  const overrun = await load('/shared/overrun.ts');
   const game = window.__outbreak as unknown as { sim: { sim: any } };
   const sim = () => game.sim.sim;
   const s = sim();
   const p = s.players[0];
-  const sceneCap = scene === 'overrun' ? 40 : constants.ZOMBIE_CAP;
+  // The bunker's own breach, the furthest town's horde at full size with the merchants fighting it; the top-up below keeps it there.
+  const breach = scene === 'overrun';
+  if (breach) {
+    s.homeRun.roomHighest = 10;
+    overrun.startOverrunClock(s);
+    if (s.overrun) s.overrun.left = 1e-6;
+  }
+  const sceneCap = breach ? overrun.OVERRUN_HORDE_MAX : constants.ZOMBIE_CAP;
   const cap = zombies >= 0 ? zombies : sceneCap;
   const types = ['walker', 'walker', 'walker', 'runner', 'bloater', 'brute'];
   let i = 0;
   let tries = 0;
-  while (s.zombies.length < cap && tries < 20_000) {
+  while (!breach && s.zombies.length < cap && tries < 20_000) {
     tries += 1;
     const angle = Math.random() * Math.PI * 2;
     const r = 90 + Math.random() * 260;
@@ -120,8 +128,9 @@ await page.evaluate(async ({ scene, zombies }: { scene: string; zombies: number 
     let n = 0;
     while (t.zombies.length < cap && n++ < 20) {
       const angle = Math.random() * Math.PI * 2;
-      const x = me.x + Math.cos(angle) * 300;
-      const y = me.y + Math.sin(angle) * 300;
+      // In the bunker the rest of the horde keeps coming through the blast door, on hall floor.
+      const x = breach ? 36 + Math.random() * 24 : me.x + Math.cos(angle) * 300;
+      const y = breach ? 76 + Math.random() * 24 : me.y + Math.sin(angle) * 300;
       const offMap = x < 20 || y < 20 || x > t.map.width - 20 || y > t.map.height - 20;
       if (offMap) continue;
       waves.spawnZombie(t, types[n % types.length], x, y);

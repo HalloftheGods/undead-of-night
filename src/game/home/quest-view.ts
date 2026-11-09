@@ -152,7 +152,7 @@ const contextOf = (home: HomeUi): QuestContext => ({ ...shopContext(home), now: 
 function refusalOf(home: HomeUi, merchant: MerchantId): string | null {
   if (home.save?.openTrip) return 'Not while out on a trip';
   const isAwayFromCounter = home.station !== merchant;
-  if (isAwayFromCounter) return 'Step up to the counter';
+  if (isAwayFromCounter) return 'Walk up to them first';
   return null;
 }
 

@@ -26,6 +26,7 @@ import type { HomeView, Jewels, OverrunPhase, OverrunReceipt, TripReceipt } from
 import { randRange } from './rng.ts';
 import type { Rng } from './rng.ts';
 import type { SpatialHashGrid } from './spatial-grid.ts';
+import type { MerchantState } from './bunker-merchants.ts';
 import { buildingAt, circleHitsSolid, isBlockedAt } from './world-query.ts';
 import type { GunQuirk, PartCounts } from './gun-upgrade-data.ts';
 import type { GunFit } from './gun-upgrades.ts';
@@ -304,6 +305,8 @@ export interface SimState {
   /** Who left this run, by reconnect token, as they stood when they went. */
   departed: Map<string, PlayerState>;
   zombies: ZombieState[];
+  /** The bunker's merchants, walking it; none anywhere else (`shared/bunker-merchants.ts`). */
+  merchants: MerchantState[];
   bullets: BulletState[];
   pickups: PickupState[];
   /** Town buildings, by ground floor, that any player has been inside: where the map marks supplies left behind. */

@@ -7,7 +7,7 @@ import type { EmoteId } from './emotes.ts';
 import { GAME_EVENT_TYPES, GAME_PHASES, PICKUP_TYPES } from './events.ts';
 import type { GameStyle } from './game-style.ts';
 import type { PlayerGear } from './gun-upgrades.ts';
-import type { HomeAction, HomeView, JoinHome, OverrunEnd, RoomHomeView } from './home-protocol.ts';
+import type { HomeAction, HomeView, JoinHome, MerchantEntity, MerchantId, OverrunEnd, RoomHomeView } from './home-protocol.ts';
 import type { LeftoverView } from './leftovers.ts';
 import type { GunEffect } from './round-effect-data.ts';
 import type { BenchAction, BenchView } from './workbench.ts';
@@ -249,6 +249,8 @@ export type GameEvent =
   /** Something at the blast door: `step` counts the warnings from 0, `left` is the clock's seconds then. */
   | { readonly type: 'overrun_warning'; readonly step: number; readonly left: number }
   | { readonly type: 'overrun_breach'; readonly hostiles: number }
+  | { readonly type: 'merchant_hurt'; readonly merchant: MerchantId; readonly x: number; readonly y: number }
+  | { readonly type: 'merchant_downed'; readonly merchant: MerchantId; readonly x: number; readonly y: number }
   | { readonly type: 'overrun_end'; readonly outcome: OverrunEnd }
   /** A survivor sent an icon. Only the id travels; the client finds the body by playerId. */
   | { readonly type: 'emote'; readonly playerId: EntityId; readonly emote: EmoteId }
@@ -328,6 +330,8 @@ export interface SnapshotPacket {
   readonly boss?: BossView;
   /** Footprints in a snowy town near this viewer. Left off when there are none. */
   readonly tracks?: readonly TrackEntity[];
+  /** The bunker's merchants, walking it, sent to everyone. Left off anywhere else. */
+  readonly merchants?: readonly MerchantEntity[];
   /** Events since the previous snapshot, in order. */
   readonly events: readonly GameEvent[];
   readonly gameOver: GameOverStats | null;
@@ -378,8 +382,9 @@ export interface RoomPacket {
  * Bumped by any change to a packet. A host closes a join from another version with 4014.
  * 3: the welcome carries the town's print, and towns laid out on 2026-11-08 no longer match version 2's.
  * 4: the fireworks bus parks in the downtown car park, and container_opened can say how many fireworks were taken.
+ * 5: the bunker's merchants walk it (snapshot `merchants`, events `merchant_hurt` and `merchant_downed`), and its stalls have no counters.
  */
-export const PROTOCOL_VERSION = 4;
+export const PROTOCOL_VERSION = 5;
 
 /**
  * Sent just before a link is closed on purpose, because a data channel has no close code.

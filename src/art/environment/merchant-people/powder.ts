@@ -39,6 +39,16 @@ export const POWDER: Person = {
     '.KKHcccccbK.',
     '.KKccccacbK.',
     '..KKcbbbbK..',
+  ] }, { rows: [
+    '...KKKKKK...',
+    '..KMMKKKKKK.',
+    '.KMKKKKKKKKK',
+    '.KMKKKKKKKKK',
+    '.KKKKKKKKKKK',
+    '.KKKKKKKKKKK',
+    '.KKKKKKKKKK.',
+    '.KKKKKKKKKK.',
+    '..KKKKKKKK..',
   ] }),
   torsos: facingFront({ rows: [
     '..OKKKKo..',
@@ -48,6 +58,15 @@ export const POWDER: Person = {
     'oooooolEls',
     'ooooooolxl',
     'oooooooosl',
+    '.ssssssss.',
+  ] }, { rows: [
+    '..OKKKKo..',
+    '.OOoKKolos',
+    'OOoooolxls',
+    'Oooooolxos',
+    'ooooolxoos',
+    'oooolxooos',
+    'ooolxoooos',
     '.ssssssss.',
   ] }),
 };

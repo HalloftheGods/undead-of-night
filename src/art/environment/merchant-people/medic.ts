@@ -39,6 +39,16 @@ export const MEDIC: Person = {
     '..WdZcccbW.',
     '...ccccacb.',
     '....cbbbb..',
+  ] }, { rows: [
+    '...WWWWW...',
+    '..WwhhwwW..',
+    '.WwhhwwwwW.',
+    '.WhwwwwwhW.',
+    '.WwwhwwwwWW',
+    '.WWwwwwwhWW',
+    '..WWwwwwWW.',
+    '...WWbbWW..',
+    '....bbbb...',
   ] }),
   torsos: facingFront({ rows: [
     '..YYoozz..',
@@ -48,6 +58,15 @@ export const MEDIC: Person = {
     'YzzzzmzxzY',
     'zzzzzzzzyy',
     'zzzzzzzyyy',
+    '.yyyyyyyy.',
+  ] }, { rows: [
+    '..YYoooz..',
+    '.YYzzzzzzy',
+    'YYzzzzzzzy',
+    'YYzzzzzzzy',
+    'YzzzzzzzzY',
+    'zzzzyzzzyy',
+    'zzzzyzzyyy',
     '.yyyyyyyy.',
   ] }),
 };

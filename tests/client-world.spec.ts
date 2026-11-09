@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CHEST_STATION, generateBunkerMap } from '../shared/bunker-map.ts';
 import { CHARACTERS } from '../shared/characters.ts';
 import { PLAYER_SPEED, TICK_DT } from '../shared/constants.ts';
-import type { HomeView, OverrunPhase } from '../shared/home-protocol.ts';
+import type { HomeView, MerchantEntity, OverrunPhase } from '../shared/home-protocol.ts';
 import { playerSpeed } from '../shared/players.ts';
 import { BUILDING_DEFS } from '../shared/protocol.ts';
 import type { PlayerEntity, SnapshotPacket, WorldMap } from '../shared/protocol.ts';
@@ -168,11 +168,11 @@ describe('the station prompt in the bunker', () => {
     const world = new ClientWorld(bunker, 'me');
     const frame = { ...snapshot(1, [player('me', { x, y, home: view })]), mapSeed: bunker.seed };
     const overrun = phase ? { overrun: { phase, left: 0, slowed: false, hostiles: 0, total: 0 } } : {};
-    world.push({ ...frame, home: { pickedLevel: null, roomHighest: 1, ...overrun } }, 1000);
+    world.push({ ...frame, merchants: [gunsmith], home: { pickedLevel: null, roomHighest: 1, ...overrun } }, 1000);
     return world.advance(1000, 66, 0, 0, 0, 1 / 60)!.station;
   }
 
-  const gunsmith = bunker.stations!.find((station) => station.id === 'gunsmith')!;
+  const gunsmith: MerchantEntity = { id: 'gunsmith', x: 200, y: 120, angle: 0, moving: false, status: 'alive', health: 140, maxHealth: 140, weapon: 'carbine', reload: 0 };
 
   it('offers the chest to a player whose view says theirs is waiting', () => {
     expect(offered(CHEST_STATION.x, CHEST_STATION.y, 'held', home({ chest: true }))).toBe('chest');
@@ -186,6 +186,11 @@ describe('the station prompt in the bunker', () => {
     expect(offered(gunsmith.x, gunsmith.y, 'breached')).toBeUndefined();
     expect(offered(gunsmith.x, gunsmith.y, 'counting')).toBe('gunsmith');
     expect(offered(gunsmith.x, gunsmith.y, undefined)).toBe('gunsmith');
+  });
+
+  it('offers a merchant where they stand now, within reach of them', () => {
+    expect(offered(gunsmith.x + 20, gunsmith.y, undefined)).toBe('gunsmith');
+    expect(offered(gunsmith.x + 40, gunsmith.y, undefined)).toBeUndefined();
   });
 });
 

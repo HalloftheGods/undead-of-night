@@ -1,3 +1,4 @@
+import { merchantView } from './bunker-merchants.ts';
 import { openedContainers } from './container-search.ts';
 import { bagOf } from './candy.ts';
 import { SNAPSHOT_RANGE } from './constants.ts';
@@ -167,6 +168,7 @@ export function buildSnapshot(sim: SimState): SnapshotPacket {
     ...dropField(sim),
     ...bossField(sim),
     ...tracksField(sim, inRange),
+    ...(sim.merchants.length > 0 ? { merchants: sim.merchants.map(merchantView) } : {}),
     events,
     gameOver: sim.gameOver ? { ...sim.gameOver, players: sim.gameOver.players.map((p) => ({ ...p })) } : null,
     ...benchField(sim),

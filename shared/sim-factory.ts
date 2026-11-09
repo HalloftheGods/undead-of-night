@@ -1,3 +1,4 @@
+import { placeMerchants } from './bunker-merchants.ts';
 import { LEAD_IN_SEC } from './constants.ts';
 import { BASELINE_DIFFICULTY } from './difficulty.ts';
 import type { DifficultyId } from './difficulty.ts';
@@ -78,6 +79,7 @@ export function createSimState(options: SimulationOptions): SimState {
     players: [],
     departed: new Map(),
     zombies: [],
+    merchants: [],
     bullets: [],
     pickups: [],
     entered: new Set(),
@@ -93,6 +95,7 @@ export function createSimState(options: SimulationOptions): SimState {
   };
   if (home) {
     parkBunkerVan(sim);
+    placeMerchants(sim);
     return sim;
   }
   placeTownLoot(sim);

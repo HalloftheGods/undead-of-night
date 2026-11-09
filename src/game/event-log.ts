@@ -1,4 +1,5 @@
 import type { EntityId, GameEvent } from '../../shared/protocol.ts';
+import { MERCHANTS } from './home/merchant-data.ts';
 import { formatDuration } from './hud-state.ts';
 import type { Banner, LevelCard } from './hud-state.ts';
 import type { CalloutTone, CalloutWords } from './kill-juice.ts';
@@ -78,6 +79,7 @@ const EVENT_LINES: { readonly [T in GameEvent['type']]?: LineFor<T> } = {
   player_downed: (event, ctx) => teamLine(event.playerId, ctx, 'IS DOWN', 'YOU ARE DOWN', 'danger'),
   player_revived: (event, ctx) => teamLine(event.playerId, ctx, 'IS BACK UP', 'YOU ARE BACK UP', 'hope'),
   player_dead: (event, ctx) => teamLine(event.playerId, ctx, 'DIED', 'YOU DIED', 'danger'),
+  merchant_downed: (event) => ({ text: `${MERCHANTS[event.merchant].name.toUpperCase()} IS DOWN`, detail: 'UP AGAIN ONCE THE HORDE IS GONE', tone: 'danger', kind: 'team' }),
   car_alarm: () => ({ text: 'A CAR ALARM', detail: 'THEY HEARD THAT', tone: 'danger', kind: 'night' }),
   drop_landed: () => ({ text: 'THE DROP IS DOWN', detail: 'SUPPLIES ON THE GROUND', tone: 'hope', kind: 'loot' }),
 };

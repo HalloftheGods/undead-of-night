@@ -1,3 +1,4 @@
+import { placeMerchants } from './bunker-merchants.ts';
 import { offerKeepsakes } from './keepsakes.ts';
 import { LEAD_IN_SEC, LEVEL_CLEAR_HEAL, PLAYER_RADIUS, SPAWN_SCATTER } from './constants.ts';
 import { stopSearch } from './container-search.ts';
@@ -43,6 +44,7 @@ function emptyWorld(sim: SimState, level: number): void {
   sim.drop = null;
   sim.dropDone = false;
   sim.zombies = [];
+  sim.merchants = [];
   sim.bullets = [];
   sim.pickups = [];
   sim.entered = new Set();
@@ -66,6 +68,7 @@ export function enterBunker(sim: SimState): void {
   emptyWorld(sim, BUNKER_LEVEL);
   sim.containers = [];
   parkBunkerVan(sim);
+  placeMerchants(sim);
 }
 
 /** Puts someone down beside the town's entry. */

@@ -2,7 +2,7 @@
 // A tile plan carved out of solid rock, so the walls, the wall tiles and the rooms all come from the same few rectangles.
 
 import { BUNKER_SEED, MERCHANT_IDS, STATION_IDS, isMerchantId } from './home-protocol.ts';
-import type { Station, StationId } from './home-protocol.ts';
+import type { MerchantId, Station, StationId } from './home-protocol.ts';
 import { TILE_KINDS, TILE_SIZE } from './protocol.ts';
 import type { PropInstance, PropKind, WorldMap } from './protocol.ts';
 import type { Box } from './world-query.ts';
@@ -63,7 +63,7 @@ export const BLAST_DOOR_SPOT = { x: 2 * TILE_SIZE, y: 5.5 * TILE_SIZE } as const
 /** Where a held overrun's chest stands, in the hall's south-west corner, clear of every station's circle. */
 export const CHEST_SPOT = { x: 40, y: 144 } as const;
 
-/** Where each station's prop stands: the bottom centre of its footprint. A merchant stands behind a counter just south of it. */
+/** Where each station's prop stands: the bottom centre of its footprint. A merchant has no stall: this is where they first stand, and they walk from there. */
 const STATION_PLACES: Record<StationId, { x: number; y: number }> = {
   bench: { x: 48, y: 224 },
   forge: { x: 144, y: 224 },
@@ -77,7 +77,6 @@ const STATION_PLACES: Record<StationId, { x: number; y: number }> = {
   chest: CHEST_SPOT,
 };
 
-const COUNTER_Y = 56;
 /** Customers stand this far below the bottom edge of what they are served from. */
 const CUSTOMER_GAP = 20;
 const STATION_RADIUS = 28;
@@ -86,8 +85,8 @@ const LAMP_RADIUS = 200;
 const EXIT_SPOT = { x: 560, y: 350 };
 const SPAWN_SPOT = { x: 304, y: 280 };
 
-/** The chest stands only while a player's chest is unopened, so the map leaves it out and the overrun puts it in reach. */
-const isStanding = (id: StationId): boolean => id !== 'chest';
+/** The chest stands only while a player's chest is unopened, so the map leaves it out and the overrun puts it in reach. The merchants walk, so their circles go with them. */
+const isStanding = (id: StationId): boolean => id !== 'chest' && !isMerchantId(id);
 const STANDING_IDS = STATION_IDS.filter(isStanding);
 
 const centreOf = (room: Room): { x: number; y: number } => ({
@@ -140,14 +139,38 @@ function stackRuns(runs: readonly Box[]): Box[] {
 
 function propsOf(): PropInstance[] {
   const props = STANDING_IDS.map((id): PropInstance => ({ kind: STATION_PROPS[id], ...STATION_PLACES[id] }));
-  const counters = MERCHANT_IDS.map((id): PropInstance => ({ kind: 'counter', x: STATION_PLACES[id].x, y: COUNTER_Y }));
-  return [...props, ...counters, { ...BLAST_DOOR }];
+  return [...props, { ...BLAST_DOOR }];
 }
 
 function stationOf(id: StationId): Station {
-  const servedFrom = isMerchantId(id) ? COUNTER_Y : STATION_PLACES[id].y;
-  return { id, x: STATION_PLACES[id].x, y: servedFrom + CUSTOMER_GAP, radius: STATION_RADIUS };
+  return { id, x: STATION_PLACES[id].x, y: STATION_PLACES[id].y + CUSTOMER_GAP, radius: STATION_RADIUS };
 }
+
+/** How near a merchant a customer stands to open their shop: the same circle as a station's, centred on them. */
+export const MERCHANT_REACH = STATION_RADIUS;
+
+/** Where each merchant stands when the bunker is first raised: the hall's north wall, where the stalls were. */
+export const MERCHANT_STARTS: Readonly<Record<MerchantId, { readonly x: number; readonly y: number }>> = Object.fromEntries(
+  MERCHANT_IDS.map((id) => [id, { x: STATION_PLACES[id].x, y: STATION_PLACES[id].y + CUSTOMER_GAP }]),
+) as Record<MerchantId, { x: number; y: number }>;
+
+/** A room's floor in pixels, a tile in from its walls. */
+export interface FloorBox {
+  readonly x0: number;
+  readonly y0: number;
+  readonly x1: number;
+  readonly y1: number;
+}
+
+const floorOf = (room: Room): FloorBox => ({
+  x0: (room.col0 + 1) * TILE_SIZE,
+  y0: (room.row0 + 1) * TILE_SIZE,
+  x1: room.col1 * TILE_SIZE,
+  y1: room.row1 * TILE_SIZE,
+});
+
+/** Where the merchants wander, the hall listed three times so they keep to the market most. The garage is the van's. */
+export const MERCHANT_ROAM: readonly FloorBox[] = [HALL, HALL, HALL, WORKSHOP, QUARTERS].map(floorOf);
 
 /** The chest's circle, for the overrun to put in reach while a chest is unopened. */
 export const CHEST_STATION: Station = stationOf('chest');

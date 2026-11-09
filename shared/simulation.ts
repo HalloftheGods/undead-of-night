@@ -1,3 +1,4 @@
+import { updateMerchants } from './merchant-fight.ts';
 import { freeCharacter } from './characters.ts';
 import { updateBullets } from './combat.ts';
 import { PLAYER_RADIUS, SPAWN_SCATTER, TICK_DT } from './constants.ts';
@@ -213,6 +214,7 @@ export class GameSimulation {
     noteEntered(sim);
     ageFootprints(sim);
     updateSpinners(sim);
+    updateMerchants(sim);
     updateBullets(sim);
     updateZombieStatuses(sim);
     updateZombies(sim);

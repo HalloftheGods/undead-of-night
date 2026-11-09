@@ -60,7 +60,7 @@ describe('the work list', () => {
     const save = { ...emptySave(3), quests: { ...emptySave(3).quests, active: {} } };
     const offer = (home: HomeUi) => questPanels(home, 'medic')[0];
     expect(offer(homeOf(save, { station: 'medic' }))).toMatchObject({ action: 'accept', canAct: true, refusal: null });
-    expect(offer(homeOf(save, { station: 'gunsmith' }))).toMatchObject({ canAct: false, refusal: 'Step up to the counter' });
+    expect(offer(homeOf(save, { station: 'gunsmith' }))).toMatchObject({ canAct: false, refusal: 'Walk up to them first' });
     const away = { ...save, openTrip: { level: 1 } } as unknown as HomeSave;
     expect(offer(homeOf(away, { station: 'medic' }))).toMatchObject({ canAct: false, refusal: 'Not while out on a trip' });
   });
@@ -69,7 +69,7 @@ describe('the work list', () => {
     const save = idle('powder', 'first_smelt', 1);
     const [panel] = questPanels(homeOf(save, { station: 'powder' }), 'powder');
     expect(panel).toMatchObject({ state: 'ready', action: 'turn_in', canAct: true, canAbandon: false });
-    expect(questPanels(homeOf(save), 'powder')[0]).toMatchObject({ canAct: false, refusal: 'Step up to the counter' });
+    expect(questPanels(homeOf(save), 'powder')[0]).toMatchObject({ canAct: false, refusal: 'Walk up to them first' });
   });
 });
 
