@@ -154,6 +154,37 @@ function facingGaps(room: Room): number[] {
   return gaps;
 }
 
+/** Free tiles inside the walls that a tile-by-tile walk in from the door never reaches. */
+function tilesCutOff({ map, building }: Room): string[] {
+  const blocked = blockedTiles(map);
+  const way = entry(building);
+  const start = Math.floor(way.y / TILE_SIZE) * map.cols + Math.floor(way.x / TILE_SIZE);
+  const seen = new Uint8Array(map.cols * map.rows);
+  const stack = [start];
+  seen[start] = 1;
+  while (stack.length > 0) {
+    const index = stack.pop() as number;
+    const col = index % map.cols;
+    for (const next of [col > 0 ? index - 1 : -1, col < map.cols - 1 ? index + 1 : -1, index - map.cols, index + map.cols]) {
+      const isOpen = next >= 0 && next < seen.length && !blocked[next] && !seen[next];
+      if (isOpen) {
+        seen[next] = 1;
+        stack.push(next);
+      }
+    }
+  }
+  const box = buildingBox(building);
+  const cut: string[] = [];
+  for (let row = box.y0 / TILE_SIZE; row < box.y1 / TILE_SIZE; row++) {
+    for (let col = box.x0 / TILE_SIZE; col < box.x1 / TILE_SIZE; col++) {
+      const index = row * map.cols + col;
+      const isCutOff = !blocked[index] && !seen[index];
+      if (isCutOff) cut.push(`${col * TILE_SIZE - box.x0},${row * TILE_SIZE - box.y0}`);
+    }
+  }
+  return cut;
+}
+
 describe('room layouts', () => {
   it('the aisle allowance fits the widest body', () => {
     expect(NARROWEST_AISLE).toBeGreaterThan(WIDEST_BODY * 2);
@@ -163,6 +194,10 @@ describe('room layouts', () => {
     for (const room of everyVariant(kind)) {
       for (const radius of WIDE_BODIES) expect(tilesOutOfReach(room, radius)).toEqual([]);
     }
+  });
+
+  it.each(BUILDING_KINDS)('%s: every free tile inside joins up on the tile grid, as the town and the flow fields see it', (kind) => {
+    for (const room of everyVariant(kind)) expect(tilesCutOff(room)).toEqual([]);
   });
 
   it.each(BUILDING_KINDS)('%s: a back door, where there is one, lets the widest body out', (kind) => {

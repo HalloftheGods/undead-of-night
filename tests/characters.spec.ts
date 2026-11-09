@@ -4,7 +4,7 @@ import { KILL_DROP_CHANCE, MELEE_KNOCKBACK_SPEED, PLAYER_SPEED, SPRINT_NOISE_RAD
 import { maybeDropOnKill } from '../shared/pickups.ts';
 import { playerSpeed } from '../shared/players.ts';
 import { GameSimulation } from '../shared/simulation.ts';
-import { addRoamer, addZombie, input, quietSim, steps } from './helpers/sim-harness.ts';
+import { addRoamer, addZombie, clearWay, input, quietSim, steps } from './helpers/sim-harness.ts';
 
 const skinOf = (id: string): number => CHARACTERS.findIndex((character) => character.id === id);
 
@@ -126,7 +126,9 @@ describe('traits in play', () => {
       const { sim, state } = quietSim();
       const [p] = state.players;
       p.skin = skin;
-      const zombie = addRoamer(state, 'walker', p.x + ZOMBIE_SIGHT_RANGE * 0.9, p.y);
+      const reach = ZOMBIE_SIGHT_RANGE * 0.9;
+      const { dx, dy } = clearWay(state, reach);
+      const zombie = addRoamer(state, 'walker', p.x + dx * reach, p.y + dy * reach);
       zombie.wanderLeft = 1e6;
       steps(sim, 12);
       return zombie.mode === 'hunt';

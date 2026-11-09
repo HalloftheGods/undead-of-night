@@ -60,7 +60,8 @@ const STYLES: Record<TownStyle, DistrictStyle> = {
     gap: [3, 5],
     vacancy: 0.15,
     fillers: ['house', 'house', 'house', 'house', 'house', 'apartment'],
-    wishes: ['grocery', 'diner'],
+    // The school sits out among the houses, on a lawn of its own.
+    wishes: ['school', 'grocery', 'diner'],
     clutter: [['tree', 3], ['pine', 4], ['bush', 5], ['rubble', 1]],
   },
   industrial: {
@@ -79,7 +80,7 @@ const STYLES: Record<TownStyle, DistrictStyle> = {
     vacancy: 0.05,
     // Houses are here for the shallow rows, where a diner would otherwise be the only thing that fits.
     fillers: ['apartment', 'apartment', 'apartment', 'apartment', 'grocery', 'grocery', 'grocery', 'diner', 'house', 'house', 'house'],
-    wishes: ['police', 'gun_shop', 'clinic', 'pharmacy', 'grocery', 'diner'],
+    wishes: ['police', 'gun_shop', 'clinic', 'pharmacy', 'hospital', 'grocery', 'diner'],
     clutter: [['dumpster', 2], ['crate_stack', 1], ['rubble', 3]],
   },
 };
@@ -116,14 +117,14 @@ function forecourt(b: MapBuilder, col: number, bottom: number): void {
 }
 
 /** The service that parks out front of these, light bar going. */
-const SERVICE_CARS: Partial<Record<BuildingKind, PropKind>> = { police: 'police_h', clinic: 'ambulance_h', pharmacy: 'ambulance_h' };
+const SERVICE_CARS: Partial<Record<BuildingKind, PropKind>> = { police: 'police_h', clinic: 'ambulance_h', hospital: 'ambulance_h', pharmacy: 'ambulance_h' };
 /** Down from the building's front to the lane by the kerb, in pixels. */
 const KERB_LANE = [44, 56];
 /** Pulled in close: a parked car does not need the room a wreck in the road is given. */
 const PARKED_GAP = 8;
 
 /**
- * A cruiser at the station, an ambulance at the clinic and at some pharmacies, pulled up on the
+ * A cruiser at the station, an ambulance at the hospital, the clinic and some pharmacies, pulled up on the
  * street beside the door. Picked off the plot rather than the town's dice, so the rest stays put.
  */
 function parkService(b: MapBuilder, building: BuildingInstance, walkDown: number): void {
