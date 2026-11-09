@@ -3,6 +3,9 @@
 // stick walks, the right stick aims. Only pads the browser maps to the Standard Gamepad layout
 // count; anything else is noted for the UI and otherwise left alone.
 
+import { DOM_PAD_MENU } from './pad-focus.ts';
+import type { PadMenu } from './pad-focus.ts';
+
 /** Standard Gamepad button indexes (w3c.github.io/gamepad, "Remapping"). The bottom face button is 0 on every pad. */
 export const PAD = {
   a: 0,
@@ -63,6 +66,9 @@ export const STICK_DEADZONE = 0.2;
 const TRIGGER_DOWN = 0.3;
 /** How far the left stick goes, past the dead zone, before it moves menu focus. */
 const NAV_PUSH = 0.5;
+/** Held in a menu, a direction repeats after this long, then every NAV_REPEAT_MS. */
+export const NAV_REPEAT_DELAY_MS = 400;
+export const NAV_REPEAT_MS = 120;
 /** Half of an eighth of a turn: the movement packet has eight directions, as the touch stick does. */
 const SECTOR_EDGE = Math.sin(Math.PI / 8);
 
@@ -90,7 +96,7 @@ export interface GamepadHost {
   /** B, behind a menu. */
   back(): void;
   /** The D-pad or left stick, behind a menu. */
-  navigate(direction: NavDirection): void;
+  navigate(direction: NavDirection): void | boolean;
   /** The pad did something this frame. */
   onActive(): void;
   onConnection?(change: PadConnection): void;
@@ -142,7 +148,7 @@ function isBusy(pad: Gamepad): boolean {
 }
 
 /** Connected pads. Empty where there is no Gamepad API, or a permissions policy blocks it (getGamepads throws). */
-function readPads(): Gamepad[] {
+export function readPads(): Gamepad[] {
   try {
     const list = globalThis.navigator?.getGamepads?.() ?? [];
     return Array.from(list).filter((pad): pad is Gamepad => pad !== null && pad.connected);
@@ -151,10 +157,25 @@ function readPads(): Gamepad[] {
   }
 }
 
+export interface GamepadOptions {
+  /** Milliseconds, for the menu repeat. Defaults to the page clock. */
+  readonly now?: () => number;
+  /** What moves focus and clicks behind a menu. Defaults to the page's own buttons (pad-focus.ts). */
+  readonly menu?: PadMenu;
+}
+
+function pageClock(): number {
+  return globalThis.performance?.now() ?? Date.now();
+}
+
 /**
  * One pad in charge at a time: the last one touched. Held buttons are re-read every frame, so a
  * pad that goes away lets go of everything at once. A button pressed behind a menu is spent there,
  * and does not count in play until it comes back up.
+ *
+ * Behind a menu the D-pad and left stick step focus (and repeat while held), A clicks the focused
+ * control or else asks the host to confirm, B clicks the screen's Back or Close or else asks the
+ * host to go back. The host may answer `navigate` with true to say it moved focus itself.
  */
 export class GamepadInput {
   /** The pad in charge, for button prompts, or null with none. */
@@ -163,6 +184,8 @@ export class GamepadInput {
   unsupportedId: string | null = null;
 
   private readonly host: GamepadHost;
+  private readonly menu: PadMenu;
+  private readonly now: () => number;
   private held = new Set<string>();
   private readonly lastDown = new Map<number, readonly boolean[]>();
   private readonly spent = new Set<number>();
@@ -170,14 +193,17 @@ export class GamepadInput {
   private move: StickVector | null = null;
   private aim: StickVector | null = null;
   private sneaking = false;
-  private lastNav: NavDirection | null = null;
+  private navDirection: NavDirection | null = null;
+  private navNextAt = Infinity;
 
   // TODO(rumble): out of scope for the first slice. Gamepad.vibrationActuator is optional and
   // Chrome/Edge-only (playEffect('dual-rumble', { duration, strongMagnitude, weakMagnitude })).
   // Hook it to kill-juice and damage taken, behind the screen-shake preference in motion.ts.
 
-  constructor(host: GamepadHost) {
+  constructor(host: GamepadHost, options: GamepadOptions = {}) {
     this.host = host;
+    this.menu = options.menu ?? DOM_PAD_MENU;
+    this.now = options.now ?? pageClock;
     window.addEventListener('gamepadconnected', this.onConnected);
     window.addEventListener('gamepaddisconnected', this.onDisconnected);
   }
@@ -255,7 +281,8 @@ export class GamepadInput {
     this.move = null;
     this.aim = null;
     this.sneaking = false;
-    this.lastNav = null;
+    this.navDirection = null;
+    this.navNextAt = Infinity;
   }
 
   private read(pad: Gamepad): void {
@@ -277,7 +304,7 @@ export class GamepadInput {
       if (live) this.playPress(index);
       else this.menuPress(index);
     });
-    this.navStick(live);
+    this.navStep(live, down);
     this.held = this.heldCodes(down);
   }
 
@@ -297,20 +324,53 @@ export class GamepadInput {
     this.spent.add(index);
     if (index === PAD.start) this.host.press('Escape');
     else if (index === PAD.view) this.host.press('KeyN');
-    else if (index === PAD.a) this.host.confirm();
-    else if (index === PAD.b) this.host.back();
-    else {
-      const direction = DPAD_NAV.get(index);
-      if (direction) this.host.navigate(direction);
-    }
+    else if (index === PAD.a) this.confirm();
+    else if (index === PAD.b) this.back();
+    // The D-pad is spent above and moves focus in navStep, so a held one repeats.
   }
 
-  /** The left stick moves menu focus one step per push. TODO(menu-nav): repeat while held. */
-  private navStick(live: boolean): void {
-    const direction = navOf(this.move);
-    const isNewPush = !live && direction !== null && direction !== this.lastNav;
-    if (isNewPush) this.host.navigate(direction);
-    this.lastNav = direction;
+  /** A: the focused control takes it; with none focused, the screen's own confirm. */
+  private confirm(): void {
+    if (this.menu.activate()) return;
+    this.host.confirm();
+  }
+
+  /** B: the screen's Back or Close takes it; with none showing, the host's back (the pause path). */
+  private back(): void {
+    if (this.menu.back()) return;
+    this.host.back();
+  }
+
+  /** The D-pad (first of up, down, left, right held), else the left stick pushed past halfway. */
+  private navTarget(down: readonly boolean[]): NavDirection | null {
+    for (const [index, direction] of DPAD_NAV) if (down[index]) return direction;
+    return navOf(this.move);
+  }
+
+  /**
+   * One step per push, then a repeat after NAV_REPEAT_DELAY_MS and every NAV_REPEAT_MS while held.
+   * A direction already held when a menu opens waits to be let go: it moved the survivor, not focus.
+   */
+  private navStep(live: boolean, down: readonly boolean[]): void {
+    const direction = this.navTarget(down);
+    if (direction === null) {
+      this.navDirection = null;
+      this.navNextAt = Infinity;
+      return;
+    }
+    if (live) {
+      this.navDirection = direction;
+      this.navNextAt = Infinity;
+      return;
+    }
+    const at = this.now();
+    const isNewPush = direction !== this.navDirection;
+    const isRepeat = !isNewPush && at >= this.navNextAt;
+    if (!isNewPush && !isRepeat) return;
+    this.navDirection = direction;
+    this.navNextAt = at + (isNewPush ? NAV_REPEAT_DELAY_MS : NAV_REPEAT_MS);
+    const moved = this.host.navigate(direction);
+    if (moved !== true) this.menu.navigate(direction);
   }
 
   private heldCodes(down: readonly boolean[]): Set<string> {
