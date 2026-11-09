@@ -23,7 +23,7 @@
 
           <span class="level-plate">
             <span class="level-plate-row">
-              <span class="level-num">LEVEL {{ row.number < 10 ? `0${row.number}` : row.number }}</span>
+              <span class="level-num">{{ row.town.toUpperCase() }}</span>
               <span class="level-theme" :style="{ '--swatch': row.swatch }">{{ row.themeLabel }}</span>
             </span>
             <span class="level-name">{{ row.unlocked ? row.title : 'CLASSIFIED SECTOR' }}</span>
@@ -52,6 +52,8 @@ import SpriteImg from './SpriteImg.vue';
 /** One card. The page that shows the grid decides what unlocked, cleared and picked mean. */
 export interface LevelGridRow {
   readonly number: number;
+  /** The town's name, shown where the tile once said LEVEL 03. */
+  readonly town: string;
   readonly title: string;
   readonly themeLabel: string;
   readonly swatch: string;

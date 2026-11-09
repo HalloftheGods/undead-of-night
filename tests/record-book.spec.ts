@@ -37,6 +37,6 @@ describe('the record book', () => {
     expect(lines).toHaveLength(7);
     expect(lines.map((line) => line.stamp).slice(0, 3)).toEqual(['open', 'counted', 'missed']);
     expect(lines[0]).toMatchObject({ weekday: 'Sat', label: '7 Nov', score: '-' });
-    expect(lines[1]).toMatchObject({ score: '900', detail: 'Level 4, 10 kills, 2 practice' });
+    expect(lines[1]).toMatchObject({ score: '900', detail: 'Four Corners, 10 kills, 2 practice' });
   });
 });
