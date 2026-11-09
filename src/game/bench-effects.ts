@@ -57,3 +57,10 @@ export function replaceQuestion(option: EffectOption): string {
 
 /** True when pressing a kit should ask first. */
 export const needsConfirm = (option: EffectOption): boolean => option.replaces !== null;
+
+/** The line under the bench while a round kit is pointed at. */
+export function effectHint(option: EffectOption): string {
+  const carried = option.count > 0 ? '' : ' None carried.';
+  const swap = option.fittable && option.replaces !== null ? ` Replaces ${option.replaces}.` : '';
+  return `${option.label}: ${option.note}.${carried}${swap}`;
+}

@@ -7,12 +7,16 @@
       :label="row.label"
       :aria="`Fit ${row.label}, rank ${row.rank} of ${row.maxRank}, takes ${row.cost.map((part) => PART_LABELS[part]).join(' and ')}`"
       :pips="{ on: row.rank, of: row.maxRank }"
+      :sub="row.blocked ?? row.costText"
+      :tone="row.blocked ? (row.rank >= row.maxRank ? 'done' : 'blocked') : 'cost'"
       :disabled="!row.fittable"
       :fitted="row.rank > 0"
       :moves="row.moves"
       :weapon-icons="art.ui.weaponIcons"
       @fit="install(row.upgrade)"
       @move="(to) => move(row.upgrade, to)"
+      @peek="emit('peek', row)"
+      @unpeek="emit('peek', null)"
     />
   </ul>
 </template>
@@ -30,6 +34,7 @@ import type { PlayerGear } from '../../shared/gun-upgrades.ts';
 import type { WeaponId } from '../../shared/protocol.ts';
 import type { ArtBook } from '../art/types.ts';
 import { benchRows } from '../game/bench-view.ts';
+import type { BenchRow } from '../game/bench-view.ts';
 import { useGame } from './use-game.ts';
 import WorkbenchTile from './WorkbenchTile.vue';
 
@@ -41,6 +46,7 @@ interface GunWorkProps {
 }
 
 const { weapon, owned, gear } = defineProps<GunWorkProps>();
+const emit = defineEmits<{ peek: [row: BenchRow | null] }>();
 const game = useGame();
 
 const rows = computed(() => benchRows(weapon, owned, gear));

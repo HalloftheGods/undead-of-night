@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { WEAPONS } from '../shared/constants.ts';
 import { GUN_SLOTS, UPGRADES } from '../shared/gun-upgrade-data.ts';
-import { BAR_SLOTS, gunBars, gunSlots, upgradeParts } from '../src/game/bench-view.ts';
+import { BAR_SLOTS, benchRows, gunBars, gunSlots, hasWorkLeft, previewBars, slotsFree, upgradeBlock, upgradeCost, upgradeEffect, upgradeParts } from '../src/game/bench-view.ts';
 
 const bar = (bars: ReturnType<typeof gunBars>, label: string) => bars.find((each) => each.label === label);
 
@@ -43,5 +43,43 @@ describe('the bench column slots', () => {
   it('names the parts a rank takes', () => {
     expect(upgradeParts('reload')).toEqual(['grip', 'magazine']);
     expect(upgradeParts('suppressor')).toEqual(['suppressor']);
+  });
+});
+
+describe('the bench tile hints', () => {
+  const none = { barrel: 0, grip: 0, magazine: 0, suppressor: 0, toolkit: 0 };
+
+  it('says what a rank gives and what it costs, in plain words', () => {
+    expect(upgradeEffect('damage')).toBe('+12% damage');
+    expect(upgradeEffect('reload')).toBe('-15% reload time');
+    expect(upgradeEffect('suppressor')).toBe('-65% noise');
+    expect(upgradeCost('reload')).toBe('1 Grip + 1 Magazine');
+  });
+
+  it('names the reason a rank cannot go on, matching what the server will allow', () => {
+    expect(upgradeBlock('pistol', undefined, none, 'damage')).toBe('Need Barrel');
+    expect(upgradeBlock('pistol', undefined, { ...none, grip: 1 }, 'reload')).toBe('Need Magazine');
+    expect(upgradeBlock('pistol', undefined, { ...none, barrel: 1 }, 'damage')).toBeNull();
+    expect(upgradeBlock('pistol', { ranks: { suppressor: 1 }, quirk: null }, { ...none, suppressor: 1 }, 'suppressor')).toBe('Maxed out');
+    expect(upgradeBlock('pistol', { ranks: { damage: 2, fireRate: 1 }, quirk: null }, { ...none, magazine: 1 }, 'magazine')).toBe('No slots left');
+  });
+
+  it('is blocked on exactly the rows the bench cannot fit', () => {
+    const gear = { parts: { ...none, barrel: 1, grip: 1 }, fits: {} };
+    for (const row of benchRows('pistol', ['pistol'], gear)) expect(row.blocked === null, row.upgrade).toBe(row.fittable);
+  });
+
+  it('previews one more rank without touching the gun', () => {
+    const fit = { ranks: { damage: 1 }, quirk: null };
+    const before = gunBars('pistol', fit);
+    const after = previewBars('pistol', fit, 'damage');
+    expect(after.find((each) => each.label === 'Damage')!.value).not.toBe(before.find((each) => each.label === 'Damage')!.value);
+    expect(fit.ranks.damage).toBe(1);
+  });
+
+  it('counts free slots and notices when no work is left', () => {
+    expect(slotsFree('pistol', { ranks: { damage: 1 }, quirk: null })).toBe(2);
+    expect(hasWorkLeft(['pistol'], { parts: none, fits: {} })).toBe(false);
+    expect(hasWorkLeft(['pistol'], { parts: { ...none, barrel: 1 }, fits: {} })).toBe(true);
   });
 });
