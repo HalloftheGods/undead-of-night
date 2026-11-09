@@ -1,6 +1,6 @@
 import type { PlayerEntity } from '../../shared/protocol.ts';
 import { TICK_DT } from '../../shared/constants.ts';
-import type { MerchantId } from '../../shared/home-protocol.ts';
+import type { MerchantEntity, MerchantId } from '../../shared/home-protocol.ts';
 import { aimAngle } from '../engine/camera.ts';
 import { CHEST_HEIGHT, EMPTY_SCENE } from '../engine/scene.ts';
 import type { QuestMark, SceneView } from '../engine/scene.ts';
@@ -84,7 +84,7 @@ export class RunFrame {
       ...entities,
       ghost: over ? null : this.ghost(world, ms),
       closedStalls: this.closedStalls(),
-      questMarks: this.questMarks(world),
+      questMarks: this.questMarks(entities.merchants ?? []),
       overrunOn: this.host.overrunOn,
       pointerX: over || touch || padAims ? null : pointerX,
       pointerY: over || touch || padAims ? null : pointerY,
@@ -170,8 +170,8 @@ export class RunFrame {
   }
 
   /** The bunker's stalls with a quest to take or to be paid for, by this player's own save. Nowhere else has stalls. */
-  private questMarks(world: ClientWorld): QuestMark[] {
+  private questMarks(merchants: readonly MerchantEntity[]): QuestMark[] {
     const { save, highest } = this.host.parts.home.facts();
-    return questMarks(save, highest, world.bunkerProps());
+    return questMarks(save, highest, merchants);
   }
 }

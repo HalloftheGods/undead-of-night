@@ -2,10 +2,11 @@
 // so the input packet does not change. A shop, the locker and the rest are client screens over `p.home.station`.
 
 import { CHEST_STATION } from './bunker-map.ts';
+import { merchantStations } from './bunker-merchants.ts';
 import { TICK_DT } from './constants.ts';
 import { isMerchantId } from './home-protocol.ts';
 import { openChest } from './overrun-chest.ts';
-import type { OverrunPhase, Station } from './home-protocol.ts';
+import type { MerchantEntity, OverrunPhase, Station } from './home-protocol.ts';
 import type { WorldMap } from './protocol.ts';
 import type { PlayerState, SimState } from './sim-state.ts';
 
@@ -33,21 +34,32 @@ export function stationInReach(map: WorldMap, x: number, y: number, extra: reado
 
 /** The chest stands for a player whose chest, won by holding the room, is still unopened. */
 const chestStands = (p: PlayerState): boolean => p.home?.chest === true;
-const CHEST_ONLY: readonly Station[] = [CHEST_STATION];
+
+/** Where the merchants are, for their circles. The sim's own state and the snapshot's view both have these. */
+type MerchantSpot = Pick<MerchantEntity, 'id' | 'x' | 'y' | 'status'>;
 
 /**
- * What can be opened from this point: the map's stations, the chest for someone who has one waiting, and no merchant's stall while the
- * horde is in. One rule for the sim and for the client's prompt. `phase` is the room's overrun phase, undefined with none.
+ * What can be opened from this point: the map's stations, a merchant on their feet, the chest for someone who has one waiting, and no
+ * merchant's shop while the horde is in. One rule for the sim and for the client's prompt. `phase` is the room's overrun phase, undefined with none.
  */
-export function openableStation(map: WorldMap, x: number, y: number, hasChest: boolean, phase: OverrunPhase | undefined): Station | null {
-  const target = stationInReach(map, x, y, hasChest ? CHEST_ONLY : NO_EXTRA_STATIONS);
+export function openableStation(
+  map: WorldMap,
+  x: number,
+  y: number,
+  hasChest: boolean,
+  phase: OverrunPhase | undefined,
+  merchants: readonly MerchantSpot[] = [],
+): Station | null {
+  const extra = merchantStations(merchants);
+  if (hasChest) extra.push(CHEST_STATION);
+  const target = stationInReach(map, x, y, extra);
   const shuttered = target !== null && isMerchantId(target.id) && phase === 'breached';
   return shuttered ? null : target;
 }
 
 /** What this player can open from where they stand. */
 function stationHere(sim: SimState, p: PlayerState): Station | null {
-  return openableStation(sim.map, p.x, p.y, chestStands(p), sim.overrun?.phase);
+  return openableStation(sim.map, p.x, p.y, chestStands(p), sim.overrun?.phase, sim.merchants);
 }
 
 function closeStation(home: NonNullable<PlayerState['home']>): void {

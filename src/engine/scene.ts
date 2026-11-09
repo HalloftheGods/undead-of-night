@@ -1,7 +1,7 @@
 import type { Container } from '../../shared/containers.ts';
 import type { LeftoverView } from '../../shared/leftovers.ts';
 import type { BulletEntity, DropView, EntityId, ExitEntity, GamePhase, PickupEntity, PlayerEntity, TrackEntity, ZombieEntity } from '../../shared/protocol.ts';
-import type { MerchantId, OverrunView, StationId } from '../../shared/home-protocol.ts';
+import type { MerchantEntity, MerchantId, OverrunView, StationId } from '../../shared/home-protocol.ts';
 
 export { CHEST_HEIGHT } from '../../shared/constants.ts';
 
@@ -20,12 +20,12 @@ export interface TouchMarks {
   readonly fingertip: number;
 }
 
-/** A "!" over a stall whose merchant has a quest on offer, or one finished and owed its pay. */
+/** A "!" over a merchant who has a quest on offer, or one finished and owed its pay. */
 export interface QuestMark {
   readonly merchant: MerchantId;
   /** What the prompt calls them: "Sarge". */
   readonly name: string;
-  /** The stall prop's bottom centre. */
+  /** The merchant's feet, where they stand now. */
   readonly x: number;
   readonly y: number;
   /** Owed pay, as against only on offer. */
@@ -52,6 +52,8 @@ export interface SceneView {
   readonly tracks?: readonly TrackEntity[];
   /** What the local player could search from where they stand, if anything. */
   readonly searchable: Container | null;
+  /** The bunker's merchants, where they are walking. Absent anywhere else. */
+  readonly merchants?: readonly MerchantEntity[];
   /** The bunker station the local player could open from where they stand. Absent anywhere else. */
   readonly station?: StationId;
   /** The bunker's horde clock, which the door and the chest are drawn from. Absent when there is none. */

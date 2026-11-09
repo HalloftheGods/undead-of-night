@@ -194,9 +194,9 @@ describe('the client seams', () => {
 });
 
 describe('the bunker map', () => {
-  it('has every station in it but the chest, which the overrun puts in reach', () => {
+  it('has every station in it but the chest, which the overrun puts in reach, and the merchants, who walk', () => {
     const { sim } = homeSim();
-    const standing = STATION_IDS.filter((id) => id !== 'chest');
+    const standing = STATION_IDS.filter((id) => id !== 'chest' && !(MERCHANT_IDS as readonly string[]).includes(id));
     expect(sim.map.stations?.map((station) => station.id).sort()).toEqual([...standing].sort());
     expect(sim.map.props.some((prop) => prop.kind === 'chest')).toBe(false);
   });

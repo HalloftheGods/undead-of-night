@@ -40,6 +40,17 @@ export const QUARTERMASTER: Person = {
     '.GcccddccbG.',
     '..cxxxxxxb..',
     '...cbbbbb...',
+  ] }, { rows: [
+    '...tuuuut...',
+    '..tuvvuuut..',
+    '.tuvvuuuutt.',
+    '.tttttttttt.',
+    '.GGGGGGGGGG.',
+    '.GGGGGGGGGG.',
+    '.GGGGGGGGGG.',
+    '.GccccccbbG.',
+    '..cccccbbb..',
+    '...cbbbbb...',
   ] }),
   torsos: facingFront({ rows: [
     '..vvssuu..',
@@ -49,6 +60,15 @@ export const QUARTERMASTER: Person = {
     'vuuuuuuutt',
     'uuuuuFuttt',
     'xxxxxFxxxx',
+    '.tttttttt.',
+  ] }, { rows: [
+    '..vvuuuu..',
+    '.vvuuuuuut',
+    'vvvuuuuuut',
+    'vvuuuuuuut',
+    'vuuuuuuutt',
+    'uuuuuuuttt',
+    'xxxxxxxxxx',
     '.tttttttt.',
   ] }),
 };

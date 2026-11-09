@@ -5,6 +5,18 @@ import type { ChangeNote } from './change-notes.ts';
 
 export const EARLIER_NOTES: readonly ChangeNote[] = [
   {
+    id: 'press-any-key',
+    date: '2026-11-08',
+    kind: 'new',
+    title: 'Press any key',
+    deck: 'The title waits for you: the logo, the night behind it, and one blinking line.',
+    points: [
+      'Any key, a click, a tap or a gamepad button brings up the main menu.',
+      'It asks once a visit. Back from a run, you land right on the menu.',
+      'Co-op invite links skip it and go straight to the team. With Motion set to Reduced, the line holds still.',
+    ],
+  },
+  {
     id: 'touch-icons-items',
     date: '2026-11-08',
     kind: 'better',

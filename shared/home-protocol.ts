@@ -29,6 +29,22 @@ export interface Station {
   readonly radius: number;
 }
 
+/** A merchant walking the bunker, as the snapshot carries them. Their id is their entity id too: no player or zombie id looks like one. */
+export interface MerchantEntity {
+  readonly id: MerchantId;
+  readonly x: number;
+  readonly y: number;
+  readonly angle: number;
+  readonly moving: boolean;
+  /** Downed by the horde, up again once it is over. */
+  readonly status: 'alive' | 'downed';
+  readonly health: number;
+  readonly maxHealth: number;
+  readonly weapon: WeaponId;
+  /** 0 when not reloading, else 0..1 through the reload, as a player's. */
+  readonly reload: number;
+}
+
 export interface Jewels {
   small: number;
   large: number;

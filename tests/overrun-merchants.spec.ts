@@ -123,6 +123,8 @@ function breachedRoom(players: readonly string[]): { sim: GameSimulation; state:
   for (const id of players) sim.addPlayer(id, id, null, undefined, { loadout: ARMED, highest: 2 });
   sim.snapshot();
   const state = stateOf(sim);
+  // Without the merchants shooting, the horde's share left is the survivors' doing alone.
+  state.merchants = [];
   (state.overrun as NonNullable<SimState['overrun']>).left = 1e-6;
   sim.step();
   return { sim, state };

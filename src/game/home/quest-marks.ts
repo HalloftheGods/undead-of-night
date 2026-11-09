@@ -1,7 +1,7 @@
 // Which stalls show a "!" over their merchant: a quest waiting to be taken, or one finished and waiting for its pay.
 
-import type { PropInstance } from '../../../shared/protocol.ts';
 import { MERCHANT_IDS } from '../../../shared/home-protocol.ts';
+import type { MerchantEntity } from '../../../shared/home-protocol.ts';
 import type { QuestMark } from '../../engine/scene.ts';
 import type { HomeSave } from './home-store.ts';
 import { MERCHANTS } from './merchant-data.ts';
@@ -9,12 +9,12 @@ import { closedStalls } from './shop.ts';
 import { questRows } from './quests.ts';
 
 /** The marks for this save, one per open stall whose merchant has a quest ready or on offer. Nothing without a save. */
-export function questMarks(save: HomeSave | null, highest: number, props: readonly PropInstance[]): QuestMark[] {
+export function questMarks(save: HomeSave | null, highest: number, merchants: readonly Pick<MerchantEntity, 'id' | 'x' | 'y' | 'status'>[]): QuestMark[] {
   if (!save) return [];
   const closed = closedStalls(save.shop);
   const marks: QuestMark[] = [];
   for (const merchant of MERCHANT_IDS) {
-    const stall = props.find((prop) => prop.kind === merchant);
+    const stall = merchants.find((m) => m.id === merchant && m.status === 'alive');
     const isStallShut = !stall || closed.includes(merchant);
     if (isStallShut) continue;
     const rows = questRows(save, merchant, highest);
