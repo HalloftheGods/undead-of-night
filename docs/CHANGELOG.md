@@ -2,6 +2,11 @@
 
 All notable changes to the Undead of Night: Last Round game are documented in this file.
 
+## [2026-11-09] - Glowing eyes on jack-o'-lanterns and candy bowls
+
+### Changed
+- Jack-o'-lanterns and candy pails now only glow at their carved eyes in the dark (`litEyes` in `src/art/environment/halloween.ts`), matching the fiery eye glow and pixel spacing of zombies as a doorstep scare tactic.
+
 ## [2026-11-09] - In-game pixel art Radio player with tape deck controls
 
 ### Added

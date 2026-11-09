@@ -30,23 +30,23 @@ export function stringLights(c: PixelCanvas, x0: number, x1: number, y: number):
   }
 }
 
-const PUMPKIN = ['....g....', '.OoOoOod.', 'OoYYoYYdd', 'OoooYoodd', 'OYoYoYodd', '.OYYYYdd.', '..Ooood..'];
-const SMALL_PUMPKIN = ['..g..', '.OoOd', 'OYoYd', 'OoYdd', '.ood.'];
-const PUMPKIN_INK = { g: olive[1], o: fire[1], O: fire[2], d: fire[0], Y: fire[3] };
-/** The letter the pumpkin grids use for the lit cut-outs of the face. */
-const FACE = 'Y';
+const PUMPKIN = ['....g....', '.OoOoOod.', 'OoEEoEEdd', 'OoooYoodd', 'OYoYoYodd', '.OYYYYdd.', '..Ooood..'];
+const SMALL_PUMPKIN = ['..g..', '.OoOd', 'OEoEd', 'OoYdd', '.ood.'];
+const PUMPKIN_INK = { g: olive[1], o: fire[1], O: fire[2], d: fire[0], Y: fire[3], E: fire[3] };
+/** The letter the pumpkin grids use for the lit eyes: glowing in the dark like zombie eyes. */
+const EYE = 'E';
 
-/** A carved pumpkin sitting on the step, its bottom row on `base`. Lit from inside, so the face glows. */
+/** A carved pumpkin sitting on the step, its bottom row on `base`. Lit from inside, its eyes glowing. */
 export function jackOLantern(c: PixelCanvas, x: number, base: number, small = false): void {
   const rows = small ? SMALL_PUMPKIN : PUMPKIN;
   c.grid(x, base - rows.length + 1, rows, PUMPKIN_INK);
-  litFace(c, x, base - rows.length + 1, rows);
+  litEyes(c, x, base - rows.length + 1, rows);
 }
 
-/** The carved face is where the candle shows through: those pixels burn by themselves after dark. */
-function litFace(c: PixelCanvas, x: number, y: number, rows: readonly string[]): void {
+/** Only the carved eyes burn by themselves after dark, giving a scare tactic silhouette in the night. */
+function litEyes(c: PixelCanvas, x: number, y: number, rows: readonly string[]): void {
   rows.forEach((row, j) => {
-    for (let i = 0; i < row.length; i++) if (row[i] === FACE) markGlow(c, x + i, y + j, fire[3], fire[1]);
+    for (let i = 0; i < row.length; i++) if (row[i] === EYE) markGlow(c, x + i, y + j, fire[3], fire[1]);
   });
 }
 
@@ -112,19 +112,19 @@ const CANDY_INK = { c: fire[2], v: violet[2], b: denim[2], t: teal[2], A: acid[2
 const PAIL = [
   '.dOOOOOOOOd.',
   'oOoooooooodd',
-  'oOYYoooYYodd',
+  'oOEEoooEEodd',
   'oOooooYooodd',
   'oOYYYYYYYodd',
   '.oOYoYoYodd.',
   '..oooooood..',
 ];
-const PAIL_INK = { o: fire[1], O: fire[2], d: fire[0], Y: fire[3] };
+const PAIL_INK = { o: fire[1], O: fire[2], d: fire[0], Y: fire[3], E: fire[3] };
 
 function bowlBase(): PixelCanvas {
   const c = new PixelCanvas(BOWL_FOOT_W + 6, BOWL_GROUND + 2);
   groundShadow(c, BOWL_LEFT, BOWL_GROUND - 1, BOWL_FOOT_W, 2);
   c.grid(BOWL_LEFT - 1, BOWL_GROUND - PAIL.length, PAIL, PAIL_INK);
-  litFace(c, BOWL_LEFT - 1, BOWL_GROUND - PAIL.length, PAIL);
+  litEyes(c, BOWL_LEFT - 1, BOWL_GROUND - PAIL.length, PAIL);
   return c;
 }
 

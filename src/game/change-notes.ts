@@ -22,6 +22,17 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'pumpkin-eyes',
+    date: '2026-11-09',
+    kind: 'better',
+    title: 'Eyes on the Step',
+    deck: 'Jack-o\'-lanterns and candy pails only burn their eyes in the dark.',
+    points: [
+      'Outside the flashlight beam, doorstep pumpkins look just like lurking zombies.',
+      'Candy bowls keep their twin eye glow until searched.',
+    ],
+  },
+  {
     id: 'dry-gun-call',
     date: '2026-11-09',
     kind: 'better',
