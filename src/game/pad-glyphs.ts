@@ -50,3 +50,25 @@ const LABELS: Readonly<Record<PadFamily, Readonly<Record<number, string>>>> = {
 export function padLabel(family: PadFamily, button: number): string {
   return LABELS[family][button] ?? SHARED[button] ?? `Button ${button}`;
 }
+
+const TOKEN = /\{(\w+)\}/g;
+
+function isPadName(name: string): name is keyof typeof PAD {
+  return Object.hasOwn(PAD, name);
+}
+
+/**
+ * Writes a pad's own button words into a prompt. `{a}` is the bottom face button, so
+ * `'{a}: confirm'` reads "A: confirm" on an Xbox pad and "Cross: confirm" on a PlayStation one.
+ * Names are the keys of `PAD` (a b x y lb rb lt rt view start l3 r3 up down left right). Anything
+ * else in braces is left as written.
+ */
+export function fillPadPrompt(template: string, padId: string | null): string {
+  const family = padFamily(padId);
+  return template.replace(TOKEN, (whole, name: string) => (isPadName(name) ? padLabel(family, PAD[name]) : whole));
+}
+
+/** A prompt for the hand in charge: keyboard words, or the pad template filled in for this pad. Touch keeps the keyboard words (its own prompts are separate). */
+export function promptFor(device: 'keyboard' | 'touch' | 'gamepad', words: { readonly keys: string; readonly pad: string }, padId: string | null): string {
+  return device === 'gamepad' ? fillPadPrompt(words.pad, padId) : words.keys;
+}

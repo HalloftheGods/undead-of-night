@@ -87,6 +87,12 @@ describe('level 1 is the game as it was', () => {
 
   it.each([1, 2, 3, 4, 5, 6, 10])('sends the same horde %i as the endless game', (wave) => {
     const roster = waveRoster(wave, createRng(wave));
+    // Horde 1 is the one deliberate change: level 1 softens it (see level-one-opening.spec.ts).
+    if (wave === 1) {
+      expect(roster).toHaveLength(5);
+      expect(roster.every((type) => type === 'walker')).toBe(true);
+      return;
+    }
     const expected = endlessCounts(wave);
     for (const type of ['walker', 'runner', 'bloater', 'brute'] as const) expect(count(roster, type)).toBe(expected[type]);
     expect(rosterAt(1, wave).length).toBe(roster.length);

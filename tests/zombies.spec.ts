@@ -263,11 +263,13 @@ describe('awareness', () => {
   });
 
   it('there is no global homing: a live town leaves a quiet player alone', () => {
-    const sim = new GameSimulation({ seed: 6 });
+    // Level 2 on purpose: level 1 places three slow shamblers by the spawn so the first fight comes early.
+    const sim = new GameSimulation({ seed: 6, startLevel: 2 });
     sim.addPlayer('a', 'a');
     const state = stateOf(sim);
+    const before = state.players[0].health;
     steps(sim, 30 * TICK_RATE);
-    expect(state.players[0].health).toBe(100);
+    expect(state.players[0].health).toBe(before);
     expect(state.zombies.filter((z) => z.mode !== 'wander').length).toBe(0);
   });
 });

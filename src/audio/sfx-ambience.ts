@@ -1,4 +1,5 @@
 import { biomeFor } from '../../shared/biomes.ts';
+import type { Scene } from './music.ts';
 import type { SfxName } from './sfx-registry.ts';
 import { noise, tone, type Recipe } from './voice-kit.ts';
 
@@ -87,6 +88,28 @@ const BED_FOR: Readonly<Record<string, AmbienceName>> = {
 /** The ambience bed for a level's town, or null for a town that has none. */
 export function ambienceFor(level: number): AmbienceName | null {
   return BED_FOR[biomeFor(level).id] ?? null;
+}
+
+/** The bed under a scene: a town's, out in the town between and during hordes; none in the bunker or the menus. */
+export function bedFor(scene: Scene, level: number): AmbienceName | null {
+  const outInTown = scene === 'intermission' || scene === 'wave';
+  return outInTown ? ambienceFor(level) : null;
+}
+
+/** How far a recorded track at full music volume pulls the beds down. */
+export const AMBIENCE_DUCK = 0.5;
+/** A horde's own noise and music carry the scene; the bed stays a thin layer under them. */
+const UNDER_HORDE = 0.4;
+
+/**
+ * How loud the beds sit, 0..1: full in a quiet lull, ducked under the music. `music` is how loud a recorded
+ * track is playing now (the player's music level, or 0 when none plays), so a muted soundtrack ducks nothing.
+ */
+export function ambienceLevel(scene: Scene, music: number): number {
+  const outInTown = scene === 'intermission' || scene === 'wave';
+  if (!outInTown) return 0;
+  const base = scene === 'wave' ? UNDER_HORDE : 1;
+  return base * (1 - AMBIENCE_DUCK * Math.max(0, Math.min(1, music)));
 }
 
 /** Seconds between layers. A layer runs about 6.1 s with a 1.2 s fade, so one every 4.8 s overlaps the last. */

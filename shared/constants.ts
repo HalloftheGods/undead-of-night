@@ -148,6 +148,16 @@ export const LEVEL_CLEAR_HEAL = 25;
 /** First lull: enough to reach a building or two before the first horde. */
 export const LEAD_IN_SEC = 140;
 export const INTERMISSION_SEC = 100;
+/** Level 1 only: the first lull is short, so a new player is not left walking an empty town. */
+export const LEVEL_ONE_LEAD_IN_SEC = 60;
+/** Level 1 only: slow shamblers placed near the spawn so the first fight comes within about 20 s. */
+export const OPENING_SHAMBLERS = 3;
+/** The first walker is in sight at once; the others start beyond sight range and join as the fight makes noise. */
+export const OPENING_SHAMBLER_RINGS: readonly number[] = [110, 150, 195];
+export const OPENING_SHAMBLER_SPEED_SCALE = 0.85;
+/** Level 1 only: Horde 1 brings this share of its usual size, one body every few seconds. */
+export const LEVEL_ONE_HORDE_ONE_SHARE = 0.6;
+export const LEVEL_ONE_HORDE_ONE_GAP_SEC = 2.5;
 /** A horde stops hunting after this long, whatever is left of it. */
 export const HORDE_MAX_SEC = 60;
 /** A horde is frenzied while it hunts: its runners can outpace a player, so they must be dealt with. */

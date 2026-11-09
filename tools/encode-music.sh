@@ -1,11 +1,11 @@
 #!/bin/sh
-# Re-encodes every public/music/*.mp3 to a sibling .ogg (Vorbis, quality 4).
+# Re-encodes every public/music/*.mp3 to a sibling .ogg (Vorbis, quality 2 (about 96 kbps)).
 # Repeatable: a track is skipped when its .ogg is newer than its .mp3. FORCE=1 redoes all.
 # The MP3s stay: the loader falls back to them where a browser cannot play Ogg.
 # Usage: sh tools/encode-music.sh [music-dir]   (default public/music; run from the app root)
 set -eu
 
-QUALITY="${QUALITY:-4}"
+QUALITY="${QUALITY:-2}"
 JOBS="${JOBS:-$(nproc 2>/dev/null || echo 2)}"
 
 encode_one() {

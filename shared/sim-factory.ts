@@ -1,11 +1,10 @@
 import { placeMerchants } from './bunker-merchants.ts';
-import { LEAD_IN_SEC } from './constants.ts';
 import { BASELINE_DIFFICULTY } from './difficulty.ts';
 import type { DifficultyId } from './difficulty.ts';
 import { FlowField } from './flow-field.ts';
 import { BUNKER_LEVEL, BUNKER_SEED } from './home-protocol.ts';
 import { parkBunkerVan } from './level-exit.ts';
-import { FINAL_LEVEL, FIRST_LEVEL, levelPopulation, levelSeed } from './levels.ts';
+import { FINAL_LEVEL, FIRST_LEVEL, leadInSeconds, levelPopulation, levelSeed } from './levels.ts';
 import { placeTownLoot } from './loot.ts';
 import { createRng } from './rng.ts';
 import type { SimState } from './sim-state.ts';
@@ -40,7 +39,7 @@ export function clampLevel(level: number | undefined): number {
 
 export function announceRunStart(sim: SimState): void {
   emit(sim, { type: 'level_start', level: sim.level });
-  emit(sim, { type: 'wave_intermission', wave: 1, seconds: LEAD_IN_SEC });
+  emit(sim, { type: 'wave_intermission', wave: 1, seconds: leadInSeconds(sim.level) });
 }
 
 /** A stocked, peopled town at the start level with nobody in it yet, or an empty bunker. */
@@ -63,7 +62,7 @@ export function createSimState(options: SimulationOptions): SimState {
     exit: null,
     hordesBehind: 0,
     wave: 0,
-    intermissionLeft: LEAD_IN_SEC,
+    intermissionLeft: leadInSeconds(startLevel),
     hordeLeft: 0,
     spawnQueue: [],
     spawnTimer: 0,

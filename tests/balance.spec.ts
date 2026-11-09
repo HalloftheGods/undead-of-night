@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AMMO_POPULATION_SHARE, LEAD_IN_SEC, STANDING_POPULATION, TICK_RATE } from '../shared/constants.ts';
+import { AMMO_POPULATION_SHARE, LEAD_IN_SEC, LEVEL_ONE_LEAD_IN_SEC, STANDING_POPULATION, TICK_RATE } from '../shared/constants.ts';
 import { containerLoot } from '../shared/container-loot.ts';
 import { ammoKillShare } from '../shared/loot.ts';
 import type { ClientInputPacket, PlayerEntity, SnapshotPacket } from '../shared/protocol.ts';
@@ -87,7 +87,8 @@ describe('balance', () => {
     const times = SEEDS.map(idleSurvival);
     console.info(`idle survival (s): ${whole(times)}`);
     for (const seconds of times) {
-      expect(seconds).toBeGreaterThan(30);
+      // Level 1 puts a few slow walkers in sight of the spawn, so an idle player is bitten early.
+      expect(seconds).toBeGreaterThan(5);
       expect(seconds).toBeLessThan(LEAD_IN_SEC + 60);
     }
   }, 60000);
@@ -117,7 +118,7 @@ describe('balance', () => {
 
     // Meaningful: always into the first horde, and several minutes for a typical run.
     for (const run of runs) {
-      expect(run.seconds).toBeGreaterThan(LEAD_IN_SEC);
+      expect(run.seconds).toBeGreaterThan(LEVEL_ONE_LEAD_IN_SEC);
       expect(run.hordes).toBeGreaterThanOrEqual(1);
     }
     expect(median(seconds)).toBeGreaterThan(300);

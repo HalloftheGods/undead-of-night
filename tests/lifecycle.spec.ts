@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BLEEDOUT_SEC, LEAD_IN_SEC, PLAYER_RADIUS, REVIVE_RANGE, REVIVE_SEC, SNAPSHOT_RANGE, STANDING_POPULATION, TICK_RATE, WEAPONS } from '../shared/constants.ts';
+import { BLEEDOUT_SEC, LEAD_IN_SEC, LEVEL_ONE_LEAD_IN_SEC, PLAYER_RADIUS, REVIVE_RANGE, REVIVE_SEC, SNAPSHOT_RANGE, STANDING_POPULATION, TICK_RATE, WEAPONS } from '../shared/constants.ts';
 import { damageZombie } from '../shared/combat.ts';
 import { hurtPlayer } from '../shared/player-health.ts';
 import { GameSimulation } from '../shared/simulation.ts';
@@ -300,7 +300,7 @@ describe('restart', () => {
     expect(sim.map).toBe(map);
     expect(fresh.phase).toBe('intermission');
     expect(fresh.wave).toBe(0);
-    expect(fresh.intermission).toBeCloseTo(LEAD_IN_SEC, 1);
+    expect(fresh.intermission).toBeCloseTo(LEVEL_ONE_LEAD_IN_SEC, 1);
     expect(fresh.gameOver).toBeNull();
     expect(fresh.zombies.some((z) => z.id === leftOver.id)).toBe(false);
     expect(state.populationTarget).toBe(STANDING_POPULATION);
@@ -315,7 +315,9 @@ describe('restart', () => {
       expect(Math.hypot(p.x - map.spawn.x, p.y - map.spawn.y)).toBeLessThan(40);
     }
 
-    steps(sim, LEAD_IN_SEC * TICK_RATE + 1);
+    // The opening shamblers are on them within seconds: nobody dies before the horde.
+    for (const p of stateOf(sim).players) p.health = 1e9;
+    steps(sim, LEVEL_ONE_LEAD_IN_SEC * TICK_RATE + 1);
     expect(sim.snapshot().wave).toBe(1);
   });
 

@@ -1,5 +1,7 @@
 import {
   HORDE_MAX_SEC,
+  LEVEL_ONE_HORDE_ONE_GAP_SEC,
+  LEVEL_ONE_HORDE_ONE_SHARE,
   HORDE_SPEED_SCALE,
   INTERMISSION_SEC,
   SPAWN_MAX_DISTANCE,
@@ -37,7 +39,9 @@ export function waveRoster(
   eventScale = 1,
 ): ZombieType[] {
   const { difficulty, mix } = level;
-  const total = scaleHordeSize(Math.round((5 + wave * 3) * difficulty * eventScale), difficultyId);
+  // Level 1's first horde is a smaller one: the player is still learning the guns.
+  const softened = level.number === 1 && wave === 1 ? LEVEL_ONE_HORDE_ONE_SHARE : 1;
+  const total = scaleHordeSize(Math.round((5 + wave * 3) * difficulty * eventScale * softened), difficultyId);
   const brutes = (wave % 5 === 0 ? wave / 5 : 0) + Math.round(total * mix.brute);
   const bloaters = (wave >= 3 ? Math.min(8, 1 + Math.floor((wave - 3) / 2)) : 0) + Math.round(total * mix.bloater);
   const runnerShare = (wave >= 2 ? Math.min(0.4, 0.14 + (wave - 2) * 0.04) : 0) + mix.runner;
@@ -56,7 +60,8 @@ export function waveRoster(
 
 const healthScale = (wave: number): number => 1 + 0.07 * Math.max(0, wave - 1);
 const speedScale = (wave: number): number => 1 + Math.min(0.3, 0.02 * Math.max(0, wave - 1));
-const spawnInterval = (wave: number): number => Math.max(0.28, 1.15 - 0.07 * wave);
+const spawnInterval = (wave: number, level: number): number =>
+  level === 1 && wave === 1 ? LEVEL_ONE_HORDE_ONE_GAP_SEC : Math.max(0.28, 1.15 - 0.07 * wave);
 
 /** A new zombie knows nothing: it starts roaming wherever it stands. */
 export function spawnZombie(sim: SimState, type: ZombieType, x: number, y: number): void {
@@ -136,7 +141,7 @@ function trickleSpawns(sim: SimState): void {
     zombie.horde = true;
     zombie.mode = 'hunt';
     zombie.speed *= HORDE_SPEED_SCALE;
-    sim.spawnTimer += spawnInterval(sim.wave);
+    sim.spawnTimer += spawnInterval(sim.wave, sim.level);
   }
   const isTimerNegative = sim.spawnTimer < 0;
   if (isTimerNegative) sim.spawnTimer = 0;

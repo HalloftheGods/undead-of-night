@@ -95,6 +95,7 @@ export const SFX = {
   glass_smash: def(FX.glassSmash, 0.45, { gain: 1.6, voices: 3, cooldown: 0.1, vary: 0.1 }),
   car_alarm: def(FX.carAlarm, 2.1, { gain: 1.2, voices: 1, cooldown: 2, vary: 0 }),
   clatter: def(P.clatter, 0.55, { gain: 1.6, voices: 2, cooldown: 0.2, vary: 0.08 }),
+  horde_warning: def(P.hordeWarning, 3.6, { gain: 1.2, voices: 1, cooldown: 5, vary: 0 }),
   wave_start: def(P.waveStart, 5.0, { gain: 1.1, voices: 1, cooldown: 2, vary: 0 }),
   wave_clear: def(P.waveClear, 2.0, { gain: 2, voices: 1, cooldown: 2, vary: 0 }),
   game_over: def(P.gameOver, 4.1, { gain: 0.95, voices: 1, cooldown: 4, vary: 0 }),

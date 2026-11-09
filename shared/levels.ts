@@ -1,4 +1,4 @@
-import { STANDING_POPULATION } from './constants.ts';
+import { LEAD_IN_SEC, LEVEL_ONE_LEAD_IN_SEC, STANDING_POPULATION } from './constants.ts';
 
 /** The look of a town. Palette, lighting and weather only: every level is built from the same art. */
 export type LevelTheme =
@@ -76,3 +76,6 @@ export const levelPopulation = (level: number): number => Math.round(STANDING_PO
 
 /** A level's town name, for anywhere a player reads it. */
 export const townName = (level: number): string => levelDef(level).town;
+
+/** The first lull of a town. Level 1 is short; every other level and the bunker keep the full one. */
+export const leadInSeconds = (level: number): number => (level === FIRST_LEVEL ? LEVEL_ONE_LEAD_IN_SEC : LEAD_IN_SEC);

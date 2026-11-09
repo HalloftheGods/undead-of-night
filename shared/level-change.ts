@@ -1,11 +1,11 @@
 import { placeMerchants } from './bunker-merchants.ts';
 import { offerKeepsakes } from './keepsakes.ts';
-import { LEAD_IN_SEC, LEVEL_CLEAR_HEAL, PLAYER_RADIUS, SPAWN_SCATTER } from './constants.ts';
+import { LEVEL_CLEAR_HEAL, PLAYER_RADIUS, SPAWN_SCATTER } from './constants.ts';
 import { stopSearch } from './container-search.ts';
 import { FlowField } from './flow-field.ts';
 import { BUNKER_LEVEL, BUNKER_SEED } from './home-protocol.ts';
 import { parkBunkerVan } from './level-exit.ts';
-import { levelPopulation, levelSeed } from './levels.ts';
+import { leadInSeconds, levelPopulation, levelSeed } from './levels.ts';
 import { placeTownLoot } from './loot.ts';
 import { giveReturnKit } from './player-health.ts';
 import type { PlayerState, SimState } from './sim-state.ts';
@@ -30,7 +30,7 @@ function emptyWorld(sim: SimState, level: number): void {
   sim.bench = null;
   sim.phase = 'intermission';
   sim.wave = 0;
-  sim.intermissionLeft = LEAD_IN_SEC;
+  sim.intermissionLeft = leadInSeconds(level);
   sim.hordeLeft = 0;
   sim.spawnQueue = [];
   sim.spawnTimer = 0;
@@ -124,5 +124,5 @@ export function moveToNextTown(sim: SimState): void {
   emit(sim, { type: 'level_complete', level: finished });
   emit(sim, { type: 'level_start', level: sim.level });
   for (const p of returning) emit(sim, { type: 'player_revived', playerId: p.id, x: p.x, y: p.y });
-  emit(sim, { type: 'wave_intermission', wave: 1, seconds: LEAD_IN_SEC });
+  emit(sim, { type: 'wave_intermission', wave: 1, seconds: leadInSeconds(sim.level) });
 }
