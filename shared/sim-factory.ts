@@ -72,7 +72,7 @@ export function createSimState(options: SimulationOptions): SimState {
     tracks: [],
     killChains: new Map(),
     spinners: [],
-    flares: [],
+    lures: [],
     drop: null,
     dropDone: false,
     players: [],

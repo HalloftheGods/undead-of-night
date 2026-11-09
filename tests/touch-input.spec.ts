@@ -294,7 +294,7 @@ describe('fingers on the game', () => {
     });
 
     /** Every slot of a full backpack reaches the sim through the key the ring sends. */
-    it('heal, switch gun, throw, light, flare and eat, every one off the backpack ring', () => {
+    it('heal, switch gun, throw, light a spinner or a fountain, and eat, every one off the backpack ring', () => {
       const slots = wheelSlots(fullBackpack());
       expect(slots.map((slot) => slot.code)).toEqual(['KeyH', 'KeyQ', 'KeyG', 'KeyT', 'KeyV', 'KeyX', 'KeyN']);
       for (const slot of slots) {
@@ -305,7 +305,7 @@ describe('fingers on the game', () => {
         heal: true,
         throw: true,
         spinner: true,
-        flare: true,
+        fountain: true,
         eat: true,
         weapon: 'shotgun',
       });

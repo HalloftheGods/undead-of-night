@@ -109,7 +109,7 @@ export function updateSupplyDrop(sim: SimState): void {
   if (isWaiting) {
     drop.phase = 'falling';
     drop.left = DROP_FALL_SEC;
-    sim.flares.push({ x: drop.x, y: drop.y, left: FLARE_SEC, noiseLeft: 0 });
+    sim.lures.push({ x: drop.x, y: drop.y, ownerId: null, sparks: 0, left: FLARE_SEC, noiseLeft: 0 });
     emit(sim, { type: 'drop_called', x: drop.x, y: drop.y, sec: DROP_FALL_SEC });
   } else {
     const isFalling = drop.phase === 'falling';

@@ -89,7 +89,7 @@ export function receiveInput(p: PlayerState, input: ClientInputPacket): void {
   if (wantsHeal) p.healQueued = true;
   p.throwQueued ||= input.throw === true;
   p.spinnerQueued ||= input.spinner === true;
-  p.flareQueued ||= input.flare === true;
+  p.fountainQueued ||= input.fountain === true;
   p.eatQueued ||= input.eat === true;
   if (input.keepsake) p.keepsakeQueued = input.keepsake;
   p.searchHeld = input.search === true;
@@ -113,7 +113,7 @@ function holdFire(p: PlayerState): void {
   p.meleeQueued = false;
   p.throwQueued = false;
   p.spinnerQueued = false;
-  p.flareQueued = false;
+  p.fountainQueued = false;
 }
 
 /** Applies the stored input exactly once, so speed never depends on packet rate. */
@@ -130,7 +130,7 @@ export function updatePlayer(sim: SimState, p: PlayerState): void {
     p.shootQueued = false;
     p.throwQueued = false;
     p.spinnerQueued = false;
-    p.flareQueued = false;
+    p.fountainQueued = false;
     stopSearch(p);
     return;
   }

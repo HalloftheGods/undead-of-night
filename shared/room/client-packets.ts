@@ -33,11 +33,11 @@ function parseAim(aimX: unknown, aimY: unknown): { aimX?: number; aimY?: number 
 
 function parseInput(value: unknown): ClientInputPacket | null {
   if (!isRecord(value)) return null;
-  const { seq, up, down, left, right, angle, aimX, aimY, touch, shoot, reload, weapon, melee, heal, search, sneak, sprint, throw: toss, spinner, flare, eat, keepsake } = value;
+  const { seq, up, down, left, right, angle, aimX, aimY, touch, shoot, reload, weapon, melee, heal, search, sneak, sprint, throw: toss, spinner, fountain, eat, keepsake } = value;
   const numbersValid = typeof seq === 'number' && Number.isFinite(seq) && seq >= 0 && typeof angle === 'number' && Number.isFinite(angle);
   const flags = [up, down, left, right, shoot, reload, melee, heal, search];
   const aim = parseAim(aimX, aimY);
-  const optionalFlags = [touch, sneak, sprint, toss, spinner, flare, eat];
+  const optionalFlags = [touch, sneak, sprint, toss, spinner, fountain, eat];
   const optionalValid = optionalFlags.every((flag) => flag === undefined || typeof flag === 'boolean');
   const isMalformedInput = !numbersValid || !aim || !optionalValid || !flags.every((flag) => typeof flag === 'boolean') || !isWeaponRequest(weapon);
   if (isMalformedInput) return null;
@@ -50,7 +50,7 @@ function parseInput(value: unknown): ClientInputPacket | null {
     ...(sprint === true ? { sprint } : {}),
     ...(toss === true ? { throw: true } : {}),
     ...(spinner === true ? { spinner: true } : {}),
-    ...(flare === true ? { flare: true } : {}),
+    ...(fountain === true ? { fountain: true } : {}),
     ...(eat === true ? { eat: true } : {}),
     ...(isKeepsakeId(keepsake) ? { keepsake } : {}),
     weapon,

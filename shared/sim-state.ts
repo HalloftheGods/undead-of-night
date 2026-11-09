@@ -2,7 +2,7 @@ import type { SugarState } from './candy.ts';
 import type { SupplyDrop } from './supply-drop.ts';
 import type { BossState } from './bosses.ts';
 import type { KillChain } from './kill-chain.ts';
-import type { SpinnerState, FlareState } from './throwables.ts';
+import type { SpinnerState, LureState } from './throwables.ts';
 import type { DifficultyId } from './difficulty.ts';
 import type {
   BulletEntity,
@@ -60,17 +60,17 @@ export interface PlayerHome extends Omit<HomeView, 'overrun' | 'chest'> {
 }
 
 /** Magazines live in `guns` and are read out for snapshots, so there is one copy of the count. */
-export interface PlayerState extends Omit<PlayerEntity, 'mags' | 'gear' | 'bottles' | 'fireworks' | 'flares' | 'home' | 'candy' | 'sugar' | 'keepsakes' | 'keepsakeOffer'> {
+export interface PlayerState extends Omit<PlayerEntity, 'mags' | 'gear' | 'bottles' | 'fireworks' | 'fountains' | 'home' | 'candy' | 'sugar' | 'keepsakes' | 'keepsakeOffer'> {
   bottles: number;
-  /** Fireworks and flares to throw, found in town and left there (`shared/throwables.ts`). */
+  /** Spinners and fountains to light, found in town and left there (`shared/throwables.ts`). */
   fireworks: number;
-  flares: number;
+  fountains: number;
   /** Null outside home mode. */
   home: PlayerHome | null;
   /** A throw asked for and not yet made. */
   throwQueued: boolean;
   spinnerQueued: boolean;
-  flareQueued: boolean;
+  fountainQueued: boolean;
   throwCooldown: number;
   /** Candy carried, oldest first, and candy working now (`shared/candy.ts`). */
   candy: CandyId[];
@@ -292,9 +292,9 @@ export interface SimState {
   tracks: Footprint[];
   /** Each survivor's kill chain, for the points it multiplies (`shared/kill-chain.ts`). */
   killChains: Map<EntityId, KillChain>;
-  /** Lit ground spinners and flares, burning down. */
+  /** Lit ground spinners, and the lures that hiss: fountains and the drop's flare. */
   spinners: SpinnerState[];
-  flares: FlareState[];
+  lures: LureState[];
   /** This town's supply drop, from arming to the end of its marked time. */
   drop: SupplyDrop | null;
   /** The town has had its drop, or tried to and found no ground for it. */

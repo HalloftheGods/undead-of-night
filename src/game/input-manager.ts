@@ -26,7 +26,7 @@ const HEAL_CODE = 'KeyH';
 const SEARCH_CODE = 'KeyE';
 const THROW_CODE = 'KeyG';
 const SPINNER_CODE = 'KeyT';
-const FLARE_CODE = 'KeyV';
+const FOUNTAIN_CODE = 'KeyV';
 const EAT_CODE = 'KeyX';
 const SNEAK_CODES = ['KeyC'];
 const SPRINT_CODES = ['ShiftLeft', 'ShiftRight'];
@@ -49,7 +49,7 @@ const GAME_CODES: ReadonlySet<string> = new Set([
   SEARCH_CODE,
   THROW_CODE,
   SPINNER_CODE,
-  FLARE_CODE,
+  FOUNTAIN_CODE,
   EAT_CODE,
   ...SNEAK_CODES,
   ...SPRINT_CODES,
@@ -144,7 +144,7 @@ export class InputManager {
   private healLatch = false;
   private throwLatch = false;
   private spinnerLatch = false;
-  private flareLatch = false;
+  private fountainLatch = false;
   private eatLatch = false;
   private keepsakeLatch: KeepsakeId | null = null;
   private reloadLatch = false;
@@ -248,7 +248,7 @@ export class InputManager {
     this.healLatch = false;
     this.throwLatch = false;
     this.spinnerLatch = false;
-    this.flareLatch = false;
+    this.fountainLatch = false;
     this.eatLatch = false;
     this.keepsakeLatch = null;
     this.reloadLatch = false;
@@ -336,7 +336,7 @@ export class InputManager {
       heal: this.healLatch,
       ...(this.throwLatch ? { throw: true } : {}),
       ...(this.spinnerLatch ? { spinner: true } : {}),
-      ...(this.flareLatch ? { flare: true } : {}),
+      ...(this.fountainLatch ? { fountain: true } : {}),
       ...(this.eatLatch ? { eat: true } : {}),
       ...(this.keepsakeLatch ? { keepsake: this.keepsakeLatch } : {}),
       search: this.isHeld([SEARCH_CODE]),
@@ -436,7 +436,7 @@ export class InputManager {
     this.healLatch ||= code === HEAL_CODE;
     this.throwLatch ||= code === THROW_CODE;
     this.spinnerLatch ||= code === SPINNER_CODE;
-    this.flareLatch ||= code === FLARE_CODE;
+    this.fountainLatch ||= code === FOUNTAIN_CODE;
     this.eatLatch ||= code === EAT_CODE;
     const weapon = WEAPON_KEYS[code];
     if (weapon) this.weaponLatch = weapon;

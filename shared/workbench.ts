@@ -79,7 +79,7 @@ function holdPlayer(p: PlayerState): void {
   p.healQueued = false;
   p.throwQueued = false;
   p.spinnerQueued = false;
-  p.flareQueued = false;
+  p.fountainQueued = false;
   p.shootQueued = false;
 }
 

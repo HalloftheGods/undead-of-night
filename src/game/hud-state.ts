@@ -68,9 +68,9 @@ export interface HudState {
   readonly medkits: number;
   /** Empty bottles to throw. */
   readonly bottles: number;
-  /** Fireworks to light as spinners, and flares. */
+  /** Fireworks: spinners and fountains. */
   readonly fireworks: number;
-  readonly flares: number;
+  readonly fountains: number;
   /** Candy carried, by name, oldest first: the next eaten is the first not already working. */
   readonly candy: readonly string[];
   /** Candy working now, with whole seconds left. */
@@ -219,7 +219,7 @@ export function buildHud(snapshot: SnapshotPacket, local: PlayerEntity, spectati
     medkits: local.medkits,
     bottles: local.bottles ?? 0,
     fireworks: local.fireworks ?? 0,
-    flares: local.flares ?? 0,
+    fountains: local.fountains ?? 0,
     candy: (local.candy ?? []).map((id) => CANDIES[id].name),
     sugar: (local.sugar ?? []).map((sugar) => ({ name: CANDIES[sugar.id].name, left: Math.ceil(sugar.left) })),
     keepsakes: (local.keepsakes ?? []).map((id) => KEEPSAKES[id].name),

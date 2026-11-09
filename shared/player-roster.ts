@@ -47,7 +47,7 @@ const FRESH_CONNECTION = {
   stepNoiseLeft: 0,
   throwQueued: false,
   spinnerQueued: false,
-  flareQueued: false,
+  fountainQueued: false,
   throwCooldown: 0,
 } as const;
 
@@ -78,7 +78,7 @@ export function createPlayer(arrival: Arrival, spot: { x: number; y: number }): 
     knife: false,
     bottles: 0,
     fireworks: 0,
-    flares: 0,
+    fountains: 0,
     candy: [],
     sugar: [],
     eatQueued: false,

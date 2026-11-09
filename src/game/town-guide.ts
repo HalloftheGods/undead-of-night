@@ -2,7 +2,7 @@
 // can never promise a medkit the town would not have put there.
 //
 // A place's finds come from four sources: what lies on its floors (LOOT_RULES), what is put away in its
-// furniture (CONTAINER_LOOT), what a search hides besides (flares, fireworks and candy), and the few gun parts,
+// furniture (CONTAINER_LOOT), what a search hides besides (fireworks and candy), and the few gun parts,
 // round kits, Radios and jewels a whole town has. Each find is ranked Always, Often, Sometimes or Rare.
 
 import { BOTTLE_FIND_CHANCE, CAR_ALARM_CHANCE } from '../../shared/bottles.ts';
@@ -18,7 +18,7 @@ import type { BuildingKind, PickupType } from '../../shared/protocol.ts';
 import { CAR_RADIO_ODDS, RADIO_ODDS, RADIO_PLACES } from '../../shared/radio.ts';
 import { GUN_EFFECTS, KIT_SOURCES } from '../../shared/round-effect-data.ts';
 import type { GunEffect } from '../../shared/round-effect-data.ts';
-import { CAR_FLARE_ODDS, FLARE_ODDS, FIREWORK_ODDS } from '../../shared/throwables.ts';
+import { CAR_FOUNTAIN_ODDS, FOUNTAIN_ODDS, FIREWORK_ODDS } from '../../shared/throwables.ts';
 import { HOME_BUILDINGS } from '../../shared/treasure.ts';
 import type { LeafColor } from './changelog.ts';
 
@@ -29,7 +29,7 @@ export const TIER_ORDER: readonly FindTier[] = ['always', 'often', 'sometimes', 
 export const TIER_LABELS: Readonly<Record<FindTier, string>> = { always: 'Always', often: 'Often', sometimes: 'Sometimes', rare: 'Rare' };
 
 /** The picture beside a find: a pickup's own icon, one of the HUD's throwables, or the candy wrapper. */
-export type FindIcon = PickupType | 'flare' | 'firework' | 'candy';
+export type FindIcon = PickupType | 'fountain' | 'firework' | 'candy';
 
 export interface GuideFind {
   readonly id: string;
@@ -80,10 +80,10 @@ const PLACE_ORDER: readonly PlaceId[] = [
 const BLURBS: Readonly<Record<PlaceId, string>> = {
   pharmacy: 'The first stop for anyone bleeding. Check behind the counter.',
   clinic: 'Medkits are as common here as bandages. Try the lockers.',
-  police: 'A carbine is always left in the station, and the lockers are full of rounds and road flares.',
+  police: 'A carbine is always left in the station, and the lockers are full of rounds and confiscated fountains.',
   gun_shop: 'A shotgun on the rack every time, and shells to go with it.',
-  garage: 'Fireworks on the shelves, the odd flare, gun parts by the bench.',
-  warehouse: 'Big, dark and mostly empty, but the cabinets hold fireworks and gun parts lie about.',
+  garage: 'Spinners on the shelves, the odd fountain, gun parts by the bench.',
+  warehouse: 'Big, dark and mostly empty, but the cabinets hold spinners and gun parts lie about.',
   grocery: 'Long aisles of first aid. Not much else is left on the shelves.',
   discount: 'Cheap goods: bandages, the odd knife, half a box of rounds.',
   diner: 'A kitchen, so a knife turns up more often here than anywhere. The fridge keeps more than food.',
@@ -154,14 +154,14 @@ function stockFinds(kind: BuildingKind | 'outdoors'): GuideFind[] {
   });
 }
 
-/** Flares, fireworks and candy a search turns up besides its loot. */
+/** Fireworks and candy a search turns up besides its loot. */
 function stashFinds(kind: BuildingKind | 'outdoors', inCars: boolean): GuideFind[] {
-  const flare = inCars ? CAR_FLARE_ODDS : FLARE_ODDS[kind] ?? 0;
+  const fountain = inCars ? CAR_FOUNTAIN_ODDS : FOUNTAIN_ODDS[kind] ?? 0;
   const firework = FIREWORK_ODDS[kind] ?? 0;
   const candy = inCars ? 0 : CANDY_ODDS[kind] ?? 0;
   const stashes: readonly (readonly [Omit<GuideFind, 'tier' | 'weight'>, number])[] = [
-    [{ id: 'flare', name: 'Road flares', icon: 'flare' }, flare],
-    [{ id: 'firework', name: 'Fireworks', icon: 'firework', note: 'Light one for a ground spinner' }, firework],
+    [{ id: 'fountain', name: 'Fountain fireworks', icon: 'fountain', note: 'A lure that lights whatever reaches it' }, fountain],
+    [{ id: 'firework', name: 'Spinner fireworks', icon: 'firework', note: 'Light one for a ground spinner' }, firework],
     [{ id: 'candy', name: 'Candy', icon: 'candy' }, candy],
   ];
   return stashes.filter(([, odds]) => odds > 0).map(([find, odds]) => ({ ...find, tier: stashTier(odds), weight: odds }));
@@ -258,7 +258,7 @@ export interface WhereToLook {
 }
 
 /** The finds the index lists, in the order a player goes looking for them. */
-const LOOKED_FOR: readonly string[] = ['medkit', 'bandage', 'pistol_ammo', 'carbine_ammo', 'shells', 'carbine', 'shotgun', 'knife', 'flare', 'firework', 'candy', 'parts', 'kits', 'radio'];
+const LOOKED_FOR: readonly string[] = ['medkit', 'bandage', 'pistol_ammo', 'carbine_ammo', 'shells', 'carbine', 'shotgun', 'knife', 'fountain', 'firework', 'candy', 'parts', 'kits', 'radio'];
 const PLACES_PER_LINE = 3;
 
 /** For each find, the places it turns up most, best tier first, at most three. */
