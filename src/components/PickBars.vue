@@ -20,23 +20,40 @@ defineProps<{ bars: readonly PickBar[] }>();
 <style scoped>
 .pick-bars {
   display: grid;
-  grid-template-columns: max-content max-content;
-  justify-content: center;
-  gap: max(1px, calc(var(--u) / 2)) calc(var(--u) * 2);
+  grid-template-columns: 1fr 1fr;
+  column-gap: calc(var(--u) * 3);
+  row-gap: calc(var(--u) * 2.5);
+  align-items: center;
+  width: 100%;
+  padding: calc(var(--u) * 1.5) calc(var(--u) * 2) calc(var(--u) * 1);
+  box-sizing: border-box;
 }
 
 .pick-bar {
-  display: grid;
-  grid-column: 1 / -1;
-  grid-template-columns: subgrid;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--u) * 1.5);
+  min-width: 0;
+}
+
+.pick-bar:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+  max-width: 55%;
+  justify-self: center;
+  width: 100%;
 }
 
 .pick-bar-label {
   color: var(--bone-dim);
-  font-size: calc(var(--u) * 3);
+  font-family: 'Silkscreen', monospace;
+  font-size: min(calc(var(--u) * 5.5), 13cqi);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  line-height: 1;
   text-align: left;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .pick-bar.is-strong .pick-bar-label {
@@ -45,12 +62,16 @@ defineProps<{ bars: readonly PickBar[] }>();
 
 .pick-bar-cells {
   display: flex;
-  gap: max(1px, calc(var(--u) / 2));
+  gap: max(1px, calc(var(--u) * 0.75));
+  flex: 1 1 auto;
+  justify-content: flex-end;
 }
 
 .pick-bar-cell {
-  width: calc(var(--u) * 4);
-  height: calc(var(--u) * 2);
+  flex: 1 1 0;
+  min-width: calc(var(--u) * 3);
+  max-width: calc(var(--u) * 6);
+  height: calc(var(--u) * 4);
   background: var(--ink-line);
 }
 
