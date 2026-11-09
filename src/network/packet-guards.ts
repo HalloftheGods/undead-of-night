@@ -135,6 +135,7 @@ export function isWelcomePacket(v: unknown): v is WelcomePacket {
     && isString(v.yourId)
     && hasNumbers(v, ['tickRate', 'mapSeed'])
     && (v.difficulty === undefined || isDifficultyId(v.difficulty))
+    && (v.town === undefined || isNumber(v.town))
     && isFlag(v.resumed);
 }
 

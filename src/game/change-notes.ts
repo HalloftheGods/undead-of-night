@@ -22,6 +22,17 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'coop-same-town',
+    date: '2026-11-09',
+    kind: 'fixed',
+    title: 'No more walking through walls in co-op',
+    deck: 'A friend on an older copy of the game saw a different town.',
+    points: [
+      'If you and the host are on different versions, you are told to reload instead of joining.',
+      'Joining checks that you built the same town as the host.',
+    ],
+  },
+  {
     id: 'candy-bag',
     date: '2026-11-09',
     kind: 'new',
@@ -465,26 +476,6 @@ export const CHANGE_NOTES: readonly ChangeNote[] = [
     points: [
       'The books, the jukebox and the ending now load in the background after the title is up.',
       'Online rooms load their code only when you host or join one.',
-    ],
-  },
-  {
-    id: 'setup-stepper-thumbs',
-    date: '2026-11-07',
-    kind: 'better',
-    title: 'Setup shows your picks',
-    deck: 'Each finished step in the setup stepper shows a little picture of what you chose.',
-    points: ['Your style, mode and difficulty sit in the stepper as thumbnails. Tap one to go back and change it.'],
-  },
-  {
-    id: 'sound-color-size-options',
-    date: '2026-11-07',
-    kind: 'better',
-    title: 'Options for your ears and eyes',
-    deck: 'Set music and sound effects apart, pick colorblind hit colors and make the UI bigger.',
-    points: [
-      'Music and Sound effects each get their own slider under Volume.',
-      'Hit colors: Colorblind swaps red and green for magenta and blue on health bars, callouts and the HUD.',
-      'UI size: Large and Larger make the HUD and menus easier to read on a phone.',
     ],
   },
   ...EARLIER_NOTES,
