@@ -4,7 +4,7 @@
 import type { Container, ContainerKind } from '../../shared/containers.ts';
 import type { PropKind } from '../../shared/protocol.ts';
 import { buildCrateArt } from './containers/cartons.ts';
-import { buildBedArt, buildBenchArt, buildCounterArt } from './containers/fittings.ts';
+import { buildBedArt, buildBenchArt, buildCounterArt, buildDeskArt } from './containers/fittings.ts';
 import { buildFridgeArt, buildLockerArt, buildShelfArt } from './containers/shelving.ts';
 import type { ContainerArt } from './containers/stage.ts';
 import { buildCarArt } from './containers/vehicles.ts';
@@ -14,11 +14,12 @@ import type { PixelSprite } from './types.ts';
 
 export type { ContainerArt } from './containers/stage.ts';
 
-export type ContainerLook = ContainerKind | 'bench' | Exclude<CarLook, 'car'>;
+export type ContainerLook = ContainerKind | 'bench' | 'desk' | Exclude<CarLook, 'car'>;
 
 /** The props that look different from the rest of their kind. */
 const PROP_LOOKS: Partial<Record<PropKind, ContainerLook>> = {
   workbench: 'bench',
+  table: 'desk',
   car_sedan_v: 'car_v',
   car_wreck_h: 'wreck',
   van_h: 'van',
@@ -39,6 +40,7 @@ export function buildContainers(props: Record<PropKind, PixelSprite>): Record<Co
     fridge: buildFridgeArt(props.fridge),
     cabinet: buildCounterArt(props.counter),
     bench: buildBenchArt(props.workbench),
+    desk: buildDeskArt(props.table),
     shelf: buildShelfArt(),
     box: buildCrateArt(props.crate_stack),
     ...buildCarArt(props),

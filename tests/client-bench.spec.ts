@@ -54,7 +54,7 @@ describe('the bench link', () => {
 describe('the bench as a player reads it', () => {
   it('names the next town and who is still to come', () => {
     const hud = benchHud(frame(true), { id: 'a' } as PlayerEntity);
-    expect(hud).toMatchObject({ level: 3, nextTitle: 'Abyssal Depths', youReady: false, waitingFor: 1, secondsLeft: 12 });
+    expect(hud).toMatchObject({ level: 3, nextTitle: 'Four Corners', youReady: false, waitingFor: 1, secondsLeft: 12 });
     expect(benchHud(frame(true), { id: 'b' } as PlayerEntity)?.youReady).toBe(true);
     expect(benchHud(frame(false), { id: 'a' } as PlayerEntity)).toBeNull();
   });
@@ -64,7 +64,7 @@ describe('the bench as a player reads it', () => {
     const walkUp = benchHud(frame(false), { id: 'a', home: { station: 'bench' } } as PlayerEntity);
     expect(between?.walkUp).toBe(false);
     expect(walkUp?.walkUp).toBe(true);
-    expect(benchNote(between!)).toContain('Town 3 is behind you');
+    expect(benchNote(between!)).toContain('Three Country is behind you');
     expect(benchNote(walkUp!)).not.toContain('Town');
 
     const screen = readFileSync(new URL('../src/components/WorkbenchScreen.vue', import.meta.url), 'utf8');

@@ -73,11 +73,12 @@ const KIT_NAMES: Readonly<Record<GunEffect, string>> = { incendiary: 'flame', ac
 
 /** The order pages run in: medicine, guns, the workshops, the shops, then where people lived, then the street. */
 const PLACE_ORDER: readonly PlaceId[] = [
-  'pharmacy', 'clinic', 'police', 'gun_shop', 'garage', 'warehouse', 'grocery', 'discount', 'diner', 'house', 'apartment', 'upstairs', 'cellar', 'cars',
+  'hospital', 'pharmacy', 'clinic', 'police', 'gun_shop', 'garage', 'warehouse', 'grocery', 'discount', 'diner', 'school', 'house', 'apartment', 'upstairs', 'cellar', 'cars',
 ];
 
 /** Each place's line under its name: the magazine's voice, never a rule the tables do not hold. */
 const BLURBS: Readonly<Record<PlaceId, string>> = {
+  hospital: 'The biggest building in town. A medkit waits in the emergency bay every time, and plenty of company with it.',
   pharmacy: 'The first stop for anyone bleeding. Check behind the counter.',
   clinic: 'Medkits are as common here as bandages. Try the lockers.',
   police: 'A carbine is always left in the station, and the lockers are full of rounds and confiscated fountains.',
@@ -87,6 +88,7 @@ const BLURBS: Readonly<Record<PlaceId, string>> = {
   grocery: 'Long aisles of first aid. Not much else is left on the shelves.',
   discount: 'Cheap goods: bandages, the odd knife, half a box of rounds.',
   diner: 'A kitchen, so a knife turns up more often here than anywhere. The fridge keeps more than food.',
+  school: 'Desks and lockers by the dozen: mostly empty, but this is where the confiscated candy went.',
   house: 'Where the spare ammo went: a box in a drawer is why a house is worth going in. Candy waits on the step.',
   apartment: 'Like a house, with more drawers to go through.',
   upstairs: 'Bedrooms: where a night\'s candy haul gets hidden.',

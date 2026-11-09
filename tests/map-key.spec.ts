@@ -1,28 +1,59 @@
-import { describe, expect, it } from 'vitest';
-import { CURSOR_COLOR } from '../src/game/map-cursor.ts';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { mapKey, YOU_ARE_HERE } from '../src/game/map-key.ts';
-import { BUNKER_LEGEND, TOWN_LEGEND } from '../src/game/town-map.ts';
+import { CURSOR_ICON } from '../src/game/map-markers.ts';
+import { fakeCanvas, installFakeBrowser } from './client-fake-dom.ts';
+
+const titles = (inBunker: boolean) => mapKey(inBunker).groups.map((group) => group.title);
+const labels = (inBunker: boolean) => mapKey(inBunker).groups.flatMap((group) => group.entries.map((entry) => entry.label));
 
 describe('the map key', () => {
-  it('calls the town a town map and lists the town legend with its check and cross marks', () => {
+  beforeAll(() => installFakeBrowser());
+
+  it('calls the town a town map and groups its key into marks, places, things on the way and supplies left behind', () => {
     const key = mapKey(false);
     expect(key.title).toBe('Town map');
-    expect(key.legend).toEqual([YOU_ARE_HERE, ...TOWN_LEGEND]);
-    expect(key.marks).toBe(true);
+    expect(titles(false)).toEqual(['Your marks', 'Places', 'On the way', 'Left behind']);
+    expect(labels(false)).toEqual([
+      'You are here', 'Been inside', 'Cleared and searched',
+      'Medical', 'Police', 'Guns', 'Food', 'Garages and yards', 'School', 'Homes',
+      'The van, once it comes', 'A supply drop',
+      'Medical', 'Ammo', 'A weapon', 'Parts and finds',
+    ]);
   });
 
-  it('calls the bunker a bunker map, with no town legend and no town marks', () => {
+  it('calls the bunker a bunker map, with no town places and no town marks', () => {
     const key = mapKey(true);
     expect(key.title).toBe('Bunker map');
-    expect(key.legend).toEqual([YOU_ARE_HERE, ...BUNKER_LEGEND]);
-    expect(key.legend.map(([, label]) => label)).toEqual(['You are here', 'Stations']);
-    expect(key.marks).toBe(false);
-    expect(JSON.stringify(key)).not.toMatch(/town|van|medical|police/i);
+    expect(labels(true)).toEqual(['You are here', 'Stations']);
+    expect(labels(true).join(' ')).not.toMatch(/town|van|medical|police|inside/i);
   });
 
-  it('lists the blinking cursor first, in its own colour, on both maps', () => {
+  it('lists the blinking cursor first on both maps', () => {
     for (const inBunker of [false, true]) {
-      expect(mapKey(inBunker).legend[0]).toEqual([CURSOR_COLOR, 'You are here']);
+      expect(mapKey(inBunker).groups[0].entries[0]).toBe(YOU_ARE_HERE);
+      expect(YOU_ARE_HERE.icon).toBe(CURSOR_ICON);
+    }
+  });
+
+  it('colours the words of the check and cross the way the map does', () => {
+    const tones = mapKey(false).groups[0].entries.map((entry) => entry.tone);
+    expect(tones).toEqual([undefined, 'tick', 'cross']);
+  });
+
+  it('paints every icon inside its own size', () => {
+    for (const inBunker of [false, true]) {
+      for (const { icon } of mapKey(inBunker).groups.flatMap((group) => group.entries)) {
+        const ctx = fakeCanvas().getContext() as unknown as CanvasRenderingContext2D;
+        const fills = vi.spyOn(ctx, 'fillRect');
+        icon.paint(ctx);
+        expect(fills).toHaveBeenCalled();
+        for (const [x, y, w, h] of fills.mock.calls) {
+          expect(x).toBeGreaterThanOrEqual(0);
+          expect(y).toBeGreaterThanOrEqual(0);
+          expect(x + w).toBeLessThanOrEqual(icon.w);
+          expect(y + h).toBeLessThanOrEqual(icon.h);
+        }
+      }
     }
   });
 

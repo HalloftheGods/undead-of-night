@@ -44,7 +44,6 @@ const previewed = ref<number | null>(null);
 
 const levels = computed(() => garageLevels(home));
 const sceneOf = (level: number) => art?.ui.levelScenes[level - 1] ?? null;
-const numbered = (level: number) => (level < 10 ? `0${level}` : `${level}`);
 const LOCK_HINT = 'NOT REACHED YET';
 
 /** The level the big card shows: the one pointed at, else the one picked, else the furthest reached. */
@@ -61,7 +60,7 @@ const featured = computed(() => {
     selectable: level.selectable,
     scene: sceneOf(level.number),
     name: level.selectable ? def.title : 'Classified sector',
-    line: `Level ${numbered(level.number)} - ${theme}. ${goal}`,
+    line: `${def.town} - ${theme}. ${goal}`,
   };
 });
 
@@ -70,6 +69,7 @@ const rows = computed<readonly LevelGridRow[]>(() =>
     const def = levelDef(level.number);
     return {
       number: level.number,
+      town: def.town,
       title: level.title,
       themeLabel: THEME_NAMES[def.theme] ?? def.theme,
       swatch: LEVEL_SWATCH[def.theme],
@@ -77,7 +77,7 @@ const rows = computed<readonly LevelGridRow[]>(() =>
       difficulty: def.difficulty,
       unlocked: level.selectable,
       tag: level.selectable ? 'button' : 'div',
-      startLabel: level.selectable ? `Drive to level ${level.number}: ${level.title}` : undefined,
+      startLabel: level.selectable ? `Drive to ${def.town}: ${level.title}` : undefined,
       thumbnail: sceneOf(level.number),
       cleared: false,
       picked: level.picked,

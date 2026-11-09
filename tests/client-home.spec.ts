@@ -234,7 +234,7 @@ describe('the run from the bunker', () => {
     expect(levelCard).toBeNull();
     expect(hud?.level).toBe(0);
     expect(hordeStatus(hud!).title).not.toMatch(/horde/i);
-    expect(levelLine(hud!.level)).not.toMatch(/level/i);
+    expect(levelLine(hud!.level)).toBe('Zero Point');
   });
 
   describe('a trip out', () => {

@@ -34,6 +34,42 @@ export const CHANGE_NOTES: readonly ChangeNote[] = [
     ],
   },
   {
+    id: 'map-art',
+    date: '2026-11-09',
+    kind: 'better',
+    title: 'A town map drawn in pixel art',
+    deck: 'Press Tab and the town looks like a town: roofs, signs, trees and parked cars.',
+    points: [
+      'Every building has a little roof in its colour, with a sign on top: a cross for medicine, a star for the police, a pistol for guns.',
+      'The van and the supply drop are drawn as a van and a crate on its parachute.',
+      'The key beside the map shows the same pictures, sorted under Your marks, Places, On the way and Left behind.',
+    ],
+  },
+  {
+    id: 'town-names',
+    date: '2026-11-09',
+    kind: 'better',
+    title: 'Every town has a name',
+    deck: 'No more Level 1, Level 2. The towns are named for their numbers.',
+    points: [
+      'The run goes One Town, Two City, Three Country, Four Corners, Fiville and on to Tenacity.',
+      'The bunker is Zero Point.',
+      'The HUD, the town cards, Continue, the Levels page and your records all use the names.',
+    ],
+  },
+  {
+    id: 'schools-and-hospitals',
+    date: '2026-11-09',
+    kind: 'new',
+    title: 'Schools and hospitals',
+    deck: 'The two biggest buildings in town, and nearly every town has both.',
+    points: [
+      'The hospital usually stands Downtown: wards along the back, an emergency bay out front, and a medkit there every time. It is the best-guarded building in town.',
+      'The school usually sits out in Riverside: classrooms, a library and a long hall of lockers. Most of them are empty, but it hides more candy than any shop.',
+      'An ambulance waits outside the hospital, lights going. Both have back doors and look different on the Tab map. The Town Guide has a page for each.',
+    ],
+  },
+  {
     id: 'setup-overlay',
     date: '2026-11-09',
     kind: 'better',

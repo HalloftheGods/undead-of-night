@@ -76,5 +76,8 @@ export const KIT_SOURCES: Partial<Record<BuildingKind, Partial<KitCounts>>> = {
   garage: { incendiary: 3, acid: 2 },
   warehouse: { incendiary: 2, acid: 2, piercing: 1 },
   clinic: { tranq: 3, acid: 1 },
+  hospital: { tranq: 4, acid: 1 },
+  // The science lab.
+  school: { acid: 2 },
   pharmacy: { tranq: 3, acid: 1 },
 };

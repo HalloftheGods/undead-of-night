@@ -1,6 +1,7 @@
 // The Records screen as a printed record book: six leaves, read two at a time on a wide screen and one at a time
 // on a tall one. The leaves' words come from here, so the page only lays them out.
 
+import { townName } from '../../shared/levels.ts';
 import type { DailyLog, DailyResult } from './daily-night.ts';
 import { bestDay, dayLabel, nightFacts, recentDays, streakOf, todaysNight } from './daily-night.ts';
 import { openOf, pagesLabel, turnWithin } from './book-turn.ts';
@@ -97,7 +98,7 @@ export function weekLines(log: DailyLog, now: Date = new Date()): readonly WeekL
       weekday,
       label: dayLabel(key),
       score: result ? String(result.score) : '-',
-      detail: result ? `Level ${result.level}, ${result.kills} kills${practice}` : UNPLAYED[stamp],
+      detail: result ? `${townName(result.level)}, ${result.kills} kills${practice}` : UNPLAYED[stamp],
       stamp,
     };
   });

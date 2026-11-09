@@ -81,7 +81,7 @@ describe('the shared Daily result', () => {
     const { shareText } = await import('../src/game/daily-night.ts');
     const run = { score: 1310, kills: 61, level: 6 };
     expect(shareText('2026-11-07', run, 3, 'https://x/')).toBe(
-      'Undead of Night - Daily Night, 7 Nov\nReached level 6: 1310 points, 61 kills\nStreak: 3 nights in a row\nhttps://x/',
+      'Undead of Night - Daily Night, 7 Nov\nReached Sixburg: 1310 points, 61 kills\nStreak: 3 nights in a row\nhttps://x/',
     );
     expect(shareText('2026-11-07', run, 1, 'https://x/')).not.toContain('Streak');
   });

@@ -16,7 +16,7 @@ import { DOOR_WIDTH } from '../shared/protocol.ts';
 import type { ZombieType } from '../shared/protocol.ts';
 import { GameSimulation } from '../shared/simulation.ts';
 import { buildingBox, circleHitsSolid, doorBox } from '../shared/world-map.ts';
-import { addRoamer, addZombie, eventsOf, findBuilding, findProp, input, pointsAcross, quietSim, stateOf, stepUntil, steps } from './helpers/sim-harness.ts';
+import { addRoamer, addZombie, clearWay, eventsOf, findBuilding, findProp, input, pointsAcross, quietSim, stateOf, stepUntil, steps } from './helpers/sim-harness.ts';
 
 describe('pathing', () => {
   it.each<ZombieType>(['walker', 'runner', 'bloater', 'brute'])('a %s walks around a building with no back door to reach the player', (type) => {
@@ -413,7 +413,8 @@ describe('zombie types', () => {
   it('chained bursts settle and credit the killer once per body', () => {
     const { sim, state } = quietSim();
     const [p] = state.players;
-    const chain = [0, 1, 2, 3].map((i) => addZombie(state, 'bloater', p.x + 90 + i * 20, p.y));
+    const { dx, dy } = clearWay(state, 150);
+    const chain = [0, 1, 2, 3].map((i) => addZombie(state, 'bloater', p.x + dx * (90 + i * 20), p.y + dy * (90 + i * 20)));
     for (const z of chain) z.health = 1;
     damageZombie(state, chain[0], 10, 0, 'a');
     expect(chain.every((z) => z.health === 0)).toBe(true);

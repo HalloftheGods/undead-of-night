@@ -76,7 +76,7 @@
 
     <template #actions>
       <PixelButton v-if="resumeAt !== null && !multi && runStyle === 'arcade'" :disabled="!ready" @press="game.continueSolo()">
-        Continue from level {{ resumeAt }}
+        Continue from {{ townName(resumeAt) }}
       </PixelButton>
       <PixelButton primary silent :disabled="!ready" @press="start">{{ actionLabel }}</PixelButton>
     </template>
@@ -87,6 +87,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue';
 import { DEFAULT_SERVER_PORT } from '../../shared/constants.ts';
 import type { DifficultyId } from '../../shared/difficulty.ts';
+import { townName } from '../../shared/levels.ts';
 import { trackTitlePage } from '../game/analytics/index.ts';
 import { loadCharacter, saveCharacter } from '../game/character-pref.ts';
 import { loadDifficulty, saveDifficulty } from '../game/difficulty-pref.ts';
