@@ -6,6 +6,7 @@ import { LOOT_RULES } from '../shared/loot.ts';
 import type { MapBuilder } from '../shared/map-builder.ts';
 import { BUILDING_DEFS, BUILDING_KINDS, TILE_SIZE, WALL_THICKNESS } from '../shared/protocol.ts';
 import type { BuildingInstance, BuildingKind, PropInstance } from '../shared/protocol.ts';
+import { flightAt, isStoreyKind, stairsPoint } from '../shared/storeys.ts';
 import { generateWorldMap } from '../shared/world-map.ts';
 import { buildingBox, doorBox, propBox } from '../shared/world-query.ts';
 import { guidePlaces } from '../src/game/town-guide.ts';
@@ -31,7 +32,7 @@ const overlaps = (a: Box, b: Box): boolean =>
 describe('schools and hospitals', () => {
   it('are the biggest buildings in town', () => {
     const area = (kind: BuildingKind) => BUILDING_DEFS[kind].w * BUILDING_DEFS[kind].h;
-    const others = BUILDING_KINDS.filter((kind) => !BIG.includes(kind));
+    const others = BUILDING_KINDS.filter((kind) => !BIG.includes(kind) && !isStoreyKind(kind));
     for (const kind of BIG) for (const other of others) expect(area(kind), `${kind} vs ${other}`).toBeGreaterThan(area(other));
   });
 
@@ -84,6 +85,21 @@ describe('schools and hospitals', () => {
     }
     for (const kind of BIG) expect(found[kind] / TOWNS, kind).toBeGreaterThanOrEqual(LEAST_SHARE);
   }, 120000);
+
+  it('each have a second floor, up stairs you walk onto, laid out round the same corridor', () => {
+    const upstairs: Partial<Record<BuildingKind, BuildingKind>> = { hospital: 'hospital_upstairs', school: 'school_upstairs' };
+    for (const seed of [1, 2, 3, 99]) {
+      const map = generateWorldMap(seed);
+      for (const building of map.buildings.filter((b) => BIG.includes(b.kind))) {
+        const floor = map.buildings.find((b) => b.of === building.id);
+        expect(floor?.kind, `seed ${seed} ${building.kind}`).toBe(upstairs[building.kind]);
+        const foot = stairsPoint(building)!;
+        expect(flightAt(map, foot.x, foot.y)?.label).toBe('UPSTAIRS');
+        expect(flightAt(map, foot.x, foot.y)?.to).toEqual(stairsPoint(floor!));
+      }
+    }
+    for (const kind of BIG) expect((PARTITIONS[upstairs[kind]!] ?? []).length).toBeGreaterThan(4);
+  });
 
   it('each have a page in the Town Guide', () => {
     const pages = guidePlaces().map((place) => place.id);

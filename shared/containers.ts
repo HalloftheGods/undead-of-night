@@ -85,8 +85,10 @@ export const ROOM_CONTAINERS: Record<BuildingKind, Partial<Record<PropKind, Cont
   discount: { counter: 'cabinet', shelf: 'shelf', crate_stack: 'box', locker: 'locker' },
   pharmacy: { counter: 'cabinet' },
   clinic: { locker: 'locker', counter: 'cabinet', shelf: 'shelf' },
-  hospital: { bed: 'drawer', locker: 'locker', counter: 'cabinet', shelf: 'shelf' },
+  hospital: { bed: 'drawer', locker: 'locker', counter: 'cabinet', shelf: 'shelf', workbench: 'cabinet' },
+  hospital_upstairs: { bed: 'drawer', locker: 'locker', counter: 'cabinet', shelf: 'shelf' },
   school: { table: 'drawer', locker: 'locker', shelf: 'shelf', fridge: 'fridge', counter: 'cabinet' },
+  school_upstairs: { table: 'drawer', locker: 'locker', shelf: 'shelf', workbench: 'cabinet' },
   police: { locker: 'locker', counter: 'cabinet', shelf: 'shelf' },
   gun_shop: { locker: 'locker', counter: 'cabinet', shelf: 'shelf' },
 };

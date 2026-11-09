@@ -43,8 +43,8 @@ export interface GuideFind {
   readonly note?: string;
 }
 
-/** A house's upstairs and an apartment's share a page, under `upstairs`. */
-export type PlaceId = Exclude<BuildingKind, 'apartment_upstairs'> | 'cars' | 'fireworks_bus';
+/** A house's upstairs and an apartment's share a page, under `upstairs`; the floors over the hospital and school go on theirs. */
+export type PlaceId = Exclude<BuildingKind, 'apartment_upstairs' | 'hospital_upstairs' | 'school_upstairs'> | 'cars' | 'fireworks_bus';
 
 export interface GuidePlace {
   readonly id: PlaceId;
@@ -245,11 +245,17 @@ function fireworksBusPlace(): GuidePlace {
   return { id: 'fireworks_bus', name: 'S.O.S. Fireworks', picture: { container: 'booth' }, blurb: BLURBS.fireworks_bus, searchIn: ['booth'], finds: [fireworks] };
 }
 
+/** Floors read on another kind's page, since their tables differ from it only in a piece or two. */
+const SAME_PAGE: Partial<Record<PlaceId, BuildingKind>> = {
+  upstairs: 'apartment_upstairs',
+  hospital: 'hospital_upstairs',
+  school: 'school_upstairs',
+};
+
 function buildingPlace(kind: Exclude<PlaceId, 'cars' | 'fireworks_bus'>): GuidePlace {
-  const isUpstairs = kind === 'upstairs';
-  // A house's upstairs and an apartment's read as one page: their tables only differ in a fridge.
-  const finds = isUpstairs ? mergeFinds(buildingFinds('upstairs'), buildingFinds('apartment_upstairs')) : buildingFinds(kind);
-  const spots = isUpstairs ? [ROOM_CONTAINERS.upstairs, ROOM_CONTAINERS.apartment_upstairs] : [ROOM_CONTAINERS[kind]];
+  const also = SAME_PAGE[kind];
+  const finds = also ? mergeFinds(buildingFinds(kind), buildingFinds(also)) : buildingFinds(kind);
+  const spots = also ? [ROOM_CONTAINERS[kind], ROOM_CONTAINERS[also]] : [ROOM_CONTAINERS[kind]];
   const hasBowl = DOORSTEP_HOMES.has(kind);
   if (hasBowl) spots.push({ candy_bowl: 'bowl' });
   return { id: kind, name: BUILDING_DEFS[kind].label, picture: PICTURES[kind] ?? { building: kind }, blurb: BLURBS[kind], searchIn: searchSpots(spots), finds: ranked(finds) };

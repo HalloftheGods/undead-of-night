@@ -22,7 +22,7 @@ describe('floors above and below', () => {
     expect(map.buildings.filter((b) => b.kind === 'cellar').length).toBeGreaterThan(0);
     expect(townBuildings(map).length + storeys.length).toBe(map.buildings.length);
     for (const storey of storeys) {
-      expect(['house', 'apartment']).toContain(houseOf(map, storey).kind);
+      expect(['house', 'apartment', 'hospital', 'school']).toContain(houseOf(map, storey).kind);
       expect(storey.y).toBeGreaterThanOrEqual(townHeight(map));
       expect(buildingAt(map, storey.x + 40, storey.y + 40)).toBe(storey);
     }

@@ -123,6 +123,8 @@ export function buildEnvironment(): EnvironmentArt {
       upstairs: [buildGableHouse()],
       cellar: [buildGableHouse()],
       apartment_upstairs: [buildBrickApartment()],
+      hospital_upstairs: [buildHospital()],
+      school_upstairs: [buildSchool()],
     },
     interior: buildInterior(),
     barrelFire: buildBarrelFire(),

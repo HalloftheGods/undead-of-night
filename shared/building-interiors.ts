@@ -29,25 +29,45 @@ const LAYOUTS: Record<BuildingKind, readonly Slot[]> = {
     ['table', 16, 88],
     ['locker', 88, NORTH_WALL], ['shelf', 144, 96], ['locker', 16, 74, 0.5],
   ],
-  // Three beds to a ward and a cabinet by each ward's door; the supply room between them stays clear front to back.
-  // The lobby keeps the waiting room by the west wall and two trolleys of the emergency bay by the east.
+  // Stores by the back door, the operating table, two exam rooms; the nurses' station in the corridor; imaging,
+  // the waiting room with reception, and two trolleys in the emergency bay.
   hospital: [
-    ['bed', 8, NORTH_BED], ['bed', 34, NORTH_BED], ['bed', 60, NORTH_BED], ['locker', 16, 90],
-    ['locker', 116, NORTH_WALL], ['locker', 188, NORTH_WALL], ['shelf', 112, 70], ['shelf', 176, 70],
-    ['bed', 238, NORTH_BED], ['bed', 264, NORTH_BED], ['bed', 290, NORTH_BED, 0.7], ['locker', 296, 90],
-    ['shelf', 6, 112], ['locker', 298, 112, 0.6],
-    ['table', 96, 140], ['counter', 192, 146],
-    ['sofa', 16, 180], ['sofa', 60, 180, 0.6],
-    ['bed', 256, 180], ['bed', 288, 180, 0.6],
+    ['shelf', 6, NORTH_WALL], ['locker', 90, NORTH_WALL], ['shelf', 6, 50],
+    ['bed', 148, NORTH_BED], ['locker', 114, 74], ['locker', 190, 74],
+    ['bed', 223, NORTH_BED], ['locker', 264, NORTH_WALL], ['bed', 290, NORTH_BED],
+    ['counter', 96, 92],
+    ['workbench', 6, 146], ['bed', 72, 176],
+    ['table', 104, 148], ['counter', 170, 146], ['sofa', 104, 186], ['sofa', 180, 186, 0.6],
+    ['bed', 224, 176], ['bed', 290, 176, 0.7], ['locker', 298, 142],
   ],
-  // A row of desks and the teacher's desk in each classroom, books along the library's back wall, and the hall doubles as the lunch room.
+  // Two beds to a patient room, and a station for the nurses with the linen in the corridor outside.
+  hospital_upstairs: [
+    ['bed', 6, NORTH_BED], ['bed', 56, NORTH_BED], ['bed', 86, NORTH_BED], ['bed', 136, NORTH_BED],
+    ['bed', 166, NORTH_BED], ['bed', 216, NORTH_BED, 0.7], ['locker', 246, NORTH_WALL], ['bed', 290, NORTH_BED],
+    ['shelf', 152, 90],
+    ['bed', 6, 176], ['bed', 56, 176, 0.7], ['counter', 86, 180], ['locker', 144, 142],
+    ['bed', 166, 176], ['bed', 216, 176], ['bed', 246, 176], ['locker', 298, 142],
+  ],
+  // Kit in the gym, rows of desks in the classrooms, lockers down the hall, the secretary's counter in the office,
+  // and the cafeteria's serving counter over its tables.
   school: [
-    ['table', 6, 28], ['table', 34, 28], ['table', 62, 28, 0.7], ['table', 66, 80],
-    ['shelf', 106, NORTH_WALL], ['shelf', 146, NORTH_WALL], ['table', 112, 56],
-    ['table', 232, 28, 0.7], ['table', 258, 28], ['table', 196, 80],
-    ['locker', 72, 104], ['locker', 88, 104], ['locker', 104, 104, 0.6],
-    ['locker', 176, 104], ['locker', 192, 104], ['locker', 208, 104, 0.6], ['fridge', 266, 104],
-    ['table', 10, 160], ['table', 36, 160], ['table', 176, 160], ['table', 202, 160], ['counter', 230, 160],
+    ['shelf', 6, NORTH_WALL], ['locker', 114, NORTH_WALL],
+    ['table', 148, 28], ['table', 174, 28], ['table', 225, 28], ['table', 258, 28],
+    ['locker', 6, 72], ['locker', 22, 72], ['locker', 38, 72, 0.6], ['locker', 128, 72], ['locker', 144, 72], ['locker', 192, 72], ['locker', 208, 72],
+    ['locker', 6, 112], ['locker', 22, 112], ['locker', 224, 112], ['locker', 240, 112, 0.6],
+    ['locker', 6, 126], ['counter', 56, 159], ['table', 6, 164],
+    ['fridge', 210, 126], ['counter', 234, 130],
+    ['table', 180, 168], ['table', 206, 168], ['table', 232, 168], ['table', 258, 168],
+  ],
+  // Classrooms with desks along the back, benches in the science lab, the library and one more classroom.
+  school_upstairs: [
+    ['table', 6, 28], ['table', 32, 28],
+    ['workbench', 104, 26], ['workbench', 144, 26],
+    ['table', 225, 28], ['table', 258, 28],
+    ['locker', 72, 72], ['locker', 88, 72], ['locker', 104, 72, 0.6], ['locker', 176, 72], ['locker', 192, 72],
+    ['locker', 112, 112], ['locker', 128, 112], ['locker', 224, 112], ['locker', 240, 112],
+    ['shelf', 6, 128], ['shelf', 6, 164], ['shelf', 38, 164], ['shelf', 70, 164], ['table', 112, 164],
+    ['table', 150, 160], ['table', 176, 160], ['table', 232, 160], ['table', 258, 160],
   ],
   police: [
     ['locker', 16, NORTH_WALL], ['locker', 32, NORTH_WALL], ['locker', 48, NORTH_WALL], ['locker', 64, NORTH_WALL],

@@ -33,6 +33,18 @@ export const CHANGE_NOTES: readonly ChangeNote[] = [
     ],
   },
   {
+    id: 'big-buildings-upstairs',
+    date: '2026-11-09',
+    kind: 'better',
+    title: 'Hospitals and schools go upstairs',
+    deck: 'Both now have a second floor, and rooms laid out like the real thing.',
+    points: [
+      'The hospital has a corridor with a nurses\' station, an operating room, exam rooms, imaging, and reception off the lobby. The patient wards are upstairs.',
+      'The school has a long hall of lockers with the gym, classrooms, the office and the cafeteria off it. Upstairs there are more classrooms, a science lab and the library.',
+      'The stairs are at the end of the main corridor. Walk onto them to go up, and anything chasing you follows.',
+    ],
+  },
+  {
     id: 'fireworks-bus',
     date: '2026-11-09',
     kind: 'new',
