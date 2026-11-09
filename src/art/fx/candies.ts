@@ -177,6 +177,22 @@ const POPPING_EYEBALLS: Grid = [
   '...eeeee....',
 ];
 
+/** A red-hot cinnamon ball with flames licking up off it. */
+const FIREBALLS: Grid = [
+  '....Y..Y....',
+  '...YB.YBY...',
+  '..YBCYBCBY..',
+  '..BCDCCDCB..',
+  '...tttttt...',
+  '..tuuttttt..',
+  '.tuWutttttt.',
+  '.tuuttttttt.',
+  '.ttttttttts.',
+  '.tttttttsss.',
+  '..ttttssss..',
+  '...ssssss...',
+];
+
 /** A whole chocolate bar, half out of its wrapper. */
 const FULL_SIZE_BAR: Grid = [
   'tttttwwwwwww',
@@ -200,6 +216,7 @@ const GRIDS: Readonly<Record<CandyId, Grid>> = {
   licorice_lash: LICORICE_LASH,
   caramel_apple: CARAMEL_APPLE,
   popping_eyeballs: POPPING_EYEBALLS,
+  fireballs: FIREBALLS,
   full_size_bar: FULL_SIZE_BAR,
 };
 

@@ -68,8 +68,8 @@ import MenuLink from './MenuLink.vue';
 import { useGame } from './use-game.ts';
 
 const PICK_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
-/** Most cards to a row: twelve kinds make two rows of six on a wide screen, four rows of three on a tall one. */
-const WIDE_COLUMNS = 6;
+/** Most cards to a row: every kind fits two rows of seven on a wide screen, rows of three on a tall one. */
+const WIDE_COLUMNS = 7;
 const TALL_COLUMNS = 3;
 
 const { hud, art, mode } = defineProps<{ hud: HudState; art: ArtBook; mode: TransportKind }>();

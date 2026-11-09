@@ -37,6 +37,7 @@ export const CANDIES: Readonly<Record<CandyId, CandyDef>> = {
   licorice_lash: { id: 'licorice_lash', name: 'Black Licorice Lash', stat: 'AIM', blurb: 'Heads are easier to hit.', weight: 10 },
   caramel_apple: { id: 'caramel_apple', name: 'Caramel Apple', stat: 'REVIVE', blurb: 'Go down while it lasts and you get straight back up.', weight: 6 },
   popping_eyeballs: { id: 'popping_eyeballs', name: 'Popping Eyeballs', stat: 'SPARKS', blurb: 'Spinners throw sparks half as far again.', weight: 8 },
+  fireballs: { id: 'fireballs', name: 'Fireballs', stat: 'FIRE', blurb: 'Every shot is a flame round: it sets zombies alight.', weight: 7 },
   full_size_bar: { id: 'full_size_bar', name: 'Full-Size Bar', stat: 'ALL', blurb: 'A little of everything, but not for long.', weight: 2 },
 };
 
@@ -45,7 +46,7 @@ export const CANDY_ORDER = Object.keys(CANDIES) as CandyId[];
 /** About a horde. */
 export const CANDY_SEC = 75;
 export const FULL_SIZE_SEC = 20;
-/** What every other candy is worth while a Full-Size Bar works. A Caramel Apple needs the real thing. */
+/** What every other candy is worth while a Full-Size Bar works. A Caramel Apple and Fireballs need the real thing. */
 export const FULL_SIZE_STRENGTH = 0.5;
 
 // What each does at full strength.

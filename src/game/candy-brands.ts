@@ -32,6 +32,7 @@ export const CANDY_BRANDS: Readonly<Record<CandyId, CandyBrand>> = {
   licorice_lash: brand('#c0c6c8', '#0d0b16', '#484e68', -12),
   caramel_apple: brand('#e85c40', '#2c1c28', '#ac8458', 0, 2),
   popping_eyeballs: brand('#faf2d4', '#5ca82c', '#b82a30', 0, -2),
+  fireballs: brand('#fff0b4', '#a03018', '#e8701c', -8, -3),
   full_size_bar: brand('#ffc03c', '#b82a30', '#4e3432', 0, 0, 0.18),
 };
 

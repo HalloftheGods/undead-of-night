@@ -28,7 +28,7 @@ export type PlayerStatus = 'alive' | 'downed' | 'dead';
 /** Halloween candy: a short boost each (shared/candy.ts). */
 export type CandyId =
   | 'sour_skulls' | 'fang_taffy' | 'ghost_gum' | 'pumpkin_fizz' | 'witchs_brittle' | 'bat_bites'
-  | 'corn_rush' | 'jawbreaker' | 'licorice_lash' | 'caramel_apple' | 'popping_eyeballs' | 'full_size_bar';
+  | 'corn_rush' | 'jawbreaker' | 'licorice_lash' | 'caramel_apple' | 'popping_eyeballs' | 'fireballs' | 'full_size_bar';
 
 /** Permanent for the run, one of three chosen after every second town (shared/keepsakes.ts). */
 export type KeepsakeId = 'rabbit_foot' | 'sneakers' | 'bandolier' | 'rosary' | 'lighter' | 'old_watch' | 'treat_bag' | 'dog_tags';
