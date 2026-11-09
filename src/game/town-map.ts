@@ -2,7 +2,7 @@ import { townContainers } from '../../shared/containers.ts';
 import { isBunkerMap } from '../../shared/home-protocol.ts';
 import { isStorey } from '../../shared/storeys.ts';
 import { groundOf } from '../../shared/world-query.ts';
-import { BUILDING_DEFS, TILE_KINDS, TILE_SIZE } from '../../shared/protocol.ts';
+import { BUILDING_DEFS, PROP_DEFS, TILE_KINDS, TILE_SIZE } from '../../shared/protocol.ts';
 import type { LeftoverView } from '../../shared/leftovers.ts';
 import type { BuildingInstance, BuildingKind, DropView, EntityId, ExitEntity, PlayerEntity, TileKind, WorldMap } from '../../shared/protocol.ts';
 import { drawOutlinedText, FONT_HEIGHT, textWidth } from '../engine/bitmap-font.ts';
@@ -60,6 +60,9 @@ const FOOD = '#5c9450';
 const WORK = '#86745a';
 const HOMES = '#4c4c56';
 const DROP_COLOR = '#e0463a';
+/** The S.O.S. Fireworks bus, pink like the sparks it sells. */
+const FIREWORKS_COLOR = '#ff7ad0';
+const FIREWORKS_LABEL = 'Fireworks';
 export const EXIT_COLOR = '#ffc03c';
 
 const BUILDING_COLOR: Record<BuildingKind, string> = {
@@ -87,6 +90,7 @@ export const TOWN_LEGEND: readonly (readonly [string, string])[] = [
   [WORK, 'Garages and yards'],
   [FOOD, 'Food'],
   [HOMES, 'Homes'],
+  [FIREWORKS_COLOR, 'S.O.S. Fireworks bus'],
   [EXIT_COLOR, 'The van, once it comes'],
   [DROP_COLOR, 'A supply drop'],
   ...LEFTOVER_LEGEND,
@@ -164,6 +168,24 @@ function drawPixelLine(
       err += dx;
       cy += sy;
     }
+  }
+}
+
+/** The fireworks bus as a block of its own colour where it is parked. */
+function paintFireworksBus(ctx: CanvasRenderingContext2D, map: WorldMap, worldPerPx: number, placed: LabelBox[]): void {
+  const { w, h } = PROP_DEFS.fireworks_bus;
+  for (const prop of map.props) {
+    const isBus = prop.kind === 'fireworks_bus';
+    if (!isBus) continue;
+    const x0 = Math.round((prop.x - w / 2) / worldPerPx);
+    const y0 = Math.round((prop.y - h) / worldPerPx);
+    const x1 = Math.round((prop.x + w / 2) / worldPerPx);
+    const y1 = Math.round(prop.y / worldPerPx);
+    ctx.fillStyle = EDGE_COLOR;
+    ctx.fillRect(x0 - 1, y0 - 1, x1 - x0 + 2, y1 - y0 + 2);
+    ctx.fillStyle = FIREWORKS_COLOR;
+    ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+    placeLabel(ctx, FIREWORKS_LABEL, Math.round((x0 + x1) / 2), y1 + 3, LABEL_COLOR, placed);
   }
 }
 
@@ -247,6 +269,7 @@ export class TownMapView {
     paintBuildings(ctx, this.map);
     this.paintStations(ctx);
     const placed: LabelBox[] = [];
+    paintFireworksBus(ctx, this.map, this.worldPerPx, placed);
     for (const building of this.map.buildings) {
       const named = isLandmark(building.kind) && !isStorey(building);
       if (!named) continue;

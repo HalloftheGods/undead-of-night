@@ -116,9 +116,15 @@ const JACK_RADIUS = 100;
 const JACK_TO_DOOR = 25;
 const JACK_UP = 10;
 
+/** The bulbs strung along the fireworks bus: a warm pool over its hatch and a pink one at each end, up on its side. */
+const BUS_GLOWS: readonly (readonly [dx: number, radius: number, color: string])[] = [[0, 130, '#ffb04a'], [-40, 84, '#ff7ad0'], [40, 84, '#ff7ad0']];
+const BUS_GLOW_DOWN = -14;
+
 function lightsFor(props: readonly PropInstance[], rng: Rng): MapLight[] {
   const lights: MapLight[] = [];
   for (const prop of props) {
+    const isFireworksBus = prop.kind === 'fireworks_bus';
+    if (isFireworksBus) for (const [dx, radius, color] of BUS_GLOWS) lights.push({ x: prop.x + dx, y: prop.y + BUS_GLOW_DOWN, radius, color, flicker: true });
     const isCandyBowl = prop.kind === 'candy_bowl';
     if (isCandyBowl) lights.push({ x: prop.x + JACK_TO_DOOR, y: prop.y - JACK_UP, radius: JACK_RADIUS, color: JACK_GLOW, flicker: true });
     const isFireBarrel = prop.kind === 'fire_barrel';

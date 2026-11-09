@@ -3,7 +3,7 @@ import type { BuildingKind, PickupType, PropKind, WorldMap } from './protocol.ts
 import { buildingAt, isSolidProp, propBox } from './world-query.ts';
 import type { Box } from './world-query.ts';
 
-export type ContainerKind = 'drawer' | 'locker' | 'fridge' | 'cabinet' | 'shelf' | 'box' | 'car' | 'bowl';
+export type ContainerKind = 'drawer' | 'locker' | 'fridge' | 'cabinet' | 'shelf' | 'box' | 'car' | 'bowl' | 'booth';
 
 /** Somewhere to search, fixed by the town itself, so a client works these out from the map alone. */
 export interface Container {
@@ -36,6 +36,8 @@ export interface ContainerState {
   opened: boolean;
   /** Null when there is nothing in it, or nothing left. */
   loot: ContainerLoot | null;
+  /** The fireworks bus alone: how many it has left to hand out. */
+  fireworks?: number;
 }
 
 /** Seconds of holding the key: a drawer is quick, a locker or car has more to go through. */
@@ -49,6 +51,8 @@ export const SEARCH_SEC: Record<ContainerKind, number> = {
   car: 2,
   // A handful out of a bowl: as quick as a search gets.
   bowl: 1,
+  // Picking a couple off the counter of the fireworks bus.
+  booth: 1.5,
 };
 
 export const CONTAINER_LABEL: Record<ContainerKind, string> = {
@@ -60,6 +64,7 @@ export const CONTAINER_LABEL: Record<ContainerKind, string> = {
   box: 'BOX',
   car: 'CAR',
   bowl: 'CANDY BOWL',
+  booth: 'FIREWORKS BUS',
 };
 
 /** Gap from the player's edge to the furniture that still counts as within reach. */
@@ -101,6 +106,7 @@ export const OUTDOOR_CONTAINERS: Partial<Record<PropKind, ContainerKind>> = {
   ambulance_h: 'car',
   crate_stack: 'box',
   candy_bowl: 'bowl',
+  fireworks_bus: 'booth',
 };
 
 interface TownContainers {

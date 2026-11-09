@@ -13,10 +13,10 @@ const placeOf = (id: GuidePlace['id']): GuidePlace => {
 const tierOf = (id: GuidePlace['id'], find: string) => placeOf(id).finds.find((each) => each.id === find)?.tier;
 
 describe('the Town Guide', () => {
-  it('has a page for every kind of building, upstairs read as one, and one for the street', () => {
+  it('has a page for every kind of building, upstairs read as one, one for the street and one for the fireworks bus', () => {
     const ids = guidePlaces().map((place) => place.id);
     const covered = BUILDING_KINDS.filter((kind) => kind !== 'apartment_upstairs');
-    expect([...ids].sort()).toEqual([...covered, 'cars'].sort());
+    expect([...ids].sort()).toEqual([...covered, 'cars', 'fireworks_bus'].sort());
   });
 
   it('lists every find a building\'s floors can hold', () => {

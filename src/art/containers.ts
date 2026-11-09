@@ -9,6 +9,7 @@ import { buildFridgeArt, buildLockerArt, buildShelfArt } from './containers/shel
 import type { ContainerArt } from './containers/stage.ts';
 import { buildCarArt } from './containers/vehicles.ts';
 import { buildCandyBowlArt } from './environment/halloween.ts';
+import { buildFireworksBusSoldOut } from './environment/fireworks-bus.ts';
 import type { CarLook } from './containers/vehicles.ts';
 import type { PixelSprite } from './types.ts';
 
@@ -43,5 +44,6 @@ export function buildContainers(props: Record<PropKind, PixelSprite>): Record<Co
     box: buildCrateArt(props.crate_stack),
     ...buildCarArt(props),
     bowl: buildCandyBowlArt(props.candy_bowl),
+    booth: { closed: props.fireworks_bus, opened: buildFireworksBusSoldOut() },
   };
 }

@@ -9,6 +9,7 @@ import { buildForge, buildJukebox, buildLevelMap } from './environment/bunker-pr
 import { buildClinic } from './environment/clinic.ts';
 import { buildDiner } from './environment/diner.ts';
 import { buildDiscount } from './environment/discount.ts';
+import { buildFireworksBus } from './environment/fireworks-bus.ts';
 import { buildInterior } from './environment/floors.ts';
 import { buildBed, buildCounter, buildShelf, buildSofa, buildTable, buildWorkbench } from './environment/furniture.ts';
 import { buildGarage } from './environment/garage.ts';
@@ -90,6 +91,7 @@ export function buildEnvironment(): EnvironmentArt {
       blast_door: buildBlastDoor(),
       chest: buildChest(),
       candy_bowl: buildCandyBowl(),
+      fireworks_bus: buildFireworksBus(),
     },
     paintJobs: {
       car_sedan_h: CAR_PAINTS.map(buildSedanH),

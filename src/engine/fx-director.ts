@@ -29,6 +29,9 @@ const SPINNER_SPARK_LIFE = 0.45;
 /** What a searcher is told they found besides the loot. */
 function stashLabel(event: Extract<GameEvent, { type: 'container_opened' }>): string {
   if (event.candy) return CANDIES[event.candy].name.toUpperCase();
+  const armful = event.fireworks ?? 1;
+  const tookSeveral = armful > 1;
+  if (tookSeveral) return `+${armful} FIREWORKS`;
   return event.stash === 'firework' ? 'FIREWORK' : 'FLARE';
 }
 
@@ -336,7 +339,7 @@ export class FxDirector {
     const emptyHanded = !event.found && event.playerId === ctx.localId;
     const gotBottle = event.bottle === true && event.playerId === ctx.localId;
     const bagFull = event.full === true && event.playerId === ctx.localId;
-    if (bagFull) this.note('BAG FULL', event.x, event.y);
+    if (bagFull) this.note(event.stash === 'firework' ? 'HANDS FULL' : 'BAG FULL', event.x, event.y);
     else if (event.noisy) this.particles.addText('CLATTER', event.x, event.y - NOTE_HEIGHT, SCORE_COLOR);
     else if (gotBottle) this.note('BOTTLE', event.x, event.y);
     else if (event.stash && event.playerId === ctx.localId) this.particles.addText(stashLabel(event), event.x, event.y - NOTE_HEIGHT, hitPalette().safe);
