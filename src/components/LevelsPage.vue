@@ -16,7 +16,7 @@
  * (or the furthest reached), with its scene, name and four meters, over the ten scene tiles to start from.
  */
 import { computed, ref } from 'vue';
-import { FINAL_LEVEL, LEVELS, levelDef } from '../../shared/levels.ts';
+import { FINAL_LEVEL, LEVELS, levelDef, townName } from '../../shared/levels.ts';
 import type { ArtBook } from '../art/types.ts';
 import { isLevelUnlocked, loadLevelProgress } from '../game/level-progress.ts';
 import { THEME_NAMES } from '../game/level-select.ts';
@@ -38,8 +38,7 @@ function choose(level: number): void {
 }
 
 const sceneOf = (level: number) => art?.ui.levelScenes[level - 1] ?? null;
-const lockHintOf = (level: number) => `SURVIVE LEVEL ${level - 1} TO UNLOCK`;
-const numbered = (level: number) => (level < 10 ? `0${level}` : `${level}`);
+const lockHintOf = (level: number) => `SURVIVE ${townName(level - 1).toUpperCase()} TO UNLOCK`;
 
 /** The level the big card shows: the one pointed at, else the furthest reached. */
 const featured = computed(() => {
@@ -52,7 +51,7 @@ const featured = computed(() => {
     unlocked,
     scene: sceneOf(def.number),
     name: unlocked ? def.title : 'Classified sector',
-    line: `Level ${numbered(def.number)} - ${theme}. ${goal}`,
+    line: `${def.town} - ${theme}. ${goal}`,
   };
 });
 
@@ -61,6 +60,7 @@ const rows = computed<readonly LevelGridRow[]>(() =>
     const unlocked = isLevelUnlocked(level.number, progress);
     return {
       number: level.number,
+      town: level.town,
       title: level.title,
       themeLabel: THEME_NAMES[level.theme] ?? level.theme,
       swatch: LEVEL_SWATCH[level.theme],
@@ -68,7 +68,7 @@ const rows = computed<readonly LevelGridRow[]>(() =>
       difficulty: level.difficulty,
       unlocked,
       tag: unlocked ? 'button' : 'div',
-      startLabel: unlocked ? `Start at level ${level.number}: ${level.title}` : undefined,
+      startLabel: unlocked ? `Start in ${level.town}: ${level.title}` : undefined,
       thumbnail: sceneOf(level.number),
       cleared: progress.finished && level.number === FINAL_LEVEL,
       lockHint: lockHintOf(level.number),

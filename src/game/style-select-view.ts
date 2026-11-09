@@ -34,7 +34,7 @@ const FACTS: Readonly<Record<GameStyle, readonly StyleFact[]>> = {
     { key: 'plays', label: 'Plays', value: 'Ten in a row' },
     { key: 'between', label: 'Between', value: 'Van bench' },
     { key: 'dying', label: 'Dying', value: 'Ends the run' },
-    { key: 'continue', label: 'Saves', value: 'Level reached' },
+    { key: 'continue', label: 'Saves', value: 'Town reached' },
   ],
 };
 

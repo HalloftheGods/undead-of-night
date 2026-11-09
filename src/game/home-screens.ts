@@ -5,7 +5,7 @@ import type { GameStyle } from '../../shared/game-style.ts';
 import { EFFECT_ORDER, GUN_EFFECTS } from '../../shared/round-effect-data.ts';
 import { PART_LABELS, PART_ORDER } from '../../shared/gun-upgrade-data.ts';
 import type { Jewels, Loadout } from '../../shared/home-protocol.ts';
-import { FINAL_LEVEL, LEVELS } from '../../shared/levels.ts';
+import { FINAL_LEVEL, LEVELS, townName } from '../../shared/levels.ts';
 import { WEAPON_ORDER } from '../../shared/protocol.ts';
 import type { WeaponId } from '../../shared/protocol.ts';
 import { coinText, jewelWorth } from '../../shared/treasure.ts';
@@ -20,7 +20,7 @@ const WEAPON_LABELS: Readonly<Record<WeaponId, string>> = { pistol: 'Pistol', ca
 /** Shown in place of either style's note on an invite link, where the room says which style it plays once connected. */
 export const ROOM_DECIDES_NOTE = 'The room decides the style.';
 
-export const HOME_COOP_NOTE = 'Pick the level at the garage map. The room can go as far as its best player has.';
+export const HOME_COOP_NOTE = 'Pick the town at the garage map. The room can go as far as its best player has.';
 
 export const LEAVE_WARNING = 'Leaving now counts as dying. You lose what you are carrying, and any gear you took out.';
 
@@ -208,10 +208,10 @@ export function plural(count: number, one: string, many = `${one}s`): string {
 
 export const LOCKER_HELD = 'The locker held';
 
-/** The heading: a trip names its level, the overrun says who fell. */
+/** The heading: a trip names its town, the overrun says who fell. */
 export function deathHeading(death: HomeDeath): string {
   if (death.overrun) return death.overrun.bunkerFell ? 'The bunker fell' : 'You fell holding the bunker';
-  return `You died on level ${death.receipt.level}`;
+  return `You died in ${townName(death.receipt.level)}`;
 }
 
 export function deathNote(death: HomeDeath): string {

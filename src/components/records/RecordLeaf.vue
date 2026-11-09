@@ -81,7 +81,7 @@
             <dt>Best night</dt>
             <dd class="rb-big">
               {{ book.daily.best?.score ?? '-' }}
-              <span class="rb-big-tag">{{ book.daily.best ? `${book.daily.best.label}, level ${book.daily.best.level}` : 'None counted yet' }}</span>
+              <span class="rb-big-tag">{{ book.daily.best ? `${book.daily.best.label}, ${townName(book.daily.best.level)}` : 'None counted yet' }}</span>
             </dd>
           </div>
           <div class="rb-daily-stat">
@@ -124,6 +124,7 @@
 <script setup lang="ts">
 /** One leaf of the record book, laid out like a page of the How to Play magazine and fitted the same way. */
 import { computed, useTemplateRef } from 'vue';
+import { townName } from '../../../shared/levels.ts';
 import { usePageFit } from '../../game/magazine-fit.ts';
 import { RECORD_BOOK_TITLE } from '../../game/record-book.ts';
 import type { DailySummary, Leaf, LeafId, StampCard, WeekLine } from '../../game/record-book.ts';
