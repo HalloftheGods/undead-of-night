@@ -173,7 +173,7 @@ onBeforeUnmount(() => {
   --reach: max(calc(var(--chip) * 1.45), calc(var(--chip) * var(--slots) * 0.22));
   --keep-in: calc(var(--reach) + var(--chip) / 2 + var(--u) * 2);
   position: fixed;
-  top: clamp(var(--keep-in), var(--player-y, 50%), calc(100% - var(--keep-in)));
+  top: clamp(var(--keep-in), var(--player-y, 50%), calc(100% - var(--keep-in) - var(--tabbar, 0px)));
   left: clamp(var(--keep-in), var(--player-x, 50%), calc(100% - var(--keep-in)));
   width: 0;
   height: 0;

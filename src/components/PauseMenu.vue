@@ -1,5 +1,5 @@
 <template>
-  <section class="px-screen">
+  <section class="px-screen pause-screen">
     <div class="px-panel px-frame pause">
       <h2 class="px-heading">{{ mode === 'solo' ? 'Paused' : 'Menu' }}</h2>
       <p v-if="mode === 'coop'" class="px-note">Co-op does not pause. The horde is still coming.</p>
@@ -21,12 +21,12 @@
         @input="onVolume"
       />
 
-      <GestureHints />
-
       <PixelButton class="pause-resume" primary silent @press="game.togglePause()">Resume</PixelButton>
       <p v-if="warning" class="px-error" role="alert">{{ warning }}</p>
       <PixelButton @press="game.toMenu()">Main menu</PixelButton>
     </div>
+
+    <GestureHints />
   </section>
 </template>
 
@@ -58,6 +58,14 @@ function onVolume(event: Event): void {
   gap: calc(var(--u) * 4);
   width: calc(var(--u) * 130);
   max-width: 100%;
+}
+
+/* A phone on its side: the swipe hints go beside the card rather than under it. */
+@media (orientation: landscape) and (max-height: 520px) {
+  .pause-screen {
+    flex-direction: row;
+    gap: calc(var(--u) * 12);
+  }
 }
 
 .pause-resume {

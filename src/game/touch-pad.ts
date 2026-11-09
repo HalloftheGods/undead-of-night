@@ -72,3 +72,18 @@ export function glyphPath(glyph: PadGlyph): string {
   });
   return squares.join('');
 }
+
+/** Two bars: pause. */
+export const PAUSE: PadGlyph = [
+  '...........',
+  '...........',
+  '..###.###..',
+  '..###.###..',
+  '..###.###..',
+  '..###.###..',
+  '..###.###..',
+  '..###.###..',
+  '..###.###..',
+  '...........',
+  '...........',
+];

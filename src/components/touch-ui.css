@@ -7,14 +7,14 @@ body {
 
 .game-root {
   --tap: 44px;
-  /* The action cluster in the bottom-right corner: two buttons by two (TouchControls.vue). */
-  --fab-size: 56px;
-  --fab-gap: calc(var(--u) * 3);
-  --cluster: calc(var(--fab-size) * 2 + var(--fab-gap));
+  /* The tab bar across the foot of the screen (TouchControls.vue): a row's height, then the home bar under it. */
+  --tab-row: 56px;
+  --tab-glyph: 24px;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
+  --tabbar: 0px;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
@@ -24,6 +24,18 @@ body {
 .game-root.is-aiming,
 .game-root.is-aiming * {
   touch-action: none;
+}
+
+.is-touch {
+  --tabbar: calc(var(--tab-row) + var(--u) + var(--safe-bottom));
+}
+
+/* On its side a phone has no height to give: one short row, the word beside the icon. */
+@media (orientation: landscape) and (max-height: 520px) {
+  .game-root {
+    --tab-row: 40px;
+    --tab-glyph: 20px;
+  }
 }
 
 .touch-only {
@@ -39,13 +51,12 @@ body {
 }
 
 /*
- * The buttons are a block in the bottom-right corner, not a bar down one side, so the HUD gives
- * up no strip to them: it keeps off the notch and the home bar, and the pieces that would sit
- * under the block dodge it themselves (HudOverlay.vue, --cluster).
+ * The HUD keeps off the notch at the top and stands on the tab bar at the foot, which already
+ * holds the home bar's safe area inside it (--tabbar).
  */
 .is-touch .hud {
   padding: calc(var(--safe-top) + var(--u) * 3) calc(var(--safe-right) + var(--u) * 3)
-    calc(var(--safe-bottom) + var(--u) * 3) calc(var(--safe-left) + var(--u) * 3);
+    calc(var(--tabbar) + var(--u) * 3) calc(var(--safe-left) + var(--u) * 3);
 }
 
 /* --- Menus ----------------------------------------------------------------- */
