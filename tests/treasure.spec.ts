@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CHARACTERS } from '../shared/characters.ts';
 import { PLAYER_RADIUS } from '../shared/constants.ts';
-import { updateSearch } from '../shared/container-search.ts';
+import { isHomeFind, updateSearch } from '../shared/container-search.ts';
 import { containerInReach, townContainers } from '../shared/containers.ts';
 import type { Container, ContainerLoot } from '../shared/containers.ts';
 import { TREASURE_TYPES } from '../shared/events.ts';
@@ -129,7 +129,8 @@ describe('placing treasure', () => {
     const classic = stateOf(new GameSimulation({ seed: SEED }));
     const { state } = townAt(1);
     expect(treasureIn(state).small).toBeGreaterThan(0);
-    const stripped = state.containers.map(({ loot }) => (loot && isTreasurePickup(loot.type) ? null : loot));
+    // Salvage goes in after treasure and is held to the same rule, so both come out.
+    const stripped = state.containers.map(({ loot }) => (loot && isHomeFind(loot.type) ? null : loot));
     expect(stripped).toEqual(classic.containers.map(({ loot }) => loot));
     expect(state.pickups).toEqual(classic.pickups);
     expect(state.nextEntity).toBe(classic.nextEntity);

@@ -19,6 +19,7 @@ import { isKitPickup, takeKit } from './round-effects.ts';
 import { bandageWound, consumeSurvivalItem, isSurvivalItem } from './survival-needs.ts';
 import type { PickupState, PlayerState, SimState } from './sim-state.ts';
 import { emit, entityId } from './sim-state.ts';
+import { spawnSalvage, takeSalvage } from './salvage.ts';
 import { isSalvagePickup } from './salvage-data.ts';
 import { isTreasurePickup, spawnTreasure, takeTreasure } from './treasure.ts';
 import { syncGun } from './weapons.ts';
@@ -32,6 +33,8 @@ export function spawnPickup(sim: SimState, type: PickupType, x: number, y: numbe
   // Treasure is numbered on its own counter, so it never moves `sim.nextEntity`.
   const isHomeTreasure = isTreasurePickup(type) && sim.homeRun;
   if (isHomeTreasure) return spawnTreasure(sim, type, x, y, rounds);
+  const isHomeSalvage = isSalvagePickup(type) && sim.homeRun;
+  if (isHomeSalvage) return spawnSalvage(sim, type, x, y, rounds);
   sim.pickups.push({ id: entityId(sim, 'i'), type, x, y, ttl, rounds });
 }
 
@@ -117,8 +120,7 @@ function applyPickup(p: PlayerState, item: PickupState): boolean {
   if (isPartPickup(type)) return takePart(p, type);
   if (isKitPickup(type)) return takeKit(p, type);
   if (isTreasurePickup(type)) return takeTreasure(p, item);
-  // Nothing places salvage yet, and carrying it lands with its placement (#7238).
-  if (isSalvagePickup(type)) return false;
+  if (isSalvagePickup(type)) return takeSalvage(p, item, type);
   const used = isAmmoPickup(type) ? takeAmmo(p, item, type) : takeGun(p, item, type);
   if (used) syncGun(p);
   return used;

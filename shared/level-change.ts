@@ -11,6 +11,7 @@ import { giveReturnKit } from './player-health.ts';
 import type { PlayerState, SimState } from './sim-state.ts';
 import { emit, openGroundNear } from './sim-state.ts';
 import { seedPopulation } from './town-population.ts';
+import { placeTownSalvage } from './salvage.ts';
 import { placeTownTreasure } from './treasure.ts';
 import { hordesSurvivedHere } from './waves.ts';
 import { generateWorldMap } from './world-map.ts';
@@ -60,6 +61,7 @@ export function enterTown(sim: SimState, level: number): void {
   placeTownLoot(sim);
   seedPopulation(sim);
   placeTownTreasure(sim);
+  placeTownSalvage(sim);
 }
 
 /** Empties the world and goes home: no loot, no containers, no zombies, and the van parked. */
