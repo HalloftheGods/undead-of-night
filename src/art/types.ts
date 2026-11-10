@@ -154,6 +154,8 @@ export interface FxArt {
   readonly smokePuff: Clip;
   readonly shellCasing: PixelSprite;
   readonly shotgunShell: PixelSprite;
+  /** A reload's spent magazine on the ground, anchored at its top-left (clips.ts magLanding). */
+  readonly droppedMag: PixelSprite;
 }
 
 /** The van from the side, for the drive between the bunker and a town (fx/van-side.ts). */

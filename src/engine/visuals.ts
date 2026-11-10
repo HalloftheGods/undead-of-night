@@ -20,6 +20,8 @@ export interface EntityVisual {
   /** How far below the standard build this survivor holds a gun. */
   gunDrop: number;
   seenFrame: number;
+  /** Reload progress at the last draw, so a dropped magazine lands once (entity-renderer.ts). */
+  reloadSeen: number;
 }
 
 function blankVisual(): EntityVisual {
@@ -38,6 +40,7 @@ function blankVisual(): EntityVisual {
     sprite: null,
     gunDrop: 0,
     seenFrame: 0,
+    reloadSeen: 0,
   };
 }
 

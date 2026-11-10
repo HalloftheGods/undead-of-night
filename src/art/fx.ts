@@ -8,6 +8,8 @@ import { buildAcidDecals, buildBloodDecals } from './fx/decals.ts';
 import { buildAcidBurst, buildBloodBurst } from './fx/gore.ts';
 import { buildMuzzle, buildTracer } from './fx/muzzle.ts';
 import { buildPickupClips } from './fx/pickups.ts';
+import { gridSprite } from './fx/shared.ts';
+import { MAG_GRID, MAG_LEGEND } from './survivors/weapons.ts';
 
 export function buildFx(): FxArt {
   return {
@@ -22,6 +24,7 @@ export function buildFx(): FxArt {
     smokePuff: buildSmoke(),
     shellCasing: buildCasing(),
     shotgunShell: buildShell(),
+    droppedMag: gridSprite(MAG_GRID, MAG_LEGEND, 0, 0),
   };
 }
 
