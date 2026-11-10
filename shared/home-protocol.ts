@@ -2,6 +2,7 @@
 // the van. Pure data, types and small checks, so it loads in the browser, Node and vitest alike.
 
 import type { DifficultyId } from './difficulty.ts';
+import type { SALVAGE_TYPES } from './events.ts';
 import type { PartCounts } from './gun-upgrade-data.ts';
 import type { GunFit } from './gun-upgrades.ts';
 import type { WeaponId, WorldMap } from './protocol.ts';
@@ -19,7 +20,7 @@ export const MERCHANT_IDS = ['gunsmith', 'quartermaster', 'medic', 'powder'] as 
 export type MerchantId = (typeof MERCHANT_IDS)[number];
 
 /** `chest` stands only while a held overrun's chest is unopened. */
-export const STATION_IDS = ['bench', 'candy_shop', 'locker', 'level_map', 'jukebox', ...MERCHANT_IDS, 'chest'] as const;
+export const STATION_IDS = ['bench', 'candy_shop', 'locker', 'level_map', 'jukebox', ...MERCHANT_IDS, 'chest', 'press'] as const;
 export type StationId = (typeof STATION_IDS)[number];
 
 export interface Station {
@@ -49,6 +50,10 @@ export interface Jewels {
   small: number;
   large: number;
 }
+
+/** A kind of salvage, which the press turns into round kits. */
+export type SalvageId = (typeof SALVAGE_TYPES)[number];
+export type SalvageCounts = Record<SalvageId, number>;
 
 /** Gear as it leaves one side for the other: taken out of the locker, or brought home by the van. */
 export interface Loadout {
@@ -106,6 +111,8 @@ export interface TripReceipt {
   gear: Loadout | null;
   /** The primary input device used, for separate leaderboards. Left off for older runs. */
   platform?: Platform;
+  /** As `silver`. Left off by a server from before salvage, and read as none. */
+  salvage?: SalvageCounts;
 }
 
 /** Counting down to the breach, guns free near the end, the horde in, then the room held or fallen. */
@@ -160,6 +167,8 @@ export interface HomeView {
   silver: number;
   jewels: Jewels;
   candy?: number;
+  /** Carried on this trip, as jewels are. Left off by a server from before salvage. */
+  salvage?: SalvageCounts;
   station: StationId | null;
   /** 0..1 through the hold on E. */
   stationHold: number;

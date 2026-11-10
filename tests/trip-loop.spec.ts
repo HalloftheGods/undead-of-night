@@ -371,7 +371,7 @@ describe('receipts', () => {
     expect(home.lost.silver).toBe(30);
     driveToTown(sim, state);
     expect(home.receipt).toBeNull();
-    expect(home.lost).toEqual({ silver: 0, jewels: { small: 0, large: 0 } });
+    expect(home.lost).toEqual({ silver: 0, jewels: { small: 0, large: 0 }, salvage: { fuel_can: 0, car_battery: 0, scrap_steel: 0, sedatives: 0 } });
   });
 });
 

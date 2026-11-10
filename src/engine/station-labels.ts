@@ -14,6 +14,7 @@ export const STATION_LABEL: Record<StationId, string> & { forge?: string } = {
   medic: 'MEDIC',
   powder: 'POWDER',
   chest: 'CHEST',
+  press: 'PRESS',
 };
 
 /** What to show over a head: the key to hold, or the word a finger can press. */

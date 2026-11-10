@@ -20,6 +20,7 @@ const MOUTH_WIDTH = 14;
 const MOUTH_HEIGHT = 13;
 const MAP_RISE = 9;
 const JUKEBOX_RISE = 18;
+const PRESS_RISE = 16;
 
 /** The forge is taller than its footprint, so it gets its own canvas with room for the chimney. */
 function startForge(kind: PropKind) {
@@ -185,5 +186,16 @@ export function buildCandyShop(): PixelSprite {
   c.ellipse(left + 35, top + 5, 4, 3, metal[1]);
   c.px(left + 34, top + 4, blood[1]);
   c.px(left + 36, top + 5, fire[1]);
+  return finish(p);
+}
+
+/** Placeholder until the press gets its own art (#7242): a steel frame on a plank base with a lever. */
+export function buildPress(): PixelSprite {
+  const p = startPiece('press', PRESS_RISE);
+  const { c, left, right, ground, front, top, w } = p;
+  c.rect(left, front, w, ground - front, wood[1]).rect(left, front, w, 1, wood[2]);
+  c.rect(left + 2, top, w - 4, front - top, metal[1]).rect(left + 2, top, w - 4, 1, metal[3]).rect(left + 2, top, 1, front - top, metal[2]);
+  c.rect(left + 7, top + 2, w - 14, front - top - 4, ink[1]);
+  c.line(right - 3, top, right, top - 5, metal[2]).px(right, top - 6, blood[2]);
   return finish(p);
 }

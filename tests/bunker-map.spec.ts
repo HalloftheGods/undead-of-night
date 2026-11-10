@@ -41,8 +41,9 @@ describe('the bunker map', () => {
     expect(reached.has(tileOf(map.exit?.x ?? 0, (map.exit?.y ?? 0) + 4))).toBe(true);
   });
 
-  it('has every station once but the chest and the merchants, who walk, and spawn on open ground', () => {
-    const standing = STATION_IDS.filter((id) => id !== 'chest' && !(MERCHANT_IDS as readonly string[]).includes(id));
+  it('has every station once but the chest, the press, which lands last, and the merchants, who walk, and spawn on open ground', () => {
+    const offMap = new Set<string>(['chest', 'press', ...MERCHANT_IDS]);
+    const standing = STATION_IDS.filter((id) => !offMap.has(id));
     expect((map.stations ?? []).map((station) => station.id).sort()).toEqual([...standing].sort());
     expect(circleHitsSolid(map, map.spawn.x, map.spawn.y, PLAYER_RADIUS)).toBe(false);
   });
