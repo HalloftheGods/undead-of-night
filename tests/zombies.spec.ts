@@ -48,7 +48,13 @@ describe('pathing', () => {
   it.each<ZombieType>(['walker', 'brute'])('a %s gets past a lamp post dead ahead', (type) => {
     const { sim, state } = quietSim();
     const [p] = state.players;
-    const lamp = findProp(sim, 'street_lamp');
+    // A lamp with open ground a body's width either side of the line past it.
+    const lamp = sim.map.props.find((prop) => {
+      if (prop.kind !== 'street_lamp') return false;
+      const open = (x: number, y: number): boolean => Math.hypot(x - prop.x, y - prop.y) < 20 || !circleHitsSolid(sim.map, x, y, 12);
+      for (let dx = -60; dx <= 100; dx += 10) for (let dy = -40; dy <= 36; dy += 12) if (!open(prop.x + dx, prop.y - 2 + dy)) return false;
+      return true;
+    }) ?? findProp(sim, 'street_lamp');
     p.x = lamp.x + 90;
     p.y = lamp.y - 2;
     const zombie = addZombie(state, type, lamp.x - 40, lamp.y - 2);
@@ -75,7 +81,8 @@ describe('pathing', () => {
     const { sim, state } = quietSim();
     const [p] = state.players;
     const { x, y } = p;
-    const crowd = Array.from({ length: 12 }, () => addZombie(state, 'walker', x + 120, y));
+    const { dx, dy } = clearWay(state, 160);
+    const crowd = Array.from({ length: 12 }, () => addZombie(state, 'walker', x + dx * 120, y + dy * 120));
     steps(sim, 90);
     let tooClose = 0;
     for (const a of crowd) {
@@ -192,14 +199,26 @@ describe('awareness', () => {
     p.guns[weapon] = { ammo: magSize };
     p.owned = ['pistol', weapon];
     p.weapon = weapon;
-    const room = buildingBox(findBuilding(sim, 'warehouse'));
-    p.x = room.x1 + noiseRadius - 40;
-    // Level with the warehouse, on a row where nothing in town stands on the shooter's spot.
-    const rows = Array.from({ length: 9 }, (_, i) => room.y0 + 12 + ((room.y1 - room.y0 - 24) * i) / 8);
-    rows.sort((a, b) => Math.abs(a - (room.y0 + room.y1) / 2) - Math.abs(b - (room.y0 + room.y1) / 2));
-    p.y = rows.find((y) => !circleHitsSolid(state.map, p.x, y, 12)) ?? rows[0];
-    const near = addRoamer(state, 'walker', room.x1 - 12, p.y);
-    const far = addRoamer(state, 'walker', p.x + noiseRadius + 30, p.y);
+    // A warehouse with the whole listening range on the map, shooting from whichever side has room,
+    // level with it on a row where nothing in town stands on the shooter's spot or the far zombie's.
+    const span = 2 * noiseRadius + 60;
+    const spots = sim.map.buildings
+      .filter((building) => building.kind === 'warehouse')
+      .map(buildingBox)
+      .flatMap((room) => ([1, -1] as const).map((side) => ({ room, side, face: side === 1 ? room.x1 : room.x0 })))
+      .filter(({ face, side }) => face + side * span > 0 && face + side * span < sim.map.width)
+      .flatMap(({ room, side, face }) => {
+        const shooterX = face + side * (noiseRadius - 40);
+        const rows = Array.from({ length: 9 }, (_, i) => room.y0 + 12 + ((room.y1 - room.y0 - 24) * i) / 8);
+        rows.sort((a, c) => Math.abs(a - (room.y0 + room.y1) / 2) - Math.abs(c - (room.y0 + room.y1) / 2));
+        const row = rows.find((y) => !circleHitsSolid(state.map, shooterX, y, 24) && !circleHitsSolid(state.map, shooterX, y + 30, 8));
+        return row === undefined ? [] : [{ side, face, shooterX, row }];
+      });
+    const { side, face, shooterX, row } = spots[0];
+    p.x = shooterX;
+    p.y = row;
+    const near = addRoamer(state, 'walker', face - side * 12, p.y);
+    const far = addRoamer(state, 'walker', p.x + side * (noiseRadius + 30), p.y);
     near.speed = 0;
     far.speed = 0;
     sim.setInput('a', input({ seq: 1, shoot: true, angle: Math.PI / 2 }));
@@ -278,7 +297,8 @@ describe('roaming', () => {
   it('wanders around and rests', () => {
     const { sim, state } = quietSim();
     const [p] = state.players;
-    const zombie = addRoamer(state, 'walker', p.x + 300, p.y);
+    const way = clearWay(state, 220, 12);
+    const zombie = addRoamer(state, 'walker', p.x + way.dx * 220, p.y + way.dy * 220);
     const { x, y } = zombie;
     let moving = 0;
     let lastX = x;

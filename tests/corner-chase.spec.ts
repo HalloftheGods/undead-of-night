@@ -8,11 +8,11 @@ import { GameSimulation } from '../shared/simulation.ts';
 import { addZombie, stateOf, stepUntil } from './helpers/sim-harness.ts';
 
 const ARRIVAL_TICKS = TICK_RATE * 5;
-/** Three survivors backed into the same corner of a house, between its west wall and the bed, seed 5150. */
+/** Three survivors backed into the same corner of a building, a tile-edge from the furniture, seed 5150. */
 const STACKED_IN_A_CORNER: readonly Point[] = [
-  { x: 1724.1, y: 1105.9 },
-  { x: 1724.24, y: 1105.82 },
-  { x: 1723.92, y: 1106.03 },
+  { x: 1888.1, y: 912.1 },
+  { x: 1888.24, y: 912.02 },
+  { x: 1887.92, y: 912.23 },
 ];
 
 /** A real town from a known seed, emptied, with one body hunting players who stay put. */
@@ -40,8 +40,8 @@ function huntInTown(seed: number, type: ZombieType, prey: readonly Point[], body
  */
 describe('a body closing on a player cornered behind furniture', () => {
   const scenes = [
-    { name: 'a walker past the corner of a bed', seed: 5150, type: 'walker', prey: STACKED_IN_A_CORNER, body: { x: 1757, y: 1127 } },
-    { name: 'a bloater under a shelf', seed: 7, type: 'bloater', prey: [{ x: 1666, y: 2594 }], body: { x: 1618, y: 2588 } },
+    { name: 'a walker past a corner of the furniture', seed: 5150, type: 'walker', prey: STACKED_IN_A_CORNER, body: { x: 1921, y: 933 } },
+    { name: 'a bloater beside a shelf', seed: 7, type: 'bloater', prey: [{ x: 1328, y: 920 }], body: { x: 1280, y: 914 } },
   ] as const;
 
   for (const { name, seed, type, prey, body } of scenes) {

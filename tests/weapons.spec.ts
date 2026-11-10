@@ -3,7 +3,7 @@ import { MELEE_COOLDOWN_SEC, MELEE_DAMAGE, MELEE_RANGE, START_SPARE_ROUNDS, TICK
 import { WEAPON_ORDER } from '../shared/protocol.ts';
 import { buildingBox, propBox } from '../shared/world-map.ts';
 import { circleHitsSolid } from '../shared/world-query.ts';
-import { addRoamer, addZombie, eventsOf, findBuilding, findProp, input, quietSim, stepUntil, steps } from './helpers/sim-harness.ts';
+import { addRoamer, addZombie, eventsOf, findBuilding, clearWay, findProp, input, quietSim, stepUntil, steps } from './helpers/sim-harness.ts';
 import type { PlayerState } from '../shared/sim-state.ts';
 
 function arm(p: PlayerState, weapon: 'carbine' | 'shotgun', ammo: number, reserve: number): void {
@@ -120,12 +120,13 @@ describe('bullets cannot tunnel', () => {
   it('knocks a hit zombie back along the shot', () => {
     const { sim, state } = quietSim();
     const [p] = state.players;
-    const zombie = addZombie(state, 'bloater', p.x + 120, p.y);
+    const { dx, dy } = clearWay(state, 160);
+    const zombie = addZombie(state, 'bloater', p.x + dx * 120, p.y + dy * 120);
     zombie.speed = 0;
-    const startX = zombie.x;
-    state.bullets.push({ id: 'b', shooterId: 'a', x: p.x + 100, y: p.y, vx: 900, vy: 0, damage: 1, rangeLeft: 100 });
+    const start = { x: zombie.x, y: zombie.y };
+    state.bullets.push({ id: 'b', shooterId: 'a', x: p.x + dx * 100, y: p.y + dy * 100, vx: dx * 900, vy: dy * 900, damage: 1, rangeLeft: 100 });
     steps(sim, 6);
-    expect(zombie.x).toBeGreaterThan(startX);
+    expect((zombie.x - start.x) * dx + (zombie.y - start.y) * dy).toBeGreaterThan(0);
   });
 });
 
