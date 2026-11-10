@@ -1,17 +1,10 @@
 <template>
   <section class="px-title-scale mag-screen" aria-label="Records" @pointerdown="pages.beginSwipe" @pointerup="pages.finishSwipe">
-    <div class="mag-book" :class="`is-${mode}`">
-      <div :key="shownKey" class="mag-open rb-open" :class="{ 'is-solo': mode === 'single' }">
-        <RecordLeaf
-          v-for="(leaf, index) in shown"
-          :key="leaf.id"
-          :leaf
-          :side="mode === 'single' || index === 0 ? 'left' : 'right'"
-          :folio="RECORD_LEAVES.indexOf(leaf) + 1"
-          :book
-        />
-      </div>
-    </div>
+    <PrintedBook :book="open" :turn :mode :leaves="RECORD_LEAVES">
+      <template #page="{ leaf, side, folio }">
+        <RecordLeaf :leaf :side :folio :book />
+      </template>
+    </PrintedBook>
 
     <nav class="mag-nav" aria-label="Record book pages">
       <MenuLink class="mag-nav-link" @press="emit('close')">Back</MenuLink>
@@ -32,6 +25,7 @@ import { dailySummary, RECORD_LEAVES, stampCards, stampTally, weekLines } from '
 import { loadStamps } from '../game/stamps.ts';
 import { recordRows, recordSections } from '../game/title-menu.ts';
 import MenuLink from './MenuLink.vue';
+import PrintedBook from './magazine/PrintedBook.vue';
 import RecordLeaf from './records/RecordLeaf.vue';
 import type { RecordBookData } from './records/RecordLeaf.vue';
 import './magazine/magazine.css';
@@ -56,7 +50,7 @@ const book = computed<RecordBookData>(() => ({
 }));
 
 const pages = useBookPages(RECORD_LEAVES, () => game.playUi('click'), () => emit('close'));
-const { mode, shown, shownKey, label, atStart, atEnd } = pages.view;
+const { open, turn, mode, label, atStart, atEnd } = pages.view;
 
 onMounted(() => trackTitlePage('records'));
 </script>

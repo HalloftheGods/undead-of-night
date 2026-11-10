@@ -1,14 +1,17 @@
 // Reading a printed book on a title page: which leaves are open, turning with Prev/Next, the arrow keys or a swipe,
 // Esc to leave, and two leaves at a time on a wide window or one on a tall one. The Record Book and the changelog share it.
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
-import type { ComputedRef, Ref } from 'vue';
-import { firstShown, openOf, pagesLabel, turnWithin } from '../game/book-turn.ts';
-import type { BookMode } from '../game/book-turn.ts';
-import { swipeStep, turnKeyStep } from '../game/magazine-controller.ts';
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue';
+import type { ComputedRef, Ref, ShallowRef } from 'vue';
+import { BOOK_MOBILE_QUERY, firstShown, openLeavesOf, openOf, pagesLabel, planBookTurn, turnWithin } from '../game/book-turn.ts';
+import type { BookMode, BookTurn, OpenLeaves } from '../game/book-turn.ts';
+import { swipeStep, turnKeyStep, TURN_MS } from '../game/magazine-controller.ts';
+import { motion } from '../game/motion.ts';
 
 /** What the open book shows right now. */
 export interface BookView<T> {
   readonly mode: Ref<BookMode>;
+  readonly open: ComputedRef<OpenLeaves<T>>;
+  readonly turn: ShallowRef<BookTurn<T> | null>;
   readonly shown: ComputedRef<readonly T[]>;
   /** Changes on every turn, to replay the settle animation. */
   readonly shownKey: ComputedRef<string>;
@@ -28,10 +31,14 @@ export interface BookPages<T> {
 }
 
 export function useBookPages<T extends { readonly id: string }>(leaves: readonly T[], onTurn: () => void, onClose: () => void): BookPages<T> {
-  /** The same test as How to Play: a window taller than it is wide reads one page at a time. */
-  const tall = window.matchMedia('(max-aspect-ratio: 1/1)');
-  const mode = ref<BookMode>(tall.matches ? 'single' : 'spread');
+  /** A window taller than it is wide or a mobile screen reads one page at a time. */
+  const mobileMedia = window.matchMedia(BOOK_MOBILE_QUERY);
+  const mode = ref<BookMode>(mobileMedia.matches ? 'single' : 'spread');
   const at = ref(0);
+  const turn = shallowRef<BookTurn<T> | null>(null);
+  let settle: number | undefined;
+
+  const open = computed(() => openLeavesOf(leaves, at.value, mode.value));
   const shown = computed(() => openOf(leaves, at.value, mode.value));
   const shownKey = computed(() => shown.value.map((leaf) => leaf.id).join('-'));
   const label = computed(() => pagesLabel(leaves.length, at.value, mode.value));
@@ -43,16 +50,29 @@ export function useBookPages<T extends { readonly id: string }>(leaves: readonly
     const next = turnWithin(leaves.length, at.value, by, mode.value);
     const stays = next === at.value;
     if (stays) return;
+    const before = open.value;
+    const forward = by > 0;
     at.value = next;
     onTurn();
+    window.clearTimeout(settle);
+    const stillPage = motion.reduced.value;
+    turn.value = stillPage ? null : planBookTurn(before, open.value, forward);
+    settle = window.setTimeout(() => (turn.value = null), TURN_MS);
   }
 
   function goTo(index: number): void {
     const target = Math.max(0, Math.min(leaves.length - 1, index));
-    const stays = firstShown(target, mode.value) === firstShown(at.value, mode.value);
+    const next = firstShown(target, mode.value);
+    const stays = next === firstShown(at.value, mode.value);
     if (stays) return;
-    at.value = firstShown(target, mode.value);
+    const before = open.value;
+    const forward = next > at.value;
+    at.value = next;
     onTurn();
+    window.clearTimeout(settle);
+    const stillPage = motion.reduced.value;
+    turn.value = stillPage ? null : planBookTurn(before, open.value, forward);
+    settle = window.setTimeout(() => (turn.value = null), TURN_MS);
   }
 
   function onKey(event: KeyboardEvent): void {
@@ -77,18 +97,20 @@ export function useBookPages<T extends { readonly id: string }>(leaves: readonly
   }
 
   function matchWindow(): void {
-    mode.value = tall.matches ? 'single' : 'spread';
+    mode.value = mobileMedia.matches ? 'single' : 'spread';
+    turn.value = null;
   }
 
   onMounted(() => {
     window.addEventListener('keydown', onKey);
-    tall.addEventListener('change', matchWindow);
+    mobileMedia.addEventListener('change', matchWindow);
   });
   onBeforeUnmount(() => {
     window.removeEventListener('keydown', onKey);
-    tall.removeEventListener('change', matchWindow);
+    mobileMedia.removeEventListener('change', matchWindow);
+    window.clearTimeout(settle);
   });
 
-  const view: BookView<T> = { mode, shown, shownKey, label, atStart, atEnd, firstFolio };
+  const view: BookView<T> = { mode, open, turn, shown, shownKey, label, atStart, atEnd, firstFolio };
   return { view, flipPages, goTo, beginSwipe, finishSwipe };
 }

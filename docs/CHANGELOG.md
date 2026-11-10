@@ -2,6 +2,18 @@
 
 All notable changes to the Undead of Night: Last Round game are documented in this file.
 
+## [2026-11-09] - Animated book page turns, magazine layout, and 2x2 stat bars
+
+### Added
+- Reusable `PrintedBook.vue` component providing 3D page turn animations (`mag-leaf`) for all book screens: Town Guide (`TownGuidePage.vue`), Records (`RecordsPage.vue`), and Changelog (`ChangelogPage.vue`).
+- Generic page turn planner `planBookTurn` and `openLeavesOf` in `src/game/book-turn.ts` supporting both 2-page spreads and single-page reading modes.
+- Responsive mobile query `BOOK_MOBILE_QUERY` automatically activating single pageview on mobile devices (`max-width: 768px`, portrait screens, and touch landscape phones) across all books including How to Play.
+- True desktop magazine proportions on `.mag-book` with `1000 / 690` spread aspect ratio and `500 / 690` single page aspect ratio in `magazine.css`.
+- Comprehensive Vitest unit tests in `tests/book-turn.spec.ts` covering spread opening, gutter turns, single-page swings, boundary conditions, and mobile queries.
+
+### Changed
+- Play setup difficulty and character stat bars (`PickBars.vue`) redesigned into a 2x2 grid that fills the card footer, with larger cells and high-legibility Silkscreen typography.
+
 ## [2026-11-09] - Glowing eyes on jack-o'-lanterns and candy bowls
 
 ### Changed

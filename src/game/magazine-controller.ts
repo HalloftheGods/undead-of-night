@@ -1,5 +1,6 @@
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue';
 import type { InjectionKey } from 'vue';
+import { BOOK_MOBILE_QUERY } from './book-turn.ts';
 import { motion } from './motion.ts';
 import { isConfirmKey } from './title-menu.ts';
 import { openBook, pageLabel, planTurn, steppedPage } from './magazine-pages.ts';
@@ -10,7 +11,7 @@ import type { Magazine } from './magazine-types.ts';
 export const TURN_MS = 560;
 
 const SWIPE_MIN_PX = 40;
-const TALL_WINDOW = '(max-aspect-ratio: 1/1)';
+const TALL_WINDOW = BOOK_MOBILE_QUERY;
 
 const TURN_KEYS: Readonly<Record<string, number>> = {
   ArrowRight: 1,

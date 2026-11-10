@@ -38,8 +38,7 @@ export function isCovered(x: number, y: number, bodies: readonly Body[]): boolea
 }
 
 /**
- * Paints a sprite's self-lit pixels, the sprite's anchor at x, y on screen. `light` is the lightmap
- * reading where it stands: full glow in the dark, a glint where the light already shows it.
+ * Paints a sprite's self-lit pixels, the sprite's anchor at x, y on screen.
  * `strength` fades the whole thing, for a shell that is opening.
  */
 export function paintSelfLit(
@@ -48,7 +47,7 @@ export function paintSelfLit(
   sprite: PixelSprite,
   x: number,
   y: number,
-  light: number,
+  _light: number,
   strength: number,
   bodies: readonly Body[],
 ): void {
@@ -57,5 +56,5 @@ export function paintSelfLit(
   const left = Math.round(x - sprite.ax);
   const top = Math.round(y - sprite.ay);
   const clear = bodies.length === 0 ? eyes : eyes.filter((eye) => !isCovered(left + eye.x, top + eye.y, bodies));
-  paintEyes(ctx, clear, sprite, x, y, 1, eyeGlow(light) * strength);
+  paintEyes(ctx, clear, sprite, x, y, 1, strength);
 }

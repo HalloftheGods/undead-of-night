@@ -1,19 +1,10 @@
 <template>
   <section class="px-title-scale mag-screen" :aria-label="CHANGELOG_TITLE" @pointerdown="pages.beginSwipe" @pointerup="pages.finishSwipe">
-    <div class="mag-book" :class="`is-${mode}`">
-      <div :key="shownKey" class="mag-open rb-open" :class="{ 'is-solo': mode === 'single' }">
-        <ChangeLeafPage
-          v-for="(leaf, index) in shown"
-          :key="leaf.id"
-          :leaf
-          :side="mode === 'single' || index === 0 ? 'left' : 'right'"
-          :folio="firstFolio + index"
-          :notes="CHANGE_NOTES"
-          :version
-          @open="pages.goTo"
-        />
-      </div>
-    </div>
+    <PrintedBook :book="open" :turn :mode :leaves>
+      <template #page="{ leaf, side, folio }">
+        <ChangeLeafPage :leaf :side :folio :notes="CHANGE_NOTES" :version @open="pages.goTo" />
+      </template>
+    </PrintedBook>
 
     <nav class="mag-nav" aria-label="Changelog pages">
       <MenuLink class="mag-nav-link" @press="emit('close')">Back</MenuLink>
@@ -31,6 +22,7 @@ import { trackTitlePage } from '../game/analytics/index.ts';
 import { CHANGE_NOTES, CHANGELOG_TITLE, changeLeaves } from '../game/changelog.ts';
 import ChangeLeafPage from './changelog/ChangeLeafPage.vue';
 import MenuLink from './MenuLink.vue';
+import PrintedBook from './magazine/PrintedBook.vue';
 import './magazine/magazine.css';
 import './magazine/magazine-blocks.css';
 import './records/record-book.css';
@@ -44,7 +36,7 @@ const game = useGame();
 
 const leaves = changeLeaves();
 const pages = useBookPages(leaves, () => game.playUi('click'), () => emit('close'));
-const { mode, shown, shownKey, label, atStart, atEnd, firstFolio } = pages.view;
+const { open, turn, mode, label, atStart, atEnd } = pages.view;
 
 onMounted(() => trackTitlePage('changelog'));
 </script>

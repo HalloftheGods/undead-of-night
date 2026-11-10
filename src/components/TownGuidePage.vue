@@ -1,19 +1,10 @@
 <template>
   <section class="px-title-scale mag-screen" :aria-label="TOWN_GUIDE_TITLE" @pointerdown="pages.beginSwipe" @pointerup="pages.finishSwipe">
-    <div class="mag-book" :class="`is-${mode}`">
-      <div :key="shownKey" class="mag-open rb-open" :class="{ 'is-solo': mode === 'single' }">
-        <GuideLeafPage
-          v-for="(leaf, index) in shown"
-          :key="leaf.id"
-          :leaf
-          :leaves
-          :art
-          :side="mode === 'single' || index === 0 ? 'left' : 'right'"
-          :folio="firstFolio + index"
-          @open="pages.goTo"
-        />
-      </div>
-    </div>
+    <PrintedBook :book="open" :turn :mode :leaves>
+      <template #page="{ leaf, side, folio }">
+        <GuideLeafPage :leaf :leaves :art :side :folio @open="pages.goTo" />
+      </template>
+    </PrintedBook>
 
     <nav class="mag-nav" aria-label="Town Guide pages">
       <MenuLink class="mag-nav-link" @press="emit('close')">Back</MenuLink>
@@ -32,6 +23,7 @@ import { trackTitlePage } from '../game/analytics/index.ts';
 import { guideLeaves, TOWN_GUIDE_TITLE } from '../game/town-guide.ts';
 import GuideLeafPage from './guide/GuideLeafPage.vue';
 import MenuLink from './MenuLink.vue';
+import PrintedBook from './magazine/PrintedBook.vue';
 import './magazine/magazine.css';
 import './magazine/magazine-blocks.css';
 import './records/record-book.css';
@@ -45,7 +37,7 @@ const art = buildArtBook();
 
 const leaves = guideLeaves();
 const pages = useBookPages(leaves, () => game.playUi('click'), () => emit('close'));
-const { mode, shown, shownKey, label, atStart, atEnd, firstFolio } = pages.view;
+const { open, turn, mode, label, atStart, atEnd } = pages.view;
 
 onMounted(() => trackTitlePage('guide'));
 </script>
