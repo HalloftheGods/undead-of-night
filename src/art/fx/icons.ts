@@ -177,34 +177,29 @@ const BOTTLE: Grid = [
 
 /** A ground spinner firework: a striped drum with its fuse lit. Lit and tossed, it whirls sparks on the street. */
 const FIREWORKS: Grid = [
-  '......Y....',
-  '.....YBY...',
-  '......C....',
-  '.....n.....',
-  '..gffnffg..',
-  '.gfeeeeefg.',
-  '.ijjjjjjll.',
-  '.rsssssstt.',
-  '.ijjjjjjll.',
-  '.rsssssstt.',
-  '.ijjjjjjll.',
-  '..rrsssst..',
+  '.YB.jjj....',
+  '...jjjtt...',
+  '..jjjjttt.B',
+  '..jjjYttt.Y',
+  'Y.ttttjjj..',
+  'B..ttjjj...',
+  '....tjj.BY.',
 ];
 
 /** A fountain firework: a striped cone on a card base, lit and spraying sparks straight up. */
 const FOUNTAIN: Grid = [
-  '.Y...B...Y.',
-  '...Y.Y.Y...',
+  '..Y..Y..Y..',
   '.B..YBY..B.',
-  '....YYY....',
-  '....gfe....',
-  '....HHI....',
+  '...B.Y.B...',
+  '....YBY....',
+  '.....e.....',
+  '....rst....',
+  '....YBB....',
+  '...rsstu...',
   '...rsstt...',
-  '...GHHHI...',
-  '..rssssst..',
-  '..GHHHHHI..',
-  '.rsssssstt.',
-  '.ggfffffee.',
+  '..YYBBBBC..',
+  '..rsssttu..',
+  '.gffffffee.',
 ];
 
 const SKULL: Grid = [
@@ -256,12 +251,11 @@ const ZOMBIE_HEAD: Grid = [
 
 /** A twist-wrapped sweet: pale wrapper pinched either side of an amber body. */
 const CANDY: Grid = [
-  '.....CCC.....',
-  '.f..CBBBC..f.',
-  'ffgCBBYBBCgff',
-  'ffgCBBBBBCgff',
-  '.f..CCCCC..f.',
-  '.....CCC.....',
+  '....ttttt....',
+  'e..tueettr..e',
+  'effteetteeffe',
+  'e..settees..e',
+  '....sssss....',
 ];
 
 /** The town map, folded in three: paper, creases, blocks, and a mark where the van waits. */

@@ -71,16 +71,12 @@ export const DISINFECTANT: Grid = [
 ];
 
 export const ANTIBIOTICS: Grid = [
-  '......rrr.',
-  '.....rtuur',
-  '....rtttur',
-  '...rstttr.',
-  '..hfrstr..',
-  '.hfeefr...',
-  'hfeeefh...',
-  'hfeefh....',
-  'hgffh.....',
-  '.hhh......',
+  '..ttteee..',
+  '.tuuteeef.',
+  'sttttfeeef',
+  'sttttfeeef',
+  '.rsssgffg.',
+  '..rrrggg..',
 ];
 
 export interface SurvivalArtSpec {
@@ -92,5 +88,5 @@ export const SURVIVAL_ITEM_ART: Record<'canned_food' | 'water_bottle' | 'disinfe
   canned_food: { rows: CANNED_FOOD, glint: [3, 1] },
   water_bottle: { rows: WATER_BOTTLE, glint: [4, 4] },
   disinfectant: { rows: DISINFECTANT, glint: [4, 4] },
-  antibiotics: { rows: ANTIBIOTICS, glint: [7, 1] },
+  antibiotics: { rows: ANTIBIOTICS, glint: [2, 1] },
 };

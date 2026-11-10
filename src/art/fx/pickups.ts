@@ -59,14 +59,15 @@ const MEDKIT: Grid = [
 
 /** Rolled gauze, end on, with a tan tape tail. */
 export const BANDAGE: Grid = [
-  '..eeeeee....',
-  '.effffffg...',
-  'efgggggghg..',
-  'efg.kk.ghhzz',
-  'efg.kk.ghzzz',
-  'efgggggghg.z',
-  '.fhhhhhhh...',
-  '..hhhhhh....',
+  '..eeeee....',
+  '.eeeeeee...',
+  'eeehhheee..',
+  'eeheeehee..',
+  'eehekehee..',
+  'efheeehfe..',
+  'effhhhffeee',
+  '.gfffffgffe',
+  '..ggggg.gfe',
 ];
 
 /** Small tan box, brass bullet tips showing. Wide and low. */

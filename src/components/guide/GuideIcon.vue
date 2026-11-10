@@ -1,10 +1,9 @@
 <template>
-  <span v-if="icon === 'candy'" class="tg-candy" aria-hidden="true" />
-  <img v-else class="tg-icon" :src="url" alt="" draggable="false" />
+  <img class="tg-icon" :src="url" alt="" draggable="false" />
 </template>
 
 <script setup lang="ts">
-/** A find's picture: the pickup's own icon, the HUD's fireworks, or a wrapped candy drawn in CSS. */
+/** A find's picture: the pickup's own icon, or the HUD's fireworks and wrapped candy. */
 import { computed } from 'vue';
 import type { ArtBook, PixelSprite } from '../../art/types.ts';
 import { spriteDataUrl } from '../../engine/sprite-cache.ts';
@@ -12,12 +11,12 @@ import type { FindIcon } from '../../game/town-guide.ts';
 
 const { icon, art } = defineProps<{ icon: FindIcon; art: ArtBook }>();
 
-function spriteOf(find: Exclude<FindIcon, 'candy'>): PixelSprite {
-  const isFountain = find === 'fountain';
-  if (isFountain) return art.ui.fountain;
-  const isFirework = find === 'firework';
-  return isFirework ? art.ui.fireworks : art.ui.pickupIcons[find];
+const HUD_ICONS = { fountain: 'fountain', firework: 'fireworks', candy: 'candy' } as const;
+
+function spriteOf(find: FindIcon): PixelSprite {
+  const isHudIcon = find === 'fountain' || find === 'firework' || find === 'candy';
+  return isHudIcon ? art.ui[HUD_ICONS[find]] : art.ui.pickupIcons[find];
 }
 
-const url = computed(() => (icon === 'candy' ? '' : spriteDataUrl(spriteOf(icon))));
+const url = computed(() => spriteDataUrl(spriteOf(icon)));
 </script>

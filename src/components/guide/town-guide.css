@@ -204,13 +204,3 @@
   object-fit: contain;
   image-rendering: pixelated;
 }
-
-/* The HUD's wrapped candy, drawn at the page's scale. */
-.tg-candy {
-  width: calc(var(--k) * 30);
-  height: calc(var(--k) * 15);
-  background:
-    linear-gradient(#e8742a, #e8742a) center / calc(var(--k) * 15) 100% no-repeat,
-    linear-gradient(#f4d36b, #f4d36b) left center / calc(var(--k) * 8) calc(var(--k) * 8) no-repeat,
-    linear-gradient(#f4d36b, #f4d36b) right center / calc(var(--k) * 8) calc(var(--k) * 8) no-repeat;
-}
