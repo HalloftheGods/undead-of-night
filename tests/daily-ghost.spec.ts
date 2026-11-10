@@ -80,11 +80,34 @@ describe('Daily Night ghost', () => {
     expect(loadGhost(DAY, store)?.score).toBe(321);
   });
 
-  it('does not save a run that was not the counted one', () => {
+  it('does not save a run that was not the counted one as official', () => {
     const store = memoryStore();
     const ghost = new DailyGhost(DAY, store);
     ghost.observe(snapshot(3, 0, player(0, 0)), 'me');
     expect(ghost.finish(false, 10)).toBe(false);
     expect(loadGhost(DAY, store)).toBeNull();
+  });
+
+  it('records both the official 1st play ghost and the improved best run ghost', () => {
+    const store = memoryStore();
+    const ghost = new DailyGhost(DAY, store);
+    ghost.observe(snapshot(3, 0, player(0, 0)), 'me');
+    expect(ghost.finish(true, 150)).toBe(true);
+
+    expect(loadGhost(DAY, store, 'official')?.score).toBe(150);
+    expect(loadGhost(DAY, store, 'best')?.score).toBe(150);
+
+    // Later practice or MP run scores higher
+    ghost.begin();
+    ghost.observe(snapshot(3, 0, player(10, 0)), 'me');
+    ghost.finish(false, 350);
+
+    // Official stays 150, best updates to 350
+    expect(loadGhost(DAY, store, 'official')?.score).toBe(150);
+    expect(loadGhost(DAY, store, 'best')?.score).toBe(350);
+
+    // Replay on next run shows the best ghost
+    ghost.begin();
+    expect(ghost.showing?.score).toBe(350);
   });
 });

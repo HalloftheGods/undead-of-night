@@ -1,4 +1,13 @@
-import { BRITTLE_HEAL, sugarById, sugarOf } from './candy.ts';
+import {
+  BRITTLE_HEAL,
+  CHERRY_BOMB_DAMAGE,
+  CHERRY_BOMB_RADIUS,
+  MONSTER_MASH_FORCE,
+  REAPER_EXECUTE_THRESHOLD,
+  sugarById,
+  sugarOf,
+  TAFFY_HEAL,
+} from './candy.ts';
 import {
   BLOATER_BURST_PLAYER_DAMAGE,
   BLOATER_BURST_RADIUS,
@@ -45,6 +54,18 @@ function burst(sim: SimState, z: ZombieState, killerId: EntityId | null): void {
   }
 }
 
+function cherryBurst(sim: SimState, z: ZombieState, killerId: EntityId | null): void {
+  emit(sim, { type: 'bloater_burst', x: z.x, y: z.y, radius: CHERRY_BOMB_RADIUS });
+  for (const other of sim.zombies) {
+    if (other === z || other.health <= 0) continue;
+    const distance = Math.hypot(other.x - z.x, other.y - z.y);
+    if (distance <= CHERRY_BOMB_RADIUS + other.radius) {
+      const angle = Math.atan2(other.y - z.y, other.x - z.x);
+      damageZombie(sim, other, CHERRY_BOMB_DAMAGE, angle, killerId);
+    }
+  }
+}
+
 function killZombie(sim: SimState, z: ZombieState, angle: number, killerId: EntityId | null): void {
   const present = sim.players.find((p) => p.id === killerId);
   // A killer who has dropped out (a burn lands after they go) keeps the credit for when they return.
@@ -56,9 +77,10 @@ function killZombie(sim: SimState, z: ZombieState, angle: number, killerId: Enti
   if (killer) {
     killer.score += points;
     killer.kills += 1;
-    const brittle = BRITTLE_HEAL * sugarOf(killer, 'witchs_brittle');
+    const heal = (BRITTLE_HEAL * sugarOf(killer, 'witchs_brittle')) + (TAFFY_HEAL * sugarOf(killer, 'fang_taffy'));
     const standing = killer.status === 'alive';
-    if (standing) killer.health = Math.min(killer.maxHealth, killer.health + brittle);
+    if (standing && heal > 0) killer.health = Math.min(killer.maxHealth, killer.health + heal);
+    if (sugarOf(killer, 'cherry_bombs') > 0) cherryBurst(sim, z, killerId);
   }
   emit(sim, {
     type: 'zombie_die',
@@ -91,10 +113,16 @@ export function damageZombie(
   const isAlreadyDead = z.health <= 0;
   if (isAlreadyDead) return;
   z.health -= damage * (corrodes ? corrosionScale(z) : 1);
+  const killer = killerId !== null ? sim.players.find((p) => p.id === killerId) : null;
+  const isBruteOrBoss = z.type === 'brute';
+  if (killer && !isBruteOrBoss && sugarOf(killer, 'reaper_ribbons') > 0 && z.health > 0 && z.health <= z.maxHealth * REAPER_EXECUTE_THRESHOLD) {
+    z.health = 0;
+  }
   const turnsOnShooter = killerId !== null && !z.horde;
   if (turnsOnShooter) startHunting(sim, z);
   // Big bodies shove less.
-  const shove = KNOCKBACK_SPEED * Math.min(1, (6 / z.radius) ** 2);
+  const mash = killerId !== null ? (1 + (MONSTER_MASH_FORCE - 1) * sugarById(sim, killerId, 'monster_mash')) : 1;
+  const shove = KNOCKBACK_SPEED * Math.min(1, (6 / z.radius) ** 2) * mash;
   z.knockX += Math.cos(angle) * shove;
   z.knockY += Math.sin(angle) * shove;
   emit(sim, { type: 'zombie_hit', zombieId: z.id, zombieType: z.type, x: z.x, y: z.y, angle });
@@ -182,8 +210,11 @@ function passThrough(sim: SimState, b: BulletState, z: ZombieState): void {
 /** Lands the bullet on a body. True if it carries on out the far side. */
 function strike(sim: SimState, b: BulletState, z: ZombieState, angle: number): boolean {
   const damage = b.damage * headshotMultiplier(sim, b, z, angle);
-  damageZombie(sim, z, damage, angle, b.shooterId, b.effect === 'acid');
+  const acidSugar = sugarById(sim, b.shooterId, 'sour_skulls') > 0;
+  damageZombie(sim, z, damage, angle, b.shooterId, b.effect === 'acid' || acidSugar);
   if (b.effect) applyRoundEffect(sim, b.effect, z, b.shooterId, b.volley);
+  if (acidSugar) applyRoundEffect(sim, 'acid', z, b.shooterId, b.volley);
+  if (sugarById(sim, b.shooterId, 'frost_bites') > 0) applyRoundEffect(sim, 'tranq', z, b.shooterId, b.volley);
   const pierces = b.effect === 'piercing' || sugarById(sim, b.shooterId, 'bat_bites') > 0;
   const carriesOn = pierces && !b.passed;
   if (carriesOn) passThrough(sim, b, z);

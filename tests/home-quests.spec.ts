@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { TICK_RATE } from '../shared/constants.ts';
-import type { MerchantId } from '../shared/home-protocol.ts';
+import type { MerchantId, StationId } from '../shared/home-protocol.ts';
 import { emptySave } from '../src/game/home/home-store.ts';
 import type { HomeSave, HomeStore } from '../src/game/home/home-store.ts';
 import { HomeSync } from '../src/game/home/home-sync.ts';
@@ -139,7 +139,7 @@ describe('the forge and visits', () => {
     const { slot, store } = sharedStore({ ...withActive(noQuests(), 'powder', 'first_smelt'), rawJewels: { small: 1, large: 0 } });
     const { sync } = await session(store);
     for (let second = 0; second <= 3; second++) {
-      sync.observe(bunkerWith({ home: { station: 'forge' } }, 100 + second * TICK_RATE), ME);
+      sync.observe(bunkerWith({ home: { station: 'forge' as StationId } }, 100 + second * TICK_RATE), ME);
       await sync.settled();
     }
     expect(slot.save.rawJewels).toEqual({ small: 0, large: 0 });

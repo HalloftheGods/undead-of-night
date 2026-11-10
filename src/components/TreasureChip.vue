@@ -1,12 +1,12 @@
 <template>
-  <div class="treasure-chip" aria-label="Carried jewels">
+  <div class="treasure-chip" :aria-label="ariaLabel">
     <span class="treasure-worth">{{ lines.worth }}</span>
     <span v-for="count in lines.counts" :key="count" class="treasure-jewel">{{ count }}</span>
   </div>
 </template>
 
 <script setup lang="ts">
-/** The jewels in hand on a trip: what they come to at the forge, in gold and silver, over the count of each size. */
+/** The candy in hand on a trip: what it comes to at the candy shop, over the count of pieces. */
 import { computed } from 'vue';
 import type { HomeUi } from '../game/home-hud.ts';
 import { carriedLines } from '../game/home-screens.ts';
@@ -14,6 +14,7 @@ import { carriedLines } from '../game/home-screens.ts';
 const { home } = defineProps<{ home: HomeUi }>();
 
 const lines = computed(() => carriedLines(home.carried));
+const ariaLabel = computed(() => (home.carried.candy !== undefined ? 'Carried candy' : 'Carried jewels'));
 </script>
 
 <style scoped>

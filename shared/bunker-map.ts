@@ -45,7 +45,7 @@ const DOORS: readonly TileArea[] = [
 
 const STATION_PROPS: Record<StationId, PropKind> = {
   bench: 'workbench',
-  forge: 'forge',
+  candy_shop: 'candy_shop',
   locker: 'locker',
   level_map: 'level_map',
   jukebox: 'jukebox',
@@ -66,7 +66,7 @@ export const CHEST_SPOT = { x: 40, y: 144 } as const;
 /** Where each station's prop stands: the bottom centre of its footprint. A merchant has no stall: this is where they first stand, and they walk from there. */
 const STATION_PLACES: Record<StationId, { x: number; y: number }> = {
   bench: { x: 48, y: 224 },
-  forge: { x: 144, y: 224 },
+  candy_shop: { x: 144, y: 224 },
   locker: { x: 240, y: 224 },
   level_map: { x: 528, y: 48 },
   jukebox: { x: 336, y: 224 },

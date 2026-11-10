@@ -33,13 +33,6 @@ export const BACK_DOORS: Readonly<Partial<Record<BuildingKind, number>>> = {
 
 const T = WALL_THICKNESS;
 
-/** A hall from the front door to the back, with a flat on each side through a doorway. */
-const APARTMENT_HALL: readonly Rect[] = [
-  { x0: 58, y0: T, x1: 64, y1: 48 },
-  { x0: 58, y0: 80, x1: 64, y1: 90 },
-  { x0: 96, y0: T, x1: 102, y1: 48 },
-  { x0: 96, y0: 80, x1: 102, y1: 90 },
-];
 
 /** A wall along a corridor at `y`, solid over each span and open in the doorways between them. */
 function corridorWall(y: number, spans: readonly (readonly [number, number])[]): Rect[] {
@@ -99,10 +92,8 @@ export const PARTITIONS: Readonly<Partial<Record<BuildingKind, readonly Rect[]>>
   // A bedroom on the west and a kitchen with the back door on the east, both opening onto the living room.
   // A house with a floor above or below leaves this wall out: see `partitionsOf`. The floor above is one room.
   house: [{ x0: 54, y0: T, x1: 54 + T, y1: 56 }],
-  // A hall from the front door to the back, with a room on each side through a doorway.
-  apartment: APARTMENT_HALL,
-  // The floor above is one open floor. The hall below runs from the front door to the back door; up here there is
-  // neither, so the same walls were a dead-end corridor and two stubs to snag on. The furniture sets the flats apart.
+  // Both floors are open: a spacious entrance lobby on the ground floor, and flats set apart by furniture upstairs.
+  apartment: [],
   apartment_upstairs: [],
   hospital: HOSPITAL_FLOOR,
   hospital_upstairs: HOSPITAL_WARDS,

@@ -16,6 +16,7 @@ import { foundGunFit, isPartPickup, takePart } from './gun-upgrades.ts';
 import { WEAPON_ORDER } from './protocol.ts';
 import type { PickupType, WeaponId } from './protocol.ts';
 import { isKitPickup, takeKit } from './round-effects.ts';
+import { bandageWound } from './survival-needs.ts';
 import type { PickupState, PlayerState, SimState } from './sim-state.ts';
 import { emit, entityId } from './sim-state.ts';
 import { isTreasurePickup, spawnTreasure, takeTreasure } from './treasure.ts';
@@ -83,7 +84,11 @@ function applyPickup(p: PlayerState, item: PickupState): boolean {
   const isBandage = type === 'bandage';
   if (isBandage) {
     const isFullHealth = p.health >= p.maxHealth;
-    if (isFullHealth) return false;
+    const isBleeding = p.needs ? p.needs.bleeding : false;
+    const canTreat = !isFullHealth || isBleeding;
+    if (!canTreat) return false;
+    const shouldBandage = isBleeding && p.needs !== undefined;
+    if (shouldBandage) bandageWound(p.needs!);
     p.health = Math.min(p.maxHealth, p.health + BANDAGE_HEAL);
     return true;
   }

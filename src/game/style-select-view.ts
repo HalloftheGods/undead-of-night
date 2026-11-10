@@ -36,6 +36,12 @@ const FACTS: Readonly<Record<GameStyle, readonly StyleFact[]>> = {
     { key: 'dying', label: 'Dying', value: 'Ends the run' },
     { key: 'continue', label: 'Saves', value: 'Town reached' },
   ],
+  daily: [
+    { key: 'plays', label: 'Plays', value: 'One town' },
+    { key: 'between', label: 'Between', value: 'Lobby' },
+    { key: 'dying', label: 'Dying', value: 'Ends the run' },
+    { key: 'continue', label: 'Saves', value: 'Today only' },
+  ],
 };
 
 /** Under the server field in co-op: a room has one style, so the choice on the first page is an offer. */

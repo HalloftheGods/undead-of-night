@@ -75,6 +75,7 @@ export function reviveSave(value: unknown, blank: HomeSave): HomeSave | null {
   if (!isFields(value)) return null;
   return {
     version: wholeCount(value.version),
+    candy: isNumber(value.candy) ? wholeCount(value.candy) : wholeCount(value.silver),
     silver: wholeCount(value.silver),
     rawJewels: isJewels(value.rawJewels) ? value.rawJewels : blank.rawJewels,
     locker: isLoadout(value.locker) ? value.locker : blank.locker,

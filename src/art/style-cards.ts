@@ -8,5 +8,6 @@ import { CAMPAIGN_CARD } from './styles/campaign.ts';
 import type { PixelSprite } from './types.ts';
 
 export function buildStyleCards(): Record<GameStyle, PixelSprite> {
-  return { campaign: cardOf(CAMPAIGN_CARD), arcade: cardOf(ARCADE_CARD) };
+  const arcade = cardOf(ARCADE_CARD);
+  return { campaign: cardOf(CAMPAIGN_CARD), arcade, daily: arcade };
 }

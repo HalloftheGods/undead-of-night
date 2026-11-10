@@ -1,5 +1,6 @@
 // How a trip ended for one player, written as state on their body so a slow client cannot lose it.
 
+import { bagOf, candyBagWorth } from './candy.ts';
 import { TICK_DT } from './constants.ts';
 import type { TripReceipt } from './home-protocol.ts';
 import { FINAL_LEVEL } from './levels.ts';
@@ -36,7 +37,17 @@ function tripFacts(sim: SimState, run: HomeRun, p: PlayerState, level: number): 
 /** Everything on them comes home, and reaching the van unlocks the next level. */
 export function bankTrip(sim: SimState, run: HomeRun, p: PlayerState, home: PlayerHome, level: number): void {
   const ending = level === FINAL_LEVEL && !home.finished;
-  home.receipt = { ...tripFacts(sim, run, p, level), outcome: 'banked', silver: home.silver, jewels: { ...home.jewels }, ending, gear: loadoutOf(p) };
+  const candyWorth = candyBagWorth(p.candy);
+  home.receipt = {
+    ...tripFacts(sim, run, p, level),
+    outcome: 'banked',
+    silver: home.silver,
+    jewels: { ...home.jewels },
+    candy: candyWorth,
+    candyBag: bagOf(p.candy),
+    ending,
+    gear: loadoutOf(p),
+  };
   home.highest = Math.max(home.highest, Math.min(FINAL_LEVEL, level + 1));
   home.finished ||= ending;
 }
@@ -44,5 +55,16 @@ export function bankTrip(sim: SimState, run: HomeRun, p: PlayerState, home: Play
 /** Nothing comes home. The silver and jewels here are what was lost, and are never credited. */
 export function loseTrip(sim: SimState, run: HomeRun, p: PlayerState, home: PlayerHome, level: number): void {
   forfeitCarried(home);
-  home.receipt = { ...tripFacts(sim, run, p, level), outcome: 'died', silver: home.lost.silver, jewels: { ...home.lost.jewels }, ending: false, gear: null };
+  const candyWorth = candyBagWorth(p.candy);
+  const lostBag = bagOf(p.candy);
+  home.receipt = {
+    ...tripFacts(sim, run, p, level),
+    outcome: 'died',
+    silver: home.lost.silver,
+    jewels: { ...home.lost.jewels },
+    candy: candyWorth,
+    candyBag: lostBag,
+    ending: false,
+    gear: null,
+  };
 }

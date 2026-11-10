@@ -1,4 +1,4 @@
-import { LICORICE_HEAD_MARGIN, sugarOf } from './candy.ts';
+import { LICORICE_HEAD_MARGIN, SKULL_POP_HEAD_MARGIN, sugarOf } from './candy.ts';
 import { CHEST_HEIGHT } from './constants.ts';
 import type { EntityId, ZombieEntity, ZombieType } from './protocol.ts';
 import type { BulletState, PlayerState, SimState, ZombieState } from './sim-state.ts';
@@ -64,7 +64,7 @@ export function isOnHead(z: HeadBearer, x: number, y: number, margin: number): b
 const marginFor = (sim: SimState, shooter: PlayerState | undefined): number =>
   (sim.workbench === 'timed' ? COOP_HEAD_MARGIN : HEAD_MARGIN) +
   (shooter?.touchAim ? TOUCH_HEAD_BONUS : 0) +
-  (shooter ? LICORICE_HEAD_MARGIN * sugarOf(shooter, 'licorice_lash') : 0);
+  (shooter ? SKULL_POP_HEAD_MARGIN * Math.max(sugarOf(shooter, 'skull_pops'), sugarOf(shooter, 'licorice_lash')) : 0);
 
 /** The head under the crosshair as the trigger breaks, the front one if two overlap. A shot can't reach past `range`. */
 export function headUnderAim(sim: SimState, p: PlayerState, range: number): ZombieState | null {

@@ -27,6 +27,36 @@ export interface DailyNight {
   readonly difficulty: DifficultyId;
 }
 
+export type DailyPartySize = 2 | 3 | 4 | 5;
+export const DAILY_PARTY_SIZES: readonly DailyPartySize[] = [2, 3, 4, 5];
+
+export interface DailyTeammate {
+  readonly name: string;
+  readonly character: number;
+  readonly score: number;
+  readonly kills: number;
+}
+
+export interface DailyMpRunResult {
+  readonly partySize: DailyPartySize;
+  readonly teamScore: number;
+  readonly teamKills: number;
+  readonly playerScore: number;
+  readonly playerKills: number;
+  readonly level: number;
+  readonly attempts: number;
+  readonly practiceBestTeamScore: number;
+  readonly roster?: readonly DailyTeammate[];
+}
+
+export interface DailySoloResult {
+  readonly score: number;
+  readonly kills: number;
+  readonly level: number;
+  readonly attempts: number;
+  readonly practiceBest: number;
+}
+
 /** What one day's counted run came to. */
 export interface DailyResult {
   readonly score: number;
@@ -37,6 +67,18 @@ export interface DailyResult {
   readonly attempts: number;
   /** The best practice score after the counted run, if any beat zero. */
   readonly practiceBest: number;
+  readonly solo?: DailySoloResult;
+  readonly mp?: Partial<Record<DailyPartySize, DailyMpRunResult>>;
+}
+
+export interface DailyRunInput {
+  readonly score: number;
+  readonly kills: number;
+  readonly level: number;
+  readonly partySize?: number;
+  readonly teamScore?: number;
+  readonly teamKills?: number;
+  readonly roster?: readonly DailyTeammate[];
 }
 
 export type DailyLog = Readonly<Record<string, DailyResult>>;
@@ -130,23 +172,124 @@ export function loadDailyLog(store: Store | null = browserStore()): DailyLog {
   return log;
 }
 
-/** The first run of a day is kept as it was; later ones only count as attempts and a practice best. */
-export function withRun(log: DailyLog, key: string, run: { score: number; kills: number; level: number }): { log: DailyLog; counted: boolean } {
+/** The first run of a day (solo or per party size in MP) is kept as it was; later ones only count as attempts and practice best. */
+export function withRun(log: DailyLog, key: string, run: DailyRunInput): { log: DailyLog; counted: boolean } {
   const earlier = log[key];
-  const result: DailyResult = earlier
-    ? { ...earlier, attempts: earlier.attempts + 1, practiceBest: Math.max(earlier.practiceBest, run.score) }
-    : { score: run.score, kills: run.kills, level: run.level, attempts: 1, practiceBest: 0 };
-  const kept = Object.keys({ ...log, [key]: result }).sort().reverse().slice(0, KEPT_DAYS);
+  const isMp = run.partySize !== undefined && run.partySize >= 2 && run.partySize <= 5;
+
+  let nextResult: DailyResult;
+  let counted = false;
+
+  if (isMp) {
+    const partySize = run.partySize as DailyPartySize;
+    const earlierMp = earlier?.mp?.[partySize];
+    const isNewMpParty = earlierMp === undefined;
+    counted = isNewMpParty;
+
+    const teamScore = run.teamScore ?? run.score;
+    const teamKills = run.teamKills ?? run.kills;
+    const mpResult: DailyMpRunResult = isNewMpParty
+      ? {
+          partySize,
+          teamScore,
+          teamKills,
+          playerScore: run.score,
+          playerKills: run.kills,
+          level: run.level,
+          attempts: 1,
+          practiceBestTeamScore: 0,
+          roster: run.roster,
+        }
+      : {
+          ...earlierMp,
+          attempts: earlierMp.attempts + 1,
+          practiceBestTeamScore: Math.max(earlierMp.practiceBestTeamScore, teamScore),
+          roster: run.roster ?? earlierMp.roster,
+        };
+
+    const nextMp = { ...(earlier?.mp ?? {}), [partySize]: mpResult };
+    const earlierAttempts = earlier?.attempts ?? 0;
+    const earlierPracticeBest = earlier?.practiceBest ?? 0;
+    nextResult = {
+      score: earlier?.score ?? run.score,
+      kills: earlier?.kills ?? run.kills,
+      level: earlier?.level ?? run.level,
+      attempts: earlierAttempts + 1,
+      practiceBest: earlierPracticeBest,
+      solo: earlier?.solo,
+      mp: nextMp,
+    };
+  } else {
+    const earlierSolo = earlier?.solo ?? (earlier && !earlier.mp ? earlier : undefined);
+    const isNewSolo = earlierSolo === undefined;
+    counted = isNewSolo;
+
+    const soloResult: DailySoloResult = isNewSolo
+      ? {
+          score: run.score,
+          kills: run.kills,
+          level: run.level,
+          attempts: 1,
+          practiceBest: 0,
+        }
+      : {
+          ...earlierSolo,
+          attempts: earlierSolo.attempts + 1,
+          practiceBest: Math.max(earlierSolo.practiceBest, run.score),
+        };
+
+    const nextAttempts = earlier ? earlier.attempts + 1 : 1;
+    const nextPracticeBest = isNewSolo ? (earlier?.practiceBest ?? 0) : Math.max(earlier?.practiceBest ?? 0, run.score);
+
+    nextResult = {
+      score: soloResult.score,
+      kills: soloResult.kills,
+      level: soloResult.level,
+      attempts: nextAttempts,
+      practiceBest: nextPracticeBest,
+      solo: soloResult,
+      mp: earlier?.mp,
+    };
+  }
+
+  const kept = Object.keys({ ...log, [key]: nextResult }).sort().reverse().slice(0, KEPT_DAYS);
   const next: Record<string, DailyResult> = {};
-  for (const day of kept) next[day] = day === key ? result : log[day];
-  return { log: next, counted: earlier === undefined };
+  for (const day of kept) next[day] = day === key ? nextResult : log[day];
+  return { log: next, counted };
 }
 
 /** Records a finished daily run and says whether it was the one that counts. */
-export function recordDaily(key: string, run: { score: number; kills: number; level: number }, store: Store | null = browserStore()): boolean {
+export function recordDaily(key: string, run: DailyRunInput, store: Store | null = browserStore()): boolean {
   const { log, counted } = withRun(loadDailyLog(store), key, run);
   writeJson(store, DAILY_KEY, log);
   return counted;
+}
+
+export function soloResultOf(result: DailyResult | null | undefined): DailySoloResult | null {
+  if (!result) return null;
+  if (result.solo) return result.solo;
+  return {
+    score: result.score,
+    kills: result.kills,
+    level: result.level,
+    attempts: result.attempts,
+    practiceBest: result.practiceBest,
+  };
+}
+
+export function mpResultOf(result: DailyResult | null | undefined, size?: DailyPartySize): DailyMpRunResult | null {
+  if (!result || !result.mp) return null;
+  if (size !== undefined) return result.mp[size] ?? null;
+  const sizes = DAILY_PARTY_SIZES.filter((s) => result.mp?.[s]);
+  if (sizes.length === 0) return null;
+  let best: DailyMpRunResult | null = null;
+  for (const s of sizes) {
+    const entry = result.mp[s];
+    if (entry && (!best || entry.teamScore > best.teamScore)) {
+      best = entry;
+    }
+  }
+  return best;
 }
 
 function previousKey(key: string): string {
@@ -193,15 +336,28 @@ const GAME_URL = 'https://undeadofnight.forthexp.com/';
  * A few lines a player can paste anywhere: the day, how far they got, and their streak.
  * Words only, no spoilers about the town beyond its name, so it reads the same to anyone who has not played yet.
  */
-export function shareText(key: string, result: Pick<DailyResult, 'score' | 'kills' | 'level'>, streak: number, url: string = GAME_URL): string {
+export function shareText(
+  key: string,
+  result: Pick<DailyResult, 'score' | 'kills' | 'level'>,
+  streak: number,
+  url: string = GAME_URL,
+  party?: { size: number; teamScore: number },
+): string {
   const nights = streak === 1 ? '1 night' : `${streak} nights`;
   const streakLine = streak > 1 ? `\nStreak: ${nights} in a row` : '';
-  return `Undead of Night - Daily Night, ${dayLabel(key)}\nReached ${townName(result.level)}: ${result.score} points, ${result.kills} kills${streakLine}\n${url}`;
+  const partyLine = party && party.size > 1 ? `\nParty: ${party.size} survivors, ${party.teamScore} team points` : '';
+  return `Undead of Night - Daily Night, ${dayLabel(key)}\nReached ${townName(result.level)}: ${result.score} points, ${result.kills} kills${partyLine}${streakLine}\n${url}`;
 }
 
 /** The day's counted run, ready to share, or null before it is played. */
-export function dailyShare(key: string, store: Store | null = browserStore()): string | null {
+export function dailyShare(key: string, store: Store | null = browserStore(), partySize?: DailyPartySize): string | null {
   const log = loadDailyLog(store);
   const counted = log[key];
-  return counted ? shareText(key, counted, streakOf(log, key)) : null;
+  if (!counted) return null;
+  const streak = streakOf(log, key);
+  if (partySize && counted.mp?.[partySize]) {
+    const mp = counted.mp[partySize];
+    return shareText(key, { score: mp.playerScore, kills: mp.playerKills, level: mp.level }, streak, GAME_URL, { size: mp.partySize, teamScore: mp.teamScore });
+  }
+  return shareText(key, counted, streak);
 }

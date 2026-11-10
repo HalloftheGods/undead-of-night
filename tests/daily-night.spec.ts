@@ -69,6 +69,71 @@ describe('Daily Night', () => {
     expect(week[0].result).toBeNull();
   });
 
+  it('records both Solo and MP runs for the same day with cumulative team scores', () => {
+    const store = memoryStore();
+    // Counted solo run
+    expect(recordDaily('2026-11-07', { score: 400, kills: 20, level: 3 }, store)).toBe(true);
+    // Practice solo run
+    expect(recordDaily('2026-11-07', { score: 600, kills: 30, level: 4 }, store)).toBe(false);
+
+    // Counted 3-player MP run
+    const mpTrio = {
+      score: 500,
+      kills: 25,
+      level: 5,
+      partySize: 3,
+      teamScore: 1450,
+      teamKills: 70,
+      roster: [
+        { name: 'Night', character: 0, score: 500, kills: 25 },
+        { name: 'Bear', character: 1, score: 450, kills: 20 },
+        { name: 'Kat', character: 2, score: 500, kills: 25 },
+      ],
+    };
+    expect(recordDaily('2026-11-07', mpTrio, store)).toBe(true);
+
+    // Practice 3-player MP run
+    const mpTrioPractice = { ...mpTrio, score: 700, teamScore: 1900 };
+    expect(recordDaily('2026-11-07', mpTrioPractice, store)).toBe(false);
+
+    // Counted 5-player MP run
+    const mpFull = {
+      score: 300,
+      kills: 15,
+      level: 6,
+      partySize: 5,
+      teamScore: 2400,
+      teamKills: 110,
+    };
+    expect(recordDaily('2026-11-07', mpFull, store)).toBe(true);
+
+    const day = loadDailyLog(store)['2026-11-07'];
+    expect(day.solo).toMatchObject({ score: 400, attempts: 2, practiceBest: 600 });
+    expect(day.mp?.[3]).toMatchObject({
+      partySize: 3,
+      teamScore: 1450,
+      playerScore: 500,
+      attempts: 2,
+      practiceBestTeamScore: 1900,
+    });
+    expect(day.mp?.[5]).toMatchObject({
+      partySize: 5,
+      teamScore: 2400,
+      playerScore: 300,
+      attempts: 1,
+    });
+  });
+
+  it('maintains a unified streak across solo and MP runs', () => {
+    let log: DailyLog = {};
+    log = withRun(log, '2026-11-04', { score: 100, kills: 10, level: 3 }).log; // solo
+    log = withRun(log, '2026-11-05', { score: 200, kills: 15, level: 4, partySize: 2, teamScore: 500 }).log; // MP duo
+    log = withRun(log, '2026-11-06', { score: 300, kills: 20, level: 5, partySize: 5, teamScore: 1800 }).log; // MP squad
+    expect(streakOf(log, '2026-11-07')).toBe(3);
+    log = withRun(log, '2026-11-07', { score: 150, kills: 12, level: 4 }).log; // solo
+    expect(streakOf(log, '2026-11-07')).toBe(4);
+  });
+
   it('ignores a damaged save', () => {
     const store = memoryStore();
     store.setItem('outbreak.daily', '{"2026-11-07":{"score":"lots"},"nonsense":{}}');

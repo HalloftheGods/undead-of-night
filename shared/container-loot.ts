@@ -45,7 +45,6 @@ export const CONTAINER_LOOT: Record<BuildingKind | 'outdoors', ContainerLootRule
   pharmacy: { odds: 0.35, table: { bandage: 3, medkit: 2 } },
   clinic: { odds: 0.35, table: { bandage: 3, medkit: 2 } },
   hospital: { odds: 0.3, table: { bandage: 3, medkit: 2.5 } },
-  // Most desks and lockers hold nothing anyone needs, but there are a lot of them.
   school: { odds: 0.18, table: { bandage: 3, knife: 1, pistol_ammo: 0.6 } },
   police: { odds: 0.3, table: { pistol_ammo: 3, carbine_ammo: 3, shells: 1 } },
   gun_shop: { odds: 0.3, table: { pistol_ammo: 2, shells: 2, carbine_ammo: 1 } },
@@ -81,7 +80,8 @@ export function stockContainers(sim: SimState, upOrDown: Rng = sim.rng): void {
 }
 
 /** The containers in the town itself, which its ammo budget and its homes' small finds are settled over. Bowls and the bus hold their own. */
-const inTown = (sim: SimState) => townContainers(sim.map).filter((container) => !container.upOrDown && container.kind !== 'bowl' && !isBooth(container));
+const inTown = (sim: SimState) =>
+  townContainers(sim.map).filter((container) => !container.upOrDown && container.kind !== 'bowl' && !isBooth(container));
 
 /**
  * Brings the ammo put away to what the town can spare, so a lucky roll never shows up as bare

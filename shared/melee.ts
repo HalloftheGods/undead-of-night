@@ -29,8 +29,9 @@ function inArc(p: PlayerState, z: ZombieState): boolean {
 
 function shove(sim: SimState, p: PlayerState, z: ZombieState): void {
   const angle = Math.atan2(z.y - p.y, z.x - p.x);
-  const taffy = 1 + sugarOf(p, 'fang_taffy');
-  damageZombie(sim, z, (p.knife ? KNIFE_DAMAGE : MELEE_DAMAGE) * taffy, angle, p.id);
+  const meleeSugar = Math.max(sugarOf(p, 'licorice_lash'), sugarOf(p, 'fang_taffy'));
+  const boost = 1 + meleeSugar;
+  damageZombie(sim, z, (p.knife ? KNIFE_DAMAGE : MELEE_DAMAGE) * boost, angle, p.id);
   // Big bodies shove less, as they do from bullets.
   const force = MELEE_KNOCKBACK_SPEED * characterOf(p.skin).shoveForce * Math.min(1, (6 / z.radius) ** 2);
   z.knockX += Math.cos(angle) * force;

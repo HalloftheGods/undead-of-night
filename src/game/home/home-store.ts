@@ -18,6 +18,7 @@ export interface HomeStore {
 
 export interface HomeSave {
   version: number;
+  candy: number;
   silver: number;
   rawJewels: Jewels;
   locker: Loadout;
@@ -50,6 +51,7 @@ export interface TripRecord {
   difficulty: DifficultyId;
   silver: number;
   jewels: Jewels;
+  candy?: number;
   replay: boolean;
   at: number;
 }
@@ -64,6 +66,7 @@ export interface OverrunRecord {
   /** The merchants a flight cost. */
   merchantsLost: readonly MerchantId[];
   silver: number;
+  candy?: number;
   at: number;
 }
 
@@ -81,6 +84,7 @@ export interface OpenOverrun {
 export function emptySave(shopSeed: number): HomeSave {
   return {
     version: 0,
+    candy: 0,
     silver: 0,
     rawJewels: { small: 0, large: 0 },
     locker: emptyLoadout(),

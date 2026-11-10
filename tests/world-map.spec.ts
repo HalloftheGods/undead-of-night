@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { ZOMBIES } from '../shared/constants.ts';
 import { FlowField } from '../shared/flow-field.ts';
 import { BUNKER_SEED } from '../shared/home-protocol.ts';
+import { isSewerBuilding } from '../shared/map-protocol.ts';
 import { BUILDING_DEFS, BUILDING_KINDS, DOOR_WIDTH, PROP_DEFS, TILE_KINDS, TILE_SIZE, WALL_THICKNESS } from '../shared/protocol.ts';
 import type { BuildingInstance, BuildingKind, PropKind, WorldMap } from '../shared/protocol.ts';
 import { buildingsWithStairs, flightsOf } from '../shared/storeys.ts';
@@ -43,7 +44,8 @@ function reachableFromSpawn(map: WorldMap): Uint8Array {
     const index = stack.pop() as number;
     const col = index % map.cols;
     const stairs = flightsOf(map).get(index)?.toIndex ?? -1;
-    const next = [col > 0 ? index - 1 : -1, col < map.cols - 1 ? index + 1 : -1, index - map.cols, index + map.cols, stairs];
+    const manhole = map.flights?.find((flight) => flight.fromIndex === index)?.toIndex ?? -1;
+    const next = [col > 0 ? index - 1 : -1, col < map.cols - 1 ? index + 1 : -1, index - map.cols, index + map.cols, stairs, manhole];
     for (const n of next) {
       if (n >= 0 && n < seen.length && !blocked[n] && !seen[n]) {
         seen[n] = 1;
@@ -112,10 +114,12 @@ describe('generateWorldMap', () => {
   it.each(SEEDS)('seed %i: uses every kind of ground and the town fixtures', (seed) => {
     const map = generateWorldMap(seed);
     const used = new Set(Array.from(map.tiles, (index) => TILE_KINDS[index]));
-    // Flood, snow, ash and sludge come only from a level's biome, which the plain town has none of.
+    // Flood, snow, ash and sludge come only from a level's biome, which the plain town has none of, bar the trenches of the sewers.
     const biomeGround: readonly string[] = ['bunker_wall', 'water', 'snow', 'ash', 'sludge'];
+    const sewerGround: readonly string[] = ['water', 'sludge'];
     const townKinds = TILE_KINDS.filter((kind) => !biomeGround.includes(kind));
-    expect([...used].sort()).toEqual([...townKinds].sort());
+    expect([...used].filter((kind) => !sewerGround.includes(kind)).sort()).toEqual([...townKinds].sort());
+    expect(used.has('sludge') || used.has('water')).toBe(true);
     const kinds = new Set(map.props.map((prop) => prop.kind));
     for (const kind of ['street_lamp', 'fire_barrel', 'tree', 'dumpster', 'sandbags', 'fence_h', 'fence_v', 'gas_pump', ...FURNITURE] as const) {
       expect(kinds).toContain(kind);
@@ -195,9 +199,9 @@ describe('the town', () => {
 
   it('names five districts that sit on the map', () => {
     const map = generateWorldMap(3);
-    const names = map.districts.map((district) => district.name).sort();
+    const names = map.districts.filter((district) => !district.underground).map((district) => district.name).sort();
     expect(names).toEqual(['Downtown', 'Industrial Yard', 'Old Town', 'Park', 'Riverside']);
-    for (const { x, y } of map.districts) {
+    for (const { x, y } of map.districts.filter((district) => !district.underground)) {
       expect(x).toBeGreaterThan(0);
       expect(x).toBeLessThan(map.width);
       expect(y).toBeGreaterThan(0);
@@ -235,9 +239,11 @@ describe('buildings', () => {
       const { w, h, floor } = BUILDING_DEFS[building.kind];
       expect(building.x % TILE_SIZE).toBe(0);
       expect(building.y % TILE_SIZE).toBe(0);
-      expect(tileKindAt(map, building.x / TILE_SIZE + 2, building.y / TILE_SIZE + 2)).toBe(floor);
+      // The sewers' pieces run together, and their trench is not floor: only their place on the grid is checked.
+      const isSewer = isSewerBuilding(building);
+      if (!isSewer) expect(tileKindAt(map, building.x / TILE_SIZE + 2, building.y / TILE_SIZE + 2)).toBe(floor);
       for (const other of map.buildings) {
-        if (other === building) continue;
+        if (other === building || isSewer || isSewerBuilding(other)) continue;
         const a = buildingBox(building);
         const b = buildingBox(other);
         const overlapping = a.x0 < b.x1 + TILE_SIZE && a.x1 > b.x0 - TILE_SIZE && a.y0 < b.y1 + TILE_SIZE && a.y1 > b.y0 - TILE_SIZE;
@@ -261,7 +267,7 @@ describe('buildings', () => {
   it('wallBoxes leave exactly the door gap', () => {
     const map = generateWorldMap(2);
     const boxes = wallBoxes(map);
-    const sides = (building: BuildingInstance): number => (building.of === undefined ? 5 + (backDoorBox(building) ? 1 : 0) : 4);
+    const sides = (building: BuildingInstance): number => (isSewerBuilding(building) ? 0 : building.of === undefined ? 5 + (backDoorBox(building) ? 1 : 0) : 4);
     const withStairs = buildingsWithStairs(map.buildings);
     const expected = map.buildings.reduce((sum, building) => sum + sides(building) + partitionBoxes(building, withStairs.has(building.id)).length, 0);
     expect(boxes.length).toBe(expected);

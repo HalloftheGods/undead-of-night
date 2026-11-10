@@ -1,5 +1,6 @@
 import { DOG_TAG_REVIVE, hasKeepsake, ROSARY_BLEEDOUT } from './keepsakes.ts';
 import { caramelCatch, JAWBREAKER_GUARD, sugarOf } from './candy.ts';
+import { bandageWound, rollCombatWound } from './survival-needs.ts';
 import {
   BLEEDOUT_ALONE_RATE,
   BLEEDOUT_SEC,
@@ -57,11 +58,15 @@ export function giveReturnKit(p: PlayerState): void {
 export function useMedkit(sim: SimState, p: PlayerState): void {
   const wanted = p.healQueued;
   p.healQueued = false;
-  const usable = wanted && p.medkits > 0 && p.health < p.maxHealth;
+  const isBleeding = p.needs ? p.needs.bleeding : false;
+  const hasHealthDeficit = p.health < p.maxHealth;
+  const needsMedicalCare = hasHealthDeficit || isBleeding;
+  const usable = wanted && p.medkits > 0 && needsMedicalCare;
   if (!usable) return;
   const amount = Math.min(MEDKIT_HEAL, p.maxHealth - p.health);
   p.medkits -= 1;
   p.health += amount;
+  if (p.needs) bandageWound(p.needs);
   emit(sim, { type: 'heal', playerId: p.id, x: p.x, y: p.y, amount });
 }
 
@@ -95,6 +100,7 @@ export function hurtPlayer(sim: SimState, p: PlayerState, damage: number): void 
   if (isNotAlive) return;
   const guarded = damage * (1 - JAWBREAKER_GUARD * sugarOf(p, 'jawbreaker'));
   p.health = Math.max(0, p.health - guarded);
+  if (p.needs) rollCombatWound(p.needs, guarded, sim.rng);
   emit(sim, { type: 'player_hurt', playerId: p.id, x: p.x, y: p.y, damage: guarded });
   const isStanding = p.health > 0;
   if (isStanding) return;

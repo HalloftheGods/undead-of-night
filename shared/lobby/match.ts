@@ -20,7 +20,7 @@ function difficultyGap(a: string, b: string): number {
 }
 
 function levelFits(room: RoomListing, request: MatchRequest): boolean {
-  const isArcadeRoom = room.style === 'arcade';
+  const isArcadeRoom = room.style === 'arcade' || room.style === 'daily';
   if (isArcadeRoom) return room.phase === 'muster' || room.level <= ARCADE_LAST_JOINABLE_LEVEL;
   const mine = request.highest ?? 1;
   return room.highest >= mine - CAMPAIGN_REACH_BELOW && room.highest <= mine + CAMPAIGN_REACH_ABOVE;

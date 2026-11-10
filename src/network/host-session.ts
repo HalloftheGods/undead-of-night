@@ -18,6 +18,7 @@ import { loopbackPair } from './packet-pipe.ts';
 import { createRoom, PLAY_API, socketUrl } from './play-api.ts';
 import { RemoteSession, type RoomSession } from './remote-session.ts';
 import { browserRtc, candidateOf, GAME_CHANNEL, rtcConfig, type RtcDeps } from './rtc-pipe.ts';
+import { tabToken } from './tab-token.ts';
 import type { ConnectOptions } from './transport.ts';
 
 /** The Room DO answers this without waking; it is what keeps the host listed. */
@@ -108,6 +109,8 @@ export class HostSession implements RoomSession {
     private readonly api: string = PLAY_API,
     private readonly rtc: RtcDeps = browserRtc,
     private readonly fetcher: typeof fetch = (...args) => fetch(...args),
+    private readonly existingSim?: GameSimulation,
+    private readonly initialTown?: { seed: number; level: number; difficulty: DifficultyId },
   ) {}
 
   /** Before connect: a public room, either made here or handed over by Find a team. Its players show by survivor name only. */
@@ -182,7 +185,7 @@ export class HostSession implements RoomSession {
       {
         protocol: PROTOCOL_VERSION,
         style: this.style,
-        difficulty: difficulty ?? DEFAULT_DIFFICULTY,
+        difficulty: this.initialTown?.difficulty ?? (this.existingSim ? this.existingSim.difficulty : (difficulty ?? DEFAULT_DIFFICULTY)),
         visibility: this.visibility,
         device: hostDevice(),
         ...(name && isPrivate ? { label: name } : {}),
@@ -200,7 +203,15 @@ export class HostSession implements RoomSession {
 
   /** The same room the Node server runs, ticking in this tab, with the host's own player let in first. */
   private openRoom(): void {
-    const sim = new GameSimulation({ seed: Math.floor(Math.random() * 0x7fffffff), workbench: 'timed', overrun: OVERRUN_LIVE });
+    if (this.existingSim) {
+      this.existingSim.bindLocalPlayerToken(tabToken());
+    }
+    const seed = this.initialTown?.seed ?? Math.floor(Math.random() * 0x7fffffff);
+    const startLevel = this.initialTown?.level;
+    const sim = this.existingSim ?? new GameSimulation({ seed, startLevel, workbench: 'timed', overrun: OVERRUN_LIVE });
+    if (this.initialTown?.difficulty) {
+      sim.setDifficulty(this.initialTown.difficulty);
+    }
     const room = createRoomHost({
       sim,
       clock: browserClock,
@@ -209,6 +220,7 @@ export class HostSession implements RoomSession {
       joinDeadlineMs: JOIN_DEADLINE_MS,
       heartbeatMs: HEARTBEAT_MS,
       anonymous: this.isPublic,
+      style: this.style,
     });
     this.room = room;
     const { pipe, peer } = loopbackPair();

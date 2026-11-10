@@ -279,7 +279,8 @@ export class WorldRenderer {
       return;
     }
     this.lighting.addPool(x, y, isViewer ? AURA_RADIUS : TEAM_AURA_RADIUS, AURA_COLOR, isViewer ? AURA_STRENGTH : TEAM_AURA_STRENGTH, clip);
-    const reach = isViewer ? FLASHLIGHT_REACH : TEAM_FLASHLIGHT_REACH;
+    const glowScale = player.sugar?.some((s) => s.id === 'glow_worms') ? 2 : 1;
+    const reach = (isViewer ? FLASHLIGHT_REACH : TEAM_FLASHLIGHT_REACH) * glowScale;
     this.lighting.addFlashlight(this.occlusion, player.x, player.y, player.angle, reach, isViewer ? 1 : 0.7, left, top);
   }
 

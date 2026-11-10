@@ -93,7 +93,7 @@ describe('home commands', () => {
   it('closes a station on leave_station', () => {
     const { sim, state } = homeSim();
     const home = state.players[0].home as NonNullable<PlayerState['home']>;
-    home.station = 'forge';
+    home.station = 'candy_shop';
     home.stationHold = 0.6;
     sim.homeCommand('a', { kind: 'leave_station' });
     expect(home).toMatchObject({ station: null, stationHold: 0 });

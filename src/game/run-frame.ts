@@ -17,6 +17,8 @@ import type { RunHost } from './run-session.ts';
 import { touchMarks } from './touch-marks.ts';
 
 const GAME_OVER_BEAT_MS = 1800;
+const STAIRS_TRANSITION_MS = 700;
+const STAIRS_FADE_HALF_MS = 350;
 
 /** What a run's frame reads from the controller beyond the run's own parts. */
 export interface RunFrameHost {
@@ -62,8 +64,11 @@ export class RunFrame {
       renderer.render(this.lastScene, 0);
       return;
     }
-    const dirX = input.dirX;
-    const dirY = input.dirY;
+    const transition = state.stairsTransition;
+    const isTransitioning = transition !== null && ms - transition.startedAtMs < STAIRS_TRANSITION_MS;
+    const elapsed = transition ? ms - transition.startedAtMs : 0;
+    const dirX = isTransitioning ? 0 : input.dirX;
+    const dirY = isTransitioning ? 0 : input.dirY;
     const pointerX = renderer.toBufferX(input.pointerClientX);
     const pointerY = renderer.toBufferY(input.pointerClientY);
     // Behind a co-op menu the mouse belongs to the menu, not the flashlight.
@@ -73,6 +78,21 @@ export class RunFrame {
     world.setStance(menuUp ? 'walk' : input.stance);
     const entities = world.advance(ms, delay, dirX, dirY, aim, dt);
     if (!entities) return;
+
+    let fadeAlpha = 0;
+    if (isTransitioning) {
+      const isFadingOut = elapsed < STAIRS_FADE_HALF_MS;
+      fadeAlpha = isFadingOut ? elapsed / STAIRS_FADE_HALF_MS : (STAIRS_TRANSITION_MS - elapsed) / STAIRS_FADE_HALF_MS;
+      const targetX = isFadingOut ? transition.fromX : transition.toX;
+      const targetY = isFadingOut ? transition.fromY : transition.toY;
+      (entities as { focusX: number; focusY: number }).focusX = targetX;
+      (entities as { focusX: number; focusY: number }).focusY = targetY;
+      const local = entities.players.find((player) => player.id === world.localId);
+      if (local) {
+        local.x = targetX;
+        local.y = targetY;
+      }
+    }
 
     const result = state.runResult;
     const over = result !== null;
@@ -88,7 +108,7 @@ export class RunFrame {
       overrunOn: this.host.overrunOn,
       pointerX: over || touch || padAims ? null : pointerX,
       pointerY: over || touch || padAims ? null : pointerY,
-      showCrosshair: this.host.playing() && !menuUp && !this.host.parts.bench.open,
+      showCrosshair: this.host.playing() && !menuUp && !this.host.parts.bench.open && !isTransitioning,
       touch,
     };
     this.lastScene = scene;
@@ -97,6 +117,9 @@ export class RunFrame {
     renderer.effects.setHeartPulse(tickRunAudio(this.host.parts.audio, world, scene, dt, this.heart));
     renderer.effects.setHealth(healthFraction(world.localPlayer));
     renderer.effects.setDesaturation(deathFade(world.localPlayer?.status, over));
+    renderer.effects.setStairsFade(fadeAlpha);
+    const hasTransitionExpired = !isTransitioning && state.stairsTransition !== null;
+    if (hasTransitionExpired) state.stairsTransition = null;
     renderer.render(scene, dt);
     this.anchor.write(this.playerSpot(renderer, world));
 

@@ -11,6 +11,9 @@ import type { PlayerEntity, SnapshotPacket, WelcomePacket } from '../../shared/p
 import type { GameTransport, TransportKind } from '../network/transport.ts';
 import { questContext, shopContext } from './home-hud.ts';
 import type { ChestOpened, HomeActions, HomeDeath, HomeFacts, HomeUi } from './home-hud.ts';
+import { buyCandyPiece, sellAllCarriedCandy, sellCandyPiece } from './home/candy-shop.ts';
+import { bagOf, candiesIn } from '../../shared/candy.ts';
+import type { CandyId } from '../../shared/candy.ts';
 import type { HomeStore } from './home/home-store.ts';
 import { HomeSync, joinHomeFor } from './home/home-sync.ts';
 import type { QuestResult } from './home/quest-sync.ts';
@@ -85,6 +88,48 @@ export class HomeLink {
       },
       // The forge runs by itself for as long as the player stays at it.
       smelt: () => {},
+      buyCandy: (id) => {
+        const p = this.host.localPlayer();
+        if (!p) return;
+        const current = p.candy ?? candiesIn(p.bag);
+        void this.sync?.trade((save) => {
+          const res = buyCandyPiece(save, current, id as CandyId);
+          if (res) {
+            p.candy = res.bag;
+            p.bag = bagOf(res.bag);
+            this.host.refresh();
+            return res.save;
+          }
+          return null;
+        });
+      },
+      sellCandy: (id) => {
+        const p = this.host.localPlayer();
+        if (!p) return;
+        const current = p.candy ?? candiesIn(p.bag);
+        void this.sync?.trade((save) => {
+          const res = sellCandyPiece(save, current, id as CandyId);
+          if (res) {
+            p.candy = res.bag;
+            p.bag = bagOf(res.bag);
+            this.host.refresh();
+            return res.save;
+          }
+          return null;
+        });
+      },
+      sellAllCandy: () => {
+        const p = this.host.localPlayer();
+        if (!p) return;
+        const current = p.candy ?? candiesIn(p.bag);
+        void this.sync?.trade((save) => {
+          const res = sellAllCarriedCandy(save, current);
+          p.candy = res.bag;
+          p.bag = bagOf(res.bag);
+          this.host.refresh();
+          return res.save;
+        });
+      },
       buy: (merchant, item) => this.buy(merchant, item),
       acceptQuest: (merchant, id) => this.quest((home, sync) => sync.acceptQuest(merchant, id, questContext(home))),
       turnInQuest: (merchant) => this.quest((home, sync) => sync.turnInQuest(merchant, questContext(home))),

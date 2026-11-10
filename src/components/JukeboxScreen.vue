@@ -1,6 +1,6 @@
 <template>
-  <section class="px-screen">
-    <div class="px-panel px-frame jukebox" :style="{ '--card-w': CARD_W }">
+  <section class="px-screen jukebox-screen" @mousedown.stop @pointerdown.stop @touchstart.stop>
+    <div class="jukebox-modern" :style="{ '--card-w': CARD_W }">
       <SceneCard :sprite="art?.ui.stations.jukebox ?? null" :name="plate.name" :line="plate.line">
         <JukeboxFacts :status :rows :hint="findsLine" :radio />
       </SceneCard>
@@ -11,8 +11,14 @@
           <span class="jukebox-page">{{ page + 1 }}/{{ pages }}</span>
           <PixelButton class="jukebox-turn" aria-label="Next page" @press="turn(1)">&gt;</PixelButton>
         </template>
+        <JukeboxVolume
+          :volume="musicVolume"
+          :muted="isMuted"
+          @toggle-mute="toggleMute"
+          @change-volume="changeVolume"
+        />
         <PixelButton class="jukebox-stop" :disabled="playing === null" @press="stop">Stop</PixelButton>
-        <PixelButton class="jukebox-close" @press="game.home.closeStation()">Close</PixelButton>
+        <PixelButton class="jukebox-close" primary @press="game.home.closeStation()">Close</PixelButton>
       </footer>
     </div>
   </section>
@@ -20,8 +26,8 @@
 
 <script setup lang="ts">
 /**
- * The bunker's jukebox, laid out like the survivor select: its framed scene with what plays on the plate, the
- * facts beside it, over a page of track tiles. A tile plays its track, or stops it if it is the one playing.
+ * The bunker's jukebox, laid out with a modern frameless container: framed scene with playing track,
+ * statistics beside it, paginated track selection tiles, and real-time volume controls.
  */
 import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue';
 import { CARD_W } from '../art/difficulty-card.ts';
@@ -32,6 +38,7 @@ import { findCount, jukeboxEntries, musicEntries, playEntry } from '../game/soun
 import type { MusicEntry } from '../game/sound-test.ts';
 import JukeboxFacts from './JukeboxFacts.vue';
 import JukeboxTracks from './JukeboxTracks.vue';
+import JukeboxVolume from './JukeboxVolume.vue';
 import PixelButton from './PixelButton.vue';
 import SceneCard from './SceneCard.vue';
 import { useGame } from './use-game.ts';
@@ -55,6 +62,24 @@ let isOpen = true;
 const cursor = ref(0);
 const page = computed(() => pageOf(cursor.value));
 const pages = pageCount(tracks.length);
+
+const musicVolume = ref(game.audio.musicVolume);
+const isMuted = ref(game.audio.muted);
+
+function changeVolume(val: number): void {
+  musicVolume.value = val;
+  game.audio.musicVolume = val;
+  if (game.audio.muted && val > 0) {
+    game.audio.muted = false;
+    isMuted.value = false;
+  }
+}
+
+function toggleMute(): void {
+  game.audio.muted = !game.audio.muted;
+  isMuted.value = game.audio.muted;
+  game.playUi('click');
+}
 
 /** Turns the strip a page, wrapping, and puts the keyboard's tile on the new page's first track. */
 function turn(step: number): void {
@@ -91,8 +116,14 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-/* As wide as the scene (rounded as SpriteImg rounds it), the column, the gaps and its own padding; a phone gets the window. */
-.jukebox {
+.jukebox-screen {
+  background: rgba(7, 8, 12, 0.88);
+  backdrop-filter: blur(4px);
+  padding: calc(var(--u) * 4);
+}
+
+/* Frameless modern layout floating seamlessly over background */
+.jukebox-modern {
   --scene-px: max(var(--dpx, 1px), round(nearest, calc(var(--u) * 4), var(--dpx, 1px)));
   display: flex;
   flex-direction: column;
@@ -104,7 +135,7 @@ onBeforeUnmount(() => {
 }
 
 /* A long track name keeps to one line, so the plate never grows over the scene. */
-.jukebox :deep(.select-name) {
+.jukebox-modern :deep(.select-name) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -114,16 +145,17 @@ onBeforeUnmount(() => {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: calc(var(--u) * 4);
+  gap: calc(var(--u) * 3);
+  padding-top: calc(var(--u) * 2);
 }
 
 .jukebox-foot .px-button {
   width: auto;
-  padding-inline: calc(var(--u) * 10);
+  padding-inline: calc(var(--u) * 8);
 }
 
 .jukebox-foot .jukebox-turn {
-  padding-inline: calc(var(--u) * 6);
+  padding-inline: calc(var(--u) * 5);
 }
 
 .jukebox-page {

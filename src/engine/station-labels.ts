@@ -2,8 +2,9 @@
 
 import type { StationId } from '../../shared/home-protocol.ts';
 
-export const STATION_LABEL: Record<StationId, string> = {
+export const STATION_LABEL: Record<StationId, string> & { forge?: string } = {
   bench: 'WORKBENCH',
+  candy_shop: 'CANDY SHOP',
   forge: 'FORGE',
   locker: 'LOCKER',
   level_map: 'LEVEL MAP',

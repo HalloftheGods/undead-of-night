@@ -1,5 +1,5 @@
-// The home side of the Vue-facing state, and the commands the home screens call.
-
+import { candiesIn, candyBagWorth } from '../../shared/candy.ts';
+import type { CandyId } from '../../shared/candy.ts';
 import { BASELINE_DIFFICULTY } from '../../shared/difficulty.ts';
 import type { DifficultyId } from '../../shared/difficulty.ts';
 import { isBunkerSeed, isMerchantId } from '../../shared/home-protocol.ts';
@@ -37,6 +37,7 @@ export interface ChestOpened {
   readonly gear: Loadout;
   readonly silver: number;
   readonly jewels: Jewels;
+  readonly candy?: number;
 }
 
 export interface HomeUi {
@@ -49,8 +50,14 @@ export interface HomeUi {
   /** The merchant whose shop is open. Follows `station`, so it shuts the moment the station clears. */
   readonly shop: MerchantId | null;
   readonly ready: boolean;
-  /** Jewels in hand on this trip, and the silver they come to once smelted. Towns hold no coin. */
-  readonly carried: { readonly jewels: Jewels; readonly worth: number };
+  /** Candy and jewels in hand on this trip. Towns hold no coin. */
+  readonly carried: {
+    readonly jewels: Jewels;
+    readonly worth: number;
+    readonly candy?: number;
+    readonly candyCount?: number;
+    readonly candyList?: readonly CandyId[];
+  };
   readonly pickedLevel: number | null;
   /** The highest level anyone in the room can pick. */
   readonly roomHighest: number;
@@ -81,6 +88,9 @@ export interface HomeActions {
   /** A screen with something still to settle says how to close it, so Esc does what its Close button does. Null when it goes. */
   closeWith(closer: (() => void) | null): void;
   smelt(): void;
+  buyCandy(id: string): void;
+  sellCandy(id: string): void;
+  sellAllCandy(): void;
   /** Builds its `ShopContext` from `UiState.home` with `shopContext`, so a screen never has to. */
   buy(merchant: MerchantId, item: string): void;
   /** Like `buy`, the context is built from `UiState.home` with `questContext`. A screen reads the outcome from the refreshed save. */
@@ -100,6 +110,9 @@ export const NO_HOME_ACTIONS: HomeActions = {
   closeStation() {},
   closeWith() {},
   smelt() {},
+  buyCandy() {},
+  sellCandy() {},
+  sellAllCandy() {},
   buy() {},
   acceptQuest() {},
   turnInQuest() {},
@@ -152,7 +165,13 @@ export function homeUi(snapshot: SnapshotPacket, local: PlayerEntity, facts: Hom
     stationHold: home.stationHold,
     shop: atStall ? station : null,
     ready: home.ready,
-    carried: { jewels: home.jewels, worth: jewelWorth(home.jewels) },
+    carried: {
+      jewels: home.jewels,
+      worth: jewelWorth(home.jewels),
+      candy: candyBagWorth(local.candy ?? local.bag ?? {}),
+      candyCount: local.candy?.length ?? Object.values(local.bag ?? {}).reduce((sum, n) => sum + (n ?? 0), 0),
+      candyList: local.candy ?? candiesIn(local.bag),
+    },
     pickedLevel: snapshot.home?.pickedLevel ?? null,
     roomHighest: snapshot.home?.roomHighest ?? FIRST_LEVEL,
     overrun: snapshot.home?.overrun ?? null,

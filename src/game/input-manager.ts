@@ -5,34 +5,17 @@ import { GamepadInput, PAD_FIRE, PAD_PREV_WEAPON } from './gamepad-input.ts';
 import type { NavDirection, PadConnection } from './gamepad-input.ts';
 import type { SwipeDirection } from './swipe-gesture.ts';
 import { TouchInput } from './touch-input.ts';
+import { loadKeyBindings } from './controls-prefs.ts';
 
 /** One notch of the wheel per this long, so a trackpad's flurry of events is one step. */
 export const WHEEL_COOLDOWN_MS = 110;
 
-const UP = ['KeyW', 'ArrowUp'];
-const DOWN = ['KeyS', 'ArrowDown'];
-const LEFT = ['KeyA', 'ArrowLeft'];
-const RIGHT = ['KeyD', 'ArrowRight'];
-const MOVE_CODES = [...UP, ...DOWN, ...LEFT, ...RIGHT];
-
-const WEAPON_KEYS: Readonly<Record<string, WeaponId>> = {
+const DEFAULT_WEAPON_KEYS: Readonly<Record<string, WeaponId>> = {
   Digit1: 'pistol',
   Digit2: 'carbine',
   Digit3: 'shotgun',
 };
 
-const SHOVE_CODE = 'KeyF';
-const HEAL_CODE = 'KeyH';
-const SEARCH_CODE = 'KeyE';
-const THROW_CODE = 'KeyG';
-const SPINNER_CODE = 'KeyT';
-const FOUNTAIN_CODE = 'KeyV';
-/** X opens the candy bag, where the candy to eat is picked. */
-const BAG_CODE = 'KeyX';
-const SNEAK_CODES = ['KeyC'];
-const SPRINT_CODES = ['ShiftLeft', 'ShiftRight'];
-const MAP_CODES: ReadonlySet<string> = new Set(['Tab', 'KeyN']);
-const LOG_CODE = 'KeyL';
 const LEFT_BUTTON = 0;
 /** Nothing in play used the middle button, so it opens the backpack. */
 const MIDDLE_BUTTON = 1;
@@ -40,21 +23,10 @@ const RIGHT_BUTTON = 2;
 const LEFT_BUTTON_BIT = 1;
 const RIGHT_BUTTON_BIT = 2;
 
-const GAME_CODES: ReadonlySet<string> = new Set([
-  ...MOVE_CODES,
-  'KeyR',
-  'KeyQ',
-  'Space',
-  SHOVE_CODE,
-  HEAL_CODE,
-  SEARCH_CODE,
-  THROW_CODE,
-  SPINNER_CODE,
-  FOUNTAIN_CODE,
-  ...SNEAK_CODES,
-  ...SPRINT_CODES,
-  ...Object.keys(WEAPON_KEYS),
-]);
+function isGameCode(code: string): boolean {
+  const binds = loadKeyBindings();
+  return Object.values(binds).some((codes) => codes.includes(code)) || code === 'Space';
+}
 
 /** The last hand on the game, for button prompts and for who steers the flashlight. */
 export type InputDevice = 'keyboard' | 'touch' | 'gamepad';
@@ -294,17 +266,20 @@ export class InputManager {
   }
 
   get dirX(): number {
-    return Math.sign(Number(this.isHeld(RIGHT)) - Number(this.isHeld(LEFT)) + this.touch.dirX + this.gamepad.dirX);
+    const binds = loadKeyBindings();
+    return Math.sign(Number(this.isHeld(binds.moveRight)) - Number(this.isHeld(binds.moveLeft)) + this.touch.dirX + this.gamepad.dirX);
   }
 
   /** Sneak wins over sprint, as it does in the sim. */
   get stance(): Stance {
-    if (this.isHeld(SNEAK_CODES)) return 'sneak';
-    return this.isHeld(SPRINT_CODES) ? 'sprint' : 'walk';
+    const binds = loadKeyBindings();
+    if (this.isHeld(binds.sneak)) return 'sneak';
+    return this.isHeld(binds.sprint) ? 'sprint' : 'walk';
   }
 
   get dirY(): number {
-    return Math.sign(Number(this.isHeld(DOWN)) - Number(this.isHeld(UP)) + this.touch.dirY + this.gamepad.dirY);
+    const binds = loadKeyBindings();
+    return Math.sign(Number(this.isHeld(binds.moveDown)) - Number(this.isHeld(binds.moveUp)) + this.touch.dirY + this.gamepad.dirY);
   }
 
   /**
@@ -312,17 +287,27 @@ export class InputManager {
    * the candy bag and, off a pad, the log. True if it was one.
    */
   private pressPanel(code: string, withLog: boolean): boolean {
-    const isMap = MAP_CODES.has(code);
-    const panels: Readonly<Record<string, () => unknown>> = {
-      Escape: () => this.callbacks.onPause(),
-      [BAG_CODE]: () => this.callbacks.onBag?.(),
-      ...(isMap ? { [code]: () => this.callbacks.onMap() } : {}),
-      ...(withLog ? { [LOG_CODE]: () => this.callbacks.onLog?.() } : {}),
-    };
-    const open = panels[code];
-    const isPanelKey = open !== undefined;
-    if (isPanelKey) open();
-    return isPanelKey;
+    const binds = loadKeyBindings();
+    const isMap = binds.map.includes(code) || code === 'Tab';
+    const isBag = binds.bag.includes(code);
+    const isLog = withLog && (binds.log.includes(code) || code === 'KeyL');
+    if (code === 'Escape') {
+      this.callbacks.onPause();
+      return true;
+    }
+    if (isBag) {
+      this.callbacks.onBag?.();
+      return true;
+    }
+    if (isMap) {
+      this.callbacks.onMap();
+      return true;
+    }
+    if (isLog) {
+      this.callbacks.onLog?.();
+      return true;
+    }
+    return false;
   }
 
   /** A touch button goes down as the key it stands for. */
@@ -341,25 +326,26 @@ export class InputManager {
   /** Builds the packet for this tick and spends the latches. */
   sample(seq: number, angle: number, weapons: OwnedWeapons | null): ClientInputPacket {
     const cycled = weapons ? cycleWeapon(weapons, this.cycleLatch) : null;
+    const binds = loadKeyBindings();
     const packet: ClientInputPacket = {
       seq,
-      up: this.isHeld(UP) || this.touch.dirY < 0 || this.gamepad.dirY < 0,
-      down: this.isHeld(DOWN) || this.touch.dirY > 0 || this.gamepad.dirY > 0,
-      left: this.isHeld(LEFT) || this.touch.dirX < 0 || this.gamepad.dirX < 0,
-      right: this.isHeld(RIGHT) || this.touch.dirX > 0 || this.gamepad.dirX > 0,
+      up: this.isHeld(binds.moveUp) || this.touch.dirY < 0 || this.gamepad.dirY < 0,
+      down: this.isHeld(binds.moveDown) || this.touch.dirY > 0 || this.gamepad.dirY > 0,
+      left: this.isHeld(binds.moveLeft) || this.touch.dirX < 0 || this.gamepad.dirX < 0,
+      right: this.isHeld(binds.moveRight) || this.touch.dirX > 0 || this.gamepad.dirX > 0,
       angle,
       ...(this.touch.used ? { touch: true } : {}),
       shoot: this.fireLatch || (this.enabled && this.firing) || this.touch.shooting || this.isHeld([PAD_FIRE]),
       reload: this.reloadLatch,
       weapon: this.weaponLatch ?? cycled,
-      melee: this.shoveLatch || (this.enabled && this.shoving) || this.isHeld([SHOVE_CODE]),
+      melee: this.shoveLatch || (this.enabled && this.shoving) || this.isHeld(binds.melee),
       heal: this.healLatch,
       ...(this.throwLatch ? { throw: true } : {}),
       ...(this.spinnerLatch ? { spinner: true } : {}),
       ...(this.fountainLatch ? { fountain: true } : {}),
       ...(this.eatLatch ? { eat: this.eatLatch } : {}),
       ...(this.keepsakeLatch ? { keepsake: this.keepsakeLatch } : {}),
-      search: this.isHeld([SEARCH_CODE]),
+      search: this.isHeld(binds.search),
       ...(this.stance === 'sneak' ? { sneak: true } : {}),
       ...(this.stance === 'sprint' ? { sprint: true } : {}),
     };
@@ -412,10 +398,11 @@ export class InputManager {
   /** Mute, the log, the map and the candy bag. True if the key was one of them. */
   private panelKey(event: KeyboardEvent): boolean {
     const { code, repeat } = event;
+    const binds = loadKeyBindings();
     const isMute = code === 'KeyM';
-    const isLog = code === LOG_CODE;
-    const isMap = MAP_CODES.has(code);
-    const isBag = code === BAG_CODE;
+    const isLog = binds.log.includes(code);
+    const isMap = binds.map.includes(code);
+    const isBag = binds.bag.includes(code);
     const shouldMute = isMute && !repeat;
     if (shouldMute) this.callbacks.onMute();
     let taken = false;
@@ -428,7 +415,7 @@ export class InputManager {
 
   /** A movement or action key: held for movement, latched for one-shot actions while input is on. */
   private gameKey(event: KeyboardEvent): void {
-    if (!GAME_CODES.has(event.code)) return;
+    if (!isGameCode(event.code)) return;
     this.held.add(event.code);
     if (!this.enabled) return;
     event.preventDefault();
@@ -436,21 +423,26 @@ export class InputManager {
   }
 
   private latch(code: string): void {
-    const isReload = code === 'KeyR';
+    const binds = loadKeyBindings();
+    const isReload = binds.reload.includes(code);
     if (isReload) this.reloadLatch = true;
-    const isCycle = code === 'KeyQ';
+    const isCycle = binds.cycleWeapon.includes(code);
     if (isCycle) this.cycleLatch += 1;
-    // Only a pad sends these two.
-    const isCycleBack = code === PAD_PREV_WEAPON;
+    const isCycleBack = binds.prevWeapon.includes(code) || code === PAD_PREV_WEAPON;
     if (isCycleBack) this.cycleLatch -= 1;
     this.fireLatch ||= code === PAD_FIRE;
-    this.shoveLatch ||= code === SHOVE_CODE;
-    this.healLatch ||= code === HEAL_CODE;
-    this.throwLatch ||= code === THROW_CODE;
-    this.spinnerLatch ||= code === SPINNER_CODE;
-    this.fountainLatch ||= code === FOUNTAIN_CODE;
-    const weapon = WEAPON_KEYS[code];
-    if (weapon) this.weaponLatch = weapon;
+    this.shoveLatch ||= binds.melee.includes(code);
+    this.healLatch ||= binds.heal.includes(code);
+    this.throwLatch ||= binds.throw.includes(code);
+    this.spinnerLatch ||= binds.spinner.includes(code);
+    this.fountainLatch ||= binds.fountain.includes(code);
+    if (binds.weapon1.includes(code)) this.weaponLatch = 'pistol';
+    else if (binds.weapon2.includes(code)) this.weaponLatch = 'carbine';
+    else if (binds.weapon3.includes(code)) this.weaponLatch = 'shotgun';
+    else {
+      const defaultWeapon = DEFAULT_WEAPON_KEYS[code];
+      if (defaultWeapon) this.weaponLatch = defaultWeapon;
+    }
   }
 
   private readonly onKeyUp = (event: KeyboardEvent): void => {

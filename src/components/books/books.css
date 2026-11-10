@@ -1,0 +1,225 @@
+/* Books Library Overlay Styling */
+
+.books-layout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--u) * 6);
+  width: 100%;
+}
+
+/* Portrait cards list: uniform sizing with the arcade play setup screen (SetupPicks) */
+.book-cards {
+  --per-row: 4;
+  --card: min(calc(var(--u) * 120), calc((100vw - var(--u) * 40 - var(--u) * 6 * 3) / 4), calc((100vh - var(--u) * 80) * 0.62));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: calc(var(--u) * 6);
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.book-stop {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  width: var(--card);
+  min-width: 0;
+}
+
+.book-card {
+  --edge: var(--ink-line);
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 2);
+  width: 100%;
+  border: 0;
+  padding: calc(var(--u) * 3);
+  background: var(--ink-raised);
+  box-shadow: 0 0 0 var(--u) var(--edge);
+  color: var(--bone);
+  font: inherit;
+  text-transform: uppercase;
+  cursor: pointer;
+  outline: none;
+  transition: transform 0.15s ease-out;
+}
+
+.book-card:hover,
+.book-card:focus-visible,
+.book-card.is-active {
+  --edge: var(--amber);
+  transform: translateY(calc(var(--u) * -1.5));
+}
+
+.book-card-head {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 3);
+  min-width: 0;
+  color: var(--bone-dim);
+  font-size: calc(var(--u) * 5);
+  white-space: nowrap;
+}
+
+.book-card-number {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: calc(var(--u) * 8);
+  height: calc(var(--u) * 8);
+  background: var(--amber);
+  color: var(--ink);
+  font-weight: 700;
+  font-size: calc(var(--u) * 5);
+}
+
+.book-card-tag {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.08em;
+  font-size: calc(var(--u) * 5);
+}
+
+.book-card-art {
+  position: relative;
+  display: block;
+  aspect-ratio: 56 / 72;
+  overflow: hidden;
+  background: var(--ink);
+}
+
+.book-card-art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: pixelated;
+  transition: transform 0.25s ease-out;
+}
+
+.book-card:hover .book-card-art img,
+.book-card:focus-visible .book-card-art img {
+  transform: scale(1.04);
+}
+
+/* Card title banner with dark gradient scrim and bold arcade typography */
+.book-card-title {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: calc(var(--u) * 16) calc(var(--u) * 3) calc(var(--u) * 4);
+  background: linear-gradient(to top, rgba(7, 8, 12, 0.92) 0%, rgba(7, 8, 12, 0.6) 55%, transparent 100%);
+  color: var(--bone);
+  font-size: min(clamp(calc(var(--u) * 7), 12cqi, calc(var(--u) * 20)), calc(90cqi / (var(--chars) * 1.3)));
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.12em;
+  text-indent: 0.12em;
+  text-align: center;
+  text-transform: uppercase;
+  text-wrap: balance;
+  text-shadow:
+    0 calc(var(--u) * 0.75) 0 var(--blood),
+    0 calc(var(--u) * 1.5) 0 var(--ink),
+    0 0 calc(var(--u) * 6) rgba(232, 163, 61, 0.45);
+}
+
+.book-card:hover .book-card-title,
+.book-card:focus-visible .book-card-title {
+  color: var(--amber);
+}
+
+.book-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--u) * 2);
+  color: var(--bone-dim);
+  font-size: calc(var(--u) * 4.5);
+}
+
+.book-card-pages {
+  background: rgba(43, 34, 51, 0.5);
+  padding: calc(var(--u) * 0.75) calc(var(--u) * 2);
+  border: 1px solid var(--ink-line);
+  color: var(--bone-dim);
+  font-size: calc(var(--u) * 4);
+}
+
+/* Featured detail panel below the cards */
+.books-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--u) * 2.5);
+  width: 100%;
+  max-width: 100%;
+  text-align: center;
+  margin-inline: auto;
+  padding-top: calc(var(--u) * 2);
+}
+
+.books-info p {
+  margin: 0;
+}
+
+.books-info-name {
+  color: var(--amber);
+  font-size: calc(var(--u) * 14);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.books-info-subtitle {
+  color: var(--bone);
+  font-size: calc(var(--u) * 7);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+
+.books-info-desc {
+  width: 100%;
+  max-width: 100%;
+  color: var(--bone-dim);
+  font-size: calc(var(--u) * 5.5);
+  line-height: 1.4;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-wrap: normal;
+}
+
+.books-info-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--u) * 2);
+  margin-top: calc(var(--u) * 1);
+  padding: calc(var(--u) * 1.5) calc(var(--u) * 5);
+  background: var(--ink-raised);
+  border: 1px solid var(--amber);
+  color: var(--amber);
+  font-size: calc(var(--u) * 5);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 600px) {
+  .book-cards {
+    --per-row: 2;
+    gap: calc(var(--u) * 3);
+  }
+
+  .book-card {
+    padding: calc(var(--u) * 2);
+  }
+}

@@ -2,7 +2,7 @@
   <section class="px-title-scale mag-screen" :aria-label="CHANGELOG_TITLE" @pointerdown="pages.beginSwipe" @pointerup="pages.finishSwipe">
     <PrintedBook :book="open" :turn :mode :leaves>
       <template #page="{ leaf, side, folio }">
-        <ChangeLeafPage :leaf :side :folio :notes="CHANGE_NOTES" :version @open="pages.goTo" />
+        <ChangeLeafPage :key="leaf.id" :leaf :side :folio :notes="CHANGE_NOTES" :version @open="pages.goTo" />
       </template>
     </PrintedBook>
 

@@ -123,13 +123,14 @@ const LAYOUTS: Record<BuildingKind, readonly Slot[]> = {
     ['sofa', 70, 90],
     ['table', 6, 90],
   ],
-  // Two rooms either side of the hall that runs from the front door to the back, and a lobby along the front.
+  // A spacious entrance lobby: waiting lounge on the west, reception on the east, and two flights of stairs in the back walls.
   apartment: [
-    ['bed', 6, NORTH_BED], ['locker', 38, 14],
-    ['table', 6, 80],
-    ['fridge', 106, 14], ['bed', 130, NORTH_BED],
-    ['table', 130, 80],
-    ['sofa', 6, 122], ['shelf', 122, 122, 0.5],
+    ['locker', 40, 14],
+    ['table', 18, 80],
+    ['sofa', 12, 122],
+    ['fridge', 104, 14],
+    ['counter', 100, 74],
+    ['shelf', 114, 122, 0.6],
   ],
   // One bedroom under the roof, with two beds and the stairs coming up in the same back corner as below.
   upstairs: [
@@ -137,13 +138,14 @@ const LAYOUTS: Record<BuildingKind, readonly Slot[]> = {
     ['bed', 82, NORTH_BED],
     ['shelf', 6, 90], ['table', 82, 90, 0.6],
   ],
-  // Two more flats off the same hall, furnished the same, with the stairs coming up in the lobby's east end.
+  // Two flats upstairs with stairs coming up in both back corners: beds pushed clear of the landings.
   apartment_upstairs: [
-    ['bed', 6, NORTH_BED], ['locker', 38, 14],
-    ['table', 6, 80],
-    ['fridge', 106, 14], ['bed', 130, NORTH_BED],
-    ['table', 130, 80],
-    ['sofa', 6, 122], ['shelf', 122, 122, 0.5],
+    ['bed', 6, STAIRS_CLEAR_BED], ['locker', 38, 14],
+    ['table', 6, 116],
+    ['sofa', 40, 122],
+    ['fridge', 106, 14], ['bed', 130, STAIRS_CLEAR_BED],
+    ['table', 130, 116],
+    ['shelf', 84, 122, 0.5],
   ],
   // One room under the whole house, stores along the walls and the stairs coming down in the same corner.
   cellar: [

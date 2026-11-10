@@ -170,6 +170,18 @@ describe('the death summary', () => {
     const receipt = { outcome: 'died', level: 1, silver: 0, jewels: { small: 0, large: 0 } } as TripReceipt;
     expect(deathSummary({ receipt, lost: gear() })).toEqual(['Nothing was lost']);
   });
+
+  it('lists candy and candy bag pieces when lost on death', () => {
+    const receipt = {
+      outcome: 'died',
+      level: 2,
+      silver: 0,
+      jewels: { small: 0, large: 0 },
+      candy: 60,
+      candyBag: { bat_bites: 1, fang_taffy: 2 },
+    } as unknown as TripReceipt;
+    expect(deathSummary({ receipt, lost: gear() })).toEqual(['60 candy (3 pieces)']);
+  });
 });
 
 describe('the carried jewels chip', () => {
@@ -180,6 +192,21 @@ describe('the carried jewels chip', () => {
 
   it('says so when nothing is carried', () => {
     expect(carriedLines({ jewels: { small: 0, large: 0 }, worth: 0 })).toEqual({ worth: 'No jewels', counts: [] });
+  });
+
+  it('leads with candy worth and piece counts when candy is tracked', () => {
+    expect(carriedLines({ jewels: { small: 0, large: 0 }, worth: 0, candy: 85, candyCount: 4 })).toEqual({
+      worth: '85 candy',
+      counts: ['4 pieces'],
+    });
+    expect(carriedLines({ jewels: { small: 0, large: 0 }, worth: 0, candy: 10, candyCount: 1 })).toEqual({
+      worth: '10 candy',
+      counts: ['1 piece'],
+    });
+    expect(carriedLines({ jewels: { small: 0, large: 0 }, worth: 0, candy: 0, candyCount: 0 })).toEqual({
+      worth: 'No candy',
+      counts: [],
+    });
   });
 });
 

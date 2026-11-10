@@ -32,7 +32,7 @@ describe('title scale', () => {
 
 describe('title menu', () => {
   it('runs section by section: Books with How to Play on top, then Play, then Extras', () => {
-    expect(TITLE_MENU.map((item) => item.label)).toEqual(['How to Play', 'Town Guide', 'Records', 'Daily Night', 'Arcade', 'Campaign', 'Level Select', 'Radio', 'Sound Test', 'Options']);
+    expect(TITLE_MENU.map((item) => item.label)).toEqual(['How to Play', 'Candy Magazine', 'Town Guide', 'Records', 'Daily Night', 'Arcade', 'Campaign', 'Level Select', 'Radio', 'Sound Test', 'Options', 'Controls']);
   });
 
   it('shows only three parents on the title, Play on top and pointed at', () => {
@@ -47,21 +47,21 @@ describe('title menu', () => {
     const play = menuRows('play');
     expect(play.map((row) => row.label)).toEqual(['Daily Night', 'Arcade', 'Campaign', 'Level Select', 'Back']);
     expect(play[openingRow(play)].label).toBe('Daily Night');
-    expect(menuRows('books').map((row) => row.label)).toEqual(['How to Play', 'Town Guide', 'Records', 'Back']);
-    expect(menuRows('extras').map((row) => row.label)).toEqual(['Sound Test', 'Options', 'Back']);
-    expect(menuRows('extras')[2].kind).toBe('back');
+    expect(menuRows('books').map((row) => row.label)).toEqual(['How to Play', 'Candy Magazine', 'Town Guide', 'Records', 'Back']);
+    expect(menuRows('extras').map((row) => row.label)).toEqual(['Sound Test', 'Options', 'Controls', 'Back']);
+    expect(menuRows('extras')[3].kind).toBe('back');
   });
 
   it('adds Radio to Extras once a Radio has been found', () => {
     const locked = menuRows('extras', TITLE_MENU, { radio: false, tracks: [] });
-    expect(locked.map((row) => row.label)).toEqual(['Sound Test', 'Options', 'Back']);
+    expect(locked.map((row) => row.label)).toEqual(['Sound Test', 'Options', 'Controls', 'Back']);
     const unlocked = menuRows('extras', TITLE_MENU, { radio: true, tracks: [] });
-    expect(unlocked.map((row) => row.label)).toEqual(['Radio', 'Sound Test', 'Options', 'Back']);
+    expect(unlocked.map((row) => row.label)).toEqual(['Radio', 'Sound Test', 'Options', 'Controls', 'Back']);
   });
 
   it('names the Sound Test from the start, and masks Radio as ??? until found', () => {
     const labels = (radio: boolean) => TITLE_MENU.map((item) => menuLabel(item, { radio, tracks: [] }));
-    expect(labels(false)).toEqual(['How to Play', 'Town Guide', 'Records', 'Daily Night', 'Arcade', 'Campaign', 'Level Select', '???', 'Sound Test', 'Options']);
+    expect(labels(false)).toEqual(['How to Play', 'Candy Magazine', 'Town Guide', 'Records', 'Daily Night', 'Arcade', 'Campaign', 'Level Select', '???', 'Sound Test', 'Options', 'Controls']);
     expect(labels(true)).toEqual(TITLE_MENU.map((item) => item.label));
   });
 

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GameEvent } from '../shared/protocol.ts';
 import { AudioEngine, HORDE_WARNING_LEAD } from '../src/audio/audio-engine.ts';
+import { playEventSound } from '../src/audio/event-sounds.ts';
 import { Mixer } from '../src/audio/mixer.ts';
 import { TILE_KINDS } from '../shared/protocol.ts';
 import type { PlayerEntity, WorldMap } from '../shared/protocol.ts';
@@ -345,5 +346,33 @@ describe('AudioEngine with a fake AudioContext', () => {
     for (let i = 0; i < 200; i++) a.handleEvent({ type: 'shot', playerId: 'p2', weapon: 'carbine', x: 10, y: 0, angle: 0 }, P);
     expect(stats.created - start).toBeLessThan(perVoice * 10);
     a.dispose();
+  });
+
+  it('stairs_taken plays 4 rhythmic footsteps with pitch cadence', () => {
+    const played: { name: string; opts: any }[] = [];
+    const mockMixer = {
+      play: (name: string, opts: any) => {
+        played.push({ name, opts });
+      },
+    } as any;
+    const mockCue = {
+      mixer: mockMixer,
+      at: (x: number, y: number, playerId?: string) => ({ x, y, local: playerId === P }),
+      playAmbient: () => {},
+      claimAlert: () => true,
+      reloadStart: () => {},
+      reloadEnd: () => {},
+      dropShells: () => {},
+    };
+
+    playEventSound({ type: 'stairs_taken', playerId: P, x: 10, y: 20, to: 'UPSTAIRS' }, mockCue);
+    expect(played).toHaveLength(4);
+    expect(played.every((p) => p.name === 'step_hard')).toBe(true);
+    expect(played.map((p) => p.opts.delay)).toEqual([0, 0.09, 0.18, 0.27]);
+    expect(played.map((p) => p.opts.pitch)).toEqual([0.92, 0.98, 1.05, 1.12]);
+
+    played.length = 0;
+    playEventSound({ type: 'stairs_taken', playerId: P, x: 10, y: 20, to: 'DOWNSTAIRS' }, mockCue);
+    expect(played.map((p) => p.opts.pitch)).toEqual([1.12, 1.05, 0.98, 0.92]);
   });
 });

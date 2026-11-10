@@ -5,7 +5,7 @@ import { PLAYER_RADIUS } from '../shared/constants.ts';
 import type { MapBuilder } from '../shared/map-builder.ts';
 import { BUILDING_DEFS, TILE_SIZE, WALL_THICKNESS } from '../shared/protocol.ts';
 import type { BuildingInstance, PropInstance } from '../shared/protocol.ts';
-import { stairsPoint } from '../shared/storeys.ts';
+import { stairsPoint, stairsPoints } from '../shared/storeys.ts';
 import { propBox } from '../shared/world-query.ts';
 
 const CELL = 4;
@@ -52,8 +52,8 @@ describe('the apartment floor above', () => {
     expect(PARTITIONS.apartment_upstairs ?? []).toEqual([]);
   });
 
-  it('keeps the hall below, with its flats', () => {
-    expect((PARTITIONS.apartment ?? []).length).toBe(4);
+  it('has no inside walls below: an open lobby', () => {
+    expect(PARTITIONS.apartment ?? []).toEqual([]);
   });
 
   it('is one connected floor: every open spot can be walked to from the stairs', () => {
@@ -62,11 +62,14 @@ describe('the apartment floor above', () => {
     expect(reached.size).toBe(open.size);
   });
 
-  it('has a stairs tile with room to step on and off', () => {
-    const { reached } = reachable('apartment_upstairs');
-    const building: BuildingInstance = { id: 'a1', kind: 'apartment_upstairs', x: 0, y: 0, variant: 0 };
-    const at = stairsPoint(building)!;
-    const near = [...reached].filter((c) => dist(c, at) < TILE_SIZE * 1.5);
-    expect(near.length).toBeGreaterThan(8);
+  it('has stairs tiles with room to step on and off for all flights', () => {
+    for (const kind of ['apartment', 'apartment_upstairs'] as const) {
+      const { reached } = reachable(kind);
+      const building: BuildingInstance = { id: 'a1', kind, x: 0, y: 0, variant: 0 };
+      for (const at of stairsPoints(building)) {
+        const near = [...reached].filter((c) => dist(c, at) < TILE_SIZE * 1.5);
+        expect(near.length).toBeGreaterThan(8);
+      }
+    }
   });
 });

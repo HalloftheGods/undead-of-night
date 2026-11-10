@@ -9,8 +9,8 @@ const NO_JEWELS: Jewels = { small: 0, large: 0 };
 
 export const receiptKey = (receipt: TripReceipt): string => `${receipt.simId}:${receipt.serial}`;
 
-function recordOf({ level, outcome, difficulty, silver, jewels, replay }: TripReceipt): TripRecord {
-  return { level, outcome, difficulty, silver, jewels, replay, at: Date.now() };
+function recordOf({ level, outcome, difficulty, silver, jewels, replay, candy }: TripReceipt): TripRecord {
+  return { level, outcome, difficulty, silver, jewels, candy, replay, at: Date.now() };
 }
 
 /** Gear taken out went with the trip. What survived it comes back on a receipt, into the locker. */
@@ -19,11 +19,17 @@ function closed(save: HomeSave, record: TripRecord): HomeSave {
 }
 
 function banked(save: HomeSave, receipt: TripReceipt): HomeSave {
-  const { silver, jewels, gear } = receipt;
+  const { silver, jewels, gear, candy } = receipt;
+  const candyCredits = candy ?? silver ?? 0;
+  const currentCandy = Math.max(save.candy ?? 0, save.silver ?? 0);
+  const nextCandy = currentCandy + candyCredits;
+  const rawJewels = save.rawJewels ?? { small: 0, large: 0 };
+  const nextJewels = jewels ? { small: rawJewels.small + jewels.small, large: rawJewels.large + jewels.large } : rawJewels;
   return rollStock({
     ...save,
+    candy: nextCandy,
     silver: save.silver + silver,
-    rawJewels: { small: save.rawJewels.small + jewels.small, large: save.rawJewels.large + jewels.large },
+    rawJewels: nextJewels,
     locker: gear ? mergeHome(save.locker, gear) : save.locker,
   });
 }

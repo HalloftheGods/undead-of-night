@@ -28,7 +28,8 @@ export function chainKill(sim: SimState, killerId: EntityId): number {
   const chain = sim.killChains.get(killerId);
   const chained = chain !== undefined && sim.tick <= chain.until;
   const count = chained ? chain.count + 1 : 1;
-  const rush = 1 + (CORN_RUSH_WINDOW - 1) * sugarById(sim, killerId, 'corn_rush');
+  const chainSugar = Math.max(sugarById(sim, killerId, 'witchs_brittle'), sugarById(sim, killerId, 'corn_rush'));
+  const rush = 1 + (CORN_RUSH_WINDOW - 1) * chainSugar;
   sim.killChains.set(killerId, { count, until: sim.tick + Math.round((CHAIN_WINDOW_SEC * rush) / TICK_DT) });
   return count;
 }

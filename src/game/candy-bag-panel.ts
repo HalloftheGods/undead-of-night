@@ -47,7 +47,7 @@ export class CandyBagPanel {
 
   /**
    * One candy out of the bag, eaten at once. A solo run is held behind the bag, so it is stepped
-   * one tick to eat it: the bag then shows the count and the boost's time as they really are.
+   * one tick to eat it, and the bag closes so play carries on.
    */
   eat(id: CandyId): void {
     const { bagOpen, hud } = this.host.ui();
@@ -56,5 +56,6 @@ export class CandyBagPanel {
     this.host.input.pickCandy(id);
     this.host.sendNow();
     this.host.transport()?.stepHeld?.();
+    this.close();
   }
 }

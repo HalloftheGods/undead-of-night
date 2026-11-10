@@ -57,14 +57,19 @@ describe('candy bag', () => {
     pump(500);
     expect(game.sim!.snapshot().tick).toBe(tick);
     game.eatCandy('jawbreaker');
+    expect(game.ui.value.bagOpen).toBe(false);
+    pump(100);
+    expect(local.candy).toEqual(['ghost_gum', 'jawbreaker']);
+    expect(local.sugar.map((sugar) => sugar.id)).toEqual(['jawbreaker']);
+    expect(local.sugar[0].left).toBeGreaterThan(70);
+    expect(game.sim!.snapshot().tick).toBeGreaterThanOrEqual(tick + 1);
+    pressKey('KeyX');
+    expect(game.ui.value).toMatchObject({ bagOpen: true, mapOpen: false });
     game.eatCandy('jawbreaker');
+    expect(game.ui.value.bagOpen).toBe(false);
     pump(100);
     expect(local.candy).toEqual(['ghost_gum']);
-    expect(local.sugar.map((sugar) => sugar.id)).toEqual(['jawbreaker']);
     expect(local.sugar[0].left).toBeGreaterThan(140);
-    expect(game.ui.value.hud?.bag.map((stack) => stack.id)).toEqual(['ghost_gum']);
-    // Two ticks for two candies, and none besides.
-    expect(game.sim!.snapshot().tick).toBe(tick + 2);
     pressKey('Tab');
     expect(game.ui.value).toMatchObject({ bagOpen: false, mapOpen: true });
     pressKey('KeyX');

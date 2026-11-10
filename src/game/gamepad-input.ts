@@ -32,7 +32,30 @@ export const PAD_FIRE = 'PadFire';
 export const PAD_PREV_WEAPON = 'PadPrevWeapon';
 const SNEAK_CODE = 'KeyC';
 
-/** In play, each button stands for the key it presses. L3 is missing on purpose: it toggles sneak. */
+import { loadPadBindings } from './controls-prefs.ts';
+
+export function getActivePadBindings(): ReadonlyMap<number, string> {
+  const binds = loadPadBindings();
+  const map = new Map<number, string>();
+  if (binds.search !== null) map.set(binds.search, 'KeyE');
+  if (binds.heal !== null) map.set(binds.heal, 'KeyH');
+  if (binds.reload !== null) map.set(binds.reload, 'KeyR');
+  if (binds.bag !== null) map.set(binds.bag, 'KeyX');
+  if (binds.sprint !== null) map.set(binds.sprint, 'ShiftLeft');
+  if (binds.throw !== null) map.set(binds.throw, 'KeyG');
+  if (binds.melee !== null) map.set(binds.melee, 'KeyF');
+  if (binds.fire !== null) map.set(binds.fire, PAD_FIRE);
+  if (binds.map !== null) map.set(binds.map, 'KeyN');
+  if (binds.log !== null) map.set(binds.log, 'KeyL');
+  if (binds.spinner !== null) map.set(binds.spinner, 'KeyT');
+  if (binds.fountain !== null) map.set(binds.fountain, 'KeyV');
+  if (binds.prevWeapon !== null) map.set(binds.prevWeapon, PAD_PREV_WEAPON);
+  if (binds.cycleWeapon !== null) map.set(binds.cycleWeapon, 'KeyQ');
+  map.set(PAD.start, 'Escape');
+  return map;
+}
+
+/** In play, each button stands for the key it presses. L3 is sneak toggle. */
 export const PLAY_BINDINGS: ReadonlyMap<number, string> = new Map<number, string>([
   [PAD.a, 'KeyE'],
   [PAD.b, 'KeyH'],
@@ -314,9 +337,10 @@ export class GamepadInput {
       this.sneaking = !this.sneaking;
       return;
     }
-    // Sprinting ends a sneak, as reaching for Shift would.
-    if (index === PAD.lb) this.sneaking = false;
-    const code = PLAY_BINDINGS.get(index);
+    const bindings = getActivePadBindings();
+    const sprintBtn = loadPadBindings().sprint;
+    if (sprintBtn !== null && index === sprintBtn) this.sneaking = false;
+    const code = bindings.get(index);
     if (code) this.host.press(code);
   }
 
@@ -375,7 +399,8 @@ export class GamepadInput {
 
   private heldCodes(down: readonly boolean[]): Set<string> {
     const held = new Set<string>();
-    for (const [index, code] of PLAY_BINDINGS) {
+    const bindings = getActivePadBindings();
+    for (const [index, code] of bindings) {
       const counts = down[index] && !this.spent.has(index);
       if (counts) held.add(code);
     }

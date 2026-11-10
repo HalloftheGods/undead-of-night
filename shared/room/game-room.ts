@@ -37,6 +37,7 @@ export interface GameRoomOptions {
   readonly restartVoteMs: number;
   /** A public room: every callsign is dropped on the way in, so players show as their survivor (shared/callsign.ts). */
   readonly anonymous?: boolean;
+  readonly style?: GameStyle;
 }
 
 export interface GameRoom {
@@ -50,7 +51,15 @@ export interface GameRoom {
   shutdown(): void;
 }
 
-export function createGameRoom({ sim, clock, newId, restartVoteMs, anonymous = false }: GameRoomOptions): GameRoom {
+export function createGameRoom(options: GameRoomOptions): GameRoom {
+  const { sim, clock, newId, restartVoteMs, anonymous = false } = options;
+  const isDaily = options.style === 'daily';
+  let inLobby = isDaily;
+  const readyClients = new Set<string>();
+  let autoStartTimerEnabled = true;
+  let countdownSeconds: number | null = null;
+  let countdownTimer: unknown = null;
+
   const clients = new Set<RoomClient>();
   let tickTimer: unknown = null;
   let nextTickAt = 0;
@@ -63,8 +72,73 @@ export function createGameRoom({ sim, clock, newId, restartVoteMs, anonymous = f
     if (client.peer.open) client.peer.send(JSON.stringify(packet));
   }
 
+  function broadcastLobbyState(): void {
+    const currentJoined = joined();
+    const snapshot = sim.snapshot();
+    const seats = currentJoined.map((c, index) => {
+      const p = snapshot.players.find((player) => player.id === c.playerId);
+      return {
+        skin: p?.skin ?? 0,
+        name: p?.name ?? '',
+        ready: readyClients.has(c.playerId as string),
+        isHost: index === 0,
+      };
+    });
+    const packet: ServerPacket = {
+      type: 'lobby_state',
+      seats,
+      countdown: countdownSeconds,
+      autoStartTimer: autoStartTimerEnabled,
+      launched: !inLobby,
+    };
+    for (const c of currentJoined) {
+      send(c, packet);
+    }
+  }
+
+  function startCountdown(seconds: number): void {
+    if (countdownTimer !== null) return;
+    countdownSeconds = seconds;
+    broadcastLobbyState();
+    function tickCountdown(): void {
+      if (!inLobby || countdownSeconds === null) return;
+      countdownSeconds -= 1;
+      if (countdownSeconds <= 0) {
+        countdownTimer = null;
+        countdownSeconds = null;
+        launchLobby();
+        return;
+      }
+      broadcastLobbyState();
+      countdownTimer = clock.after(1000, tickCountdown);
+    }
+    countdownTimer = clock.after(1000, tickCountdown);
+  }
+
+  function cancelCountdown(): void {
+    if (countdownTimer !== null) {
+      clock.cancel(countdownTimer);
+      countdownTimer = null;
+    }
+    countdownSeconds = null;
+    broadcastLobbyState();
+  }
+
+  function launchLobby(): void {
+    if (!inLobby) return;
+    inLobby = false;
+    if (countdownTimer !== null) {
+      clock.cancel(countdownTimer);
+      countdownTimer = null;
+    }
+    countdownSeconds = null;
+    broadcastLobbyState();
+    startTicking();
+  }
+
   /** What the room plays while someone is in it. An empty room plays nothing, so the next one in can change it. */
   function roomStyle(): GameStyle | null {
+    if (options.style) return options.style;
     const isEmpty = sim.playerCount === 0;
     if (isEmpty) return null;
     return sim.playsHome ? 'campaign' : 'arcade';
@@ -113,7 +187,7 @@ export function createGameRoom({ sim, clock, newId, restartVoteMs, anonymous = f
 
   function startTicking(): void {
     const isTicking = tickTimer !== null;
-    if (isTicking) return;
+    if (isTicking || inLobby) return;
     nextTickAt = clock.now();
     runDueTicks();
   }
@@ -156,12 +230,51 @@ export function createGameRoom({ sim, clock, newId, restartVoteMs, anonymous = f
     clock.cancel(client.joinDeadline);
     send(client, { type: 'welcome', yourId: id, tickRate: TICK_RATE, mapSeed: sim.map.seed, level: sim.level, difficulty: sim.difficulty, town: townPrint(sim.map), ...(resumed ? { resumed } : {}) });
     stale?.peer.drop();
-    startTicking();
+    if (inLobby) {
+      sendFrame(sim.snapshot());
+      broadcastLobbyState();
+      if (autoStartTimerEnabled && joined().length >= MAX_PLAYERS) {
+        launchLobby();
+      }
+    } else {
+      startTicking();
+    }
   }
 
   function receive(client: RoomClient, packet: ClientPacket): void {
     if (packet.type === 'join') join(client, packet);
     else if (client.playerId === null) return;
+    else if (packet.type === 'lobby_ready') {
+      if (!inLobby) return;
+      if (packet.ready) readyClients.add(client.playerId);
+      else readyClients.delete(client.playerId);
+      const currentJoined = joined();
+      const allReady = currentJoined.length >= 2 && currentJoined.every((c) => readyClients.has(c.playerId as string));
+      if (allReady) {
+        launchLobby();
+      } else {
+        broadcastLobbyState();
+      }
+    }
+    else if (packet.type === 'lobby_start') {
+      if (!inLobby) return;
+      const currentJoined = joined();
+      const isHost = currentJoined[0]?.playerId === client.playerId;
+      if (!isHost) return;
+      const allReady = currentJoined.length >= 2 && currentJoined.every((c) => readyClients.has(c.playerId as string));
+      if (allReady) {
+        launchLobby();
+      } else if (currentJoined.length >= 2 && countdownSeconds === null) {
+        startCountdown(5);
+      }
+    }
+    else if (packet.type === 'lobby_toggle_timer') {
+      if (!inLobby) return;
+      const isHost = joined()[0]?.playerId === client.playerId;
+      if (!isHost) return;
+      autoStartTimerEnabled = packet.enabled;
+      broadcastLobbyState();
+    }
     else if (packet.type === 'input') sim.setInput(client.playerId, packet.input);
     else if (packet.type === 'bench') sim.benchCommand(client.playerId, packet.action);
     else if (packet.type === 'home') sim.homeCommand(client.playerId, packet.action);
@@ -175,10 +288,23 @@ export function createGameRoom({ sim, clock, newId, restartVoteMs, anonymous = f
     const { playerId } = client;
     const neverJoined = playerId === null;
     if (neverJoined) return;
+    if (playerId) readyClients.delete(playerId);
     sim.removePlayer(playerId);
     for (const other of joined()) send(other, { type: 'player_disconnected', playerId });
+    if (inLobby) {
+      if (joined().length < 2 && countdownSeconds !== null) {
+        cancelCountdown();
+      } else {
+        broadcastLobbyState();
+      }
+    }
     const isRoomEmpty = sim.playerCount === 0;
     if (isRoomEmpty) {
+      if (countdownTimer !== null) clock.cancel(countdownTimer);
+      countdownTimer = null;
+      countdownSeconds = null;
+      inLobby = isDaily;
+      readyClients.clear();
       stopTicking();
       vote.end();
       sim.restart();
@@ -188,6 +314,9 @@ export function createGameRoom({ sim, clock, newId, restartVoteMs, anonymous = f
   }
 
   function shutdown(): void {
+    if (countdownTimer !== null) clock.cancel(countdownTimer);
+    countdownTimer = null;
+    countdownSeconds = null;
     stopTicking();
     vote.end();
   }

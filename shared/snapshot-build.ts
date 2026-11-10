@@ -120,6 +120,7 @@ export function playerSnapshot(p: PlayerState): PlayerEntity {
     lastInputSeq: p.lastInputSeq,
     ...gearField(p),
     ...playerHomeField(p),
+    ...(p.needs ? { needs: { ...p.needs } } : {}),
   };
 }
 

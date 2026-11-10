@@ -341,6 +341,15 @@ export class GameController {
     this.session.startCoop(style, entry);
   }
 
+  /** Promotes the current solo run to a hosted online multiplayer room. */
+  hostCurrentRun(): void {
+    void this.session.hostCurrentRun();
+  }
+
+  get isDaily(): boolean {
+    return this.run.daily !== null;
+  }
+
   /** A menu is over the game: solo stops, and co-op stands still while the town carries on. */
   private holdRun(held: boolean): void {
     this.run.transport?.setPaused(held);

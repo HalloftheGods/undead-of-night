@@ -5,7 +5,7 @@ import type { EnvironmentArt, PixelSprite } from './types.ts';
 import { buildBrickApartment, buildSlabApartment } from './environment/apartment.ts';
 import { buildCrates } from './containers/cartons.ts';
 import { buildFridge, buildLocker } from './containers/shelving.ts';
-import { buildForge, buildJukebox, buildLevelMap } from './environment/bunker-props.ts';
+import { buildCandyShop, buildForge, buildJukebox, buildLevelMap } from './environment/bunker-props.ts';
 import { buildClinic } from './environment/clinic.ts';
 import { buildDiner } from './environment/diner.ts';
 import { buildDiscount } from './environment/discount.ts';
@@ -92,6 +92,7 @@ export function buildEnvironment(): EnvironmentArt {
       locker: buildLocker(),
       fridge: buildFridge(),
       workbench: buildWorkbench(),
+      candy_shop: buildCandyShop(),
       forge: buildForge(),
       level_map: buildLevelMap(),
       jukebox: buildJukebox(),

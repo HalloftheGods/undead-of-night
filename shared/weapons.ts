@@ -1,5 +1,5 @@
 import { hasKeepsake, WATCH_RELOAD } from './keepsakes.ts';
-import { sugarOf } from './candy.ts';
+import { EVERLASTING_SAVE_CHANCE, SHOCK_TARTS_RATE, sugarOf } from './candy.ts';
 import { characterOf } from './characters.ts';
 import { DRY_FIRE_INTERVAL_SEC, MUZZLE_OFFSET, TICK_DT, WEAPON_SWITCH_DELAY_SEC } from './constants.ts';
 import { effectOf, heldStats, rankOf } from './gun-upgrades.ts';
@@ -35,7 +35,10 @@ function switchWeapon(sim: SimState, p: PlayerState): void {
 }
 
 function reloadSeconds(p: PlayerState): number {
-  return ((heldStats(p).reloadMs / 1000) * characterOf(p.skin).reloadTime) / (1 + sugarOf(p, 'sour_skulls')) / (hasKeepsake(p, 'old_watch') ? WATCH_RELOAD : 1);
+  const fizz = sugarOf(p, 'pumpkin_fizz');
+  const skulls = sugarOf(p, 'sour_skulls');
+  const reloadSugar = Math.max(fizz, skulls);
+  return ((heldStats(p).reloadMs / 1000) * characterOf(p.skin).reloadTime) / (1 + reloadSugar) / (hasKeepsake(p, 'old_watch') ? WATCH_RELOAD : 1);
 }
 
 function startReload(sim: SimState, p: PlayerState): void {
@@ -75,11 +78,15 @@ function fire(sim: SimState, p: PlayerState): void {
   const fiery = sugarOf(p, 'fireballs') >= 1;
   const effect = fiery ? 'incendiary' : effectOf(p.guns[p.weapon]?.fit);
   const carried = effect ? { effect } : {};
+  const deadeye = sugarOf(p, 'deadeye_drops') > 0;
+  const spreadRad = deadeye ? 0 : stats.spreadRad;
+  const extraPellets = sugarOf(p, 'scatter_skittles') > 0 ? 1 : 0;
+  const totalPellets = stats.pellets + extraPellets;
   // Pellets scatter past the crosshair, so a spread gun never claims a head.
-  const headTarget = stats.pellets === 1 ? headUnderAim(sim, p, stats.range) : null;
+  const headTarget = totalPellets === 1 ? headUnderAim(sim, p, stats.range) : null;
   const volley = entityId(sim, 'v');
-  for (let i = 0; i < stats.pellets; i++) {
-    const angle = p.angle + (sim.rng() * 2 - 1) * stats.spreadRad;
+  for (let i = 0; i < totalPellets; i++) {
+    const angle = p.angle + (sim.rng() * 2 - 1) * spreadRad;
     // Bullets leave from the body centre so the first sweep covers what is touching the player.
     sim.bullets.push({
       id: entityId(sim, 'b'),
@@ -114,9 +121,11 @@ function tryFire(sim: SimState, p: PlayerState): void {
   if (!canAct) return;
 
   if (gun.ammo > 0) {
-    gun.ammo -= 1;
+    const savesAmmo = sim.rng() < EVERLASTING_SAVE_CHANCE * sugarOf(p, 'everlasting_chews');
+    if (!savesAmmo) gun.ammo -= 1;
+    const rateBoost = 1 + SHOCK_TARTS_RATE * sugarOf(p, 'shock_tarts');
     // Carrying the remainder keeps fire rates honest when they do not divide the tick.
-    p.fireCooldown += heldStats(p).fireIntervalMs / 1000;
+    p.fireCooldown += (heldStats(p).fireIntervalMs / 1000) / rateBoost;
     fire(sim, p);
     syncGun(p);
   } else if (p.ammoBag[p.weapon] > 0) {

@@ -1,0 +1,636 @@
+/* Candy Magazine (Sweet Tooth): Confectionery review styling */
+@import '../magazine/magazine.css';
+@import '../magazine/magazine-blocks.css';
+@import '../magazine/magazine-figures.css';
+@import '../magazine/magazine-cover.css';
+
+/* Cover Art / Hero Page matching the knife page layout */
+.cm-art-page {
+  background: repeating-conic-gradient(from 0deg at 50% 52%, var(--band) 0 10deg, var(--band-deep) 10deg 20deg);
+  display: flex;
+  flex-direction: column;
+}
+
+.cm-art-page .mag-running-head {
+  color: var(--on-band);
+  border-color: var(--on-band);
+}
+
+.cm-art-page .mag-folio {
+  background: var(--print);
+  color: var(--paper);
+}
+
+.cm-hero {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: calc(var(--k) * 10);
+  padding-bottom: calc(var(--k) * 4);
+}
+
+.cm-hero .cm-brand-name {
+  margin: 0;
+  z-index: 2;
+  font-size: calc(var(--k) * 30);
+  text-align: center;
+}
+
+.cm-hero-sprite {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  rotate: -12deg;
+  filter: drop-shadow(calc(var(--k) * 6) calc(var(--k) * 6) 0 rgba(7, 8, 12, 0.7));
+  transform-origin: center center;
+  transition: transform 0.25s ease-out;
+}
+
+.cm-hero:hover .cm-hero-sprite {
+  transform: scale(1.08) rotate(-6deg);
+}
+
+.cm-hero .cm-burst {
+  position: absolute;
+  right: calc(var(--k) * 12);
+  top: calc(var(--k) * 34);
+}
+
+.cm-hero-caption {
+  position: relative;
+  align-self: flex-start;
+  margin-top: auto;
+  padding: calc(var(--k) * 3) calc(var(--k) * 12);
+  background: var(--print);
+  color: var(--paper);
+  font-family: var(--chunky);
+  font-size: calc(var(--k) * 13);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  box-shadow: calc(var(--k) * 3) calc(var(--k) * 3) 0 rgba(0, 0, 0, 0.4);
+}
+
+/* Authentic Candy Brand Lettering */
+.cm-brand-name {
+  font-family: var(--chunky);
+  font-size: calc(var(--k) * 26);
+  line-height: 1.1;
+  color: var(--brand-fill, var(--bone));
+  letter-spacing: var(--brand-spread, 0.1em);
+  text-indent: var(--brand-spread, 0.1em);
+  text-shadow:
+    calc(var(--k) * 1) 0 0 var(--brand-edge, var(--ink)),
+    calc(var(--k) * -1) 0 0 var(--brand-edge, var(--ink)),
+    0 calc(var(--k) * 1) 0 var(--brand-edge, var(--ink)),
+    0 calc(var(--k) * -1) 0 var(--brand-edge, var(--ink)),
+    calc(var(--k) * 1) calc(var(--k) * 1) 0 var(--brand-edge, var(--ink)),
+    calc(var(--k) * -1) calc(var(--k) * 1) 0 var(--brand-edge, var(--ink)),
+    calc(var(--k) * 1) calc(var(--k) * -1) 0 var(--brand-edge, var(--ink)),
+    calc(var(--k) * -1) calc(var(--k) * -1) 0 var(--brand-edge, var(--ink)),
+    0 calc(var(--k) * 3.5) 0 var(--brand-drop, var(--ink));
+  transform: rotate(var(--brand-turn, 0deg)) skewX(var(--brand-lean, 0deg));
+  display: inline-block;
+  margin: calc(var(--k) * 4) 0;
+}
+
+/* Detail Page Layout */
+.cm-detail-flow {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--k) * 10);
+  padding-bottom: calc(var(--k) * 4);
+}
+
+.cm-detail-columns {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr;
+  gap: calc(var(--k) * 12);
+  align-items: start;
+}
+
+/* Nutrition Facts Panel */
+.cm-nutrition-panel {
+  border: calc(var(--k) * 2) solid var(--print);
+  background: #fffdf5;
+  color: var(--print);
+  padding: calc(var(--k) * 6) calc(var(--k) * 8);
+  font-family: Arial, Helvetica, sans-serif;
+  box-shadow: calc(var(--k) * 3) calc(var(--k) * 3) 0 var(--print);
+}
+
+.cm-nutrition-title {
+  font-family: var(--chunky);
+  font-size: calc(var(--k) * 20);
+  font-weight: 900;
+  line-height: 1;
+  margin: 0;
+  padding-bottom: calc(var(--k) * 4);
+  border-bottom: calc(var(--k) * 6) solid var(--print);
+  text-transform: uppercase;
+}
+
+.cm-nutrition-serving {
+  display: flex;
+  justify-content: space-between;
+  font-size: calc(var(--k) * 11);
+  padding: calc(var(--k) * 2) 0;
+  border-bottom: calc(var(--k) * 1) solid var(--print);
+}
+
+.cm-nutrition-calories {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: calc(var(--k) * 14);
+  font-weight: 700;
+  padding: calc(var(--k) * 3) 0;
+  border-bottom: calc(var(--k) * 4) solid var(--print);
+}
+
+.cm-nutrition-calories-num {
+  font-family: var(--chunky);
+  font-size: calc(var(--k) * 24);
+  font-weight: 900;
+  line-height: 1;
+}
+
+.cm-nutrition-dv-head {
+  text-align: right;
+  font-size: calc(var(--k) * 10);
+  font-weight: 700;
+  padding: calc(var(--k) * 2) 0;
+  border-bottom: calc(var(--k) * 1) solid var(--print);
+}
+
+.cm-nutrition-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.cm-nutrition-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: calc(var(--k) * 11);
+  padding: calc(var(--k) * 2) 0;
+  border-bottom: calc(var(--k) * 1) solid rgba(43, 34, 51, 0.2);
+}
+
+.cm-nutrition-row.is-bold {
+  font-weight: 700;
+}
+
+.cm-nutrition-ingredients {
+  margin-top: calc(var(--k) * 6);
+  padding-top: calc(var(--k) * 4);
+  border-top: calc(var(--k) * 3) solid var(--print);
+  font-size: calc(var(--k) * 9.5);
+  line-height: 1.25;
+  color: var(--print-soft);
+}
+
+/* Combat & Tactical Information Box */
+.cm-combat-box {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--k) * 8);
+}
+
+.cm-combat-card {
+  padding: calc(var(--k) * 8) calc(var(--k) * 10);
+  background: var(--paper-deep);
+  border-left: calc(var(--k) * 5) solid var(--band);
+  box-shadow: calc(var(--k) * 2) calc(var(--k) * 2) 0 var(--print);
+}
+
+.cm-combat-card-title {
+  font-family: var(--chunky);
+  font-size: calc(var(--k) * 13);
+  color: var(--band);
+  text-transform: uppercase;
+  margin-bottom: calc(var(--k) * 3);
+}
+
+.cm-combat-card-body {
+  font-size: calc(var(--k) * 14.5);
+  line-height: 1.25;
+  color: var(--print);
+}
+
+.cm-detail-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--k) * 8);
+  margin-top: calc(var(--k) * 4);
+}
+
+.cm-detail-footer .mag-review {
+  flex: 1;
+}
+
+/* Single-Page Centered Closed Cover and Retro Showcase */
+.cm-book.is-cover {
+  aspect-ratio: 500 / 690;
+  max-width: min(100%, calc(100cqh * (500 / 690)));
+  margin-inline: auto;
+  box-shadow:
+    -10px 0 20px rgba(0, 0, 0, 0.45),
+    0 0 0 2px var(--print),
+    0 14px 34px rgba(0, 0, 0, 0.7);
+  border-radius: 2px 6px 6px 2px;
+}
+
+.cm-book.is-solo {
+  aspect-ratio: 500 / 690;
+  max-width: min(100%, calc(100cqh * (500 / 690)));
+  margin-inline: auto;
+}
+
+.cm-cover {
+  cursor: pointer;
+  background: #e4502e;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.cm-cover-top {
+  padding: calc(var(--k) * 10) calc(var(--k) * 18) calc(var(--k) * 8);
+  background:
+    radial-gradient(circle, rgba(43, 34, 51, 0.14) 28%, transparent 30%) 0 0 / calc(var(--k) * 8) calc(var(--k) * 8),
+    #f6c344;
+  border-bottom: calc(var(--k) * 6) solid var(--print);
+}
+
+.cm-cover-issue {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: calc(var(--k) * 8);
+}
+
+.cm-issue-pill,
+.cm-price-pill {
+  font-family: var(--chunky);
+  font-size: calc(var(--k) * 10);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--print);
+  color: #fffdf5;
+  padding: calc(var(--k) * 2.5) calc(var(--k) * 8);
+  box-shadow: calc(var(--k) * 2) calc(var(--k) * 2) 0 rgba(0, 0, 0, 0.25);
+}
+
+.cm-cover .cm-masthead {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--k) * 12);
+  margin: calc(var(--k) * 6) 0 calc(var(--k) * 4);
+  font-family: var(--chunky);
+  font-size: calc(var(--k) * 54);
+  font-weight: 900;
+  line-height: 0.95;
+  letter-spacing: calc(var(--k) * -2);
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.cm-masthead-sweet {
+  color: #dc2626;
+  text-shadow:
+    calc(var(--k) * 2) calc(var(--k) * 2) 0 #fef08a,
+    calc(var(--k) * 4) calc(var(--k) * 4) 0 #1b1728;
+}
+
+.cm-masthead-tooth {
+  color: #fbbf24;
+  text-shadow:
+    calc(var(--k) * 2) calc(var(--k) * 2) 0 #b91c1c,
+    calc(var(--k) * 4) calc(var(--k) * 4) 0 #1b1728;
+}
+
+.cm-cover-strap {
+  font-family: var(--book);
+  font-size: calc(var(--k) * 15.5);
+  font-weight: 700;
+  font-style: italic;
+  color: var(--print);
+  text-align: center;
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+
+.cm-cover-graphic {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 50% 50%, transparent 30%, rgba(20, 10, 25, 0.5) 100%),
+    repeating-conic-gradient(from 0deg at 50% 50%, #dc2626 0 9deg, #f59e0b 9deg 18deg);
+  overflow: hidden;
+  border-bottom: calc(var(--k) * 6) solid var(--print);
+}
+
+.cm-cover-cluster {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+}
+
+.cm-cluster-candy {
+  position: absolute;
+  filter:
+    drop-shadow(0 0 calc(var(--k) * 8) rgba(255, 230, 100, 0.35))
+    drop-shadow(calc(var(--k) * 5) calc(var(--k) * 5) 0 #1b1728);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.cm-cluster-candy.is-skulls {
+  top: 18%;
+  left: 15%;
+  rotate: -18deg;
+}
+
+.cm-cluster-candy.is-taffy {
+  top: 16%;
+  right: 15%;
+  rotate: 16deg;
+}
+
+.cm-cluster-candy.is-jawbreaker {
+  bottom: 20%;
+  left: 18%;
+  rotate: -10deg;
+}
+
+.cm-cluster-candy.is-bar {
+  bottom: 22%;
+  right: 16%;
+  rotate: 14deg;
+}
+
+.cm-cover:hover .cm-cluster-candy.is-skulls {
+  transform: scale(1.12) rotate(-12deg);
+}
+
+.cm-cover:hover .cm-cluster-candy.is-taffy {
+  transform: scale(1.12) rotate(22deg);
+}
+
+.cm-cover:hover .cm-cluster-candy.is-jawbreaker {
+  transform: scale(1.12) rotate(-4deg);
+}
+
+.cm-cover:hover .cm-cluster-candy.is-bar {
+  transform: scale(1.12) rotate(18deg);
+}
+
+.cm-cover-burst-badge {
+  position: absolute;
+  bottom: calc(var(--k) * 7);
+  z-index: 5;
+  rotate: -5deg;
+  filter: drop-shadow(calc(var(--k) * 4) calc(var(--k) * 4) 0 #1b1728);
+}
+
+.cm-teaser-list {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--k) * 5);
+  padding: calc(var(--k) * 8) calc(var(--k) * 14);
+  background: #fffbe8;
+  border-bottom: calc(var(--k) * 6) solid var(--print);
+}
+
+.cm-teaser-badge {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--k) * 8);
+  padding: calc(var(--k) * 3) calc(var(--k) * 8);
+  background: #ffffff;
+  border: calc(var(--k) * 2) solid #1b1728;
+  box-shadow: calc(var(--k) * 3) calc(var(--k) * 3) 0 #1b1728;
+  transform-origin: center center;
+  transition: transform 0.2s ease-out;
+}
+
+.cm-teaser-badge.is-tilt-left {
+  transform: rotate(-1.8deg);
+}
+
+.cm-teaser-badge.is-tilt-right {
+  transform: rotate(1.6deg);
+}
+
+.cm-teaser-badge.is-tilt-slight-left {
+  transform: rotate(-0.8deg);
+}
+
+.cm-cover:hover .cm-teaser-badge.is-tilt-left {
+  transform: rotate(-0.5deg) scale(1.02);
+}
+
+.cm-cover:hover .cm-teaser-badge.is-tilt-right {
+  transform: rotate(0.5deg) scale(1.02);
+}
+
+.cm-cover:hover .cm-teaser-badge.is-tilt-slight-left {
+  transform: rotate(0deg) scale(1.02);
+}
+
+.cm-teaser-stamp {
+  flex: none;
+  font-family: var(--chunky);
+  font-size: calc(var(--k) * 10);
+  font-weight: 700;
+  color: #ffffff;
+  background: #dc2626;
+  padding: calc(var(--k) * 2) calc(var(--k) * 6);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.cm-teaser-badge:nth-child(2) .cm-teaser-stamp {
+  background: #ea580c;
+}
+
+.cm-teaser-badge:nth-child(3) .cm-teaser-stamp {
+  background: #0284c7;
+}
+
+.cm-teaser-title {
+  font-family: var(--chunky);
+  font-size: calc(var(--k) * 11);
+  font-weight: 700;
+  color: #1b1728;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cm-cover-open-btn {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--k) * 4);
+  border: calc(var(--k) * 2) solid #f6c344;
+  background: #dc2626;
+  color: #fffdf5;
+  padding: calc(var(--k) * 3) calc(var(--k) * 10);
+  font-family: var(--chunky);
+  font-size: calc(var(--k) * 10.5);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  box-shadow: calc(var(--k) * 3) calc(var(--k) * 3) 0 #000000;
+  animation: cm-pulse-btn 2.2s infinite ease-in-out;
+}
+
+@keyframes cm-pulse-btn {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: calc(var(--k) * 3) calc(var(--k) * 3) 0 #000000;
+  }
+  50% {
+    transform: scale(1.04);
+    box-shadow: calc(var(--k) * 4) calc(var(--k) * 4) 0 #000000, 0 0 calc(var(--k) * 8) rgba(246, 195, 68, 0.6);
+  }
+}
+
+.cm-cover-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--k) * 8);
+  padding: calc(var(--k) * 6) calc(var(--k) * 12);
+  background: var(--print);
+}
+
+.cm-barcode-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--k) * 1);
+}
+
+.cm-barcode-lines {
+  width: calc(var(--k) * 68);
+  height: calc(var(--k) * 20);
+  background: repeating-linear-gradient(
+    90deg,
+    #fffdf5 0 2px,
+    #2b2233 2px 3px,
+    #fffdf5 3px 6px,
+    #2b2233 6px 9px,
+    #fffdf5 9px 11px,
+    #2b2233 11px 12px
+  );
+  border: calc(var(--k) * 2) solid #fffdf5;
+}
+
+.cm-barcode-num {
+  font-family: monospace;
+  font-size: calc(var(--k) * 7.5);
+  color: #fffdf5;
+  letter-spacing: 0.1em;
+}
+
+.cm-cover-open-btn {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--k) * 4);
+  padding: calc(var(--k) * 4) calc(var(--k) * 8);
+  background: var(--paper);
+  color: var(--print);
+  border: calc(var(--k) * 1.5) solid var(--paper);
+  font-family: var(--chunky);
+  font-size: calc(var(--k) * 10);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, transform 0.15s;
+  box-shadow: calc(var(--k) * 2) calc(var(--k) * 2) 0 rgba(0, 0, 0, 0.4);
+}
+
+.cm-cover-open-btn:hover,
+.cm-cover:hover .cm-cover-open-btn {
+  background: var(--band);
+  color: var(--on-band);
+  transform: scale(1.04);
+}
+
+.cm-open-arrow {
+  font-size: calc(var(--k) * 8);
+}
+
+.cm-open-label {
+  white-space: nowrap;
+}
+
+/* Contents Page Styling */
+.cm-contents-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: calc(var(--k) * 5);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.cm-contents-item-btn {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--k) * 6);
+  width: 100%;
+  padding: calc(var(--k) * 4) calc(var(--k) * 6);
+  border: calc(var(--k) * 1) solid var(--print);
+  background: #fffdf5;
+  color: var(--print);
+  cursor: pointer;
+  text-align: left;
+  transition: transform 0.15s ease-out, background 0.15s ease-out;
+  box-shadow: calc(var(--k) * 2) calc(var(--k) * 2) 0 var(--print);
+}
+
+.cm-contents-item-btn:hover,
+.cm-contents-item-btn:focus-visible {
+  background: var(--paper-deep);
+  transform: translateY(calc(var(--k) * -1));
+  outline: calc(var(--k) * 2) solid var(--band);
+}
+
+.cm-contents-item-stat {
+  font-family: var(--chunky);
+  font-size: calc(var(--k) * 10);
+  background: var(--band);
+  color: var(--on-band);
+  padding: calc(var(--k) * 1) calc(var(--k) * 4);
+}
+
+.cm-contents-item-name {
+  font-size: calc(var(--k) * 13);
+  font-weight: 700;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cm-contents-item-page {
+  font-family: var(--chunky);
+  font-size: calc(var(--k) * 12);
+  color: var(--print-soft);
+}

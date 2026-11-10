@@ -107,7 +107,7 @@ export const SFX = {
   amb_embers: def(AMB.ambEmbers, 6.5, { gain: 1, voices: 2, cooldown: 3, vary: 0.03 }),
   amb_forest: def(AMB.ambForest, 6.5, { gain: 1, voices: 2, cooldown: 3, vary: 0.03 }),
   // Footsteps: short, dry and quiet. No cooldown to speak of, since several players step at once.
-  step_hard: def(ST.stepHard, 0.12, { gain: 0.5, voices: 4, cooldown: 0.015, vary: 0.15 }),
+  step_hard: def(ST.stepHard, 0.12, { gain: 0.5, voices: 8, cooldown: 0.015, vary: 0.15 }),
   step_soft: def(ST.stepSoft, 0.14, { gain: 0.5, voices: 4, cooldown: 0.015, vary: 0.15 }),
   step_water: def(ST.stepWater, 0.14, { gain: 0.45, voices: 4, cooldown: 0.015, vary: 0.15 }),
   step_snow: def(ST.stepSnow, 0.14, { gain: 0.5, voices: 4, cooldown: 0.015, vary: 0.15 }),

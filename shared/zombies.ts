@@ -12,6 +12,8 @@ import {
 } from './constants.ts';
 import { groundEffect } from './ground.ts';
 import { stepMovement } from './movement.ts';
+import { damageZombie } from './combat.ts';
+import { SPIKY_THORNS_DAMAGE, sugarOf } from './candy.ts';
 import { hurtPlayer } from './player-health.ts';
 import { TILE_SIZE } from './protocol.ts';
 import { randRange } from './rng.ts';
@@ -234,15 +236,21 @@ function landSwing(sim: SimState, z: ZombieState, prey: readonly Prey[]): void {
   const target = nearest(sim, z, prey);
   const inReach = target !== null && bodyGap(z, target) <= z.reach + SWING_LEEWAY;
   const landsSwing = inReach && canSee(sim, z, target);
-  if (landsSwing) hurtPrey(sim, target, z.damage);
+  if (landsSwing) hurtPrey(sim, target, z.damage, z);
   z.recoveryLeft = ZOMBIE_RECOVERY_SEC;
   z.cooldownLeft = z.cooldownSec;
 }
 
-function hurtPrey(sim: SimState, target: Prey, damage: number): void {
+function hurtPrey(sim: SimState, target: Prey, damage: number, attacker?: ZombieState): void {
   const isMerchant = 'kind' in target;
   if (isMerchant) hurtMerchant(sim, target, damage);
-  else hurtPlayer(sim, target, damage);
+  else {
+    hurtPlayer(sim, target, damage);
+    if (attacker && sugarOf(target, 'spiky_suckers') > 0) {
+      const angle = Math.atan2(attacker.y - target.y, attacker.x - target.x);
+      damageZombie(sim, attacker, SPIKY_THORNS_DAMAGE * sugarOf(target, 'spiky_suckers'), angle, target.id);
+    }
+  }
 }
 
 function chooseWander(sim: SimState, z: ZombieState): void {

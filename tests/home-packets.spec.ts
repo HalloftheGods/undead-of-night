@@ -29,7 +29,7 @@ const overrun: OverrunReceipt = {
 
 const clock: OverrunView = { phase: 'breached', left: 0, slowed: false, hostiles: 18, total: 24 };
 
-const view: HomeView = { silver: 5, jewels: { small: 0, large: 1 }, station: 'forge', stationHold: 0.5, ready: false, receipt, overrun: null };
+const view: HomeView = { silver: 5, jewels: { small: 0, large: 1 }, station: 'candy_shop', stationHold: 0.5, ready: false, receipt, overrun: null };
 
 const player: PlayerEntity = {
   id: 'p1', name: 'ANA', skin: 0, x: 1, y: 2, angle: 0, moving: false, status: 'alive',

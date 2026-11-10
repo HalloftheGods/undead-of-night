@@ -204,6 +204,11 @@ export class HomeSync {
     return this.counter((save) => abandon(save, merchant, context));
   }
 
+  async trade(step: (save: HomeSave) => HomeSave | null): Promise<boolean> {
+    const result = await this.counter(step);
+    return result === 'saved';
+  }
+
   /** One write that stops at its first conflict. A step that returns null leaves the save as it was. */
   private async counter(step: (save: HomeSave) => HomeSave | null): Promise<QuestResult> {
     let stepped = false;
@@ -441,7 +446,7 @@ export class HomeSync {
   private watchForge(home: HomeView, elapsed: number): void {
     const jewels = this.saves.save?.rawJewels;
     const hasJewels = jewels !== undefined && jewels.small + jewels.large > 0;
-    const smelting = home.station === 'forge' && hasJewels;
+    const smelting = (home.station as string) === 'forge' && hasJewels;
     this.forgeSeconds = smelting ? this.forgeSeconds + elapsed : 0;
     const finished = this.forgeSeconds >= SMELT_SECONDS;
     if (!finished) return;

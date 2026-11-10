@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BUNKER_SEED } from '../shared/home-protocol.ts';
+import type { StationId } from '../shared/home-protocol.ts';
 import { MEDKIT_MAX, TICK_RATE } from '../shared/constants.ts';
 import { emptyLoadout, loadoutOfEntity } from '../shared/loadout.ts';
 import type { PlayerEntity, SnapshotPacket } from '../shared/protocol.ts';
@@ -301,7 +302,7 @@ describe('a trip found open on load', () => {
 
 describe('at the forge', () => {
   const seconds = (count: number): number => 100 + count * TICK_RATE;
-  const atForge = (tick: number): SnapshotPacket => frame({ tick, home: { station: 'forge' } });
+  const atForge = (tick: number): SnapshotPacket => frame({ tick, home: { station: 'forge' as StationId } });
 
   it('the forge pays per jewel and only while at the forge', async () => {
     const { slot, store } = sharedStore({ rawJewels: { small: 2, large: 0 } });

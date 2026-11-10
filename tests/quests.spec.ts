@@ -77,7 +77,7 @@ describe('progress', () => {
   it('counts a visit at the right station only', () => {
     const quests = emptySave(1).quests;
     expect(noteVisit(quests, 'quartermaster').active.quartermaster?.progress).toBe(1);
-    expect(noteVisit(quests, 'forge')).toBe(quests);
+    expect(noteVisit(quests, 'candy_shop')).toBe(quests);
   });
 
   it('counts jewels smelted, and clamps at the target', () => {

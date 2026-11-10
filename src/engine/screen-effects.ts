@@ -59,6 +59,7 @@ export class ScreenEffects {
   private heartPulse = 0;
   private desaturation = 0;
   private desaturationTarget = 0;
+  private stairsFade = 0;
   private time = 0;
   private vignette: HTMLCanvasElement | null = null;
 
@@ -86,6 +87,7 @@ export class ScreenEffects {
     this.heartPulse = 0;
     this.desaturation = 0;
     this.desaturationTarget = 0;
+    this.stairsFade = 0;
   }
 
   /** 0..1. Stacks, then squares, so small kicks stay small. */
@@ -113,6 +115,10 @@ export class ScreenEffects {
 
   setDesaturation(target: number): void {
     this.desaturationTarget = target;
+  }
+
+  setStairsFade(alpha: number): void {
+    this.stairsFade = Math.min(1, Math.max(0, alpha));
   }
 
   update(dt: number): void {
@@ -161,6 +167,12 @@ export class ScreenEffects {
     if (isFlashing) {
       ctx.globalAlpha = this.flash * 0.6;
       ctx.fillStyle = '#fff4dc';
+      ctx.fillRect(0, 0, width, height);
+    }
+    const isStairsFading = this.stairsFade > 0.005;
+    if (isStairsFading) {
+      ctx.globalAlpha = this.stairsFade;
+      ctx.fillStyle = '#000000';
       ctx.fillRect(0, 0, width, height);
     }
     ctx.globalAlpha = 1;

@@ -15,6 +15,12 @@
         <PixelButton @press="copy">{{ label }}</PixelButton>
         <p class="px-note pause-note">Leaving ends the game for everyone in it.</p>
       </template>
+      <div v-else-if="canHost" class="pause-host">
+        <PixelButton :disabled="ui.connecting" @press="onHost">
+          {{ ui.connecting ? 'Starting room...' : 'Switch to multiplayer' }}
+        </PixelButton>
+        <p class="px-note pause-note">Start hosting so friends can join with a code.</p>
+      </div>
 
       <div class="pause-sliders">
         <div>
@@ -41,7 +47,8 @@
       <div ref="resumeBox" class="pause-resume">
         <PixelButton primary silent @press="game.togglePause()">Resume</PixelButton>
       </div>
-      <p v-if="warning" class="px-error" role="alert">{{ warning }}</p>
+      <p v-if="ui.error" class="px-error" role="alert">{{ ui.error }}</p>
+      <p v-else-if="warning" class="px-error" role="alert">{{ warning }}</p>
       <MenuLink class="pause-menu-link" @press="game.toMenu()">Main menu</MenuLink>
     </div>
 
@@ -59,6 +66,7 @@ import { townName } from '../../shared/levels.ts';
 import { leaveWarning } from '../game/home-screens.ts';
 import type { UiState } from '../game/hud-state.ts';
 import type { TransportKind } from '../network/transport.ts';
+import { onlineRoomsLive } from '../network/play-api.ts';
 import BrightnessSlider from './BrightnessSlider.vue';
 import GestureHints from './GestureHints.vue';
 import MenuLink from './MenuLink.vue';
@@ -66,7 +74,7 @@ import PixelButton from './PixelButton.vue';
 import { useRoomLink } from './use-room-link.ts';
 import { useGame } from './use-game.ts';
 
-const { ui } = defineProps<{ ui: UiState; mode: TransportKind }>();
+const { ui, mode } = defineProps<{ ui: UiState; mode: TransportKind }>();
 const game = useGame();
 const resumeBox = useTemplateRef<HTMLElement>('resumeBox');
 /** While the Brightness thumb is held the backdrop and the rest of the card fade, so the town shows what it does. */
@@ -75,8 +83,18 @@ const warning = computed(() => leaveWarning(ui.home));
 const inBunker = computed(() => ui.home?.inBunker === true);
 const level = computed(() => ui.hud?.level ?? null);
 const volumeShown = computed(() => (ui.muted ? 'Muted' : `${Math.round(ui.volume * 100)}%`));
+const canHost = computed(() => {
+  const isSolo = mode === 'solo';
+  const notDaily = !game.isDaily;
+  const isLive = onlineRoomsLive();
+  return isSolo && notDaily && isLive;
+});
 
 const { label, copy } = useRoomLink(() => ui.onlineRoom);
+
+function onHost(): void {
+  game.hostCurrentRun();
+}
 
 function onVolume(event: Event): void {
   game.setVolume(Number((event.target as HTMLInputElement).value));
@@ -158,6 +176,12 @@ onMounted(() => void nextTick(() => resumeBox.value?.querySelector('button')?.fo
 
 .pause-code {
   color: var(--amber);
+}
+
+.pause-host {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 2);
 }
 
 .pause-sliders {

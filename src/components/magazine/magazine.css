@@ -40,7 +40,8 @@
   box-shadow: 0 0 0 2px var(--print), 0 6px 18px rgba(0, 0, 0, 0.6);
 }
 
-.mag-book.is-single {
+.mag-book.is-single,
+.mag-book.is-solo {
   aspect-ratio: 500 / 690;
   max-width: min(100%, calc(100cqh * (500 / 690)));
 }
@@ -104,11 +105,14 @@
 }
 
 .mag-book.is-single .mag-page.is-left::after,
-.mag-book.is-single .mag-page.is-right::after {
+.mag-book.is-single .mag-page.is-right::after,
+.mag-book.is-solo .mag-page.is-left::after,
+.mag-book.is-solo .mag-page.is-right::after {
   background: linear-gradient(to right, rgba(43, 34, 51, 0.22), transparent 3%);
 }
 
-.mag-book.is-single .mag-page {
+.mag-book.is-single .mag-page,
+.mag-book.is-solo .mag-page {
   --m: min(calc(100cqw / 500), calc(100cqh / 690));
   padding-inline: calc(var(--m) * 16);
 }

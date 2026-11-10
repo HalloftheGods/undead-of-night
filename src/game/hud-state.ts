@@ -10,6 +10,7 @@ import type { CalloutTone } from './kill-juice.ts';
 import { displayName } from '../../shared/callsign.ts';
 import { characterOf } from '../../shared/characters.ts';
 import type { GameStyle } from '../../shared/game-style.ts';
+import type { SurvivalNeeds } from '../../shared/survival-needs.ts';
 import type { PlayerGear } from '../../shared/gun-upgrades.ts';
 import { BUNKER_LEVEL } from '../../shared/home-protocol.ts';
 import { WEAPON_ORDER } from '../../shared/protocol.ts';
@@ -107,6 +108,14 @@ export interface HudState {
   readonly bench: BenchHud | null;
   /** The town's boss while it stands: its name and the share of health it has left. */
   readonly boss: { readonly name: string; readonly share: number } | null;
+  readonly moodles: readonly MoodleView[];
+}
+
+export interface MoodleView {
+  readonly id: 'hunger' | 'thirst' | 'bleeding' | 'infection' | 'fatigue';
+  readonly label: string;
+  readonly severity: 'low' | 'medium' | 'high' | 'critical';
+  readonly value: number;
 }
 
 export interface Banner {
@@ -257,8 +266,81 @@ export function buildHud(snapshot: SnapshotPacket, local: PlayerEntity, spectati
     gear: local.gear ?? null,
     bench: benchHud(snapshot, local),
     boss: snapshot.boss ? { name: BOSSES[snapshot.boss.id].name, share: snapshot.boss.health / Math.max(1, snapshot.boss.maxHealth) } : null,
+    moodles: buildMoodles(local.needs),
   };
 }
+
+export function buildMoodles(needs?: SurvivalNeeds): readonly MoodleView[] {
+  const hasNoNeeds = needs === undefined;
+  if (hasNoNeeds) return [];
+
+  const list: MoodleView[] = [];
+
+  const isStarving = needs.hunger >= 80;
+  const isHungry = needs.hunger >= 50 && !isStarving;
+  const isPeckish = needs.hunger >= 25 && !isHungry && !isStarving;
+  if (isStarving) {
+    list.push({ id: 'hunger', label: 'STARVING', severity: 'critical', value: needs.hunger });
+  } else if (isHungry) {
+    list.push({ id: 'hunger', label: 'HUNGRY', severity: 'medium', value: needs.hunger });
+  } else if (isPeckish) {
+    list.push({ id: 'hunger', label: 'PECKISH', severity: 'low', value: needs.hunger });
+  }
+
+  const isDehydrated = needs.thirst >= 80;
+  const isThirsty = needs.thirst >= 50 && !isDehydrated;
+  const isParched = needs.thirst >= 25 && !isThirsty && !isDehydrated;
+  if (isDehydrated) {
+    list.push({ id: 'thirst', label: 'DEHYDRATED', severity: 'critical', value: needs.thirst });
+  } else if (isThirsty) {
+    list.push({ id: 'thirst', label: 'THIRSTY', severity: 'medium', value: needs.thirst });
+  } else if (isParched) {
+    list.push({ id: 'thirst', label: 'PARCHED', severity: 'low', value: needs.thirst });
+  }
+
+  const isBleeding = needs.bleeding;
+  if (isBleeding) {
+    const isHeavy = needs.wound === 'laceration' || needs.wound === 'bite';
+    list.push({
+      id: 'bleeding',
+      label: isHeavy ? 'HEAVY BLEEDING' : 'BLEEDING',
+      severity: isHeavy ? 'critical' : 'high',
+      value: 100,
+    });
+  }
+
+  const isInfected = needs.isInfected;
+  if (isInfected) {
+    let label = 'INFECTED';
+    let severity: 'medium' | 'high' | 'critical' = 'medium';
+    const isCritical = needs.infection >= 75;
+    const isHigh = needs.infection >= 40 && !isCritical;
+    if (isCritical) {
+      label = 'TERMINAL ZOONOSIS';
+      severity = 'critical';
+    } else if (isHigh) {
+      label = 'FEVERED';
+      severity = 'high';
+    }
+    list.push({
+      id: 'infection',
+      label,
+      severity,
+      value: needs.infection,
+    });
+  }
+
+  const isExhausted = needs.fatigue >= 80;
+  const isTired = needs.fatigue >= 50 && !isExhausted;
+  if (isExhausted) {
+    list.push({ id: 'fatigue', label: 'EXHAUSTED', severity: 'critical', value: needs.fatigue });
+  } else if (isTired) {
+    list.push({ id: 'fatigue', label: 'TIRED', severity: 'medium', value: needs.fatigue });
+  }
+
+  return list;
+}
+
 
 /**
  * On their feet in a town with nothing up over the game: the moment a survivor can reach into

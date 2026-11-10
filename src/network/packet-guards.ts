@@ -176,6 +176,10 @@ function isDisconnectPacket(v: unknown): v is { type: 'player_disconnected'; pla
   return isFields(v) && v.type === 'player_disconnected' && isString(v.playerId);
 }
 
+export function isLobbyStatePacket(v: unknown): v is LobbyStatePacket {
+  return isFields(v) && v.type === 'lobby_state' && Array.isArray(v.seats) && typeof v.launched === 'boolean';
+}
+
 /** Returns null for anything that is not a well-formed server packet. */
 export function parseServerPacket(raw: unknown): ServerPacket | null {
   if (!isString(raw)) return null;
@@ -188,6 +192,7 @@ export function parseServerPacket(raw: unknown): ServerPacket | null {
   const value = parsed;
   const isPassThrough = isSnapshotPacket(value) || isWelcomePacket(value) || isRoomPacket(value);
   if (isPassThrough) return value;
+  if (isLobbyStatePacket(value)) return value;
   if (isByePacket(value)) return { type: 'bye', code: value.code, reason: value.reason };
   if (isDisconnectPacket(value)) {
     return { type: 'player_disconnected', playerId: value.playerId };

@@ -27,16 +27,6 @@
           </div>
         </section>
       </div>
-
-      <section class="options-card px-frame" aria-labelledby="options-controls">
-        <h3 id="options-controls" class="options-card-head">Controls</h3>
-        <dl class="options-keys">
-          <div v-for="[keys, action] in CONTROLS" :key="action" class="options-key">
-            <dt>{{ keys }}</dt>
-            <dd>{{ action }}</dd>
-          </div>
-        </dl>
-      </section>
     </div>
   </TitlePage>
 </template>
@@ -45,7 +35,6 @@
 import { computed } from 'vue';
 import { consent, openPrivacy } from '../game/analytics/index.ts';
 import type { UiState } from '../game/hud-state.ts';
-import { CONTROLS } from '../game/title-menu.ts';
 import DisplayOptions from './DisplayOptions.vue';
 import MenuLink from './MenuLink.vue';
 import MotionOptions from './MotionOptions.vue';
@@ -134,31 +123,5 @@ function setAnalytics(on: boolean): void {
 .options-privacy {
   align-self: flex-start;
   padding-inline: 0;
-}
-
-.options-keys {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(var(--u) * 180)), 1fr));
-  gap: var(--u) calc(var(--u) * 10);
-  margin: 0;
-}
-
-.options-key {
-  display: grid;
-  grid-template-columns: calc(var(--u) * 40) 1fr;
-  gap: calc(var(--u) * 4);
-}
-
-.options-key dt {
-  margin: 0;
-}
-
-.options-keys dt {
-  color: var(--amber);
-}
-
-.options-keys dd {
-  margin: 0;
-  color: var(--bone-dim);
 }
 </style>

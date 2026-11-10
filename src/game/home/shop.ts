@@ -199,12 +199,14 @@ export function buy(save: HomeSave, merchant: MerchantId, item: string, context:
   const def = itemOf(merchant, item);
   const isNotOnShelf = !def || !offered(save, def, context);
   if (isNotOnShelf) return null;
-  const cannotAfford = save.silver < def.price || stockOf(save, merchant, def) < 1 || !fits(save, def, context);
+  const balance = Math.max(save.candy ?? 0, save.silver ?? 0);
+  const cannotAfford = balance < def.price || stockOf(save, merchant, def) < 1 || !fits(save, def, context);
   if (cannotAfford) return null;
   const shelf = save.shop.merchants[merchant];
   const items = def.stock.kind === 'always' ? shelf.items : { ...shelf.items, [def.id]: stockOf(save, merchant, def) - 1 };
   const merchants = { ...save.shop.merchants, [merchant]: { ...shelf, items } };
-  return { ...save, silver: save.silver - def.price, locker: granted(save.locker, def, context), shop: { ...save.shop, merchants } };
+  const nextBalance = balance - def.price;
+  return { ...save, candy: nextBalance, silver: nextBalance, locker: granted(save.locker, def, context), shop: { ...save.shop, merchants } };
 }
 
 /** One unit of an item into the locker as a reward, or null when it does not fit. A quest pays silver at the shop price instead. */

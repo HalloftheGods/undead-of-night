@@ -91,6 +91,11 @@ function leave(): void {
 function open(index: number): void {
   game.playUi('click');
   const row = rows.value[index];
+  const isBooksSection = row.kind === 'section' && row.group === 'books';
+  if (isBooksSection) {
+    emit('open', { group: 'books', page: 'books', label: 'Books', line: row.line });
+    return;
+  }
   if (row.kind === 'section' && row.group) enter(row.group);
   else if (row.kind === 'back') leave();
   else if (row.item) emit('open', row.item);

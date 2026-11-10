@@ -12,24 +12,29 @@
     </div>
 
     <footer class="title-foot">
+      <div class="title-links">
+        <MenuLink v-if="!privacyOpen" class="title-privacy" @press="openPrivacy()">Privacy</MenuLink>
+        <MenuLink class="title-version" aria-label="What's new in this version" @press="nav = openPage(nav, 'changelog')">v{{ APP_VERSION }}</MenuLink>
+      </div>
       <p class="title-credit">
         <img class="title-omega" :src="BRAND_MARK" alt="" />
         {{ STUDIO_LINE }}
       </p>
-      <MenuLink v-if="!privacyOpen" class="title-privacy" @press="openPrivacy()">Privacy</MenuLink>
     </footer>
-    <MenuLink class="title-version" aria-label="What's new in this version" @press="nav = openPage(nav, 'changelog')">v{{ APP_VERSION }}</MenuLink>
   </section>
 
   <PlaySetup v-else-if="nav.page === 'play'" :ui :join="nav.invited" :level="nav.startLevel" @close="nav = closePlay(nav)" />
   <DailyPage v-else-if="nav.page === 'daily'" :ui @close="close" />
   <LevelsPage v-else-if="nav.page === 'levels'" :art="ui.art" @start="nav = pickLevel(nav, $event)" @close="close" />
+  <BooksPage v-else-if="nav.page === 'books'" :art="ui.art" @open="openBookPage" @close="close" />
   <HowToPlay v-else-if="nav.page === 'howto'" @close="close" />
+  <CandyMagazinePage v-else-if="nav.page === 'candy'" @close="close" />
   <TownGuidePage v-else-if="nav.page === 'guide'" @close="close" />
   <RecordsPage v-else-if="nav.page === 'records'" :ui @close="close" />
   <ChangelogPage v-else-if="nav.page === 'changelog'" :version="APP_VERSION" @close="close" />
   <SoundTestPage v-else-if="nav.page === 'sound'" @close="close" />
   <RadioPage v-else-if="nav.page === 'radio'" :ui @close="close" />
+  <ControlsPage v-else-if="nav.page === 'controls'" @close="close" />
   <OptionsPage v-else :ui @close="close" />
 </template>
 
@@ -43,10 +48,10 @@ import { markPressAnswered, shouldAskForPress } from '../game/press-start.ts';
 import { onlineRoomsLive } from '../network/play-api.ts';
 import { BRAND_MARK, STUDIO_LINE } from '../game/studio-splash.ts';
 import { TITLE_MENU } from '../game/title-menu.ts';
-import type { MenuGroup, TitleMenuItem } from '../game/title-menu.ts';
-import { closePage, closePlay, INVITE_LANDING, openPage, pickLevel, TITLE_HOME } from '../game/title-nav.ts';
+import type { MenuGroup, TitleMenuItem, TitlePage } from '../game/title-menu.ts';
+import { closeBook, closePage, closePlay, INVITE_LANDING, openBook, openPage, pickLevel, TITLE_HOME } from '../game/title-nav.ts';
 import InstallCartridge from './InstallCartridge.vue';
-import { ChangelogPage, DailyPage, HowToPlay, LevelsPage, RadioPage, RecordsPage, SoundTestPage, TownGuidePage } from './lazy-pages.ts';
+import { BooksPage, CandyMagazinePage, ChangelogPage, ControlsPage, DailyPage, HowToPlay, LevelsPage, RadioPage, RecordsPage, SoundTestPage, TownGuidePage } from './lazy-pages.ts';
 import MenuLink from './MenuLink.vue';
 import OptionsPage from './OptionsPage.vue';
 import PlaySetup from './PlaySetup.vue';
@@ -95,7 +100,16 @@ function answer(): void {
 }
 
 function close(): void {
+  const isBookOpen = nav.value.fromBooks === true;
+  if (isBookOpen) {
+    nav.value = closeBook(nav.value);
+    return;
+  }
   nav.value = closePage(nav.value);
+}
+
+function openBookPage(page: TitlePage): void {
+  nav.value = openBook(nav.value, page);
 }
 
 /** Campaign and Arcade each carry a style: pressing one remembers it, then opens the one Play setup, which no longer asks. */
@@ -169,18 +183,22 @@ function openItem(item: TitleMenuItem): void {
   position: absolute;
   bottom: calc(var(--u) * 2);
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  column-gap: calc(var(--u) * 4);
+  gap: calc(var(--u) * 1);
   max-width: 100%;
   color: var(--bone-dim);
 }
 
+.title-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  column-gap: calc(var(--u) * 4);
+}
+
 .title-version {
-  position: absolute;
-  bottom: calc(var(--u) * 2);
-  left: calc(var(--u) * 3);
   min-height: 44px;
   margin: 0;
   padding-inline: calc(var(--u) * 2);
@@ -230,10 +248,6 @@ function openItem(item: TitleMenuItem): void {
   animation: title-fade-up 0.5s ease-out 0.6s both;
 }
 
-.is-revealed .title-version {
-  animation: title-fade-up 0.5s ease-out 0.7s both;
-}
-
 @keyframes title-drop {
   0% {
     opacity: 0;
@@ -277,8 +291,7 @@ function openItem(item: TitleMenuItem): void {
 :root[data-motion='reduced'] .is-revealed .title-hero,
 :root[data-motion='reduced'] .is-revealed .title-press,
 :root[data-motion='reduced'] .is-revealed .title-columns,
-:root[data-motion='reduced'] .is-revealed .title-foot,
-:root[data-motion='reduced'] .is-revealed .title-version {
+:root[data-motion='reduced'] .is-revealed .title-foot {
   animation: none !important;
 }
 </style>

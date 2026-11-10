@@ -34,6 +34,22 @@ export const CANDY_BRANDS: Readonly<Record<CandyId, CandyBrand>> = {
   popping_eyeballs: brand('#faf2d4', '#5ca82c', '#b82a30', 0, -2),
   fireballs: brand('#fff0b4', '#a03018', '#e8701c', -8, -3),
   full_size_bar: brand('#ffc03c', '#b82a30', '#4e3432', 0, 0, 0.18),
+  skull_pops: brand('#faf2d4', '#484e68', '#0d0b16', 0, 0, 0.15),
+  frost_bites: brand('#68c4d8', '#222c52', '#0d0b16', 0, -2, 0.12),
+  cherry_bombs: brand('#e85c40', '#0d0b16', '#246030', -6, 2, 0.1),
+  shock_tarts: brand('#fff0b4', '#34205c', '#c4f048', -12, 0, 0.18),
+  glow_worms: brand('#c4f048', '#0d0b16', '#5ca82c', 0, 3, 0.14),
+  sticky_fingers: brand('#e89440', '#4e3432', '#2c1c28', -4, -2, 0.1),
+  deadeye_drops: brand('#c0c6c8', '#0d0b16', '#b82a30', 0, 0, 0.2),
+  monster_mash: brand('#5ca82c', '#0d0b16', '#34205c', -8, -3, 0.12),
+  everlasting_chews: brand('#fff0b4', '#b82a30', '#3a5288', 0, 0, 0.16),
+  spiky_suckers: brand('#b070d0', '#0d0b16', '#6c3c9c', 0, 2, 0.14),
+  boom_drops: brand('#ffc03c', '#0d0b16', '#b82a30', -10, 0, 0.15),
+  grave_gels: brand('#8894a0', '#0d0b16', '#222c52', 0, 0, 0.18),
+  scatter_skittles: brand('#faf2d4', '#e85c40', '#5ca82c', 0, -3, 0.12),
+  cadaver_chews: brand('#6c8438', '#0d0b16', '#2c1c28', -6, 2, 0.1),
+  reaper_ribbons: brand('#faf2d4', '#0d0b16', '#b82a30', -12, -2, 0.16),
+  toffee_timber: brand('#ac8458', '#4e3432', '#0d0b16', 0, 0, 0.12),
 };
 
 /** The custom properties CandyBag.vue letters a name with. */

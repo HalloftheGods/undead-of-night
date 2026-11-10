@@ -28,7 +28,7 @@
       <WorkbenchScreen v-if="ui.hud?.bench && ui.art" :hud="ui.hud" :bench="ui.hud.bench" :art="ui.art" />
       <template v-if="ui.home">
         <LockerScreen v-if="ui.home.station === 'locker'" :home="ui.home" :art="ui.art" />
-        <ForgeScreen v-else-if="ui.home.station === 'forge'" :home="ui.home" :art="ui.art" />
+        <CandyShopScreen v-else-if="ui.home.station === 'candy_shop'" :home="ui.home" :art="ui.art" />
         <GarageMap v-else-if="ui.home.station === 'level_map'" :home="ui.home" :art="ui.art" />
         <JukeboxScreen v-else-if="ui.home.station === 'jukebox'" :art="ui.art" />
         <MerchantScreen v-else-if="ui.home.shop && ui.art" :home="ui.home" :art="ui.art" />
@@ -66,7 +66,7 @@ import ConnectionLost from './components/ConnectionLost.vue';
 import DeathSummary from './components/DeathSummary.vue';
 import DownedOverlay from './components/DownedOverlay.vue';
 import EmoteWheel from './components/EmoteWheel.vue';
-import ForgeScreen from './components/ForgeScreen.vue';
+import CandyShopScreen from './components/CandyShopScreen.vue';
 import GameOverScreen from './components/GameOverScreen.vue';
 import GarageMap from './components/GarageMap.vue';
 import HudOverlay from './components/HudOverlay.vue';

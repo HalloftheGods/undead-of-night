@@ -1,4 +1,5 @@
 import type { SugarState } from './candy.ts';
+import type { SurvivalNeeds } from './survival-needs.ts';
 import type { SupplyDrop } from './supply-drop.ts';
 import type { BossState } from './bosses.ts';
 import type { KillChain } from './kill-chain.ts';
@@ -138,6 +139,7 @@ export interface PlayerState extends Omit<PlayerEntity, 'mags' | 'gear' | 'bottl
   staminaRest: number;
   /** Seconds until the next loud footstep while sprinting. */
   stepNoiseLeft: number;
+  needs?: SurvivalNeeds;
 }
 
 /** Unaware, walking to a noise, or after a player. */

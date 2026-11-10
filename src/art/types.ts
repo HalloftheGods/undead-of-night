@@ -208,7 +208,9 @@ export interface UiArt {
   readonly levelScenes: readonly PixelSprite[];
   /** The home station screens' scene picture for each station (station-cards.ts). */
   readonly stations: Record<'locker' | 'forge' | 'jukebox' | 'bench', PixelSprite>;
+  readonly bookCovers: Record<string, PixelSprite>;
   readonly vanSide: VanSideArt;
+  readonly moodles?: Record<'hunger' | 'thirst' | 'bleeding' | 'infection' | 'fatigue', PixelSprite>;
 }
 
 export interface ArtBook {

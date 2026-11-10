@@ -170,16 +170,23 @@ defineExpose({ focus: () => focusTile(cursor) });
 }
 
 .track-name {
-  font-size: calc(var(--u) * 6);
+  font-size: calc(var(--u) * 6.5);
+  font-weight: 700;
+  color: var(--bone);
 }
 
 .track-where {
   color: var(--bone-dim);
-  font-size: calc(var(--u) * 5);
+  font-size: calc(var(--u) * 5.5);
+}
+
+.is-playing .track-name {
+  color: var(--amber);
 }
 
 .is-playing .track-where {
-  color: var(--amber);
+  color: var(--sick);
+  font-weight: 700;
 }
 
 /* A phone fits two tiles to a row: five rows, the glyph beside the words. */

@@ -10,9 +10,11 @@ import type { PlayerGear } from './gun-upgrades.ts';
 import type { HomeAction, HomeView, JoinHome, MerchantEntity, MerchantId, OverrunEnd, RoomHomeView } from './home-protocol.ts';
 import type { LeftoverView } from './leftovers.ts';
 import type { GunEffect } from './round-effect-data.ts';
+import type { SurvivalNeeds } from './survival-needs.ts';
 import type { BenchAction, BenchView } from './workbench.ts';
 
 export { GAME_EVENT_TYPES, GAME_PHASES, PICKUP_TYPES };
+export type { SurvivalNeeds };
 // The world map types live in map-protocol.ts; everything still imports them from here.
 export { BUILDING_DEFS, BUILDING_KINDS, DOOR_WIDTH, PROP_DEFS, PROP_KINDS, TILE_KINDS, TILE_SIZE, WALL_THICKNESS } from './map-protocol.ts';
 export type { BuildingInstance, BuildingKind, District, MapLight, PropInstance, PropKind, TileKind, WorldMap } from './map-protocol.ts';
@@ -28,7 +30,10 @@ export type PlayerStatus = 'alive' | 'downed' | 'dead';
 /** Halloween candy: a short boost each (shared/candy.ts). */
 export type CandyId =
   | 'sour_skulls' | 'fang_taffy' | 'ghost_gum' | 'pumpkin_fizz' | 'witchs_brittle' | 'bat_bites'
-  | 'corn_rush' | 'jawbreaker' | 'licorice_lash' | 'caramel_apple' | 'popping_eyeballs' | 'fireballs' | 'full_size_bar';
+  | 'corn_rush' | 'jawbreaker' | 'licorice_lash' | 'caramel_apple' | 'popping_eyeballs' | 'fireballs' | 'full_size_bar'
+  | 'skull_pops' | 'frost_bites' | 'cherry_bombs' | 'shock_tarts' | 'glow_worms' | 'sticky_fingers'
+  | 'deadeye_drops' | 'monster_mash' | 'everlasting_chews' | 'spiky_suckers' | 'boom_drops' | 'grave_gels'
+  | 'scatter_skittles' | 'cadaver_chews' | 'reaper_ribbons' | 'toffee_timber';
 
 /** Permanent for the run, one of three chosen after every second town (shared/keepsakes.ts). */
 export type KeepsakeId = 'rabbit_foot' | 'sneakers' | 'bandolier' | 'rosary' | 'lighter' | 'old_watch' | 'treat_bag' | 'dog_tags';
@@ -85,6 +90,7 @@ export interface PlayerEntity {
   fountains?: number;
   /** Candy carried, counted by kind (shared/candy.ts). Left off at none. */
   bag?: CandyBag;
+  candy?: readonly CandyId[];
   /** Candy working on this survivor now, with the seconds each has left. Left off at none. */
   sugar?: SugarView[];
   /** Keepsakes kept this run. Left off at none. */
@@ -113,6 +119,7 @@ export interface PlayerEntity {
   gear?: PlayerGear;
   /** Treasure carried, station and trip result. Left off outside home mode. */
   home?: HomeView;
+  needs?: SurvivalNeeds;
 }
 
 export interface ZombieEntity {
@@ -396,11 +403,27 @@ export interface ByePacket {
   readonly reason: string;
 }
 
+export interface LobbySeat {
+  readonly skin: number;
+  readonly name: string;
+  readonly ready: boolean;
+  readonly isHost: boolean;
+}
+
+export interface LobbyStatePacket {
+  readonly type: 'lobby_state';
+  readonly seats: readonly LobbySeat[];
+  readonly countdown: number | null;
+  readonly autoStartTimer: boolean;
+  readonly launched: boolean;
+}
+
 export type ServerPacket =
   | RoomPacket
   | WelcomePacket
   | SnapshotPacket
   | ByePacket
+  | LobbyStatePacket
   | { readonly type: 'player_disconnected'; readonly playerId: EntityId };
 
 export type ClientPacket =
@@ -410,4 +433,7 @@ export type ClientPacket =
   | { readonly type: 'bench'; readonly action: BenchAction }
   | { readonly type: 'home'; readonly action: HomeAction }
   | { readonly type: 'emote'; readonly emote: EmoteId }
-  | { readonly type: 'restart' };
+  | { readonly type: 'restart' }
+  | { readonly type: 'lobby_ready'; readonly ready: boolean }
+  | { readonly type: 'lobby_start' }
+  | { readonly type: 'lobby_toggle_timer'; readonly enabled: boolean };

@@ -64,6 +64,20 @@
           </span>
         </div>
       </div>
+
+      <!-- Survival Moodles (Hunger, Thirst, Bleeding, Infection, Fatigue) -->
+      <aside v-if="hasMoodles" class="hud-moodles" aria-label="Survival moodles">
+        <div
+          v-for="moodle in hud.moodles"
+          :key="moodle.id"
+          class="hud-moodle-badge"
+          :class="`is-${moodle.severity}`"
+          :title="`${moodle.label} (${Math.round(moodle.value)}%)`"
+        >
+          <SpriteImg v-if="art.ui.moodles && art.ui.moodles[moodle.id]" :sprite="art.ui.moodles[moodle.id]" />
+          <span class="hud-moodle-text">{{ moodle.label }}</span>
+        </div>
+      </aside>
     </header>
 
     <BossBar v-if="hud.boss" :boss="hud.boss" />
@@ -208,6 +222,7 @@ function glyph(code: string): string | null {
 }
 
 const isLow = computed(() => hud.health / hud.maxHealth < LOW_HEALTH);
+const hasMoodles = computed(() => (hud.moodles?.length ?? 0) > 0);
 const bar = computed(() => weaponBar(hud));
 const ammo = computed(() => ammoWarning(hud));
 const swapKey = computed(() => switchKey(hud));
@@ -740,5 +755,55 @@ function hold(slot: BarSlot): void {
 
 .hud-reload > span {
   background: var(--amber);
+}
+
+.hud-moodles {
+  position: absolute;
+  right: calc(var(--u) * 5);
+  top: calc(var(--u) * 5);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: calc(var(--u) * 2);
+  pointer-events: auto;
+}
+
+.hud-moodle-badge {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 2);
+  padding: calc(var(--u) * 1) calc(var(--u) * 2);
+  background: rgba(13, 11, 22, 0.85);
+  border: calc(var(--u) * 0.5) solid var(--bone-dark, #444);
+  image-rendering: pixelated;
+}
+
+.hud-moodle-text {
+  font-size: calc(var(--u) * 3);
+  font-family: inherit;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.hud-moodle-badge.is-low {
+  border-color: #8c8c56;
+  color: #faf2d4;
+}
+
+.hud-moodle-badge.is-medium {
+  border-color: #e8701c;
+  color: #ffc03c;
+}
+
+.hud-moodle-badge.is-high {
+  border-color: #b82a30;
+  color: #e85c40;
+}
+
+.hud-moodle-badge.is-critical {
+  border-color: #e85c40;
+  background: rgba(58, 15, 42, 0.95);
+  color: #ffc03c;
 }
 </style>

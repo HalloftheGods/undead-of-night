@@ -2,7 +2,7 @@
   <section class="px-title-scale mag-screen" aria-label="Records" @pointerdown="pages.beginSwipe" @pointerup="pages.finishSwipe">
     <PrintedBook :book="open" :turn :mode :leaves="RECORD_LEAVES">
       <template #page="{ leaf, side, folio }">
-        <RecordLeaf :leaf :side :folio :book />
+        <RecordLeaf :key="leaf.id" :leaf :side :folio :book />
       </template>
     </PrintedBook>
 

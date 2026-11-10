@@ -11,7 +11,7 @@ import { emit } from './sim-state.ts';
 import { makeNoise } from './zombie-senses.ts';
 import { maybeCarAlarm, scroungeBottle } from './bottles.ts';
 import { stashIn, takeStash } from './throwables.ts';
-import { candyIn, takeCandy } from './candy.ts';
+import { candyIn, STICKY_SEARCH_SCALE, sugarOf, takeCandy } from './candy.ts';
 import { hasKeepsake, RABBIT_LUCK } from './keepsakes.ts';
 import { isBooth, sellFireworks } from './fireworks-booth.ts';
 
@@ -31,7 +31,8 @@ function startSearch(sim: SimState, p: PlayerState): void {
   const target = free ? containerInReach(sim.map, p.x, p.y, (id) => sim.containers[id].opened) : null;
   if (!target) return;
   p.searchingId = target.id;
-  p.searchLeft = SEARCH_SEC[target.kind];
+  const stickyScale = 1 - (1 - STICKY_SEARCH_SCALE) * sugarOf(p, 'sticky_fingers');
+  p.searchLeft = SEARCH_SEC[target.kind] * stickyScale;
 }
 
 interface Finds {
@@ -39,6 +40,24 @@ interface Finds {
   readonly treasure: ContainerLoot | null;
   /** What was put away here or, rolled now so every client agrees, what a lucky searcher turns up anyway. */
   readonly ordinary: ContainerLoot | null;
+}
+
+const BOX_AMMO_FIND_CHANCE = 0.55;
+
+function scroungeBoxAmmo(sim: SimState, p: PlayerState, container: Container): ContainerLoot | null {
+  const isBox = container.kind === 'box';
+  if (!isBox) return null;
+  const isLucky = sim.rng() < BOX_AMMO_FIND_CHANCE;
+  if (!isLucky) return null;
+
+  const weapon = p.weapon;
+  const isShotgun = weapon === 'shotgun';
+  if (isShotgun) return { type: 'shells', rounds: 2 };
+
+  const isCarbine = weapon === 'carbine';
+  if (isCarbine) return { type: 'carbine_ammo', rounds: 6 };
+
+  return { type: 'pistol_ammo', rounds: 4 };
 }
 
 function findIn(sim: SimState, p: PlayerState, id: number): Finds {
@@ -68,12 +87,14 @@ function finishSearch(sim: SimState, p: PlayerState, id: number): void {
   state.loot = null;
   const { clatterChance, noise } = characterOf(p.skin);
   const noisy = sim.rng() < CLATTER_CHANCE * clatterChance;
-  const found = ordinary !== null || treasure !== null;
+  const container = townContainers(sim.map)[id];
+  const boxAmmo = ordinary === null ? scroungeBoxAmmo(sim, p, container) : null;
+  if (boxAmmo) spawnPickup(sim, boxAmmo.type, p.x, p.y, boxAmmo.rounds);
+  const found = ordinary !== null || treasure !== null || boxAmmo !== null;
   if (noisy) makeNoise(sim, p.x, p.y, CLATTER_RADIUS * noise);
   if (treasure) spawnPickup(sim, treasure.type, p.x, p.y, treasure.rounds);
   if (ordinary) spawnPickup(sim, ordinary.type, p.x, p.y, ordinary.rounds);
-  const container = townContainers(sim.map)[id];
-  const bottle = ordinary === null && container.kind !== 'bowl' && scroungeBottle(sim, p);
+  const bottle = ordinary === null && boxAmmo === null && container.kind !== 'bowl' && scroungeBottle(sim, p);
   const thrown = takeStash(p, stashIn(sim.map.seed, container));
   const candy = thrown ? null : takeCandy(p, candyIn(sim.map.seed, container));
   const stash = thrown ?? (candy ? 'candy' : null);
@@ -92,7 +113,8 @@ function keepSearching(sim: SimState, p: PlayerState, id: number, hurt: boolean)
 }
 
 function advanceSearch(sim: SimState, p: PlayerState, id: number): void {
-  const total = SEARCH_SEC[townContainers(sim.map)[id].kind];
+  const stickyScale = 1 - (1 - STICKY_SEARCH_SCALE) * sugarOf(p, 'sticky_fingers');
+  const total = SEARCH_SEC[townContainers(sim.map)[id].kind] * stickyScale;
   p.searchLeft -= TICK_DT;
   // A floor above zero keeps "searching" distinct from "not searching" on the first tick.
   p.search = Math.max(0.01, 1 - p.searchLeft / total);

@@ -13,7 +13,7 @@ const { acid, blood, bone, denim, fire, ink, metal, rot, violet, wood } = RAMPS;
 /** Every candy fits this square, outline and all. */
 export const CANDY_ART_SIZE = 16;
 
-const SWEET: Legend = {
+export const SWEET_LEGEND: Legend = {
   k: ink[0], K: ink[1],
   W: bone[3], e: bone[2], g: bone[1],
   r: blood[0], s: blood[1], t: blood[2], u: blood[3],
@@ -204,7 +204,178 @@ const FULL_SIZE_BAR: Grid = [
   'tttttwwwwwww',
 ];
 
-const GRIDS: Readonly<Record<CandyId, Grid>> = {
+const SKULL_POPS: Grid = [
+  '..eWWWe..',
+  '.WWeeeWW.',
+  '.WkkekkW.',
+  '.WkkekkW.',
+  '.WWeeeWW.',
+  '..eWkWe..',
+  '...eee...',
+  '....w....',
+  '....w....',
+  '....w....',
+];
+
+const FROST_BITES: Grid = [
+  '..NNPPNN..',
+  '.NPOOOPN.',
+  '.NOOOOOON.',
+  'NPOWWWWOPN',
+  'NOOW..WOON',
+  'NPOW..WOPN',
+  '.NOOWWOON.',
+  '..NNPPNN..',
+];
+
+const CHERRY_BOMBS: Grid = [
+  '....D....',
+  '...G.....',
+  '..G.G....',
+  '.rtr.rtr.',
+  'rtsurssur',
+  'rtuurttur',
+  '.rtr.rtr.',
+];
+
+const SHOCK_TARTS: Grid = [
+  '....YYB..',
+  '...YYB...',
+  '..YYB....',
+  '.YYYYYYB.',
+  '....YYB..',
+  '...YYB...',
+  '..YYB....',
+  '.YYB.....',
+];
+
+const GLOW_WORMS: Grid = [
+  '..GHHG....',
+  '.GHHHHG...',
+  'GHkHHkHG..',
+  '.GHHHHGHHG',
+  '..GHHGHHHG',
+  '...GHHHHG.',
+  '....GHHG..',
+];
+
+const STICKY_FINGERS: Grid = [
+  '..xyyx..',
+  '.xyyyyx.',
+  '.xyyyyx.',
+  '.xyyyyx.',
+  '.xyyyyx.',
+  '.xyzzzx.',
+  '.xyyyyx.',
+  '.xyyyyx.',
+  '..xxxx..',
+];
+
+const DEADEYE_DROPS: Grid = [
+  '...kKk...',
+  '..KkkkK..',
+  '.KkkkkkK.',
+  'kKkWkkKk.',
+  '.KkkkkkK.',
+  '..KkkkK..',
+  '...kKk...',
+];
+
+const MONSTER_MASH: Grid = [
+  '.qQQqqQQq.',
+  'qQQQQQQQQq',
+  'qQQWQQWQQq',
+  'qQQQQQQQQq',
+  '.qQQQQQQq.',
+  '..qQQQQq..',
+  '...wwww...',
+  '...wwww...',
+];
+
+const EVERLASTING_CHEWS: Grid = [
+  '..rrrr..',
+  '.rYYYYr.',
+  'rYGGGGYr',
+  'rYGPPGYr',
+  'rYGPPGYr',
+  'rYGGGGYr',
+  '.rYYYYr.',
+  '..rrrr..',
+];
+
+const SPIKY_SUCKERS: Grid = [
+  '..i..i..',
+  '.ijllji.',
+  'iijlllji',
+  '.jlllll.',
+  'iijlllji',
+  '.ijllji.',
+  '..i..i..',
+  '....w...',
+  '....w...',
+];
+
+const BOOM_DROPS: Grid = [
+  '....DY...',
+  '...m.....',
+  '..kKKk...',
+  '.kKKKKk..',
+  'kKKKKKKk.',
+  'kKKKKKKk.',
+  '.kKKKKk..',
+  '..kKKk...',
+];
+
+const GRAVE_GELS: Grid = [
+  '..mmmm..',
+  '.mmnnmm.',
+  '.mmnnmm.',
+  'mnnnnnnm',
+  'mnnnnnnm',
+  '.mmnnmm.',
+  '.mmnnmm.',
+  '.mmnnmm.',
+  'mmmmmmmm',
+];
+
+const SCATTER_SKITTLES: Grid = [
+  '.rr..YY.',
+  'rts.YBBY',
+  '.rr..YY.',
+  '...GG...',
+  '..GAHG..',
+  '...GG...',
+];
+
+const CADAVER_CHEWS: Grid = [
+  '.qqQQqq.',
+  'qQQQQQQq',
+  'qQkkQQkq',
+  'qQQQQQQq',
+  '.qQQQQq.',
+  '..qqqq..',
+];
+
+const REAPER_RIBBONS: Grid = [
+  '..ommm..',
+  '.onnnnmo',
+  'onm..mno',
+  'om....mo',
+  '......mo',
+  '.....mo.',
+  '....mo..',
+  '...mo...',
+];
+
+const TOFFEE_TIMBER: Grid = [
+  '.wwwwwww.',
+  'wxyyyyxw.',
+  'wxywwyxw.',
+  'wxyyyyxw.',
+  '.wwwwwww.',
+];
+
+export const CANDY_GRIDS: Readonly<Record<CandyId, Grid>> = {
   sour_skulls: SOUR_SKULLS,
   fang_taffy: FANG_TAFFY,
   ghost_gum: GHOST_GUM,
@@ -218,6 +389,22 @@ const GRIDS: Readonly<Record<CandyId, Grid>> = {
   popping_eyeballs: POPPING_EYEBALLS,
   fireballs: FIREBALLS,
   full_size_bar: FULL_SIZE_BAR,
+  skull_pops: SKULL_POPS,
+  frost_bites: FROST_BITES,
+  cherry_bombs: CHERRY_BOMBS,
+  shock_tarts: SHOCK_TARTS,
+  glow_worms: GLOW_WORMS,
+  sticky_fingers: STICKY_FINGERS,
+  deadeye_drops: DEADEYE_DROPS,
+  monster_mash: MONSTER_MASH,
+  everlasting_chews: EVERLASTING_CHEWS,
+  spiky_suckers: SPIKY_SUCKERS,
+  boom_drops: BOOM_DROPS,
+  grave_gels: GRAVE_GELS,
+  scatter_skittles: SCATTER_SKITTLES,
+  cadaver_chews: CADAVER_CHEWS,
+  reaper_ribbons: REAPER_RIBBONS,
+  toffee_timber: TOFFEE_TIMBER,
 };
 
 /** Centred in the square with a dark outline, so each holds on any background. */
@@ -226,11 +413,11 @@ function sweet(rows: Grid): PixelSprite {
   const width = Math.max(...rows.map((row) => row.length));
   const x = Math.floor((size - width) / 2);
   const y = Math.floor((size - rows.length) / 2);
-  const canvas = new PixelCanvas(size, size).grid(x, y, rows, SWEET).outline({ color: ink[0] });
+  const canvas = new PixelCanvas(size, size).grid(x, y, rows, SWEET_LEGEND).outline({ color: ink[0] });
   return canvas.toSprite(size, size, Math.floor(size / 2), Math.floor(size / 2));
 }
 
 export function buildCandyArt(): Record<CandyId, PixelSprite> {
-  const entries = Object.entries(GRIDS).map(([id, rows]) => [id, sweet(rows)] as const);
+  const entries = Object.entries(CANDY_GRIDS).map(([id, rows]) => [id, sweet(rows)] as const);
   return Object.fromEntries(entries) as Record<CandyId, PixelSprite>;
 }

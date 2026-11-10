@@ -89,6 +89,7 @@ export const PROP_DEFS = {
   locker: { w: 16, h: 8 },
   fridge: { w: 16, h: 8 },
   workbench: { w: 40, h: 12 },
+  candy_shop: { w: 40, h: 12 },
   forge: { w: 40, h: 12 },
   level_map: { w: 24, h: 14 },
   jukebox: { w: 20, h: 8 },

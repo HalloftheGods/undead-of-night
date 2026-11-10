@@ -10,7 +10,9 @@ import { buildModeCards } from './mode-cards.ts';
 import { buildStationCards } from './station-cards.ts';
 import { buildStyleCards } from './style-cards.ts';
 import { buildLogo } from './fx/logo.ts';
+import { buildMoodleIcons } from './fx/moodles.ts';
 import { buildVanSide } from './fx/van-side.ts';
+import { buildBookCovers } from './book-covers.ts';
 
 export function buildUi(): UiArt {
   return {
@@ -35,6 +37,8 @@ export function buildUi(): UiArt {
     style: buildStyleCards(),
     levelScenes: buildLevelCards(),
     stations: buildStationCards(),
+    bookCovers: buildBookCovers(),
     vanSide: buildVanSide(),
+    moodles: buildMoodleIcons(),
   };
 }

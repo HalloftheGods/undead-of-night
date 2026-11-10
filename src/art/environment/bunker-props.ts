@@ -9,7 +9,7 @@ import { RAMPS } from '../palette.ts';
 import { bake, groundShadow } from './common.ts';
 import { finish, startPiece } from './furniture.ts';
 
-const { blood, bone, brick, concrete, denim, fire, ink, metal, wood } = RAMPS;
+const { blood, bone, brick, concrete, denim, fire, ink, metal, teal, violet, wood } = RAMPS;
 
 const MARGIN = 2;
 const SHADOW_DEPTH = 3;
@@ -87,21 +87,103 @@ export function buildLevelMap(): PixelSprite {
   return finish(p);
 }
 
-/** A timber cabinet with a lit arch of glass, a speaker grille and a steel plinth: the bunker's record player. */
+/** A classic Wurlitzer-style jukebox with glowing violet and teal neon arches, lit glass dome with vinyl record, and chrome grille. */
 export function buildJukebox(): PixelSprite {
   const p = startPiece('jukebox', JUKEBOX_RISE);
   const { c, left, right, front, top, w } = p;
-  c.rect(left, top, w, front - top, wood[2]).rect(left, top, w, 1, wood[3]).rect(left, top, 1, front - top, wood[3]);
-  c.rect(right, top + 1, 1, front - top - 1, wood[0]);
-  // The arch of glass, lit warm from inside.
-  const glass = { x: left + 3, y: top + 3, w: w - 6, h: 8 };
-  c.rect(glass.x, glass.y, glass.w, glass.h, fire[1]).rect(glass.x + 2, glass.y, glass.w - 4, 1, fire[2]);
-  c.rect(glass.x + 3, glass.y + 2, glass.w - 6, 3, fire[3]);
-  c.line(glass.x + 2, glass.y + glass.h - 2, glass.x + glass.w - 3, glass.y + glass.h - 2, ink[1]);
-  // Speaker grille below it.
-  for (let y = glass.y + glass.h + 2; y < front - 2; y += 2) c.rect(left + 3, y, w - 6, 1, ink[1]);
-  // The plinth.
-  c.rect(left, front, w, 3, metal[1]).rect(left, front, w, 1, metal[3]).rect(left, front + 2, w, 1, ink[1]);
+
+  // Wood cabinet with rounded shoulders
+  c.rect(left + 5, top, 10, 1, wood[1]);
+  c.rect(left + 3, top + 1, 14, 1, wood[2]);
+  c.rect(left + 1, top + 2, 18, 1, wood[2]);
+  c.rect(left, top + 3, w, front - top - 3, wood[2]);
+  c.rect(left, front, w, p.ground - front, wood[1]);
+
+  // Glowing outer neon arch (violet/magenta)
+  c.rect(left + 6, top, 8, 1, violet[2]);
+  c.rect(left + 4, top + 1, 3, 1, violet[2]).rect(right - 6, top + 1, 3, 1, violet[2]);
+  c.rect(left + 2, top + 2, 2, 1, violet[2]).rect(right - 3, top + 2, 2, 1, violet[2]);
+  c.rect(left, top + 3, 2, p.ground - top - 6, violet[2]);
+  c.rect(right - 1, top + 3, 2, p.ground - top - 6, violet[2]);
+  c.rect(left + 1, top + 3, 1, p.ground - top - 6, violet[1]);
+
+  // Glowing inner neon arch (teal/cyan)
+  c.rect(left + 7, top + 1, 6, 1, teal[2]);
+  c.rect(left + 3, top + 2, 2, 1, teal[2]).rect(right - 4, top + 2, 2, 1, teal[2]);
+  c.rect(left + 2, top + 3, 1, p.ground - top - 6, teal[2]);
+  c.rect(right - 2, top + 3, 1, p.ground - top - 6, teal[2]);
+
+  // Illuminated glass viewing dome with vinyl record on turntable
+  const glass = { x: left + 4, y: top + 3, w: w - 8, h: 9 };
+  c.rect(glass.x, glass.y, glass.w, glass.h, fire[0]);
+  c.rect(glass.x + 1, glass.y + 1, glass.w - 2, glass.h - 2, fire[1]);
+  c.rect(glass.x + 2, glass.y + 1, glass.w - 4, 2, fire[2]);
+  // Turntable and vinyl record
+  c.ellipse(glass.x + 5, glass.y + 5, 4, 2, ink[0]);
+  c.px(glass.x + 5, glass.y + 5, blood[2]);
+  // Silver tone arm
+  c.line(glass.x + 9, glass.y + 3, glass.x + 6, glass.y + 5, metal[3]);
+  // Glass highlight
+  c.line(glass.x + 2, glass.y + 1, glass.x + 4, glass.y + 1, bone[3]);
+
+  // Chrome song selector strip
+  const barY = top + 12;
+  c.rect(left + 3, barY, w - 6, 2, metal[2]);
+  c.rect(left + 3, barY, w - 6, 1, metal[3]);
+  for (let x = left + 4; x < right - 4; x += 2) {
+    c.px(x, barY + 1, fire[2]);
+  }
+
+  // Art deco lower speaker grille
+  const grilleY = top + 15;
+  const grilleH = p.ground - grilleY - 3;
+  c.rect(left + 3, grilleY, w - 6, grilleH, ink[0]);
+  // Illuminated colored grille backdrop
+  for (let y = grilleY; y < grilleY + grilleH; y += 2) {
+    c.rect(left + 4, y, w - 8, 1, fire[1]);
+  }
+  // Vertical chrome slats
+  for (let x = left + 4; x < right - 4; x += 2) {
+    c.rect(x, grilleY, 1, grilleH, metal[3]);
+  }
+
+  // Heavy chrome base plinth
+  c.rect(left, p.ground - 3, w, 3, metal[1]);
+  c.rect(left, p.ground - 3, w, 1, metal[3]);
+  c.rect(left, p.ground - 1, w, 1, ink[1]);
+
   c.outline({ selective: true });
+  return finish(p);
+}
+
+/** A wooden candy stall counter with glass jars of colorful sweets. */
+export function buildCandyShop(): PixelSprite {
+  const p = startPiece('candy_shop', 12);
+  const { c, left, w, ground, front, top } = p;
+  c.rect(left, front, w, ground - front, wood[1]);
+  c.rect(left, front, w, 1, wood[2]);
+  c.rect(left, ground - 1, w, 1, wood[0]);
+  c.rect(left, top, w, front - top, wood[2]);
+  c.rect(left, top, w, 1, wood[3]);
+  c.rect(left, front - 1, w, 1, wood[1]);
+  // Colorful candy jars
+  c.rect(left + 4, top + 2, 7, 7, ink[1]);
+  c.rect(left + 5, top + 3, 5, 5, fire[1]);
+  c.px(left + 6, top + 4, fire[2]);
+  c.rect(left + 6, top + 1, 3, 1, metal[2]);
+
+  c.rect(left + 14, top + 1, 8, 8, ink[1]);
+  c.rect(left + 15, top + 2, 6, 6, violet[1]);
+  c.px(left + 17, top + 4, teal[1]);
+  c.rect(left + 16, top, 4, 1, metal[2]);
+
+  c.rect(left + 25, top + 2, 7, 7, ink[1]);
+  c.rect(left + 26, top + 3, 5, 5, fire[2]);
+  c.px(left + 28, top + 5, denim[1]);
+  c.rect(left + 27, top + 1, 3, 1, metal[2]);
+
+  c.ellipse(left + 35, top + 5, 4, 3, metal[1]);
+  c.px(left + 34, top + 4, blood[1]);
+  c.px(left + 36, top + 5, fire[1]);
   return finish(p);
 }

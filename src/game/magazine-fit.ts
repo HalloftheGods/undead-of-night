@@ -1,4 +1,4 @@
-import { onBeforeUnmount, onMounted } from 'vue';
+import { getCurrentInstance, onBeforeUnmount, onMounted, onUpdated } from 'vue';
 import type { Ref } from 'vue';
 
 /**
@@ -46,31 +46,72 @@ function overflows(flow: HTMLElement): boolean {
   });
 }
 
+function pageOverflows(page: HTMLElement): boolean {
+  const flows = [...page.querySelectorAll<HTMLElement>('.mag-flow')];
+  return flows.some(overflows);
+}
+
 function apply(page: HTMLElement, step: PageFit): void {
   page.style.setProperty('--fit', String(step.scale));
   page.classList.toggle('is-tight', step.tight);
 }
 
-export function fitPage(page: HTMLElement): void {
-  const flows = [...page.querySelectorAll<HTMLElement>('.mag-flow')];
+export function fitSinglePage(page: HTMLElement): void {
   const chosen = chooseFit((step) => {
     apply(page, step);
-    return !flows.some(overflows);
+    return !pageOverflows(page);
   });
   apply(page, chosen);
 }
 
-/** Keeps a page fitted as the window changes. */
+/** Fits an open two-page spread or solo page, ensuring facing pages share the exact same scale. */
+export function fitSpread(container: HTMLElement): void {
+  const pages = [...container.querySelectorAll<HTMLElement>('.mag-page')];
+  const pageCount = pages.length;
+  if (pageCount === 0) return;
+  if (pageCount === 1) {
+    fitSinglePage(pages[0]);
+    return;
+  }
+
+  const chosen = chooseFit((step) => {
+    for (const page of pages) {
+      apply(page, step);
+    }
+    return !pages.some(pageOverflows);
+  });
+
+  for (const page of pages) {
+    apply(page, chosen);
+  }
+}
+
+export function fitPage(page: HTMLElement): void {
+  const openContainer = page.closest<HTMLElement>('.mag-open');
+  if (openContainer) {
+    fitSpread(openContainer);
+    return;
+  }
+  fitSinglePage(page);
+}
+
+/** Keeps a page fitted as the window changes or content updates on page turns. */
 export function usePageFit(page: Readonly<Ref<HTMLElement | null>>): void {
   let observer: ResizeObserver | null = null;
   const refit = () => {
     if (page.value) fitPage(page.value);
   };
-  onMounted(() => {
-    refit();
-    void document.fonts?.ready.then(refit);
-    observer = new ResizeObserver(refit);
-    if (page.value) observer.observe(page.value);
-  });
-  onBeforeUnmount(() => observer?.disconnect());
+
+  if (getCurrentInstance()) {
+    onMounted(() => {
+      refit();
+      void document.fonts?.ready.then(refit);
+      observer = new ResizeObserver(refit);
+      if (page.value) observer.observe(page.value);
+    });
+    onUpdated(() => {
+      refit();
+    });
+    onBeforeUnmount(() => observer?.disconnect());
+  }
 }

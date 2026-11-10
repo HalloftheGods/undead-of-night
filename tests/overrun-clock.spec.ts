@@ -75,8 +75,8 @@ describe('the overrun clock', () => {
     const { sim, state } = overrunRoom({ players: ['a', 'b'] });
     openStation(state, playerNamed(state, 'a'));
     const second = playerNamed(state, 'b');
-    standAtStation(state, second, 'forge');
-    (second.home as NonNullable<PlayerState['home']>).station = 'forge';
+    standAtStation(state, second, 'candy_shop');
+    (second.home as NonNullable<PlayerState['home']>).station = 'candy_shop';
     runSeconds(sim, state, 10);
     expect(state.overrun?.left).toBeCloseTo(OVERRUN_CLOCK_SEC - 5, 5);
   });

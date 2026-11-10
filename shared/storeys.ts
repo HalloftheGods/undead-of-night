@@ -35,23 +35,28 @@ const ANNEX_MARGIN_TILES = 2;
  * house they stand in the back corner on the west, against the back wall and off the way through
  * from the front door to the back, so nobody takes them by walking past.
  */
+export interface StairTile {
+  readonly col: number;
+  readonly row: number;
+}
+
 const HOUSE_STAIRS = { col: 1, row: 1 } as const;
-/** In an apartment block, the lobby's east end, below the east flat's doorway. */
-const APARTMENT_STAIRS = { col: 7, row: 5 } as const;
+/** In an apartment block, two ways upstairs set flush against the north back wall: west and east. */
+const APARTMENT_STAIRS: readonly StairTile[] = [{ col: 1, row: 1 }, { col: 8, row: 1 }];
 /** In the hospital, the west end of the main corridor, past the nurses' station. */
 const HOSPITAL_STAIRS = { col: 1, row: 6 } as const;
 /** In the school, the east end of the main hall. */
 const SCHOOL_STAIRS = { col: 16, row: 5 } as const;
-export const STAIRS: Readonly<Partial<Record<BuildingKind, { readonly col: number; readonly row: number }>>> = {
-  house: HOUSE_STAIRS,
-  upstairs: HOUSE_STAIRS,
-  cellar: HOUSE_STAIRS,
+export const STAIRS: Readonly<Partial<Record<BuildingKind, readonly StairTile[]>>> = {
+  house: [HOUSE_STAIRS],
+  upstairs: [HOUSE_STAIRS],
+  cellar: [HOUSE_STAIRS],
   apartment: APARTMENT_STAIRS,
   apartment_upstairs: APARTMENT_STAIRS,
-  hospital: HOSPITAL_STAIRS,
-  hospital_upstairs: HOSPITAL_STAIRS,
-  school: SCHOOL_STAIRS,
-  school_upstairs: SCHOOL_STAIRS,
+  hospital: [HOSPITAL_STAIRS],
+  hospital_upstairs: [HOSPITAL_STAIRS],
+  school: [SCHOOL_STAIRS],
+  school_upstairs: [SCHOOL_STAIRS],
 };
 
 export function isStorey(building: BuildingInstance): boolean {
@@ -158,9 +163,17 @@ export interface Flight {
   readonly down: boolean;
 }
 
+export function stairsPoints(building: BuildingInstance): readonly Point[] {
+  const tiles = STAIRS[building.kind];
+  if (!tiles) return [];
+  return tiles.map((tile) => ({
+    x: building.x + (tile.col + 0.5) * TILE_SIZE,
+    y: building.y + (tile.row + 0.5) * TILE_SIZE,
+  }));
+}
+
 export function stairsPoint(building: BuildingInstance): Point | null {
-  const tile = STAIRS[building.kind];
-  return tile ? { x: building.x + (tile.col + 0.5) * TILE_SIZE, y: building.y + (tile.row + 0.5) * TILE_SIZE } : null;
+  return stairsPoints(building)[0] ?? null;
 }
 
 const tileIndex = (map: Pick<WorldMap, 'cols'>, point: Point): number =>
@@ -184,16 +197,20 @@ export function flightsOf(map: Pick<WorldMap, 'buildings' | 'cols'>): ReadonlyMa
   const flights = new Map<number, Flight>();
   for (const storey of map.buildings) {
     const house = storey.of === undefined ? undefined : byId.get(storey.of);
-    const up = stairsPoint(storey);
-    const down = house ? stairsPoint(house) : null;
-    const linked = up !== null && down !== null;
-    if (!linked) continue;
-    const words = FLIGHT_LABEL[storey.kind as StoreyKind];
-    const upIndex = tileIndex(map, up);
-    const downIndex = tileIndex(map, down);
-    const cellar = storey.kind === 'cellar';
-    flights.set(downIndex, { from: down, to: up, fromIndex: downIndex, toIndex: upIndex, label: words.there, down: cellar });
-    flights.set(upIndex, { from: up, to: down, fromIndex: upIndex, toIndex: downIndex, label: words.back, down: !cellar });
+    if (!house) continue;
+    const storeyPoints = stairsPoints(storey);
+    const housePoints = stairsPoints(house);
+    const count = Math.min(storeyPoints.length, housePoints.length);
+    for (let i = 0; i < count; i++) {
+      const up = storeyPoints[i];
+      const down = housePoints[i];
+      const words = FLIGHT_LABEL[storey.kind as StoreyKind];
+      const upIndex = tileIndex(map, up);
+      const downIndex = tileIndex(map, down);
+      const cellar = storey.kind === 'cellar';
+      flights.set(downIndex, { from: down, to: up, fromIndex: downIndex, toIndex: upIndex, label: words.there, down: cellar });
+      flights.set(upIndex, { from: up, to: down, fromIndex: upIndex, toIndex: downIndex, label: words.back, down: !cellar });
+    }
   }
   flightCache.set(map.buildings, flights);
   return flights;

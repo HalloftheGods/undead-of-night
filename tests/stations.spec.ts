@@ -20,7 +20,7 @@ describe('stationInReach', () => {
 });
 
 describe('holding E at a station', () => {
-  function atStation(id: 'locker' | 'forge') {
+  function atStation(id: 'locker' | 'candy_shop') {
     const { sim, state } = homeSim();
     const station = state.map.stations?.find((candidate) => candidate.id === id);
     if (!station) throw new Error(`no ${id}`);
@@ -39,7 +39,7 @@ describe('holding E at a station', () => {
   });
 
   it('shows the hold climbing before it opens', () => {
-    const { sim, p } = atStation('forge');
+    const { sim, p } = atStation('candy_shop');
     sim.setInput('a', input({ seq: 1, search: true }));
     steps(sim, 5);
     expect(p.home?.stationHold).toBeGreaterThan(0);
@@ -48,7 +48,7 @@ describe('holding E at a station', () => {
   });
 
   it('opens nothing for a tap that lets go early', () => {
-    const { sim, p } = atStation('forge');
+    const { sim, p } = atStation('candy_shop');
     sim.setInput('a', input({ seq: 1, search: true }));
     steps(sim, 5);
     sim.setInput('a', input({ seq: 2 }));

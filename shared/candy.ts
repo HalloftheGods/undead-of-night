@@ -26,19 +26,37 @@ export interface CandyDef {
 }
 
 export const CANDIES: Readonly<Record<CandyId, CandyDef>> = {
-  sour_skulls: { id: 'sour_skulls', name: 'Sour Skulls', stat: 'RELOAD', blurb: 'Reload twice as fast.', weight: 10 },
-  fang_taffy: { id: 'fang_taffy', name: 'Fang Taffy', stat: 'MELEE', blurb: 'Your shove and knife hit twice as hard.', weight: 10 },
+  sour_skulls: { id: 'sour_skulls', name: 'Sour Skulls', stat: 'ACID', blurb: 'Bullets soften targets with corrosive acid.', weight: 10 },
+  fang_taffy: { id: 'fang_taffy', name: 'Fang Taffy', stat: 'HEAL', blurb: 'Every kill heals 2 health.', weight: 10 },
   ghost_gum: { id: 'ghost_gum', name: 'Ghost Gum', stat: 'QUIET', blurb: 'Sprint without a sound.', weight: 10 },
-  pumpkin_fizz: { id: 'pumpkin_fizz', name: 'Pumpkin Fizz', stat: 'SPEED', blurb: 'Run a quarter faster.', weight: 10 },
-  witchs_brittle: { id: 'witchs_brittle', name: "Witch's Brittle", stat: 'HEAL', blurb: 'Every kill heals 2 health.', weight: 10 },
+  pumpkin_fizz: { id: 'pumpkin_fizz', name: 'Pumpkin Fizz', stat: 'RELOAD', blurb: 'Reload twice as fast.', weight: 10 },
+  witchs_brittle: { id: 'witchs_brittle', name: "Witch's Brittle", stat: 'CHAIN', blurb: 'Kill chains hold five times as long.', weight: 10 },
   bat_bites: { id: 'bat_bites', name: 'Bat Bites', stat: 'PIERCE', blurb: 'Bullets go through one zombie into the next.', weight: 10 },
-  corn_rush: { id: 'corn_rush', name: 'Candy Corn Rush', stat: 'CHAIN', blurb: 'Kill chains hold five times as long.', weight: 10 },
+  corn_rush: { id: 'corn_rush', name: 'Candy Corn Rush', stat: 'SPEED', blurb: 'Run a quarter faster.', weight: 10 },
   jawbreaker: { id: 'jawbreaker', name: 'Jawbreaker', stat: 'ARMOR', blurb: 'Take half damage.', weight: 10 },
-  licorice_lash: { id: 'licorice_lash', name: 'Black Licorice Lash', stat: 'AIM', blurb: 'Heads are easier to hit.', weight: 10 },
+  licorice_lash: { id: 'licorice_lash', name: 'Black Licorice Lash', stat: 'MELEE', blurb: 'Your shove and knife hit twice as hard.', weight: 10 },
   caramel_apple: { id: 'caramel_apple', name: 'Caramel Apple', stat: 'REVIVE', blurb: 'Go down while it lasts and you get straight back up.', weight: 6 },
   popping_eyeballs: { id: 'popping_eyeballs', name: 'Popping Eyeballs', stat: 'SPARKS', blurb: 'Spinners throw sparks half as far again.', weight: 8 },
   fireballs: { id: 'fireballs', name: 'Fireballs', stat: 'FIRE', blurb: 'Every shot is a flame round: it sets zombies alight.', weight: 7 },
   full_size_bar: { id: 'full_size_bar', name: 'Full-Size Bar', stat: 'ALL', blurb: 'A little of everything, but not for long.', weight: 2 },
+  skull_pops: { id: 'skull_pops', name: 'Sucker Skull Pops', stat: 'AIM', blurb: 'Heads are easier to hit.', weight: 10 },
+
+  // 15 New Thematic Candies
+  frost_bites: { id: 'frost_bites', name: 'Frost Bites', stat: 'FREEZE', blurb: 'Bullets chill zombies and slow them down.', weight: 8 },
+  cherry_bombs: { id: 'cherry_bombs', name: 'Cherry Bombs', stat: 'BLAST', blurb: 'Headshot kills trigger an explosive burst.', weight: 7 },
+  shock_tarts: { id: 'shock_tarts', name: 'Shock Tarts', stat: 'RATE', blurb: 'Guns fire a third faster.', weight: 8 },
+  glow_worms: { id: 'glow_worms', name: 'Glow Worms', stat: 'SIGHT', blurb: 'Flashlight shines twice as wide through the dark.', weight: 8 },
+  sticky_fingers: { id: 'sticky_fingers', name: 'Sticky Fingers', stat: 'LOOT', blurb: 'Search containers in half the time.', weight: 9 },
+  deadeye_drops: { id: 'deadeye_drops', name: 'Dead-Eye Drops', stat: 'SPREAD', blurb: 'Pin-point accuracy with zero bullet spread.', weight: 8 },
+  monster_mash: { id: 'monster_mash', name: 'Monster Mash Drops', stat: 'FORCE', blurb: 'Strikes and shots deliver triple knockback.', weight: 8 },
+  everlasting_chews: { id: 'everlasting_chews', name: 'Everlasting Chews', stat: 'AMMO', blurb: 'A quarter of fired shots consume no ammo.', weight: 7 },
+  spiky_suckers: { id: 'spiky_suckers', name: 'Spiky Suckers', stat: 'THORNS', blurb: 'Zombies that hit you take sharp retaliatory damage.', weight: 7 },
+  boom_drops: { id: 'boom_drops', name: 'Boom Drops', stat: 'THROW', blurb: 'Throwables fly further with a wider blast.', weight: 8 },
+  grave_gels: { id: 'grave_gels', name: 'Grave Gels', stat: 'REGEN', blurb: 'Slowly heal over time while walking or resting.', weight: 7 },
+  scatter_skittles: { id: 'scatter_skittles', name: 'Scatter Skittles', stat: 'BURST', blurb: 'Every shot fires an extra projectile.', weight: 6 },
+  cadaver_chews: { id: 'cadaver_chews', name: 'Cadaver Chews', stat: 'SCENT', blurb: 'Mask your scent: zombies lose track of you easily.', weight: 8 },
+  reaper_ribbons: { id: 'reaper_ribbons', name: 'Reaper Ribbons', stat: 'EXECUTE', blurb: 'Hits instantly execute wounded zombies.', weight: 6 },
+  toffee_timber: { id: 'toffee_timber', name: 'Toffee Timber', stat: 'BOARD', blurb: 'Barricades are instantly fortified with double health.', weight: 8 },
 };
 
 export const CANDY_ORDER = Object.keys(CANDIES) as CandyId[];
@@ -52,11 +70,28 @@ export const FULL_SIZE_STRENGTH = 0.5;
 // What each does at full strength.
 export const SPEED_BOOST = 0.25;
 export const JAWBREAKER_GUARD = 0.5;
+export const TAFFY_HEAL = 2;
 export const BRITTLE_HEAL = 2;
+export const BRITTLE_CHAIN_WINDOW = 5;
 export const CORN_RUSH_WINDOW = 5;
+export const SKULL_POP_HEAD_MARGIN = 3;
 export const LICORICE_HEAD_MARGIN = 3;
 /** A Caramel Apple stands you up with this share of your health. */
 export const CARAMEL_HEALTH = 0.3;
+
+export const CHERRY_BOMB_RADIUS = 36;
+export const CHERRY_BOMB_DAMAGE = 35;
+export const SHOCK_TARTS_RATE = 0.3;
+export const MONSTER_MASH_FORCE = 3;
+export const EVERLASTING_SAVE_CHANCE = 0.25;
+export const SPIKY_THORNS_DAMAGE = 40;
+export const BOOM_DISTANCE_SCALE = 1.5;
+export const BOOM_RADIUS_SCALE = 1.35;
+export const GRAVE_GELS_INTERVAL_SEC = 3;
+export const GRAVE_GELS_HEAL = 1;
+export const STICKY_SEARCH_SCALE = 0.5;
+export const CADAVER_SENSE_SCALE = 0.5;
+export const REAPER_EXECUTE_THRESHOLD = 0.3;
 
 /** Candy is a Halloween night's loot, so homes hide the most. */
 export const CANDY_ODDS: Partial<Record<Container['buildingKind'], number>> = {
@@ -130,6 +165,47 @@ export function bagOf(candy: readonly CandyId[]): CandyBag {
   return bag;
 }
 
+/** Converts a counted candy bag back into an array of candy IDs. */
+export function candiesIn(bag?: CandyBag): readonly CandyId[] {
+  if (!bag) return [];
+  const list: CandyId[] = [];
+  for (const [id, count] of Object.entries(bag)) {
+    if (count && count > 0 && isCandyId(id)) {
+      for (let i = 0; i < count; i++) list.push(id);
+    }
+  }
+  return list;
+}
+
+/** What a candy sells for at the bunker Candy Shop, tiered by rarity weight. */
+export function candySellValue(id: CandyId): number {
+  const def = CANDIES[id];
+  const weight = def ? def.weight : 10;
+  if (weight <= 2) return 150;
+  if (weight <= 6) return 60;
+  if (weight <= 8) return 25;
+  if (weight <= 9) return 15;
+  return 10;
+}
+
+/** What a candy costs to buy at the bunker Candy Shop. */
+export function candyBuyPrice(id: CandyId): number {
+  return candySellValue(id) * 2;
+}
+
+/** Total sell value of an array of candies or counted candy bag. */
+export function candyBagWorth(bag: CandyBag | readonly CandyId[]): number {
+  let total = 0;
+  if (Array.isArray(bag)) {
+    for (const id of bag) total += candySellValue(id);
+  } else {
+    for (const [id, count] of Object.entries(bag)) {
+      if (count && isCandyId(id)) total += candySellValue(id) * count;
+    }
+  }
+  return total;
+}
+
 /** How strongly a candy works on this survivor now: 1 eaten, a half under a Full-Size Bar, 0 otherwise. */
 export function sugarOf(p: Pick<PlayerState, 'sugar'>, id: CandyId): number {
   let strength = 0;
@@ -149,7 +225,7 @@ export function sugarById(sim: Pick<SimState, 'players'>, id: EntityId, candy: C
 
 /** What a survivor's speed is multiplied by. Shared with the client's prediction. */
 export function candySpeed(p: Pick<PlayerState, 'sugar'>): number {
-  return 1 + SPEED_BOOST * sugarOf(p, 'pumpkin_fizz');
+  return 1 + SPEED_BOOST * Math.max(sugarOf(p, 'corn_rush'), sugarOf(p, 'pumpkin_fizz'));
 }
 
 /** A pick off the bag, from an input packet, waits for the next tick. */
@@ -191,6 +267,10 @@ export function updateCandy(sim: SimState, p: PlayerState): void {
   const canEat = p.status === 'alive';
   if (!canEat) return;
   for (const pick of picks) eat(sim, p, pick);
+  const regenSugar = sugarOf(p, 'grave_gels');
+  if (regenSugar > 0 && p.stance !== 'sprint' && p.health < p.maxHealth) {
+    p.health = Math.min(p.maxHealth, p.health + (GRAVE_GELS_HEAL / GRAVE_GELS_INTERVAL_SEC) * TICK_DT * regenSugar);
+  }
 }
 
 /** A Caramel Apple catches a survivor about to go down, and is spent doing it. True if it did. */

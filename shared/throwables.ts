@@ -6,7 +6,7 @@ import { hasKeepsake, LIGHTER_SPIN } from './keepsakes.ts';
 // The supply drop's red flare is the other lure: it hisses the same but burns nobody.
 
 import { landingSpot } from './bottles.ts';
-import { sugarOf } from './candy.ts';
+import { BOOM_DISTANCE_SCALE, BOOM_RADIUS_SCALE, sugarOf } from './candy.ts';
 import { TICK_DT } from './constants.ts';
 import type { Container } from './containers.ts';
 import { hurtPlayer } from './player-health.ts';
@@ -124,9 +124,11 @@ export function updateThrowables(sim: SimState, p: PlayerState): void {
 function lightSpinner(sim: SimState, p: PlayerState): void {
   p.fireworks -= 1;
   p.throwCooldown = THROW_COOLDOWN_SEC;
-  const spot = landingSpot(sim, p, SPINNER_RANGE);
+  const boomDist = 1 + (BOOM_DISTANCE_SCALE - 1) * sugarOf(p, 'boom_drops');
+  const boomRad = 1 + (BOOM_RADIUS_SCALE - 1) * sugarOf(p, 'boom_drops');
+  const spot = landingSpot(sim, p, SPINNER_RANGE * boomDist);
   const sec = SPINNER_SEC * (hasKeepsake(p, 'lighter') ? LIGHTER_SPIN : 1);
-  const radius = SPINNER_RADIUS * (1 + POPPING_REACH * sugarOf(p, 'popping_eyeballs'));
+  const radius = SPINNER_RADIUS * (1 + POPPING_REACH * sugarOf(p, 'popping_eyeballs')) * boomRad;
   sim.spinners.push({ x: spot.x, y: spot.y, radius, ownerId: p.id, left: sec, noiseLeft: SPARK_NOISE_SEC });
   makeNoise(sim, spot.x, spot.y, SPINNER_NOISE_RADIUS);
   emit(sim, { type: 'spinner_lit', playerId: p.id, x: spot.x, y: spot.y, fromX: p.x, fromY: p.y, radius, sec });
@@ -135,7 +137,8 @@ function lightSpinner(sim: SimState, p: PlayerState): void {
 function lightFountain(sim: SimState, p: PlayerState): void {
   p.fountains -= 1;
   p.throwCooldown = THROW_COOLDOWN_SEC;
-  const spot = landingSpot(sim, p, FOUNTAIN_RANGE);
+  const boomDist = 1 + (BOOM_DISTANCE_SCALE - 1) * sugarOf(p, 'boom_drops');
+  const spot = landingSpot(sim, p, FOUNTAIN_RANGE * boomDist);
   sim.lures.push({ x: spot.x, y: spot.y, ownerId: p.id, sparks: FOUNTAIN_SPARK_RADIUS, left: FOUNTAIN_SEC, noiseLeft: 0 });
   emit(sim, { type: 'fountain_lit', playerId: p.id, x: spot.x, y: spot.y, fromX: p.x, fromY: p.y, sec: FOUNTAIN_SEC });
 }

@@ -228,6 +228,17 @@ export function deathSummary(death: HomeDeath): readonly string[] {
   if (death.overrun) return overrunLost(death.lost);
   const { receipt, lost } = death;
   const lines: string[] = [];
+  const hasCandy = (receipt.candy ?? 0) > 0;
+  if (hasCandy) {
+    const totalPieces = receipt.candyBag
+      ? Object.values(receipt.candyBag).reduce<number>((sum, n) => sum + (n ?? 0), 0)
+      : 0;
+    if (totalPieces > 0) {
+      lines.push(`${receipt.candy} candy (${plural(totalPieces, 'piece')})`);
+    } else {
+      lines.push(`${receipt.candy} candy`);
+    }
+  }
   const hasSilver = receipt.silver > 0;
   if (hasSilver) lines.push(coinText(receipt.silver));
   lines.push(...jewelLines(receipt.jewels));
@@ -252,10 +263,18 @@ export function jewelLines(jewels: Jewels): string[] {
   return hasWorth ? [...jewelCounts(jewels), `${coinText(worth)} once smelted`] : [];
 }
 
-/** The HUD's jewels in hand: what they come to at the forge first, then each size counted. */
-export function carriedLines({ jewels, worth }: HomeUi['carried']): { readonly worth: string; readonly counts: readonly string[] } {
-  const carrying = worth > 0;
-  return { worth: carrying ? `${coinText(worth)} in jewels` : 'No jewels', counts: jewelCounts(jewels) };
+/** The HUD's candy/jewels in hand: what they come to at the candy shop/forge first, then piece/jewel counts. */
+export function carriedLines(carried: HomeUi['carried']): { readonly worth: string; readonly counts: readonly string[] } {
+  if (carried.candy !== undefined) {
+    const carrying = carried.candy > 0;
+    const count = carried.candyCount ?? 0;
+    return {
+      worth: carrying ? `${carried.candy} candy` : 'No candy',
+      counts: carrying && count > 0 ? [plural(count, 'piece')] : [],
+    };
+  }
+  const carrying = carried.worth > 0;
+  return { worth: carrying ? `${coinText(carried.worth)} in jewels` : 'No jewels', counts: jewelCounts(carried.jewels) };
 }
 
 const UNIT_ROWS = /^(gun:|knife)/;
@@ -276,11 +295,12 @@ function gearLine(row: LockerRow): string {
 // The reward chest
 
 export const CHEST_HEADING = 'The chest held';
-export const CHEST_NOTE = 'The gear is in your locker. The silver and jewels are in the bank.';
+export const CHEST_NOTE = 'The gear is in your locker. The candy is in the bank.';
 
-/** What the chest held: silver, jewels, then each piece of gear. */
+/** What the chest held: candy, silver, jewels, then each piece of gear. */
 export function chestLines(chest: ChestOpened): readonly string[] {
   const lines: string[] = [];
+  if (chest.candy && chest.candy > 0) lines.push(`${chest.candy} candy`);
   const hasSilver = chest.silver > 0;
   if (hasSilver) lines.push(`${chest.silver} silver`);
   lines.push(...jewelCounts(chest.jewels));

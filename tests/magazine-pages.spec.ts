@@ -3,7 +3,7 @@ import { buildArtBook } from '../src/art/index.ts';
 import { HOW_TO_SECTIONS } from '../src/game/how-to-play.ts';
 import type { HowToSection } from '../src/game/how-to-play.ts';
 import { swipeStep, turnKeyStep } from '../src/game/magazine-controller.ts';
-import { chooseFit, FIT_STEPS } from '../src/game/magazine-fit.ts';
+import { chooseFit, FIT_STEPS, fitSinglePage, fitSpread } from '../src/game/magazine-fit.ts';
 import { buildMagazine, CONTENTS_PAGE, openBook, pageLabel, planTurn, spreadIndexOf, splitLead, steppedPage } from '../src/game/magazine-pages.ts';
 import type { Magazine, MagazineBlock, MagazinePage } from '../src/game/magazine-types.ts';
 
@@ -195,6 +195,37 @@ describe('page fit', () => {
 
   it('keeps shrinking until the last step when nothing fits', () => {
     expect(chooseFit(() => false)).toBe(FIT_STEPS.at(-1));
+  });
+
+  it('synchronizes spread fit across facing pages so both pages share the same scale', () => {
+    const leftStyles = new Map<string, string>();
+    const rightStyles = new Map<string, string>();
+
+    const leftPage = {
+      querySelectorAll: () => [],
+      style: {
+        setProperty: (prop: string, val: string) => leftStyles.set(prop, val),
+        getPropertyValue: (prop: string) => leftStyles.get(prop) ?? '',
+      },
+      classList: { toggle: () => {} },
+    } as unknown as HTMLElement;
+
+    const rightPage = {
+      querySelectorAll: () => [],
+      style: {
+        setProperty: (prop: string, val: string) => rightStyles.set(prop, val),
+        getPropertyValue: (prop: string) => rightStyles.get(prop) ?? '',
+      },
+      classList: { toggle: () => {} },
+    } as unknown as HTMLElement;
+
+    const container = {
+      querySelectorAll: () => [leftPage, rightPage],
+    } as unknown as HTMLElement;
+
+    fitSpread(container);
+    expect(leftPage.style.getPropertyValue('--fit')).toBe('1');
+    expect(rightPage.style.getPropertyValue('--fit')).toBe('1');
   });
 });
 

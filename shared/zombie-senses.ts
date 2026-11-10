@@ -1,3 +1,4 @@
+import { CADAVER_SENSE_SCALE, sugarOf } from './candy.ts';
 import { characterOf } from './characters.ts';
 import { SCREAM_COOLDOWN_SEC, SCREAM_RADIUS, SNEAK_SIGHT_SCALE, TICK_DT, ZOMBIE_INVESTIGATE_SEC, ZOMBIE_LOSE_INTEREST_SEC, ZOMBIE_SIGHT_RANGE } from './constants.ts';
 import type { PlayerState, SimState, ZombieMode, ZombieState } from './sim-state.ts';
@@ -75,7 +76,8 @@ export function makeNoise(sim: SimState, x: number, y: number, radius: number): 
 /** How far away a zombie can pick this survivor out. */
 export function spottedFrom(p: PlayerState): number {
   const sneaking = p.stance === 'sneak' ? SNEAK_SIGHT_SCALE : 1;
-  return ZOMBIE_SIGHT_RANGE * characterOf(p.skin).sightRange * sneaking;
+  const cadaver = 1 - (1 - CADAVER_SENSE_SCALE) * sugarOf(p, 'cadaver_chews');
+  return ZOMBIE_SIGHT_RANGE * characterOf(p.skin).sightRange * sneaking * cadaver;
 }
 
 function seesAnyone(sim: SimState, z: ZombieState, prey: readonly PlayerState[]): boolean {

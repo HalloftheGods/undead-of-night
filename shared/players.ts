@@ -12,6 +12,7 @@ import { stopSearch, updateSearch } from './container-search.ts';
 import { effectiveStance, updateStamina } from './stamina.ts';
 import { updateMelee } from './melee.ts';
 import { stepMovement } from './movement.ts';
+import { moveSpeedMultiplier, updateSurvivalNeeds } from './survival-needs.ts';
 import { useMedkit } from './player-health.ts';
 import { updateThrow } from './bottles.ts';
 import { updateThrowables } from './throwables.ts';
@@ -140,10 +141,16 @@ export function updatePlayer(sim: SimState, p: PlayerState): void {
   p.moving = dirX !== 0 || dirY !== 0;
   p.stance = effectiveStance(p.stanceWanted, p.winded);
   if (p.moving) {
-    const speed = playerSpeed(p.skin, p.stance) * candySpeed(p) * groundSpeedScale(sim.level, sim.map, p.x, p.y);
+    const survivalSpeed = p.needs ? moveSpeedMultiplier(p.needs) : 1;
+    const speed = playerSpeed(p.skin, p.stance) * candySpeed(p) * groundSpeedScale(sim.level, sim.map, p.x, p.y) * survivalSpeed;
     const moved = stepMovement(sim.map, p.x, p.y, dirX, dirY, speed, TICK_DT, PLAYER_RADIUS);
     p.x = moved.x;
     p.y = moved.y;
+  }
+  const hasNeeds = p.needs !== undefined;
+  if (hasNeeds) {
+    const isSprinting = p.stance === 'sprint' && p.moving;
+    updateSurvivalNeeds(p.needs!, TICK_DT, isSprinting, p.moving, p);
   }
   updateStamina(p);
   footsteps(sim, p);

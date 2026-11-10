@@ -2,7 +2,7 @@
   <section class="px-screen">
     <div class="px-panel px-frame locker">
       <SceneCard :sprite="art?.ui.stations.locker ?? null" name="Locker" :line="LOCKER_LINE">
-        <LockerHands :rows="hands" :icons />
+        <LockerHands :rows="hands" :icons @stow="stow" />
       </SceneCard>
       <LockerShelf ref="strip" :tiles :chosen :icons :art-size :empty @choose="choose" @take="take" @stow="stow" @hover="game.playUi('hover')" />
       <footer class="locker-foot">
@@ -120,7 +120,7 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: calc(var(--u) * 3);
-  width: calc(var(--u) * 510);
+  width: calc(var(--u) * 540);
   max-width: 100%;
   padding-block: calc(var(--u) * 4);
   container: select / inline-size;

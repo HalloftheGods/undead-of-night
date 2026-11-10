@@ -1,4 +1,5 @@
 import { hasKeepsake, SNEAKER_STAMINA } from './keepsakes.ts';
+import { staminaRecoveryMultiplier } from './survival-needs.ts';
 // Sprinting costs breath. The bar drains while a survivor sprints on the move and refills when
 // they do not; run it dry and they walk until it is back past the re-arm mark. A faster survivor
 // (characters.ts moveSpeed) lasts longer, so the Speed stat on the select screen is the stamina stat too.
@@ -39,7 +40,8 @@ function spend(p: PlayerState): void {
 }
 
 function refill(p: PlayerState): void {
-  p.stamina = Math.min(1, p.stamina + TICK_DT / STAMINA_REGEN_SEC);
+  const recoveryScale = p.needs ? staminaRecoveryMultiplier(p.needs) : 1;
+  p.stamina = Math.min(1, p.stamina + (TICK_DT * recoveryScale) / STAMINA_REGEN_SEC);
   const rearmed = p.stamina >= SPRINT_REARM_SHARE;
   p.winded &&= !rearmed;
 }

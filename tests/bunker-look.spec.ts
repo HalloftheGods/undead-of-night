@@ -59,7 +59,7 @@ describe('the station prompt', () => {
   it('names every station and the key to hold', () => {
     for (const id of STATION_IDS) expect(stationPrompt(id, false)).toMatch(/^HOLD E: [A-Z ]+$/);
     expect(stationPrompt('locker', false)).toBe('HOLD E: LOCKER');
-    expect(stationPrompt('forge', true)).toBe('OPEN: FORGE');
+    expect(stationPrompt('candy_shop', true)).toBe('OPEN: CANDY SHOP');
   });
 });
 

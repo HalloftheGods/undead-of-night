@@ -1,7 +1,7 @@
 // How a run is played. "Mode" already means solo or multiplayer, so this is the style:
 // Campaign plays from the bunker, in trips, and Arcade is ten levels in a row.
 
-export const GAME_STYLES = ['campaign', 'arcade'] as const;
+export const GAME_STYLES = ['campaign', 'arcade', 'daily'] as const;
 export type GameStyle = (typeof GAME_STYLES)[number];
 
 /** A first-time player starts at home. */

@@ -6,7 +6,7 @@ import type { BestRun, LeaderboardEntry } from './storage.ts';
 
 /** The title's menu, what each item opens, and the words its pages show. The components only lay these out. */
 /** Every title page. The changelog has no menu item: the version number in the corner opens it. */
-export type TitlePage = 'play' | 'daily' | 'levels' | 'howto' | 'guide' | 'records' | 'sound' | 'radio' | 'options' | 'changelog';
+export type TitlePage = 'play' | 'daily' | 'levels' | 'books' | 'howto' | 'candy' | 'guide' | 'records' | 'sound' | 'radio' | 'options' | 'controls' | 'changelog';
 
 /** The menu's three parents. */
 export type MenuGroup = 'books' | 'play' | 'extras';
@@ -40,6 +40,7 @@ export function menuLine(item: TitleMenuItem, unlock: SoundUnlock): string {
 /** Every link, section by section. The title shows only the three parents (MENU_SECTIONS); a link shows once its parent is opened. */
 export const TITLE_MENU: readonly TitleMenuItem[] = [
   { group: 'books', page: 'howto', label: 'How to Play', line: 'Controls and the rules of the night.' },
+  { group: 'books', page: 'candy', label: 'Candy Magazine', line: 'Nutrition, brands and special effects.' },
   { group: 'books', page: 'guide', label: 'Town Guide', line: 'What each kind of building holds.' },
   { group: 'books', page: 'records', label: 'Records', line: 'Your best runs, trips and scores.' },
   { group: 'play', page: 'daily', label: 'Daily Night', line: 'A fresh night every day.', primary: true },
@@ -48,7 +49,8 @@ export const TITLE_MENU: readonly TitleMenuItem[] = [
   { group: 'play', page: 'levels', label: 'Level Select', line: 'Jump to an Arcade level you have reached.' },
   { group: 'extras', page: 'radio', label: 'Radio', line: 'Tapes, tunes and radio finds.', needs: 'radio' },
   { group: 'extras', page: 'sound', label: 'Sound Test', line: 'Hear the music and effects.' },
-  { group: 'extras', page: 'options', label: 'Options', line: 'Sound, display, motion and controls.' },
+  { group: 'extras', page: 'options', label: 'Options', line: 'Sound, display, motion and comfort.' },
+  { group: 'extras', page: 'controls', label: 'Controls', line: 'Remap keyboard keys and controller buttons.' },
 ];
 
 /** A parent on the title: it opens a list of its own links instead of a page. */
@@ -61,8 +63,8 @@ export interface MenuSection {
 /** The three parents the title shows, Play on top. Each opens its children; Back returns here. */
 export const MENU_SECTIONS: readonly MenuSection[] = [
   { group: 'play', label: 'Play', line: 'Daily Night, Arcade, Campaign and Level Select.' },
-  { group: 'books', label: 'Books', line: 'How to Play, the Town Guide and your Records.' },
-  { group: 'extras', label: 'Extras', line: 'Sound Test and Options.' },
+  { group: 'books', label: 'Books', line: 'How to Play, the Candy Magazine, Town Guide and Records.' },
+  { group: 'extras', label: 'Extras', line: 'Sound Test, Options and Controls.' },
 ];
 
 /** One line of the menu as drawn: a parent, one of its links, or the Back that leaves a list. */

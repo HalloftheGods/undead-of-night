@@ -161,7 +161,7 @@ describe('the client seams', () => {
     const frame = homeSim().sim.snapshot();
     const at = (station: HomeView['station']): PlayerEntity => ({ home: { ...QUIET_HOME, station } }) as PlayerEntity;
     expect(homeUi(frame, at('medic'))).toMatchObject({ inBunker: true, station: 'medic', shop: 'medic' });
-    expect(homeUi(frame, at('forge'))).toMatchObject({ station: 'forge', shop: null });
+    expect(homeUi(frame, at('candy_shop'))).toMatchObject({ station: 'candy_shop', shop: null });
     expect(homeUi(frame, at(null))).toMatchObject({ station: null, shop: null });
   });
 

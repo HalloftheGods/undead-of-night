@@ -34,6 +34,14 @@ import { seatRefusal } from './seat-check.ts';
 import { streakCardLine, tonightsStreakNight } from './streak-reward.ts';
 import { loadBests } from './trip-record.ts';
 
+export interface StairsTransitionState {
+  readonly startedAtMs: number;
+  readonly fromX: number;
+  readonly fromY: number;
+  readonly toX: number;
+  readonly toY: number;
+}
+
 /** What a run keeps between snapshots, shared by the session and the snapshot handler. */
 export interface RunState {
   transport: GameTransport | null;
@@ -51,6 +59,7 @@ export interface RunState {
   daily: string | null;
   /** The Daily Night's ghost: the counted run playing back, or this one recording. Null for any other run. */
   ghost: DailyGhost | null;
+  stairsTransition: StairsTransitionState | null;
 }
 
 /** The controller's parts a run reaches into. */
@@ -79,13 +88,15 @@ export type CoopEntry = 'find' | 'host' | 'code';
 type OnlinePlan = { readonly kind: 'find' } | { readonly kind: 'host' } | { readonly kind: 'join'; readonly code: string };
 
 export function newRunState(): RunState {
-  return { transport: null, world: null, runResult: null, welcomed: false, lastSnapshotMs: 0, gameOverAtMs: 0, levelNoted: 0, inBunker: null, daily: null, ghost: null };
+  return { transport: null, world: null, runResult: null, welcomed: false, lastSnapshotMs: 0, gameOverAtMs: 0, levelNoted: 0, inBunker: null, daily: null, ghost: null, stairsTransition: null };
 }
 
 /** Starts, restarts and ends a run: the connection from menu to welcome to menu. */
 export class RunSession {
   /** Counts reads of the save, so a room that changes its answer outdates the read before it. */
   private homeReads = 0;
+  /** Preserved during solo-to-coop promotion in case room hosting fails before welcome. */
+  private fallbackSoloSession: LocalSession | null = null;
 
   constructor(
     private readonly host: RunHost,
@@ -159,6 +170,41 @@ export class RunSession {
       return;
     }
     this.openCoop(new SocketSession(url), style);
+  }
+
+  /** Promotes the active solo run to a hosted online co-op room. */
+  async hostCurrentRun(): Promise<void> {
+    const { state, ui } = this.host;
+    const isSolo = ui.value.mode === 'solo' && state.transport instanceof LocalSession;
+    const isDaily = state.daily !== null;
+    const canHost = isSolo && !isDaily && state.world !== null;
+    if (!canHost) return;
+
+    const localSession = state.transport as LocalSession;
+    const sim = localSession.sim;
+    const noSim = sim === null;
+    if (noSim) return;
+
+    this.host.publish({ connecting: true, error: null });
+    let rooms: typeof import('../network/online-session.ts');
+    try {
+      rooms = await import('../network/online-session.ts');
+    } catch {
+      this.host.publish({ connecting: false, error: ONLINE_UNLOADED });
+      return;
+    }
+
+    localSession.setPaused(true);
+    this.fallbackSoloSession = localSession;
+
+    const style: GameStyle = ui.value.runStyle ?? ui.value.style ?? (sim.playsHome ? 'campaign' : 'arcade');
+    const events = {
+      onHosted: (room: string, isPublic: boolean) => this.host.publish({ onlineRoom: room, onlinePublic: isPublic }),
+      onUnlisted: () => this.host.publish({ onlineRoom: null }),
+    };
+
+    const session = rooms.hostRoom(style, events, { public: false, existingSim: sim });
+    this.openCoop(session, style);
   }
 
   /** The online room code is fetched on first use, with the menu held in its connecting state meanwhile. */
@@ -253,6 +299,11 @@ export class RunSession {
   }
 
   onWelcome(packet: WelcomePacket): void {
+    const hasFallback = this.fallbackSoloSession !== null;
+    if (hasFallback) {
+      this.fallbackSoloSession?.disconnect();
+      this.fallbackSoloSession = null;
+    }
     const { state, stage } = this.host;
     state.welcomed = true;
     this.host.home.welcomed(packet);
@@ -265,10 +316,10 @@ export class RunSession {
       return;
     }
     state.world = new ClientWorld(map, packet.yourId);
-    this.beginRun();
+    this.beginRun(this.host.ui.value.paused);
   }
 
-  beginRun(): void {
+  beginRun(preservePause = false): void {
     const { state, input, inputs, runHud } = this.host;
     state.runResult = null;
     state.inBunker = null;
@@ -277,11 +328,22 @@ export class RunSession {
     runHud.reset();
     this.host.onResize();
     input.setEnabled(true);
-    this.host.publish({ ...NO_RUN_UI, screen: 'game', connecting: false });
+    const paused = preservePause && this.host.ui.value.paused;
+    this.host.publish({ ...NO_RUN_UI, screen: 'game', connecting: false, paused });
   }
 
   onClosed(reason: string): void {
     const { state, input, audio, titleMap, renderer } = this.host;
+    const hasFallback = this.fallbackSoloSession !== null;
+    if (hasFallback && !state.welcomed) {
+      const fallback = this.fallbackSoloSession;
+      this.fallbackSoloSession = null;
+      state.transport = fallback;
+      fallback?.setPaused(this.host.ui.value.paused);
+      this.host.publish({ mode: 'solo', connecting: false, onlineRoom: null, error: reason });
+      return;
+    }
+    this.fallbackSoloSession = null;
     this.host.home.close();
     state.transport = null;
     if (!state.welcomed) {

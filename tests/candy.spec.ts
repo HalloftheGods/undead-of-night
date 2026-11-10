@@ -35,8 +35,8 @@ function carrying(p: PlayerState, ...ids: CandyId[]): void {
 }
 
 describe('candy', () => {
-  it('has thirteen kinds, all named and described', () => {
-    expect(CANDY_ORDER).toHaveLength(13);
+  it('has twenty-nine kinds, all named and described', () => {
+    expect(CANDY_ORDER).toHaveLength(29);
     for (const id of CANDY_ORDER) expect(CANDIES[id].blurb.length).toBeGreaterThan(0);
   });
 
@@ -149,6 +149,40 @@ describe('candy', () => {
     const z = addZombie(state, 'walker', p.x + 300, p.y);
     damageZombie(state, z, 1e6, 0, 'a');
     expect(p.health).toBe(52);
+  });
+
+  it('heals the killer under Fang Taffy', () => {
+    const { sim, state } = quietSim();
+    const [p] = state.players;
+    carrying(p, 'fang_taffy');
+    eat(sim, p, 1);
+    p.health = 50;
+    const z = addZombie(state, 'walker', p.x + 300, p.y);
+    damageZombie(state, z, 1e6, 0, 'a');
+    expect(p.health).toBe(52);
+  });
+
+  it('regenerates health over time under Grave Gels while not sprinting', () => {
+    const { sim, state } = quietSim();
+    const [p] = state.players;
+    p.health = 40;
+    carrying(p, 'grave_gels');
+    eat(sim, p, 1);
+    steps(sim, TICK_RATE * 3);
+    expect(p.health).toBeGreaterThanOrEqual(41);
+  });
+
+  it('reflects damage to attacker under Spiky Suckers', () => {
+    const { sim, state } = quietSim();
+    const [p] = state.players;
+    carrying(p, 'spiky_suckers');
+    eat(sim, p, 1);
+    const z = addZombie(state, 'walker', p.x + 10, p.y);
+    z.attacking = true;
+    z.windupLeft = 0.01;
+    const startHealth = z.health;
+    sim.step();
+    expect(z.health).toBeLessThan(startHealth);
   });
 
   it('picks a survivor straight back up once with a Caramel Apple', () => {

@@ -1,5 +1,6 @@
 import { PLAYER_MAX_HEALTH } from './constants.ts';
 import { freshEmoteBudget } from './emotes.ts';
+import { createDefaultSurvivalNeeds } from './survival-needs.ts';
 import { noParts } from './gun-upgrades.ts';
 import { giveStartingLoadout } from './player-health.ts';
 import { noKits } from './round-effects.ts';
@@ -95,6 +96,7 @@ export function createPlayer(arrival: Arrival, spot: { x: number; y: number }): 
     benchReady: false,
     ...freshEmoteBudget(),
     home: null,
+    needs: createDefaultSurvivalNeeds(),
   };
   giveStartingLoadout(player);
   return player;

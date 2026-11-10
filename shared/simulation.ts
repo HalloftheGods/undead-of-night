@@ -32,7 +32,7 @@ import { updateSpinners } from './throwables.ts';
 import { updateSupplyDrop } from './supply-drop.ts';
 import { updateBosses } from './bosses.ts';
 import { benchCommand, updateBench } from './workbench.ts';
-import type { BenchAction } from './workbench.ts';
+import type { BenchAction, WorkbenchMode } from './workbench.ts';
 import { ageFootprints } from './snow-tracks.ts';
 import { noteEntered } from './leftovers.ts';
 import { giveStreakKit } from './streak-kit.ts';
@@ -101,6 +101,15 @@ export class GameSimulation {
     const isLocked = roomInUse || unchanged;
     if (isLocked) return;
     this.sim = createSimState({ seed: runSeed, random: rng, difficulty, workbench, home, overrun: this.overrun });
+  }
+
+  /** Prepares a solo run's local player for migration to a hosted co-op room. */
+  bindLocalPlayerToken(token: string): boolean {
+    const local = this.sim.players.find((p) => p.id === 'local');
+    if (!local) return false;
+    (local as { token: string | null }).token = token;
+    (this.sim as { workbench: WorkbenchMode }).workbench = 'timed';
+    return true;
   }
 
   /** Near a living teammate if there is one, otherwise at the map spawn. */

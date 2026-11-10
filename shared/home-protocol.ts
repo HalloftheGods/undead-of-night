@@ -19,7 +19,7 @@ export const MERCHANT_IDS = ['gunsmith', 'quartermaster', 'medic', 'powder'] as 
 export type MerchantId = (typeof MERCHANT_IDS)[number];
 
 /** `chest` stands only while a held overrun's chest is unopened. */
-export const STATION_IDS = ['bench', 'forge', 'locker', 'level_map', 'jukebox', ...MERCHANT_IDS, 'chest'] as const;
+export const STATION_IDS = ['bench', 'candy_shop', 'locker', 'level_map', 'jukebox', ...MERCHANT_IDS, 'chest'] as const;
 export type StationId = (typeof STATION_IDS)[number];
 
 export interface Station {
@@ -91,6 +91,9 @@ export interface TripReceipt {
   silver: number;
   /** As `silver`. */
   jewels: Jewels;
+  /** Banked candy credit worth and bag contents. */
+  candy?: number;
+  candyBag?: Partial<Record<string, number>>;
   /** A level below the highest anyone in the room has reached. */
   replay: boolean;
   score: number;
@@ -141,6 +144,8 @@ export interface OverrunReceipt {
   silver: number;
   /** Held: the chest's jewel, for the bank. */
   jewels: Jewels;
+  /** Held: candy credited from the chest. */
+  candy?: number;
   /** Died: the gear in hand that went down with the body. Null otherwise. */
   lost: Loadout | null;
   kills: number;
@@ -154,6 +159,7 @@ export interface HomeView {
   /** Carried on this trip. The bank lives in the browser and never goes on the wire. */
   silver: number;
   jewels: Jewels;
+  candy?: number;
   station: StationId | null;
   /** 0..1 through the hold on E. */
   stationHold: number;

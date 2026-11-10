@@ -151,6 +151,18 @@ export class SnapshotHandler {
     if (ateIt) runHud.say(candyBanner(event.candy, event.saved === true, event.stacked === true), now);
     const keptIt = event.type === 'keepsake_taken' && event.playerId === world.localId;
     if (keptIt) runHud.say({ title: KEEPSAKES[event.keepsake].name.toUpperCase(), subtitle: 'KEPT FOR THE RUN', tone: 'hope' }, now);
+    const tookStairs = event.type === 'stairs_taken' && event.playerId === world.localId;
+    if (tookStairs) {
+      const fromX = before ? before.x : world.predictor.x;
+      const fromY = before ? before.y : world.predictor.y;
+      this.host.state.stairsTransition = {
+        startedAtMs: now,
+        fromX,
+        fromY,
+        toX: event.x,
+        toY: event.y,
+      };
+    }
   }
 
   enterGameOver(stats: GameOverStats, localId: string, now: number): void {

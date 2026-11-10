@@ -99,9 +99,14 @@ const EVENT_SOUNDS: EventSounds = {
     if (p.local) mixer.play('keepsake', p);
   },
   stairs_taken: (e, { mixer, at }) => {
-    // Two treads, the second a little lower, where they come out.
-    mixer.play('step_hard', at(e.x, e.y, e.playerId));
-    mixer.play('step_hard', { ...at(e.x, e.y, e.playerId), pitch: 0.8 });
+    // 4 rhythmic footsteps across the stair traversal, pitched by direction (LTTP cadence).
+    const p = at(e.x, e.y, e.playerId);
+    const isGoingUp = e.to === 'UPSTAIRS';
+    const pitches = isGoingUp ? [0.92, 0.98, 1.05, 1.12] : [1.12, 1.05, 0.98, 0.92];
+    const delays = [0, 0.09, 0.18, 0.27];
+    for (let i = 0; i < delays.length; i++) {
+      mixer.play('step_hard', { ...p, delay: delays[i], pitch: pitches[i] });
+    }
   },
   container_opened: (e, { mixer, at }) => mixer.play(e.noisy ? 'clatter' : 'container_open', at(e.x, e.y, e.playerId)),
   bottle_smash: (e, { mixer }) => mixer.play('glass_smash', { x: e.x, y: e.y }),

@@ -2,7 +2,7 @@
   <section class="px-title-scale mag-screen" :aria-label="TOWN_GUIDE_TITLE" @pointerdown="pages.beginSwipe" @pointerup="pages.finishSwipe">
     <PrintedBook :book="open" :turn :mode :leaves>
       <template #page="{ leaf, side, folio }">
-        <GuideLeafPage :leaf :leaves :art :side :folio @open="pages.goTo" />
+        <GuideLeafPage :key="leaf.id" :leaf :leaves :art :side :folio @open="pages.goTo" />
       </template>
     </PrintedBook>
 
