@@ -75,6 +75,20 @@ describe('the Town Guide', () => {
     expect(parts?.places[0].id).toBe('gun_shop');
   });
 
+  it('ranks survival rations and remedies with proper Always, Often, and Rare find tiers', () => {
+    expect(tierOf('grocery', 'canned_food')).toBe('always');
+    expect(tierOf('diner', 'canned_food')).toBe('always');
+    expect(tierOf('clinic', 'disinfectant')).toBe('always');
+    expect(tierOf('pharmacy', 'antibiotics')).toBe('often');
+    expect(tierOf('grocery', 'water_bottle')).toBe('often');
+    const foodLookup = whereToLook().find((line) => line.id === 'canned_food');
+    expect(foodLookup?.places.map((place) => place.id)).toContain('grocery');
+    const waterLookup = whereToLook().find((line) => line.id === 'water_bottle');
+    expect(waterLookup?.places.length).toBeGreaterThan(0);
+    const disinfectantLookup = whereToLook().find((line) => line.id === 'disinfectant');
+    expect(disinfectantLookup?.places[0].id).toBe('clinic');
+  });
+
   it('opens on the contents, then the index, then a page per place', () => {
     const leaves = guideLeaves();
     expect(leaves.map((leaf) => leaf.kind).slice(0, 2)).toEqual(['front', 'index']);

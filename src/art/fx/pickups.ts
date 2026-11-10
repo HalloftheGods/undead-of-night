@@ -190,7 +190,7 @@ function frame({ rows, glint, legend }: ItemSpec, index: number): PixelCanvas {
   const hasGlint = size > 0;
   if (hasGlint) {
     const stamp = GLINTS[size - 1];
-    canvas.grid(x + glint[0] - size, y + glint[1] - size, stamp, itemLegend);
+    canvas.grid(x + glint[0] - size, y + glint[1] - size, stamp, ITEM);
   }
   return canvas;
 }

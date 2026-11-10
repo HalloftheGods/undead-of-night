@@ -43,8 +43,8 @@ export interface LootRule {
 const NOTHING_UNDERGROUND: LootRule = { items: [0, 0], table: { bandage: 1 } };
 
 export const LOOT_RULES: Record<BuildingKind, LootRule> = {
-  pharmacy: { items: [2, 4], table: { disinfectant: 4, bandage: 4, antibiotics: 2.5, medkit: 1.5, water_bottle: 1 } },
-  clinic: { items: [3, 4], fixed: ['disinfectant'], table: { antibiotics: 3.5, bandage: 3.5, medkit: 3, water_bottle: 1 } },
+  pharmacy: { items: [2, 4], table: { medkit: 3.6, disinfectant: 3, antibiotics: 3, bandage: 2.4 } },
+  clinic: { items: [3, 4], fixed: ['disinfectant'], table: { medkit: 3.5, antibiotics: 3.5, bandage: 3, water_bottle: 1 } },
   // The town's biggest store of medicine, and the most guarded: a medkit in the emergency bay every time.
   hospital: { items: [3, 5], fixed: ['medkit'], table: { antibiotics: 3.5, bandage: 3.5, medkit: 2, disinfectant: 2, pistol_ammo: 0.4 } },
   // A nurse's office and a kitchen: first aid, clean water, and the odd knife.
