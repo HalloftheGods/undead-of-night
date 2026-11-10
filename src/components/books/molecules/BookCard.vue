@@ -1,6 +1,6 @@
 <template>
   <BookCardButton
-    :aria-label="`Open ${book.title}: ${book.subtitle}`"
+    :ariaLabel="`Open ${book.title}: ${book.subtitle}`"
     :active="active"
     @press="emit('choose', book.id)"
     @hover="emit('hover', book.id)"

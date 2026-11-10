@@ -12,7 +12,7 @@ import type { PlayerState, SimState } from './sim-state.ts';
 import { emit } from './sim-state.ts';
 
 /** How close, in pixels, a player has to stand to the middle of the cover or the foot of the ladder. */
-export const MANHOLE_REACH = 20;
+export const MANHOLE_REACH = 28;
 
 /** The manhole flight within reach of this spot, the nearest if there are two, or null. */
 export function manholeFlightNear(sim: Pick<SimState, 'map'>, x: number, y: number): ManholeFlight | null {
@@ -27,6 +27,11 @@ export function manholeFlightNear(sim: Pick<SimState, 'map'>, x: number, y: numb
     }
   }
   return best;
+}
+
+/** What the prompt says over a head at a manhole or a ladder: the way it goes, as `E: CLIMB DOWN` or `E: CLIMB UP`. */
+export function climbPrompt(flight: Pick<ManholeFlight, 'down'>, touch: boolean): string {
+  return `${touch ? '' : 'E: '}${flight.down ? 'CLIMB DOWN' : 'CLIMB UP'}`;
 }
 
 /** Crosses the flight the player is pressing search at. True if it did. */

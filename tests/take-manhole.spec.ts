@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { TILE_SIZE } from '../shared/protocol.ts';
-import { MANHOLE_REACH, manholeFlightNear } from '../shared/take-manhole.ts';
+import { climbPrompt, MANHOLE_REACH, manholeFlightNear } from '../shared/take-manhole.ts';
 import { buildingAt } from '../shared/world-map.ts';
 import { isSewerBuilding } from '../shared/map-protocol.ts';
 import { addZombie, eventsOf, input, quietSim, stepUntil } from './helpers/sim-harness.ts';
@@ -97,3 +97,36 @@ describe('taking a manhole', () => {
     expect(followed).toBeGreaterThan(0);
   });
 });
+
+describe('the climb prompt and its reach', () => {
+  it('shows at the cover and at the ladder foot, a body-width off, and says which way it goes', () => {
+    const { state, flight } = atManhole();
+    const back = (state.map.flights ?? []).find((f) => f.fromIndex === flight.toIndex);
+    for (const dx of [0, 14, -14, 24]) {
+      expect(manholeFlightNear(state, flight.from.x + dx, flight.from.y)?.down).toBe(true);
+      expect(manholeFlightNear(state, flight.to.x + dx, flight.to.y)?.down).toBe(false);
+    }
+    expect(manholeFlightNear(state, flight.from.x, flight.from.y + 24)).toBe(flight);
+    expect(back?.down).toBe(false);
+    expect(climbPrompt(flight, false)).toBe('E: CLIMB DOWN');
+    expect(climbPrompt(back!, false)).toBe('E: CLIMB UP');
+    expect(climbPrompt(flight, true)).toBe('CLIMB DOWN');
+    expect(climbPrompt(back!, true)).toBe('CLIMB UP');
+  });
+
+  it('E climbs both ways from beside the cover and beside the ladder, not only from its middle', () => {
+    const { sim, state, p, flight } = atManhole();
+    p.x = flight.from.x + 20;
+    sim.setInput('a', input({ seq: 1, search: true }));
+    sim.step();
+    expect(inSewer(state, p.x, p.y)).toBe(true);
+    p.x = flight.to.x - 20;
+    sim.setInput('a', input({ seq: 2, search: false }));
+    sim.step();
+    sim.setInput('a', input({ seq: 3, search: true }));
+    sim.step();
+    expect(inSewer(state, p.x, p.y)).toBe(false);
+    expect(p.y).toBe(flight.from.y);
+  });
+});
+

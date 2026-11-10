@@ -1,7 +1,7 @@
 // Hosting an online room from this tab (spec option A). The simulation and the room host run here, the
 // host's own player joins over an in-tab loopback, and each guest arrives over its own WebRTC data channel.
 // play-api only introduces the peers: game packets never pass through it.
-import { DEFAULT_DIFFICULTY } from '../../shared/difficulty.ts';
+import { DEFAULT_DIFFICULTY, type DifficultyId } from '../../shared/difficulty.ts';
 import type { EmoteId } from '../../shared/emotes.ts';
 import type { GameStyle } from '../../shared/game-style.ts';
 import { OVERRUN_LIVE, type HomeAction, type JoinHome } from '../../shared/home-protocol.ts';

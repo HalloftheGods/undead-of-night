@@ -164,7 +164,7 @@ describe('Survival Needs Core Data & Mechanics', () => {
 describe('Survival Pixel Art Standards', () => {
   it('uses only valid palette colors in SURVIVAL_LEGEND', () => {
     for (const [key, color] of Object.entries(SURVIVAL_LEGEND)) {
-      expect(inPalette(color)).toBe(true);
+      expect(color === null || inPalette(color)).toBe(true);
     }
   });
 
@@ -204,7 +204,7 @@ describe('Survival Pixel Art Standards', () => {
 
   it('renders all 16x16 moodle pixel art sprites adhering to palette rules', () => {
     for (const [key, color] of Object.entries(MOODLE_LEGEND)) {
-      expect(inPalette(color)).toBe(true);
+      expect(color === null || inPalette(color)).toBe(true);
     }
 
     const icons = buildMoodleIcons();

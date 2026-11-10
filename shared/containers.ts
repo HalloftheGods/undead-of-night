@@ -92,10 +92,7 @@ export const ROOM_CONTAINERS: Record<BuildingKind, Partial<Record<PropKind, Cont
   police: { locker: 'locker', counter: 'cabinet', shelf: 'shelf' },
   gun_shop: { locker: 'locker', counter: 'cabinet', shelf: 'shelf' },
   // Nothing down there is furniture.
-  sewer_junction: {},
-  sewer_tunnel_h: {},
-  sewer_tunnel_v: {},
-  sewer_pump_station: {},
+  sewer_maze: {},
 };
 
 /** Vehicles that carry what their service keeps indoors. */

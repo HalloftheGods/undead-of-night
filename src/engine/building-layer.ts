@@ -166,7 +166,8 @@ export class BuildingLayer {
       const building = buildingAt(map, flight.from.x, flight.from.y);
       if (building) this.stairs.set(building.id, [...(this.stairs.get(building.id) ?? []), flight]);
     }
-    this.placed = map.buildings.map((building) => {
+    // The sewers are a floor of rock and tunnel with nothing to open or hide: they have no shell, room or stairs of their own to draw.
+    this.placed = map.buildings.filter((building) => !isSewerBuilding(building)).map((building) => {
       const variants = this.art.buildings[building.kind];
       const sprite = variants[building.variant % variants.length];
       const { w, h } = BUILDING_DEFS[building.kind];

@@ -67,10 +67,7 @@ export const LOOT_RULES: Record<BuildingKind, LootRule> = {
   // The wards keep their own first aid; the classrooms upstairs, a nurse's kit and a confiscated knife.
   hospital_upstairs: { items: [1, 3], table: { bandage: 4, medkit: 2 } },
   school_upstairs: { items: [0, 2], table: { bandage: 3, knife: 0.5 } },
-  sewer_junction: NOTHING_UNDERGROUND,
-  sewer_tunnel_h: NOTHING_UNDERGROUND,
-  sewer_tunnel_v: NOTHING_UNDERGROUND,
-  sewer_pump_station: NOTHING_UNDERGROUND,
+  sewer_maze: NOTHING_UNDERGROUND,
 };
 
 const STOREY_LOOT_SALT = 0x55504457;

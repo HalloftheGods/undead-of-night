@@ -1,4 +1,5 @@
 import type { SugarState } from './candy.ts';
+import type { BackpackTier } from './backpack.ts';
 import type { SurvivalNeeds } from './survival-needs.ts';
 import type { SupplyDrop } from './supply-drop.ts';
 import type { BossState } from './bosses.ts';
@@ -140,6 +141,7 @@ export interface PlayerState extends Omit<PlayerEntity, 'mags' | 'gear' | 'bottl
   /** Seconds until the next loud footstep while sprinting. */
   stepNoiseLeft: number;
   needs?: SurvivalNeeds;
+  backpackTier?: BackpackTier;
 }
 
 /** Unaware, walking to a noise, or after a player. */

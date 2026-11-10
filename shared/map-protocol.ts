@@ -32,6 +32,9 @@ export const TILE_KINDS = [
   'floor_tile',
   'floor_concrete',
   'floor_carpet',
+  'floor_sewer',
+  'floor_sewer_channel',
+  'sewer_wall',
   'bunker_wall',
   /** The dark between the floors above and below the town, where nobody goes. */
   'void',
@@ -142,11 +145,8 @@ export const BUILDING_DEFS = {
   // The wards over the hospital and the classrooms over the school, the same size as the floor below.
   hospital_upstairs: { label: 'Wards', w: 320, h: 192, doorX: 160, floor: 'floor_tile' },
   school_upstairs: { label: 'Upstairs', w: 288, h: 176, doorX: 144, floor: 'floor_wood' },
-  // The sewers under the town, laid end to end in the annex band. They have no walls of their own: the dark around them is the wall.
-  sewer_junction: { label: 'Sewer Junction', w: 128, h: 128, doorX: 64, floor: 'floor_concrete' },
-  sewer_tunnel_h: { label: 'Sewer Tunnel', w: 192, h: 96, doorX: 96, floor: 'floor_concrete' },
-  sewer_tunnel_v: { label: 'Sewer Tunnel', w: 96, h: 192, doorX: 48, floor: 'floor_concrete' },
-  sewer_pump_station: { label: 'Pump Station', w: 160, h: 128, doorX: 80, floor: 'floor_concrete' },
+  // The sewers under the town: one footprint for the whole maze, as wide as the town and as deep, directly below the surface rows. Its tunnels are floor tiles; the rock between them is 'void', which is solid. It has no walls of its own.
+  sewer_maze: { label: 'Sewers', w: 3200, h: 3200, doorX: 1600, floor: 'floor_sewer' },
 } as const;
 export type BuildingKind = keyof typeof BUILDING_DEFS;
 export const BUILDING_KINDS = Object.keys(BUILDING_DEFS) as BuildingKind[];
@@ -218,4 +218,6 @@ export interface WorldMap {
   readonly townRows?: number;
   /** Manholes and their ladders: two-way crossings between street and sewer that a player takes with a key press. */
   readonly flights?: readonly ManholeFlight[];
+  /** Where the sewer maze lies: its first row, which is the town's first row 'seen from underneath', and the lamps down its tunnels. */
+  readonly sewers?: { readonly top: number; readonly lamps: readonly MapLight[] };
 }

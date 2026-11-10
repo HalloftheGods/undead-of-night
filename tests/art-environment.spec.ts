@@ -18,7 +18,7 @@ const environment = buildEnvironment();
 
 type Edge = 'top' | 'bottom' | 'left' | 'right';
 
-const FLOORS = ['floor_wood', 'floor_tile', 'floor_concrete', 'floor_carpet'] as const;
+const FLOORS = ['floor_wood', 'floor_tile', 'floor_concrete', 'floor_carpet', 'floor_sewer', 'floor_sewer_channel', 'sewer_wall'] as const;
 const FURNITURE = ['shelf', 'counter', 'table', 'sofa', 'bed', 'locker', 'fridge', 'workbench', 'gas_pump'] as const;
 const SIDES = ['top', 'bottom', 'left', 'right'] as const;
 const MIN_FACADES = { house: 3, apartment: 2, warehouse: 2 } as const;
@@ -51,7 +51,7 @@ function sameStone(kind: TileKind, sides: readonly Edge[], from: number, to: num
 }
 
 /** Every shell of every kind, with a label a failure can name. */
-// The sewers have no shell (nothing is drawn over a tunnel), so the shell contracts are for the buildings that do.
+// The sewer maze has no shell: its walls are brick and rock tiles, and it is never drawn as a building.
 const SHELLS = BUILDING_KINDS.filter((kind) => !kind.startsWith('sewer_')).flatMap((kind) =>
   environment.buildings[kind].map((sprite, variant) => ({ kind, variant, sprite, label: `${kind}/${variant}` })),
 );

@@ -11,6 +11,7 @@ import type {
   ExitEntity,
   GameEvent,
   GameOverStats,
+  LobbyStatePacket,
   PickupEntity,
   PlayerEntity,
   RoomPacket,

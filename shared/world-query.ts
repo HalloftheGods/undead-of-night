@@ -2,7 +2,7 @@ import { backDoorBox, partitionBoxes } from './building-plans.ts';
 import { settleVan } from './exit-van.ts';
 import type { Point } from './flow-field.ts';
 import { buildingsWithStairs, isStorey, voidBoxes } from './storeys.ts';
-import { BUILDING_DEFS, DOOR_WIDTH, PROP_DEFS, TILE_SIZE, WALL_THICKNESS } from './protocol.ts';
+import { BUILDING_DEFS, DOOR_WIDTH, PROP_DEFS, TILE_KINDS, TILE_SIZE, WALL_THICKNESS } from './protocol.ts';
 import type { BuildingInstance, PropInstance, WorldMap } from './protocol.ts';
 import { isSewerBuilding } from './map-protocol.ts';
 
@@ -31,9 +31,9 @@ export function propBox(prop: PropInstance): Box {
 }
 
 export function isSolidProp(prop: PropInstance): boolean {
-  // A manhole cover has a whole tile for a footprint but is flat: it is walked over to reach the ladder, by anyone with a key to press.
-  const isCover = prop.kind === 'manhole';
-  return !isCover && PROP_DEFS[prop.kind].h > 0;
+  // A manhole cover is flat and a sewer ladder is bolted to a wall: each is walked up to, and used by anyone with a key to press.
+  const isFitting = prop.kind === 'manhole' || prop.kind === 'sewer_ladder';
+  return !isFitting && PROP_DEFS[prop.kind].h > 0;
 }
 
 /** The whole footprint, walls included. */
@@ -126,30 +126,40 @@ export function buildingAt(map: WorldMap, x: number, y: number): BuildingInstanc
  */
 export function groundOf(map: WorldMap, x: number, y: number): Point {
   const here = isBelowTown(map, y) ? buildingAt(map, x, y) : null;
-  if (here && isSewerBuilding(here)) return manholeAbove(map, x, y);
+  if (here && isSewerBuilding(here)) return streetAbove(map, x, y);
   const house = here?.of === undefined ? null : map.buildings.find((building) => building.id === here.of);
   return house && here ? { x: house.x + x - here.x, y: house.y + y - here.y } : { x, y };
 }
 
-/** Someone in the sewers is as near as the street at the foot of the nearest ladder: noise and shots carry up to it. */
-function manholeAbove(map: WorldMap, x: number, y: number): Point {
-  let best: Point | null = null;
-  let bestDistance = Infinity;
-  for (const flight of map.flights ?? []) {
-    const isLadderFoot = !flight.down;
-    if (!isLadderFoot) continue;
-    const distance = Math.hypot(flight.from.x - x, flight.from.y - y);
-    const isNearer = distance < bestDistance;
-    if (isNearer) {
-      bestDistance = distance;
-      best = flight.to;
-    }
-  }
-  return best ?? { x, y };
+/** Someone in the sewers is on the street over them: the maze lies tile for tile under the town, so noise and shots carry straight up. */
+function streetAbove(map: WorldMap, x: number, y: number): Point {
+  return { x, y: y - (map.sewers?.top ?? 0) * TILE_SIZE };
 }
 
 function isBelowTown(map: WorldMap, y: number): boolean {
   return map.townRows !== undefined && y >= map.townRows * TILE_SIZE;
+}
+
+/** The sewers' brick and rock, a row of tiles at a time: solid, since nothing walks through a wall. */
+function rockBoxes(map: WorldMap): Box[] {
+  if (!map.sewers) return [];
+  const boxes: Box[] = [];
+  const solid = (col: number, row: number): boolean => {
+    const kind = TILE_KINDS[map.tiles[row * map.cols + col]];
+    return kind === 'void' || kind === 'sewer_wall';
+  };
+  for (let row = map.sewers.top; row < map.rows; row++) {
+    let start = -1;
+    for (let col = 0; col <= map.cols; col++) {
+      const isSolid = col < map.cols && solid(col, row);
+      if (isSolid && start < 0) start = col;
+      if (!isSolid && start >= 0) {
+        boxes.push({ x0: start * TILE_SIZE, y0: row * TILE_SIZE, x1: col * TILE_SIZE, y1: (row + 1) * TILE_SIZE });
+        start = -1;
+      }
+    }
+  }
+  return boxes;
 }
 
 function solidIndex(map: WorldMap): SolidIndex {
@@ -177,6 +187,7 @@ function solidIndex(map: WorldMap): SolidIndex {
   }
   for (const wall of wallBoxes(map)) addBox(wall);
   for (const dark of voidBoxes(map, buildingBox)) addBox(dark);
+  for (const rock of rockBoxes(map)) addBox(rock);
   const index: SolidIndex = { buckets, blocked };
   // Settling the van's spot reads these solids, so they are cached first and the van joins them after.
   indexes.set(map, index);

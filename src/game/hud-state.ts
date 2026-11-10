@@ -1,3 +1,5 @@
+import { streetAt } from '../../shared/street-names.ts';
+import type { StreetSpot } from '../../shared/street-names.ts';
 import type { PaletteId, UiScale } from './display-prefs.ts';
 import { KEEPSAKES } from '../../shared/keepsakes.ts';
 import type { KeepsakeId } from '../../shared/protocol.ts';
@@ -108,6 +110,8 @@ export interface HudState {
   readonly bench: BenchHud | null;
   /** The town's boss while it stands: its name and the share of health it has left. */
   readonly boss: { readonly name: string; readonly share: number } | null;
+  /** The street sign: where the survivor stands on the town's grid. Null indoors, underground and off the streets. */
+  readonly street: StreetSpot | null;
   readonly moodles: readonly MoodleView[];
 }
 
@@ -265,6 +269,7 @@ export function buildHud(snapshot: SnapshotPacket, local: PlayerEntity, spectati
     spectating,
     gear: local.gear ?? null,
     bench: benchHud(snapshot, local),
+    street: local.indoors === null ? streetAt(local.x, local.y) : null,
     boss: snapshot.boss ? { name: BOSSES[snapshot.boss.id].name, share: snapshot.boss.health / Math.max(1, snapshot.boss.maxHealth) } : null,
     moodles: buildMoodles(local.needs),
   };

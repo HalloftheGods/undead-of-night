@@ -2,6 +2,7 @@
 
 import { BOTTLE_CARRY } from './bottles.ts';
 import { MEDKIT_MAX, START_SPARE_ROUNDS, WEAPONS } from './constants.ts';
+import { reserveCapForTier, type BackpackTier } from './backpack.ts';
 import { GUN_SLOTS, PART_CARRY_CAP, PART_ORDER, QUIRK_ORDER, UPGRADE_ORDER, UPGRADES } from './gun-upgrade-data.ts';
 import type { GunQuirk, GunUpgrade, PartCounts, PartId } from './gun-upgrade-data.ts';
 import { effectOf, gunStats, noParts, rankOf, slotsUsed } from './gun-upgrades.ts';
@@ -19,11 +20,12 @@ export function emptyLoadout(): Loadout {
   return { guns: {}, ammoBag: { pistol: 0, carbine: 0, shotgun: 0 }, parts: noParts(), kits: noKits(), medkits: 0, knife: false, bottles: 0 };
 }
 
-const reserveCapOf = (weapon: WeaponId): number => WEAPONS[weapon].reserveCap;
+const reserveCapOf = (weapon: WeaponId, tier?: BackpackTier): number =>
+  tier ? reserveCapForTier(weapon, tier) : WEAPONS[weapon].reserveCap;
 
 /** What a magazine holds goes back in with the rounds, and anything over the reserve cap is lost. */
-function roundsOf(bag: Record<WeaponId, number>, mags: Readonly<Partial<Record<WeaponId, number>>>): Record<WeaponId, number> {
-  const rounds = WEAPON_ORDER.map((weapon) => [weapon, Math.min(reserveCapOf(weapon), bag[weapon] + (mags[weapon] ?? 0))]);
+function roundsOf(bag: Record<WeaponId, number>, mags: Readonly<Partial<Record<WeaponId, number>>>, tier?: BackpackTier): Record<WeaponId, number> {
+  const rounds = WEAPON_ORDER.map((weapon) => [weapon, Math.min(reserveCapOf(weapon, tier), bag[weapon] + (mags[weapon] ?? 0))]);
   return Object.fromEntries(rounds) as Record<WeaponId, number>;
 }
 
@@ -41,7 +43,7 @@ export function loadoutOf(p: PlayerState): Loadout {
   const mags = Object.fromEntries(owned.map((weapon) => [weapon, (p.guns[weapon] as GunState).ammo]));
   return {
     guns: gunsOf(owned, (weapon) => p.guns[weapon]?.fit),
-    ammoBag: roundsOf(p.ammoBag, mags),
+    ammoBag: roundsOf(p.ammoBag, mags, p.backpackTier),
     parts: { ...p.parts },
     kits: { ...p.kits },
     medkits: p.medkits,
@@ -55,7 +57,7 @@ export function loadoutOfEntity(entity: PlayerEntity): Loadout {
   const { gear } = entity;
   return {
     guns: gunsOf(entity.owned, (weapon) => gear?.fits[weapon]),
-    ammoBag: roundsOf(entity.ammoBag, entity.mags),
+    ammoBag: roundsOf(entity.ammoBag, entity.mags, entity.backpackTier),
     parts: { ...(gear?.parts ?? noParts()) },
     kits: { ...(gear?.kits ?? noKits()) },
     medkits: entity.medkits,

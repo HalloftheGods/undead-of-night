@@ -1,7 +1,7 @@
 import { generateBunkerMap } from './bunker-map.ts';
 import { isBunkerSeed } from './home-protocol.ts';
 import { BUILDING_DEFS, TILE_KINDS, TILE_SIZE } from './protocol.ts';
-import type { BuildingInstance, MapLight, PropInstance, WorldMap } from './protocol.ts';
+import type { MapLight, PropInstance, WorldMap } from './protocol.ts';
 import { biomeFor } from './biomes.ts';
 import { MapBuilder } from './map-builder.ts';
 import { createRng, randRange } from './rng.ts';
@@ -32,15 +32,16 @@ export type { Box } from './world-query.ts';
 
 /** Depth of the strip the verge scatter works in, along each edge of the map. */
 const VERGE_TILES = 6;
+/** A terrain patch reaches at most this many radii (the blob's ragged edge); none may touch the spawn. */
+const SPAWN_CLEARANCE = 1.1;
 
 const STOREY_FURNISH_SALT = 0x464c5253;
 
 const SODIUM = '#ffb066';
 const COOL = '#9ad0ff';
 const FIRE = '#ff7a2e';
-/** Dim sodium at each ladder, and the emergency green over the pump station. */
+/** Dim sodium at each ladder; the tunnels' own emergency green lamps come with the sewer plan. */
 const SEWER_SODIUM = '#c8923c';
-const EMERGENCY_GREEN = '#46d98a';
 
 function freeTilesReached(blocked: Uint8Array, cols: number, rows: number, start: number, stairs: ReadonlyMap<number, { readonly toIndex: number }>): Uint8Array {
   const seen = new Uint8Array(cols * rows);
@@ -117,7 +118,11 @@ function spreadTerrain(b: MapBuilder): void {
   const inner = EDGE_TILES * TILE_SIZE + TILE_SIZE;
   for (let i = 0; i < terrain.count; i++) {
     const radius = randRange(b.rng, terrain.radius[0], terrain.radius[1]);
-    b.blob(randRange(b.rng, inner, size - inner), randRange(b.rng, inner, size - inner), radius, terrain.tile, terrain.over);
+    const x = randRange(b.rng, inner, size - inner);
+    const y = randRange(b.rng, inner, size - inner);
+    // The patch the park's spawn stands on stays clear: a drift is never laid over the safe square.
+    const coversSpawn = Math.hypot(x - b.spawn.x, y - b.spawn.y) < radius * SPAWN_CLEARANCE;
+    if (!coversSpawn) b.blob(x, y, radius, terrain.tile, terrain.over);
   }
 }
 
@@ -131,14 +136,8 @@ const JACK_UP = 10;
 const BUS_GLOWS: readonly (readonly [dx: number, radius: number, color: string])[] = [[0, 130, '#ffb04a'], [-40, 84, '#ff7ad0'], [40, 84, '#ff7ad0']];
 const BUS_GLOW_DOWN = -14;
 
-function lightsFor(props: readonly PropInstance[], rng: Rng, buildings: readonly BuildingInstance[]): MapLight[] {
+function lightsFor(props: readonly PropInstance[], rng: Rng, sewerLamps: readonly MapLight[]): MapLight[] {
   const lights: MapLight[] = [];
-  for (const building of buildings) {
-    const isPumpStation = building.kind === 'sewer_pump_station';
-    if (isPumpStation) lights.push({ x: building.x + BUILDING_DEFS[building.kind].w / 2, y: building.y + BUILDING_DEFS[building.kind].h / 2, radius: 120, color: EMERGENCY_GREEN, flicker: true });
-    const isTunnel = building.kind === 'sewer_tunnel_h';
-    if (isTunnel) lights.push({ x: building.x + BUILDING_DEFS[building.kind].w / 2, y: building.y + 12, radius: 70, color: EMERGENCY_GREEN, flicker: false });
-  }
   for (const prop of props) {
     const isSewerLadder = prop.kind === 'sewer_ladder';
     if (isSewerLadder) lights.push({ x: prop.x, y: prop.y + 10, radius: 96, color: SEWER_SODIUM, flicker: false });
@@ -160,6 +159,8 @@ function lightsFor(props: readonly PropInstance[], rng: Rng, buildings: readonly
       }
     }
   }
+  // Last, so the town's own lamps keep their places in the list.
+  lights.push(...sewerLamps);
   return lights;
 }
 
@@ -229,7 +230,7 @@ export function generateWorldMap(seed: number, level = 1): WorldMap {
   };
   const base = withSewers(withStoreys(town), plan.roads);
   const props = connectedProps(base);
-  return { ...base, props, lights: lightsFor(props, rng, base.buildings) };
+  return { ...base, props, lights: lightsFor(props, rng, base.sewers?.lamps ?? []) };
 }
 
 export const tileKindAt = (map: WorldMap, col: number, row: number) => TILE_KINDS[map.tiles[row * map.cols + col]];

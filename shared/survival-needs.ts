@@ -132,10 +132,7 @@ export const SURVIVAL_LOOT_TABLES: Record<BuildingKind | 'outdoors', SurvivalLoo
   police: { odds: 0.22, table: { water_bottle: 2, antibiotics: 1 } },
   gun_shop: { odds: 0.15, table: { water_bottle: 1 } },
   cellar: { odds: 0.25, table: { canned_food: 2, water_bottle: 1 } },
-  sewer_junction: { odds: 0, table: {} },
-  sewer_tunnel_h: { odds: 0, table: {} },
-  sewer_tunnel_v: { odds: 0, table: {} },
-  sewer_pump_station: { odds: 0, table: {} },
+  sewer_maze: { odds: 0, table: {} },
   outdoors: { odds: 0.08, table: { water_bottle: 1 } },
 };
 

@@ -21,7 +21,7 @@ export const PLAY_JOIN: PlayFlow = { mode: 'multi' };
 /** A level picked on the Levels page: Arcade already, solo. */
 export const PLAY_LEVEL: PlayFlow = { mode: 'solo' };
 
-export const STYLE_LABELS: Readonly<Record<GameStyle, string>> = { campaign: 'Campaign', arcade: 'Arcade' };
+export const STYLE_LABELS: Readonly<Record<GameStyle, string>> = { campaign: 'Campaign', arcade: 'Arcade', daily: 'Daily Night' };
 
 /** Said on the setup page when Campaign could not start. */
 export const HOME_UNREADABLE = 'The game could not open your saved home.';

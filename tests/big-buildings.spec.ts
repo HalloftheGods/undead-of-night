@@ -32,7 +32,7 @@ const overlaps = (a: Box, b: Box): boolean =>
 describe('schools and hospitals', () => {
   it('are the biggest buildings in town', () => {
     const area = (kind: BuildingKind) => BUILDING_DEFS[kind].w * BUILDING_DEFS[kind].h;
-    const others = BUILDING_KINDS.filter((kind) => !BIG.includes(kind) && !isStoreyKind(kind));
+    const others = BUILDING_KINDS.filter((kind) => !BIG.includes(kind) && !isStoreyKind(kind) && !kind.startsWith('sewer_'));
     for (const kind of BIG) for (const other of others) expect(area(kind), `${kind} vs ${other}`).toBeGreaterThan(area(other));
   });
 

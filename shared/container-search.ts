@@ -1,7 +1,7 @@
 import { characterOf } from './characters.ts';
 import { rollFind } from './container-loot.ts';
 import { containerInReach, SEARCH_SEC, townContainers } from './containers.ts';
-import type { ContainerLoot } from './containers.ts';
+import type { Container, ContainerLoot } from './containers.ts';
 import { TICK_DT } from './constants.ts';
 import { isBunkerMap } from './home-protocol.ts';
 import { spawnPickup } from './pickups.ts';

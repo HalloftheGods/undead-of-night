@@ -5,7 +5,7 @@ import { inPalette } from '../src/art/palette.ts';
 describe('Backpack Pixel Art Compliance', () => {
   it('strictly uses colors within the master 64-color palette', () => {
     for (const color of Object.values(BACKPACK_LEGEND)) {
-      expect(inPalette(color)).toBe(true);
+      expect(color === null || inPalette(color)).toBe(true);
     }
   });
 

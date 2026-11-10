@@ -8,7 +8,7 @@ import { BUILDING_DEFS, BUILDING_KINDS, DOOR_WIDTH, PROP_DEFS, TILE_KINDS, TILE_
 import type { BuildingInstance, BuildingKind, PropKind, WorldMap } from '../shared/protocol.ts';
 import { buildingsWithStairs, flightsOf } from '../shared/storeys.ts';
 import { createRng } from '../shared/rng.ts';
-import { planTown } from '../shared/town-plan.ts';
+import { MAP_TILES, WALK_TILES, planTown } from '../shared/town-plan.ts';
 import {
   blockedTiles,
   buildingAt,
@@ -209,13 +209,38 @@ describe('the town', () => {
     }
   });
 
-  it('lays out varied streets, with side streets that end at the road they meet', () => {
-    const { roads } = planTown(createRng(8));
-    const widths = new Set(roads.map((road) => (road.horizontal ? road.r1 - road.r0 : road.c1 - road.c0)));
-    expect(widths.size).toBeGreaterThanOrEqual(2);
-    expect(roads.length).toBeGreaterThan(12);
-    const short = roads.filter((road) => (road.horizontal ? road.c1 - road.c0 : road.r1 - road.r0) < 120);
-    expect(short.length).toBeGreaterThan(4);
+  it('lays the streets on one fixed grid, whatever the seed', () => {
+    const reference = planTown(createRng(8)).roads;
+    for (const seed of [1, 8, 99]) {
+      const { roads } = planTown(createRng(seed));
+      expect(roads).toHaveLength(10);
+      expect(roads.map((road) => [road.c0, road.c1, road.r0, road.r1])).toEqual(reference.map((road) => [road.c0, road.c1, road.r0, road.r1]));
+      const down = roads.filter((road) => !road.horizontal);
+      const across = roads.filter((road) => road.horizontal);
+      expect(down).toHaveLength(5);
+      expect(across).toHaveLength(5);
+      // Every street is a straight line spanning the town, so each pair of them crosses.
+      for (const road of roads) expect(road.horizontal ? road.c1 - road.c0 : road.r1 - road.r0).toBeGreaterThanOrEqual(MAP_TILES - 2);
+      // Streets are evenly spaced, so crossings share their X and Y.
+      const centres = (list: typeof roads, horizontal: boolean) => list.map((road) => (horizontal ? road.r0 + road.r1 : road.c0 + road.c1) / 2).sort((a, c) => a - c);
+      const colGaps = centres(down, false).map((centre, i, all) => centre - (all[i - 1] ?? centre)).slice(1);
+      expect(new Set(colGaps).size).toBe(1);
+      const rowGaps = centres(across, true).map((centre, i, all) => centre - (all[i - 1] ?? centre)).slice(1);
+      expect(new Set(rowGaps).size).toBe(1);
+    }
+  });
+
+  it('keeps every block clear of the streets and big enough to build in', () => {
+    const { roads, blocks } = planTown(createRng(5));
+    expect(blocks.length).toBeGreaterThanOrEqual(30);
+    for (const block of blocks) {
+      expect(block.c1 - block.c0).toBeGreaterThanOrEqual(16);
+      expect(block.r1 - block.r0).toBeGreaterThanOrEqual(11);
+      for (const road of roads) {
+        const apart = block.c1 + WALK_TILES <= road.c0 || block.c0 - WALK_TILES >= road.c1 || block.r1 + WALK_TILES <= road.r0 || block.r0 - WALK_TILES >= road.r1;
+        expect(apart).toBe(true);
+      }
+    }
   });
 
   it.each(SEEDS)('seed %i: closes the boundary with a fence', (seed) => {
@@ -363,7 +388,8 @@ describe('buildings', () => {
 
   it.each(SEEDS)('seed %i: leaves outdoor scenery outdoors', (seed) => {
     const map = generateWorldMap(seed);
-    const scenery = map.props.filter((prop) => !isSolidProp(prop));
+    // The sewer ladder is walk-through too, but it stands in the sewers, which are a building of their own.
+    const scenery = map.props.filter((prop) => !isSolidProp(prop) && prop.kind !== 'sewer_ladder');
     expect(scenery.length).toBeGreaterThan(0);
     expect(scenery.filter((prop) => buildingAt(map, prop.x, prop.y))).toEqual([]);
   });

@@ -92,6 +92,12 @@
       </li>
     </ul>
 
+    <!-- A green street sign, top centre, while on the town's streets: hidden indoors and underground. -->
+    <div v-if="hud.street" class="hud-street" :class="{ 'is-junction': hud.street.junction }" role="img" :aria-label="`${hud.street.road} at ${hud.street.cross}`">
+      <span class="hud-street-road">{{ hud.street.road }}</span>
+      <span class="hud-street-cross">{{ hud.street.junction ? '& ' : '' }}{{ hud.street.cross }}</span>
+    </div>
+
     <p v-if="place" :key="place.key" class="hud-place">{{ place.label }}</p>
 
     <footer class="hud-bottom">
@@ -475,6 +481,47 @@ function hold(slot: BarSlot): void {
 .hud-wave.is-quiet {
   color: var(--bone-dim);
   font-weight: 400;
+}
+
+.hud-street {
+  position: absolute;
+  top: calc(var(--u) * 5);
+  left: 0;
+  right: 0;
+  width: fit-content;
+  min-width: calc(var(--u) * 36);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--u);
+  padding: calc(var(--u) * 2) calc(var(--u) * 5);
+  background: #1d6b3b;
+  /* Stepped corners and a white rim, drawn as hard shadows so the edge stays pixel-crisp. */
+  box-shadow: 0 0 0 var(--u) #e9efe6, 0 0 0 calc(var(--u) * 2) #0f3a20;
+  color: #e9efe6;
+  font-family: 'Silkscreen', monospace;
+  text-transform: uppercase;
+  text-align: center;
+  image-rendering: pixelated;
+}
+
+.hud-street-road {
+  font-size: 1.15em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.hud-street-cross {
+  font-size: 0.8em;
+  opacity: 0.85;
+  letter-spacing: 0.08em;
+}
+
+.hud-street.is-junction .hud-street-cross {
+  opacity: 1;
+  font-size: 1.15em;
+  font-weight: 700;
 }
 
 .hud-place {

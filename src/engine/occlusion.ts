@@ -1,4 +1,5 @@
-import { BUILDING_DEFS, PROP_DEFS } from '../../shared/protocol.ts';
+import { isSewerBuilding } from '../../shared/map-protocol.ts';
+import { BUILDING_DEFS, PROP_DEFS, TILE_KINDS, TILE_SIZE } from '../../shared/protocol.ts';
 import type { PropKind, WorldMap } from '../../shared/protocol.ts';
 import { wallBoxes } from '../../shared/world-map.ts';
 
@@ -40,14 +41,34 @@ export class OcclusionGrid {
     this.rows = Math.ceil(map.height / CELL);
     this.cells = new Uint8Array(this.cols * this.rows);
     for (const building of map.buildings) {
+      // The sewers' own walls are the brick and rock tiles below, not a roof over the whole maze.
+      if (isSewerBuilding(building)) continue;
       const { w, h } = BUILDING_DEFS[building.kind];
       this.fill(building.x, building.y, building.x + w, building.y + h, ROOM);
     }
+    this.fillSewerRock(map);
     for (const wall of wallBoxes(map)) this.fill(wall.x0, wall.y0, wall.x1, wall.y1, WALL);
     for (const prop of map.props) {
       if (!BLOCKS_LIGHT.has(prop.kind)) continue;
       const { w, h } = PROP_DEFS[prop.kind];
       this.fill(prop.x - w / 2, prop.y - h, prop.x + w / 2, prop.y, PROP);
+    }
+  }
+
+  /** Light stops at the sewers' brick and rock, a run of tiles at a time. */
+  private fillSewerRock(map: WorldMap): void {
+    if (!map.sewers) return;
+    for (let row = map.sewers.top; row < map.rows; row += 1) {
+      let start = -1;
+      for (let col = 0; col <= map.cols; col += 1) {
+        const kind = col < map.cols ? TILE_KINDS[map.tiles[row * map.cols + col]] : null;
+        const isRock = kind === 'void' || kind === 'sewer_wall';
+        if (isRock && start < 0) start = col;
+        if (!isRock && start >= 0) {
+          this.fill(start * TILE_SIZE, row * TILE_SIZE, col * TILE_SIZE, (row + 1) * TILE_SIZE, WALL);
+          start = -1;
+        }
+      }
     }
   }
 

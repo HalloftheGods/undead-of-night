@@ -1,6 +1,6 @@
 import { TILE_SIZE } from './protocol.ts';
 import type { District } from './protocol.ts';
-import { pick, randInt, randRange, shuffle } from './rng.ts';
+import { randInt, shuffle } from './rng.ts';
 import type { Rng } from './rng.ts';
 import type { Box } from './world-query.ts';
 
@@ -9,10 +9,20 @@ export const MAP_TILES = 200;
 export const WALK_TILES = 2;
 /** Open verge between the outermost blocks and the fence. */
 export const EDGE_TILES = 6;
-const AVENUE_TILES = 7;
-const MIN_BLOCK_W = 16;
-const MIN_BLOCK_H = 11;
-const PARK_STREET_TILES = 5;
+export const AVENUE_TILES = 7;
+/** Every street but the two avenues. */
+export const STREET_TILES = 5;
+/**
+ * The town sits on a fixed grid, like a Utah city. The avenues cross at the middle tile; a street
+ * runs every pitch from there, so crossings always share their X and Y. East-west streets are
+ * 1 grid step apart in rows, north-south ones in columns. One step is a "100" in street names.
+ */
+export const GRID_CENTRE_COL = 100;
+export const GRID_CENTRE_ROW = 100;
+export const GRID_PITCH_COLS = 36;
+export const GRID_PITCH_ROWS = 32;
+/** Grid steps out from the avenues that carry a street: 100 and 200, either side. */
+export const GRID_STEPS = 2;
 
 export interface TileRect {
   readonly c0: number;
@@ -40,22 +50,12 @@ export interface TownPlan {
   readonly spawn: { readonly x: number; readonly y: number };
 }
 
-/** Block size limits and street widths give each district its grain. */
-const SHAPES: Record<TownStyle, { readonly maxW: number; readonly maxH: number; readonly roads: readonly number[] }> = {
-  downtown: { maxW: 42, maxH: 24, roads: [5] },
-  old_town: { maxW: 30, maxH: 22, roads: [3, 3, 5] },
-  riverside: { maxW: 58, maxH: 16, roads: [3, 5] },
-  industrial: { maxW: 60, maxH: 34, roads: [5, 7] },
-};
-
 const DISTRICT_NAMES: Record<TownStyle, string> = {
   downtown: 'Downtown',
   old_town: 'Old Town',
   riverside: 'Riverside',
   industrial: 'Industrial Yard',
 };
-
-const clamp = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value));
 
 export function rectBox(rect: TileRect): Box {
   return { x0: rect.c0 * TILE_SIZE, y0: rect.r0 * TILE_SIZE, x1: rect.c1 * TILE_SIZE, y1: rect.r1 * TILE_SIZE };
@@ -65,94 +65,52 @@ function rectCentre(rect: TileRect): { x: number; y: number } {
   return { x: ((rect.c0 + rect.c1) / 2) * TILE_SIZE, y: ((rect.r0 + rect.r1) / 2) * TILE_SIZE };
 }
 
-/** A street's ends reach the roads it meets, or the fence where there is nothing else to meet. */
-function streetEnds(low: number, high: number): { from: number; to: number } {
-  return {
-    from: low === EDGE_TILES ? 1 : low - WALK_TILES,
-    to: high === MAP_TILES - EDGE_TILES ? MAP_TILES - 1 : high + WALK_TILES,
-  };
-}
-
-/** Cuts a rect in two along a new street. `at` is the first half's size in tiles. */
-function splitRect(rect: TileRect, vertical: boolean, at: number, width: number): { first: TileRect; second: TileRect; road: Road } {
-  if (vertical) {
-    const roadCol = rect.c0 + at + WALK_TILES;
-    const { from, to } = streetEnds(rect.r0, rect.r1);
-    return {
-      first: { ...rect, c1: rect.c0 + at },
-      second: { ...rect, c0: roadCol + width + WALK_TILES },
-      road: { c0: roadCol, c1: roadCol + width, r0: from, r1: to, horizontal: false },
-    };
+/** The streets as [first, one past last) tile spans across one axis, in order, with the avenue's step at 0. */
+export function gridSpans(centre: number, pitch: number): { step: number; from: number; to: number }[] {
+  const spans: { step: number; from: number; to: number }[] = [];
+  for (let step = -GRID_STEPS; step <= GRID_STEPS; step++) {
+    const width = step === 0 ? AVENUE_TILES : STREET_TILES;
+    const from = centre + step * pitch - (width >> 1);
+    spans.push({ step, from, to: from + width });
   }
-  const roadRow = rect.r0 + at + WALK_TILES;
-  const { from, to } = streetEnds(rect.c0, rect.c1);
-  return {
-    first: { ...rect, r1: rect.r0 + at },
-    second: { ...rect, r0: roadRow + width + WALK_TILES },
-    road: { r0: roadRow, r1: roadRow + width, c0: from, c1: to, horizontal: true },
-  };
+  return spans;
 }
 
-/** Recursive cuts, so side streets end at the street they meet instead of forming a grid. */
-function subdivide(rect: TileRect, style: TownStyle, roads: Road[], blocks: Block[], rng: Rng): void {
-  const shape = SHAPES[style];
-  const width = rect.c1 - rect.c0;
-  const height = rect.r1 - rect.r0;
-  const roadWidth = pick(rng, shape.roads);
-  const street = roadWidth + WALK_TILES * 2;
-  const splitAcross = width > shape.maxW && width >= MIN_BLOCK_W * 2 + street;
-  const splitDown = height > shape.maxH && height >= MIN_BLOCK_H * 2 + street;
-  const smallEnough = !splitAcross && !splitDown;
-  if (smallEnough) {
-    blocks.push({ ...rect, style });
-    return;
-  }
-  const vertical = splitAcross && (!splitDown || width / shape.maxW >= height / shape.maxH);
-  const free = (vertical ? width : height) - street;
-  const least = vertical ? MIN_BLOCK_W : MIN_BLOCK_H;
-  const at = clamp(Math.round(free * randRange(rng, 0.38, 0.62)), least, free - least);
-  const { first, second, road } = splitRect(rect, vertical, at, roadWidth);
-  roads.push(road);
-  subdivide(first, style, roads, blocks, rng);
-  subdivide(second, style, roads, blocks, rng);
+/** The open ground between neighbouring streets (and the fence verge), pavements already taken off. */
+function gaps(spans: readonly { from: number; to: number }[]): { lo: number; hi: number }[] {
+  const edges = [{ lo: EDGE_TILES, hi: spans[0].from - WALK_TILES }];
+  for (let i = 1; i < spans.length; i++) edges.push({ lo: spans[i - 1].to + WALK_TILES, hi: spans[i].from - WALK_TILES });
+  edges.push({ lo: spans[spans.length - 1].to + WALK_TILES, hi: MAP_TILES - EDGE_TILES });
+  return edges;
 }
 
-/** Carves the park out of the corner of a quadrant nearest the main crossing. */
-function carvePark(quadrant: TileRect, west: boolean, north: boolean, roads: Road[], rng: Rng): { park: TileRect; rest: TileRect[] } {
-  const street = PARK_STREET_TILES + WALK_TILES * 2;
-  const parkW = randInt(rng, 34, 40);
-  const parkH = randInt(rng, 32, 38);
-  const quadrantW = quadrant.c1 - quadrant.c0;
-  const across = splitRect(quadrant, true, west ? quadrantW - parkW - street : parkW, PARK_STREET_TILES);
-  const column = west ? across.second : across.first;
-  const quadrantH = column.r1 - column.r0;
-  const down = splitRect(column, false, north ? quadrantH - parkH - street : parkH, PARK_STREET_TILES);
-  roads.push(across.road, down.road);
-  return {
-    park: north ? down.second : down.first,
-    rest: [west ? across.first : across.second, north ? down.first : down.second],
-  };
-}
-
-/** The town at tile level: where the roads, the blocks and the park go. */
+/** The town at tile level: where the roads, the blocks and the park go. Always the same grid; the seed picks districts. */
 export function planTown(rng: Rng): TownPlan {
-  const avenueCol = randInt(rng, 88, 112);
-  const avenueRow = randInt(rng, 88, 112);
+  const colSpans = gridSpans(GRID_CENTRE_COL, GRID_PITCH_COLS);
+  const rowSpans = gridSpans(GRID_CENTRE_ROW, GRID_PITCH_ROWS);
   const roads: Road[] = [
-    { c0: avenueCol, c1: avenueCol + AVENUE_TILES, r0: 1, r1: MAP_TILES - 1, horizontal: false },
-    { r0: avenueRow, r1: avenueRow + AVENUE_TILES, c0: 1, c1: MAP_TILES - 1, horizontal: true },
+    ...colSpans.map(({ from, to }): Road => ({ c0: from, c1: to, r0: 1, r1: MAP_TILES - 1, horizontal: false })),
+    ...rowSpans.map(({ from, to }): Road => ({ r0: from, r1: to, c0: 1, c1: MAP_TILES - 1, horizontal: true })),
   ];
-  const westEnd = avenueCol - WALK_TILES;
-  const eastStart = avenueCol + AVENUE_TILES + WALK_TILES;
-  const northEnd = avenueRow - WALK_TILES;
-  const southStart = avenueRow + AVENUE_TILES + WALK_TILES;
-  const far = MAP_TILES - EDGE_TILES;
-  const quadrants: readonly TileRect[] = [
-    { c0: EDGE_TILES, c1: westEnd, r0: EDGE_TILES, r1: northEnd },
-    { c0: eastStart, c1: far, r0: EDGE_TILES, r1: northEnd },
-    { c0: EDGE_TILES, c1: westEnd, r0: southStart, r1: far },
-    { c0: eastStart, c1: far, r0: southStart, r1: far },
-  ];
+  // The two avenues lead, so the wall pass (which skips the first two roads) leaves them alone.
+  const avenues = roads.filter((road) => (road.horizontal ? road.r1 - road.r0 : road.c1 - road.c0) === AVENUE_TILES);
+  roads.splice(0, roads.length, ...avenues, ...roads.filter((road) => !avenues.includes(road)));
+
+  const colGaps = gaps(colSpans);
+  const rowGaps = gaps(rowSpans);
+  /** Gaps before the avenue are west/north of it: with two streets a side that is gaps 0 to 2. */
+  const firstEast = GRID_STEPS + 1;
+  const quadrantOf = (gapCol: number, gapRow: number): number => (gapCol < firstEast ? 0 : 1) + (gapRow < firstEast ? 0 : 2);
+  const quadrantRect = (index: number): TileRect => {
+    const west = index % 2 === 0;
+    const north = index < 2;
+    return {
+      c0: west ? EDGE_TILES : colSpans[GRID_STEPS].to + WALK_TILES,
+      c1: west ? colSpans[GRID_STEPS].from - WALK_TILES : MAP_TILES - EDGE_TILES,
+      r0: north ? EDGE_TILES : rowSpans[GRID_STEPS].to + WALK_TILES,
+      r1: north ? rowSpans[GRID_STEPS].from - WALK_TILES : MAP_TILES - EDGE_TILES,
+    };
+  };
 
   // Old Town and the park share a quadrant, with Downtown across the crossing from them.
   const home = randInt(rng, 0, 3);
@@ -165,17 +123,24 @@ export function planTown(rng: Rng): TownPlan {
     styles[index] = flanks[order];
   });
 
+  // The park is the block of the home quadrant that touches the main crossing.
+  const parkGapCol = home % 2 === 0 ? firstEast - 1 : firstEast;
+  const parkGapRow = home < 2 ? firstEast - 1 : firstEast;
+  const parkCol = colGaps[parkGapCol];
+  const parkRow = rowGaps[parkGapRow];
+  const park: TileRect = { c0: parkCol.lo, c1: parkCol.hi, r0: parkRow.lo, r1: parkRow.hi };
+
   const blocks: Block[] = [];
-  const carved = carvePark(quadrants[home], home % 2 === 0, home < 2, roads, rng);
-  const districts: District[] = [];
-  quadrants.forEach((quadrant, index) => {
-    const style = styles[index];
-    districts.push({ name: DISTRICT_NAMES[style], ...rectCentre(quadrant) });
-    const isHomeQuadrant = index === home;
-    if (isHomeQuadrant) carved.rest.forEach((rect) => subdivide(rect, style, roads, blocks, rng));
-    else subdivide(quadrant, style, roads, blocks, rng);
+  colGaps.forEach((colGap, gapCol) => {
+    rowGaps.forEach((rowGap, gapRow) => {
+      const isPark = colGap === parkCol && rowGap === parkRow;
+      if (isPark) return;
+      blocks.push({ c0: colGap.lo, c1: colGap.hi, r0: rowGap.lo, r1: rowGap.hi, style: styles[quadrantOf(gapCol, gapRow)] });
+    });
   });
-  const spawn = rectCentre(carved.park);
+  const districts: District[] = [];
+  styles.forEach((style, index) => districts.push({ name: DISTRICT_NAMES[style], ...rectCentre(quadrantRect(index)) }));
+  const spawn = rectCentre(park);
   districts.push({ name: 'Park', ...spawn });
-  return { roads, blocks, park: carved.park, districts, spawn };
+  return { roads, blocks, park, districts, spawn };
 }

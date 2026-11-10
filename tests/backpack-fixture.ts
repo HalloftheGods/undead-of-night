@@ -40,6 +40,8 @@ export function aHud(patch: Partial<HudState> = {}): HudState {
     gear: null,
     bench: null,
     boss: null,
+    street: null,
+    moodles: [],
     ...patch,
   };
 }

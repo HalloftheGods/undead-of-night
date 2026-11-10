@@ -10,11 +10,12 @@ import type { PlayerGear } from './gun-upgrades.ts';
 import type { HomeAction, HomeView, JoinHome, MerchantEntity, MerchantId, OverrunEnd, RoomHomeView } from './home-protocol.ts';
 import type { LeftoverView } from './leftovers.ts';
 import type { GunEffect } from './round-effect-data.ts';
+import type { BackpackTier } from './backpack.ts';
 import type { SurvivalNeeds } from './survival-needs.ts';
 import type { BenchAction, BenchView } from './workbench.ts';
 
 export { GAME_EVENT_TYPES, GAME_PHASES, PICKUP_TYPES };
-export type { SurvivalNeeds };
+export type { BackpackTier, SurvivalNeeds };
 // The world map types live in map-protocol.ts; everything still imports them from here.
 export { BUILDING_DEFS, BUILDING_KINDS, DOOR_WIDTH, PROP_DEFS, PROP_KINDS, TILE_KINDS, TILE_SIZE, WALL_THICKNESS } from './map-protocol.ts';
 export type { BuildingInstance, BuildingKind, District, MapLight, PropInstance, PropKind, TileKind, WorldMap } from './map-protocol.ts';
@@ -120,6 +121,7 @@ export interface PlayerEntity {
   /** Treasure carried, station and trip result. Left off outside home mode. */
   home?: HomeView;
   needs?: SurvivalNeeds;
+  backpackTier?: BackpackTier;
 }
 
 export interface ZombieEntity {

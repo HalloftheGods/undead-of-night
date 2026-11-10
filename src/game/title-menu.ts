@@ -170,6 +170,7 @@ export interface RecordStat {
 const RECORD_TAGS: Readonly<Record<GameStyle, readonly [string, string, string, string]>> = {
   arcade: ['Best score', 'Hordes', 'Kills', 'Best time'],
   campaign: ['Best trip score', 'Trip hordes', 'Trip kills', 'Best trip time'],
+  daily: ['Best score', 'Hordes', 'Kills', 'Best time'],
 };
 
 /** A style's own best: Arcade's whole run, or Campaign's single trip. The two are never compared. */
@@ -198,7 +199,7 @@ export function recordSections(arcadeBest: BestRun | null, campaignBest: BestRun
 }
 
 /** What a leaderboard row says about where it came from: a Campaign entry is one trip, an Arcade entry a whole run. */
-const ROW_LABELS: Readonly<Record<GameStyle, string>> = { campaign: 'Campaign trip', arcade: 'Arcade run' };
+const ROW_LABELS: Readonly<Record<GameStyle, string>> = { campaign: 'Campaign trip', arcade: 'Arcade run', daily: 'Daily Night run' };
 
 const SHOWN_RUNS = 5;
 

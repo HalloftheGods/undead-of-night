@@ -97,6 +97,7 @@ export function createPlayer(arrival: Arrival, spot: { x: number; y: number }): 
     ...freshEmoteBudget(),
     home: null,
     needs: createDefaultSurvivalNeeds(),
+    backpackTier: 'satchel',
   };
   giveStartingLoadout(player);
   return player;
