@@ -64,7 +64,7 @@ describe('the bench as a player reads it', () => {
     const walkUp = benchHud(frame(false), { id: 'a', home: { station: 'bench' } } as PlayerEntity);
     expect(between?.walkUp).toBe(false);
     expect(walkUp?.walkUp).toBe(true);
-    expect(benchNote(between!)).toContain('Three Country is behind you');
+    expect(benchNote(between!)).toContain('Threetropolis is behind you');
     expect(benchNote(walkUp!)).not.toContain('Town');
 
     const screen = readFileSync(new URL('../src/components/WorkbenchScreen.vue', import.meta.url), 'utf8');

@@ -80,15 +80,15 @@ describe('the Sound Test lists', () => {
   it('shows only level 1\'s tracks by name at the start, the rest as ???', () => {
     const entries = musicEntries(NO_PROGRESS);
     const named = entries.filter((entry) => entry.unlocked).map((entry) => entry.where);
-    expect(named).toEqual(expect.arrayContaining(['TITLE', 'HORDE', 'ONE TOWN']));
-    expect(named).not.toContain('TWO CITY');
+    expect(named).toEqual(expect.arrayContaining(['TITLE', 'HORDE', 'ONCE HOME']));
+    expect(named).not.toContain('TWO LAKE CITY');
     expect(named).not.toContain('VICTORY');
     for (const entry of entries.filter((each) => !each.unlocked)) expect(entry.label).toBe(HIDDEN_LABEL);
   });
 
   it('opens a level\'s tracks once it is reached', () => {
     const entries = musicEntries({ highest: 3, finished: false }, 'arcade', new Set(LULLS[2].files));
-    expect(entries.filter((entry) => entry.where === 'THREE COUNTRY').every((entry) => entry.unlocked)).toBe(true);
+    expect(entries.filter((entry) => entry.where === 'THREETROPOLIS').every((entry) => entry.unlocked)).toBe(true);
     expect(entries.filter((entry) => entry.where === 'FOUR CORNERS').some((entry) => entry.unlocked)).toBe(false);
   });
 
@@ -106,7 +106,7 @@ describe('the Sound Test lists', () => {
     const finds = none.filter((entry) => entry.find);
     expect(finds.length).toBe(LULLS.reduce((sum, playlist) => sum + playlist.files.length - 1, 0));
     for (const entry of finds) expect(entry.label).toBe(HIDDEN_LABEL);
-    expect(none.filter((entry) => entry.where === 'THREE COUNTRY' && !entry.find).every((entry) => entry.unlocked)).toBe(true);
+    expect(none.filter((entry) => entry.where === 'THREETROPOLIS' && !entry.find).every((entry) => entry.unlocked)).toBe(true);
     expect(findCount(none)).toEqual({ found: 0, total: finds.length });
     const one = musicEntries(progress, 'arcade', new Set([LULLS[2].files[1]]));
     expect(findCount(one)).toEqual({ found: 1, total: finds.length });

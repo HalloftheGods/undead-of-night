@@ -68,7 +68,7 @@ const stats: GameOverStats = {
 
 describe('level wording', () => {
   it('names the level', () => {
-    expect(levelLine(3)).toBe('Three Country: Into the Breach');
+    expect(levelLine(3)).toBe('Threetropolis: Into the Breach');
   });
 
   it('counts only the hordes already seen off', () => {

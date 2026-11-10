@@ -10,8 +10,8 @@ function memoryStore(): Store {
 
 describe('Game Over retry button', () => {
   it('solo Arcade tries the town you died in again, with Start over beside it past the first town', () => {
-    expect(retryPlan({ mode: 'solo', runStyle: 'arcade', level: 3, daily: false })).toEqual({ label: 'Try again from Three Country', fromLevel: 3, startOver: true });
-    expect(retryPlan({ mode: 'solo', runStyle: 'arcade', level: 1, daily: false })).toEqual({ label: 'Try again from One Town', fromLevel: 1, startOver: false });
+    expect(retryPlan({ mode: 'solo', runStyle: 'arcade', level: 3, daily: false })).toEqual({ label: 'Try again from Threetropolis', fromLevel: 3, startOver: true });
+    expect(retryPlan({ mode: 'solo', runStyle: 'arcade', level: 1, daily: false })).toEqual({ label: 'Try again from Once Home', fromLevel: 1, startOver: false });
   });
 
   it('a Daily Night replays its own town', () => {

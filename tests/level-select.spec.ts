@@ -38,7 +38,7 @@ describe('solo start level', () => {
 
 describe('start at label', () => {
   it('names the level and its title', () => {
-    expect(startAtLabel(2)).toBe(`Start in Two City: ${LEVELS[1].title}`);
+    expect(startAtLabel(2)).toBe(`Start in Two Lake City: ${LEVELS[1].title}`);
   });
 
   it('is null with no level or an unknown one', () => {

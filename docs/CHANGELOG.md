@@ -2,7 +2,23 @@
 
 All notable changes to the Undead of Night: Last Round game are documented in this file.
 
-## [2026-11-09] - Animated book page turns, magazine layout, and 2x2 stat bars
+## [2026-11-09] - Town renames: Once Home, Two Lake City, and Threetropolis
+
+### Changed
+- Level 1 town renamed from "One Town" to "Once Home" across `shared/levels.ts`, setup screens, how-to-play guide, and sound test.
+- Level 2 town renamed from "Two City" to "Two Lake City" across level cards, overrun rules, quest definitions, and retry buttons.
+- Level 3 town renamed from "Three Country" to "Threetropolis" across level line titles, grey screamer how-to hints, bench notes, and death screens.
+- All dependent test suites updated to assert new town titles and uppercase soundtrack origins.
+
+## [2026-11-09] - A Link to the Past stairs transition and wall-flush positioning
+
+### Added
+- LTTP-style stairs transition: walking onto stairs triggers a smooth 700ms sequence consisting of a 350ms fade-out to black with camera and player held at departure, peak black floor switch at 350ms, and a 350ms fade-in to the new floor before player movement unlocks.
+- Rhythmic stair footstep cadence: `stairs_taken` schedules 4 crisp `step_hard` footsteps across the transition, with ascending pitches when climbing upstairs and descending pitches when going downstairs or to cellar.
+- `stairsFade` overlay channel on `ScreenEffects` with full canvas black wash.
+
+### Changed
+- Apartment stairs repositioned from col 7 to col 8 in `shared/storeys.ts`, moving flush against the lobby east wall without interfering with flats or furniture.
 
 ### Added
 - Reusable `PrintedBook.vue` component providing 3D page turn animations (`mag-leaf`) for all book screens: Town Guide (`TownGuidePage.vue`), Records (`RecordsPage.vue`), and Changelog (`ChangelogPage.vue`).

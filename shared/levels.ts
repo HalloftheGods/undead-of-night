@@ -35,9 +35,9 @@ export interface LevelDef {
 
 /** A run, in order. Level 1 adds nothing, so it plays as the endless game did. */
 export const LEVELS: readonly LevelDef[] = [
-  { number: 1, town: 'One Town', title: 'Silent Ruins', hordes: 2, difficulty: 1, theme: 'night', mix: { runner: 0, bloater: 0, brute: 0 } },
-  { number: 2, town: 'Two City', title: 'Escalation', hordes: 2, difficulty: 1.06, theme: 'night', mix: { runner: 0.02, bloater: 0.01, brute: 0 } },
-  { number: 3, town: 'Three Country', title: 'Into the Breach', hordes: 3, difficulty: 1.13, theme: 'industrial-dusk', mix: { runner: 0.04, bloater: 0.02, brute: 0 } },
+  { number: 1, town: 'Once Home', title: 'Silent Ruins', hordes: 2, difficulty: 1, theme: 'night', mix: { runner: 0, bloater: 0, brute: 0 } },
+  { number: 2, town: 'Two Lake City', title: 'Escalation', hordes: 2, difficulty: 1.06, theme: 'night', mix: { runner: 0.02, bloater: 0.01, brute: 0 } },
+  { number: 3, town: 'Threetropolis', title: 'Into the Breach', hordes: 3, difficulty: 1.13, theme: 'industrial-dusk', mix: { runner: 0.04, bloater: 0.02, brute: 0 } },
   { number: 4, town: 'Four Corners', title: 'Abyssal Depths', hordes: 3, difficulty: 1.2, theme: 'flooded', mix: { runner: 0.06, bloater: 0.03, brute: 0.005 } },
   { number: 5, town: 'Fiville', title: 'Contamination Zone', hordes: 3, difficulty: 1.27, theme: 'contaminated', mix: { runner: 0.08, bloater: 0.05, brute: 0.01 } },
   { number: 6, town: 'Sixburg', title: 'Blackout', hordes: 4, difficulty: 1.34, theme: 'blackout', mix: { runner: 0.1, bloater: 0.05, brute: 0.015 } },
@@ -47,7 +47,7 @@ export const LEVELS: readonly LevelDef[] = [
   { number: 10, town: 'Tenacity', title: 'Final Stand', hordes: 5, difficulty: 1.6, theme: 'burning', mix: { runner: 0.2, bloater: 0.08, brute: 0.04 } },
 ];
 
-/** The bunker's name, the town before One Town. */
+/** The bunker's name, the town before Once Home. */
 export const BASE_NAME = 'Zero Point';
 
 export const FIRST_LEVEL = 1;

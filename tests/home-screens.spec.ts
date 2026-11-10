@@ -227,14 +227,14 @@ describe('records by style', () => {
 });
 
 describe('setup page', () => {
-  it('hides the level choice in Campaign, where the co-op note no longer names One Town', () => {
+  it('hides the level choice in Campaign, where the co-op note no longer names Once Home', () => {
     const home = setupLevelLines({ style: 'campaign', multi: true, level: 3, unlocked: true, chosen: 3 });
     expect(home.startLine).toBeNull();
-    expect(home.coopNote).not.toMatch(/One Town/i);
+    expect(home.coopNote).not.toMatch(/Once Home/i);
     expect(setupLevelLines({ style: 'campaign', multi: false, level: 3, unlocked: true, chosen: 3 }).coopNote).toBeNull();
     const arcade = setupLevelLines({ style: 'arcade', multi: true, level: 3, unlocked: true, chosen: 3 });
-    expect(arcade.coopNote).toMatch(/One Town/);
-    expect(setupLevelLines({ style: 'arcade', multi: false, level: 2, unlocked: true, chosen: 2 }).startLine).toMatch(/Start in Two City/);
+    expect(arcade.coopNote).toMatch(/Once Home/);
+    expect(setupLevelLines({ style: 'arcade', multi: false, level: 2, unlocked: true, chosen: 2 }).startLine).toMatch(/Start in Two Lake City/);
   });
 
   it('claims no style for a room that decides: no level hint, and a neutral co-op line that names neither style', () => {
