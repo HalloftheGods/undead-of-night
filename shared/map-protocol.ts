@@ -3,6 +3,7 @@
 
 import type { Point } from './flow-field.ts';
 import type { Station } from './home-protocol.ts';
+import type { ManholeFlight } from './sewers.ts';
 import type { Box } from './world-query.ts';
 
 export const TILE_SIZE = 16;
@@ -102,6 +103,10 @@ export const PROP_DEFS = {
   candy_bowl: { w: 10, h: 6 },
   /** The S.O.S. Fireworks stand: an old city bus, side-on, with a hatch cut in its side. */
   fireworks_bus: { w: 96, h: 24 },
+  /** A street manhole cover. Its footprint is a whole tile, but it is walk-through: isSolidProp exempts it, so zombies can reach it. */
+  manhole: { w: 16, h: 16 },
+  /** An iron ladder bolted to the shaft wall under a manhole. */
+  sewer_ladder: { w: 16, h: 6 },
 } as const;
 export type PropKind = keyof typeof PROP_DEFS;
 export const PROP_KINDS = Object.keys(PROP_DEFS) as PropKind[];
@@ -136,9 +141,20 @@ export const BUILDING_DEFS = {
   // The wards over the hospital and the classrooms over the school, the same size as the floor below.
   hospital_upstairs: { label: 'Wards', w: 320, h: 192, doorX: 160, floor: 'floor_tile' },
   school_upstairs: { label: 'Upstairs', w: 288, h: 176, doorX: 144, floor: 'floor_wood' },
+  // The sewers under the town, laid end to end in the annex band. They have no walls of their own: the dark around them is the wall.
+  sewer_junction: { label: 'Sewer Junction', w: 128, h: 128, doorX: 64, floor: 'floor_concrete' },
+  sewer_tunnel_h: { label: 'Sewer Tunnel', w: 192, h: 96, doorX: 96, floor: 'floor_concrete' },
+  sewer_tunnel_v: { label: 'Sewer Tunnel', w: 96, h: 192, doorX: 48, floor: 'floor_concrete' },
+  sewer_pump_station: { label: 'Pump Station', w: 160, h: 128, doorX: 80, floor: 'floor_concrete' },
 } as const;
 export type BuildingKind = keyof typeof BUILDING_DEFS;
 export const BUILDING_KINDS = Object.keys(BUILDING_DEFS) as BuildingKind[];
+
+/** What a sewer piece's `of` holds: like a floor above or below, it is reached only by its ladders, but it belongs to no house. */
+export const SEWERS_OF = 'sewers';
+
+/** True for a piece of the sewers under the town. */
+export const isSewerBuilding = (building: Pick<BuildingInstance, 'kind'>): boolean => building.kind.startsWith('sewer_');
 
 export interface BuildingInstance {
   readonly id: string;
@@ -157,6 +173,8 @@ export interface District {
   readonly name: string;
   readonly x: number;
   readonly y: number;
+  /** True for a part of the sewers, below the town. */
+  readonly underground?: boolean;
 }
 
 export interface PropInstance {
@@ -197,4 +215,6 @@ export interface WorldMap {
   readonly stations?: readonly Station[];
   /** Rows of the town itself. Below them lie the floors above and below its houses, reached only by stairs. */
   readonly townRows?: number;
+  /** Manholes and their ladders: two-way crossings between street and sewer that a player takes with a key press. */
+  readonly flights?: readonly ManholeFlight[];
 }

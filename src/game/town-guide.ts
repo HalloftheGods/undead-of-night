@@ -43,8 +43,8 @@ export interface GuideFind {
   readonly note?: string;
 }
 
-/** A house's upstairs and an apartment's share a page, under `upstairs`; the floors over the hospital and school go on theirs. */
-export type PlaceId = Exclude<BuildingKind, 'apartment_upstairs' | 'hospital_upstairs' | 'school_upstairs'> | 'cars' | 'fireworks_bus';
+/** A house's upstairs and an apartment's share a page, under `upstairs`; the floors over the hospital and school go on theirs. The sewers hold nothing to find, so they get no page. */
+export type PlaceId = Exclude<BuildingKind, 'apartment_upstairs' | 'hospital_upstairs' | 'school_upstairs' | `sewer_${string}`> | 'cars' | 'fireworks_bus';
 
 export interface GuidePlace {
   readonly id: PlaceId;

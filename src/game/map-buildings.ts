@@ -59,6 +59,10 @@ export const BUILDING_LOOK: Record<BuildingKind, BuildingLook> = {
   apartment_upstairs: { group: 'homes', roof: 'flat' },
   hospital_upstairs: { group: 'medical', roof: 'flat', extra: 'vents' },
   school_upstairs: { group: 'school', roof: 'flat', extra: 'vents' },
+  sewer_junction: { group: 'work', roof: 'flat' },
+  sewer_tunnel_h: { group: 'work', roof: 'flat' },
+  sewer_tunnel_v: { group: 'work', roof: 'flat' },
+  sewer_pump_station: { group: 'work', roof: 'flat', extra: 'vents' },
 };
 
 const SHADOW = '#050609';

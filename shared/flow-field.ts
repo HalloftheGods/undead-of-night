@@ -37,6 +37,7 @@ export class FlowField {
     this.queue = new Int32Array(map.cols * map.rows);
     this.stairs = new Int32Array(map.cols * map.rows).fill(-1);
     for (const flight of flightsOf(map).values()) this.stairs[flight.fromIndex] = flight.toIndex;
+    for (const flight of map.flights ?? []) this.stairs[flight.fromIndex] = flight.toIndex;
   }
 
   get ready(): boolean {

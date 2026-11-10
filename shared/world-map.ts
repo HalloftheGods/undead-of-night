@@ -1,7 +1,7 @@
 import { generateBunkerMap } from './bunker-map.ts';
 import { isBunkerSeed } from './home-protocol.ts';
 import { BUILDING_DEFS, TILE_KINDS, TILE_SIZE } from './protocol.ts';
-import type { MapLight, PropInstance, WorldMap } from './protocol.ts';
+import type { BuildingInstance, MapLight, PropInstance, WorldMap } from './protocol.ts';
 import { biomeFor } from './biomes.ts';
 import { MapBuilder } from './map-builder.ts';
 import { createRng, randRange } from './rng.ts';
@@ -12,6 +12,7 @@ import { EDGE_TILES, MAP_TILES, planTown, rectBox } from './town-plan.ts';
 import { dressStreets, paintStreets } from './town-streets.ts';
 import { fillPark, fillVerge, raiseFence } from './world-blocks.ts';
 import { furnish } from './building-interiors.ts';
+import { withSewers } from './sewers.ts';
 import { flightsOf, planStoreys } from './storeys.ts';
 import { blockedTiles, buildingBox, isSolidProp, propBox } from './world-query.ts';
 
@@ -37,6 +38,9 @@ const STOREY_FURNISH_SALT = 0x464c5253;
 const SODIUM = '#ffb066';
 const COOL = '#9ad0ff';
 const FIRE = '#ff7a2e';
+/** Dim sodium at each ladder, and the emergency green over the pump station. */
+const SEWER_SODIUM = '#c8923c';
+const EMERGENCY_GREEN = '#46d98a';
 
 function freeTilesReached(blocked: Uint8Array, cols: number, rows: number, start: number, stairs: ReadonlyMap<number, { readonly toIndex: number }>): Uint8Array {
   const seen = new Uint8Array(cols * rows);
@@ -64,6 +68,13 @@ function freeTilesReached(blocked: Uint8Array, cols: number, rows: number, start
   return seen;
 }
 
+/** Every way between floors, by the tile it starts from: the stairs, and the manholes and ladders. */
+function crossings(base: WorldMap): ReadonlyMap<number, { readonly toIndex: number }> {
+  const all = new Map<number, { readonly toIndex: number }>(flightsOf(base));
+  for (const flight of base.flights ?? []) all.set(flight.fromIndex, flight);
+  return all;
+}
+
 function nearestSolid(props: readonly PropInstance[], x: number, y: number): number {
   let bestIndex = -1;
   let bestDistance = Infinity;
@@ -88,7 +99,7 @@ function connectedProps(base: WorldMap): PropInstance[] {
   const spawnTile = Math.floor(base.spawn.y / TILE_SIZE) * base.cols + Math.floor(base.spawn.x / TILE_SIZE);
   for (;;) {
     const blocked = blockedTiles({ ...base, props });
-    const seen = freeTilesReached(blocked, base.cols, base.rows, spawnTile, flightsOf(base));
+    const seen = freeTilesReached(blocked, base.cols, base.rows, spawnTile, crossings(base));
     const stranded = blocked.findIndex((isBlocked, index) => !isBlocked && !seen[index]);
     const hasNoStranded = stranded < 0;
     if (hasNoStranded) return props;
@@ -120,9 +131,17 @@ const JACK_UP = 10;
 const BUS_GLOWS: readonly (readonly [dx: number, radius: number, color: string])[] = [[0, 130, '#ffb04a'], [-40, 84, '#ff7ad0'], [40, 84, '#ff7ad0']];
 const BUS_GLOW_DOWN = -14;
 
-function lightsFor(props: readonly PropInstance[], rng: Rng): MapLight[] {
+function lightsFor(props: readonly PropInstance[], rng: Rng, buildings: readonly BuildingInstance[]): MapLight[] {
   const lights: MapLight[] = [];
+  for (const building of buildings) {
+    const isPumpStation = building.kind === 'sewer_pump_station';
+    if (isPumpStation) lights.push({ x: building.x + BUILDING_DEFS[building.kind].w / 2, y: building.y + BUILDING_DEFS[building.kind].h / 2, radius: 120, color: EMERGENCY_GREEN, flicker: true });
+    const isTunnel = building.kind === 'sewer_tunnel_h';
+    if (isTunnel) lights.push({ x: building.x + BUILDING_DEFS[building.kind].w / 2, y: building.y + 12, radius: 70, color: EMERGENCY_GREEN, flicker: false });
+  }
   for (const prop of props) {
+    const isSewerLadder = prop.kind === 'sewer_ladder';
+    if (isSewerLadder) lights.push({ x: prop.x, y: prop.y + 10, radius: 96, color: SEWER_SODIUM, flicker: false });
     const isFireworksBus = prop.kind === 'fireworks_bus';
     if (isFireworksBus) for (const [dx, radius, color] of BUS_GLOWS) lights.push({ x: prop.x + dx, y: prop.y + BUS_GLOW_DOWN, radius, color, flicker: true });
     const isCandyBowl = prop.kind === 'candy_bowl';
@@ -208,9 +227,9 @@ export function generateWorldMap(seed: number, level = 1): WorldMap {
     lights: [],
     spawn: plan.spawn,
   };
-  const base = withStoreys(town);
+  const base = withSewers(withStoreys(town), plan.roads);
   const props = connectedProps(base);
-  return { ...base, props, lights: lightsFor(props, rng) };
+  return { ...base, props, lights: lightsFor(props, rng, base.buildings) };
 }
 
 export const tileKindAt = (map: WorldMap, col: number, row: number) => TILE_KINDS[map.tiles[row * map.cols + col]];

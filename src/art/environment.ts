@@ -1,7 +1,7 @@
 // The world: ground tiles, street props, vehicles and buildings.
 // A prop's anchor is the bottom centre of its PROP_DEFS footprint; art may rise above it.
 
-import type { EnvironmentArt } from './types.ts';
+import type { EnvironmentArt, PixelSprite } from './types.ts';
 import { buildBrickApartment, buildSlabApartment } from './environment/apartment.ts';
 import { buildCrates } from './containers/cartons.ts';
 import { buildFridge, buildLocker } from './containers/shelving.ts';
@@ -24,6 +24,7 @@ import { buildReeds, buildFungus } from './environment/blight.ts';
 import { buildPine } from './environment/evergreen.ts';
 import { buildBush, buildRubble, buildTree } from './environment/nature.ts';
 import { buildBlastDoor, buildBlastDoorBuckling, buildBlastDoorBurst, buildChest, buildChestOpen } from './environment/overrun-props.ts';
+import { buildManhole, buildSewerLadder } from './environment/sewer-props.ts';
 import { buildPharmacy } from './environment/pharmacy.ts';
 import { buildPolice } from './environment/police.ts';
 import { buildSchool } from './environment/school.ts';
@@ -44,6 +45,11 @@ import { buildEscapeVanLights, buildVan, VAN_LIVERIES } from './environment/van.
 import { buildSedanH, buildSedanV, buildWreckH } from './environment/vehicles.ts';
 import { buildBrickWarehouse, buildSteelWarehouse } from './environment/warehouse.ts';
 import { buildFenceH, buildFenceV, buildGasPump } from './environment/yard.ts';
+
+/** The sewers have no roof or walls to draw: the dark around them is the wall, so each piece is one clear pixel. */
+function buildSewerShell(): PixelSprite {
+  return { w: 1, h: 1, ax: 0, ay: 1, rgba: new Uint8ClampedArray(4) };
+}
 
 export function buildEnvironment(): EnvironmentArt {
   return {
@@ -94,6 +100,8 @@ export function buildEnvironment(): EnvironmentArt {
       chest: buildChest(),
       candy_bowl: buildCandyBowl(),
       fireworks_bus: buildFireworksBus(),
+      manhole: buildManhole(),
+      sewer_ladder: buildSewerLadder(),
     },
     paintJobs: {
       car_sedan_h: CAR_PAINTS.map(buildSedanH),
@@ -125,6 +133,11 @@ export function buildEnvironment(): EnvironmentArt {
       apartment_upstairs: [buildBrickApartment()],
       hospital_upstairs: [buildHospital()],
       school_upstairs: [buildSchool()],
+      // The sewers under the town: nothing to see from outside, so each is a single clear pixel.
+      sewer_junction: [buildSewerShell()],
+      sewer_tunnel_h: [buildSewerShell()],
+      sewer_tunnel_v: [buildSewerShell()],
+      sewer_pump_station: [buildSewerShell()],
     },
     interior: buildInterior(),
     barrelFire: buildBarrelFire(),

@@ -22,6 +22,9 @@ const HOME_KEEPSAKES: ContainerLootRule['table'] = { bandage: 2, knife: 0.15 };
 /** Homes are where the extra ammo went: a box in a drawer is why it is worth going in. */
 const HOME: ContainerLootRule = { odds: 0.24, table: { ...HOME_KEEPSAKES, pistol_ammo: 3, shells: 0.25 } };
 
+/** The sewers have nothing in them to search (no containers are ever placed there), so this rule is never rolled; it only keeps the table complete. */
+const NOTHING_UNDERGROUND: ContainerLootRule = { odds: 0.1, table: { bandage: 1 } };
+
 export const CONTAINER_LOOT: Record<BuildingKind | 'outdoors', ContainerLootRule> = {
   house: HOME,
   apartment: HOME,
@@ -29,6 +32,10 @@ export const CONTAINER_LOOT: Record<BuildingKind | 'outdoors', ContainerLootRule
   apartment_upstairs: { odds: 0.3, table: HOME_KEEPSAKES },
   hospital_upstairs: { odds: 0.3, table: { bandage: 3, medkit: 2 } },
   school_upstairs: { odds: 0.2, table: { bandage: 3, knife: 1 } },
+  sewer_junction: NOTHING_UNDERGROUND,
+  sewer_tunnel_h: NOTHING_UNDERGROUND,
+  sewer_tunnel_v: NOTHING_UNDERGROUND,
+  sewer_pump_station: NOTHING_UNDERGROUND,
   cellar: { odds: 0.35, table: { bandage: 2, medkit: 1, knife: 0.6 } },
   diner: { odds: 0.4, table: { bandage: 3, pistol_ammo: 1, knife: 1.5 } },
   garage: { odds: 0.25, table: { pistol_ammo: 1.2, shells: 0.6, bandage: 2, knife: 1.5 } },

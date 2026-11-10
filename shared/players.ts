@@ -22,6 +22,7 @@ import { gunsFree } from './overrun.ts';
 import type { ClientInputPacket, Stance } from './protocol.ts';
 import type { PlayerState, SimState } from './sim-state.ts';
 import { updateStations } from './stations.ts';
+import { takeManhole } from './take-manhole.ts';
 import { takeStairs } from './take-stairs.ts';
 import { updateWeapons } from './weapons.ts';
 import { buildingAt } from './world-query.ts';
@@ -147,6 +148,7 @@ export function updatePlayer(sim: SimState, p: PlayerState): void {
   updateStamina(p);
   footsteps(sim, p);
   takeStairs(sim, p);
+  takeManhole(sim, p);
   p.indoors = buildingAt(sim.map, p.x, p.y)?.id ?? null;
   leaveFootprint(sim, p);
   const holdingFire = isBunkerMap(sim.map) && !gunsFree(sim);

@@ -4,6 +4,7 @@ import type { Point } from './flow-field.ts';
 import { buildingsWithStairs, isStorey, voidBoxes } from './storeys.ts';
 import { BUILDING_DEFS, DOOR_WIDTH, PROP_DEFS, TILE_SIZE, WALL_THICKNESS } from './protocol.ts';
 import type { BuildingInstance, PropInstance, WorldMap } from './protocol.ts';
+import { isSewerBuilding } from './map-protocol.ts';
 
 export interface Box {
   readonly x0: number;
@@ -30,7 +31,9 @@ export function propBox(prop: PropInstance): Box {
 }
 
 export function isSolidProp(prop: PropInstance): boolean {
-  return PROP_DEFS[prop.kind].h > 0;
+  // A manhole cover has a whole tile for a footprint but is flat: it is walked over to reach the ladder, by anyone with a key to press.
+  const isCover = prop.kind === 'manhole';
+  return !isCover && PROP_DEFS[prop.kind].h > 0;
 }
 
 /** The whole footprint, walls included. */
@@ -67,6 +70,8 @@ function closedWalls(building: BuildingInstance, hasStairs: boolean): Box[] {
 }
 
 function wallsOf(building: BuildingInstance, hasStairs: boolean): Box[] {
+  // The sewers are walled by the dark around them, so their pieces run together into one tunnel.
+  if (isSewerBuilding(building)) return [];
   if (isStorey(building)) return closedWalls(building, hasStairs);
   const { x0, y0, x1, y1 } = buildingBox(building);
   const door = doorBox(building);
@@ -121,8 +126,26 @@ export function buildingAt(map: WorldMap, x: number, y: number): BuildingInstanc
  */
 export function groundOf(map: WorldMap, x: number, y: number): Point {
   const here = isBelowTown(map, y) ? buildingAt(map, x, y) : null;
+  if (here && isSewerBuilding(here)) return manholeAbove(map, x, y);
   const house = here?.of === undefined ? null : map.buildings.find((building) => building.id === here.of);
   return house && here ? { x: house.x + x - here.x, y: house.y + y - here.y } : { x, y };
+}
+
+/** Someone in the sewers is as near as the street at the foot of the nearest ladder: noise and shots carry up to it. */
+function manholeAbove(map: WorldMap, x: number, y: number): Point {
+  let best: Point | null = null;
+  let bestDistance = Infinity;
+  for (const flight of map.flights ?? []) {
+    const isLadderFoot = !flight.down;
+    if (!isLadderFoot) continue;
+    const distance = Math.hypot(flight.from.x - x, flight.from.y - y);
+    const isNearer = distance < bestDistance;
+    if (isNearer) {
+      bestDistance = distance;
+      best = flight.to;
+    }
+  }
+  return best ?? { x, y };
 }
 
 function isBelowTown(map: WorldMap, y: number): boolean {

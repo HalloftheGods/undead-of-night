@@ -12,17 +12,19 @@ const placeOf = (id: GuidePlace['id']): GuidePlace => {
 };
 /** Floors that read on another kind's page. */
 const PAGE_OF: Partial<Record<BuildingKind, GuidePlace['id']>> = { apartment_upstairs: 'upstairs', hospital_upstairs: 'hospital', school_upstairs: 'school' };
+/** The sewers hold nothing to find, so the guide gives them no page. */
+const inGuide = (kind: BuildingKind): boolean => !kind.startsWith('sewer_');
 const tierOf = (id: GuidePlace['id'], find: string) => placeOf(id).finds.find((each) => each.id === find)?.tier;
 
 describe('the Town Guide', () => {
   it('has a page for every kind of building, each floor on its building\'s page, one for the street and one for the fireworks bus', () => {
     const ids = guidePlaces().map((place) => place.id);
-    const covered = BUILDING_KINDS.filter((kind) => PAGE_OF[kind] === undefined);
+    const covered = BUILDING_KINDS.filter((kind) => PAGE_OF[kind] === undefined && inGuide(kind));
     expect([...ids].sort()).toEqual([...covered, 'cars', 'fireworks_bus'].sort());
   });
 
   it('lists every find a building\'s floors can hold', () => {
-    for (const kind of Object.keys(LOOT_RULES) as BuildingKind[]) {
+    for (const kind of (Object.keys(LOOT_RULES) as BuildingKind[]).filter(inGuide)) {
       const page = placeOf(PAGE_OF[kind] ?? (kind as GuidePlace['id']));
       const ids = page.finds.map((find) => find.id);
       for (const type of Object.keys(LOOT_RULES[kind].table)) expect(ids).toContain(type);

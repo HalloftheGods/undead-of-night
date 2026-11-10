@@ -39,6 +39,9 @@ export interface LootRule {
   readonly smallAmmo?: boolean;
 }
 
+/** The sewers hold nothing to pick up. */
+const NOTHING_UNDERGROUND: LootRule = { items: [0, 0], table: { bandage: 1 } };
+
 export const LOOT_RULES: Record<BuildingKind, LootRule> = {
   pharmacy: { items: [2, 4], table: { bandage: 5, medkit: 3, pistol_ammo: 0.5 } },
   clinic: { items: [3, 4], table: { bandage: 4, medkit: 4 } },
@@ -64,6 +67,10 @@ export const LOOT_RULES: Record<BuildingKind, LootRule> = {
   // The wards keep their own first aid; the classrooms upstairs, a nurse's kit and a confiscated knife.
   hospital_upstairs: { items: [1, 3], table: { bandage: 4, medkit: 2 } },
   school_upstairs: { items: [0, 2], table: { bandage: 3, knife: 0.5 } },
+  sewer_junction: NOTHING_UNDERGROUND,
+  sewer_tunnel_h: NOTHING_UNDERGROUND,
+  sewer_tunnel_v: NOTHING_UNDERGROUND,
+  sewer_pump_station: NOTHING_UNDERGROUND,
 };
 
 const STOREY_LOOT_SALT = 0x55504457;
