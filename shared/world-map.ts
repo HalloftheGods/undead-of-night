@@ -32,6 +32,8 @@ export type { Box } from './world-query.ts';
 
 /** Depth of the strip the verge scatter works in, along each edge of the map. */
 const VERGE_TILES = 6;
+/** A terrain patch reaches at most this many radii (the blob's ragged edge); none may touch the spawn. */
+const SPAWN_CLEARANCE = 1.1;
 
 const STOREY_FURNISH_SALT = 0x464c5253;
 
@@ -116,7 +118,11 @@ function spreadTerrain(b: MapBuilder): void {
   const inner = EDGE_TILES * TILE_SIZE + TILE_SIZE;
   for (let i = 0; i < terrain.count; i++) {
     const radius = randRange(b.rng, terrain.radius[0], terrain.radius[1]);
-    b.blob(randRange(b.rng, inner, size - inner), randRange(b.rng, inner, size - inner), radius, terrain.tile, terrain.over);
+    const x = randRange(b.rng, inner, size - inner);
+    const y = randRange(b.rng, inner, size - inner);
+    // The patch the park's spawn stands on stays clear: a drift is never laid over the safe square.
+    const coversSpawn = Math.hypot(x - b.spawn.x, y - b.spawn.y) < radius * SPAWN_CLEARANCE;
+    if (!coversSpawn) b.blob(x, y, radius, terrain.tile, terrain.over);
   }
 }
 
