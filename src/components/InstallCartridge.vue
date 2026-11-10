@@ -56,25 +56,20 @@ onBeforeUnmount(() => setTitleShowing(false));
 }
 
 /*
- * Portrait: small, centred above the credit line. It never sits in the flow, so the menu does not jump
- * when the install prompt arrives. A screen too short to hold it clear of the menu and the credit line goes without.
+ * Portrait: small, centred directly under the menu (.title-columns is its positioning parent). It never sits in the
+ * flow, so the menu does not jump when the install prompt arrives, and it can never cover a menu row: it hangs off the
+ * menu's own bottom edge. A screen too short to hold it clear of the menu and the credit line goes without.
  */
 @media (orientation: portrait) {
   .cartridge {
     --pixel: var(--u);
     position: absolute;
-    top: auto;
-    bottom: calc(var(--u) * 26);
+    top: 100%;
+    bottom: auto;
+    margin-top: calc(var(--u) * 4);
     left: 0;
     right: 0;
-    margin: 0 auto;
-  }
-}
-
-/* On a very narrow screen the credit line and the Privacy link wrap to two rows, so it sits higher. */
-@media (orientation: portrait) and (max-width: 340px) {
-  .cartridge {
-    bottom: calc(var(--u) * 44);
+    margin-inline: auto;
   }
 }
 

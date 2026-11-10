@@ -165,6 +165,7 @@ function openItem(item: TitleMenuItem): void {
 }
 
 .title-columns {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
