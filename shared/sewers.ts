@@ -35,8 +35,8 @@ export interface ManholeFlight extends Flight {
 /** Its own generator, so the town and the run roll exactly as they did before there were sewers. */
 const SEWER_SALT = 0x53455752;
 
-export const MIN_MANHOLES = 6;
-export const MAX_MANHOLES = 8;
+export const MIN_MANHOLES = 12;
+export const MAX_MANHOLES = 18;
 /** Tiles of dark between the last floor and the sewers. */
 const SEWER_GAP_TILES = Math.min(ANNEX_GAP_TILES, 3);
 /** A tunnel is this many tiles either side of its middle: five across, a canal between two walkways. */
@@ -59,7 +59,7 @@ const SHAFT_OFFSETS: readonly (readonly [number, number])[] = [[-1, 2], [1, 2], 
 /** How far into its foot's tile the ladder's base stands: less than the half-tile a climber stands at, so they are drawn after it. */
 const LADDER_BASE_PX = 4;
 /** Manholes keep this far apart, in tiles. */
-const MIN_SPACING_TILES = 20;
+const MIN_SPACING_TILES = 11;
 
 const ROAD_TILES: ReadonlySet<TileKind> = new Set<TileKind>(['asphalt', 'asphalt_cracked', 'lane_h', 'lane_v']);
 
@@ -247,25 +247,46 @@ function sidePassages(rng: Rng, tunnels: readonly Tunnel[], cols: number, rows: 
   return { tunnels: side, chambers };
 }
 
-const farFrom = (chosen: readonly Crossing[], spot: Crossing): boolean => chosen.every((other) => Math.hypot(other.col - spot.col, other.row - spot.row) >= MIN_SPACING_TILES);
+const farFrom = (chosen: readonly Crossing[], spot: Crossing, minSpacing: number = MIN_SPACING_TILES): boolean =>
+  chosen.every((other) => Math.hypot(other.col - spot.col, other.row - spot.row) >= minSpacing);
 
-/** 6 to 8 crossings: one in each quadrant that has one, then extras from anywhere, all well apart. */
-function chooseNodes(rng: Rng, candidates: readonly number[], nodes: readonly Crossing[], cols: number, townRows: number): number[] {
+/** Crossings spread across quadrants, prioritizing major avenue trunk cross streets. */
+function chooseNodes(rng: Rng, candidates: readonly number[], nodes: readonly Crossing[], cols: number, townRows: number, trunkNodes: ReadonlySet<number>): number[] {
   const quadrantOf = (index: number): number => (nodes[index].col < cols / 2 ? 0 : 1) + (nodes[index].row < townRows / 2 ? 0 : 2);
   const chosen: number[] = [];
   const spots = (): Crossing[] => chosen.map((index) => nodes[index]);
+
   for (let quadrant = 0; quadrant < 4; quadrant++) {
     const here = candidates.filter((index) => quadrantOf(index) === quadrant && farFrom(spots(), nodes[index]));
-    const hasNone = here.length === 0;
-    if (!hasNone) chosen.push(pick(rng, here));
+    const trunkHere = here.filter((index) => trunkNodes.has(index));
+    const pool = trunkHere.length > 0 ? trunkHere : here;
+    const hasCandidates = pool.length > 0;
+    if (hasCandidates) chosen.push(pick(rng, pool));
   }
+
   const wanted = MIN_MANHOLES + Math.floor(rng() * (MAX_MANHOLES - MIN_MANHOLES + 1));
   while (chosen.length < wanted) {
     const left = candidates.filter((index) => !chosen.includes(index) && farFrom(spots(), nodes[index]));
     const hasNone = left.length === 0;
     if (hasNone) break;
-    chosen.push(pick(rng, left));
+    const trunkLeft = left.filter((index) => trunkNodes.has(index));
+    const pool = trunkLeft.length > 0 ? trunkLeft : left;
+    chosen.push(pick(rng, pool));
   }
+
+  const needsMore = chosen.length < MIN_MANHOLES;
+  if (needsMore) {
+    const fallbackSpacing = 8;
+    while (chosen.length < MIN_MANHOLES) {
+      const left = candidates.filter((index) => !chosen.includes(index) && farFrom(spots(), nodes[index], fallbackSpacing));
+      const hasNone = left.length === 0;
+      if (hasNone) break;
+      const trunkLeft = left.filter((index) => trunkNodes.has(index));
+      const pool = trunkLeft.length > 0 ? trunkLeft : left;
+      chosen.push(pick(rng, pool));
+    }
+  }
+
   return chosen.sort((a, b) => nodes[a].col - nodes[b].col || nodes[a].row - nodes[b].row);
 }
 
@@ -273,7 +294,8 @@ function chooseNodes(rng: Rng, candidates: readonly number[], nodes: readonly Cr
 function shaftTile(node: Crossing, isFree: (col: number, row: number) => boolean): Crossing | null {
   for (const [dc, dr] of SHAFT_OFFSETS) {
     const spot = { col: node.col + dc, row: node.row + dr };
-    if (isFree(spot.col, spot.row)) return spot;
+    const canTake = isFree(spot.col, spot.row);
+    if (canTake) return spot;
   }
   return null;
 }
@@ -287,6 +309,14 @@ export function planSewers(seed: number, roads: readonly Road[], cols: number, t
   const top = options.top ?? townRows + SEWER_GAP_TILES;
   const isFree = options.isFree ?? (() => true);
   const { nodes, edges } = latticeOf(roads);
+  const trunkNodes = new Set<number>();
+  for (const edge of edges) {
+    const isTrunk = edge.trunk;
+    if (isTrunk) {
+      trunkNodes.add(edge.a);
+      trunkNodes.add(edge.b);
+    }
+  }
   const laid = layTunnels(rng, nodes, edges);
   // Manholes go over crossings the open tunnels join into one maze, so every one of them leads to every other.
   const parts = new Components(nodes.length);
@@ -300,10 +330,12 @@ export function planSewers(seed: number, roads: readonly Road[], cols: number, t
   const biggest = [...sizes.entries()].sort((p, q) => q[1] - p[1] || p[0] - q[0])[0]?.[0];
   const shafts = new Map<number, Crossing>();
   for (const index of reached) {
-    const spot = parts.find(index) === biggest ? shaftTile(nodes[index], isFree) : null;
-    if (spot) shafts.set(index, spot);
+    const isLargestPart = parts.find(index) === biggest;
+    const spot = isLargestPart ? shaftTile(nodes[index], isFree) : null;
+    const hasSpot = spot !== null;
+    if (hasSpot) shafts.set(index, spot);
   }
-  const picked = chooseNodes(rng, [...shafts.keys()], nodes, cols, townRows);
+  const picked = chooseNodes(rng, [...shafts.keys()], nodes, cols, townRows, trunkNodes);
   const manholes: Manhole[] = picked.map((node) => ({ ...(shafts.get(node) as Crossing), node }));
   const side = sidePassages(rng, laid.tunnels.filter((t) => t.kind !== 'dead_end'), cols, townRows);
   return { manholes, nodes, tunnels: [...laid.tunnels, ...side.tunnels], chambers: side.chambers, top };
@@ -364,7 +396,8 @@ function spanOf(tunnel: Tunnel): { c0: number; c1: number; r0: number; r1: numbe
 function paintMaze(annex: MapBuilder, plan: SewerPlan): void {
   const offset = plan.top;
   const floor = new Set<number>();
-  const canal = new Set<number>();
+  const canalH = new Set<number>();
+  const canalV = new Set<number>();
   const key = (col: number, row: number): number => row * annex.cols + col;
   const carve = (c0: number, c1: number, r0: number, r1: number, into: Set<number>): void => {
     for (let row = r0; row <= r1; row++) {
@@ -382,14 +415,27 @@ function paintMaze(annex: MapBuilder, plan: SewerPlan): void {
   for (const tunnel of plan.tunnels) {
     const isSide = tunnel.kind === 'side';
     if (isSide) continue;
-    if (tunnel.horizontal) carve(tunnel.from, tunnel.to, tunnel.line, tunnel.line, canal);
-    else carve(tunnel.line, tunnel.line, tunnel.from, tunnel.to, canal);
+    const isH = tunnel.horizontal;
+    if (isH) carve(tunnel.from, tunnel.to, tunnel.line, tunnel.line, canalH);
+    else carve(tunnel.line, tunnel.line, tunnel.from, tunnel.to, canalV);
   }
   const isFloor = (col: number, row: number): boolean => col >= 0 && row >= 0 && col < annex.cols && row < annex.rows && floor.has(key(col, row));
   for (let row = offset; row < annex.rows; row++) {
     for (let col = 0; col < annex.cols; col++) {
-      if (isFloor(col, row)) {
-        annex.setTile(col, row, canal.has(key(col, row)) ? 'floor_sewer_channel' : 'floor_sewer');
+      const isFloorTile = isFloor(col, row);
+      if (isFloorTile) {
+        const k = key(col, row);
+        const inV = canalV.has(k);
+        const inH = canalH.has(k);
+        const isVerticalOnly = inV && !inH;
+        const isCanalTile = inH || inV;
+        if (isVerticalOnly) {
+          annex.setTile(col, row, 'floor_sewer_channel_v');
+        } else if (isCanalTile) {
+          annex.setTile(col, row, 'floor_sewer_channel');
+        } else {
+          annex.setTile(col, row, 'floor_sewer');
+        }
         continue;
       }
       const touches = [-1, 0, 1].some((dr) => [-1, 0, 1].some((dc) => isFloor(col + dc, row + dr)));

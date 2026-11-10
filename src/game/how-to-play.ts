@@ -86,6 +86,20 @@ export const HOW_TO_SECTIONS: readonly HowToSection[] = [
     ],
   },
   {
+    id: 'survival',
+    tab: 'Survival',
+    title: 'Survival needs and remedies',
+    points: [
+      'Hunger and thirst slowly build as you explore, and sprinting makes them rise faster. Starvation and dehydration slow your movement and sap your stamina recovery.',
+      'Scavenge canned food and bottled water from grocery stores, diners, and residential kitchens. Stepping over rations eats or drinks them when you are in need.',
+      'Zombie attacks inflict scratches, lacerations, and lethal bites that cause bleeding. Bandages or medkits (H) close wounds and stop blood loss.',
+      'Neglected open wounds can turn septic. Use disinfectant alcohol from clinics, pharmacies, and bathrooms to clean wounds and cure early infection risk.',
+      'Bites and festering cuts progress to zombie zoonosis. Take broad-spectrum antibiotics from clinics and hospitals to stall infection growth before it turns terminal.',
+      'Exhaustion builds from constant sprinting. Stop sprinting or stand stationary to catch your breath and let fatigue decay.',
+      'Active status ailments and their immediate remedies are tracked in the bottom-right HUD moodles.',
+    ],
+  },
+  {
     id: 'searching',
     tab: 'Searching',
     title: 'Searching furniture',

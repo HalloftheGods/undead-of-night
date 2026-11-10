@@ -56,7 +56,9 @@ export function quietSim(players: readonly string[] = ['a']): { sim: GameSimulat
  */
 export function clearWay(state: SimState, reach: number, room = 10): { dx: number; dy: number } {
   const [p] = state.players;
-  for (const angle of [0, Math.PI, Math.PI / 2, -Math.PI / 2, Math.PI / 4, (3 * Math.PI) / 4, -Math.PI / 4, (-3 * Math.PI) / 4]) {
+  const directions = 24;
+  for (let i = 0; i < directions; i++) {
+    const angle = (i * 2 * Math.PI) / directions;
     const dx = Math.cos(angle);
     const dy = Math.sin(angle);
     const blocked = segmentHitsSolid(state.map, p.x, p.y, p.x + dx * reach, p.y + dy * reach) !== null;

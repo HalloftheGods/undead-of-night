@@ -18,9 +18,9 @@ interface ContainerLootRule {
 }
 
 /** What a home that came up empty is left with instead. */
-const HOME_KEEPSAKES: ContainerLootRule['table'] = { bandage: 2, knife: 0.15 };
+const HOME_KEEPSAKES: ContainerLootRule['table'] = { bandage: 2, canned_food: 1.5, water_bottle: 1.5, disinfectant: 0.4, knife: 0.15 };
 /** Homes are where the extra ammo went: a box in a drawer is why it is worth going in. */
-const HOME: ContainerLootRule = { odds: 0.24, table: { ...HOME_KEEPSAKES, pistol_ammo: 3, shells: 0.25 } };
+const HOME: ContainerLootRule = { odds: 0.25, table: { ...HOME_KEEPSAKES, pistol_ammo: 3, shells: 0.25 } };
 
 /** The sewers have nothing in them to search (no containers are ever placed there), so this rule is never rolled; it only keeps the table complete. */
 const NOTHING_UNDERGROUND: ContainerLootRule = { odds: 0.1, table: { bandage: 1 } };
@@ -30,22 +30,22 @@ export const CONTAINER_LOOT: Record<BuildingKind | 'outdoors', ContainerLootRule
   apartment: HOME,
   upstairs: { odds: 0.3, table: HOME_KEEPSAKES },
   apartment_upstairs: { odds: 0.3, table: HOME_KEEPSAKES },
-  hospital_upstairs: { odds: 0.3, table: { bandage: 3, medkit: 2 } },
-  school_upstairs: { odds: 0.2, table: { bandage: 3, knife: 1 } },
+  hospital_upstairs: { odds: 0.35, table: { bandage: 3, medkit: 2, antibiotics: 2, disinfectant: 1 } },
+  school_upstairs: { odds: 0.2, table: { bandage: 3, water_bottle: 1.5, knife: 1 } },
   sewer_maze: NOTHING_UNDERGROUND,
-  cellar: { odds: 0.35, table: { bandage: 2, medkit: 1, knife: 0.6 } },
-  diner: { odds: 0.4, table: { bandage: 3, pistol_ammo: 1, knife: 1.5 } },
-  garage: { odds: 0.25, table: { pistol_ammo: 1.2, shells: 0.6, bandage: 2, knife: 1.5 } },
-  warehouse: { odds: 0.18, table: { bandage: 2, pistol_ammo: 1, shells: 0.5 } },
-  grocery: { odds: 0.2, table: { bandage: 4, pistol_ammo: 0.5 } },
-  discount: { odds: 0.22, table: { bandage: 3, pistol_ammo: 0.8, knife: 1, shells: 0.2 } },
-  pharmacy: { odds: 0.35, table: { bandage: 3, medkit: 2 } },
-  clinic: { odds: 0.35, table: { bandage: 3, medkit: 2 } },
-  hospital: { odds: 0.3, table: { bandage: 3, medkit: 2.5 } },
-  school: { odds: 0.18, table: { bandage: 3, knife: 1, pistol_ammo: 0.6 } },
+  cellar: { odds: 0.35, table: { canned_food: 2, water_bottle: 2, bandage: 2, medkit: 1, knife: 0.6 } },
+  diner: { odds: 0.4, table: { canned_food: 3, water_bottle: 2.5, bandage: 2, knife: 1.5, pistol_ammo: 0.5 } },
+  garage: { odds: 0.25, table: { pistol_ammo: 1.2, shells: 0.6, bandage: 1.5, knife: 1.2, water_bottle: 0.6, disinfectant: 0.6 } },
+  warehouse: { odds: 0.2, table: { pistol_ammo: 1, shells: 0.5, bandage: 1.5, water_bottle: 0.6, canned_food: 0.6 } },
+  grocery: { odds: 0.35, table: { canned_food: 4, water_bottle: 4, bandage: 2, pistol_ammo: 0.5 } },
+  discount: { odds: 0.25, table: { canned_food: 2.5, water_bottle: 2.5, bandage: 2.5, pistol_ammo: 0.8, knife: 0.5 } },
+  pharmacy: { odds: 0.4, table: { disinfectant: 4, antibiotics: 3, bandage: 3, water_bottle: 1.5, medkit: 1.5 } },
+  clinic: { odds: 0.4, table: { disinfectant: 4, antibiotics: 3.5, medkit: 2.5, bandage: 2.5, water_bottle: 1 } },
+  hospital: { odds: 0.35, table: { disinfectant: 3, antibiotics: 3.5, medkit: 3, bandage: 3 } },
+  school: { odds: 0.22, table: { water_bottle: 2.5, bandage: 2.5, canned_food: 1, knife: 1, pistol_ammo: 0.6 } },
   police: { odds: 0.3, table: { pistol_ammo: 3, carbine_ammo: 3, shells: 1 } },
   gun_shop: { odds: 0.3, table: { pistol_ammo: 2, shells: 2, carbine_ammo: 1 } },
-  outdoors: { odds: 0.14, table: { bandage: 3, pistol_ammo: 1, knife: 1, shells: 0.2 } },
+  outdoors: { odds: 0.14, table: { bandage: 3, water_bottle: 1, pistol_ammo: 1, knife: 1, shells: 0.2 } },
 };
 
 /** Nobody leaves a full box in a drawer: everything put away here is half used. */

@@ -12,6 +12,7 @@ import { gridSprite } from './shared.ts';
 import type { Grid } from './shared.ts';
 import { BANDAGE, CARBINE_AMMO, PISTOL_AMMO, SHELLS } from './pickups.ts';
 import { JEWEL_LARGE, JEWEL_SMALL, SILVER, TREASURE_LEGEND } from './treasure.ts';
+import { SURVIVAL_ITEM_ART, SURVIVAL_LEGEND } from './survival-art.ts';
 
 const { blood, bone, fire, ink, metal, olive, rot, violet, wood } = RAMPS;
 
@@ -277,11 +278,11 @@ const TOWN_MAP: Grid = [
 ];
 
 /** Centres a body grid in a fixed cell, leaving room for the outline. */
-function outlined(rows: Grid, w: number, h: number): PixelSprite {
+function outlined(rows: Grid, w: number, h: number, legend: Legend = ICON): PixelSprite {
   const width = Math.max(...rows.map((row) => row.length));
   const x = Math.floor((w - width) / 2);
   const y = Math.floor((h - rows.length) / 2);
-  const canvas = new PixelCanvas(w, h).grid(x, y, rows, ICON).outline({ color: ink[0] });
+  const canvas = new PixelCanvas(w, h).grid(x, y, rows, legend).outline({ color: ink[0] });
   return canvas.toSprite(w, h, Math.floor(w / 2), Math.floor(h / 2));
 }
 
@@ -308,6 +309,10 @@ export function buildPickupIcons(): Record<PickupType, PixelSprite> {
     shotgun: outlined(SHOTGUN_SMALL, 15, 15),
     knife: outlined(KNIFE_SMALL, 15, 15),
     radio: outlined(RADIO_SMALL, 15, 15),
+    canned_food: outlined(SURVIVAL_ITEM_ART.canned_food.rows, 15, 15, SURVIVAL_LEGEND),
+    water_bottle: outlined(SURVIVAL_ITEM_ART.water_bottle.rows, 15, 15, SURVIVAL_LEGEND),
+    disinfectant: outlined(SURVIVAL_ITEM_ART.disinfectant.rows, 15, 15, SURVIVAL_LEGEND),
+    antibiotics: outlined(SURVIVAL_ITEM_ART.antibiotics.rows, 15, 15, SURVIVAL_LEGEND),
     barrel: outlined(PART_ART.barrel.rows, 15, 15),
     grip: outlined(PART_ART.grip.rows, 15, 15),
     magazine: outlined(PART_ART.magazine.rows, 15, 15),

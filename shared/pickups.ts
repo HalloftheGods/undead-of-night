@@ -16,7 +16,7 @@ import { foundGunFit, isPartPickup, takePart } from './gun-upgrades.ts';
 import { WEAPON_ORDER } from './protocol.ts';
 import type { PickupType, WeaponId } from './protocol.ts';
 import { isKitPickup, takeKit } from './round-effects.ts';
-import { bandageWound } from './survival-needs.ts';
+import { bandageWound, consumeSurvivalItem, isSurvivalItem } from './survival-needs.ts';
 import type { PickupState, PlayerState, SimState } from './sim-state.ts';
 import { emit, entityId } from './sim-state.ts';
 import { isTreasurePickup, spawnTreasure, takeTreasure } from './treasure.ts';
@@ -105,9 +105,14 @@ function applyPickup(p: PlayerState, item: PickupState): boolean {
     p.knife = true;
     return true;
   }
-  /** The Radio does nothing in the sim: whoever stands on it takes it, and the event tells every client. */
   const isRadio = type === 'radio';
   if (isRadio) return true;
+  const isSurvival = isSurvivalItem(type);
+  if (isSurvival) {
+    const hasNeeds = p.needs !== undefined;
+    if (!hasNeeds) return false;
+    return consumeSurvivalItem(p.needs!, p, type);
+  }
   if (isPartPickup(type)) return takePart(p, type);
   if (isKitPickup(type)) return takeKit(p, type);
   if (isTreasurePickup(type)) return takeTreasure(p, item);

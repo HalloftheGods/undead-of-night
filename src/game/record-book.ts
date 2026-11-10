@@ -2,8 +2,8 @@
 // on a tall one. The leaves' words come from here, so the page only lays them out.
 
 import { townName } from '../../shared/levels.ts';
-import type { DailyLog, DailyResult } from './daily-night.ts';
-import { bestDay, dayLabel, nightFacts, recentDays, streakOf, todaysNight } from './daily-night.ts';
+import type { DailyLog, DailyMpRunResult, DailyResult, DailySoloResult } from './daily-night.ts';
+import { bestDay, bestMpDay, dayLabel, mpResultOf, nightFacts, recentDays, soloResultOf, streakOf, todaysNight } from './daily-night.ts';
 import { openOf, pagesLabel, turnWithin } from './book-turn.ts';
 import type { BookMode } from './book-turn.ts';
 import { STAMPS } from './stamps.ts';
@@ -51,18 +51,43 @@ export interface DailySummary {
   /** Counted days kept on this device. */
   readonly nights: number;
   readonly best: { readonly label: string; readonly score: number; readonly level: number } | null;
-  readonly tonight: { readonly label: string; readonly title: string; readonly line: string; readonly played: DailyResult | null };
+  readonly bestMp?: { readonly label: string; readonly teamScore: number; readonly partySize: number; readonly level: number } | null;
+  readonly tonight: {
+    readonly label: string;
+    readonly title: string;
+    readonly line: string;
+    readonly played: DailyResult | null;
+    readonly solo?: DailySoloResult | null;
+    readonly mp?: DailyMpRunResult | null;
+  };
 }
 
 export function dailySummary(log: DailyLog, now: Date = new Date()): DailySummary {
   const night = todaysNight(now);
   const facts = nightFacts(night);
   const best = bestDay(log);
+  const bestMp = bestMpDay(log);
+  const todayEntry = log[night.key] ?? null;
   return {
     streak: streakOf(log, night.key),
     nights: Object.keys(log).length,
     best: best ? { label: dayLabel(best.key), score: best.result.score, level: best.result.level } : null,
-    tonight: { label: dayLabel(night.key), title: facts.title, line: `${facts.level}, ${facts.difficulty}`, played: log[night.key] ?? null },
+    bestMp: bestMp
+      ? {
+          label: dayLabel(bestMp.key),
+          teamScore: bestMp.result.teamScore,
+          partySize: bestMp.result.partySize,
+          level: bestMp.result.level,
+        }
+      : null,
+    tonight: {
+      label: dayLabel(night.key),
+      title: facts.title,
+      line: `${facts.level}, ${facts.difficulty}`,
+      played: todayEntry,
+      solo: soloResultOf(todayEntry),
+      mp: mpResultOf(todayEntry),
+    },
   };
 }
 

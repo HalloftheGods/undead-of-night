@@ -45,8 +45,8 @@ const VAN_GLOW_STRENGTH = 0.7;
 const VAN_GLOW_HEIGHT = 12;
 /** Flashes of light (shots, burns, blasts) one frame lights at full detail; a slow machine gets a share of it. */
 const MAX_PULSES = 24;
-/** Underground, the town above is laid over the tunnels this faint, so the streets can be read against them. */
-const SURFACE_GHOST_ALPHA = 0.3;
+/** Underground tunnels are near pitch black between lamps and ladder shafts. */
+const SEWER_AMBIENT: Rgb = [2, 3, 4];
 /** From this load-shedding level on, the light is worked out every other frame and moved with the camera between. */
 const HALF_RATE_LIGHT_LEVEL = 2;
 
@@ -60,6 +60,7 @@ export class WorldRenderer {
   readonly budget = new FrameBudget();
   /** Flips each frame, for the light that is only worked out every other frame under load. */
   private oddFrame = false;
+  private lastUnderground = false;
 
   private readonly canvas: HTMLCanvasElement;
   private readonly ctx: CanvasRenderingContext2D;
@@ -192,6 +193,11 @@ export class WorldRenderer {
   }
 
   private applyLook(): void {
+    const isUnder = this.lastUnderground;
+    if (isUnder) {
+      this.lighting.setAmbient(SEWER_AMBIENT);
+      return;
+    }
     const { ambient, ground } = this.atmosphere.look;
     const lift = (c: number): number => Math.round(c + (255 - c) * this.brightness);
     const lifted: Rgb = this.brightness === 0 ? ambient : [lift(ambient[0]), lift(ambient[1]), lift(ambient[2])];
@@ -201,6 +207,7 @@ export class WorldRenderer {
 
   /** A new run on the same map: scrub the streets. */
   reset(): void {
+    this.lastUnderground = false;
     this.ground?.clear();
     this.buildings.reset();
     this.entities.reset();
@@ -262,28 +269,10 @@ export class WorldRenderer {
     lighting.finish();
   }
 
-  /** True when the viewer is down in the sewers, where the view is the tunnels with the town faint over them. */
+  /** True when the viewer is down in the sewers. */
   private isUnderground(focusY: number): boolean {
     const top = this.map?.sewers?.top;
     return top !== undefined && focusY >= top * TILE_SIZE;
-  }
-
-  /**
-   * The surface map, drawn over the underground one: the maze lies tile for tile under the town, so the town
-   * at (x, y) is drawn where the sewers at (x, y + the sewers' top) are, and clipped to the town's own rows.
-   */
-  private drawSurfaceGhost(ctx: CanvasRenderingContext2D, ground: GroundLayer, left: number, top: number, viewW: number, viewH: number): void {
-    const map = this.map;
-    if (!map?.sewers) return;
-    const shift = map.sewers.top * TILE_SIZE;
-    const townPx = (map.townRows ?? map.rows) * TILE_SIZE;
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(0, shift - top, viewW, townPx);
-    ctx.clip();
-    ctx.globalAlpha = SURFACE_GHOST_ALPHA;
-    ground.draw(ctx, left, top - shift, viewW, viewH);
-    ctx.restore();
   }
 
   /** Light that starts in the open room stays there; it must not spill through the walls. */
@@ -352,15 +341,24 @@ export class WorldRenderer {
     ctx.fillStyle = '#07080c';
     ctx.fillRect(0, 0, viewW, viewH);
     const underground = this.isUnderground(scene.focusY);
+    const undergroundChanged = underground !== this.lastUnderground;
+    if (undergroundChanged) {
+      this.lastUnderground = underground;
+      if (underground) {
+        this.lighting.setAmbient(SEWER_AMBIENT);
+      } else {
+        this.applyLook();
+      }
+    }
     ground.draw(ctx, left, top, viewW, viewH);
-    if (!underground) this.groundMotion.draw(ctx, left, top, viewW, viewH, time);
+    const notUnderground = !underground;
+    if (notUnderground) this.groundMotion.draw(ctx, left, top, viewW, viewH, time);
     paintPrints(ctx, scene.tracks ?? [], left, top, viewW, viewH);
     this.entities.drawWorld(ctx, scene, left, top, viewW, viewH, time, dt);
     this.fx.particles.drawLit(ctx, left, top);
 
     this.composeLight(scene, left, top);
     this.lighting.apply(ctx);
-    if (underground) this.drawSurfaceGhost(ctx, ground, left, top, viewW, viewH);
     const lightAt = (x: number, y: number) => this.lighting.brightness(x, y);
     const isKilled = (id: EntityId) => this.entities.isKilled(id);
     // Below ground there is no sky: no weather, no wash of the night's colour.

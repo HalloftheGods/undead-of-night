@@ -1,6 +1,12 @@
 import type { BuildingKind } from './protocol.ts';
+import { SURVIVAL_ITEM_TYPES } from './events.ts';
 
-export type SurvivalItemType = 'canned_food' | 'water_bottle' | 'disinfectant' | 'antibiotics';
+export type SurvivalItemType = (typeof SURVIVAL_ITEM_TYPES)[number];
+export { SURVIVAL_ITEM_TYPES };
+
+export function isSurvivalItem(type: string): type is SurvivalItemType {
+  return type === 'canned_food' || type === 'water_bottle' || type === 'disinfectant' || type === 'antibiotics';
+}
 
 export type WoundType = 'none' | 'scratch' | 'laceration' | 'bite';
 

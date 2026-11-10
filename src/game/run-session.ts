@@ -75,6 +75,7 @@ export interface RunHost {
   readonly home: HomeLink;
   readonly renderer: WorldRenderer | null;
   readonly titleMap: WorldMap | null;
+  syncTitleMap(): void;
   publish(patch: Partial<UiState>): void;
   onResize(): void;
   /** Holds the picture (and, solo, the sim) still for a beat. */
@@ -123,6 +124,27 @@ export class RunSession {
     this.host.state.daily = night.key;
     this.host.state.ghost = new DailyGhost(night.key);
     this.beginSession(new LocalSession(), 'arcade', night.level, { seed: night.seed, difficulty: night.difficulty });
+  }
+
+  /** Today's town in multiplayer lobby: up to 5 survivors. */
+  startDailyMp(night: DailyNight): void {
+    if (!this.canStart()) return;
+    this.host.audio.unlock();
+    this.host.state.daily = night.key;
+    this.host.state.ghost = new DailyGhost(night.key);
+    void this.startOnline('daily', { kind: 'find' }, { seed: night.seed, level: night.level, difficulty: night.difficulty });
+  }
+
+  lobbyReady(ready?: boolean): void {
+    this.host.state.transport?.sendLobbyReady?.(ready);
+  }
+
+  lobbyStart(): void {
+    this.host.state.transport?.sendLobbyStart?.();
+  }
+
+  lobbyToggleTimer(): void {
+    this.host.state.transport?.sendLobbyToggleTimer?.();
   }
 
   /** Arcade from `chosen` (guarded by what is unlocked) or, with none, the furthest level reached. Does nothing if there is no later level to start at. */
@@ -208,7 +230,11 @@ export class RunSession {
   }
 
   /** The online room code is fetched on first use, with the menu held in its connecting state meanwhile. */
-  private async startOnline(style: GameStyle, plan: OnlinePlan): Promise<void> {
+  private async startOnline(
+    style: GameStyle,
+    plan: OnlinePlan,
+    initialTown?: { seed: number; level: number; difficulty: DifficultyId },
+  ): Promise<void> {
     this.host.publish({ connecting: true, error: null });
     let rooms: typeof import('../network/online-session.ts');
     try {
@@ -222,16 +248,19 @@ export class RunSession {
       onHosted: (room: string, isPublic: boolean) => this.host.publish({ onlineRoom: room, onlinePublic: isPublic }),
       onUnlisted: () => this.host.publish({ onlineRoom: null }),
     };
-    if (plan.kind === 'host') return this.openCoop(rooms.hostRoom(style, events), style);
+    if (plan.kind === 'host') return this.openCoop(rooms.hostRoom(style, events, { public: false, initialTown }), style);
     if (plan.kind === 'join') return this.joinByCode(rooms.joinRoom, plan.code, style);
-    const found = await matchRoom({ protocol: PROTOCOL_VERSION, style, difficulty: loadDifficulty(), character: loadCharacter(), device: rooms.hostDevice() });
+    const difficulty = initialTown?.difficulty ?? loadDifficulty();
+    const found = await matchRoom({ protocol: PROTOCOL_VERSION, style, difficulty, character: loadCharacter(), device: rooms.hostDevice() });
     if (!this.stillWanted()) return;
     if (!found.ok) {
       this.host.publish({ connecting: false, error: found.reason });
       return;
     }
     const { match } = found;
-    const session = match.kind === 'join' ? rooms.joinRoom(match.code, true) : rooms.hostRoom(style, events, { public: true, preset: { code: match.code, hostKey: match.hostKey } });
+    const session = match.kind === 'join'
+      ? rooms.joinRoom(match.code, true)
+      : rooms.hostRoom(style, events, { public: true, preset: { code: match.code, hostKey: match.hostKey }, initialTown });
     this.openCoop(session, style);
   }
 
@@ -293,8 +322,7 @@ export class RunSession {
     input.setEnabled(false);
     audio.setScene('menu');
     this.host.onResize();
-    const hasTitleMap = titleMap !== null;
-    if (hasTitleMap) renderer?.setMap(titleMap);
+    this.host.syncTitleMap();
     this.host.publish({ ...NO_RUN_UI, screen: 'title', connecting: false, runStyle: null, onlineRoom: null, ...loadBests(), leaderboard: loadLeaderboard() });
   }
 
@@ -355,8 +383,7 @@ export class RunSession {
     input.setEnabled(false);
     audio.setScene('menu');
     this.host.onResize();
-    const hasTitleMap = titleMap !== null;
-    if (hasTitleMap) renderer?.setMap(titleMap);
+    this.host.syncTitleMap();
     this.host.publish({ ...NO_RUN_UI, screen: 'lost', runStyle: null, onlineRoom: null, lostReason: reason });
   }
 
@@ -378,6 +405,12 @@ export class RunSession {
     transport.onWelcome = (packet) => this.onWelcome(packet);
     transport.onSnapshot = this.onSnapshot;
     transport.onClosed = (reason) => this.onClosed(reason);
+    if (transport.onLobbyState !== undefined) {
+      transport.onLobbyState = (packet) => {
+        const lobby = packet.launched ? null : packet;
+        this.host.publish({ lobby });
+      };
+    }
     this.followStyle(style);
     // No callsign (blank or refused) goes out as '': every screen then labels the player by survivor name.
     const roomDecides = transport.kind === 'coop';

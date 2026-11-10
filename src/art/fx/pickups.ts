@@ -9,6 +9,7 @@ import { RAMPS } from '../palette.ts';
 import { KIT_ART } from './kits.ts';
 import { PART_ART } from './parts.ts';
 import { JEWEL_LARGE, JEWEL_SMALL, TREASURE_LEGEND } from './treasure.ts';
+import { SURVIVAL_ITEM_ART, SURVIVAL_LEGEND } from './survival-art.ts';
 import type { Grid } from './shared.ts';
 
 const { blood, bone, fire, ink, metal, olive, wood } = RAMPS;
@@ -156,6 +157,7 @@ interface ItemSpec {
   readonly rows: Grid;
   /** Where the glint sits, relative to the item. */
   readonly glint: readonly [number, number];
+  readonly legend?: Legend;
 }
 
 const ITEMS: Record<PickupType, ItemSpec> = {
@@ -168,22 +170,27 @@ const ITEMS: Record<PickupType, ItemSpec> = {
   shotgun: { rows: SHOTGUN, glint: [10, 1] },
   knife: { rows: KNIFE, glint: [11, 1] },
   radio: { rows: RADIO, glint: [2, 3] },
+  canned_food: { rows: SURVIVAL_ITEM_ART.canned_food.rows, glint: SURVIVAL_ITEM_ART.canned_food.glint, legend: SURVIVAL_LEGEND },
+  water_bottle: { rows: SURVIVAL_ITEM_ART.water_bottle.rows, glint: SURVIVAL_ITEM_ART.water_bottle.glint, legend: SURVIVAL_LEGEND },
+  disinfectant: { rows: SURVIVAL_ITEM_ART.disinfectant.rows, glint: SURVIVAL_ITEM_ART.disinfectant.glint, legend: SURVIVAL_LEGEND },
+  antibiotics: { rows: SURVIVAL_ITEM_ART.antibiotics.rows, glint: SURVIVAL_ITEM_ART.antibiotics.glint, legend: SURVIVAL_LEGEND },
   ...PART_ART,
   ...KIT_ART,
   jewel_small: { rows: JEWEL_SMALL, glint: [1, 1] },
   jewel_large: { rows: JEWEL_LARGE, glint: [3, 1] },
 };
 
-function frame({ rows, glint }: ItemSpec, index: number): PixelCanvas {
+function frame({ rows, glint, legend }: ItemSpec, index: number): PixelCanvas {
+  const itemLegend = legend ?? ITEM;
   const w = Math.max(...rows.map((row) => row.length));
   const x = ANCHOR_X - Math.floor(w / 2);
   const y = ANCHOR_Y - HOVER - rows.length - BOB[index];
-  const canvas = new PixelCanvas(CELL_W, CELL_H).grid(x, y, rows, ITEM).outline({ color: ink[0] });
+  const canvas = new PixelCanvas(CELL_W, CELL_H).grid(x, y, rows, itemLegend).outline({ color: ink[0] });
   const size = GLINT_SIZE[index];
   const hasGlint = size > 0;
   if (hasGlint) {
     const stamp = GLINTS[size - 1];
-    canvas.grid(x + glint[0] - size, y + glint[1] - size, stamp, ITEM);
+    canvas.grid(x + glint[0] - size, y + glint[1] - size, stamp, itemLegend);
   }
   return canvas;
 }

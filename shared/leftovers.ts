@@ -17,7 +17,7 @@ export interface LeftoverView {
   readonly supplies: Partial<Record<SupplyKind, number>>;
 }
 
-const MED_PICKUPS: ReadonlySet<PickupType> = new Set(['bandage', 'medkit']);
+const MED_PICKUPS: ReadonlySet<PickupType> = new Set(['bandage', 'medkit', 'disinfectant', 'antibiotics']);
 const WEAPON_PICKUPS: ReadonlySet<PickupType> = new Set(['carbine', 'shotgun', 'knife']);
 
 export function supplyKindOf(type: PickupType): SupplyKind {

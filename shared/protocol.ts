@@ -436,6 +436,6 @@ export type ClientPacket =
   | { readonly type: 'home'; readonly action: HomeAction }
   | { readonly type: 'emote'; readonly emote: EmoteId }
   | { readonly type: 'restart' }
-  | { readonly type: 'lobby_ready'; readonly ready: boolean }
+  | { readonly type: 'lobby_ready'; readonly ready?: boolean }
   | { readonly type: 'lobby_start' }
-  | { readonly type: 'lobby_toggle_timer'; readonly enabled: boolean };
+  | { readonly type: 'lobby_toggle_timer'; readonly enabled?: boolean };

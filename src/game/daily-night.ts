@@ -318,6 +318,18 @@ export function bestDay(log: DailyLog): { key: string; result: DailyResult } | n
   return best;
 }
 
+/** The best counted MP run across all days, or null with none. */
+export function bestMpDay(log: DailyLog): { key: string; result: DailyMpRunResult } | null {
+  let best: { key: string; result: DailyMpRunResult } | null = null;
+  for (const [key, daily] of Object.entries(log)) {
+    const mp = mpResultOf(daily);
+    if (mp && (!best || mp.teamScore > best.result.teamScore)) {
+      best = { key, result: mp };
+    }
+  }
+  return best;
+}
+
 /** The last `count` days up to today, newest first, played or not. */
 export function recentDays(log: DailyLog, todayKey: string, count = 7): { key: string; result: DailyResult | null }[] {
   const days: { key: string; result: DailyResult | null }[] = [];

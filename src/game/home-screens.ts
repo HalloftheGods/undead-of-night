@@ -323,14 +323,15 @@ export interface AimState {
   readonly home: HomeUi | null;
   /** The backpack ring wants the real pointer: its slots are clicked. */
   readonly backpackOpen: boolean;
+  readonly inLobby?: boolean;
 }
 
 /** The crosshair stands in for the cursor, except where a station screen or the death summary needs the real one. */
 export function aimsCursor(state: AimState): boolean {
-  const { screen, paused, mapOpen, bench, home, backpackOpen } = state;
+  const { screen, paused, mapOpen, bench, home, backpackOpen, inLobby } = state;
   const stationOpen = home !== null && home.station !== null;
   const summaryOpen = home !== null && (home.death !== null || home.chest !== null);
-  return screen === 'game' && !paused && !mapOpen && !bench && !stationOpen && !summaryOpen && !backpackOpen;
+  return screen === 'game' && !paused && !mapOpen && !bench && !stationOpen && !summaryOpen && !backpackOpen && !inLobby;
 }
 
 export interface SetupLevelInput {

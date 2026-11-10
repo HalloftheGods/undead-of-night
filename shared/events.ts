@@ -10,9 +10,11 @@ export const GAME_PHASES = ['intermission', 'wave', 'gameover'] as const;
 /** Towns hold jewels only; silver comes from the forge, quests and the overrun chest, straight into the bank. */
 export const TREASURE_TYPES = ['jewel_small', 'jewel_large'] as const;
 
+export const SURVIVAL_ITEM_TYPES = ['canned_food', 'water_bottle', 'disinfectant', 'antibiotics'] as const;
+
 export const PICKUP_TYPES = [
   'bandage', 'medkit', 'pistol_ammo', 'carbine_ammo', 'shells', 'carbine', 'shotgun', 'knife', 'radio',
-  ...PART_ORDER, ...KIT_ORDER, ...TREASURE_TYPES,
+  ...PART_ORDER, ...KIT_ORDER, ...TREASURE_TYPES, ...SURVIVAL_ITEM_TYPES,
 ] as const;
 
 export const GAME_EVENT_TYPES = [

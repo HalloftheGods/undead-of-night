@@ -100,8 +100,16 @@ const merchants: CardList = (art) =>
     caption: MERCHANT_CAPTIONS[id],
   }));
 
+const survival: CardList = (art) => [
+  { id: 'canned-food', title: 'Canned food', sprite: art.ui.pickupIcons.canned_food, scale: 3, tag: 'Rations', caption: 'Restores hunger and vitality.' },
+  { id: 'water-bottle', title: 'Bottled water', sprite: art.ui.pickupIcons.water_bottle, scale: 3, tag: 'Clean', caption: 'Quenches thirst and recharges stamina.' },
+  { id: 'disinfectant', title: 'Disinfectant', sprite: art.ui.pickupIcons.disinfectant, scale: 3, tag: 'First aid', caption: 'Sterilizes dirty cuts and scratches.' },
+  { id: 'antibiotics', title: 'Antibiotics', sprite: art.ui.pickupIcons.antibiotics, scale: 3, tag: 'Medicine', caption: 'Arrests zombie zoonosis.' },
+];
+
 const SECTION_CARDS: Readonly<Record<string, CardList>> = {
   supplies,
+  survival,
   searching,
   hordes,
   survivors,

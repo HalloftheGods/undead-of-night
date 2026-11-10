@@ -7,7 +7,7 @@ import type { GameStyle } from '../../shared/game-style.ts';
 import { OVERRUN_LIVE, type HomeAction, type JoinHome } from '../../shared/home-protocol.ts';
 import type { HostDevice, Visibility } from '../../shared/lobby/types.ts';
 import { parseToHostSignal, type HostSignal, type IceCandidate, type IceServer, type RoomReport } from '../../shared/lobby/lobby-protocol.ts';
-import { PROTOCOL_VERSION, type ClientInputPacket, type SnapshotPacket, type WelcomePacket } from '../../shared/protocol.ts';
+import { PROTOCOL_VERSION, type ClientInputPacket, type LobbyStatePacket, type SnapshotPacket, type WelcomePacket } from '../../shared/protocol.ts';
 import { HEARTBEAT_MS, JOIN_DEADLINE_MS, MAX_BUFFERED_BYTES, RESTART_VOTE_MS } from '../../shared/room/limits.ts';
 import type { HostClock, PeerSocket } from '../../shared/room/peer.ts';
 import { createRoomHost, type HostedPeer, type RoomHost } from '../../shared/room/room-host.ts';
@@ -72,6 +72,7 @@ export class HostSession implements RoomSession {
 
   onWelcome: (packet: WelcomePacket) => void = () => {};
   onSnapshot: (packet: SnapshotPacket) => void = () => {};
+  onLobbyState: (packet: LobbyStatePacket) => void = () => {};
   onClosed: (reason: string) => void = () => {};
   onRoom: (style: GameStyle | null) => void = () => {};
   /** The room's code, once play-api has given it one: the host shares it with friends. */
@@ -146,6 +147,18 @@ export class HostSession implements RoomSession {
 
   sendEmote(emote: EmoteId): void {
     this.inner?.sendEmote(emote);
+  }
+
+  sendLobbyReady(ready?: boolean): void {
+    this.inner?.sendLobbyReady(ready);
+  }
+
+  sendLobbyStart(): void {
+    this.inner?.sendLobbyStart();
+  }
+
+  sendLobbyToggleTimer(): void {
+    this.inner?.sendLobbyToggleTimer();
   }
 
   requestRestart(): void {
@@ -229,6 +242,7 @@ export class HostSession implements RoomSession {
     this.inner = inner;
     inner.onRoom = (style) => this.onRoom(style);
     inner.onWelcome = (packet) => this.onWelcome(packet);
+    inner.onLobbyState = (packet) => this.onLobbyState(packet);
     inner.onSnapshot = (packet) => {
       this.report(reportOf(packet));
       this.onSnapshot(packet);

@@ -272,7 +272,7 @@ export function createGameRoom(options: GameRoomOptions): GameRoom {
       if (!inLobby) return;
       const isHost = joined()[0]?.playerId === client.playerId;
       if (!isHost) return;
-      autoStartTimerEnabled = packet.enabled;
+      autoStartTimerEnabled = packet.enabled !== undefined ? packet.enabled : !autoStartTimerEnabled;
       broadcastLobbyState();
     }
     else if (packet.type === 'input') sim.setInput(client.playerId, packet.input);

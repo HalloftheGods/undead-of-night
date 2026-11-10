@@ -67,6 +67,10 @@ const FIND_NAMES: Readonly<Partial<Record<PickupType, string>>> = {
   shotgun: 'Shotgun',
   knife: 'Knife',
   radio: 'Radio',
+  canned_food: 'Canned Food',
+  water_bottle: 'Bottled Water',
+  disinfectant: 'Disinfectant',
+  antibiotics: 'Antibiotics',
 };
 
 const PART_NAMES: Readonly<Record<string, string>> = { barrel: 'barrel', grip: 'grip', magazine: 'magazine', suppressor: 'suppressor', toolkit: 'toolkit' };
@@ -79,19 +83,19 @@ const PLACE_ORDER: readonly PlaceId[] = [
 
 /** Each place's line under its name: the magazine's voice, never a rule the tables do not hold. */
 const BLURBS: Readonly<Record<PlaceId, string>> = {
-  hospital: 'The biggest building in town. A medkit waits in the emergency bay every time, and plenty of company with it.',
-  pharmacy: 'The first stop for anyone bleeding. Check behind the counter.',
-  clinic: 'Medkits are as common here as bandages. Try the lockers.',
+  hospital: 'The biggest building in town. A medkit waits in the emergency bay every time, with antibiotics in the wards.',
+  pharmacy: 'The first stop for anyone bleeding or septic. Check behind the counter for antibiotics.',
+  clinic: 'Disinfectant waits on the counter every time, and the lockers keep antibiotics and bandages.',
   police: 'A carbine is always left in the station, and the lockers are full of rounds and confiscated fountains.',
   gun_shop: 'A shotgun on the rack every time, and shells to go with it.',
   garage: 'Spinners on the shelves, the odd fountain, gun parts by the bench.',
   warehouse: 'Big, dark and mostly empty, but the cabinets hold spinners and gun parts lie about.',
-  grocery: 'Long aisles of first aid. Not much else is left on the shelves.',
+  grocery: 'Always has canned food on the floor, and the coolers keep bottled water.',
   discount: 'Cheap goods: bandages, the odd knife, half a box of rounds.',
-  diner: 'A kitchen, so a knife turns up more often here than anywhere. The fridge keeps more than food.',
+  diner: 'A kitchen always keeps canned food and bottled water, and a knife turns up more often here than anywhere.',
   school: 'Desks and lockers by the dozen: mostly empty, but this is where the confiscated candy went.',
-  house: 'Where the spare ammo went: a box in a drawer is why a house is worth going in. Candy waits on the step.',
-  apartment: 'Like a house, with more drawers to go through.',
+  house: 'Where the spare ammo and pantry rations went. Candy waits on the step.',
+  apartment: 'Like a house, with more pantries and drawers to scavenge for food and water.',
   upstairs: 'Bedrooms: where a night\'s candy haul gets hidden.',
   cellar: 'Worth the trip down for first aid, and the noise it brings.',
   cars: 'Every car has a radio, and a few still work. Searching one can set its alarm off.',
@@ -279,16 +283,41 @@ export interface WhereToLook {
 }
 
 /** The finds the index lists, in the order a player goes looking for them. */
-const LOOKED_FOR: readonly string[] = ['medkit', 'bandage', 'pistol_ammo', 'carbine_ammo', 'shells', 'carbine', 'shotgun', 'knife', 'fountain', 'firework', 'candy', 'parts', 'kits', 'radio'];
+const LOOKED_FOR: readonly string[] = [
+  'canned_food',
+  'water_bottle',
+  'disinfectant',
+  'antibiotics',
+  'medkit',
+  'bandage',
+  'pistol_ammo',
+  'carbine_ammo',
+  'shells',
+  'carbine',
+  'shotgun',
+  'knife',
+  'fountain',
+  'firework',
+  'candy',
+  'parts',
+  'kits',
+  'radio',
+];
 const PLACES_PER_LINE = 3;
 
 /** For each find, the places it turns up most, best tier first, at most three. */
 export function whereToLook(places: readonly GuidePlace[] = guidePlaces()): readonly WhereToLook[] {
   return LOOKED_FOR.map((id) => {
-    const holding = places.flatMap((place) => place.finds.filter((find) => find.id === id).map((find) => ({ place, find })));
+    const isMatchingId = (find: GuideFind): boolean => find.id === id;
+    const holding = places.flatMap((place) => place.finds.filter(isMatchingId).map((find) => ({ place, find })));
     const best = [...holding].sort((a, b) => likelierFirst(a.find, b.find)).slice(0, PLACES_PER_LINE);
+    const hasHolding = holding.length > 0;
+    if (!hasHolding) {
+      return { id, name: id, icon: id as FindIcon, places: [] };
+    }
     const { name, icon } = holding[0].find;
-    return { id, name, icon, places: best.map(({ place }) => ({ id: place.id, name: place.name })) };
+    const toPlaceEntry = ({ place }: { place: GuidePlace }) => ({ id: place.id, name: place.name });
+    return { id, name, icon, places: best.map(toPlaceEntry) };
   });
 }
 

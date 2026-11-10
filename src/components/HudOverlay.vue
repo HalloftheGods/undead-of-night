@@ -1,5 +1,5 @@
 <template>
-  <section class="hud">
+  <section class="hud" :class="{ 'has-moodles': hasMoodles }">
     <header class="hud-top">
       <!-- What is carried, across the top left like the item row of a Zelda screen. -->
       <div class="hud-vitals">
@@ -64,20 +64,6 @@
           </span>
         </div>
       </div>
-
-      <!-- Survival Moodles (Hunger, Thirst, Bleeding, Infection, Fatigue) -->
-      <aside v-if="hasMoodles" class="hud-moodles" aria-label="Survival moodles">
-        <div
-          v-for="moodle in hud.moodles"
-          :key="moodle.id"
-          class="hud-moodle-badge"
-          :class="`is-${moodle.severity}`"
-          :title="`${moodle.label} (${Math.round(moodle.value)}%)`"
-        >
-          <SpriteImg v-if="art.ui.moodles && art.ui.moodles[moodle.id]" :sprite="art.ui.moodles[moodle.id]" />
-          <span class="hud-moodle-text">{{ moodle.label }}</span>
-        </div>
-      </aside>
     </header>
 
     <BossBar v-if="hud.boss" :boss="hud.boss" />
@@ -153,6 +139,30 @@
         </div>
       </div>
     </footer>
+
+    <!-- Survival moodles: docked bottom-right clear of central weapons and top vitals -->
+    <aside v-if="hasMoodles" class="hud-moodles" aria-label="Survival moodles">
+      <div
+        v-for="moodle in hud.moodles"
+        :key="moodle.id"
+        class="hud-moodle-badge"
+        :class="`is-${moodle.severity}`"
+        :title="`${moodle.label}: ${moodle.remedy} (${Math.round(moodle.value)}%)`"
+      >
+        <SpriteImg
+          v-if="art.ui.moodles && art.ui.moodles[moodle.id]"
+          :sprite="art.ui.moodles[moodle.id]"
+          class="hud-moodle-icon"
+        />
+        <div class="hud-moodle-info">
+          <div class="hud-moodle-header">
+            <span class="hud-moodle-text">{{ moodle.label }}</span>
+            <span v-if="moodle.id !== 'bleeding'" class="hud-moodle-pct">{{ Math.round(moodle.value) }}%</span>
+          </div>
+          <span class="hud-moodle-remedy">{{ moodle.remedy }}</span>
+        </div>
+      </div>
+    </aside>
 
     <!-- Right of centre: clear of the numbers above and of the thumb's buttons below. -->
     <div v-if="log.length" :key="log[log.length - 1].key" class="hud-feed">
@@ -348,11 +358,20 @@ function hold(slot: BarSlot): void {
   right: calc(var(--u) * 5);
   bottom: calc(var(--u) * 5);
   animation: feed-life 6s steps(12) forwards;
+  z-index: 15;
+}
+
+.has-moodles .hud-feed {
+  bottom: calc(var(--u) * 5 + 170px);
 }
 
 .is-touch .hud-feed {
   bottom: calc(var(--tabbar) + var(--u) * 3);
   max-width: 30vw;
+}
+
+.is-touch.has-moodles .hud-feed {
+  bottom: calc(var(--tabbar) + var(--u) * 3 + 170px);
 }
 
 @keyframes feed-life {
@@ -807,30 +826,72 @@ function hold(slot: BarSlot): void {
 .hud-moodles {
   position: absolute;
   right: calc(var(--u) * 5);
-  top: calc(var(--u) * 5);
+  bottom: calc(var(--u) * 5);
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: calc(var(--u) * 2);
   pointer-events: auto;
+  z-index: 20;
+}
+
+.is-touch .hud-moodles {
+  bottom: calc(var(--tabbar) + var(--u) * 3);
 }
 
 .hud-moodle-badge {
   display: flex;
   align-items: center;
-  gap: calc(var(--u) * 2);
-  padding: calc(var(--u) * 1) calc(var(--u) * 2);
-  background: rgba(13, 11, 22, 0.85);
-  border: calc(var(--u) * 0.5) solid var(--bone-dark, #444);
+  gap: calc(var(--u) * 3);
+  padding: calc(var(--u) * 2) calc(var(--u) * 3);
+  background: rgba(13, 11, 22, 0.92);
+  border: calc(var(--u) * 0.75) solid var(--bone-dark, #444);
+  box-shadow: 0 calc(var(--u) * 1) calc(var(--u) * 3) rgba(0, 0, 0, 0.6);
   image-rendering: pixelated;
+  min-width: calc(var(--u) * 70);
+}
+
+.hud-moodle-icon {
+  flex: 0 0 auto;
+}
+
+.hud-moodle-info {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 0.75);
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.hud-moodle-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(var(--u) * 2);
 }
 
 .hud-moodle-text {
-  font-size: calc(var(--u) * 3);
-  font-family: inherit;
+  font-family: 'Silkscreen', monospace;
+  font-size: calc(var(--u) * 6);
   font-weight: 700;
   letter-spacing: 0.5px;
   text-transform: uppercase;
+  line-height: 1.1;
+}
+
+.hud-moodle-pct {
+  font-family: 'Silkscreen', monospace;
+  font-size: calc(var(--u) * 5);
+  opacity: 0.85;
+}
+
+.hud-moodle-remedy {
+  font-family: inherit;
+  font-size: calc(var(--u) * 5);
+  color: var(--bone, #e4dcc3);
+  opacity: 0.95;
+  letter-spacing: 0.25px;
+  line-height: 1.1;
 }
 
 .hud-moodle-badge.is-low {

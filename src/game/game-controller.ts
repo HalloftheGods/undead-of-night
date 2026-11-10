@@ -3,7 +3,9 @@ import type { ShallowRef } from 'vue';
 import { capCallsign } from '../../shared/callsign.ts';
 import type { EmoteId } from '../../shared/emotes.ts';
 import type { GameStyle } from '../../shared/game-style.ts';
+import { levelDef, levelSeed } from '../../shared/levels.ts';
 import type { CandyId, WorldMap } from '../../shared/protocol.ts';
+import { TILE_SIZE } from '../../shared/protocol.ts';
 import { generateWorldMap } from '../../shared/world-map.ts';
 import { buildArtBook } from '../art/index.ts';
 import { AudioEngine } from '../audio/audio-engine.ts';
@@ -23,6 +25,7 @@ import { standingInTown } from './hud-state.ts';
 import type { UiState } from './hud-state.ts';
 import { InputManager } from './input-manager.ts';
 import { InputSender } from './input-sender.ts';
+import { loadFurthestProgress } from './level-progress.ts';
 import { RunFrame } from './run-frame.ts';
 import { NO_RUN_UI, RunHud } from './run-hud.ts';
 import { newRunState, RunSession } from './run-session.ts';
@@ -80,6 +83,7 @@ export class GameController {
   private readonly runFrame: RunFrame;
   private renderer: WorldRenderer | null = null;
   private titleMap: WorldMap | null = null;
+  private titleLevel: number | null = null;
   private canvas: HTMLCanvasElement | null = null;
   private raf = 0;
   private artTimer: ReturnType<typeof setTimeout> | null = null;
@@ -210,12 +214,31 @@ export class GameController {
 
   private loadArt(): void {
     const canvas = this.canvas;
-    if (!canvas) return;
+    const noCanvas = !canvas;
+    if (noCanvas) return;
     const art = buildArtBook();
     this.renderer = new WorldRenderer(canvas, art, motion.reduced.value, motion.shake.value);
-    this.titleMap = generateWorldMap(TITLE_MAP_SEED);
-    this.renderer.setMap(this.titleMap);
+    this.syncTitleMap();
     this.publish({ art });
+  }
+
+  syncTitleMap(): void {
+    const progress = loadFurthestProgress();
+    const highestLevel = progress.highest;
+    const sameLevel = this.titleMap !== null && this.titleLevel === highestLevel;
+    if (sameLevel) return;
+    this.titleLevel = highestLevel;
+    const def = levelDef(highestLevel);
+    const seed = levelSeed(TITLE_MAP_SEED, highestLevel);
+    this.titleMap = generateWorldMap(seed);
+    const renderer = this.renderer;
+    const hasRenderer = renderer !== null;
+    if (hasRenderer) {
+      renderer.setMap(this.titleMap);
+      renderer.setTheme(def.theme);
+      const surfaceH = (this.titleMap.townRows ?? this.titleMap.rows) * TILE_SIZE;
+      renderer.camera.setWorld(this.titleMap.width, surfaceH);
+    }
   }
 
   private publish(patch: Partial<UiState>): void {
@@ -334,6 +357,23 @@ export class GameController {
   /** Today's Daily Night: solo, Arcade rules, the day's seed, level and difficulty. */
   startDaily(): void {
     this.session.startDaily(todaysNight());
+  }
+
+  /** Today's Daily Night in MP lobby mode: up to 5 players. */
+  startDailyMp(): void {
+    this.session.startDailyMp(todaysNight());
+  }
+
+  lobbyReady(ready?: boolean): void {
+    this.session.lobbyReady(ready);
+  }
+
+  lobbyStart(): void {
+    this.session.lobbyStart();
+  }
+
+  lobbyToggleTimer(): void {
+    this.session.lobbyToggleTimer();
   }
 
   /** Co-op. `style`, by default the one the player last chose, goes to an empty room; a room in play keeps its own and the run follows it. */
@@ -522,6 +562,7 @@ export class GameController {
       home: this.homeLink,
       get renderer() { return controller.renderer; },
       get titleMap() { return controller.titleMap; },
+      syncTitleMap: () => this.syncTitleMap(),
       publish: (patch) => this.publish(patch),
       onResize: () => this.onResize(),
       hitStop: (ms) => this.hitStop(ms),
@@ -566,7 +607,8 @@ export class GameController {
     // Before the art is in, so Start and the D-pad already answer on the title.
     this.input.pollGamepad();
     const renderer = this.renderer;
-    if (!renderer) return;
+    const noRenderer = !renderer;
+    if (noRenderer) return;
     if (this.run.world) this.runFrame.draw(renderer, this.run.world, ms, dt);
     else this.frameTitle(renderer, dt);
   };
@@ -574,10 +616,21 @@ export class GameController {
   /** The city at night behind the menu, drifting past with nobody in it. */
   private frameTitle(renderer: WorldRenderer, dt: number): void {
     const map = this.titleMap;
-    if (!map) return;
+    const noMap = !map;
+    if (noMap) return;
     this.titleTime += dt;
-    const focusX = map.width / 2 + Math.sin(this.titleTime * 0.04) * map.width * 0.3;
-    const focusY = map.height / 2 + Math.cos(this.titleTime * 0.031) * map.height * 0.3;
+    const surfaceH = (map.townRows ?? map.rows) * TILE_SIZE;
+    renderer.camera.setWorld(map.width, surfaceH);
+    const halfViewW = renderer.camera.viewW / 2;
+    const halfViewH = renderer.camera.viewH / 2;
+    const minX = halfViewW;
+    const maxX = Math.max(minX, map.width - halfViewW);
+    const minY = halfViewH;
+    const maxY = Math.max(minY, surfaceH - halfViewH);
+    const spanX = maxX - minX;
+    const spanY = maxY - minY;
+    const focusX = minX + spanX * (0.5 + 0.35 * Math.sin(this.titleTime * 0.04));
+    const focusY = minY + spanY * (0.5 + 0.35 * Math.cos(this.titleTime * 0.031));
     renderer.render({ ...EMPTY_SCENE, focusX, focusY }, dt);
   }
 

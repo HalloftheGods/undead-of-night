@@ -192,6 +192,24 @@ const supplies: HintMaker = ({ art, photos }) => ({
   ],
 });
 
+const survival: HintMaker = ({ art, photos }) => ({
+  layout: 'catalog',
+  color: 'lime',
+  kicker: 'Field biology',
+  deck: 'Keeping the meat on your bones.',
+  coverline: 'Survival needs: food, water and staying alive',
+  left: [
+    head,
+    gallery('catalog', getSectionVisuals('survival', art), 'Field rations & medicine'),
+    sticky('Wash dirty cuts immediately.', -2),
+  ],
+  right: [
+    article('bullets'),
+    aside(photo(photos.stockroom, 'Fig. 6b: Pantry inspection. Check expiry dates.', 1.1, 'normal', [])),
+    tip('Standing still lets fatigue recover twice as fast as walking.'),
+  ],
+});
+
 const searching: HintMaker = ({ art, photos }) => ({
   layout: 'classifieds',
   color: 'teal',
@@ -436,6 +454,7 @@ const HINTS: Readonly<Record<string, HintMaker>> = {
   controls,
   noise,
   supplies,
+  survival,
   searching,
   melee,
   hordes,

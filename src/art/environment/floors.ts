@@ -11,7 +11,7 @@ import type { Color } from '../palette.ts';
 const { ink, wood, ash, concrete, asphalt, brick, skinDeep, metal, olive, bone, acid } = RAMPS;
 const S = TILE_SIZE;
 
-export type FloorKind = 'floor_wood' | 'floor_tile' | 'floor_concrete' | 'floor_carpet' | 'floor_sewer' | 'floor_sewer_channel' | 'sewer_wall';
+export type FloorKind = 'floor_wood' | 'floor_tile' | 'floor_concrete' | 'floor_carpet' | 'floor_sewer' | 'floor_sewer_channel' | 'floor_sewer_channel_v' | 'sewer_wall';
 
 /** A run of pixels: x, y, width, colour. */
 type Mark = readonly [number, number, number, Color];
@@ -103,14 +103,37 @@ function channel(shift: number): PixelCanvas {
   return c;
 }
 
+/** Murky green sludge in a vertical stone-lipped channel: lit lip left, shadowed lip right, ripples down the flow. */
+function channelV(variant: number): PixelCanvas {
+  const c = new PixelCanvas(S, S).fill(acid[0]);
+  c.rect(0, 0, 2, S, concrete[1]).rect(2, 0, 1, S, ink[0]);
+  c.rect(13, 0, 1, S, ink[0]).rect(14, 0, 2, S, concrete[0]);
+  c.rect(3, 0, 2, S, olive[0]).rect(11, 0, 2, S, olive[0]);
+  const isVariantOne = variant === 1;
+  const isVariantTwo = variant === 2;
+  if (isVariantOne) {
+    c.rect(7, 3, 2, 5, olive[1]).rect(5, 9, 2, 4, olive[1]);
+    c.px(8, 5, acid[1]).px(6, 11, acid[1]);
+  } else if (isVariantTwo) {
+    c.rect(5, 2, 2, 4, olive[1]).rect(8, 5, 2, 5, olive[1]).rect(6, 10, 2, 4, olive[1]);
+    c.px(6, 3, acid[1]).px(9, 7, acid[1]);
+  } else {
+    c.rect(6, 2, 2, 5, olive[1]).rect(8, 8, 2, 5, olive[1]);
+    c.px(7, 4, acid[1]).px(5, 10, olive[1]);
+  }
+  return c;
+}
+
 /** Brick wall: running bond in dark brick, mortar lines, a chipped course and a streak of damp. */
 function sewerBrick(variant: number): PixelCanvas {
   const c = new PixelCanvas(S, S).fill(brick[0]);
   for (let y = 0; y < S; y += 4) c.rect(0, y, S, 1, ink[1]);
   for (let y = 0; y < S; y += 4) for (let x = (y / 4 % 2) * 4; x < S; x += 8) c.rect(x, y + 1, 1, 3, ink[1]);
   for (let y = 1; y < S; y += 4) c.rect(1, y, S - 2, 1, brick[1]);
-  if (variant === 1) c.rect(5, 6, 2, 2, brick[2]).rect(6, 8, 1, 4, olive[0]);
-  if (variant === 2) c.rect(10, 10, 3, 1, asphalt[2]).rect(11, 11, 1, 3, olive[0]);
+  const isVariantOne = variant === 1;
+  const isVariantTwo = variant === 2;
+  if (isVariantOne) c.rect(5, 6, 2, 2, brick[2]).rect(6, 8, 1, 4, olive[0]);
+  if (isVariantTwo) c.rect(10, 10, 3, 1, asphalt[2]).rect(11, 11, 1, 3, olive[0]);
   return c;
 }
 
@@ -123,6 +146,7 @@ export function buildFloors(): Record<FloorKind, readonly PixelCanvas[]> {
     floor_carpet: CARPET.map((marks) => marked(pile(), marks)),
     floor_sewer: SEWER_FLOOR.map((marks) => marked(flagstones(), marks)),
     floor_sewer_channel: [channel(0), channel(2)],
+    floor_sewer_channel_v: [channelV(0), channelV(1), channelV(2)],
     sewer_wall: [sewerBrick(0), sewerBrick(1), sewerBrick(2)],
   };
 }

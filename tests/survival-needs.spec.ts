@@ -200,6 +200,10 @@ describe('Survival Pixel Art Standards', () => {
     expect(moodles.find((m) => m.id === 'bleeding')?.label).toBe('HEAVY BLEEDING');
     expect(moodles.find((m) => m.id === 'infection')?.label).toBe('TERMINAL ZOONOSIS');
     expect(moodles.find((m) => m.id === 'fatigue')?.label).toBe('EXHAUSTED');
+    for (const moodle of moodles) {
+      expect(typeof moodle.remedy).toBe('string');
+      expect(moodle.remedy.length).toBeGreaterThan(0);
+    }
   });
 
   it('renders all 16x16 moodle pixel art sprites adhering to palette rules', () => {

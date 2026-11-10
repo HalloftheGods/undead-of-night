@@ -19,6 +19,7 @@ import { trackName } from './sound-test.ts';
 import { foundTracks, isRadioFound, recordRadioFound } from './sound-unlock.ts';
 import { recordRun } from './storage.ts';
 import { dailyShare, dayLabel, recordDaily } from './daily-night.ts';
+import type { DailyPartySize } from './daily-night.ts';
 import { TownMapView } from './town-map.ts';
 import { containerInReach } from '../../shared/containers.ts';
 import { BUNKER_LEVEL } from '../../shared/home-protocol.ts';
@@ -53,6 +54,7 @@ export const NO_RUN_UI = {
   logOpen: false,
   hint: null,
   bite: null,
+  lobby: null,
 } as const satisfies Partial<UiState>;
 
 /** 0..1 for the low-health effects. Anyone not on their feet has no use for them. */
@@ -79,9 +81,48 @@ export function finishRun(stats: GameOverStats, localId: string, dailyKey: strin
   const kills = local?.kills ?? 0;
   const isDaily = dailyKey !== null;
   if (isDaily) {
-    // A Daily Night keeps its own book, so the leaderboard stays a list of runs anyone could have had.
-    const counted = local ? recordDaily(dailyKey, { score, kills, level: stats.level }) : false;
-    return { stats, localId, score, kills, isNewBest: false, daily: { label: `Daily Night, ${dayLabel(dailyKey)}`, counted, share: dailyShare(dailyKey) } };
+    const playerCount = stats.players.length;
+    const isMp = playerCount > 1;
+    const partySize = isMp && playerCount >= 2 && playerCount <= 5 ? (playerCount as DailyPartySize) : undefined;
+    const teamScore = isMp ? stats.players.reduce((sum, player) => sum + player.score, 0) : undefined;
+    const teamKills = isMp ? stats.players.reduce((sum, player) => sum + player.kills, 0) : undefined;
+    const roster = isMp
+      ? stats.players.map((player) => ({
+          name: player.name,
+          character: player.skin,
+          score: player.score,
+          kills: player.kills,
+        }))
+      : undefined;
+
+    const counted = local
+      ? recordDaily(dailyKey, {
+          score,
+          kills,
+          level: stats.level,
+          partySize,
+          teamScore,
+          teamKills,
+          roster,
+        })
+      : false;
+
+    const label = isMp
+      ? `Daily Night (${partySize ?? playerCount}P), ${dayLabel(dailyKey)}`
+      : `Daily Night, ${dayLabel(dailyKey)}`;
+
+    return {
+      stats,
+      localId,
+      score,
+      kills,
+      isNewBest: false,
+      daily: {
+        label,
+        counted,
+        share: dailyShare(dailyKey, undefined, partySize),
+      },
+    };
   }
   const isNewBest = local ? recordRun({ score, kills, wave: stats.wave, durationSec: stats.durationSec }, undefined, local.name) : false;
   return { stats, localId, score, kills, isNewBest };

@@ -67,8 +67,17 @@
           <p class="rb-tab">Tonight, {{ book.daily.tonight.label }}</p>
           <p class="rb-ticket-title">{{ book.daily.tonight.title }}</p>
           <p class="rb-ticket-line">{{ book.daily.tonight.line }}</p>
-          <p class="rb-ticket-line">
-            {{ book.daily.tonight.played ? `Counted: ${book.daily.tonight.played.score} points` : 'Not played yet. The first run counts.' }}
+          <p v-if="book.daily.tonight.solo" class="rb-ticket-line">
+            Solo: {{ book.daily.tonight.solo.score }} points
+          </p>
+          <p v-if="book.daily.tonight.mp" class="rb-ticket-line">
+            MP: {{ book.daily.tonight.mp.teamScore }} team points ({{ book.daily.tonight.mp.partySize }}P)
+          </p>
+          <p v-if="!book.daily.tonight.solo && !book.daily.tonight.mp && book.daily.tonight.played" class="rb-ticket-line">
+            Counted: {{ book.daily.tonight.played.score }} points
+          </p>
+          <p v-if="!book.daily.tonight.played" class="rb-ticket-line">
+            Not played yet. The first run counts.
           </p>
           <p v-if="book.daily.tonight.played" class="rb-stamp">Counted</p>
         </section>
@@ -78,10 +87,17 @@
             <dd class="rb-big">{{ book.daily.streak }}<span class="rb-big-tag">{{ book.daily.streak === 1 ? 'night in a row' : 'nights in a row' }}</span></dd>
           </div>
           <div class="rb-daily-stat">
-            <dt>Best night</dt>
+            <dt>Best Solo</dt>
             <dd class="rb-big">
               {{ book.daily.best?.score ?? '-' }}
-              <span class="rb-big-tag">{{ book.daily.best ? `${book.daily.best.label}, ${townName(book.daily.best.level)}` : 'None counted yet' }}</span>
+              <span class="rb-big-tag">{{ book.daily.best ? `${book.daily.best.label}, ${townName(book.daily.best.level)}` : 'None counted' }}</span>
+            </dd>
+          </div>
+          <div class="rb-daily-stat">
+            <dt>Best MP Team</dt>
+            <dd class="rb-big">
+              {{ book.daily.bestMp?.teamScore ?? '-' }}
+              <span class="rb-big-tag">{{ book.daily.bestMp ? `${book.daily.bestMp.label}, ${book.daily.bestMp.partySize}P` : 'None counted' }}</span>
             </dd>
           </div>
           <div class="rb-daily-stat">

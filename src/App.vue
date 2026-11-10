@@ -5,8 +5,10 @@
     <TitleScreen v-if="ui.screen === 'title'" :ui :splashing />
 
     <template v-else-if="ui.screen === 'game'">
-      <template v-if="ui.hud && ui.art">
-        <HudOverlay :hud="ui.hud" :art="ui.art" :mode="ui.mode" :signal-weak="ui.signalWeak" :place="ui.place" :home="ui.home" :log="ui.log" />
+      <DailyLobby v-if="ui.lobby && !ui.lobby.launched" :lobby="ui.lobby" />
+      <template v-else>
+        <template v-if="ui.hud && ui.art">
+          <HudOverlay :hud="ui.hud" :art="ui.art" :mode="ui.mode" :signal-weak="ui.signalWeak" :place="ui.place" :home="ui.home" :log="ui.log" />
         <DownedOverlay v-if="ui.hud.status !== 'alive'" :hud="ui.hud" :mode="ui.mode" />
         <TouchControls v-if="ui.touch && !ui.bagOpen && !ui.paused" />
         <!-- The backpack ring: the Backpack button on a phone, a middle-click on a desktop. -->
@@ -40,6 +42,7 @@
       <CandyBag v-if="ui.bagOpen && ui.hud && ui.art" :hud="ui.hud" :art="ui.art" :mode="ui.mode" />
       <PauseMenu v-if="ui.paused" :ui :mode="ui.mode" />
       <VanTransition :in-bunker="ui.home?.inBunker ?? null" :art="ui.art" />
+      </template>
     </template>
 
     <EndingFlow v-else-if="ui.screen === 'gameover' && ui.result && ui.result.stats.outcome === 'victory'" :result="ui.result" :art="ui.art" />
@@ -85,6 +88,7 @@ import TitleScreen from './components/TitleScreen.vue';
 import TouchControls from './components/TouchControls.vue';
 import TownMap from './components/TownMap.vue';
 import CandyBag from './components/CandyBag.vue';
+import DailyLobby from './components/DailyLobby.vue';
 import { GAME_KEY } from './components/use-game.ts';
 import VanTransition from './components/VanTransition.vue';
 import WaveBanner from './components/WaveBanner.vue';
@@ -104,9 +108,10 @@ const aiming = computed(() =>
     screen: ui.value.screen,
     paused: ui.value.paused,
     mapOpen: ui.value.mapOpen || ui.value.bagOpen,
-    bench: !!ui.value.hud?.bench,
+    bench: Boolean(ui.value.hud?.bench),
     home: ui.value.home,
     backpackOpen: ui.value.backpackOpen,
+    inLobby: Boolean(ui.value.lobby && !ui.value.lobby.launched),
   })
 );
 /** The pause card, the town map and the candy bag each clear the level card and the banners off the screen. */

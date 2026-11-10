@@ -3,7 +3,7 @@ import { closeText } from '../../shared/close-codes.ts';
 import type { GameStyle } from '../../shared/game-style.ts';
 import type { HomeAction, JoinHome } from '../../shared/home-protocol.ts';
 import { PROTOCOL_VERSION } from '../../shared/protocol.ts';
-import type { ClientInputPacket, ClientPacket, SnapshotPacket, WelcomePacket } from '../../shared/protocol.ts';
+import type { ClientInputPacket, ClientPacket, LobbyStatePacket, SnapshotPacket, WelcomePacket } from '../../shared/protocol.ts';
 import type { BenchAction } from '../../shared/workbench.ts';
 import { tapRoomDifficulty } from '../game/analytics/event-tap.ts';
 import type { PacketPipe, PipeWords } from './packet-pipe.ts';
@@ -27,6 +27,7 @@ export class RemoteSession implements RoomSession {
 
   onWelcome: (packet: WelcomePacket) => void = () => {};
   onSnapshot: (packet: SnapshotPacket) => void = () => {};
+  onLobbyState: (packet: LobbyStatePacket) => void = () => {};
   onClosed: (reason: string) => void = () => {};
   /** What the room plays, or null for an empty one. Heard before joining, and answered with `join`; heard again if the room moved on first. */
   onRoom: (style: GameStyle | null) => void = () => {};
@@ -81,6 +82,18 @@ export class RemoteSession implements RoomSession {
     if (this.welcomed) this.send({ type: 'emote', emote });
   }
 
+  sendLobbyReady(ready?: boolean): void {
+    this.send({ type: 'lobby_ready', ...(ready !== undefined ? { ready } : {}) });
+  }
+
+  sendLobbyStart(): void {
+    this.send({ type: 'lobby_start' });
+  }
+
+  sendLobbyToggleTimer(enabled?: boolean): void {
+    this.send({ type: 'lobby_toggle_timer', ...(enabled !== undefined ? { enabled } : {}) });
+  }
+
   requestRestart(): void {
     this.send({ type: 'restart' });
   }
@@ -112,6 +125,8 @@ export class RemoteSession implements RoomSession {
       this.onWelcome(packet);
     } else if (packet.type === 'snapshot' && this.welcomed) {
       this.onSnapshot(this.anonymous ? withoutNames(packet) : packet);
+    } else if (packet.type === 'lobby_state') {
+      this.onLobbyState(packet);
     }
   }
 

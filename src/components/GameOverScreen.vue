@@ -28,6 +28,7 @@
           <div><dt>Time</dt><dd>{{ formatDuration(result.stats.durationSec) }}</dd></div>
           <div><dt>Kills</dt><dd>{{ result.kills }}</dd></div>
           <div><dt>Score</dt><dd>{{ result.score }}</dd></div>
+          <div v-if="result.stats.players.length > 1"><dt>Team</dt><dd>{{ teamScore }}</dd></div>
         </dl>
 
         <table v-if="result.stats.players.length > 1" class="gameover-table">
@@ -93,6 +94,7 @@ const town = computed(() => levelDef(level.value).town);
 const title = computed(() => levelDef(level.value).title);
 const scene = computed(() => art?.ui.levelScenes[level.value - 1] ?? null);
 const ranked = computed(() => [...result.stats.players].sort((a, b) => b.score - a.score));
+const teamScore = computed(() => result.stats.players.reduce((sum, player) => sum + player.score, 0));
 
 /** Read once: the death and the run's mode are settled by the time this screen shows. */
 const { mode, runStyle } = game.ui.value;

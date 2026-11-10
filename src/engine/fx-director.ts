@@ -74,6 +74,10 @@ const PICKUP_LABEL: Record<PickupType, string> = {
   tranq_kit: 'TRANQ KIT',
   jewel_small: 'JEWEL',
   jewel_large: 'LARGE JEWEL',
+  canned_food: 'CANNED FOOD',
+  water_bottle: 'WATER BOTTLE',
+  disinfectant: 'DISINFECTANT',
+  antibiotics: 'ANTIBIOTICS',
 };
 
 export interface PulseLight {

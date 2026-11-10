@@ -20,6 +20,7 @@ import type {
   EntityId,
   GameOverStats,
   GamePhase,
+  LobbyStatePacket,
   PlayerEntity,
   PlayerStatus,
   SnapshotPacket,
@@ -120,6 +121,7 @@ export interface MoodleView {
   readonly label: string;
   readonly severity: 'low' | 'medium' | 'high' | 'critical';
   readonly value: number;
+  readonly remedy: string;
 }
 
 export interface Banner {
@@ -221,6 +223,8 @@ export interface UiState {
   readonly onlineRoom: string | null;
   /** The hosted room is public (Find a team), so strangers may be matched into it. */
   readonly onlinePublic: boolean;
+  /** Active multiplayer daily lobby state if currently in pre-match lobby. */
+  readonly lobby?: LobbyStatePacket | null;
   readonly volume: number;
   /** Music and sound effects, each a share of volume. */
   readonly musicVolume: number;
@@ -285,22 +289,22 @@ export function buildMoodles(needs?: SurvivalNeeds): readonly MoodleView[] {
   const isHungry = needs.hunger >= 50 && !isStarving;
   const isPeckish = needs.hunger >= 25 && !isHungry && !isStarving;
   if (isStarving) {
-    list.push({ id: 'hunger', label: 'STARVING', severity: 'critical', value: needs.hunger });
+    list.push({ id: 'hunger', label: 'STARVING', severity: 'critical', value: needs.hunger, remedy: 'Eat food urgently' });
   } else if (isHungry) {
-    list.push({ id: 'hunger', label: 'HUNGRY', severity: 'medium', value: needs.hunger });
+    list.push({ id: 'hunger', label: 'HUNGRY', severity: 'medium', value: needs.hunger, remedy: 'Eat canned food' });
   } else if (isPeckish) {
-    list.push({ id: 'hunger', label: 'PECKISH', severity: 'low', value: needs.hunger });
+    list.push({ id: 'hunger', label: 'PECKISH', severity: 'low', value: needs.hunger, remedy: 'Find & eat food' });
   }
 
   const isDehydrated = needs.thirst >= 80;
   const isThirsty = needs.thirst >= 50 && !isDehydrated;
   const isParched = needs.thirst >= 25 && !isThirsty && !isDehydrated;
   if (isDehydrated) {
-    list.push({ id: 'thirst', label: 'DEHYDRATED', severity: 'critical', value: needs.thirst });
+    list.push({ id: 'thirst', label: 'DEHYDRATED', severity: 'critical', value: needs.thirst, remedy: 'Drink water urgently' });
   } else if (isThirsty) {
-    list.push({ id: 'thirst', label: 'THIRSTY', severity: 'medium', value: needs.thirst });
+    list.push({ id: 'thirst', label: 'THIRSTY', severity: 'medium', value: needs.thirst, remedy: 'Drink bottled water' });
   } else if (isParched) {
-    list.push({ id: 'thirst', label: 'PARCHED', severity: 'low', value: needs.thirst });
+    list.push({ id: 'thirst', label: 'PARCHED', severity: 'low', value: needs.thirst, remedy: 'Drink clean water' });
   }
 
   const isBleeding = needs.bleeding;
@@ -311,6 +315,7 @@ export function buildMoodles(needs?: SurvivalNeeds): readonly MoodleView[] {
       label: isHeavy ? 'HEAVY BLEEDING' : 'BLEEDING',
       severity: isHeavy ? 'critical' : 'high',
       value: 100,
+      remedy: isHeavy ? 'Bandage wound urgently [H]' : 'Use bandage [H]',
     });
   }
 
@@ -318,29 +323,33 @@ export function buildMoodles(needs?: SurvivalNeeds): readonly MoodleView[] {
   if (isInfected) {
     let label = 'INFECTED';
     let severity: 'medium' | 'high' | 'critical' = 'medium';
+    let remedy = 'Clean with disinfectant';
     const isCritical = needs.infection >= 75;
     const isHigh = needs.infection >= 40 && !isCritical;
     if (isCritical) {
       label = 'TERMINAL ZOONOSIS';
       severity = 'critical';
+      remedy = 'Antibiotics urgently';
     } else if (isHigh) {
       label = 'FEVERED';
       severity = 'high';
+      remedy = 'Take antibiotics';
     }
     list.push({
       id: 'infection',
       label,
       severity,
       value: needs.infection,
+      remedy,
     });
   }
 
   const isExhausted = needs.fatigue >= 80;
   const isTired = needs.fatigue >= 50 && !isExhausted;
   if (isExhausted) {
-    list.push({ id: 'fatigue', label: 'EXHAUSTED', severity: 'critical', value: needs.fatigue });
+    list.push({ id: 'fatigue', label: 'EXHAUSTED', severity: 'critical', value: needs.fatigue, remedy: 'Halt & rest stamina' });
   } else if (isTired) {
-    list.push({ id: 'fatigue', label: 'TIRED', severity: 'medium', value: needs.fatigue });
+    list.push({ id: 'fatigue', label: 'TIRED', severity: 'medium', value: needs.fatigue, remedy: 'Rest (stop sprinting)' });
   }
 
   return list;

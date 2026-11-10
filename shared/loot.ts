@@ -43,30 +43,30 @@ export interface LootRule {
 const NOTHING_UNDERGROUND: LootRule = { items: [0, 0], table: { bandage: 1 } };
 
 export const LOOT_RULES: Record<BuildingKind, LootRule> = {
-  pharmacy: { items: [2, 4], table: { bandage: 5, medkit: 3, pistol_ammo: 0.5 } },
-  clinic: { items: [3, 4], table: { bandage: 4, medkit: 4 } },
+  pharmacy: { items: [2, 4], table: { disinfectant: 4, bandage: 4, antibiotics: 2.5, medkit: 1.5, water_bottle: 1 } },
+  clinic: { items: [3, 4], fixed: ['disinfectant'], table: { antibiotics: 3.5, bandage: 3.5, medkit: 3, water_bottle: 1 } },
   // The town's biggest store of medicine, and the most guarded: a medkit in the emergency bay every time.
-  hospital: { items: [3, 5], fixed: ['medkit'], table: { bandage: 4, medkit: 3, pistol_ammo: 0.4 } },
-  // A nurse's office and a kitchen: first aid, the odd knife, and rounds confiscated from a locker.
-  school: { items: [1, 3], table: { bandage: 4, knife: 0.6, pistol_ammo: 0.8 }, smallAmmo: true },
+  hospital: { items: [3, 5], fixed: ['medkit'], table: { antibiotics: 3.5, bandage: 3.5, medkit: 2, disinfectant: 2, pistol_ammo: 0.4 } },
+  // A nurse's office and a kitchen: first aid, clean water, and the odd knife.
+  school: { items: [1, 3], table: { bandage: 3, water_bottle: 2.5, canned_food: 1, knife: 1, pistol_ammo: 1 }, smallAmmo: true },
   police: { items: [3, 4], fixed: ['carbine'], table: { pistol_ammo: 3, carbine_ammo: 4, shells: 1 } },
   gun_shop: { items: [3, 4], fixed: ['shotgun'], table: { pistol_ammo: 3, shells: 3, carbine_ammo: 1 } },
-  garage: { items: [0, 2], table: { pistol_ammo: 3, shells: 1, bandage: 1, knife: 0.4 } },
-  warehouse: { items: [0, 2], table: { pistol_ammo: 3, carbine_ammo: 1, shells: 1, bandage: 1 } },
-  grocery: { items: [0, 2], table: { bandage: 3, pistol_ammo: 1 }, smallAmmo: true },
-  // Cheap goods off the shelves: mostly first aid, the odd knife, a half box of rounds.
-  discount: { items: [0, 2], table: { bandage: 3, pistol_ammo: 1, knife: 0.3 }, smallAmmo: true },
-  diner: { items: [0, 1], table: { bandage: 2, pistol_ammo: 1, knife: 0.3 }, smallAmmo: true },
-  house: { items: [-1, 1], table: { bandage: 3, pistol_ammo: 2, knife: 0.05 }, smallAmmo: true },
-  apartment: { items: [-1, 1], table: { bandage: 3, pistol_ammo: 2 }, smallAmmo: true },
+  garage: { items: [0, 2], table: { pistol_ammo: 3, shells: 1.5, bandage: 1, knife: 0.4, water_bottle: 0.6, disinfectant: 0.6 } },
+  warehouse: { items: [0, 2], table: { pistol_ammo: 3, carbine_ammo: 1.5, shells: 1.5, bandage: 1, water_bottle: 0.6, canned_food: 0.6 } },
+  grocery: { items: [1, 3], fixed: ['canned_food'], table: { water_bottle: 3.5, canned_food: 3.5, bandage: 2, pistol_ammo: 1 }, smallAmmo: true },
+  // Cheap goods off the shelves: rations, water bottles, first aid, the odd knife, a half box of rounds.
+  discount: { items: [0, 2], table: { canned_food: 2.5, water_bottle: 2.5, bandage: 2.5, pistol_ammo: 1, knife: 0.5 }, smallAmmo: true },
+  diner: { items: [1, 2], fixed: ['canned_food'], table: { water_bottle: 2.5, canned_food: 2.5, knife: 2, bandage: 1.5, pistol_ammo: 0.5 }, smallAmmo: true },
+  house: { items: [-1, 1], table: { pistol_ammo: 2.5, canned_food: 1.5, water_bottle: 1.5, bandage: 1.5, disinfectant: 0.5, knife: 0.1 }, smallAmmo: true },
+  apartment: { items: [-1, 1], table: { pistol_ammo: 2.5, canned_food: 1.5, water_bottle: 1.5, bandage: 1.5, disinfectant: 0.5 }, smallAmmo: true },
   // What was put away upstairs, and what was hidden in the cellar: worth the trip down, and the noise it brings.
   // No ammo up or down: the town's rounds are budgeted, so these floors are for first aid, and the candy hidden in them.
-  upstairs: { items: [0, 1], table: { bandage: 3, knife: 0.3 } },
-  cellar: { items: [0, 2], table: { bandage: 2, medkit: 1, knife: 0.5 } },
-  apartment_upstairs: { items: [0, 1], table: { bandage: 3, knife: 0.3 } },
+  upstairs: { items: [0, 1], table: { bandage: 3, canned_food: 1, water_bottle: 1, knife: 0.3 } },
+  cellar: { items: [0, 2], table: { bandage: 2, medkit: 1, canned_food: 1, water_bottle: 1, knife: 0.5 } },
+  apartment_upstairs: { items: [0, 1], table: { bandage: 3, canned_food: 1, water_bottle: 1, knife: 0.3 } },
   // The wards keep their own first aid; the classrooms upstairs, a nurse's kit and a confiscated knife.
-  hospital_upstairs: { items: [1, 3], table: { bandage: 4, medkit: 2 } },
-  school_upstairs: { items: [0, 2], table: { bandage: 3, knife: 0.5 } },
+  hospital_upstairs: { items: [1, 3], table: { bandage: 3, medkit: 2, antibiotics: 2, disinfectant: 1 } },
+  school_upstairs: { items: [0, 2], table: { bandage: 3, water_bottle: 2, knife: 0.5 } },
   sewer_maze: NOTHING_UNDERGROUND,
 };
 

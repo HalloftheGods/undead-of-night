@@ -10,7 +10,8 @@
       </p>
       <p v-if="facts.rule" class="daily-rule">{{ facts.rule }}</p>
       <dl class="daily-facts">
-        <div class="daily-fact"><dt class="px-label">Your run</dt><dd>{{ todayLine }}</dd></div>
+        <div class="daily-fact"><dt class="px-label">Solo run</dt><dd>{{ soloLine }}</dd></div>
+        <div class="daily-fact"><dt class="px-label">MP run</dt><dd>{{ mpLine }}</dd></div>
         <div class="daily-fact"><dt class="px-label">Streak</dt><dd>{{ streak === 1 ? '1 night' : `${streak} nights` }}</dd></div>
         <div class="daily-fact"><dt class="px-label">New town in</dt><dd>{{ countdown }}</dd></div>
       </dl>
@@ -22,7 +23,12 @@
 
     <template #actions>
       <ShareButton v-if="share" :text="share" />
-      <PixelButton primary silent :disabled="!ready" @press="game.startDaily()">{{ played ? 'Practice' : 'Start tonight' }}</PixelButton>
+      <PixelButton silent :disabled="!ready" @press="game.startDaily()">
+        {{ soloPlayed ? 'Solo Practice' : 'Solo Run' }}
+      </PixelButton>
+      <PixelButton primary silent :disabled="!ready" @press="game.startDailyMp()">
+        {{ mpPlayed ? 'MP Practice' : 'Nightly MP Lobby' }}
+      </PixelButton>
     </template>
   </TitlePage>
 </template>
@@ -36,7 +42,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef } f
 import { difficultyDef } from '../../shared/difficulty.ts';
 import { townName } from '../../shared/levels.ts';
 import { loadCharacter, saveCharacter } from '../game/character-pref.ts';
-import { countdownText, dailyShare, dayLabel, loadDailyLog, msUntilTomorrow, nightFacts, streakOf, todaysNight } from '../game/daily-night.ts';
+import { countdownText, dailyShare, dayLabel, loadDailyLog, mpResultOf, msUntilTomorrow, nightFacts, soloResultOf, streakOf, todaysNight } from '../game/daily-night.ts';
 import type { UiState } from '../game/hud-state.ts';
 import { survivorPick } from '../game/setup-picks.ts';
 import type { FixedCard, PickKey } from '../game/setup-picks.ts';
@@ -56,11 +62,15 @@ const night = todaysNight();
 const facts = nightFacts(night);
 const log = loadDailyLog();
 const today = log[night.key] ?? null;
-const played = today !== null;
+const solo = soloResultOf(today);
+const mp = mpResultOf(today);
+const soloPlayed = solo !== null;
+const mpPlayed = mp !== null;
+const soloLine = solo ? `${solo.score} pts (${townName(solo.level)})${solo.attempts > 1 ? `, ${solo.attempts - 1} practice` : ''}` : 'Not played yet';
+const mpLine = mp ? `${mp.teamScore} team pts (${mp.partySize}P, ${townName(mp.level)})${mp.attempts > 1 ? `, ${mp.attempts - 1} practice` : ''}` : 'Not played yet';
 const share = dailyShare(night.key);
 const streak = streakOf(log, night.key);
 const reward = streakReward(log, night.key);
-const todayLine = today ? `${today.score} points, ${townName(today.level)}${today.attempts > 1 ? `, ${today.attempts - 1} practice` : ''}` : 'Not played yet';
 const ready = computed(() => ui.art !== null && !ui.connecting);
 
 const nextLabel = computed(() => {

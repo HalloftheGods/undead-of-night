@@ -259,6 +259,7 @@ describe('horde flow', () => {
     const { sim, state } = soloSim();
     const [p] = state.players;
     p.health = p.maxHealth = 1e9;
+    p.needs = undefined;
     const seen: { called: number; spawned: number; total: number }[] = [];
     let called = 0;
     let spawned = new Set<string>();

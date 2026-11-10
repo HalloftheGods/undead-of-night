@@ -67,7 +67,7 @@ describe('sewer layout', () => {
     expect(map.rows).toBe(surface + townHeight(map) / TILE_SIZE);
   });
 
-  it.each(SEEDS)('seed %i: has six to eight manholes on the street, spread over the quadrants', (seed) => {
+  it.each(SEEDS)('seed %i: has manholes on the street, spread over the quadrants', (seed) => {
     const map = generateWorldMap(seed);
     const covers = manholes(map);
     expect(covers.length).toBeGreaterThanOrEqual(MIN_MANHOLES);
@@ -99,7 +99,8 @@ describe('the maze', () => {
     let underStreet = 0;
     for (let row = top; row < map.rows; row++) {
       for (let col = 0; col < map.cols; col++) {
-        const isCanal = TILE_KINDS[map.tiles[row * map.cols + col]] === 'floor_sewer_channel';
+        const tileKind = TILE_KINDS[map.tiles[row * map.cols + col]];
+        const isCanal = tileKind === 'floor_sewer_channel' || tileKind === 'floor_sewer_channel_v';
         if (!isCanal) continue;
         canal++;
         if (ROAD_KINDS.includes(TILE_KINDS[map.tiles[(row - top) * map.cols + col]])) underStreet++;

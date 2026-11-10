@@ -57,6 +57,7 @@ const TILE_RGB: Record<TileKind, Rgb> = {
   floor_carpet: PAVEMENT,
   floor_sewer: [28, 30, 38],
   floor_sewer_channel: [36, 62, 40],
+  floor_sewer_channel_v: [36, 62, 40],
   sewer_wall: [50, 30, 36],
   bunker_wall: [26, 26, 32],
   void: [0, 0, 0],

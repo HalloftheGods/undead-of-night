@@ -108,14 +108,16 @@ export function parseClientPacket(raw: string): ClientPacket | null {
   if (emote) return { type: 'emote', emote };
   const homeAction = value.type === 'home' ? parseHome(value.action) : null;
   if (homeAction) return { type: 'home', action: homeAction };
-  if (value.type === 'lobby_ready' && typeof value.ready === 'boolean') {
-    return { type: 'lobby_ready', ready: value.ready };
+  if (value.type === 'lobby_ready') {
+    const ready = typeof value.ready === 'boolean' ? value.ready : true;
+    return { type: 'lobby_ready', ready };
   }
   if (value.type === 'lobby_start') {
     return { type: 'lobby_start' };
   }
-  if (value.type === 'lobby_toggle_timer' && typeof value.enabled === 'boolean') {
-    return { type: 'lobby_toggle_timer', enabled: value.enabled };
+  if (value.type === 'lobby_toggle_timer') {
+    const enabled = typeof value.enabled === 'boolean' ? value.enabled : undefined;
+    return { type: 'lobby_toggle_timer', ...(enabled !== undefined ? { enabled } : {}) };
   }
   return value.type === 'restart' ? { type: 'restart' } : null;
 }

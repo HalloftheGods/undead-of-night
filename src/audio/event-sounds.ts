@@ -19,6 +19,7 @@ export const PICKUP_SFX: Record<PickupType, SfxName> = {
   barrel: 'pickup_part', grip: 'pickup_part', magazine: 'pickup_part', suppressor: 'pickup_part', toolkit: 'pickup_part',
   incendiary_kit: 'pickup_part', acid_kit: 'pickup_part', piercing_kit: 'pickup_part', tranq_kit: 'pickup_part',
   jewel_small: 'pickup_jewel', jewel_large: 'pickup_jewel_large',
+  canned_food: 'pickup_medkit', water_bottle: 'pickup_bandage', disinfectant: 'pickup_medkit', antibiotics: 'pickup_bandage',
 };
 /** Each boss's trick has its own call, so a player hears which one is coming. */
 const BOSS_TRICK: Record<BossId, SfxName> = { howler: 'boss_howl', mother: 'boss_brood', butcher: 'boss_charge' };

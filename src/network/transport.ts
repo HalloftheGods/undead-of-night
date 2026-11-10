@@ -2,7 +2,7 @@ import type { DifficultyId } from '../../shared/difficulty.ts';
 import type { EmoteId } from '../../shared/emotes.ts';
 import type { GameStyle } from '../../shared/game-style.ts';
 import type { HomeAction, JoinHome } from '../../shared/home-protocol.ts';
-import type { ClientInputPacket, SnapshotPacket, WelcomePacket } from '../../shared/protocol.ts';
+import type { ClientInputPacket, LobbyStatePacket, SnapshotPacket, WelcomePacket } from '../../shared/protocol.ts';
 import type { BenchAction } from '../../shared/workbench.ts';
 
 export type TransportKind = 'solo' | 'coop';
@@ -30,12 +30,16 @@ export interface GameTransport {
   readonly interpolationDelayMs: number;
   onWelcome: (packet: WelcomePacket) => void;
   onSnapshot: (packet: SnapshotPacket) => void;
+  onLobbyState?: (packet: LobbyStatePacket) => void;
   /** Fires at most once, and never after disconnect(). */
   onClosed: (reason: string) => void;
   connect(options: ConnectOptions): void;
   sendInput(input: ClientInputPacket): void;
   sendBench(action: BenchAction): void;
   sendHome(action: HomeAction): void;
+  sendLobbyReady?(ready?: boolean): void;
+  sendLobbyStart?(): void;
+  sendLobbyToggleTimer?(): void;
   /** An icon over this survivor for everyone, paced by the room. */
   sendEmote(emote: EmoteId): void;
   /** Solo can begin again from a later level; co-op restarts at level 1 and ignores it. */

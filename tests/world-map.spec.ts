@@ -119,7 +119,7 @@ describe('generateWorldMap', () => {
     const sewerGround: readonly string[] = ['water', 'sludge'];
     const townKinds = TILE_KINDS.filter((kind) => !biomeGround.includes(kind));
     expect([...used].filter((kind) => !sewerGround.includes(kind)).sort()).toEqual([...townKinds].sort());
-    expect(used.has('sludge') || used.has('water')).toBe(true);
+    expect(used.has('floor_sewer_channel') || used.has('floor_sewer_channel_v')).toBe(true);
     const kinds = new Set(map.props.map((prop) => prop.kind));
     for (const kind of ['street_lamp', 'fire_barrel', 'tree', 'dumpster', 'sandbags', 'fence_h', 'fence_v', 'gas_pump', ...FURNITURE] as const) {
       expect(kinds).toContain(kind);
