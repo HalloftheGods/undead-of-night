@@ -1,5 +1,6 @@
 import { BUILDING_DEFS, DOOR_WIDTH, TILE_SIZE, WALL_THICKNESS } from '../../shared/protocol.ts';
 import type { BuildingInstance, BuildingKind, WorldMap } from '../../shared/protocol.ts';
+import { isSewerBuilding } from '../../shared/map-protocol.ts';
 import { buildingAt } from '../../shared/world-map.ts';
 import { BACK_DOORS, partitionsOf } from '../../shared/building-plans.ts';
 import { flightsOf, isStoreyKind } from '../../shared/storeys.ts';
@@ -169,15 +170,17 @@ export class BuildingLayer {
       const variants = this.art.buildings[building.kind];
       const sprite = variants[building.variant % variants.length];
       const { w, h } = BUILDING_DEFS[building.kind];
-      const x0 = building.x + w / 2 - sprite.ax;
-      const y0 = building.y + h - sprite.ay;
+      // The sewers have no shell: their bounds are their footprint, and nothing is drawn over them.
+      const isSewer = isSewerBuilding(building);
+      const x0 = isSewer ? building.x : building.x + w / 2 - sprite.ax;
+      const y0 = isSewer ? building.y : building.y + h - sprite.ay;
       const placed = {
         building,
         sprite,
         x0,
         y0,
-        x1: x0 + sprite.w,
-        y1: y0 + sprite.h,
+        x1: isSewer ? x0 + w : x0 + sprite.w,
+        y1: isSewer ? y0 + h : y0 + sprite.h,
         width: w,
         height: h,
         depthY: building.y + h,
@@ -209,7 +212,9 @@ export class BuildingLayer {
   /** True for a point under a shell that has not begun to open. */
   isHidden(x: number, y: number): boolean {
     const placed = this.placedAt(x, y);
-    return placed !== null && placed.reveal === 0;
+    // The sewers run together into one open tunnel: the dark and the lights hide what is down there, not a shell.
+    const isOpenTunnel = placed !== null && isSewerBuilding(placed.building);
+    return placed !== null && !isOpenTunnel && placed.reveal === 0;
   }
 
   /** The room that is open, or opening, around the viewer. */
@@ -236,7 +241,8 @@ export class BuildingLayer {
   drawInteriors(ctx: CanvasRenderingContext2D, left: number, top: number): void {
     for (const placed of this.placed) {
       const showing = placed.reveal > 0;
-      if (!showing) continue;
+      // A sewer has no walls to paint: its catwalks and trench are the tiles themselves.
+      if (!showing || isSewerBuilding(placed.building)) continue;
       ctx.drawImage(this.interior(placed.building), placed.building.x - left, placed.building.y - top);
       for (const flight of this.stairs.get(placed.building.id) ?? []) this.drawStairs(ctx, flight, left, top);
     }
@@ -251,6 +257,7 @@ export class BuildingLayer {
 
   /** The fade punches pixels out through the dither matrix, so the art stays hard-edged. */
   drawShell(ctx: CanvasRenderingContext2D, placed: PlacedBuilding, left: number, top: number): void {
+    if (isSewerBuilding(placed.building)) return;
     // A floor above or below has no outside to show: shut, it is as dark as the strip it lies in.
     const storey = isStoreyKind(placed.building.kind);
     if (storey) {

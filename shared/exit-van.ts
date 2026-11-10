@@ -34,7 +34,9 @@ const spots = new WeakMap<WorldMap, Point>();
 
 function exitCandidates(map: WorldMap, walk: FlowField): ExitCandidate[] {
   const found: ExitCandidate[] = [];
-  for (let row = 0; row < map.rows; row++) {
+  // The van parks in the town: the floors and sewers below it are buildings or dark, so their rows are never scanned.
+  const rows = map.townRows ?? map.rows;
+  for (let row = 0; row < rows; row++) {
     for (let col = 0; col < map.cols; col++) {
       const x = (col + 0.5) * TILE_SIZE;
       const y = (row + 0.5) * TILE_SIZE;
@@ -51,7 +53,8 @@ function exitCandidates(map: WorldMap, walk: FlowField): ExitCandidate[] {
 }
 
 function pickExitSpot(map: WorldMap): Point | null {
-  const walk = new FlowField(map);
+  // The long walk to the van is measured on the streets: a shortcut through the sewers does not move where it parks.
+  const walk = new FlowField(map, { manholes: false });
   walk.recompute([map.spawn]);
   const candidates = exitCandidates(map, walk);
   const hasNoCandidates = candidates.length === 0;
