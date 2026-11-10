@@ -92,7 +92,7 @@ describe('a home sim', () => {
 
   it('keeps what a death cost on this side of the wire', () => {
     const { sim, state } = homeSim();
-    expect(state.players[0].home?.lost).toEqual({ silver: 0, jewels: { small: 0, large: 0 } });
+    expect(state.players[0].home?.lost).toEqual({ silver: 0, jewels: { small: 0, large: 0 }, salvage: { fuel_can: 0, car_battery: 0, scrap_steel: 0, sedatives: 0 } });
     expect(sim.snapshot().players[0].home).not.toHaveProperty('lost');
   });
 
@@ -194,11 +194,13 @@ describe('the client seams', () => {
 });
 
 describe('the bunker map', () => {
-  it('has every station in it but the chest, which the overrun puts in reach, and the merchants, who walk', () => {
+  it('has every station in it but the chest, which the overrun puts in reach, the press, which lands last, and the merchants, who walk', () => {
     const { sim } = homeSim();
-    const standing = STATION_IDS.filter((id) => id !== 'chest' && !(MERCHANT_IDS as readonly string[]).includes(id));
+    const offMap = new Set<string>(['chest', 'press', ...MERCHANT_IDS]);
+    const standing = STATION_IDS.filter((id) => !offMap.has(id));
     expect(sim.map.stations?.map((station) => station.id).sort()).toEqual([...standing].sort());
     expect(sim.map.props.some((prop) => prop.kind === 'chest')).toBe(false);
+    expect(sim.map.props.some((prop) => prop.kind === 'press')).toBe(false);
   });
 
   it('keeps the chest\'s circle clear of every other station\'s, on open floor', () => {

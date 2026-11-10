@@ -19,6 +19,7 @@ import { isKitPickup, takeKit } from './round-effects.ts';
 import { bandageWound, consumeSurvivalItem, isSurvivalItem } from './survival-needs.ts';
 import type { PickupState, PlayerState, SimState } from './sim-state.ts';
 import { emit, entityId } from './sim-state.ts';
+import { isSalvagePickup } from './salvage-data.ts';
 import { isTreasurePickup, spawnTreasure, takeTreasure } from './treasure.ts';
 import { syncGun } from './weapons.ts';
 
@@ -116,6 +117,8 @@ function applyPickup(p: PlayerState, item: PickupState): boolean {
   if (isPartPickup(type)) return takePart(p, type);
   if (isKitPickup(type)) return takeKit(p, type);
   if (isTreasurePickup(type)) return takeTreasure(p, item);
+  // Nothing places salvage yet, and carrying it lands with its placement (#7238).
+  if (isSalvagePickup(type)) return false;
   const used = isAmmoPickup(type) ? takeAmmo(p, item, type) : takeGun(p, item, type);
   if (used) syncGun(p);
   return used;

@@ -211,7 +211,7 @@ describe('dropping what was carried', () => {
     a.status = 'dead';
     dropCarried(state, a);
     expect(a.home.jewels).toEqual({ small: 0, large: 0 });
-    expect(a.home.lost).toEqual({ silver: 0, jewels: { small: 2, large: 1 } });
+    expect(a.home.lost).toEqual({ silver: 0, jewels: { small: 2, large: 1 }, salvage: { fuel_can: 0, car_battery: 0, scrap_steel: 0, sedatives: 0 } });
     expect(state.pickups.map((item) => item.type).sort()).toEqual(['jewel_large', 'jewel_small', 'jewel_small']);
     for (const item of state.pickups) expect([item.x, item.y]).toEqual([100, 100]);
     b.x = 100;

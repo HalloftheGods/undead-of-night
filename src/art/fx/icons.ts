@@ -324,6 +324,11 @@ export function buildPickupIcons(): Record<PickupType, PixelSprite> {
     tranq_kit: outlined(KIT_ART.tranq_kit.rows, 15, 15),
     jewel_small: outlined(JEWEL_SMALL, 15, 15),
     jewel_large: outlined(JEWEL_LARGE, 15, 15),
+    // Stand-ins drawn as the kit each makes, until salvage gets its own icons (#7242).
+    fuel_can: outlined(KIT_ART.incendiary_kit.rows, 15, 15),
+    car_battery: outlined(KIT_ART.acid_kit.rows, 15, 15),
+    scrap_steel: outlined(KIT_ART.piercing_kit.rows, 15, 15),
+    sedatives: outlined(KIT_ART.tranq_kit.rows, 15, 15),
   };
 }
 

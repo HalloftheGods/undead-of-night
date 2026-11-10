@@ -24,7 +24,7 @@ import type {
 } from './protocol.ts';
 import type { ContainerState } from './containers.ts';
 import type { FlowField, Point } from './flow-field.ts';
-import type { HomeView, Jewels, OverrunPhase, OverrunReceipt, TripReceipt } from './home-protocol.ts';
+import type { HomeView, Jewels, OverrunPhase, OverrunReceipt, SalvageCounts, TripReceipt } from './home-protocol.ts';
 import { randRange } from './rng.ts';
 import type { Rng } from './rng.ts';
 import type { SpatialHashGrid } from './spatial-grid.ts';
@@ -45,7 +45,9 @@ export interface GunState {
 }
 
 /** What the sim holds for one player in a home room: what they see, and what stays on this side of the wire. */
-export interface PlayerHome extends Omit<HomeView, 'overrun' | 'chest'> {
+export interface PlayerHome extends Omit<HomeView, 'overrun' | 'chest' | 'salvage'> {
+  /** Carried on this trip, uncapped, as treasure is. */
+  salvage: SalvageCounts;
   /** The last overrun's receipt, until the next arrival in the bunker. The sim always has a word here; only an older wire leaves it off. */
   overrun: OverrunReceipt | null;
   /** The furthest level they have reached, as they said when they joined, and raised by the van. */
@@ -53,7 +55,7 @@ export interface PlayerHome extends Omit<HomeView, 'overrun' | 'chest'> {
   /** Has cleared the last level, as they said when they joined or since, so the ending is behind them. */
   finished: boolean;
   /** What `dropCarried` took off them on this trip, for a died receipt, since their carried treasure is gone by then. */
-  lost: { silver: number; jewels: Jewels };
+  lost: { silver: number; jewels: Jewels; salvage: SalvageCounts };
   /** A held overrun's reward chest is waiting unopened. Only its owner's view of the snapshot carries it, so the chest is drawn for them alone. */
   chest: boolean;
   /** When they last pressed a key or had a station open. */

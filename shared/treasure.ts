@@ -126,7 +126,7 @@ export function dropCarried(sim: SimState, p: PlayerState): void {
   const { silver, jewels } = home;
   for (let n = 0; n < jewels.small; n++) spawnTreasure(sim, 'jewel_small', p.x, p.y, SMALL_JEWEL_SILVER);
   for (let n = 0; n < jewels.large; n++) spawnTreasure(sim, 'jewel_large', p.x, p.y, LARGE_JEWEL_SILVER);
-  home.lost = { silver: home.lost.silver + silver, jewels: { small: home.lost.jewels.small + jewels.small, large: home.lost.jewels.large + jewels.large } };
+  home.lost = { ...home.lost, silver: home.lost.silver + silver, jewels: { small: home.lost.jewels.small + jewels.small, large: home.lost.jewels.large + jewels.large } };
   home.silver = 0;
   home.jewels = { small: 0, large: 0 };
 }

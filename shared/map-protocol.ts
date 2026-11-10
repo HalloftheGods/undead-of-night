@@ -97,6 +97,8 @@ export const PROP_DEFS = {
   forge: { w: 40, h: 12 },
   level_map: { w: 24, h: 14 },
   jukebox: { w: 20, h: 8 },
+  /** The reloading press in the Workshop, the jukebox's size. */
+  press: { w: 20, h: 8 },
   gunsmith: { w: 12, h: 8 },
   quartermaster: { w: 12, h: 8 },
   medic: { w: 12, h: 8 },

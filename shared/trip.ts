@@ -7,6 +7,7 @@ import { applyLoadout, emptyLoadout, issueFreePistol, validateLoadout } from './
 import { openPendingChests } from './overrun-chest.ts';
 import { writeFlight } from './overrun-fight.ts';
 import { startOverrunClock } from './overrun.ts';
+import { noSalvage } from './salvage-data.ts';
 import { announceRunStart, clampLevel } from './sim-factory.ts';
 import type { HomeRun, PlayerHome, PlayerState, SimState } from './sim-state.ts';
 import { emit } from './sim-state.ts';
@@ -40,7 +41,8 @@ export function enterHome(sim: SimState, p: PlayerState, join?: JoinHome): void 
     overrun: null,
     highest: clampLevel(join?.highest),
     finished: join?.finished === true,
-    lost: { silver: 0, jewels: { small: 0, large: 0 } },
+    salvage: noSalvage(),
+    lost: { silver: 0, jewels: { small: 0, large: 0 }, salvage: noSalvage() },
     chest: false,
     lastActiveTick: sim.tick,
     leftTick: null,
@@ -72,7 +74,7 @@ function setOut(sim: SimState, p: PlayerState): void {
   leaveStation(home);
   home.ready = false;
   home.receipt = null;
-  home.lost = { silver: 0, jewels: { small: 0, large: 0 } };
+  home.lost = { silver: 0, jewels: { small: 0, large: 0 }, salvage: noSalvage() };
   home.lastActiveTick = sim.tick;
   p.score = 0;
   p.kills = 0;
