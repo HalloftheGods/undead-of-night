@@ -66,7 +66,7 @@ describe('sewer layout', () => {
 });
 
 function tileName(map: WorldMap, x: number, y: number): string {
-  const kinds = ['asphalt', 'asphalt_cracked', 'lane_h', 'lane_v', 'crosswalk_h', 'crosswalk_v', 'parking_line', 'sidewalk', 'curb_n', 'curb_s', 'curb_e', 'curb_w', 'grass', 'dirt', 'water', 'snow', 'ash', 'sludge', 'floor_wood', 'floor_tile', 'floor_concrete', 'floor_carpet', 'bunker_wall', 'void'];
+  const kinds = ['asphalt', 'asphalt_cracked', 'lane_h', 'lane_v', 'crosswalk_h', 'crosswalk_v', 'parking_line', 'sidewalk', 'curb_n', 'curb_s', 'curb_e', 'curb_w', 'grass', 'dirt', 'water', 'snow', 'ash', 'sludge', 'floor_wood', 'floor_tile', 'floor_concrete', 'floor_carpet', 'floor_sewer', 'floor_sewer_channel', 'sewer_wall', 'bunker_wall', 'void'];
   return kinds[map.tiles[tileOf(map, x, y)]];
 }
 

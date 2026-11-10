@@ -8,10 +8,10 @@ import { PixelCanvas } from '../kit.ts';
 import { RAMPS } from '../palette.ts';
 import type { Color } from '../palette.ts';
 
-const { ink, wood, ash, concrete, asphalt, brick, skinDeep, metal, olive, bone } = RAMPS;
+const { ink, wood, ash, concrete, asphalt, brick, skinDeep, metal, olive, bone, acid } = RAMPS;
 const S = TILE_SIZE;
 
-export type FloorKind = 'floor_wood' | 'floor_tile' | 'floor_concrete' | 'floor_carpet';
+export type FloorKind = 'floor_wood' | 'floor_tile' | 'floor_concrete' | 'floor_carpet' | 'floor_sewer' | 'floor_sewer_channel' | 'sewer_wall';
 
 /** A run of pixels: x, y, width, colour. */
 type Mark = readonly [number, number, number, Color];
@@ -76,6 +76,44 @@ const CARPET: readonly (readonly Mark[])[] = [
   [[9, 4, 3, skinDeep[0]], [8, 5, 4, skinDeep[0]], [9, 6, 2, skinDeep[0]], [3, 11, 2, skinDeep[0]]],
 ];
 
+/** Sewer flagstones: dark slabs in staggered courses, mortar on the outer ring so every variant seams. */
+function flagstones(): PixelCanvas {
+  const c = new PixelCanvas(S, S).fill(asphalt[1]);
+  c.rect(0, 0, S, 1, ink[1]).rect(0, 8, S, 1, ink[1]).rect(0, 0, 1, 8, ink[1]).rect(8, 8, 1, 8, ink[1]);
+  c.rect(1, 1, 7, 1, asphalt[2]).rect(9, 9, 7, 1, asphalt[2]);
+  return c;
+}
+
+const SEWER_FLOOR: readonly (readonly Mark[])[] = [
+  [[3, 4, 2, asphalt[2]], [11, 4, 1, asphalt[2]], [4, 12, 3, asphalt[2]]],
+  // Moss in the joints.
+  [[2, 5, 3, olive[0]], [3, 6, 2, olive[0]], [11, 11, 2, olive[0]], [12, 12, 1, olive[1]]],
+  // A damp patch with a sheen.
+  [[9, 3, 4, ink[1]], [8, 4, 5, ink[1]], [9, 5, 3, ink[1]], [10, 4, 1, metal[1]]],
+];
+
+/** Murky green sludge in a stone-lipped channel: lit lip above, shadowed lip below, ripples between. */
+function channel(shift: number): PixelCanvas {
+  const c = new PixelCanvas(S, S).fill(olive[0]);
+  c.rect(0, 0, S, 2, concrete[1]).rect(0, 2, S, 1, ink[0]);
+  c.rect(0, 3, S, 10, acid[0]).rect(0, 3, S, 2, olive[0]).rect(0, 11, S, 2, olive[0]);
+  for (const [x, y, w] of [[2 + shift, 6, 4], [10 - shift, 8, 3], [6, 9, 2]] as const) c.rect(x, y, w, 1, olive[1]);
+  c.px(4 + shift, 7, acid[1]).px(12 - shift, 6, acid[1]);
+  c.rect(0, 13, S, 1, ink[0]).rect(0, 14, S, 2, concrete[0]);
+  return c;
+}
+
+/** Brick wall: running bond in dark brick, mortar lines, a chipped course and a streak of damp. */
+function sewerBrick(variant: number): PixelCanvas {
+  const c = new PixelCanvas(S, S).fill(brick[0]);
+  for (let y = 0; y < S; y += 4) c.rect(0, y, S, 1, ink[1]);
+  for (let y = 0; y < S; y += 4) for (let x = (y / 4 % 2) * 4; x < S; x += 8) c.rect(x, y + 1, 1, 3, ink[1]);
+  for (let y = 1; y < S; y += 4) c.rect(1, y, S - 2, 1, brick[1]);
+  if (variant === 1) c.rect(5, 6, 2, 2, brick[2]).rect(6, 8, 1, 4, olive[0]);
+  if (variant === 2) c.rect(10, 10, 3, 1, asphalt[2]).rect(11, 11, 1, 3, olive[0]);
+  return c;
+}
+
 export function buildFloors(): Record<FloorKind, readonly PixelCanvas[]> {
   const concreteBase = new PixelCanvas(S, S).fill(asphalt[2]);
   return {
@@ -83,6 +121,9 @@ export function buildFloors(): Record<FloorKind, readonly PixelCanvas[]> {
     floor_tile: TILE.map((marks) => marked(checks(), marks)),
     floor_concrete: SLAB.map((marks) => marked(concreteBase, marks)),
     floor_carpet: CARPET.map((marks) => marked(pile(), marks)),
+    floor_sewer: SEWER_FLOOR.map((marks) => marked(flagstones(), marks)),
+    floor_sewer_channel: [channel(0), channel(2)],
+    sewer_wall: [sewerBrick(0), sewerBrick(1), sewerBrick(2)],
   };
 }
 

@@ -1,7 +1,7 @@
 // The sewer's props: the cast-iron manhole cover on the street, the iron ladder in the shaft below,
 // and the pipe mouth, overflow grate and wall conduit that dress the tunnels.
 // Sizes are fixed here, not read from PROP_DEFS, so the file stands before those keys land:
-// manhole 16x16, sewer ladder 16x6 (both match the spec footprints), pipe mouth 24x18,
+// manhole 16x16 (matches the footprint), sewer ladder 16x26 (footprint 16x6; the iron rises up the wall above it), pipe mouth 24x18,
 // overflow grate 16x10, wall conduit 16x6. Each bakes with its anchor at the bottom centre.
 
 import type { PixelSprite } from '../types.ts';
@@ -9,11 +9,11 @@ import { PixelCanvas } from '../kit.ts';
 import { RAMPS } from '../palette.ts';
 import { bake } from './common.ts';
 
-const { acid, concrete, fire, ink, metal, olive } = RAMPS;
+const { acid, asphalt, brick, concrete, fire, ink, metal, olive } = RAMPS;
 
 const MANHOLE = 16;
 const LADDER_W = 16;
-const LADDER_H = 6;
+const LADDER_H = 26;
 const MOUTH_W = 24;
 const MOUTH_H = 18;
 const GRATE_W = 16;
@@ -21,40 +21,78 @@ const GRATE_H = 10;
 const CONDUIT_W = 16;
 const CONDUIT_H = 6;
 
-/** A round cast-iron cover seen from above: a ring, a crosshatch of anti-slip ribs and a keyhole slot. */
-export function buildManhole(): PixelSprite {
-  const c = new PixelCanvas(MANHOLE, MANHOLE);
-  const mid = MANHOLE / 2 - 0.5;
-  c.ellipse(mid, mid, 8, 8, ink[0]).ellipse(mid, mid, 7, 7, metal[0]);
+/** Cast-iron disc, seen from above: a dark outer lip, a raised rim ring and a cross-hatch grid of ribs. */
+function castIronDisc(c: PixelCanvas, mid: number): void {
+  c.ellipse(mid, mid, 8, 8, ink[0]).ellipse(mid, mid, 7, 7, metal[2]);
   c.ellipse(mid, mid, 6, 6, metal[1]);
-  c.ellipseOutline(mid, mid, 6, 6, metal[2]);
-  c.ellipseOutline(mid, mid, 4, 4, metal[0]);
-  // Anti-slip crosshatch inside the ring, clipped to the disc.
-  for (let y = 4; y <= 11; y++) {
-    for (let x = 4; x <= 11; x++) {
+  c.ellipseOutline(mid, mid, 7, 7, metal[3]);
+  c.ellipseOutline(mid, mid, 6, 6, metal[0]);
+  // Cross-hatch: a grid of raised ribs every third pixel, clipped inside the rim.
+  for (let y = 3; y <= 12; y++) {
+    for (let x = 3; x <= 12; x++) {
       const dx = x - mid;
       const dy = y - mid;
-      if (dx * dx + dy * dy > 13) continue;
-      if ((x + y) % 3 === 0 || (x - y + 16) % 3 === 0) c.px(x, y, metal[0]);
+      if (dx * dx + dy * dy > 25) continue;
+      if (x % 3 === 0 || y % 3 === 0) c.px(x, y, metal[2]);
+      if (x % 3 === 0 && y % 3 === 0) c.px(x, y, metal[3]);
     }
   }
-  // Keyhole slot for the hook, with a dark pit and a lit edge above it.
-  c.rect(6, 7, 4, 2, ink[0]).rect(6, 6, 4, 1, metal[2]).px(7, 7, ink[1]);
-  // Rust and grime at the rim, a little catch of light on the lip.
-  c.px(3, 12, olive[0]).px(12, 4, olive[0]).px(12, 11, concrete[0]).px(5, 3, metal[3]);
+  // Shade the lower-right of the dish and rust the rim.
+  for (const [x, y] of [[11, 11], [10, 12], [12, 10], [9, 12], [12, 9]] as const) c.px(x, y, metal[0]);
+  c.px(2, 11, brick[2]).px(13, 5, brick[2]).px(4, 2, brick[2]).px(12, 12, olive[0]);
+}
+
+/** A round cast-iron cover seen from above: rim, cross-hatch grid and a lift slot. */
+export function buildManhole(): PixelSprite {
+  const c = new PixelCanvas(MANHOLE, MANHOLE);
+  castIronDisc(c, MANHOLE / 2 - 0.5);
+  c.rect(6, 7, 4, 2, ink[0]).rect(6, 6, 4, 1, metal[3]);
   return bake(c, 0, MANHOLE, MANHOLE);
 }
 
-/** Two iron rails with rungs, bolted to a wall seen from above, with a drop shadow under it. */
+/** The same hole with the cover slid off: iron collar, black shaft, and the top of the ladder at one side. */
+export function buildManholeOpen(): PixelSprite {
+  const c = new PixelCanvas(MANHOLE, MANHOLE);
+  const mid = MANHOLE / 2 - 0.5;
+  c.ellipse(mid, mid, 8, 8, ink[0]).ellipse(mid, mid, 7, 7, metal[2]).ellipse(mid, mid, 6, 6, metal[1]);
+  c.ellipse(mid, mid, 5, 5, ink[0]).ellipse(mid, mid + 1, 4, 4, asphalt[0]);
+  c.ellipseOutline(mid, mid, 7, 7, metal[3]);
+  // Ladder top: two rails and the first rung, going down into the dark.
+  c.rect(5, 6, 1, 6, metal[2]).rect(10, 6, 1, 6, metal[2]);
+  c.rect(5, 6, 1, 1, metal[3]).rect(10, 6, 1, 1, metal[3]);
+  c.rect(6, 8, 4, 1, metal[3]).rect(6, 11, 4, 1, metal[1]);
+  c.px(7, 13, acid[0]).px(9, 13, acid[0]);
+  c.px(2, 11, brick[2]).px(13, 5, brick[2]);
+  return bake(c, 0, MANHOLE, MANHOLE);
+}
+
+/**
+ * An iron ladder bolted to the shaft wall, seen square on: two rails, evenly spaced rungs,
+ * wall brackets, a catch of light on the left of every bar and rust at the foot.
+ */
 export function buildSewerLadder(): PixelSprite {
   const c = new PixelCanvas(LADDER_W, LADDER_H);
-  c.rect(2, 3, LADDER_W - 3, 3, ink[0]);
-  c.rect(1, 0, LADDER_W - 2, 1, metal[2]).rect(1, 1, LADDER_W - 2, 1, metal[1]);
-  c.rect(1, 4, LADDER_W - 2, 1, metal[1]).rect(1, 5, LADDER_W - 2, 1, metal[0]);
-  for (let x = 2; x < LADDER_W - 2; x += 3) {
-    c.rect(x, 1, 1, 4, metal[2]).px(x, 2, metal[3]).px(x, 4, metal[0]);
+  const left = 3;
+  const right = LADDER_W - 6;
+  // Drop shadow on the wall, one pixel down and right of the iron.
+  c.rect(left + 1, 1, 2, LADDER_H - 1, ink[0]).rect(right + 1, 1, 2, LADDER_H - 1, ink[0]);
+  for (let y = 3; y < LADDER_H - 2; y += 4) c.rect(left + 2, y + 1, right - left - 1, 2, ink[0]);
+  // Rails: highlight, body, shade.
+  for (const x of [left, right]) {
+    c.rect(x, 0, 1, LADDER_H - 1, metal[3]).rect(x + 1, 0, 1, LADDER_H - 1, metal[2]);
+    c.rect(x + 2, 0, 1, LADDER_H - 1, metal[1]);
   }
-  c.rect(0, 0, 1, 6, metal[0]).rect(LADDER_W - 1, 0, 1, 6, metal[0]);
+  // Rungs every four rows, lit on top, shaded below.
+  for (let y = 3; y < LADDER_H - 2; y += 4) {
+    c.rect(left + 3, y, right - left - 3, 1, metal[3]);
+    c.rect(left + 3, y + 1, right - left - 3, 1, metal[2]);
+    c.rect(left + 3, y + 2, right - left - 3, 1, metal[0]);
+  }
+  // Wall brackets and rust.
+  for (const y of [1, LADDER_H - 6]) c.rect(left - 1, y, 5, 1, metal[0]).rect(right - 1, y, 5, 1, metal[0]);
+  c.rect(left, LADDER_H - 4, 3, 3, brick[2]).px(left + 1, LADDER_H - 3, brick[1]);
+  c.rect(right, LADDER_H - 5, 3, 3, brick[2]).px(right + 2, LADDER_H - 3, olive[0]);
+  c.px(left + 3, 9, brick[2]).px(right - 1, 14, brick[2]);
   return bake(c, 0, LADDER_W, LADDER_H);
 }
 

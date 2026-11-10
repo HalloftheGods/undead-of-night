@@ -101,6 +101,10 @@ type DrawItem =
 
 const shadows = new Map<number, HTMLCanvasElement>();
 
+/** Props lying flat on the ground, drawn beneath everything that stands. */
+const GROUND_FLAT_PROPS: ReadonlySet<string> = new Set(['manhole']);
+const GROUND_DEPTH = 100000;
+
 /** A flat pixel ellipse. Rows are stepped by hand so the edge stays hard. */
 function shadowSprite(width: number): HTMLCanvasElement {
   let canvas = shadows.get(width);
@@ -243,7 +247,8 @@ export class EntityRenderer {
       const onScreen = placed.x1 > left && placed.x0 < right && placed.y1 > top && placed.y0 < bottom;
       const roomClosed = placed.room !== null && placed.room.reveal === 0;
       const shown = onScreen && !roomClosed && !hiddenProp(placed.prop.kind, scene.overrunOn === true);
-      if (shown) items.push({ y: placed.prop.y, kind: 'prop', prop: placed });
+      // Flat ground fittings (manhole covers) are painted under every actor, never over a character standing on them.
+      if (shown) items.push({ y: GROUND_FLAT_PROPS.has(placed.prop.kind) ? placed.prop.y - GROUND_DEPTH : placed.prop.y, kind: 'prop', prop: placed });
     }
     const local = scene.players.find((player) => player.id === scene.localId) ?? null;
     if (chestPending(scene.overrun, local)) items.push({ y: CHEST_SPOT.y, kind: 'chest' });

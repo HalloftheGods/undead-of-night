@@ -32,6 +32,9 @@ export const TILE_KINDS = [
   'floor_tile',
   'floor_concrete',
   'floor_carpet',
+  'floor_sewer',
+  'floor_sewer_channel',
+  'sewer_wall',
   'bunker_wall',
   /** The dark between the floors above and below the town, where nobody goes. */
   'void',
