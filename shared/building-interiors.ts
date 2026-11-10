@@ -152,10 +152,7 @@ const LAYOUTS: Record<BuildingKind, readonly Slot[]> = {
     ['crate_stack', 86, 90],
   ],
   // The sewers are bare: their fittings are the ladder and the trench.
-  sewer_junction: [],
-  sewer_tunnel_h: [],
-  sewer_tunnel_v: [],
-  sewer_pump_station: [],
+  sewer_maze: [],
 };
 
 /** A gap narrower than this looks like a way round but is not one. */

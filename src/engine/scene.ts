@@ -54,6 +54,8 @@ export interface SceneView {
   readonly searchable: Container | null;
   /** The bunker's merchants, where they are walking. Absent anywhere else. */
   readonly merchants?: readonly MerchantEntity[];
+  /** A manhole (topside) or sewer ladder (below) the local player is close enough to climb with the search key: which way it goes. */
+  readonly climb?: { readonly down: boolean };
   /** The bunker station the local player could open from where they stand. Absent anywhere else. */
   readonly station?: StationId;
   /** The bunker's horde clock, which the door and the chest are drawn from. Absent when there is none. */

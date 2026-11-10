@@ -388,7 +388,8 @@ describe('buildings', () => {
 
   it.each(SEEDS)('seed %i: leaves outdoor scenery outdoors', (seed) => {
     const map = generateWorldMap(seed);
-    const scenery = map.props.filter((prop) => !isSolidProp(prop));
+    // The sewer ladder is walk-through too, but it stands in the sewers, which are a building of their own.
+    const scenery = map.props.filter((prop) => !isSolidProp(prop) && prop.kind !== 'sewer_ladder');
     expect(scenery.length).toBeGreaterThan(0);
     expect(scenery.filter((prop) => buildingAt(map, prop.x, prop.y))).toEqual([]);
   });

@@ -7,6 +7,7 @@ import type { OverrunPhase, StationId } from '../../shared/home-protocol.ts';
 import { stepMovement } from '../../shared/movement.ts';
 import { playerSpeed } from '../../shared/players.ts';
 import { effectiveStance } from '../../shared/stamina.ts';
+import { manholeFlightNear } from '../../shared/take-manhole.ts';
 import { openableStation } from '../../shared/stations.ts';
 import { groundSpeedScale } from '../../shared/town-rules.ts';
 import type { EntityId, PlayerEntity, SnapshotPacket, Stance, WorldMap } from '../../shared/protocol.ts';
@@ -20,7 +21,7 @@ const MAX_BULLET_LEAD_SEC = 0.1;
 
 export type WorldEntities = Pick<
   SceneView,
-  'players' | 'zombies' | 'merchants' | 'bullets' | 'pickups' | 'exit' | 'drop' | 'openedContainers' | 'leftovers' | 'tracks' | 'searchable' | 'station' | 'overrun' | 'localId' | 'viewerId' | 'focusX' | 'focusY' | 'phase' | 'hostiles'
+  'players' | 'zombies' | 'merchants' | 'bullets' | 'pickups' | 'exit' | 'drop' | 'openedContainers' | 'leftovers' | 'tracks' | 'searchable' | 'station' | 'climb' | 'overrun' | 'localId' | 'viewerId' | 'focusX' | 'focusY' | 'phase' | 'hostiles'
 >;
 
 /** The bunker's merchants where they are drawn; left off anywhere without them. */
@@ -128,6 +129,13 @@ export class ClientWorld {
     return free ? containerInReach(this.map, player.x, player.y, (id) => opened.includes(id)) : null;
   }
 
+  /** The manhole or ladder the local player could climb from where they stand, by the sim's own range. */
+  private climbBy(player: PlayerEntity | null): WorldEntities['climb'] {
+    const free = player !== null && player.status === 'alive' && player.search === 0;
+    const flight = free ? manholeFlightNear({ map: this.map }, player.x, player.y) : null;
+    return flight ? { down: flight.down } : undefined;
+  }
+
   /** The bunker station the local player could open from where they stand, by the sim's own rule: none once one is open, or anywhere but the bunker. */
   private stationBy(player: PlayerEntity | null, phase: OverrunPhase | undefined): StationId | undefined {
     const free = player !== null && player.status === 'alive' && !player.home?.station && isBunkerMap(this.map);
@@ -151,6 +159,7 @@ export class ClientWorld {
     const lead = Math.min(MAX_BULLET_LEAD_SEC, Math.max(0, (nowMs - this.latestArrival) / 1000));
     const overrun = newest.snapshot.home?.overrun;
     const station = this.stationBy(shownLocal, overrun?.phase);
+    const climb = this.climbBy(shownLocal);
     return {
       players,
       zombies: interpolateZombies(sample),
@@ -164,6 +173,7 @@ export class ClientWorld {
       tracks: newest.snapshot.tracks ?? [],
       searchable: this.searchableBy(shownLocal, newest.snapshot.openedContainers),
       ...(station ? { station } : {}),
+      ...(climb ? { climb } : {}),
       ...(overrun ? { overrun } : {}),
       localId: this.localId,
       viewerId: viewer?.id ?? null,

@@ -134,10 +134,7 @@ export function buildEnvironment(): EnvironmentArt {
       hospital_upstairs: [buildHospital()],
       school_upstairs: [buildSchool()],
       // The sewers under the town: nothing to see from outside, so each is a single clear pixel.
-      sewer_junction: [buildSewerShell()],
-      sewer_tunnel_h: [buildSewerShell()],
-      sewer_tunnel_v: [buildSewerShell()],
-      sewer_pump_station: [buildSewerShell()],
+      sewer_maze: [buildSewerShell()],
     },
     interior: buildInterior(),
     barrelFire: buildBarrelFire(),

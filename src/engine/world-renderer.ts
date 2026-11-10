@@ -1,5 +1,6 @@
 import type { LevelTheme } from '../../shared/levels.ts';
 import type { NightEventId } from '../../shared/night-events.ts';
+import { TILE_SIZE } from '../../shared/protocol.ts';
 import type { EntityId, GameEvent, WorldMap, ZombieType } from '../../shared/protocol.ts';
 import type { ArtBook, PixelSprite } from '../art/types.ts';
 import { Atmosphere } from './atmosphere.ts';
@@ -44,6 +45,8 @@ const VAN_GLOW_STRENGTH = 0.7;
 const VAN_GLOW_HEIGHT = 12;
 /** Flashes of light (shots, burns, blasts) one frame lights at full detail; a slow machine gets a share of it. */
 const MAX_PULSES = 24;
+/** Underground, the town above is laid over the tunnels this faint, so the streets can be read against them. */
+const SURFACE_GHOST_ALPHA = 0.3;
 /** From this load-shedding level on, the light is worked out every other frame and moved with the camera between. */
 const HALF_RATE_LIGHT_LEVEL = 2;
 
@@ -259,6 +262,30 @@ export class WorldRenderer {
     lighting.finish();
   }
 
+  /** True when the viewer is down in the sewers, where the view is the tunnels with the town faint over them. */
+  private isUnderground(focusY: number): boolean {
+    const top = this.map?.sewers?.top;
+    return top !== undefined && focusY >= top * TILE_SIZE;
+  }
+
+  /**
+   * The surface map, drawn over the underground one: the maze lies tile for tile under the town, so the town
+   * at (x, y) is drawn where the sewers at (x, y + the sewers' top) are, and clipped to the town's own rows.
+   */
+  private drawSurfaceGhost(ctx: CanvasRenderingContext2D, ground: GroundLayer, left: number, top: number, viewW: number, viewH: number): void {
+    const map = this.map;
+    if (!map?.sewers) return;
+    const shift = map.sewers.top * TILE_SIZE;
+    const townPx = (map.townRows ?? map.rows) * TILE_SIZE;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, shift - top, viewW, townPx);
+    ctx.clip();
+    ctx.globalAlpha = SURFACE_GHOST_ALPHA;
+    ground.draw(ctx, left, top - shift, viewW, viewH);
+    ctx.restore();
+  }
+
   /** Light that starts in the open room stays there; it must not spill through the walls. */
   private keepInRoom(room: ScreenRect | null, x: number, y: number): ScreenRect | undefined {
     const inside = room !== null && x >= room.x0 && x < room.x1 && y >= room.y0 && y < room.y1;
@@ -323,17 +350,20 @@ export class WorldRenderer {
 
     ctx.fillStyle = '#07080c';
     ctx.fillRect(0, 0, viewW, viewH);
+    const underground = this.isUnderground(scene.focusY);
     ground.draw(ctx, left, top, viewW, viewH);
-    this.groundMotion.draw(ctx, left, top, viewW, viewH, time);
+    if (!underground) this.groundMotion.draw(ctx, left, top, viewW, viewH, time);
     paintPrints(ctx, scene.tracks ?? [], left, top, viewW, viewH);
     this.entities.drawWorld(ctx, scene, left, top, viewW, viewH, time, dt);
     this.fx.particles.drawLit(ctx, left, top);
 
     this.composeLight(scene, left, top);
     this.lighting.apply(ctx);
+    if (underground) this.drawSurfaceGhost(ctx, ground, left, top, viewW, viewH);
     const lightAt = (x: number, y: number) => this.lighting.brightness(x, y);
     const isKilled = (id: EntityId) => this.entities.isKilled(id);
-    const outdoors = 1 - (this.buildings.openRoom()?.reveal ?? 0);
+    // Below ground there is no sky: no weather, no wash of the night's colour.
+    const outdoors = underground ? 0 : 1 - (this.buildings.openRoom()?.reveal ?? 0);
     this.atmosphere.drawWash(ctx, viewW, viewH, time, outdoors);
     const isOutdoors = outdoors > 0;
     if (isOutdoors) this.groundMotion.draw(ctx, left, top, viewW, viewH, time, 'lit');

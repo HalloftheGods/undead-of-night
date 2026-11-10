@@ -19,6 +19,8 @@ export const GROUND_EFFECTS: Readonly<Partial<Record<TileKind, GroundEffect>>> =
   snow: { speed: 0.88, noise: 0.7 },
   /** Sucking mud that sounds like it. */
   sludge: { speed: 0.65, noise: 1.2 },
+  /** The sewer's canal: the same sludge, between stone lips. */
+  floor_sewer_channel: { speed: 0.65, noise: 1.2 },
   /** Soft and loose, hardly worth noting. */
   ash: { speed: 0.95, noise: 0.9 },
 };

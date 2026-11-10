@@ -2,6 +2,7 @@ import { BUILDING_DEFS, DOOR_WIDTH, TILE_SIZE, WALL_THICKNESS } from '../../shar
 import type { BuildingInstance, BuildingKind, WorldMap } from '../../shared/protocol.ts';
 import { buildingAt } from '../../shared/world-map.ts';
 import { BACK_DOORS, partitionsOf } from '../../shared/building-plans.ts';
+import { isSewerBuilding } from '../../shared/map-protocol.ts';
 import { flightsOf, isStoreyKind } from '../../shared/storeys.ts';
 import type { Flight } from '../../shared/storeys.ts';
 import type { EnvironmentArt, PixelSprite } from '../art/types.ts';
@@ -165,7 +166,8 @@ export class BuildingLayer {
       const building = buildingAt(map, flight.from.x, flight.from.y);
       if (building) this.stairs.set(building.id, [...(this.stairs.get(building.id) ?? []), flight]);
     }
-    this.placed = map.buildings.map((building) => {
+    // The sewers are a floor of rock and tunnel with nothing to open or hide: they have no shell, room or stairs of their own to draw.
+    this.placed = map.buildings.filter((building) => !isSewerBuilding(building)).map((building) => {
       const variants = this.art.buildings[building.kind];
       const sprite = variants[building.variant % variants.length];
       const { w, h } = BUILDING_DEFS[building.kind];

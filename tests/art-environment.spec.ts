@@ -51,7 +51,8 @@ function sameStone(kind: TileKind, sides: readonly Edge[], from: number, to: num
 }
 
 /** Every shell of every kind, with a label a failure can name. */
-const SHELLS = BUILDING_KINDS.flatMap((kind) =>
+// The sewer maze has no shell: its walls are brick and rock tiles, and it is never drawn as a building.
+const SHELLS = BUILDING_KINDS.filter((kind) => !kind.startsWith('sewer_')).flatMap((kind) =>
   environment.buildings[kind].map((sprite, variant) => ({ kind, variant, sprite, label: `${kind}/${variant}` })),
 );
 

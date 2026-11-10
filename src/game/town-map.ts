@@ -152,6 +152,10 @@ function placeLabel(
   return false;
 }
 
+/** How faint the town is drawn over the sewers on the map, as in the world view. */
+const SURFACE_GHOST_ALPHA = 0.3;
+const UNDERGROUND_LABEL = 'UNDERGROUND - SEWERS';
+
 /** A cursor that holds still, with its full label: what a paint with no clock gets. */
 const STEADY_CLOCK: CursorClock = { nowMs: 0, openedMs: 0, reducedMotion: true };
 
@@ -166,6 +170,8 @@ export class TownMapView {
   private readonly worldPerPx: number;
   private readonly map: WorldMap;
   private readonly base: HTMLCanvasElement;
+  /** The sewers, drawn tile for tile as they lie under the town: what the map shows, with the town faint over it, once someone is below. */
+  private under: HTMLCanvasElement | null = null;
   private readonly visited = new Set<string>();
   private readonly opened = new Set<number>();
   private readonly buildingContainers = new Map<string, number[]>();
@@ -214,6 +220,35 @@ export class TownMapView {
       const isLabelPlaced = placeLabel(ctx, district.name, x, y, DISTRICT_COLOR, placed);
       if (isLabelPlaced) this.roomLabels.push(district.name);
     }
+  }
+
+  /** The sewer maze as a map of its own, painted the first time someone goes down. */
+  private underBase(): HTMLCanvasElement | null {
+    const sewers = this.map.sewers;
+    if (!sewers) return null;
+    if (this.under) return this.under;
+    const rows = this.map.townRows ?? this.map.rows;
+    const slice: WorldMap = { ...this.map, rows, tiles: this.map.tiles.subarray(sewers.top * this.map.cols, (sewers.top + rows) * this.map.cols) };
+    const canvas = document.createElement('canvas');
+    canvas.width = this.width;
+    canvas.height = this.height;
+    const ctx = canvas.getContext('2d')!;
+    paintGround(ctx, slice, { width: this.width, height: this.height, tilePx: this.pixelsPerTile, textured: false }, (kind) => TILE_RGB[kind]);
+    const shift = sewers.top * TILE_SIZE;
+    const placed: LabelBox[] = [];
+    for (const district of this.map.districts) {
+      if (!district.underground) continue;
+      placeLabel(ctx, district.name, Math.round(district.x / this.worldPerPx), Math.round((district.y - shift) / this.worldPerPx), DISTRICT_COLOR, placed);
+    }
+    drawOutlinedText(ctx, UNDERGROUND_LABEL, Math.round(this.width / 2), 3, '#6fd39a');
+    this.under = canvas;
+    return canvas;
+  }
+
+  /** True when this player is down in the sewers. */
+  private isBelow(player: PlayerEntity | undefined): boolean {
+    const sewers = this.map.sewers;
+    return sewers !== undefined && player !== undefined && player.y >= sewers.top * TILE_SIZE;
   }
 
   /** The S.O.S. Fireworks bus where it is parked, named under it. */
@@ -339,7 +374,16 @@ export class TownMapView {
   ): void {
     const hasOpenedContainers = openedContainers.length > 0;
     if (hasOpenedContainers) this.syncOpened(openedContainers);
-    ctx.drawImage(this.base, 0, 0);
+    const viewer = players.find((player) => player.id === localId);
+    const under = this.isBelow(viewer) ? this.underBase() : null;
+    if (under) {
+      ctx.drawImage(under, 0, 0);
+      ctx.globalAlpha = SURFACE_GHOST_ALPHA;
+      ctx.drawImage(this.base, 0, 0);
+      ctx.globalAlpha = 1;
+    } else {
+      ctx.drawImage(this.base, 0, 0);
+    }
     for (const id of this.visited) {
       const building = this.building(id);
       if (!building) continue;
