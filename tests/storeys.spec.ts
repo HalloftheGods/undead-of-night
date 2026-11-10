@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { FlowField } from '../shared/flow-field.ts';
 import { makeNoise } from '../shared/zombie-senses.ts';
 import { flightAt, flightsOf, isStorey, planStoreys, stairsPoint, townBuildings, townHeight } from '../shared/storeys.ts';
-import { TILE_SIZE } from '../shared/protocol.ts';
+import { isSewerBuilding } from '../shared/map-protocol.ts';
+import { BUILDING_DEFS, TILE_SIZE } from '../shared/protocol.ts';
 import type { BuildingInstance, WorldMap } from '../shared/protocol.ts';
 import { townContainers } from '../shared/containers.ts';
 import { buildingAt, circleHitsSolid, generateWorldMap, segmentHitsSolid } from '../shared/world-map.ts';
@@ -10,17 +11,20 @@ import { addRoamer, addZombie, eventsOf, input, quietSim, stepUntil } from './he
 
 const SEEDS = [1, 2, 3, 99, 1234, 777777];
 
+/** A floor of a house, as opposed to a piece of the sewers, which is reached the same way but belongs to none. */
+const isFloor = (building: BuildingInstance): boolean => isStorey(building) && !isSewerBuilding(building);
+
 const houseOf = (map: WorldMap, storey: BuildingInstance): BuildingInstance =>
   map.buildings.find((building) => building.id === storey.of) as BuildingInstance;
 
 describe('floors above and below', () => {
   it.each(SEEDS)('seed %i: some houses have one, laid out below the town on the same plan', (seed) => {
     const map = generateWorldMap(seed);
-    const storeys = map.buildings.filter(isStorey);
+    const storeys = map.buildings.filter(isFloor);
     expect(storeys.length).toBeGreaterThan(5);
     expect(map.buildings.filter((b) => b.kind === 'upstairs').length).toBeGreaterThan(0);
     expect(map.buildings.filter((b) => b.kind === 'cellar').length).toBeGreaterThan(0);
-    expect(townBuildings(map).length + storeys.length).toBe(map.buildings.length);
+    expect(townBuildings(map).length + storeys.length + map.buildings.filter(isSewerBuilding).length).toBe(map.buildings.length);
     for (const storey of storeys) {
       expect(['house', 'apartment', 'hospital', 'school']).toContain(houseOf(map, storey).kind);
       expect(storey.y).toBeGreaterThanOrEqual(townHeight(map));
@@ -42,13 +46,16 @@ describe('floors above and below', () => {
   it('leaves the town itself as it was', () => {
     const map = generateWorldMap(2);
     const plan = planStoreys(map.seed, townBuildings(map), map.cols, map.townRows ?? map.rows);
-    expect(map.rows).toBe((map.townRows ?? 0) + plan.rows);
+    // The sewers lay their own band under the floors, so the floors' rows are the town's plus theirs, up to the first sewer piece.
+    const firstSewerRow = Math.min(...map.buildings.filter(isSewerBuilding).map((building) => building.y / TILE_SIZE));
+    expect(Math.max(...map.buildings.filter(isFloor).map((storey) => (storey.y + BUILDING_DEFS[storey.kind].h) / TILE_SIZE))).toBeLessThanOrEqual((map.townRows ?? 0) + plan.rows);
+    expect(firstSewerRow).toBeGreaterThanOrEqual((map.townRows ?? 0) + plan.rows);
     expect(townHeight(map)).toBe(3200);
   });
 
   it.each(SEEDS)('seed %i: every pair of stairs leads both ways, and a brute fits on them', (seed) => {
     const map = generateWorldMap(seed);
-    const storeys = map.buildings.filter(isStorey);
+    const storeys = map.buildings.filter(isFloor);
     expect(flightsOf(map).size).toBe(storeys.length * 2);
     for (const storey of storeys) {
       const up = stairsPoint(storey)!;
@@ -64,14 +71,14 @@ describe('floors above and below', () => {
     const map = generateWorldMap(seed);
     const field = new FlowField(map);
     field.recompute([map.spawn]);
-    for (const storey of map.buildings.filter(isStorey)) {
+    for (const storey of map.buildings.filter(isFloor)) {
       expect(field.distanceAt(storey.x + 40, storey.y + 70)).toBeLessThan(Infinity);
     }
   });
 
   it('is walled off from the town and from each other: nothing is seen or shot across the dark', () => {
     const map = generateWorldMap(1);
-    const [first, second] = map.buildings.filter(isStorey);
+    const [first, second] = map.buildings.filter(isFloor);
     const middle = (b: BuildingInstance) => ({ x: b.x + 56, y: b.y + 72 });
     const a = middle(first);
     const b = middle(second);
@@ -90,7 +97,7 @@ describe('floors above and below', () => {
 describe('taking the stairs', () => {
   function onStairs() {
     const { sim, state } = quietSim();
-    const storey = state.map.buildings.find(isStorey) as BuildingInstance;
+    const storey = state.map.buildings.find(isFloor) as BuildingInstance;
     const house = houseOf(state.map, storey);
     const [p] = state.players;
     const down = stairsPoint(house)!;
