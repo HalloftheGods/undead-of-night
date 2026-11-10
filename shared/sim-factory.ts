@@ -11,6 +11,7 @@ import type { SimState } from './sim-state.ts';
 import { emit } from './sim-state.ts';
 import { SpatialHashGrid } from './spatial-grid.ts';
 import { seedPopulation } from './town-population.ts';
+import { placeTownSalvage } from './salvage.ts';
 import { placeTownTreasure } from './treasure.ts';
 import { newHomeRun } from './trip.ts';
 import type { WorkbenchMode } from './workbench.ts';
@@ -100,6 +101,7 @@ export function createSimState(options: SimulationOptions): SimState {
   placeTownLoot(sim);
   seedPopulation(sim);
   placeTownTreasure(sim);
+  placeTownSalvage(sim);
   announceRunStart(sim);
   return sim;
 }
