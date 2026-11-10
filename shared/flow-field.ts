@@ -28,7 +28,8 @@ export class FlowField {
   private readonly stairs: Int32Array;
   private computed = false;
 
-  constructor(map: WorldMap) {
+  /** `manholes: false` measures the walk on foot alone, with the stairs but without the sewers' ladders. */
+  constructor(map: WorldMap, options: { readonly manholes?: boolean } = {}) {
     this.map = map;
     this.cols = map.cols;
     this.rows = map.rows;
@@ -37,7 +38,8 @@ export class FlowField {
     this.queue = new Int32Array(map.cols * map.rows);
     this.stairs = new Int32Array(map.cols * map.rows).fill(-1);
     for (const flight of flightsOf(map).values()) this.stairs[flight.fromIndex] = flight.toIndex;
-    for (const flight of map.flights ?? []) this.stairs[flight.fromIndex] = flight.toIndex;
+    const usesManholes = options.manholes !== false;
+    if (usesManholes) for (const flight of map.flights ?? []) this.stairs[flight.fromIndex] = flight.toIndex;
   }
 
   get ready(): boolean {

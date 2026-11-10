@@ -185,6 +185,27 @@ function solidIndex(map: WorldMap): SolidIndex {
   return index;
 }
 
+/**
+ * Like blockedTiles, but only the props, walls and dark: the van is left out, so nothing has to settle where it parks.
+ * For laying out more of a map that is still being built, where finding the van's spot would be wasted work. Not cached.
+ */
+export function blockedTilesWithoutVan(map: WorldMap): Uint8Array {
+  const blocked = new Uint8Array(map.cols * map.rows);
+  const mark = (box: Box): void => {
+    const minCol = Math.max(0, Math.floor(box.x0 / TILE_SIZE));
+    const maxCol = Math.min(map.cols - 1, Math.ceil(box.x1 / TILE_SIZE) - 1);
+    const minRow = Math.max(0, Math.floor(box.y0 / TILE_SIZE));
+    const maxRow = Math.min(map.rows - 1, Math.ceil(box.y1 / TILE_SIZE) - 1);
+    for (let row = minRow; row <= maxRow; row++) blocked.fill(1, row * map.cols + minCol, row * map.cols + maxCol + 1);
+  };
+  for (const prop of map.props) {
+    if (isSolidProp(prop)) mark(propBox(prop));
+  }
+  for (const wall of wallBoxes(map)) mark(wall);
+  for (const dark of voidBoxes(map, buildingBox)) mark(dark);
+  return blocked;
+}
+
 /** Row-major, 1 where a solid overlaps the tile. Shared, do not write to it. */
 export function blockedTiles(map: WorldMap): Uint8Array {
   return solidIndex(map).blocked;

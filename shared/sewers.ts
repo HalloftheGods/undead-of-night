@@ -16,7 +16,7 @@ import type { BuildingInstance, District, PropInstance, TileKind, WorldMap } fro
 import { createRng, pick } from './rng.ts';
 import type { Rng } from './rng.ts';
 import type { Road } from './town-plan.ts';
-import { blockedTiles } from './world-query.ts';
+import { blockedTilesWithoutVan } from './world-query.ts';
 
 /** A flight a player takes by pressing the search key at it, rather than by walking onto it. */
 export interface ManholeFlight extends Flight {
@@ -260,7 +260,8 @@ function districtNear(districts: readonly District[], x: number, y: number): str
  */
 export function withSewers(town: WorldMap, roads: readonly Road[]): WorldMap {
   const surfaceRows = town.townRows ?? town.rows;
-  const blocked = blockedTiles(town);
+  // The van is not settled yet: it parks after the sewers are in, and a cover is never solid, so leaving it out changes nothing.
+  const blocked = blockedTilesWithoutVan(town);
   const clear = (col: number, row: number): boolean => {
     const reaches = [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]].every(([dc, dr]) => isRoad(town, col + dc, row + dr) && !blocked[(row + dr) * town.cols + col + dc]);
     return reaches && row < surfaceRows;

@@ -46,7 +46,9 @@ describe('biomes', () => {
 
 const tilesOf = (level: number, kind: TileKind): number => {
   const map = generateWorldMap(SEED, level);
-  return map.tiles.filter((tile) => TILE_KINDS[tile] === kind).length;
+  // Only the town itself: the sewers below it have their own sludge and water in every level.
+  const town = map.tiles.slice(0, (map.townRows ?? map.rows) * map.cols);
+  return town.filter((tile) => TILE_KINDS[tile] === kind).length;
 };
 
 describe('terrain and landmarks', () => {

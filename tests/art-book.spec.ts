@@ -99,7 +99,9 @@ describe('art book', () => {
   });
 
   it('draws every sprite with something visible', () => {
-    const blank = sprites.filter(([, s]) => !s.rgba.some((value, i) => i % 4 === 3 && value === 255));
+    // The sewers' shells are a clear placeholder that is never drawn: a tunnel has no roof.
+    const isSewerShell = (path: string): boolean => path.includes('/buildings/sewer_');
+    const blank = sprites.filter(([path, s]) => !isSewerShell(path) && !s.rgba.some((value, i) => i % 4 === 3 && value === 255));
     expect(blank.map(([path]) => path)).toEqual([]);
   });
 

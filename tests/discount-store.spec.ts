@@ -30,7 +30,8 @@ describe('S.O.S. Discount', () => {
     expect(store.h).toBeLessThan(BUILDING_DEFS.grocery.h);
   });
 
-  it.each(BUILDING_KINDS)('%s: has an interior and loot on its floors and in its furniture', (kind) => {
+  // The sewers are bare by design: nothing to search and nothing to find.
+  it.each(BUILDING_KINDS.filter((kind) => !kind.startsWith('sewer_')))('%s: has an interior and loot on its floors and in its furniture', (kind) => {
     expect(everyPiece(kind).props.length).toBeGreaterThan(0);
     expect(Object.keys(LOOT_RULES[kind].table).length).toBeGreaterThan(0);
     expect(Object.keys(CONTAINER_LOOT[kind].table).length).toBeGreaterThan(0);
