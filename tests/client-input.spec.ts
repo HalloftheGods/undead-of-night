@@ -52,6 +52,31 @@ describe('InputManager', () => {
     expect(input.dirX).toBe(-1);
   });
 
+  it('asks for the pause on Escape and on P, once per press, and not for a P typed into a field', () => {
+    const onPause = vi.fn();
+    input.dispose();
+    input = new InputManager({ ...noop, onPause });
+    input.setEnabled(true);
+    browser.dispatch('keydown', key('Escape'));
+    browser.dispatch('keydown', key('KeyP'));
+    browser.dispatch('keydown', key('KeyP', { repeat: true }));
+    expect(onPause).toHaveBeenCalledTimes(2);
+    const field = new (globalThis as { HTMLInputElement: new () => object }).HTMLInputElement();
+    browser.dispatch('keydown', key('KeyP', { target: field }));
+    expect(onPause).toHaveBeenCalledTimes(2);
+  });
+
+  it('moves right while D is held, also with input back on after a pause', () => {
+    browser.dispatch('keydown', key('KeyD'));
+    expect(input.dirX).toBe(1);
+    input.setEnabled(false);
+    expect(input.dirX).toBe(0);
+    input.setEnabled(true);
+    expect(input.dirX).toBe(1);
+    browser.dispatch('keyup', key('KeyD'));
+    expect(input.dirX).toBe(0);
+  });
+
   it('latches a reload until sampled, then only once', () => {
     browser.dispatch('keydown', key('KeyR'));
     browser.dispatch('keyup', key('KeyR'));

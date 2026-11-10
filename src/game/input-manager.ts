@@ -373,6 +373,12 @@ export class InputManager {
     if (isHandled) return;
     if (isTyping(event.target)) return;
     this.callbacks.onGesture();
+    // P pauses like Escape, but only outside text fields, where it is just a letter.
+    const isPauseLetter = event.code === 'KeyP' && !isShortcut(event);
+    if (isPauseLetter) {
+      if (!event.repeat) this.callbacks.onPause();
+      return;
+    }
     const tookPanelKey = this.panelKey(event);
     if (!tookPanelKey) this.gameKey(event);
   };
