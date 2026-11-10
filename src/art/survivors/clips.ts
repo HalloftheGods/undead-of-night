@@ -4,7 +4,7 @@ import type { WeaponId } from '../../../shared/protocol.ts';
 import type { Clip, DirClips, PixelSprite, SurvivorWeaponArt } from '../types.ts';
 import { makeClip } from '../kit.ts';
 import type { DrawnDir, Point } from '../kit.ts';
-import { mirrorFrames } from './cell.ts';
+import { ANCHOR_X, ANCHOR_Y, mirrorFrames } from './cell.ts';
 import { deadClip } from './fallen.ts';
 import { LEG_SETS } from './legs.ts';
 import { BODY, drawPose } from './rig.ts';
@@ -18,8 +18,10 @@ const SWAY = [0, -1, 0, 0, 1, 0];
 
 /** Rates chosen so a fire clip ends before the next shot of that gun. */
 const FIRE_FPS: Record<WeaponId, number> = { pistol: 14, carbine: 18, shotgun: 6 };
-/** The row a dropped magazine comes to rest on. */
+/** The row a dropped magazine comes to rest on, once it is a ground decal (magLanding). */
 const LANDED_Y = 33;
+/** The magazine grid's width, for where it lands in a mirrored facing. */
+const MAG_W = 2;
 
 /** Each facing in dirFromAngle order: the drawn facing it copies, and whether it is that one mirrored. */
 const FACING_SOURCE: readonly (readonly [DrawnDir, boolean])[] = [
@@ -72,12 +74,11 @@ function magazinePoses(weapon: WeaponId, dir: DrawnDir): Pose[] {
   const { pose, port, belt } = tucked(weapon, dir);
   const pulled: Point = [port[0], port[1] + 3];
   const fallen: Point = [port[0], Math.min(port[1] + 6, 30)];
-  const landed: Point = [port[0], LANDED_Y];
   const swap: Pose[] = [
     { ...pose, hand: port },
     { ...pose, hand: pulled, magOut: true, carrying: 'mag' },
     { ...pose, hand: belt, magOut: true, dropped: fallen },
-    { ...pose, hand: belt, magOut: true, carrying: 'mag', dropped: landed },
+    { ...pose, hand: belt, magOut: true, carrying: 'mag' },
     { ...pose, hand: pulled, magOut: true, carrying: 'mag' },
   ];
   const seated: Pose = { ...pose, hand: port, gunY: (pose.gunY ?? 0) - 1 };
@@ -101,7 +102,7 @@ function samePoint(a: Point, b: Point): boolean {
 /**
  * The pose halfway between two reload poses: the hand at the midpoint, the rest from the
  * earlier pose. A spare picked up at the belt is already in hand; a magazine let go starts
- * falling from where the hand was; one already falling has landed.
+ * falling from where the hand was; one already falling has landed, and is a ground decal now.
  */
 function between(from: Pose, to: Pose, belt: Point): Pose {
   const a = from.hand as Point;
@@ -110,8 +111,7 @@ function between(from: Pose, to: Pose, belt: Point): Pose {
   const lettingGo = to.dropped !== undefined && from.dropped === undefined && from.carrying !== undefined;
   if (lettingGo) return { ...from, hand, carrying: undefined, dropped: [a[0] - 1, a[1] + 1] };
   const carrying = samePoint(a, belt) ? to.carrying : from.carrying;
-  const dropped: Point | undefined = from.dropped && [from.dropped[0], LANDED_Y];
-  return { ...from, hand, carrying, dropped };
+  return { ...from, hand, carrying, dropped: undefined };
 }
 
 /** A reload with a pose added wherever the hand would otherwise jump, so it travels. */
@@ -125,13 +125,46 @@ function reloadPoses(weapon: WeaponId, dir: DrawnDir): Pose[] {
   });
 }
 
+/** Where and when a reload's dropped magazine reaches the ground. */
+export interface MagLanding {
+  /** Reload progress, 0..1, at the first frame that no longer draws the falling magazine. */
+  readonly at: number;
+  /** The magazine's top-left pixel from the figure's feet. */
+  readonly dx: number;
+  readonly dy: number;
+}
+
+const landings = new Map<string, MagLanding | null>();
+
+function landingOf(weapon: WeaponId, dir: number): MagLanding | null {
+  const [source, mirrored] = FACING_SOURCE[dir];
+  const poses = reloadPoses(weapon, source);
+  const last = poses.findLastIndex((pose) => pose.dropped !== undefined);
+  const fell = poses[last]?.dropped;
+  if (!fell) return null;
+  const dx = fell[0] - ANCHOR_X;
+  return { at: (last + 1) / poses.length, dx: mirrored ? -dx - MAG_W : dx, dy: LANDED_Y - ANCHOR_Y };
+}
+
+/**
+ * The reload's magazine landing for a facing in dirFromAngle order, or null for a gun that
+ * drops none (the shotgun). The pose stops drawing it in the air there; the renderer stamps
+ * it into the ground, so it stays where it fell instead of following the figure.
+ */
+export function magLanding(weapon: WeaponId, dir: number): MagLanding | null {
+  const key = `${weapon}/${dir}`;
+  const known = landings.get(key);
+  if (known !== undefined) return known;
+  const found = landingOf(weapon, dir);
+  landings.set(key, found);
+  return found;
+}
+
 /**
  * A fire or reload pose carried on a walk pose: the walk's legs, the two body offsets
- * added together. A magazine already on the ground is left out, because a figure on the
- * move would otherwise drag it along.
+ * added together. A landed magazine is never in a pose (magLanding), so nothing is dragged.
  */
 function onTheMove(walk: Pose, act: Pose): Pose {
-  const grounded = act.dropped !== undefined && act.dropped[1] >= LANDED_Y;
   return {
     ...act,
     near: walk.near,
@@ -139,7 +172,6 @@ function onTheMove(walk: Pose, act: Pose): Pose {
     bodyX: (walk.bodyX ?? 0) + (act.bodyX ?? 0),
     bodyY: (walk.bodyY ?? 0) + (act.bodyY ?? 0),
     headY: (walk.headY ?? 0) + (act.headY ?? 0),
-    dropped: grounded ? undefined : act.dropped,
   };
 }
 
