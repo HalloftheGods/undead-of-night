@@ -1,5 +1,5 @@
 <template>
-  <TitlePage heading="Books" bare boxed @close="emit('close')">
+  <TitlePage heading="News Stand" bare boxed @close="emit('close')">
     <template #lead>
       <BooksGrid
         :books="books"

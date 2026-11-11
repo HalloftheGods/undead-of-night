@@ -37,7 +37,7 @@ describe('title menu', () => {
 
   it('shows only three parents on the title, Play on top and pointed at', () => {
     const rows = menuRows(null);
-    expect(rows.map((row) => row.label)).toEqual(['Play', 'Books', 'Extras']);
+    expect(rows.map((row) => row.label)).toEqual(['Play', 'News Stand', 'Extras']);
     expect(rows.every((row) => row.kind === 'section')).toBe(true);
     expect(openingRow(rows)).toBe(0);
     expect(MENU_SECTIONS.map((section) => section.group)).toEqual(['play', 'books', 'extras']);

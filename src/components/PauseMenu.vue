@@ -49,7 +49,7 @@
       </div>
       <p v-if="ui.error" class="px-error" role="alert">{{ ui.error }}</p>
       <p v-else-if="warning" class="px-error" role="alert">{{ warning }}</p>
-      <MenuLink class="pause-menu-link" @press="emit('openBook')">Books & Guide</MenuLink>
+      <MenuLink class="pause-menu-link" @press="emit('openBook')">News Stand</MenuLink>
       <MenuLink class="pause-menu-link" @press="game.toMenu()">Main menu</MenuLink>
     </div>
 

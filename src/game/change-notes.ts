@@ -29,7 +29,7 @@ export const CHANGE_NOTES: readonly ChangeNote[] = [
     deck: 'Alley dumpsters can be searched, and empty searches can turn up marked caches.',
     points: [
       'Search outdoor dumpsters for a chance at spare ammo, weapons, medical gear or candy.',
-      'Empty searches can turn up a scrawled map note, marking an untouched building cache on your town map.',
+      'Empty searches can turn up a scrawled map note, circling untouched caches with a glowing ring on your map.',
       'Emergency vehicles hold better finds: shotguns or carbines in police cruisers, and medical supplies in ambulances.',
     ],
   },

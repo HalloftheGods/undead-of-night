@@ -127,7 +127,7 @@ export const MENU_SECTIONS: readonly MenuSection[] = [
   { group: "play", label: "Play", line: "Daily Night, Arcade, Campaign and Level Select." },
   {
     group: "books",
-    label: "Guides",
+    label: "News Stand",
     line: "How to Play, the Candy Magazine, Town Guide and Records."
   },
   { group: "extras", label: "Extras", line: "Sound Test, Options and Controls." }
