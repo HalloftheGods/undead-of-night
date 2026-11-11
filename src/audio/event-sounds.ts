@@ -123,6 +123,7 @@ const EVENT_SOUNDS: EventSounds = {
   drop_called: (e, { mixer }) => mixer.play('ignite', { x: e.x, y: e.y, pitch: 1.4 }),
   drop_landed: (e, { mixer }) => mixer.play('crate_land', { x: e.x, y: e.y }),
   car_alarm: (e, { mixer }) => mixer.play('car_alarm', { x: e.x, y: e.y }),
+  radio_tower_alarm: (e, { mixer }) => mixer.play('tower_alarm', { x: e.x, y: e.y, local: true }),
   // The van is waiting: everyone hears it, since everyone has to get to it.
   exit_open: (_e, { mixer }) => mixer.play('van_horn', { local: true }),
   wave_start: (_e, { mixer }) => mixer.play('wave_start'),

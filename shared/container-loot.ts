@@ -45,6 +45,7 @@ export const CONTAINER_LOOT: Record<BuildingKind | 'outdoors', ContainerLootRule
   school: { odds: 0.22, table: { water_bottle: 2.5, bandage: 2.5, canned_food: 1, knife: 1, pistol_ammo: 0.6 } },
   police: { odds: 0.3, table: { pistol_ammo: 3, carbine_ammo: 3, shells: 1 } },
   gun_shop: { odds: 0.3, table: { pistol_ammo: 2, shells: 2, carbine_ammo: 1 } },
+  radio_station: { odds: 0.3, table: { pistol_ammo: 2, carbine_ammo: 1, bandage: 2, water_bottle: 1.5, canned_food: 1 } },
   outdoors: { odds: 0.14, table: { bandage: 3, water_bottle: 1, pistol_ammo: 1, knife: 1, shells: 0.2, plank: 0.6, nails: 0.6 } },
 };
 

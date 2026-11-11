@@ -58,6 +58,8 @@ export interface SceneView {
   readonly climb?: { readonly down: boolean };
   /** The bunker station the local player could open from where they stand. Absent anywhere else. */
   readonly station?: StationId;
+  /** Emergency radio tower the local player can trigger: canTrigger is true if in intermission with remaining hordes. */
+  readonly radioTower?: { readonly canTrigger: boolean; readonly hold: number };
   /** The bunker's horde clock, which the door and the chest are drawn from. Absent when there is none. */
   readonly overrun?: OverrunView;
   /** The overrun is switched on for this build, so the blast door is drawn. Absent or false, the bunker looks as it did before it. */

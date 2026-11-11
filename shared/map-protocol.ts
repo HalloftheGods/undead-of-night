@@ -114,6 +114,8 @@ export const PROP_DEFS = {
   manhole: { w: 16, h: 16 },
   /** An iron ladder bolted to the shaft wall under a manhole. */
   sewer_ladder: { w: 16, h: 6 },
+  /** An emergency radio tower with antenna lattice and civil defense siren console. */
+  radio_tower: { w: 48, h: 24 },
 } as const;
 export type PropKind = keyof typeof PROP_DEFS;
 export const PROP_KINDS = Object.keys(PROP_DEFS) as PropKind[];
@@ -138,6 +140,7 @@ export const BUILDING_DEFS = {
   diner: { label: 'Diner', w: 160, h: 96, doorX: 112, floor: 'floor_tile' },
   garage: { label: 'Auto Garage', w: 176, h: 112, doorX: 48, floor: 'floor_concrete' },
   warehouse: { label: 'Warehouse', w: 240, h: 144, doorX: 192, floor: 'floor_concrete' },
+  radio_station: { label: 'Radio Station', w: 160, h: 112, doorX: 80, floor: 'floor_concrete' },
   house: { label: 'House', w: 112, h: 96, doorX: 48, floor: 'floor_wood' },
   apartment: { label: 'Apartments', w: 160, h: 128, doorX: 80, floor: 'floor_carpet' },
   // A floor above or below a house, the same size as it. Its doorX only keeps loot off the strip a door would have.

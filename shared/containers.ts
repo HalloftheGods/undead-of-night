@@ -2,6 +2,7 @@ import { PLAYER_RADIUS } from './constants.ts';
 import type { BuildingKind, PickupType, PropKind, WorldMap } from './protocol.ts';
 import { buildingAt, isSolidProp, propBox } from './world-query.ts';
 import type { Box } from './world-query.ts';
+import type { GridItem } from './grid-inventory.ts';
 
 export type ContainerKind = 'drawer' | 'locker' | 'fridge' | 'cabinet' | 'shelf' | 'box' | 'car' | 'bowl' | 'booth' | 'dumpster';
 
@@ -38,6 +39,8 @@ export interface ContainerState {
   loot: ContainerLoot | null;
   /** The fireworks bus alone: how many it has left to hand out. */
   fireworks?: number;
+  /** Items remaining in the container grid. */
+  items?: GridItem[];
 }
 
 /** Seconds of holding the key: a drawer is quick, a locker or car has more to go through. */
@@ -93,6 +96,7 @@ export const ROOM_CONTAINERS: Record<BuildingKind, Partial<Record<PropKind, Cont
   school_upstairs: { table: 'drawer', locker: 'locker', shelf: 'shelf', workbench: 'cabinet' },
   police: { locker: 'locker', counter: 'cabinet', shelf: 'shelf' },
   gun_shop: { locker: 'locker', counter: 'cabinet', shelf: 'shelf' },
+  radio_station: { locker: 'locker', counter: 'cabinet', shelf: 'shelf', fridge: 'fridge' },
   // Nothing down there is furniture.
   sewer_maze: {},
 };
@@ -178,14 +182,14 @@ function gapTo({ x0, y0, x1, y1 }: Box, x: number, y: number): number {
  * The nearest container still shut within reach of a spot, or null. Only the room the spot is in
  * counts, so nobody searches through a wall. When outdoors, only outdoor containers count.
  */
-export function containerInReach(map: WorldMap, x: number, y: number, isOpen: (id: number) => boolean): Container | null {
+export function containerInReach(map: WorldMap, x: number, y: number, isOpen?: (id: number) => boolean): Container | null {
   const room = buildingAt(map, x, y);
   const candidates = room ? surveyed(map).byBuilding.get(room.id) ?? [] : surveyed(map).outdoors;
   let nearest: Container | null = null;
   let nearestGap = SEARCH_REACH;
   for (const container of candidates) {
     const gap = gapTo(container.box, x, y);
-    const nearer = gap <= nearestGap && !isOpen(container.id);
+    const nearer = gap <= nearestGap && (!isOpen || !isOpen(container.id));
     if (nearer) {
       nearest = container;
       nearestGap = gap;

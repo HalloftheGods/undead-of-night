@@ -114,6 +114,13 @@ const LAYOUTS: Record<BuildingKind, readonly Slot[]> = {
     ['workbench', 194, NORTH_DEEP],
     ['shelf', 156, 64], ['shelf', 202, 100, 0.6],
   ],
+  radio_station: [
+    ['shelf', 16, NORTH_WALL], ['locker', 52, NORTH_WALL], ['locker', 92, NORTH_WALL], ['shelf', 112, NORTH_WALL],
+    ['counter', 16, 56],
+    ['table', 130, 56],
+    ['sofa', 16, 96, 0.6],
+    ['fridge', 138, 96],
+  ],
   // Bedroom west of the inside wall at 54, kitchen east of it with the back door, living room along the front.
   // The bedroom's back corner is left bare for the stairs, and a house with stairs has no inside wall.
   house: [

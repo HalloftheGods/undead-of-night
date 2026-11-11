@@ -213,3 +213,11 @@ export const gameOver: Recipe = (v) => {
   tone(v, { at: 2.4, type: 'sawtooth', f0: 73.4, lp: 200, attack: 0.05, decay: 1.5, gain: 0.3 });
   noise(v, { at: 2.4, filter: 'lowpass', freq: 400, freq1: 100, decay: 1.4, gain: 0.2 });
 };
+
+/** Civil defense emergency tower siren with winding klaxon wail and radio noise burst. */
+export const towerAlarm: Recipe = (v) => {
+  tone(v, { type: 'sawtooth', f0: 220, path: [[0.8, 620], [1.6, 380], [2.4, 700]], attack: 0.1, hold: 2.2, decay: 0.6, gain: 0.35, lp: 900 });
+  tone(v, { type: 'square', f0: 440, path: [[0.8, 880], [1.6, 520], [2.4, 980]], attack: 0.1, hold: 2.0, decay: 0.5, gain: 0.15, lp: 1200 });
+  noise(v, { at: 0, filter: 'bandpass', freq: 1800, q: 2, attack: 0.01, decay: 0.08, gain: 0.3 });
+  noise(v, { at: 0.05, filter: 'lowpass', freq: 400, decay: 0.3, gain: 0.25 });
+};

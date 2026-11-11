@@ -15,9 +15,11 @@ import type { SurvivalNeeds } from './survival-needs.ts';
 import type { FortificationInventory, FortificationItemType } from './fortifications.ts';
 import type { BagCommit } from './bag.ts';
 import type { BenchAction, BenchView } from './workbench.ts';
+import type { GridItem } from './grid-inventory.ts';
+import type { ContainerKind } from './containers.ts';
 
 export { GAME_EVENT_TYPES, GAME_PHASES, PICKUP_TYPES };
-export type { BackpackTier, FortificationInventory, FortificationItemType, SurvivalNeeds };
+export type { BackpackTier, FortificationInventory, FortificationItemType, GridItem, SurvivalNeeds };
 export type ArmorTier = 'light' | 'medium' | 'heavy';
 // The world map types live in map-protocol.ts; everything still imports them from here.
 export { BUILDING_DEFS, BUILDING_KINDS, DOOR_WIDTH, PROP_DEFS, PROP_KINDS, TILE_KINDS, TILE_SIZE, WALL_THICKNESS } from './map-protocol.ts';
@@ -129,6 +131,8 @@ export interface PlayerEntity {
   materials?: FortificationInventory;
   /** Hash of where this survivor's things sit in the bag (`shared/bag.ts`). The layout itself is never sent. */
   bagHash?: number;
+  /** Hold progress (0..1) on the radio tower alarm. Left off when 0. */
+  towerHold?: number;
 }
 
 export interface ZombieEntity {
@@ -244,7 +248,7 @@ export type GameEvent =
   | { readonly type: 'pickup'; readonly playerId: EntityId; readonly pickup: PickupType; readonly x: number; readonly y: number }
   /** Someone took the stairs: x, y is where they came out, `to` what the stairs led to. */
   | { readonly type: 'stairs_taken'; readonly playerId: EntityId; readonly x: number; readonly y: number; readonly to: string }
-  | { readonly type: 'container_opened'; readonly playerId: EntityId; readonly container: number; readonly x: number; readonly y: number; readonly found: boolean; readonly noisy: boolean; readonly bottle?: boolean; readonly stash?: 'firework' | 'fountain' | 'candy'; readonly candy?: CandyId; readonly full?: true; readonly fireworks?: number; readonly clue?: true }
+  | { readonly type: 'container_opened'; readonly playerId: EntityId; readonly container: number; readonly x: number; readonly y: number; readonly found: boolean; readonly noisy: boolean; readonly bottle?: boolean; readonly stash?: 'firework' | 'fountain' | 'candy'; readonly candy?: CandyId; readonly full?: true; readonly fireworks?: number; readonly clue?: true; readonly items?: readonly GridItem[]; readonly reopen?: boolean; readonly title?: string; readonly kind?: ContainerKind }
   /** A thrown bottle broke at x,y, thrown from fromX,fromY. */
   | { readonly type: 'bottle_smash'; readonly playerId: EntityId; readonly x: number; readonly y: number; readonly fromX: number; readonly fromY: number }
   /** A firework landed at x,y as a ground spinner, throwing sparks `radius` round it for `sec`. */
@@ -252,6 +256,8 @@ export type GameEvent =
   /** A fountain firework landed at x,y and sprays for `sec`. */
   | { readonly type: 'fountain_lit'; readonly playerId: EntityId; readonly x: number; readonly y: number; readonly fromX: number; readonly fromY: number; readonly sec: number }
   | { readonly type: 'car_alarm'; readonly x: number; readonly y: number }
+  /** Emergency siren at the radio tower sounded to summon the horde early. */
+  | { readonly type: 'radio_tower_alarm'; readonly x: number; readonly y: number; readonly playerId: EntityId }
   /** A flare went up at x,y: a supply crate comes down on it in `sec`. */
   | { readonly type: 'drop_called'; readonly x: number; readonly y: number; readonly sec: number }
   | { readonly type: 'drop_landed'; readonly x: number; readonly y: number }

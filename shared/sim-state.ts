@@ -149,6 +149,7 @@ export interface PlayerState extends Omit<PlayerEntity, 'mags' | 'gear' | 'bottl
   needs?: SurvivalNeeds;
   backpackTier?: BackpackTier;
   materials: FortificationInventory;
+  towerHold?: number;
 }
 
 /** Unaware, walking to a noise, or after a player. */

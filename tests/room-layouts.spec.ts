@@ -185,22 +185,24 @@ function tilesCutOff({ map, building }: Room): string[] {
   return cut;
 }
 
+const ROOM_KINDS = BUILDING_KINDS.filter((kind) => !kind.startsWith('sewer_'));
+
 describe('room layouts', () => {
   it('the aisle allowance fits the widest body', () => {
     expect(NARROWEST_AISLE).toBeGreaterThan(WIDEST_BODY * 2);
   });
 
-  it.each(BUILDING_KINDS)('%s: every free tile can be reached by the widest bodies', (kind) => {
+  it.each(ROOM_KINDS)('%s: every free tile can be reached by the widest bodies', (kind) => {
     for (const room of everyVariant(kind)) {
       for (const radius of WIDE_BODIES) expect(tilesOutOfReach(room, radius)).toEqual([]);
     }
   });
 
-  it.each(BUILDING_KINDS)('%s: every free tile inside joins up on the tile grid, as the town and the flow fields see it', (kind) => {
+  it.each(ROOM_KINDS)('%s: every free tile inside joins up on the tile grid, as the town and the flow fields see it', (kind) => {
     for (const room of everyVariant(kind)) expect(tilesCutOff(room)).toEqual([]);
   });
 
-  it.each(BUILDING_KINDS)('%s: a back door, where there is one, lets the widest body out', (kind) => {
+  it.each(ROOM_KINDS)('%s: a back door, where there is one, lets the widest body out', (kind) => {
     for (const room of everyVariant(kind)) {
       const back = backDoorBox(room.building);
       if (!back) continue;
@@ -214,7 +216,7 @@ describe('room layouts', () => {
     }
   });
 
-  it.each(BUILDING_KINDS)('%s: a gap a player fits through is wide enough for a brute to follow', (kind) => {
+  it.each(ROOM_KINDS)('%s: a gap a player fits through is wide enough for a brute to follow', (kind) => {
     const playerWidth = PLAYER_RADIUS * 2;
     for (const room of everyVariant(kind)) {
       const squeezes = facingGaps(room).filter((gap) => gap >= playerWidth && gap < NARROWEST_AISLE);

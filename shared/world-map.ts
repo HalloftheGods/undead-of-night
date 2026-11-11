@@ -145,6 +145,11 @@ function lightsFor(props: readonly PropInstance[], rng: Rng, sewerLamps: readonl
     if (isFireworksBus) for (const [dx, radius, color] of BUS_GLOWS) lights.push({ x: prop.x + dx, y: prop.y + BUS_GLOW_DOWN, radius, color, flicker: true });
     const isCandyBowl = prop.kind === 'candy_bowl';
     if (isCandyBowl) lights.push({ x: prop.x + JACK_TO_DOOR, y: prop.y - JACK_UP, radius: JACK_RADIUS, color: JACK_GLOW, flicker: true });
+    const isRadioTower = prop.kind === 'radio_tower';
+    if (isRadioTower) {
+      lights.push({ x: prop.x, y: prop.y - 100, radius: 110, color: '#ff2222', flicker: true });
+      lights.push({ x: prop.x, y: prop.y - 50, radius: 60, color: '#ff2222', flicker: true });
+    }
     const isFireBarrel = prop.kind === 'fire_barrel';
     if (isFireBarrel) {
       lights.push({ x: prop.x, y: prop.y - 6, radius: 74, color: FIRE, flicker: true });

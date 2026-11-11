@@ -52,6 +52,7 @@ export const BUILDING_LOOK: Record<BuildingKind, BuildingLook> = {
   diner: { group: 'food', roof: 'flat', extra: 'chimney' },
   garage: { group: 'work', roof: 'tin' },
   warehouse: { group: 'work', roof: 'tin', extra: 'vents' },
+  radio_station: { group: 'work', roof: 'flat', extra: 'vents' },
   house: { group: 'homes', roof: 'gable', extra: 'chimney' },
   apartment: { group: 'homes', roof: 'flat', extra: 'vents' },
   upstairs: { group: 'homes', roof: 'gable' },

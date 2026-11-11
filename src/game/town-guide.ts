@@ -111,6 +111,7 @@ const PLACE_ORDER: readonly PlaceId[] = [
   "gun_shop",
   "garage",
   "warehouse",
+  "radio_station",
   "grocery",
   "discount",
   "diner",
@@ -136,6 +137,7 @@ const BLURBS: Readonly<Record<PlaceId, string>> = {
   gun_shop: "A shotgun on the rack every time, and shells to go with it.",
   garage: "Spinners on the shelves, the odd fountain, gun parts by the bench.",
   warehouse: "Big, dark and mostly empty, but the cabinets hold spinners and gun parts lie about.",
+  radio_station: "Broadcast consoles, emergency frequencies, and the towering transmitter mast in the yard.",
   grocery: "Always has canned food on the floor, and the coolers keep bottled water.",
   discount:
     "Cheap goods: canned food and bottled water, with rare kits and gun parts on the shelves.",

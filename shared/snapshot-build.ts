@@ -129,6 +129,7 @@ export function playerSnapshot(p: PlayerState): PlayerEntity {
     ...(p.backpackTier ? { backpackTier: p.backpackTier } : {}),
     ...(p.materials ? { materials: { ...p.materials } } : {}),
     bagHash: bagHash(p.inventory),
+    ...(p.towerHold ? { towerHold: round2(p.towerHold) } : {}),
   };
 }
 

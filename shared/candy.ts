@@ -115,6 +115,7 @@ export const CANDY_ODDS: Partial<Record<Container['buildingKind'], number>> = {
   garage: 0.04,
   warehouse: 0.04,
   gun_shop: 0.03,
+  radio_station: 0.05,
 };
 /** Halloween night: every home left a bowl out by the front door for the trick-or-treaters, and the dead don't eat candy. */
 export const DOORSTEP_HOMES: ReadonlySet<Container['buildingKind']> = new Set(['house', 'apartment']);
@@ -143,6 +144,25 @@ export function candyIn(seed: number, container: Container): CandyId | null {
   const odds = isBowl ? BOWL_CANDY_ODDS : CANDY_ODDS[container.buildingKind] ?? 0;
   const found = rng() < odds;
   return found ? pickWeighted(rng, WEIGHTS) : null;
+}
+
+export interface CandyBowlLoot {
+  readonly label: 'TAKE ONE' | 'TAKE TWO';
+  readonly count: 1 | 2;
+  readonly candies: readonly CandyId[];
+}
+
+/** Rolls 1 or 2 candies for a doorstep candy bowl, with a matching house rule label. */
+export function candiesInBowl(seed: number, container: Container): CandyBowlLoot {
+  const rng = createRng((seed ^ CANDY_SALT ^ Math.imul(container.id + 1, 0x85ebca6b)) >>> 0);
+  const count: 1 | 2 = rng() < 0.5 ? 1 : 2;
+  const candies: CandyId[] = [];
+  for (let i = 0; i < count; i += 1) {
+    const candy = pickWeighted(rng, WEIGHTS);
+    if (candy) candies.push(candy);
+  }
+  const label = count === 1 ? 'TAKE ONE' : 'TAKE TWO';
+  return { label, count, candies };
 }
 
 /** Maximum candy pieces one survivor can carry in their bag. */

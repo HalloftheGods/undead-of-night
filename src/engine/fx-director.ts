@@ -204,6 +204,10 @@ export class FxDirector {
     drop_landed: (event) => this.onDropLanded(event.x, event.y),
     car_alarm: (event) =>
       this.particles.addText("CAR ALARM", event.x, event.y - NOTE_HEIGHT, SCORE_COLOR),
+    radio_tower_alarm: (event) => {
+      this.particles.addText("HORDE CALLED EARLY!", event.x, event.y - NOTE_HEIGHT, hitPalette().danger);
+      this.effects.addShake(4);
+    },
     zombie_status: (event) => this.onZombieStatus(event),
     overrun_breach: () => this.effects.addShake(OVERRUN_BURST_SHAKE),
     boss_down: (event) => this.onBossDown(event.x, event.y)

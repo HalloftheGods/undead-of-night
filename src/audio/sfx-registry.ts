@@ -94,6 +94,7 @@ export const SFX = {
   tranq_dart: def(FX.tranq, 0.5, { gain: 1.2, voices: 3, cooldown: 0.1, vary: 0.06 }),
   glass_smash: def(FX.glassSmash, 0.45, { gain: 1.6, voices: 3, cooldown: 0.1, vary: 0.1 }),
   car_alarm: def(FX.carAlarm, 2.1, { gain: 1.2, voices: 1, cooldown: 2, vary: 0 }),
+  tower_alarm: def(P.towerAlarm, 3.2, { gain: 1.3, voices: 1, cooldown: 3, vary: 0 }),
   clatter: def(P.clatter, 0.55, { gain: 1.6, voices: 2, cooldown: 0.2, vary: 0.08 }),
   horde_warning: def(P.hordeWarning, 3.6, { gain: 1.2, voices: 1, cooldown: 5, vary: 0 }),
   wave_start: def(P.waveStart, 5.0, { gain: 1.1, voices: 1, cooldown: 2, vary: 0 }),

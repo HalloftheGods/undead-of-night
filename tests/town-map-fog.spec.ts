@@ -138,4 +138,16 @@ describe('layer filtering and zombie blip rendering', () => {
 
     expect(() => view.paint(ctx, [player], player.id, null, [], null, undefined, [], [zombie])).not.toThrow();
   });
+
+  it('reveals fog as players walk without the map open', () => {
+    const map = generateWorldMap(4242);
+    const view = new TownMapView(map);
+    const player = makePlayer({ x: 300, y: 300 });
+
+    expect(() => view.revealPlayers([player])).not.toThrow();
+
+    player.x = 450;
+    player.y = 450;
+    expect(() => view.revealPlayers([player])).not.toThrow();
+  });
 });

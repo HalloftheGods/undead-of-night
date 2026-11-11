@@ -11,7 +11,7 @@ export const CAR_RADIO_ODDS = 0.1;
 const RADIO_SALT = 0x52414449;
 const CAR_RADIO_SALT = 0x43415252;
 /** Where a Radio is left: the places someone would have kept one. */
-export const RADIO_PLACES: ReadonlySet<BuildingKind | 'outdoors'> = new Set(['house', 'apartment', 'diner', 'garage']);
+export const RADIO_PLACES: ReadonlySet<BuildingKind | 'outdoors'> = new Set(['house', 'apartment', 'diner', 'garage', 'radio_station']);
 
 const SMALL_FINDS: ReadonlySet<PickupType> = new Set(['bandage', 'knife']);
 

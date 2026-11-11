@@ -14,7 +14,7 @@ import type { Rgb } from './map-ground.ts';
 import { drawClueCache, drawLeftovers } from './map-leftovers.ts';
 import type { CursorClock } from './map-cursor.ts';
 import {
-  CROSS_COLOR, DROP_COLOR, DROP_LABEL_RISE, drawDropSprite, drawFireworksBus, drawStation, drawTickMark, drawVan, EXIT_COLOR, VAN_LABEL_RISE,
+  CROSS_COLOR, DROP_COLOR, DROP_LABEL_RISE, drawDropSprite, drawFireworksBus, drawRadioTowerMarker, drawStation, drawTickMark, drawVan, EXIT_COLOR, TOWER_COLOR, VAN_LABEL_RISE,
 } from './map-markers.ts';
 import { MAP_INK } from './map-sprite.ts';
 import { drawTeammateLocator } from './map-teammate.ts';
@@ -212,6 +212,7 @@ export class TownMapView {
     this.paintStations(ctx);
     const placed: LabelBox[] = [];
     if (town) this.paintFireworksBus(ctx, placed);
+    if (town) this.paintRadioTower(ctx, placed);
     for (const building of this.map.buildings) {
       const named = isLandmark(building.kind) && !isStorey(building);
       if (!named) continue;
@@ -265,6 +266,19 @@ export class TownMapView {
       const y = Math.round((prop.y - rise) / this.worldPerPx);
       drawFireworksBus(ctx, x, y);
       placeLabel(ctx, 'Fireworks', x, y + 6, LABEL_COLOR, placed);
+    }
+  }
+
+  /** The emergency radio tower where it stands in town, named under it. */
+  private paintRadioTower(ctx: CanvasRenderingContext2D, placed: LabelBox[]): void {
+    const rise = PROP_DEFS.radio_tower.h / 2;
+    for (const prop of this.map.props) {
+      const isTower = prop.kind === 'radio_tower';
+      if (!isTower) continue;
+      const x = Math.round(prop.x / this.worldPerPx);
+      const y = Math.round((prop.y - rise) / this.worldPerPx);
+      drawRadioTowerMarker(ctx, x, y);
+      placeLabel(ctx, 'Radio Tower', x, y + 6, TOWER_COLOR, placed);
     }
   }
 
@@ -378,6 +392,19 @@ export class TownMapView {
     drawOutlinedText(ctx, 'VAN', x, y - VAN_LABEL_RISE - FONT_HEIGHT, EXIT_COLOR);
   }
 
+  revealPlayers(players: readonly PlayerEntity[]): void {
+    const onMap = players.filter((player) => player.status !== 'dead');
+    const sewerShift = this.map.sewers ? this.map.sewers.top * TILE_SIZE : 0;
+    for (const player of onMap) {
+      const at = groundOf(this.map, player.x, player.y);
+      const isPlayerBelow = this.isBelow(player);
+      const shiftY = isPlayerBelow ? sewerShift : 0;
+      const px = Math.round(at.x / this.worldPerPx);
+      const py = Math.round((at.y - shiftY) / this.worldPerPx);
+      this.fog.reveal(px, py, isPlayerBelow);
+    }
+  }
+
   paint(
     ctx: CanvasRenderingContext2D,
     players: readonly PlayerEntity[],
@@ -391,19 +418,10 @@ export class TownMapView {
   ): void {
     const hasOpenedContainers = openedContainers.length > 0;
     if (hasOpenedContainers) this.syncOpened(openedContainers);
+    this.revealPlayers(players);
     const viewer = players.find((player) => player.id === localId);
     const isViewerBelow = this.isBelow(viewer);
     const onMap = players.filter((player) => player.status !== 'dead');
-
-    const sewerShift = this.map.sewers ? this.map.sewers.top * TILE_SIZE : 0;
-    for (const player of onMap) {
-      const at = groundOf(this.map, player.x, player.y);
-      const isPlayerBelow = this.isBelow(player);
-      const shiftY = isPlayerBelow ? sewerShift : 0;
-      const px = Math.round(at.x / this.worldPerPx);
-      const py = Math.round((at.y - shiftY) / this.worldPerPx);
-      this.fog.reveal(px, py, isPlayerBelow);
-    }
 
     const under = isViewerBelow ? this.underBase() : null;
     if (under) {

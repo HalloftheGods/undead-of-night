@@ -9,6 +9,7 @@ import { drawOutlinedText, FONT_HEIGHT } from './bitmap-font.ts';
 import { ammoPrompt } from './ammo-prompt.ts';
 import type { SceneView } from './scene.ts';
 import { climbPrompt } from '../../shared/take-manhole.ts';
+import { radioTowerPrompt } from '../../shared/radio-tower.ts';
 import { stationPrompt } from './station-labels.ts';
 import { SUGAR_BAR_WIDTH, SUGAR_LINE_GAP, SUGAR_ROW_HEIGHT, sugarTags, sugarTagsWidth } from './sugar-tags.ts';
 import type { KeepOut } from './sugar-tags.ts';
@@ -270,14 +271,23 @@ export class OverlayRenderer {
       const prompted = isLocal && scene.searchable !== null;
       const atStation = isLocal && scene.station !== undefined;
       const atClimb = isLocal && scene.climb !== undefined;
+      const atRadioTower = isLocal && scene.radioTower !== undefined;
       if (player.search > 0) drawBar(ctx, x - SEARCH_BAR_WIDTH / 2, y, SEARCH_BAR_WIDTH, player.search, BONE);
-      else if (prompted) drawOutlinedText(ctx, `${scene.touch ? 'SEARCH' : 'HOLD E'}: ${CONTAINER_LABEL[scene.searchable.kind]}`, x, y, AMBER);
+      else if (prompted) {
+        const isOpened = scene.openedContainers.includes(scene.searchable!.id);
+        const action = isOpened ? (scene.touch ? 'OPEN' : 'PRESS E') : (scene.touch ? 'SEARCH' : 'HOLD E');
+        drawOutlinedText(ctx, `${action}: ${CONTAINER_LABEL[scene.searchable!.kind]}`, x, y, AMBER);
+      }
       else if (atStation) drawOutlinedText(ctx, stationPrompt(scene.station, Boolean(scene.touch), this.payFrom(scene)), x, y, AMBER);
       else if (atClimb) drawOutlinedText(ctx, climbPrompt(scene.climb, Boolean(scene.touch)), x, y, AMBER);
+      else if (atRadioTower) {
+        if (scene.radioTower!.hold > 0) drawBar(ctx, x - SEARCH_BAR_WIDTH / 2, y, SEARCH_BAR_WIDTH, scene.radioTower!.hold, AMBER);
+        else drawOutlinedText(ctx, radioTowerPrompt(Boolean(scene.touch), scene.radioTower!.canTrigger), x, y, AMBER);
+      }
       if (!isLocal) continue;
       const call = ammoPrompt(player, { touch: Boolean(scene.touch), atHome: scene.merchants !== undefined, time });
       if (!call?.lit) continue;
-      const lineTaken = player.search > 0 || prompted || atStation || atClimb;
+      const lineTaken = player.search > 0 || prompted || atStation || atClimb || atRadioTower;
       drawOutlinedText(ctx, call.text, x, lineTaken ? y - FONT_HEIGHT - 3 : y, hitPalette().danger);
     }
   }

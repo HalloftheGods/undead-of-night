@@ -19,6 +19,8 @@ const DOOR_APRON_TILES = 3;
 const BACK_STEP_TILES = 1;
 const FORECOURT_W_TILES = 7;
 const FORECOURT_H_TILES = 5;
+const TOWER_YARD_W_TILES = 6;
+const TOWER_YARD_H_TILES = 5;
 
 /** The town's one S.O.S. Discount, when it has one: downtown's first plot once every wish there stands. */
 const STORE: BuildingKind = 'discount';
@@ -51,7 +53,7 @@ const STYLES: Record<TownStyle, DistrictStyle> = {
     gap: [2, 3],
     vacancy: 0.1,
     fillers: ['house', 'house', 'house', 'house', 'apartment', 'apartment'],
-    wishes: ['grocery', 'diner', 'garage', 'pharmacy', 'diner'],
+    wishes: ['grocery', 'diner', 'garage', 'pharmacy', 'radio_station', 'diner'],
     clutter: [['bush', 6], ['tree', 3], ['dumpster', 1], ['crate_stack', 1], ['rubble', 2]],
   },
   riverside: {
@@ -90,7 +92,8 @@ const FILL_ORDER: readonly TownStyle[] = ['old_town', 'riverside', 'industrial',
 
 const widthOf = (kind: BuildingKind): number => BUILDING_DEFS[kind].w / TILE_SIZE;
 const heightOf = (kind: BuildingKind): number => BUILDING_DEFS[kind].h / TILE_SIZE;
-const plotWidth = (kind: BuildingKind): number => widthOf(kind) + (kind === 'garage' ? FORECOURT_W_TILES : 0);
+const plotWidth = (kind: BuildingKind): number =>
+  widthOf(kind) + (kind === 'garage' ? FORECOURT_W_TILES : kind === 'radio_station' ? TOWER_YARD_W_TILES : 0);
 
 /** The next building that fits: wishes, then a late arrival once every wish stands, then fillers. */
 function nextKind(b: MapBuilder, style: DistrictStyle, wishes: BuildingKind[], late: BuildingKind[], room: number, height: number): BuildingKind | null {
@@ -113,6 +116,16 @@ function forecourt(b: MapBuilder, col: number, bottom: number): void {
   const y = (bottom - 2) * TILE_SIZE;
   b.place('gas_pump', (col + 1.5) * TILE_SIZE, y, 16);
   b.place('gas_pump', (col + 4.5) * TILE_SIZE, y, 16);
+  b.reserve(area);
+}
+
+/** A concrete compound beside the radio station where its towering radio mast and sirens stand. */
+function radioTowerYard(b: MapBuilder, col: number, bottom: number): void {
+  const area = rectBox({ c0: col, c1: col + TOWER_YARD_W_TILES - 1, r0: bottom - TOWER_YARD_H_TILES, r1: bottom });
+  b.fill(area, 'concrete');
+  const midX = Math.round((col + (TOWER_YARD_W_TILES - 1) / 2) * TILE_SIZE);
+  const baseY = Math.round((bottom - 1) * TILE_SIZE);
+  b.fixture('radio_tower', midX, baseY);
   b.reserve(area);
 }
 
@@ -177,6 +190,8 @@ function raise(b: MapBuilder, kind: BuildingKind, col: number, bottom: number, w
   if (onStreet) parkService(b, building, walkDown);
   const isGarage = kind === 'garage';
   if (isGarage) forecourt(b, col + widthOf(kind) + 1, bottom);
+  const isRadioStation = kind === 'radio_station';
+  if (isRadioStation) radioTowerYard(b, col + widthOf(kind) + 1, bottom);
 }
 
 /** Packs one row of buildings against `bottom`. Returns the row's top edge, or null if nothing fit. */

@@ -10,7 +10,7 @@ import { townContainers } from '../shared/containers.ts';
 import { PART_ORDER } from '../shared/gun-upgrade-data.ts';
 import { KIT_ORDER } from '../shared/round-effect-data.ts';
 import { GameSimulation } from '../shared/simulation.ts';
-import { stateOf } from '../shared/sim-state.ts';
+import { stateOf } from './helpers/sim-harness.ts';
 import { buildingBox, generateWorldMap, propBox } from '../shared/world-map.ts';
 
 const TOWNS = 200;

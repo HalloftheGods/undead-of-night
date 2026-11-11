@@ -56,6 +56,7 @@ export const LOOT_RULES: Record<BuildingKind, LootRule> = {
   gun_shop: { items: [3, 4], fixed: ['shotgun'], table: { pistol_ammo: 3, shells: 3, carbine_ammo: 1 } },
   garage: { items: [0, 2], table: { pistol_ammo: 3, shells: 1.5, bandage: 1, knife: 0.4, water_bottle: 0.6, disinfectant: 0.6 } },
   warehouse: { items: [0, 2], table: { pistol_ammo: 3, carbine_ammo: 1.5, shells: 1.5, bandage: 1, water_bottle: 0.6, canned_food: 0.6 } },
+  radio_station: { items: [1, 3], table: { pistol_ammo: 2, carbine_ammo: 1, bandage: 2, water_bottle: 2, canned_food: 1 } },
   grocery: { items: [1, 3], fixed: ['canned_food'], table: { water_bottle: 3.5, canned_food: 3.5, bandage: 2, pistol_ammo: 1 }, smallAmmo: true },
   // Cheap goods off the shelves: always canned food and bottled water, bandages, the odd knife, a half box of rounds.
   discount: { items: [0, 2], fixed: ['canned_food', 'water_bottle'], table: { canned_food: 2.5, water_bottle: 2.5, bandage: 2.5, pistol_ammo: 1, knife: 0.5 }, smallAmmo: true },

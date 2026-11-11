@@ -8,6 +8,7 @@ import { stepMovement } from '../../shared/movement.ts';
 import { playerSpeed } from '../../shared/players.ts';
 import { effectiveStance } from '../../shared/stamina.ts';
 import { manholeFlightNear } from '../../shared/take-manhole.ts';
+import { radioTowerNear } from '../../shared/radio-tower.ts';
 import { openableStation } from '../../shared/stations.ts';
 import { groundSpeedScale } from '../../shared/town-rules.ts';
 import type { EntityId, PlayerEntity, SnapshotPacket, Stance, WorldMap } from '../../shared/protocol.ts';
@@ -21,7 +22,7 @@ const MAX_BULLET_LEAD_SEC = 0.1;
 
 export type WorldEntities = Pick<
   SceneView,
-  'players' | 'zombies' | 'merchants' | 'bullets' | 'pickups' | 'exit' | 'drop' | 'openedContainers' | 'leftovers' | 'tracks' | 'searchable' | 'station' | 'climb' | 'overrun' | 'localId' | 'viewerId' | 'focusX' | 'focusY' | 'phase' | 'hostiles'
+  'players' | 'zombies' | 'merchants' | 'bullets' | 'pickups' | 'exit' | 'drop' | 'openedContainers' | 'leftovers' | 'tracks' | 'searchable' | 'station' | 'climb' | 'radioTower' | 'overrun' | 'localId' | 'viewerId' | 'focusX' | 'focusY' | 'phase' | 'hostiles'
 >;
 
 /** The bunker's merchants where they are drawn; left off anywhere without them. */
@@ -124,9 +125,9 @@ export class ClientWorld {
   }
 
   /** What the local player could start searching: nothing while down, or already at it. */
-  private searchableBy(player: PlayerEntity | null, opened: readonly number[]): Container | null {
+  private searchableBy(player: PlayerEntity | null, _opened: readonly number[]): Container | null {
     const free = player !== null && player.status === 'alive' && player.search === 0;
-    return free ? containerInReach(this.map, player.x, player.y, (id) => opened.includes(id)) : null;
+    return free ? containerInReach(this.map, player.x, player.y) : null;
   }
 
   /** The manhole or ladder the local player could climb from where they stand, by the sim's own range. */
@@ -141,6 +142,17 @@ export class ClientWorld {
     const free = player !== null && player.status === 'alive' && !player.home?.station && isBunkerMap(this.map);
     const merchants = this.latest?.merchants ?? [];
     return free ? openableStation(this.map, player.x, player.y, player.home?.chest === true, phase, merchants)?.id : undefined;
+  }
+
+  /** The radio tower the local player is standing near, if any. */
+  private radioTowerBy(player: PlayerEntity | null, phase: string | undefined): WorldEntities['radioTower'] {
+    const free = player !== null && player.status === 'alive' && !isBunkerMap(this.map);
+    if (!free) return undefined;
+    const tower = radioTowerNear({ map: this.map }, player.x, player.y);
+    if (!tower) return undefined;
+    const canTrigger = phase === 'intermission';
+    const local = this.buffer.latest?.players.get(this.localId);
+    return { canTrigger, hold: local?.towerHold ?? 0 };
   }
 
   /** Advances prediction by dt and returns this frame's entities, or null before any snapshot. */
@@ -160,6 +172,7 @@ export class ClientWorld {
     const overrun = newest.snapshot.home?.overrun;
     const station = this.stationBy(shownLocal, overrun?.phase);
     const climb = this.climbBy(shownLocal);
+    const radioTower = this.radioTowerBy(shownLocal, newest.snapshot.phase);
     return {
       players,
       zombies: interpolateZombies(sample),
@@ -174,6 +187,7 @@ export class ClientWorld {
       searchable: this.searchableBy(shownLocal, newest.snapshot.openedContainers),
       ...(station ? { station } : {}),
       ...(climb ? { climb } : {}),
+      ...(radioTower ? { radioTower } : {}),
       ...(overrun ? { overrun } : {}),
       localId: this.localId,
       viewerId: viewer?.id ?? null,

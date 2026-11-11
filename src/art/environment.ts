@@ -10,6 +10,8 @@ import { buildClinic } from './environment/clinic.ts';
 import { buildDiner } from './environment/diner.ts';
 import { buildDiscount } from './environment/discount.ts';
 import { buildFireworksBus } from './environment/fireworks-bus.ts';
+import { buildRadioTower } from './environment/radio-tower.ts';
+import { buildRadioStation } from './environment/radio-station.ts';
 import { buildInterior } from './environment/floors.ts';
 import { buildBed, buildCounter, buildShelf, buildSofa, buildTable, buildWorkbench } from './environment/furniture.ts';
 import { buildGarage } from './environment/garage.ts';
@@ -102,6 +104,7 @@ export function buildEnvironment(): EnvironmentArt {
       chest: buildChest(),
       candy_bowl: buildCandyBowl(),
       fireworks_bus: buildFireworksBus(),
+      radio_tower: buildRadioTower(),
       manhole: buildManhole(),
       sewer_ladder: buildSewerLadder(),
     },
@@ -127,6 +130,7 @@ export function buildEnvironment(): EnvironmentArt {
       diner: [buildDiner()],
       garage: [buildGarage()],
       warehouse: [buildSteelWarehouse(), buildBrickWarehouse()],
+      radio_station: [buildRadioStation()],
       house: [buildHipHouse(), buildGableHouse(), buildBungalow()],
       apartment: [buildBrickApartment(), buildSlabApartment()],
       // Floors above and below are only ever seen from inside, so they borrow a house's shell.

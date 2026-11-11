@@ -2,7 +2,7 @@ import type { MapBuilder } from './map-builder.ts';
 import type { BuildingKind, PropKind, TileKind } from './protocol.ts';
 import { TILE_SIZE } from './protocol.ts';
 import { randInt, shuffle } from './rng.ts';
-import { WALK_TILES } from './town-plan.ts';
+import { rectBox, WALK_TILES } from './town-plan.ts';
 import type { Road, TownPlan } from './town-plan.ts';
 import { buildingBox } from './world-query.ts';
 import type { Box } from './world-query.ts';
@@ -137,8 +137,27 @@ function afflictBuildings(b: MapBuilder): void {
   }
 }
 
-/** The set pieces of the town itself, as opposed to the park: walls across streets and afflicted buildings. */
+/** Places the town's emergency radio tower, near the park perimeter if no radio station yard placed one. */
+function raiseRadioTower(b: MapBuilder, plan: TownPlan): void {
+  const alreadyPlaced = b.props.some((p) => p.kind === 'radio_tower');
+  if (alreadyPlaced) return;
+  const lot = rectBox(plan.park);
+  const spots = [
+    { x: lot.x1 - 64, y: lot.y0 + 64 },
+    { x: lot.x0 + 64, y: lot.y0 + 64 },
+    { x: lot.x1 - 64, y: lot.y1 - 64 },
+    { x: lot.x0 + 64, y: lot.y1 - 64 },
+  ];
+  for (const spot of spots) {
+    const placed = b.place('radio_tower', spot.x, spot.y, 16);
+    if (placed) return;
+  }
+  b.fixture('radio_tower', lot.x1 - 64, lot.y0 + 64);
+}
+
+/** The set pieces of the town itself, as opposed to the park: walls across streets, afflicted buildings, and the radio tower. */
 export function raiseTownPieces(b: MapBuilder, plan: TownPlan): void {
   raiseWalls(b, plan);
   afflictBuildings(b);
+  raiseRadioTower(b, plan);
 }

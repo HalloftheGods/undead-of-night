@@ -121,3 +121,20 @@ export function drawStation(ctx: CanvasRenderingContext2D, x: number, y: number)
 }
 
 export const STATION_ICON: MapIcon = rowsIcon(STATION, STATION_LEGEND);
+
+/** The emergency radio tower on the town map: antenna mast with red beacon. */
+export const TOWER_COLOR = '#ff4444';
+const TOWER_LEGEND: SpriteLegend = { K: MAP_INK, R: '#ff2222', W: '#ffffff', M: '#7c8494', m: '#484e68' };
+const RADIO_TOWER: readonly string[] = [
+  '..R..',
+  '.MWM.',
+  '..M..',
+  '.m.m.',
+  'm...m',
+];
+
+export function drawRadioTowerMarker(ctx: CanvasRenderingContext2D, x: number, y: number): void {
+  drawRowsCentred(ctx, x, y, RADIO_TOWER, TOWER_LEGEND);
+}
+
+export const RADIO_TOWER_ICON: MapIcon = rowsIcon(RADIO_TOWER, TOWER_LEGEND);

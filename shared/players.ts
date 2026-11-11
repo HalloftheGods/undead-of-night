@@ -22,6 +22,7 @@ import { isBunkerMap } from './home-protocol.ts';
 import { gunsFree } from './overrun.ts';
 import type { ClientInputPacket, Stance } from './protocol.ts';
 import type { PlayerState, SimState } from './sim-state.ts';
+import { updateRadioTower } from './radio-tower.ts';
 import { updateStations } from './stations.ts';
 import { takeManhole } from './take-manhole.ts';
 import { takeStairs } from './take-stairs.ts';
@@ -176,4 +177,5 @@ export function updatePlayer(sim: SimState, p: PlayerState): void {
   if (pick) takeKeepsake(sim, p, pick);
   updateSearch(sim, p);
   updateStations(sim, p);
+  updateRadioTower(sim, p);
 }
