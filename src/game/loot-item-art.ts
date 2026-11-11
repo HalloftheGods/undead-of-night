@@ -11,8 +11,15 @@ function isHudItem(type: string): type is keyof typeof HUD_SPRITES {
   return type in HUD_SPRITES;
 }
 
-/** The sprite for an item type, or null when the game has no picture of it. */
-export function lootSprite(art: ArtBook, type: string): PixelSprite | null {
+/** The end-to-end drawing of a long item, for a bag slot: upright, to be turned when the item is. */
+export function longSprite(art: ArtBook, type: string): PixelSprite | null {
+  return art.ui.longIcons?.[type as PickupType] ?? null;
+}
+
+/** The sprite for an item type, or null when the game has no picture of it. In a bag slot, a long item gets its long drawing. */
+export function lootSprite(art: ArtBook, type: string, inSlot = false): PixelSprite | null {
+  const long = inSlot ? longSprite(art, type) : null;
+  if (long) return long;
   if (WEAPONS.includes(type)) return art.ui.weaponIcons[type as WeaponId];
   if (isCandyId(type) && art.ui.candies) return art.ui.candies[type];
   if (isHudItem(type)) return art.ui[HUD_SPRITES[type]];

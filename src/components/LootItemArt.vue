@@ -1,6 +1,6 @@
 <template>
   <span class="loot-art" :title="name">
-    <img v-if="url" class="loot-art-img" :src="url" :style="{ '--art-scale': scale }" alt="" draggable="false" />
+    <img v-if="url" class="loot-art-img" :class="{ 'is-turned': turned }" :src="url" :style="{ '--art-scale': scale }" alt="" draggable="false" />
     <span v-else class="loot-art-name">{{ name }}</span>
     <span v-if="badge" class="loot-art-badge">{{ badge }}</span>
   </span>
@@ -11,9 +11,9 @@
 import { computed } from 'vue';
 import type { ArtBook } from '../art/types.ts';
 import { spriteDataUrl } from '../engine/sprite-cache.ts';
-import { lootBadge, lootSprite } from '../game/loot-item-art.ts';
+import { longSprite, lootBadge, lootSprite } from '../game/loot-item-art.ts';
 
-const { art = null, type, name, scale = 1, count, ammo } = defineProps<{
+const { art = null, type, name, scale = 1, count, ammo, lying } = defineProps<{
   art?: ArtBook | null;
   type: string;
   name: string;
@@ -21,12 +21,16 @@ const { art = null, type, name, scale = 1, count, ammo } = defineProps<{
   scale?: number;
   count?: number;
   ammo?: number;
+  /** Given for an item lying in a bag slot: a long item is then drawn end to end, on its side when turned. */
+  lying?: 'upright' | 'turned';
 }>();
 
+const inSlot = computed(() => lying !== undefined);
 const url = computed(() => {
-  const sprite = art ? lootSprite(art, type) : null;
+  const sprite = art ? lootSprite(art, type, inSlot.value) : null;
   return sprite ? spriteDataUrl(sprite) : '';
 });
+const turned = computed(() => lying === 'turned' && art !== null && longSprite(art, type) !== null);
 const badge = computed(() => lootBadge(count, ammo));
 </script>
 
@@ -45,6 +49,10 @@ const badge = computed(() => lootBadge(count, ammo));
   width: calc(var(--ap) * 15 * var(--art-scale, 1));
   height: auto;
   image-rendering: pixelated;
+}
+
+.loot-art-img.is-turned {
+  transform: rotate(90deg);
 }
 
 .loot-art-name {

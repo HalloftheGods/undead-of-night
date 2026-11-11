@@ -10,6 +10,7 @@ import { buildModeCards } from './mode-cards.ts';
 import { buildStationCards } from './station-cards.ts';
 import { buildStyleCards } from './style-cards.ts';
 import { buildLogo } from './fx/logo.ts';
+import { buildLongIcons } from './fx/long-icons.ts';
 import { buildMoodleIcons } from './fx/moodles.ts';
 import { buildVanSide } from './fx/van-side.ts';
 import { buildBookCovers } from './book-covers.ts';
@@ -20,6 +21,7 @@ export function buildUi(): UiArt {
     crosshairHead: buildCrosshairHead(),
     weaponIcons: buildWeaponIcons(),
     pickupIcons: buildPickupIcons(),
+    longIcons: buildLongIcons(),
     silverIcon: buildSilverIcon(),
     heart: buildHeart(),
     bottle: buildBottle(),

@@ -57,7 +57,7 @@
               @dragstart="onItemDragStart($event, 'container', item)"
               @dragend="onItemDragEnd"
             >
-              <LootItemArt :art :type="item.type" :name="getItemName(item.type)" :scale="getItemArtScale(item)" :count="item.count" :ammo="item.ammo" />
+              <LootItemArt :art :type="item.type" :name="getItemName(item.type)" :scale="getItemArtScale(item)" :count="item.count" :ammo="item.ammo" :lying="lyingOf(item)" />
             </div>
 
             <div
@@ -67,7 +67,7 @@
               @click.stop="onGhostClick('container')"
               @dblclick.stop="onGhostDblClick('container')"
             >
-              <LootItemArt :art :type="modalState.heldItem!.item.type" :name="getItemName(modalState.heldItem!.item.type)" :scale="getGhostArtScale()" :count="modalState.heldItem!.item.count" :ammo="modalState.heldItem!.item.ammo" />
+              <LootItemArt :art :type="modalState.heldItem!.item.type" :name="getItemName(modalState.heldItem!.item.type)" :scale="getGhostArtScale()" :count="modalState.heldItem!.item.count" :ammo="modalState.heldItem!.item.ammo" :lying="lyingOf(modalState.heldItem!.item)" />
             </div>
           </div>
         </div>
@@ -163,7 +163,7 @@
                   @dragstart="onItemDragStart($event, 'pockets', item)"
                   @dragend="onItemDragEnd"
                 >
-                  <LootItemArt :art :type="item.type" :name="getItemName(item.type)" :scale="getItemArtScale(item)" :count="item.count" :ammo="item.ammo" />
+                  <LootItemArt :art :type="item.type" :name="getItemName(item.type)" :scale="getItemArtScale(item)" :count="item.count" :ammo="item.ammo" :lying="lyingOf(item)" />
                 </div>
 
                 <div
@@ -173,7 +173,7 @@
                   @click.stop="onGhostClick('pockets')"
                   @dblclick.stop="onGhostDblClick('pockets')"
                 >
-                  <LootItemArt :art :type="modalState.heldItem!.item.type" :name="getItemName(modalState.heldItem!.item.type)" :scale="getGhostArtScale()" :count="modalState.heldItem!.item.count" :ammo="modalState.heldItem!.item.ammo" />
+                  <LootItemArt :art :type="modalState.heldItem!.item.type" :name="getItemName(modalState.heldItem!.item.type)" :scale="getGhostArtScale()" :count="modalState.heldItem!.item.count" :ammo="modalState.heldItem!.item.ammo" :lying="lyingOf(modalState.heldItem!.item)" />
                 </div>
               </div>
             </div>
@@ -212,7 +212,7 @@
                   @dragstart="onItemDragStart($event, 'candyBag', item)"
                   @dragend="onItemDragEnd"
                 >
-                  <LootItemArt :art :type="item.type" :name="getItemName(item.type)" :scale="getItemArtScale(item)" :count="item.count" :ammo="item.ammo" />
+                  <LootItemArt :art :type="item.type" :name="getItemName(item.type)" :scale="getItemArtScale(item)" :count="item.count" :ammo="item.ammo" :lying="lyingOf(item)" />
                 </div>
 
                 <div
@@ -222,7 +222,7 @@
                   @click.stop="onGhostClick('candyBag')"
                   @dblclick.stop="onGhostDblClick('candyBag')"
                 >
-                  <LootItemArt :art :type="modalState.heldItem!.item.type" :name="getItemName(modalState.heldItem!.item.type)" :scale="getGhostArtScale()" :count="modalState.heldItem!.item.count" :ammo="modalState.heldItem!.item.ammo" />
+                  <LootItemArt :art :type="modalState.heldItem!.item.type" :name="getItemName(modalState.heldItem!.item.type)" :scale="getGhostArtScale()" :count="modalState.heldItem!.item.count" :ammo="modalState.heldItem!.item.ammo" :lying="lyingOf(modalState.heldItem!.item)" />
                 </div>
               </div>
             </div>
@@ -262,7 +262,7 @@
                 @dragstart="onItemDragStart($event, 'backpack', item)"
                 @dragend="onItemDragEnd"
               >
-                <LootItemArt :art :type="item.type" :name="getItemName(item.type)" :scale="getItemArtScale(item)" :count="item.count" :ammo="item.ammo" />
+                <LootItemArt :art :type="item.type" :name="getItemName(item.type)" :scale="getItemArtScale(item)" :count="item.count" :ammo="item.ammo" :lying="lyingOf(item)" />
               </div>
 
               <div
@@ -272,7 +272,7 @@
                 @click.stop="onGhostClick('backpack')"
                 @dblclick.stop="onGhostDblClick('backpack')"
               >
-                <LootItemArt :art :type="modalState.heldItem!.item.type" :name="getItemName(modalState.heldItem!.item.type)" :scale="getGhostArtScale()" :count="modalState.heldItem!.item.count" :ammo="modalState.heldItem!.item.ammo" />
+                <LootItemArt :art :type="modalState.heldItem!.item.type" :name="getItemName(modalState.heldItem!.item.type)" :scale="getGhostArtScale()" :count="modalState.heldItem!.item.count" :ammo="modalState.heldItem!.item.ammo" :lying="lyingOf(modalState.heldItem!.item)" />
               </div>
             </div>
           </div>
@@ -438,6 +438,11 @@ function getItemName(type: string): string {
 function getItemArtScale(item: GridItem): number {
   const dims = getItemFootprint(item.type, item.rotated);
   return Math.min(2, dims.width, dims.height);
+}
+
+/** How an item lies in its slots, so a long one is drawn end to end the right way round. */
+function lyingOf(item: GridItem): 'upright' | 'turned' {
+  return item.rotated ? 'turned' : 'upright';
 }
 
 function getItemCustomProperties(item: GridItem) {

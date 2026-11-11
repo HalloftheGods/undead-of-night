@@ -379,7 +379,25 @@ export function buildWeaponIcons(): Record<WeaponId, PixelSprite> {
   return { pistol: outlined(PISTOL, 32, 14), carbine: outlined(CARBINE, 32, 14), shotgun: outlined(SHOTGUN, 32, 14) };
 }
 
+/** A sawn board leaning corner to corner, a nail at each end. */
 export const PLANK_GRID: Grid = [
+  '........zzzzx',
+  '.......zyyxw.',
+  '.......zypxw.',
+  '......zyyxw..',
+  '.....zyxyw...',
+  '.....zyxyw...',
+  '....zyyxw....',
+  '...zyyxw.....',
+  '...zyxxw.....',
+  '..zyyxw......',
+  '.zypxw.......',
+  '.zyyxw.......',
+  'xxxww........',
+];
+
+/** The earlier drawing of PLANK_GRID, kept to switch back to. */
+export const PLANK_GRID_OLD: Grid = [
   '..kzzzzzzzk..',
   '.kzyyyyyyyzk.',
   'kzyyppppyzyzk',
@@ -416,7 +434,25 @@ export const CURTAIN_GRID: Grid = [
   '.kkkkkkkkkkkk.',
 ];
 
+/** A red wrecking bar on the diagonal, corner to corner: bare steel gooseneck up top, chisel tip below. */
 export const CROWBAR_GRID: Grid = [
+  '.......ooo...',
+  '......op.nn..',
+  '......p..nn..',
+  '.........ut..',
+  '........ut...',
+  '.......ut....',
+  '......ut.....',
+  '.....ut......',
+  '....ut.......',
+  '...ut........',
+  '..on.........',
+  '.on..........',
+  'pn...........',
+];
+
+/** The earlier drawing of CROWBAR_GRID, kept to switch back to. */
+export const CROWBAR_GRID_OLD: Grid = [
   '...kppmmk.....',
   '..kpmnnmok....',
   '..kmnk..kmk...',
