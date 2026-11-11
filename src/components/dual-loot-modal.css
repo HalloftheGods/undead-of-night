@@ -40,18 +40,33 @@
   width: 100%;
   height: 100%;
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
   gap: calc(var(--ap) * 3);
   pointer-events: none;
   box-sizing: border-box;
 }
 
+/* The clear middle: the docks hug the edges and this takes whatever is left, so the survivor stays in view. */
 .center-stage-spacer {
-  flex: 0 1 auto;
-  min-width: calc(var(--ap) * 20);
+  flex: 1 1 0;
+  min-width: 0;
   pointer-events: none;
 }
+
+/* The container (when there is one) and the held-item panel under it. The panel keeps its place when empty. */
+.left-column {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: stretch;
+  gap: calc(var(--ap) * 3);
+  height: 100%;
+  min-width: calc(var(--ap) * 90);
+  pointer-events: none;
+  box-sizing: border-box;
+}
+.left-column > * { pointer-events: auto; }
 
 .loot-dock {
   pointer-events: auto;
@@ -157,19 +172,6 @@
 .close-btn { --edge: var(--blood); color: var(--blood-bright); }
 .close-btn:hover,
 .close-btn:focus-visible { --edge: var(--blood-bright); color: var(--blood-bright); }
-
-.held-item-banner {
-  display: flex;
-  align-items: center;
-  gap: calc(var(--ap) * 2);
-  background: var(--ink-raised);
-  box-shadow: 0 0 0 var(--ap) var(--amber);
-  padding: var(--ap) calc(var(--ap) * 2);
-  font-size: calc(var(--m) * 2.4);
-  flex-shrink: 0;
-}
-.held-icon { width: calc(var(--ap) * 14); height: calc(var(--ap) * 14); flex: 0 0 auto; }
-.held-hint { margin-left: auto; font-size: calc(var(--m) * 2); color: var(--bone-dim); }
 
 .container-grid-stage {
   position: relative;
@@ -361,11 +363,18 @@
   }
   .dual-loot-overlay {
     flex-direction: column;
+    justify-content: flex-start;
     overflow-y: auto;
     pointer-events: auto;
   }
   .center-stage-spacer {
     display: none;
+  }
+  /* Portrait: one column, the container and the held-item slot on top, the bag below; scroll if it is long. */
+  .left-column {
+    align-self: stretch;
+    min-width: 0;
+    height: auto;
   }
   .dock-title {
     font-size: calc(var(--m) * 2.8);

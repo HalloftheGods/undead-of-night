@@ -8,73 +8,76 @@
   >
     <div class="dual-loot-overlay">
       <!-- Left Dock: Container (Enlarged Prop with Overlaid Grid) -->
-      <section v-if="hasContainer" class="loot-dock container-dock container-panel">
-        <header class="dock-header container-header">
-          <div class="dock-title-group">
-            <h2 id="modal-title" class="dock-title">{{ modalState.containerTitle.toUpperCase() }}</h2>
-            <span class="dock-capacity">{{ modalState.containerGrid.items.length }} ITEMS</span>
-          </div>
-        </header>
+      <div class="left-column">
+        <section v-if="hasContainer" class="loot-dock container-dock container-panel">
+          <header class="dock-header container-header">
+            <div class="dock-title-group">
+              <h2 id="modal-title" class="dock-title">{{ modalState.containerTitle.toUpperCase() }}</h2>
+              <span class="dock-capacity">{{ modalState.containerGrid.items.length }} ITEMS</span>
+            </div>
+          </header>
 
-        <div class="container-grid-stage">
-          <img
-            v-if="containerArtUrl"
-            :src="containerArtUrl"
-            class="container-stage-bg-art"
-            alt=""
-            draggable="false"
-          />
-
-          <div
-            class="grid-board container-grid"
-            :style="{
-              '--cols': modalState.containerGrid.cols,
-              '--rows': modalState.containerGrid.rows,
-            }"
-          >
-            <div
-              v-for="cell in containerCells"
-              :key="`container-${cell.col}-${cell.row}`"
-              class="grid-cell"
-              :class="getCellHighlightClass('container', cell.col, cell.row)"
-              :style="getCellCustomProperties(cell.col, cell.row)"
-              @pointerenter="setHoverTile('container', cell.col, cell.row)"
-              @pointerleave="clearHoverTile('container', cell.col, cell.row)"
-              @click="onCellClick('container', cell.col, cell.row)"
-              @dragover.prevent="setHoverTile('container', cell.col, cell.row)"
-              @drop.prevent="onDropCell('container', cell.col, cell.row)"
+          <div class="container-grid-stage">
+            <img
+              v-if="containerArtUrl"
+              :src="containerArtUrl"
+              class="container-stage-bg-art"
+              alt=""
+              draggable="false"
             />
 
             <div
-              v-for="item in modalState.containerGrid.items"
-              :key="item.id"
-              class="grid-item"
-              :class="{ 'is-selected': modalState.selectedItemId === item.id }"
-              :style="getItemCustomProperties(item)"
-              draggable="true"
-              @click.stop="onItemClick('container', item)"
-              @dblclick.stop="onItemDblClick('container', item)"
-              @dragstart="onItemDragStart($event, 'container', item)"
-              @dragend="onItemDragEnd"
+              class="grid-board container-grid"
+              :style="{
+                '--cols': modalState.containerGrid.cols,
+                '--rows': modalState.containerGrid.rows,
+              }"
             >
-              <LootItemArt :art :type="item.type" :name="getItemName(item.type)" :scale="getItemArtScale(item)" :count="item.count" :ammo="item.ammo" :lying="lyingOf(item)" />
-            </div>
+              <div
+                v-for="cell in containerCells"
+                :key="`container-${cell.col}-${cell.row}`"
+                class="grid-cell"
+                :class="getCellHighlightClass('container', cell.col, cell.row)"
+                :style="getCellCustomProperties(cell.col, cell.row)"
+                @pointerenter="setHoverTile('container', cell.col, cell.row)"
+                @pointerleave="clearHoverTile('container', cell.col, cell.row)"
+                @click="onCellClick('container', cell.col, cell.row)"
+                @dragover.prevent="setHoverTile('container', cell.col, cell.row)"
+                @drop.prevent="onDropCell('container', cell.col, cell.row)"
+              />
 
-            <div
-              v-if="isGhostInGrid('container')"
-              class="grid-item is-ghost"
-              :style="ghostCustomProperties"
-              @click.stop="onGhostClick('container')"
-              @dblclick.stop="onGhostDblClick('container')"
-            >
-              <LootItemArt :art :type="modalState.heldItem!.item.type" :name="getItemName(modalState.heldItem!.item.type)" :scale="getGhostArtScale()" :count="modalState.heldItem!.item.count" :ammo="modalState.heldItem!.item.ammo" :lying="lyingOf(modalState.heldItem!.item)" />
+              <div
+                v-for="item in modalState.containerGrid.items"
+                :key="item.id"
+                class="grid-item"
+                :class="{ 'is-selected': modalState.selectedItemId === item.id }"
+                :style="getItemCustomProperties(item)"
+                draggable="true"
+                @click.stop="onItemClick('container', item)"
+                @dblclick.stop="onItemDblClick('container', item)"
+                @dragstart="onItemDragStart($event, 'container', item)"
+                @dragend="onItemDragEnd"
+              >
+                <LootItemArt :art :type="item.type" :name="getItemName(item.type)" :scale="getItemArtScale(item)" :count="item.count" :ammo="item.ammo" :lying="lyingOf(item)" />
+              </div>
+
+              <div
+                v-if="isGhostInGrid('container')"
+                class="grid-item is-ghost"
+                :style="ghostCustomProperties"
+                @click.stop="onGhostClick('container')"
+                @dblclick.stop="onGhostDblClick('container')"
+              >
+                <LootItemArt :art :type="modalState.heldItem!.item.type" :name="getItemName(modalState.heldItem!.item.type)" :scale="getGhostArtScale()" :count="modalState.heldItem!.item.count" :ammo="modalState.heldItem!.item.ammo" :lying="lyingOf(modalState.heldItem!.item)" />
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+        <HeldItemPanel :art :item="modalState.heldItem?.item ?? null" />
+      </div>
 
       <!-- Center Spacer: Open view of player character in game world -->
-      <div v-if="hasContainer" class="center-stage-spacer" />
+      <div class="center-stage-spacer" />
 
       <!-- Right Dock: Survivor Inventory -->
       <section class="loot-dock survivor-dock player-panel">
@@ -94,14 +97,6 @@
             </button>
           </div>
         </header>
-
-        <div v-if="isHoldingItem" class="held-item-banner">
-          <span class="held-icon"><LootItemArt :art :type="modalState.heldItem!.item.type" :name="heldItemDisplayName" /></span>
-          <span class="held-label">
-            HOLDING: <strong>{{ heldItemDisplayName }}</strong> ({{ heldItemDimensions.width }}x{{ heldItemDimensions.height }})
-          </span>
-          <span class="held-hint">Press R to rotate footprint. Click cell to drop. Esc to return.</span>
-        </div>
 
         <div class="gear-slots-row">
           <div
@@ -288,9 +283,10 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
+import HeldItemPanel from './HeldItemPanel.vue';
 import LootItemArt from './LootItemArt.vue';
 import { backpackDef } from '../../shared/backpack.ts';
-import { getItemFootprint, type GridFootprint, type GridItem } from '../../shared/grid-inventory.ts';
+import { getItemFootprint, type GridItem } from '../../shared/grid-inventory.ts';
 import { spriteDataUrl } from '../engine/sprite-cache.ts';
 import {
   buildGridCells,
@@ -368,20 +364,6 @@ const containerArtUrl = computed(() => {
     ? (containerArt.closed ?? containerArt.opened)
     : (containerArt.opened ?? containerArt.closed);
   return sprite ? spriteDataUrl(sprite) : '';
-});
-
-const heldItemDisplayName = computed(() => {
-  const activeHeld = modalState.heldItem;
-  const isHeldMissing = activeHeld === null;
-  if (isHeldMissing) return '';
-  return formatItemName(activeHeld.item.type);
-});
-
-const heldItemDimensions = computed<GridFootprint>(() => {
-  const activeHeld = modalState.heldItem;
-  const isHeldMissing = activeHeld === null;
-  if (isHeldMissing) return { width: 1, height: 1 };
-  return getItemFootprint(activeHeld.item.type, activeHeld.item.rotated);
 });
 
 const currentOrientationLabel = computed(() => {

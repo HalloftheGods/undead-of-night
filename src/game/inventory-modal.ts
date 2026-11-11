@@ -12,8 +12,8 @@ import { loadAutoCloseEmptyLoot } from './loot-prefs.ts';
 /** How often a shut bag checks itself against the host's hash. */
 const HEAL_CHECK_MS = 500;
 
-/** The grid inventory opens on I. Tab is the map's, so I is the free key (`DEFAULT_KEY_BINDINGS`). */
-export const INVENTORY_CODE = 'KeyI';
+/** The grid inventory opens on I or B. Tab is the map's; neither letter is in `DEFAULT_KEY_BINDINGS`. */
+export const INVENTORY_CODES: readonly string[] = ['KeyI', 'KeyB'];
 
 /** What the modal lets the window ask of it. */
 export interface InventoryPanel {
@@ -31,11 +31,11 @@ function isTypingTarget(target: EventTarget | null): boolean {
   return field || target.isContentEditable;
 }
 
-/** True if the press is the inventory key, bare, on its own and not in a text field or a rebound key. */
+/** True if the press is an inventory key (I or B), bare, on its own, not in a text field and not a key the player rebound. */
 export function isInventoryKey(event: Pick<KeyboardEvent, 'code' | 'repeat' | 'ctrlKey' | 'metaKey' | 'altKey' | 'target'>, reboundCodes: readonly string[]): boolean {
-  const isTheKey = event.code === INVENTORY_CODE && !event.repeat;
+  const isTheKey = INVENTORY_CODES.includes(event.code) && !event.repeat;
   const isBare = !event.ctrlKey && !event.metaKey && !event.altKey;
-  const isFree = !isTypingTarget(event.target) && !reboundCodes.includes(INVENTORY_CODE);
+  const isFree = !isTypingTarget(event.target) && !reboundCodes.includes(event.code);
   return isTheKey && isBare && isFree;
 }
 
@@ -123,7 +123,7 @@ export function useInventoryModal(ui: Ref<UiState>, input: Held, panel: Ref<Inve
     if (event.code === 'Escape') {
       event.preventDefault();
       panel.value?.escape();
-    } else if (event.code === INVENTORY_CODE) {
+    } else if (INVENTORY_CODES.includes(event.code)) {
       event.preventDefault();
       if (!event.repeat) hide();
     } else if (event.code === 'KeyR') {
