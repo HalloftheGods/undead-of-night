@@ -41,6 +41,29 @@
             <span class="hud-sugar-left">{{ sugar.left }}s</span>
           </li>
         </ul>
+        <!-- Survival moodles: docked bottom-right on a keyboard screen (out of the flow); last in the top-left item column on touch -->
+        <aside v-if="hasMoodles" class="hud-moodles" aria-label="Survival moodles">
+          <div
+            v-for="moodle in sortedMoodles"
+            :key="moodle.id"
+            class="hud-moodle-badge"
+            :class="`is-${moodle.severity}`"
+            :title="`${moodle.label}: ${moodle.remedy} (${Math.round(moodle.value)}%)`"
+          >
+            <SpriteImg
+              v-if="art.ui.moodles && art.ui.moodles[moodle.id]"
+              :sprite="art.ui.moodles[moodle.id]"
+              class="hud-moodle-icon"
+            />
+            <div class="hud-moodle-info">
+              <div class="hud-moodle-header">
+                <span class="hud-moodle-text">{{ moodle.label }}</span>
+                <span v-if="moodle.id !== 'bleeding'" class="hud-moodle-pct">{{ Math.round(moodle.value) }}%</span>
+              </div>
+              <span class="hud-moodle-remedy">{{ moodle.remedy }}<span v-if="moodle.key && glyph(moodle.key)" class="keys-only"> [{{ glyph(moodle.key) }}]</span></span>
+            </div>
+          </div>
+        </aside>
       </div>
 
       <!--
@@ -140,30 +163,6 @@
         </div>
       </div>
     </footer>
-
-    <!-- Survival moodles: docked bottom-right clear of central weapons and top vitals -->
-    <aside v-if="hasMoodles" class="hud-moodles" aria-label="Survival moodles">
-      <div
-        v-for="moodle in sortedMoodles"
-        :key="moodle.id"
-        class="hud-moodle-badge"
-        :class="`is-${moodle.severity}`"
-        :title="`${moodle.label}: ${moodle.remedy} (${Math.round(moodle.value)}%)`"
-      >
-        <SpriteImg
-          v-if="art.ui.moodles && art.ui.moodles[moodle.id]"
-          :sprite="art.ui.moodles[moodle.id]"
-          class="hud-moodle-icon"
-        />
-        <div class="hud-moodle-info">
-          <div class="hud-moodle-header">
-            <span class="hud-moodle-text">{{ moodle.label }}</span>
-            <span v-if="moodle.id !== 'bleeding'" class="hud-moodle-pct">{{ Math.round(moodle.value) }}%</span>
-          </div>
-          <span class="hud-moodle-remedy">{{ moodle.remedy }}</span>
-        </div>
-      </div>
-    </aside>
 
     <!-- Right of centre: clear of the numbers above and of the thumb's buttons below. -->
     <div v-if="log.length" :key="log[log.length - 1].key" class="hud-feed">
@@ -381,10 +380,6 @@ function hold(slot: BarSlot): void {
 .is-touch .hud-feed {
   bottom: calc(var(--tabbar) + var(--u) * 3);
   max-width: 30vw;
-}
-
-.is-touch.has-moodles .hud-feed {
-  bottom: calc(var(--tabbar) + var(--u) * 3 + 170px);
 }
 
 @keyframes feed-life {
@@ -848,8 +843,18 @@ function hold(slot: BarSlot): void {
   z-index: 20;
 }
 
+/*
+ * Fingers: the foot of the screen is the weapon bar, the ammo counter and the tab bar, so the badges go to the top left,
+ * last in the item column (the left thumb's stick is at the bottom). They never take a tap meant for the playfield.
+ */
 .is-touch .hud-moodles {
-  bottom: calc(var(--tabbar) + var(--u) * 3);
+  position: static;
+  align-items: flex-start;
+  pointer-events: none;
+}
+
+.is-touch .hud-moodle-badge {
+  width: min(calc(var(--u) * 200), 62vw);
 }
 
 .hud-moodle-badge {

@@ -234,7 +234,10 @@ describe('Survival Pixel Art Standards', () => {
     for (const moodle of moodles) {
       expect(typeof moodle.remedy).toBe('string');
       expect(moodle.remedy.length).toBeGreaterThan(0);
+      // A key name is not part of the words: the HUD shows it only where there is a keyboard.
+      expect(moodle.remedy).not.toMatch(/\[.\]/);
     }
+    expect(moodles.find((m) => m.id === 'bleeding')?.key).toBe('KeyH');
   });
 
   it('renders all 16x16 moodle pixel art sprites adhering to palette rules', () => {

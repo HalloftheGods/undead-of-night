@@ -132,6 +132,8 @@ export interface MoodleView {
   readonly severity: 'low' | 'medium' | 'high' | 'critical';
   readonly value: number;
   readonly remedy: string;
+  /** The key that applies the remedy; the HUD shows it only where there is a keyboard. */
+  readonly key?: 'KeyH';
 }
 
 export interface Banner {
@@ -334,7 +336,8 @@ export function buildMoodles(needs?: SurvivalNeeds): readonly MoodleView[] {
       label: isHeavy ? 'HEAVY BLEEDING' : 'BLEEDING',
       severity: isHeavy ? 'critical' : 'high',
       value: 100,
-      remedy: isHeavy ? 'Bandage wound urgently [H]' : 'Use bandage [H]',
+      remedy: isHeavy ? 'Bandage wound urgently' : 'Use bandage',
+      key: 'KeyH',
     });
   }
 
