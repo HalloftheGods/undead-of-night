@@ -85,7 +85,7 @@ function takeGun(p: PlayerState, item: PickupState, weapon: WeaponId): boolean {
 }
 
 /** False leaves the item on the ground: it would have done nothing for this player. */
-function applyPickup(p: PlayerState, item: PickupState): boolean {
+export function applyPickup(p: PlayerState, item: PickupState): boolean {
   const { type } = item;
   const bagType = bagTypeOf(type);
   // A thing for the bag stays on the ground when the bag has no slot for it, as when a count is at its cap.
@@ -138,7 +138,9 @@ export function takeItem(p: PlayerState, item: PickupState): boolean {
   if (isKitPickup(type)) return takeKit(p, type);
   if (isTreasurePickup(type)) return takeTreasure(p, item);
   if (isSalvagePickup(type)) return takeSalvage(p, item, type);
-  const used = isAmmoPickup(type) ? takeAmmo(p, item, type) : takeGun(p, item, type);
+  // Only a gun or a box of rounds is left here. Anything else, a bag counter such as a firework included, is not ours to take.
+  const isGun = Object.hasOwn(WEAPONS, type);
+  const used = isAmmoPickup(type) ? takeAmmo(p, item, type) : isGun && takeGun(p, item, type as WeaponId);
   if (used) syncGun(p);
   return used;
 }

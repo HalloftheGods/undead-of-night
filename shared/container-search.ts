@@ -13,8 +13,9 @@ import type { PlayerState, SimState } from './sim-state.ts';
 import { emit } from './sim-state.ts';
 import { pickWeighted } from './rng.ts';
 import { makeNoise } from './zombie-senses.ts';
-import { maybeCarAlarm, scroungeBottle } from './bottles.ts';
-import { stashIn, takeStash } from './throwables.ts';
+import { BOTTLE_CARRY, BOTTLE_FIND_CHANCE, maybeCarAlarm } from './bottles.ts';
+import { stashIn } from './throwables.ts';
+import { roomFor } from './bag.ts';
 import { candiesInBowl, candyIn, STICKY_SEARCH_SCALE, sugarOf, takeCandy, type CandyBowlLoot, type CandyId } from './candy.ts';
 import { hasKeepsake, RABBIT_LUCK } from './keepsakes.ts';
 import { isBooth, sellFireworks } from './fireworks-booth.ts';
@@ -161,6 +162,12 @@ function revealCache(sim: SimState): boolean {
   return true;
 }
 
+/** Whether a bottle turns up for a searcher with room for one. It goes in the grid; taking it from there counts it. */
+function turnsUpBottle(sim: SimState, p: PlayerState): boolean {
+  const room = p.bottles < BOTTLE_CARRY && roomFor(p, 'bottle');
+  return room && sim.rng() < BOTTLE_FIND_CHANCE;
+}
+
 function findIn(sim: SimState, p: PlayerState, id: number): Finds {
   const { loot } = sim.containers[id];
   const treasure = loot !== null && isHomeFind(loot.type) ? loot : null;
@@ -210,10 +217,11 @@ function finishSearch(sim: SimState, p: PlayerState, id: number): void {
   if (treasure) pack(treasure.type, treasure.rounds);
   if (ordinary) pack(ordinary.type, ordinary.rounds);
 
-  const bottle = ordinary === null && serviceLoot === null && boxAmmo === null && container.kind !== 'bowl' && scroungeBottle(sim, p);
+  const bottle = ordinary === null && serviceLoot === null && boxAmmo === null && container.kind !== 'bowl' && turnsUpBottle(sim, p);
   if (bottle) pack('bottle');
 
-  const thrown = takeStash(p, stashIn(sim.map.seed, container));
+  // Fireworks and bottles are laid in the grid like anything else and counted only when taken out of it.
+  const thrown = stashIn(sim.map.seed, container);
   let bowlLoot: CandyBowlLoot | null = null;
   let candyFound: CandyId | null = null;
   const isCandyBowl = container.kind === 'bowl';

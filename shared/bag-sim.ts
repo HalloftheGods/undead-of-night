@@ -2,10 +2,16 @@ import { bagWanted, isBagItemType, retierBag, syncBag, validateLayout, adoptLayo
 import type { BagCommit, BagItemType, BagWanted } from './bag.ts';
 import { MAX_COMMIT_DROPS, MAX_COMMIT_LAYOUT } from './bag-commit.ts';
 import { FORTIFICATION_ITEMS } from './fortifications.ts';
-import { spawnPickup, takeItem } from './pickups.ts';
+import { takeFromContainer } from './container-take.ts';
+import { autoPackItem, createInventoryGrid, placeItem } from './grid-inventory.ts';
+import { spawnPickup } from './pickups.ts';
 import type { PickupType } from './protocol.ts';
-import { isCandyId, takeCandy, type CandyId } from './candy.ts';
+import { isCandyId, type CandyId } from './candy.ts';
 import type { PlayerState, SimState } from './sim-state.ts';
+
+/** The size of the grid a searched container's contents are laid out in. */
+const CONTAINER_COLS = 5;
+const CONTAINER_ROWS = 4;
 
 /** Types that have a pickup to leave on the ground. Bottles, fireworks and fountains have none, so they cannot be dropped. */
 type Droppable = Extract<BagItemType, PickupType>;
@@ -71,21 +77,18 @@ export function applyBagCommit(sim: SimState, p: PlayerState, commit: BagCommit)
   if (commit.container) {
     const containerState = sim.containers[commit.container.id];
     if (containerState) {
-      containerState.items = [...commit.container.items];
-      for (const item of commit.container.taken) {
-        if (isCandyId(item.type)) {
-          takeCandy(p, item.type as CandyId);
-        } else {
-          takeItem(p, {
-            id: '0',
-            type: item.type as PickupType,
-            rounds: item.ammo ?? item.count ?? 0,
-            x: p.x,
-            y: p.y,
-            ttl: null,
-          });
-        }
+      const held = new Map((containerState.items ?? []).map((item) => [item.id, item]));
+      const contents = createInventoryGrid(CONTAINER_COLS, CONTAINER_ROWS);
+      for (const item of commit.container.items) placeItem(contents, { ...item });
+      // Only what the host's container really held can be taken, and each piece once.
+      for (const claimed of commit.container.taken) {
+        const real = held.get(claimed.id);
+        if (!real || real.type !== claimed.type) continue;
+        held.delete(claimed.id);
+        const left = takeFromContainer(p, real);
+        if (left && !placeItem(contents, { ...left })) autoPackItem(contents, left);
       }
+      containerState.items = contents.items;
       for (const item of commit.container.deposited ?? []) {
         const isCandy = isCandyId(item.type);
         if (isCandy) {
