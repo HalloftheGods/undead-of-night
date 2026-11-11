@@ -382,6 +382,47 @@ describe('Dual-Grid Container Looting & Inventory Modal', () => {
       expect(state.backpackGrid.items).toHaveLength(1);
       expect(state.backpackGrid.items[0].id).toBe('ammo-1');
     });
+
+    it('quick transfers a held item when double-clicked from ghost or held state', () => {
+      const state = createDualLootState();
+      placeItem(state.containerGrid, {
+        id: 'knife-1',
+        type: 'knife',
+        x: 0,
+        y: 0,
+        rotated: false,
+      });
+
+      pickUpItemFromGrid(state, 'container', 'knife-1');
+      expect(state.heldItem).not.toBeNull();
+      expect(state.containerGrid.items).toHaveLength(0);
+
+      const transferred = quickTransferBetweenInventories(state, 'container', 'knife-1');
+      expect(transferred).toBe(true);
+      expect(state.heldItem).toBeNull();
+      expect(state.backpackGrid.items).toHaveLength(1);
+      expect(state.backpackGrid.items[0].id).toBe('knife-1');
+    });
+
+    it('quick transfers a held candy to candy bag when double clicked', () => {
+      const state = createDualLootState();
+      placeItem(state.containerGrid, {
+        id: 'candy-1',
+        type: 'sour_skulls',
+        x: 0,
+        y: 0,
+        rotated: false,
+      });
+
+      pickUpItemFromGrid(state, 'container', 'candy-1');
+      expect(state.heldItem).not.toBeNull();
+
+      const transferred = quickTransferBetweenInventories(state, 'container', 'candy-1');
+      expect(transferred).toBe(true);
+      expect(state.heldItem).toBeNull();
+      expect(state.candyBagGrid.items).toHaveLength(1);
+      expect(state.candyBagGrid.items[0].id).toBe('candy-1');
+    });
   });
 
   describe('Component Structure & Styling Contracts', () => {

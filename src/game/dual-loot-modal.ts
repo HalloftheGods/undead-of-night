@@ -1,3 +1,5 @@
+import { CANDIES, isCandyId } from '../../shared/candy.ts';
+import type { ContainerKind } from '../../shared/containers.ts';
 import type { ArtBook } from '../art/types.ts';
 import { backpackDef, type BackpackTier } from '../../shared/backpack.ts';
 import {
@@ -13,7 +15,7 @@ import {
   type InventoryGrid,
 } from '../../shared/grid-inventory.ts';
 
-export type GridIdentifier = 'container' | 'pockets' | 'backpack';
+export type GridIdentifier = 'container' | 'pockets' | 'backpack' | 'candyBag';
 export type GearSlotId = 'primary' | 'secondary' | 'sidearm' | 'armor';
 export type TileHighlightState = 'valid' | 'invalid' | 'none';
 
@@ -53,10 +55,12 @@ export interface DualLootModalProps {
   /** The game's sprites, for drawing each item; without it items fall back to their names. */
   art?: ArtBook | null;
   containerTitle?: string;
+  containerKind?: ContainerKind;
   containerGrid?: InventoryGrid;
   backpackTier?: BackpackTier;
   backpackGrid?: InventoryGrid;
   pocketsGrid?: InventoryGrid;
+  candyBagGrid?: InventoryGrid;
   equippedPrimary?: GridItem | null;
   equippedSecondary?: GridItem | null;
   equippedSidearm?: GridItem | null;
@@ -94,9 +98,11 @@ export interface DualLootState {
   containerGrid: InventoryGrid;
   pocketsGrid: InventoryGrid;
   backpackGrid: InventoryGrid;
+  candyBagGrid: InventoryGrid;
   gear: GearEquipState;
   backpackTier: BackpackTier;
   containerTitle: string;
+  containerKind?: ContainerKind;
   heldItem: HeldItemState | null;
   selectedItemId: string | null;
   selectedGridId: GridIdentifier | null;
@@ -126,6 +132,9 @@ export const ITEM_DISPLAY_NAMES: Record<string, string> = {
 };
 
 export function formatItemName(type: string): string {
+  if (isCandyId(type)) {
+    return CANDIES[type].name;
+  }
   const customName = ITEM_DISPLAY_NAMES[type];
   const hasCustomName = customName !== undefined;
   if (hasCustomName) {
@@ -176,11 +185,13 @@ export function createDualLootState(options?: DualLootModalProps): DualLootState
   const containerGrid = options?.containerGrid ?? createInventoryGrid(5, 4);
   const pocketsGrid = options?.pocketsGrid ?? createInventoryGrid(2, 2);
   const backpackGrid = options?.backpackGrid ?? createInventoryGrid(tierConfig.cols, tierConfig.rows);
+  const candyBagGrid = options?.candyBagGrid ?? createInventoryGrid(6, 2);
 
   return {
     containerGrid,
     pocketsGrid,
     backpackGrid,
+    candyBagGrid,
     gear: {
       primary: options?.equippedPrimary ?? options?.primary ?? null,
       secondary: options?.equippedSecondary ?? options?.secondary ?? null,
@@ -189,6 +200,7 @@ export function createDualLootState(options?: DualLootModalProps): DualLootState
     },
     backpackTier: tier,
     containerTitle: options?.containerTitle ?? 'Inspected Container',
+    containerKind: options?.containerKind,
     heldItem: null,
     selectedItemId: null,
     selectedGridId: null,
@@ -207,6 +219,10 @@ export function resolveGridById(
   if (isPockets) {
     return state.pocketsGrid;
   }
+  const isCandyBag = gridId === 'candyBag';
+  if (isCandyBag) {
+    return state.candyBagGrid;
+  }
   return state.backpackGrid;
 }
 
@@ -216,7 +232,8 @@ export function computeTileHighlight(
   row: number,
   hoveredCol: number | null,
   hoveredRow: number | null,
-  heldItem: GridItem | null
+  heldItem: GridItem | null,
+  gridId?: GridIdentifier
 ): TileHighlightState {
   const hasNoHover = hoveredCol === null || hoveredRow === null;
   const hasNoHeldItem = heldItem === null;
@@ -233,6 +250,12 @@ export function computeTileHighlight(
 
   if (isNotCovered) {
     return 'none';
+  }
+
+  const isCandyBag = gridId === 'candyBag';
+  const isCandyItem = isCandyId(heldItem.type) || heldItem.type === 'candy';
+  if (isCandyBag && !isCandyItem) {
+    return 'invalid';
   }
 
   const canFit = canPlaceItem(
@@ -317,6 +340,12 @@ export function placeHeldItemInGrid(
   const activeHeld = state.heldItem;
   const hasNoHeldItem = activeHeld === null;
   if (hasNoHeldItem) {
+    return false;
+  }
+
+  const isCandyBag = gridId === 'candyBag';
+  const isCandyItem = isCandyId(activeHeld.item.type) || activeHeld.item.type === 'candy';
+  if (isCandyBag && !isCandyItem) {
     return false;
   }
 
@@ -472,6 +501,54 @@ export function transferItemDirectly(
   });
 }
 
+export function quickTransferHeldItem(state: DualLootState): boolean {
+  const activeHeld = state.heldItem;
+  const hasNoHeld = activeHeld === null;
+  if (hasNoHeld) {
+    return false;
+  }
+  const isFromGear = activeHeld.source.kind === 'gear';
+  if (isFromGear) {
+    return false;
+  }
+
+  const fromGridId = activeHeld.source.gridId;
+  const itemToPlace = activeHeld.item;
+  const isContainerSource = fromGridId === 'container';
+
+  if (isContainerSource) {
+    const isCandy = isCandyId(itemToPlace.type) || itemToPlace.type === 'candy';
+    if (isCandy) {
+      const packedInCandyBag = autoPackItem(state.candyBagGrid, itemToPlace);
+      if (packedInCandyBag) {
+        state.heldItem = null;
+        return true;
+      }
+    }
+
+    const packedInBackpack = autoPackItem(state.backpackGrid, itemToPlace);
+    if (packedInBackpack) {
+      state.heldItem = null;
+      return true;
+    }
+
+    const packedInPockets = autoPackItem(state.pocketsGrid, itemToPlace);
+    if (packedInPockets) {
+      state.heldItem = null;
+      return true;
+    }
+    return false;
+  }
+
+  const packedInContainer = autoPackItem(state.containerGrid, itemToPlace);
+  if (packedInContainer) {
+    state.heldItem = null;
+    return true;
+  }
+
+  return false;
+}
+
 export function quickTransferBetweenInventories(
   state: DualLootState,
   fromGridId: GridIdentifier,
@@ -481,11 +558,24 @@ export function quickTransferBetweenInventories(
   const sourceItem = sourceGrid.items.find((candidate) => candidate.id === itemId);
   const sourceItemMissing = sourceItem === undefined;
   if (sourceItemMissing) {
+    const isHeld = state.heldItem !== null && state.heldItem.item.id === itemId;
+    if (isHeld) {
+      return quickTransferHeldItem(state);
+    }
     return false;
   }
 
   const isContainerSource = fromGridId === 'container';
   if (isContainerSource) {
+    const isCandy = isCandyId(sourceItem.type) || sourceItem.type === 'candy';
+    if (isCandy) {
+      const packedInCandyBag = autoPackItem(state.candyBagGrid, sourceItem);
+      if (packedInCandyBag) {
+        removeItem(sourceGrid, itemId);
+        return true;
+      }
+    }
+
     const packedInBackpack = autoPackItem(state.backpackGrid, sourceItem);
     if (packedInBackpack) {
       removeItem(sourceGrid, itemId);

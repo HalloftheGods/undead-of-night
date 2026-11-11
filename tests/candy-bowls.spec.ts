@@ -3,6 +3,7 @@ import { candyIn, DOORSTEP_HOMES } from '../shared/candy.ts';
 import { containerInReach, SEARCH_SEC, townContainers } from '../shared/containers.ts';
 import type { Container } from '../shared/containers.ts';
 import { PLAYER_RADIUS, TICK_RATE } from '../shared/constants.ts';
+import { applyBagCommit } from '../shared/bag-sim.ts';
 import { GameSimulation } from '../shared/simulation.ts';
 import type { PlayerState, SimState } from '../shared/sim-state.ts';
 import { stashIn } from '../shared/throwables.ts';
@@ -62,21 +63,46 @@ describe('Halloween night candy bowls', () => {
     }
   });
 
-  it('gives its candy to whoever searches it', () => {
+  it('opens a looting grid with candy when searched', () => {
     const { sim, state, p, bowl } = atAFullBowl();
     searchFor(sim, bowl);
-    expect(p.candy).toEqual([candyIn(state.map.seed, bowl)]);
     expect(state.containers[bowl.id].opened).toBe(true);
+    expect(state.containers[bowl.id].items).toBeDefined();
+    const items = state.containers[bowl.id].items!;
+    expect(items.length).toBeGreaterThanOrEqual(1);
+    expect(items.length).toBeLessThanOrEqual(2);
     const [opened] = eventsOf(sim.snapshot(), 'container_opened');
-    expect(opened.candy).toBe(p.candy[0]);
+    expect(opened.title).toMatch(/^TAKE (ONE|TWO)$/);
+    expect(opened.items).toEqual(items);
+
+    applyBagCommit(state, p, {
+      layout: [],
+      drop: [],
+      container: {
+        id: bowl.id,
+        items: [],
+        taken: items,
+      },
+    });
+    expect(p.candy).toEqual(items.map((it) => it.type));
   });
 
   it('gives its candy however much is in the bag already: the bag has no bottom', () => {
     const { sim, state, p, bowl } = atAFullBowl();
     p.candy = Array.from({ length: 40 }, () => 'ghost_gum' as const);
     searchFor(sim, bowl);
-    expect(p.candy).toHaveLength(41);
     expect(state.containers[bowl.id].opened).toBe(true);
+    const items = state.containers[bowl.id].items!;
+    applyBagCommit(state, p, {
+      layout: [],
+      drop: [],
+      container: {
+        id: bowl.id,
+        items: [],
+        taken: items,
+      },
+    });
+    expect(p.candy).toHaveLength(40 + items.length);
   });
 
   it('lights its front step like a jack-o\'-lantern', () => {

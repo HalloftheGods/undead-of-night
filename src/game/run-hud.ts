@@ -364,6 +364,7 @@ export class RunHud {
   tick(frame: HudFrame): void {
     const { world, scene, renderer, ms } = frame;
     this.lastScene = scene;
+    this.town?.revealPlayers(scene.players);
     const notDue = ms - this.lastHudMs < HUD_INTERVAL_MS;
     if (notDue) return;
     this.lastHudMs = ms;

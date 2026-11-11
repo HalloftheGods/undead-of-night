@@ -2,8 +2,9 @@ import { bagWanted, isBagItemType, retierBag, syncBag, validateLayout, adoptLayo
 import type { BagCommit, BagItemType, BagWanted } from './bag.ts';
 import { MAX_COMMIT_DROPS, MAX_COMMIT_LAYOUT } from './bag-commit.ts';
 import { FORTIFICATION_ITEMS } from './fortifications.ts';
-import { spawnPickup } from './pickups.ts';
+import { spawnPickup, takeItem } from './pickups.ts';
 import type { PickupType } from './protocol.ts';
+import { isCandyId, takeCandy, type CandyId } from './candy.ts';
 import type { PlayerState, SimState } from './sim-state.ts';
 
 /** Types that have a pickup to leave on the ground. Bottles, fireworks and fountains have none, so they cannot be dropped. */
@@ -67,6 +68,37 @@ export function reconcileBag(sim: SimState, p: PlayerState): void {
 export function applyBagCommit(sim: SimState, p: PlayerState, commit: BagCommit): boolean {
   const tooBig = commit.layout.length > MAX_COMMIT_LAYOUT || commit.drop.length > MAX_COMMIT_DROPS;
   if (tooBig || p.status !== 'alive') return false;
+  if (commit.container) {
+    const containerState = sim.containers[commit.container.id];
+    if (containerState) {
+      containerState.items = [...commit.container.items];
+      for (const item of commit.container.taken) {
+        if (isCandyId(item.type)) {
+          takeCandy(p, item.type as CandyId);
+        } else {
+          takeItem(p, {
+            id: '0',
+            type: item.type as PickupType,
+            rounds: item.ammo ?? item.count ?? 0,
+            x: p.x,
+            y: p.y,
+            ttl: null,
+          });
+        }
+      }
+      for (const item of commit.container.deposited ?? []) {
+        const isCandy = isCandyId(item.type);
+        if (isCandy) {
+          const candyIndex = p.candy.indexOf(item.type as CandyId);
+          const hasCandy = candyIndex >= 0;
+          if (hasCandy) p.candy.splice(candyIndex, 1);
+        } else {
+          const isBagItem = isBagItemType(item.type);
+          if (isBagItem) take(p, item.type, item.count ?? 1);
+        }
+      }
+    }
+  }
   for (const row of commit.drop) {
     const real = isBagItemType(row.type) && isDroppable(row.type) && Number.isFinite(row.count) && row.count >= 1;
     if (real) leaveOnGround(sim, p, row.type, Math.floor(row.count));

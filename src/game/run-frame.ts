@@ -37,6 +37,7 @@ export class RunFrame {
   private heldUntilMs = 0;
   /** The low-health heart, one clock for its sound and the screen's red pulse. */
   private readonly heart = new Heartbeat();
+  private lastHealth = 1;
   /** Where the survivor stands, for the overlay to ring (player-anchor.ts). */
   private readonly anchor = new PlayerAnchor();
 
@@ -120,9 +121,18 @@ export class RunFrame {
     this.lastScene = scene;
     const sending = transport !== null && !over;
     if (sending) this.host.parts.inputs.send(transport, world, aim, dirX, dirY, dt);
-    renderer.effects.setHeartPulse(tickRunAudio(this.host.parts.audio, world, scene, dt, this.heart));
-    renderer.effects.setHealth(healthFraction(world.localPlayer));
-    renderer.effects.setDesaturation(deathFade(world.localPlayer?.status, over));
+    const localPlayer = world.localPlayer;
+    const isBleeding = localPlayer?.needs?.bleeding === true;
+    const currentHealth = healthFraction(localPlayer);
+    const tookDamage = currentHealth < this.lastHealth && this.lastHealth > 0;
+    this.lastHealth = currentHealth;
+    if (tookDamage) {
+      this.heart.kick();
+    }
+    renderer.effects.setBleeding(isBleeding);
+    renderer.effects.setHeartPulse(tickRunAudio(this.host.parts.audio, world, scene, dt, this.heart, isBleeding));
+    renderer.effects.setHealth(currentHealth);
+    renderer.effects.setDesaturation(deathFade(localPlayer?.status, over));
     renderer.effects.setStairsFade(fadeAlpha);
     const hasTransitionExpired = !isTransitioning && state.stairsTransition !== null;
     if (hasTransitionExpired) state.stairsTransition = null;

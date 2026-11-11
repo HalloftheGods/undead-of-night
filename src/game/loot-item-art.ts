@@ -1,4 +1,4 @@
-/** Which of the game's own sprites stands for an item in the inventory grid. */
+import { isCandyId } from '../../shared/candy.ts';
 import type { PickupType, WeaponId } from '../../shared/protocol.ts';
 import type { ArtBook, PixelSprite } from '../art/types.ts';
 
@@ -14,6 +14,7 @@ function isHudItem(type: string): type is keyof typeof HUD_SPRITES {
 /** The sprite for an item type, or null when the game has no picture of it. */
 export function lootSprite(art: ArtBook, type: string): PixelSprite | null {
   if (WEAPONS.includes(type)) return art.ui.weaponIcons[type as WeaponId];
+  if (isCandyId(type) && art.ui.candies) return art.ui.candies[type];
   if (isHudItem(type)) return art.ui[HUD_SPRITES[type]];
   return art.ui.pickupIcons[type as PickupType] ?? null;
 }

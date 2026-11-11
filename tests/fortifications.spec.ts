@@ -302,8 +302,7 @@ describe('Fortification Drops, Pickup Collection & Inventory Caps', () => {
   });
 
   it('collects ground fortification pickups into player materials', () => {
-    const map = generateWorldMap(1234);
-    const sim = createSimState({ map, difficulty: 'stay_close' });
+    const sim = createSimState({ seed: 1234, difficulty: 'stay_close' });
     const player = createPlayer({ id: 'p1', name: 'Builder', token: null, skin: 0 }, { x: 100, y: 100 });
     sim.players = [player];
     sim.pickups = [];
@@ -325,8 +324,7 @@ describe('Fortification Drops, Pickup Collection & Inventory Caps', () => {
   });
 
   it('leaves excess planks on the ground when player inventory is full', () => {
-    const map = generateWorldMap(5678);
-    const sim = createSimState({ map, difficulty: 'stay_close' });
+    const sim = createSimState({ seed: 5678, difficulty: 'stay_close' });
     const player = createPlayer({ id: 'p1', name: 'Survivor', token: null, skin: 0 }, { x: 200, y: 200 });
     player.backpackTier = 'satchel';
     player.materials.planks = 2; // Cap for satchel

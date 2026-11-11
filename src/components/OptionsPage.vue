@@ -13,6 +13,14 @@
           <TouchOptions />
         </section>
 
+        <section class="options-card px-frame" aria-labelledby="options-gameplay">
+          <h3 id="options-gameplay" class="options-card-head">Gameplay</h3>
+          <div class="options-analytics">
+            <PixelSwitch label="Auto-close empty loot" :on="autoCloseLoot" @change="setAutoCloseLoot" />
+            <p class="options-note">Automatically closes the loot screen when the last item is taken from a container.</p>
+          </div>
+        </section>
+
         <section class="options-card px-frame" aria-labelledby="options-privacy">
           <h3 id="options-privacy" class="options-card-head">Privacy</h3>
           <div class="options-analytics">
@@ -27,9 +35,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { consent, openPrivacy } from '../game/analytics/index.ts';
 import type { UiState } from '../game/hud-state.ts';
+import { loadAutoCloseEmptyLoot, saveAutoCloseEmptyLoot } from '../game/loot-prefs.ts';
 import DisplayOptions from './DisplayOptions.vue';
 import MenuLink from './MenuLink.vue';
 import MotionOptions from './MotionOptions.vue';
@@ -39,6 +48,12 @@ import TouchOptions from './TouchOptions.vue';
 
 defineProps<{ ui: UiState }>();
 const emit = defineEmits<{ close: [] }>();
+
+const autoCloseLoot = ref(loadAutoCloseEmptyLoot());
+function setAutoCloseLoot(on: boolean): void {
+  autoCloseLoot.value = on;
+  saveAutoCloseEmptyLoot(on);
+}
 
 const analyticsOn = computed(() => consent.allowed());
 const analyticsNote = computed(() =>

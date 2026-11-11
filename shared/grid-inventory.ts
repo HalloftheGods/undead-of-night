@@ -26,6 +26,12 @@ export interface InventoryGrid {
 
 export const ITEM_FOOTPRINTS: Record<string, GridFootprint> = {
   ammo_box: { width: 1, height: 1 },
+  pistol_ammo: { width: 1, height: 1 },
+  carbine_ammo: { width: 1, height: 1 },
+  shells: { width: 1, height: 1 },
+  bandage: { width: 1, height: 1 },
+  antibiotics: { width: 1, height: 1 },
+  disinfectant: { width: 1, height: 1 },
   nails: { width: 1, height: 1 },
   firework: { width: 1, height: 1 },
   fountain: { width: 1, height: 1 },

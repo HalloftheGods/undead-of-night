@@ -140,3 +140,121 @@
 .cl-points li::marker {
   color: var(--band-deep);
 }
+
+/* Noise in the Night: a blackletter-weight masthead between double rules, like a broadsheet's nameplate. */
+.cl-masthead {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--k) * 6);
+  padding-bottom: calc(var(--k) * 8);
+  border-bottom: calc(var(--k) * 4) double var(--print);
+  text-align: center;
+}
+
+.cl-leaf .cl-masthead-title {
+  font-family: var(--chunky);
+  font-size: calc(var(--k) * 40);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--print);
+  text-shadow: calc(var(--k) * 2) calc(var(--k) * 2) 0 var(--band);
+}
+
+.cl-dateline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--k) * 10);
+  width: 100%;
+  padding-top: calc(var(--k) * 4);
+  border-top: calc(var(--k) * 1) solid var(--print);
+  font-family: var(--chunky);
+  font-size: calc(var(--k) * 12);
+  text-transform: uppercase;
+  color: var(--print);
+}
+
+.cl-front,
+.cl-index {
+  gap: calc(var(--k) * 12);
+}
+
+.cl-leaf .cl-note.is-lead .cl-title {
+  font-size: calc(var(--k) * 36);
+}
+
+.cl-inside {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--k) * 4);
+  padding-top: calc(var(--k) * 8);
+  border-top: calc(var(--k) * 4) solid var(--band);
+}
+
+.cl-inside-head {
+  font-family: var(--chunky);
+  font-size: calc(var(--k) * 14);
+  text-transform: uppercase;
+  color: var(--band-deep);
+}
+
+.cl-inside-list {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--k) * 3);
+  list-style: none;
+  font-family: var(--book);
+  font-size: calc(var(--k) * 15);
+  color: var(--print);
+}
+
+.cl-inside-list .cl-kind {
+  margin-right: calc(var(--k) * 6);
+}
+
+.cl-inside-more {
+  font-family: var(--hand);
+  font-size: calc(var(--k) * 18);
+  color: var(--hand-ink, #1f3b8a);
+}
+
+.cl-issue-number {
+  font-family: var(--chunky);
+  font-size: calc(var(--k) * 13);
+  color: var(--band-deep);
+}
+
+/* Issues Rack Container and Slide Navigation */
+.issues-rack-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--u) * 4);
+  width: 100%;
+}
+
+.issues-slide-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--u) * 5);
+  margin-top: calc(var(--u) * 2);
+}
+
+.issues-nav-indicator {
+  font-family: var(--chunky);
+  font-size: calc(var(--u) * 5);
+  text-transform: uppercase;
+  color: var(--bone-dim);
+  letter-spacing: 0.08em;
+}
+
+.issues-nav-btn {
+  min-width: 44px;
+  min-height: 44px;
+  padding-inline: calc(var(--u) * 3);
+  font-size: calc(var(--u) * 5);
+}

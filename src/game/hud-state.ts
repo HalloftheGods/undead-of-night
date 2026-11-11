@@ -2,6 +2,8 @@ import type { BackpackTier } from '../../shared/backpack.ts';
 import type { FortificationInventory } from '../../shared/fortifications.ts';
 import { streetAt } from '../../shared/street-names.ts';
 import type { StreetSpot } from '../../shared/street-names.ts';
+import type { ContainerKind } from '../../shared/containers.ts';
+import type { GridItem } from '../../shared/grid-inventory.ts';
 import type { PaletteId, UiScale } from './display-prefs.ts';
 import { KEEPSAKES } from '../../shared/keepsakes.ts';
 import type { KeepsakeId } from '../../shared/protocol.ts';
@@ -240,6 +242,12 @@ export interface UiState {
   readonly muted: boolean;
   readonly palette: PaletteId;
   readonly uiScale: UiScale;
+  readonly openedContainer?: {
+    readonly id: number;
+    readonly kind?: ContainerKind;
+    readonly title?: string;
+    readonly items: readonly GridItem[];
+  } | null;
 }
 
 export function buildHud(snapshot: SnapshotPacket, local: PlayerEntity, spectating: string | null): HudState {

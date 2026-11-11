@@ -1,7 +1,8 @@
-// What's new, in the players' own words: the notes the changelog book (changelog.ts) lays out.
+// Noise in the Night: the notes the daily newspaper (changelog.ts) lays out.
 //
-// To add an update, put a new note at the TOP of CHANGE_NOTES. Nothing else needs to change: the book lays the
-// notes out two to a page, newest first, and lists them on its front page. Older notes live in change-notes-earlier.ts.
+// To add an update, put a new note at the TOP of CHANGE_NOTES. Each ship day becomes an issue numbered like
+// the game version (e.g. 2026-11-07 -> Issue 26.11.7). The day's first note leads the issue front page, and the rest
+// run as stories inside. Older notes live in change-notes-earlier.ts.
 
 import { EARLIER_NOTES } from './change-notes-earlier.ts';
 

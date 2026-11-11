@@ -26,15 +26,18 @@
           :key="inventory.openings.value"
           ref="inventoryPanel"
           :art="ui.art"
-          container-title="Nearby"
+          :container-title="inventory.working.value.containerTitle || 'Nearby'"
+          :container-kind="inventory.working.value.containerKind"
           :backpack-tier="inventory.working.value.tier"
           :backpack-grid="inventory.working.value.pack"
           :pockets-grid="inventory.working.value.pockets"
+          :candy-bag-grid="inventory.working.value.candyBag"
           :container-grid="inventory.working.value.container"
           :equipped-primary="inventory.working.value.gear.primary"
           :equipped-secondary="inventory.working.value.gear.secondary"
           :equipped-sidearm="inventory.working.value.gear.sidearm"
-          @close="inventory.hide()"
+          @close="onInventoryClose"
+          @transfer="inventory.onTransfer()"
         />
         <EmoteWheel :art="ui.art" :enabled="emotesOn" />
         <RoomInvite v-if="ui.onlineRoom && !ui.paused && ui.hud.teammates.length === 0" :room="ui.onlineRoom" :is-public="ui.onlinePublic" />
@@ -121,6 +124,7 @@ import WaveBanner from './components/WaveBanner.vue';
 import KillCallout from './components/KillCallout.vue';
 import WorkbenchScreen from './components/WorkbenchScreen.vue';
 import { privacyOpen, startAnalytics } from './game/analytics/index.ts';
+import { CONTAINER_LABEL } from '../shared/containers.ts';
 import { GameController } from './game/game-controller.ts';
 import { aimsCursor } from './game/home-screens.ts';
 import { useInventoryModal, type InventoryPanel } from './game/inventory-modal.ts';
@@ -133,7 +137,21 @@ const splashing = ref(shouldShowSplash(window.location.search));
 const canvasRef = useTemplateRef<HTMLCanvasElement>('canvasRef');
 const pausedBook = ref<TitlePage | null>(null);
 const inventoryPanel = useTemplateRef<InventoryPanel>('inventoryPanel');
-const inventory = useInventoryModal(ui, game.input, inventoryPanel, (commit) => game.sim?.bagCommand(LOCAL_PLAYER_ID, commit));
+const inventory = useInventoryModal(ui, game.input, inventoryPanel, (commit) => game.sendBag(commit));
+
+function onInventoryClose(): void {
+  inventory.hide();
+  if (ui.value.openedContainer) {
+    (ui.value as { openedContainer?: null }).openedContainer = null;
+  }
+}
+
+watch(() => ui.value.openedContainer, (loot) => {
+  if (loot && loot.items.length > 0) {
+    const title = loot.title ?? (loot.kind ? CONTAINER_LABEL[loot.kind] : 'Container');
+    inventory.showContainer(loot.id, title, loot.items, loot.kind);
+  }
+});
 
 function openInventory(): void {
   game.closeBackpack();

@@ -2,6 +2,7 @@ import { characterOf } from './characters.ts';
 import { rollFind } from './container-loot.ts';
 import { containerInReach, SEARCH_SEC, townContainers } from './containers.ts';
 import type { Container, ContainerLoot } from './containers.ts';
+import { autoPackItem, createInventoryGrid } from './grid-inventory.ts';
 import type { PickupType } from './protocol.ts';
 import { TICK_DT } from './constants.ts';
 import { isBunkerMap } from './home-protocol.ts';
@@ -14,7 +15,7 @@ import { pickWeighted } from './rng.ts';
 import { makeNoise } from './zombie-senses.ts';
 import { maybeCarAlarm, scroungeBottle } from './bottles.ts';
 import { stashIn, takeStash } from './throwables.ts';
-import { candyIn, STICKY_SEARCH_SCALE, sugarOf, takeCandy } from './candy.ts';
+import { candiesInBowl, candyIn, STICKY_SEARCH_SCALE, sugarOf, takeCandy, type CandyBowlLoot, type CandyId } from './candy.ts';
 import { hasKeepsake, RABBIT_LUCK } from './keepsakes.ts';
 import { isBooth, sellFireworks } from './fireworks-booth.ts';
 import { AMMO_PICKUPS } from './constants.ts';
@@ -38,8 +39,28 @@ export function stopSearch(p: PlayerState): void {
 
 function startSearch(sim: SimState, p: PlayerState): void {
   const free = p.searchHeld && !p.searchSpent && !p.moving;
-  const target = free ? containerInReach(sim.map, p.x, p.y, (id) => sim.containers[id].opened) : null;
+  if (!free) return;
+  const target = containerInReach(sim.map, p.x, p.y);
   if (!target) return;
+  const state = sim.containers[target.id];
+  if (state.opened) {
+    const bowlLoot = target.kind === 'bowl' ? candiesInBowl(sim.map.seed, target) : null;
+    emit(sim, {
+      type: 'container_opened',
+      playerId: p.id,
+      container: target.id,
+      x: p.x,
+      y: p.y,
+      found: (state.items?.length ?? 0) > 0,
+      noisy: false,
+      items: state.items ?? [],
+      reopen: true,
+      kind: target.kind,
+      ...(bowlLoot ? { title: bowlLoot.label } : {}),
+    });
+    p.searchSpent = true;
+    return;
+  }
   p.searchingId = target.id;
   const stickyScale = 1 - (1 - STICKY_SEARCH_SCALE) * sugarOf(p, 'sticky_fingers');
   p.searchLeft = SEARCH_SEC[target.kind] * stickyScale;
@@ -171,29 +192,75 @@ function finishSearch(sim: SimState, p: PlayerState, id: number): void {
   const serviceLoot = ordinary === null ? scroungeEmergencyVehicle(sim, container) : null;
   const dumpsterLoot = ordinary === null && serviceLoot === null ? scroungeDumpster(sim, p, container) : null;
   const boxAmmo = ordinary === null && serviceLoot === null ? scroungeBoxAmmo(sim, p, container) : null;
-  if (serviceLoot) spawnPickup(sim, serviceLoot.type, p.x, p.y, serviceLoot.rounds);
-  if (dumpsterLoot) spawnPickup(sim, dumpsterLoot.type, p.x, p.y, dumpsterLoot.rounds);
-  if (boxAmmo) spawnPickup(sim, boxAmmo.type, p.x, p.y, boxAmmo.rounds);
-  const foundLoot = ordinary !== null || treasure !== null || serviceLoot !== null || dumpsterLoot !== null || boxAmmo !== null;
+
+  const grid = createInventoryGrid(5, 4);
+  let itemId = 1;
+  const pack = (type: string, rounds = 0) => {
+    autoPackItem(grid, {
+      id: `cont-${id}-${itemId++}`,
+      type,
+      rotated: false,
+      ...(rounds > 0 ? { ammo: rounds } : {}),
+    });
+  };
+
+  if (serviceLoot) pack(serviceLoot.type, serviceLoot.rounds);
+  if (dumpsterLoot) pack(dumpsterLoot.type, dumpsterLoot.rounds);
+  if (boxAmmo) pack(boxAmmo.type, boxAmmo.rounds);
+  if (treasure) pack(treasure.type, treasure.rounds);
+  if (ordinary) pack(ordinary.type, ordinary.rounds);
+
+  const bottle = ordinary === null && serviceLoot === null && boxAmmo === null && container.kind !== 'bowl' && scroungeBottle(sim, p);
+  if (bottle) pack('bottle');
+
+  const thrown = takeStash(p, stashIn(sim.map.seed, container));
+  let bowlLoot: CandyBowlLoot | null = null;
+  let candyFound: CandyId | null = null;
+  const isCandyBowl = container.kind === 'bowl';
+  if (isCandyBowl) {
+    bowlLoot = candiesInBowl(sim.map.seed, container);
+    for (const candy of bowlLoot.candies) pack(candy);
+  } else {
+    candyFound = thrown ? null : candyIn(sim.map.seed, container);
+    if (candyFound) pack(candyFound);
+  }
+
+  const stash = thrown ?? (candyFound || bowlLoot ? 'candy' : null);
+  if (thrown) pack(thrown);
+
+  state.items = [...grid.items];
+
+  const foundLoot = grid.items.length > 0;
   const rollsClue = !foundLoot && container.kind !== 'bowl' && sim.rng() < MAP_CLUE_CHANCE;
   const clue = rollsClue && revealCache(sim);
   const found = foundLoot || clue;
   if (noisy) makeNoise(sim, p.x, p.y, CLATTER_RADIUS * noise);
-  if (treasure) spawnPickup(sim, treasure.type, p.x, p.y, treasure.rounds);
-  if (ordinary) spawnPickup(sim, ordinary.type, p.x, p.y, ordinary.rounds);
-  const bottle = ordinary === null && serviceLoot === null && boxAmmo === null && container.kind !== 'bowl' && scroungeBottle(sim, p);
-  const thrown = takeStash(p, stashIn(sim.map.seed, container));
-  const candy = thrown ? null : takeCandy(p, candyIn(sim.map.seed, container));
-  const stash = thrown ?? (candy ? 'candy' : null);
+
   maybeCarAlarm(sim, container);
-  emit(sim, { type: 'container_opened', playerId: p.id, container: id, x: p.x, y: p.y, found: found || stash !== null, noisy, ...(bottle ? { bottle } : {}), ...(stash ? { stash } : {}), ...(candy ? { candy } : {}), ...(clue ? { clue: true as const } : {}) });
+  emit(sim, {
+    type: 'container_opened',
+    playerId: p.id,
+    container: id,
+    kind: container.kind,
+    x: p.x,
+    y: p.y,
+    found: found || stash !== null,
+    noisy,
+    items: grid.items,
+    ...(bottle ? { bottle } : {}),
+    ...(stash ? { stash } : {}),
+    ...(candyFound ? { candy: candyFound } : {}),
+    ...(bowlLoot ? { title: bowlLoot.label } : {}),
+    ...(clue ? { clue: true as const } : {})
+  });
   stopSearch(p);
   p.searchSpent = true;
 }
 
 /** Ends a search the player or a teammate has put a stop to. */
 function keepSearching(sim: SimState, p: PlayerState, id: number, hurt: boolean): void {
-  const interrupted = p.moving || hurt;
+  const isBleeding = p.needs?.bleeding === true;
+  const interrupted = p.moving || (hurt && !isBleeding);
   if (interrupted) p.searchSpent = true;
   const stopped = interrupted || !p.searchHeld || sim.containers[id].opened;
   if (stopped) stopSearch(p);

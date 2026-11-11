@@ -440,6 +440,7 @@ export const FORTIFICATION_LOOT: Record<BuildingKind | 'outdoors', Fortification
   school: { odds: 0.20, table: { crowbar: 2, nails: 2, sheet_curtain: 1 } },
   police: { odds: 0.30, table: { crowbar: 3, hammer_tool: 1, plank: 1 } },
   gun_shop: { odds: 0.20, table: { crowbar: 2, hammer_tool: 1 } },
+  radio_station: { odds: 0.20, table: { sheet_curtain: 2, crowbar: 1, nails: 1 } },
   outdoors: { odds: 0.10, table: { plank: 2, nails: 1 } },
 };
 

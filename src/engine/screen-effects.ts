@@ -55,6 +55,8 @@ export class ScreenEffects {
   private hurt = 0;
   private flash = 0;
   private health = 1;
+  private bleeding = false;
+  private bleedPulseBoost = 0;
   /** 0..1, the heartbeat's swell this frame (src/game/heartbeat.ts), so the red beats with the heart. */
   private heartPulse = 0;
   private desaturation = 0;
@@ -84,6 +86,8 @@ export class ScreenEffects {
     this.hurt = 0;
     this.flash = 0;
     this.health = 1;
+    this.bleeding = false;
+    this.bleedPulseBoost = 0;
     this.heartPulse = 0;
     this.desaturation = 0;
     this.desaturationTarget = 0;
@@ -103,9 +107,19 @@ export class ScreenEffects {
 
   addHurt(amount: number): void {
     this.hurt = Math.min(1, this.hurt + amount);
+    this.bleedPulseBoost = Math.min(1, this.bleedPulseBoost + 0.6);
+  }
+
+  setBleeding(bleeding: boolean): void {
+    this.bleeding = bleeding;
   }
 
   setHealth(fraction: number): void {
+    const tookDamage = fraction < this.health && this.health > 0 && fraction >= 0;
+    if (tookDamage) {
+      const drop = this.health - fraction;
+      this.bleedPulseBoost = Math.min(1, this.bleedPulseBoost + 0.5 + drop * 2);
+    }
     this.health = fraction;
   }
 
@@ -125,6 +139,7 @@ export class ScreenEffects {
     this.time += dt;
     this.trauma = Math.max(0, this.trauma - SHAKE_DECAY * dt);
     this.hurt = Math.max(0, this.hurt - HURT_DECAY * dt);
+    this.bleedPulseBoost = Math.max(0, this.bleedPulseBoost - 1.4 * dt);
     this.flash = Math.max(0, this.flash - FLASH_DECAY * dt);
     const toward = this.desaturationTarget - this.desaturation;
     const step = Math.min(Math.abs(toward), DESATURATE_RATE * dt);
@@ -136,15 +151,22 @@ export class ScreenEffects {
   }
 
   private vignetteStrength(): number {
-    let lowHealth = 0;
+    let beatStrength = 0;
     const isLowHealth = this.health > 0 && this.health < LOW_HEALTH;
-    if (isLowHealth) {
-      const severity = 1 - this.health / LOW_HEALTH;
-      // Reduced motion holds the red steady instead of throbbing.
-      const pulse = this.reducedMotion ? 0.7 : 0.45 + 0.55 * this.heartPulse;
-      lowHealth = (0.25 + 0.5 * severity) * pulse;
+    const isBleeding = this.bleeding && this.health > 0;
+    const hasActiveBeat = isLowHealth || isBleeding;
+
+    if (hasActiveBeat) {
+      const healthSeverity = isLowHealth ? 1 - this.health / LOW_HEALTH : 0;
+      const baseSeverity = isBleeding ? Math.max(0.35, healthSeverity) : healthSeverity;
+      const boost = this.bleedPulseBoost;
+      const severity = Math.min(1, baseSeverity + 0.35 * boost);
+      const pulseSwing = this.reducedMotion
+        ? 0.7 + 0.2 * boost
+        : (0.4 - 0.2 * boost) + (0.6 + 0.4 * boost) * this.heartPulse;
+      beatStrength = (0.28 + 0.5 * severity) * pulseSwing;
     }
-    return Math.min(1, Math.max(this.hurt, lowHealth));
+    return Math.min(1, Math.max(this.hurt, beatStrength));
   }
 
   draw(ctx: CanvasRenderingContext2D, width: number, height: number): void {

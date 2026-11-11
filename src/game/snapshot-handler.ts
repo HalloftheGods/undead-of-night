@@ -1,6 +1,7 @@
 import { KEEPSAKES } from '../../shared/keepsakes.ts';
 import { displayName } from '../../shared/callsign.ts';
 import { isBunkerSeed } from '../../shared/home-protocol.ts';
+import { townContainers } from '../../shared/containers.ts';
 import type { GameEvent, GameOverStats, PlayerEntity, SnapshotPacket } from '../../shared/protocol.ts';
 import type { ClientWorld } from './client-world.ts';
 import { recordGameFinished, recordLevelReached } from './level-progress.ts';
@@ -163,6 +164,18 @@ export class SnapshotHandler {
         toX: event.x,
         toY: event.y,
       };
+    }
+    const openedContainer = event.type === 'container_opened' && event.playerId === world.localId;
+    if (openedContainer && event.items && event.items.length > 0) {
+      const containerKind = event.kind ?? (event.container !== undefined && (world as any).map ? townContainers((world as any).map)[event.container]?.kind : undefined);
+      this.host.publish({
+        openedContainer: {
+          id: event.container,
+          kind: containerKind,
+          title: event.title,
+          items: event.items,
+        },
+      });
     }
   }
 

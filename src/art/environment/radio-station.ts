@@ -82,14 +82,14 @@ function front(s: Shell): void {
   c.rect(left + 12, winTop, 44, 12, ink[0]);
   c.rect(left + 12, winTop, 44, 1, metal[2]);
   c.rect(left + 12, winTop, 1, 12, metal[2]);
-  glass(c, left + 14, winTop + 2, 40, 8, teal[2]);
+  glass(c, left + 14, winTop + 2, 40, 8);
   bars(c, left + 14, winTop + 2, 40, 8);
 
   // Production room window (right of door)
   c.rect(doorR + 10, winTop, 44, 12, ink[0]);
   c.rect(doorR + 10, winTop, 44, 1, metal[2]);
   c.rect(doorR + 10, winTop, 1, 12, metal[2]);
-  glass(c, doorR + 12, winTop + 2, 40, 8, teal[2]);
+  glass(c, doorR + 12, winTop + 2, 40, 8);
   bars(c, doorR + 12, winTop + 2, 40, 8);
 
   // Steel entrance doorway with awning

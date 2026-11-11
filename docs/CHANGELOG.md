@@ -2,6 +2,16 @@
 
 All notable changes to the Undead of Night: Last Round game are documented in this file.
 
+## [2026-11-11] - Noise in the Night Daily Newspaper
+
+### Added
+- "Noise in the Night" daily newspaper replacing the generic changelog book, featured as book #01 on the News Stand.
+- Dedicated portrait-style Issues Rack (`PaperIssuesLayout.vue`) displaying daily issues 5 to a slide with pagination navigation.
+- Single-issue printed broadsheet reader (`PaperSingleIssue.vue`) for opening and browsing individual daily issues with page turns.
+- Daily issue grouping by ship day, mapped directly to version numbers (e.g. 2026-11-07 becomes Issue 26.11.7).
+- Front page broadsheet layout with masthead, dateline, lead story headline, and teases for inside stories.
+- Pixel cover art for Noise in the Night displaying woodblock typography, moonlit photo, and newsprint columns.
+
 ## [2026-11-10] - Dumpsters, map cache clues, and knife cooldown
 
 ### Added

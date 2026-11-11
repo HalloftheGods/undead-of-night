@@ -31,7 +31,7 @@
   <CandyMagazinePage v-else-if="nav.page === 'candy'" @close="close" />
   <TownGuidePage v-else-if="nav.page === 'guide'" @close="close" />
   <RecordsPage v-else-if="nav.page === 'records'" :ui @close="close" />
-  <ChangelogPage v-else-if="nav.page === 'changelog'" :version="APP_VERSION" @close="close" />
+  <ChangelogPage v-else-if="nav.page === 'changelog'" :art="ui.art" :version="APP_VERSION" @close="close" />
   <SoundTestPage v-else-if="nav.page === 'sound'" :ui @close="close" />
   <RadioPage v-else-if="nav.page === 'radio'" :ui @close="close" />
   <ControlsPage v-else-if="nav.page === 'controls'" @close="close" />

@@ -15,6 +15,7 @@ import type { PlayerState, SimState } from '../shared/sim-state.ts';
 import { GameSimulation } from '../shared/simulation.ts';
 import { generateWorldMap } from '../shared/world-map.ts';
 import { buildingAt, circleHitsSolid } from '../shared/world-query.ts';
+import { createDefaultSurvivalNeeds } from '../shared/survival-needs.ts';
 import { addRoamer, addZombie, eventsOf, input, quietSim, SEED, stateOf, steps } from './helpers/sim-harness.ts';
 
 const SEEDS = [1, 2, 3, 4, 5, 6];
@@ -177,6 +178,18 @@ describe('searching', () => {
     hold(sim, 2, false);
     sim.step();
     hold(sim, 3);
+    steps(sim, ticksFor(container));
+    expect(state.containers[container.id].opened).toBe(true);
+  });
+
+  it('is not undone by damage when bleeding', () => {
+    const { sim, state, p, container } = setup();
+    p.needs = { ...createDefaultSurvivalNeeds(), bleeding: true };
+    hold(sim);
+    steps(sim, 10);
+    p.health -= 10;
+    sim.step();
+    expect(p.search).toBeGreaterThan(0);
     steps(sim, ticksFor(container));
     expect(state.containers[container.id].opened).toBe(true);
   });

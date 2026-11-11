@@ -28,10 +28,10 @@ export class Heartbeat {
   private untilNext = 0;
   private since = Number.POSITIVE_INFINITY;
 
-  /** True on the frame a beat lands. Off the low-health band (or down) it rests, and the next beat comes at once. */
-  tick(dt: number, health: number): boolean {
+  /** True on the frame a beat lands. Off the low-health band or when not bleeding (or down) it rests, and the next beat comes at once. */
+  tick(dt: number, health: number, bleeding = false): boolean {
     this.since += dt;
-    const racing = health > 0 && health < LOW_HEALTH;
+    const racing = (health > 0 && health < LOW_HEALTH) || (bleeding && health > 0);
     if (!racing) {
       this.untilNext = 0;
       return false;
@@ -39,9 +39,16 @@ export class Heartbeat {
     this.untilNext -= dt;
     const waiting = this.untilNext > 0;
     if (waiting) return false;
-    this.untilNext = beatPeriod(health);
+    const effectiveHealth = bleeding ? Math.min(health, LOW_HEALTH * 0.9) : health;
+    this.untilNext = beatPeriod(effectiveHealth);
     this.since = 0;
     return true;
+  }
+
+  /** Immediately pulses the heartbeat, called when damage lands. */
+  kick(): void {
+    this.since = 0;
+    this.untilNext = Math.min(this.untilNext, 0.25);
   }
 
   /** How swollen the current beat is, 0..1. */

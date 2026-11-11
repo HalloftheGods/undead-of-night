@@ -1,5 +1,6 @@
 // Data definitions for the Books section library overlay.
 
+import { changeIssues, issueLabel, PAPER_TITLE } from './changelog.ts';
 import type { TitlePage } from './title-menu.ts';
 
 export interface BookDef {
@@ -12,10 +13,21 @@ export interface BookDef {
   readonly pagesCount: string;
 }
 
+const PAPER_ISSUES = changeIssues();
+
 export const BOOKS_CATALOG: readonly BookDef[] = [
   {
-    id: 'howto',
+    id: 'changelog',
     number: '01',
+    tag: 'NEWSPAPER',
+    title: PAPER_TITLE,
+    subtitle: issueLabel(PAPER_ISSUES[0]),
+    description: "The town's daily paper: every update to the game, one issue per day, with back issues to the very first night.",
+    pagesCount: `${PAPER_ISSUES.length} Issues`,
+  },
+  {
+    id: 'howto',
+    number: '02',
     tag: 'MANUAL',
     title: 'How to Play',
     subtitle: 'Field Operations & Tactics',
@@ -24,7 +36,7 @@ export const BOOKS_CATALOG: readonly BookDef[] = [
   },
   {
     id: 'candy',
-    number: '02',
+    number: '03',
     tag: 'MAGAZINE',
     title: 'Candy Magazine',
     subtitle: 'The Sweet Tooth - Issue #1',
@@ -33,7 +45,7 @@ export const BOOKS_CATALOG: readonly BookDef[] = [
   },
   {
     id: 'guide',
-    number: '03',
+    number: '04',
     tag: 'FIELD GUIDE',
     title: 'Town Guide',
     subtitle: 'Sector Maps & Architecture',
@@ -42,7 +54,7 @@ export const BOOKS_CATALOG: readonly BookDef[] = [
   },
   {
     id: 'records',
-    number: '04',
+    number: '05',
     tag: 'ARCHIVES',
     title: 'Records',
     subtitle: 'The Survivors Ledger',

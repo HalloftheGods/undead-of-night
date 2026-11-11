@@ -1,14 +1,95 @@
 import { describe, expect, it } from 'vitest';
-import { pagesLabel, openOf, turnWithin } from '../src/game/book-turn.ts';
-import { CHANGE_NOTES, changeLeaves, notePage, noteDate, NOTES_PER_LEAF } from '../src/game/changelog.ts';
+import { openOf, pagesLabel, turnWithin } from '../src/game/book-turn.ts';
+import {
+  CHANGE_NOTES,
+  changeIssues,
+  changeLeaves,
+  ISSUES_PER_SLIDE,
+  issueLabel,
+  issueLeaves,
+  issuePage,
+  issueToCardDef,
+  issueVersion,
+  noteDate,
+  PAPER_TITLE,
+  STORIES_PER_LEAF,
+} from '../src/game/changelog.ts';
 
-describe('the changelog book', () => {
-  it('opens on a front page, then every note two to a page, newest first', () => {
-    const leaves = changeLeaves();
+describe('Noise in the Night daily paper', () => {
+  it('formats issue versions as YY.M.D', () => {
+    expect(PAPER_TITLE).toBe('Noise in the Night');
+    expect(issueVersion('2026-11-07')).toBe('26.11.7');
+    expect(issueVersion('2026-11-10')).toBe('26.11.10');
+  });
+
+  it('groups notes into daily issues newest first with chronological issue numbers from 1', () => {
+    const issues = changeIssues();
+    expect(issues.length).toBe(4);
+    // Newest issue is 2026-11-10 with chronological number 4
+    expect(issues[0].date).toBe('2026-11-10');
+    expect(issues[0].version).toBe('26.11.10');
+    expect(issues[0].issueNumber).toBe(4);
+    expect(issueLabel(issues[0])).toBe('Issue #4 (v26.11.10)');
+
+    // Earliest issue is 2026-11-07 with chronological number 1
+    const earliest = issues[issues.length - 1];
+    expect(earliest.date).toBe('2026-11-07');
+    expect(earliest.version).toBe('26.11.7');
+    expect(earliest.issueNumber).toBe(1);
+    expect(issueLabel(earliest)).toBe('Issue #1 (v26.11.7)');
+
+    // All original notes are preserved across the issues
+    const allNotes = issues.flatMap((issue) => [issue.lead, ...issue.stories]);
+    expect(allNotes).toEqual(CHANGE_NOTES);
+  });
+
+  it('converts an issue into portrait card metadata with 5 issues per slide standard', () => {
+    expect(ISSUES_PER_SLIDE).toBe(5);
+    const issues = changeIssues();
+    const newestCard = issueToCardDef(issues[0]);
+    expect(newestCard.id).toBe('26.11.10');
+    expect(newestCard.number).toBe('04');
+    expect(newestCard.tag).toBe('v26.11.10');
+    expect(newestCard.title).toBe(issues[0].lead.title);
+    expect(newestCard.subtitle).toBe(noteDate(issues[0].date));
+    expect(newestCard.description).toBe(issues[0].lead.deck);
+    expect(newestCard.pagesCount).toContain('Stories');
+
+    const earliestCard = issueToCardDef(issues[issues.length - 1]);
+    expect(earliestCard.id).toBe('26.11.7');
+    expect(earliestCard.number).toBe('01');
+    expect(earliestCard.tag).toBe('v26.11.7');
+  });
+
+  it('generates single issue leaves with front page and story leaves', () => {
+    const issues = changeIssues();
+    const issue = issues[0];
+    const leaves = issueLeaves(issue);
     expect(leaves[0].kind).toBe('front');
-    const shown = leaves.flatMap((leaf) => (leaf.kind === 'notes' ? leaf.notes : []));
-    expect(shown).toEqual(CHANGE_NOTES);
-    expect(leaves).toHaveLength(1 + Math.ceil(CHANGE_NOTES.length / NOTES_PER_LEAF));
+    if (leaves[0].kind === 'front') {
+      expect(leaves[0].issue.version).toBe(issue.version);
+    }
+    const expectedLeaves = 1 + Math.ceil(issue.stories.length / STORIES_PER_LEAF);
+    expect(leaves).toHaveLength(expectedLeaves);
+
+    const insideStories = leaves.flatMap((leaf) => (leaf.kind === 'stories' ? leaf.notes : []));
+    expect(insideStories).toEqual(issue.stories);
+  });
+
+  it('opens with a Back Issues index, then issues with front pages and story leaves', () => {
+    const leaves = changeLeaves();
+    expect(leaves[0].kind).toBe('index');
+    expect(leaves[1].kind).toBe('front');
+    if (leaves[1].kind === 'front') {
+      expect(leaves[1].issue.version).toBe('26.11.10');
+    }
+
+    const collectedNotes = leaves.flatMap((leaf) => {
+      if (leaf.kind === 'front') return [leaf.issue.lead];
+      if (leaf.kind === 'stories') return leaf.notes;
+      return [];
+    });
+    expect(collectedNotes).toEqual(CHANGE_NOTES);
   });
 
   it('keeps every note complete and its id unique', () => {
@@ -21,13 +102,27 @@ describe('the changelog book', () => {
     }
   });
 
-  it('a note added at the top lands on page 2 and pushes the rest along', () => {
-    const fresh = { id: 'cellars', date: '2026-11-08', kind: 'new' as const, title: 'Cellars', deck: 'Down you go.', points: ['Stairs.'] };
+  it('adding a note for a new day creates a new front page at page 2', () => {
+    const fresh = {
+      id: 'fresh-bunker-day',
+      date: '2026-11-11',
+      kind: 'new' as const,
+      title: 'Bunker Expansion',
+      deck: 'A new floor uncovered.',
+      points: ['Stairs lead down.'],
+    };
     const notes = [fresh, ...CHANGE_NOTES];
+    const issues = changeIssues(notes);
+    expect(issues[0].version).toBe('26.11.11');
+    expect(issues[0].lead.id).toBe('fresh-bunker-day');
+
     const leaves = changeLeaves(notes);
-    expect(leaves[1].kind === 'notes' && leaves[1].notes[0].id).toBe('cellars');
-    expect(notePage('cellars', notes)).toBe(2);
-    expect(notePage(CHANGE_NOTES[1].id, notes)).toBe(3);
+    expect(leaves[1].kind).toBe('front');
+    if (leaves[1].kind === 'front') {
+      expect(leaves[1].issue.version).toBe('26.11.11');
+    }
+    expect(issuePage('26.11.11', notes)).toBe(2);
+    expect(issuePage('26.11.10', notes)).toBeGreaterThan(2);
   });
 
   it('dates read the way the rest of the game writes them', () => {

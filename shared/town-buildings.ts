@@ -122,7 +122,7 @@ function forecourt(b: MapBuilder, col: number, bottom: number): void {
 /** A concrete compound beside the radio station where its towering radio mast and sirens stand. */
 function radioTowerYard(b: MapBuilder, col: number, bottom: number): void {
   const area = rectBox({ c0: col, c1: col + TOWER_YARD_W_TILES - 1, r0: bottom - TOWER_YARD_H_TILES, r1: bottom });
-  b.fill(area, 'concrete');
+  b.fill(area, 'floor_concrete');
   const midX = Math.round((col + (TOWER_YARD_W_TILES - 1) / 2) * TILE_SIZE);
   const baseY = Math.round((bottom - 1) * TILE_SIZE);
   b.fixture('radio_tower', midX, baseY);

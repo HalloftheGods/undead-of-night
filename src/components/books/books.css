@@ -10,12 +10,12 @@
 
 /* Portrait cards list: uniform sizing with the arcade play setup screen (SetupPicks) */
 .book-cards {
-  --per-row: 4;
-  --card: min(calc(var(--u) * 120), calc((100vw - var(--u) * 40 - var(--u) * 6 * 3) / 4), calc((100vh - var(--u) * 80) * 0.62));
+  --per-row: 5;
+  --card: min(calc(var(--u) * 105), calc((100vw - var(--u) * 40 - var(--u) * 6 * 4) / 5), calc((100vh - var(--u) * 80) * 0.58));
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: calc(var(--u) * 6);
+  gap: calc(var(--u) * 5);
   max-width: 100%;
   margin: 0;
   padding: 0;

@@ -280,7 +280,7 @@ export class AudioEngine {
 
   /** One beat of the low-health heart, timed by src/game/heartbeat.ts so the screen beats with it. */
   heartbeat(health: number): void {
-    this.mixer?.play('heartbeat', { local: true, gain: 0.9 - health });
+    this.mixer?.play('heartbeat', { local: true, gain: Math.max(0.25, 0.9 - health) });
   }
 
   get volume(): number {

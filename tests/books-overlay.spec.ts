@@ -4,9 +4,9 @@ import { BOOKS_CATALOG } from '../src/game/books-data.ts';
 import { closeBook, closePage, openBook, openPage, TITLE_HOME } from '../src/game/title-nav.ts';
 
 describe('books catalog', () => {
-  it('defines the four canonical books in order', () => {
-    expect(BOOKS_CATALOG.map((b) => b.id)).toEqual(['howto', 'candy', 'guide', 'records']);
-    expect(BOOKS_CATALOG.map((b) => b.number)).toEqual(['01', '02', '03', '04']);
+  it('defines the five canonical books in order with Noise in the Night first', () => {
+    expect(BOOKS_CATALOG.map((b) => b.id)).toEqual(['changelog', 'howto', 'candy', 'guide', 'records']);
+    expect(BOOKS_CATALOG.map((b) => b.number)).toEqual(['01', '02', '03', '04', '05']);
   });
 
   it('provides non-empty titles, subtitles, tags and descriptions', () => {
@@ -21,9 +21,9 @@ describe('books catalog', () => {
 });
 
 describe('book cover art generation', () => {
-  it('generates 56x72 pixel sprites for all four books', () => {
+  it('generates 56x72 pixel sprites for all five books', () => {
     const covers = buildBookCovers();
-    expect(Object.keys(covers)).toEqual(['howto', 'candy', 'guide', 'records']);
+    expect(Object.keys(covers)).toEqual(['changelog', 'howto', 'candy', 'guide', 'records']);
 
     for (const [id, sprite] of Object.entries(covers)) {
       expect(sprite.w).toBe(BOOK_CARD_W);

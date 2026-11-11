@@ -1,10 +1,13 @@
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch, type Ref } from 'vue';
 import type { BagCommit } from '../../shared/bag.ts';
+import type { ContainerKind } from '../../shared/containers.ts';
+import type { GridItem } from '../../shared/grid-inventory.ts';
 import { loadKeyBindings } from './controls-prefs.ts';
 import { aimsCursor } from './home-screens.ts';
 import type { UiState } from './hud-state.ts';
 import type { InputManager } from './input-manager.ts';
 import { LocalBag, type BagWorking } from './local-bag.ts';
+import { loadAutoCloseEmptyLoot } from './loot-prefs.ts';
 
 /** How often a shut bag checks itself against the host's hash. */
 const HEAL_CHECK_MS = 500;
@@ -75,6 +78,27 @@ export function useInventoryModal(ui: Ref<UiState>, input: Held, panel: Ref<Inve
     return true;
   }
 
+  function showContainer(containerId: number, containerTitle: string, items: readonly GridItem[] = [], containerKind?: ContainerKind): boolean {
+    const hud = ui.value.hud;
+    const canShow = inventoryReachable(ui.value) && hud !== null;
+    if (!canShow) return false;
+    bag.sync(hud);
+    working.value = bag.open(hud, containerId, containerTitle, items, containerKind);
+    openings.value += 1;
+    input.letGoButtons();
+    input.setEnabled(false);
+    isOpen.value = true;
+    return true;
+  }
+
+  function onTransfer(): void {
+    if (working.value && working.value.containerId !== null && working.value.containerId !== undefined) {
+      if (working.value.container.items.length === 0 && loadAutoCloseEmptyLoot()) {
+        hide();
+      }
+    }
+  }
+
   function hide(): void {
     if (!isOpen.value) return;
     panel.value?.settle();
@@ -129,5 +153,5 @@ export function useInventoryModal(ui: Ref<UiState>, input: Held, panel: Ref<Inve
     if (isOpen.value) input.setEnabled(true);
   });
 
-  return { isOpen, working, openings, show, hide };
+  return { isOpen, working, openings, show, showContainer, hide, onTransfer };
 }

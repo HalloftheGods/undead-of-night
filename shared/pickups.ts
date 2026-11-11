@@ -95,7 +95,7 @@ function applyPickup(p: PlayerState, item: PickupState): boolean {
   return taken;
 }
 
-function takeItem(p: PlayerState, item: PickupState): boolean {
+export function takeItem(p: PlayerState, item: PickupState): boolean {
   const { type } = item;
   const isBandage = type === 'bandage';
   if (isBandage) {

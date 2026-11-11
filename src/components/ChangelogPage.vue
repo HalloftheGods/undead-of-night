@@ -1,42 +1,38 @@
 <template>
-  <section class="px-title-scale mag-screen" :aria-label="CHANGELOG_TITLE" @pointerdown="pages.beginSwipe" @pointerup="pages.finishSwipe">
-    <PrintedBook :book="open" :turn :mode :leaves>
-      <template #page="{ leaf, side, folio }">
-        <ChangeLeafPage :key="leaf.id" :leaf :side :folio :notes="CHANGE_NOTES" :version @open="pages.goTo" />
-      </template>
-    </PrintedBook>
-
-    <nav class="mag-nav" aria-label="Changelog pages">
-      <MenuLink class="mag-nav-link" @press="emit('close')">Back</MenuLink>
-      <span class="mag-nav-page" aria-live="polite">{{ label }}</span>
-      <MenuLink class="mag-nav-link" silent :disabled="atStart" @press="pages.flipPages(-1)">Prev</MenuLink>
-      <MenuLink class="mag-nav-link is-next" silent :disabled="atEnd" @press="pages.flipPages(1)">Next</MenuLink>
-    </nav>
-  </section>
+  <PaperSingleIssue v-if="selectedIssue" :issue="selectedIssue" @close="selectedIssue = null" />
+  <PaperIssuesLayout v-else :issues="issues" :cover-src="coverUrl" @choose="openIssue" @close="emit('close')" />
 </template>
 
 <script setup lang="ts">
-/** The changelog, opened from the version number on the title: what's new, as a printed book like Records. */
-import { onMounted } from 'vue';
+/** Noise in the Night: daily issues rack with 5 to a slide, opening into individual printed issue broadsheets. */
+import { computed, onMounted, ref } from 'vue';
+import { buildPaperCover } from '../art/books/paper-card.ts';
+import type { ArtBook } from '../art/types.ts';
+import { spriteDataUrl } from '../engine/sprite-cache.ts';
 import { trackTitlePage } from '../game/analytics/index.ts';
-import { CHANGE_NOTES, CHANGELOG_TITLE, changeLeaves } from '../game/changelog.ts';
-import ChangeLeafPage from './changelog/ChangeLeafPage.vue';
-import MenuLink from './MenuLink.vue';
-import PrintedBook from './magazine/PrintedBook.vue';
-import './magazine/magazine.css';
-import './magazine/magazine-blocks.css';
-import './records/record-book.css';
-import './changelog/changelog.css';
-import { useBookPages } from './use-book-pages.ts';
-import { useGame } from './use-game.ts';
+import { changeIssues } from '../game/changelog.ts';
+import type { ChangeIssue } from '../game/changelog.ts';
+import PaperIssuesLayout from './changelog/PaperIssuesLayout.vue';
+import PaperSingleIssue from './changelog/PaperSingleIssue.vue';
 
-const { version } = defineProps<{ version: string }>();
+const props = defineProps<{
+  version?: string;
+  art?: ArtBook | null;
+}>();
+
 const emit = defineEmits<{ close: [] }>();
-const game = useGame();
 
-const leaves = changeLeaves();
-const pages = useBookPages(leaves, () => game.playUi('click'), () => emit('close'));
-const { open, turn, mode, label, atStart, atEnd } = pages.view;
+const issues = changeIssues();
+const selectedIssue = ref<ChangeIssue | null>(null);
+
+const coverUrl = computed(() => {
+  const sprite = props.art?.ui.bookCovers?.changelog ?? buildPaperCover();
+  return spriteDataUrl(sprite);
+});
+
+function openIssue(issue: ChangeIssue): void {
+  selectedIssue.value = issue;
+}
 
 onMounted(() => trackTitlePage('changelog'));
 </script>

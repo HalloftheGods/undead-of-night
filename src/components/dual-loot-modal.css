@@ -1,9 +1,9 @@
 /*
-  The inventory, drawn like the rest of the game: flat ink plates, bone type, hard one-pixel edges
+  The looting overlay, drawn like the rest of the game: flat ink plates, bone type, hard one-pixel edges
   and the game's own item sprites. No blur, no soft shadows, no colours from outside pixel-ui.css.
 
   --m  the modal's layout unit: the HUD unit scaled up, capped so the modal fits the screen.
-  --ap one art pixel: --m snapped to whole screen pixels, so every sprite pixel is a clean square.
+  --ap one art pixel: --m snapped to clean pixels, so every sprite pixel is a clean square.
 */
 .dual-loot-backdrop {
   position: fixed;
@@ -12,58 +12,127 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(11, 12, 16, 0.82);
-  padding: calc(var(--u) * 4);
-  --m: min(calc(var(--u) * 2.4), calc(100vw / 276), calc(92vh / 172));
+  pointer-events: none;
+  background: transparent;
+  padding: max(calc(var(--u) * 1.5), env(safe-area-inset-top, 0px))
+    max(calc(var(--u) * 2), env(safe-area-inset-right, 0px))
+    max(calc(var(--u) * 1.5), env(safe-area-inset-bottom, 0px))
+    max(calc(var(--u) * 2), env(safe-area-inset-left, 0px));
+  --m: min(
+    calc(var(--u) * 2.2),
+    calc((100dvw - 24px) / 290),
+    calc((100dvh - 24px) / 185)
+  );
   --ap: var(--m);
   font-family: inherit;
   color: var(--bone);
   outline: none;
+  box-sizing: border-box;
 }
+
 @supports (width: round(down, 1px, 1px)) {
-  .dual-loot-backdrop { --ap: max(1px, round(down, calc(var(--m) * 1.1), 1px)); }
+  .dual-loot-backdrop {
+    --ap: max(1px, round(down, var(--m), 0.5px));
+  }
 }
 
-/* The frame is the game's px-frame, cut at the corners, at the modal's own pixel size. */
-.dual-loot-modal {
-  --edge: var(--bone-dim);
-  width: fit-content;
-  max-width: 100%;
-  max-height: 92vh;
-  min-height: 0;
-  background: var(--ink);
-  box-shadow:
-    calc(var(--ap) * -1) 0 0 0 var(--edge),
-    var(--ap) 0 0 0 var(--edge),
-    0 calc(var(--ap) * -1) 0 0 var(--edge),
-    0 var(--ap) 0 0 var(--edge),
-    0 calc(var(--ap) * 4) 0 0 rgba(0, 0, 0, 0.6);
+.dual-loot-overlay {
+  width: 100%;
+  height: 100%;
   display: flex;
-  flex-direction: column;
+  justify-content: space-around;
+  align-items: center;
   gap: calc(var(--ap) * 3);
-  padding: calc(var(--ap) * 4);
-  overflow: hidden;
+  pointer-events: none;
+  box-sizing: border-box;
 }
 
-.modal-header {
-  border-bottom: var(--ap) solid var(--ink-line);
-  padding-bottom: calc(var(--ap) * 2);
+.center-stage-spacer {
+  flex: 0 1 auto;
+  min-width: calc(var(--ap) * 20);
+  pointer-events: none;
+}
+
+.loot-dock {
+  pointer-events: auto;
   display: flex;
   flex-direction: column;
   gap: calc(var(--ap) * 2);
+  max-height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  box-sizing: border-box;
 }
-.header-main-row { display: flex; justify-content: space-between; align-items: center; gap: calc(var(--ap) * 6); }
-.title-group { display: flex; align-items: center; gap: calc(var(--ap) * 3); }
-.modal-title { margin: 0; font-size: calc(var(--m) * 4); color: var(--amber); letter-spacing: 1px; }
+.loot-dock::-webkit-scrollbar {
+  display: none;
+}
+
+.container-dock {
+  background: rgba(11, 12, 16, 0.85);
+  box-shadow:
+    0 0 0 var(--ap) var(--ink-line),
+    0 calc(var(--ap) * 3) 0 0 rgba(0, 0, 0, 0.5);
+  padding: calc(var(--ap) * 2.5);
+  width: fit-content;
+}
+
+.survivor-dock {
+  background: rgba(11, 12, 16, 0.9);
+  box-shadow:
+    0 0 0 var(--ap) var(--ink-line),
+    0 calc(var(--ap) * 3) 0 0 rgba(0, 0, 0, 0.5);
+  padding: calc(var(--ap) * 2.5);
+  width: fit-content;
+}
+
+.dock-header {
+  border-bottom: var(--ap) solid var(--ink-line);
+  padding-bottom: calc(var(--ap) * 1.5);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: calc(var(--ap) * 3);
+  flex-shrink: 0;
+}
+
+.dock-title-group {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--ap) * 2);
+  min-width: 0;
+}
+
+.dock-title {
+  margin: 0;
+  font-size: calc(var(--m) * 3.2);
+  color: var(--amber);
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+.dock-capacity {
+  font-size: calc(var(--m) * 2);
+  color: var(--bone-dim);
+  white-space: nowrap;
+}
+
 .backpack-tier-badge {
-  font-size: calc(var(--m) * 2.4);
+  font-size: calc(var(--m) * 2);
   background: var(--ink-raised);
   color: var(--sick);
   box-shadow: 0 0 0 var(--ap) var(--ink-line);
-  padding: var(--ap) calc(var(--ap) * 2);
+  padding: var(--ap) calc(var(--ap) * 1.5);
   font-weight: 700;
+  white-space: nowrap;
 }
-.header-actions { display: flex; align-items: center; gap: calc(var(--ap) * 3); }
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--ap) * 2);
+  flex-shrink: 0;
+}
 
 /* A raised key: light on top, dark underneath, and it sinks when pressed. */
 .action-btn {
@@ -74,11 +143,12 @@
   box-shadow:
     0 0 0 var(--ap) var(--edge),
     0 calc(var(--ap) * 2) 0 var(--ap) var(--ink-line);
-  padding: calc(var(--ap) * 1.5) calc(var(--ap) * 3);
+  padding: calc(var(--ap) * 1.2) calc(var(--ap) * 2.5);
   cursor: pointer;
   font-family: inherit;
-  font-size: calc(var(--m) * 2.6);
+  font-size: calc(var(--m) * 2.4);
   font-weight: 700;
+  white-space: nowrap;
 }
 .action-btn:hover,
 .action-btn:focus-visible { --edge: var(--amber); color: var(--amber); outline: none; }
@@ -91,58 +161,121 @@
 .held-item-banner {
   display: flex;
   align-items: center;
-  gap: calc(var(--ap) * 3);
+  gap: calc(var(--ap) * 2);
   background: var(--ink-raised);
   box-shadow: 0 0 0 var(--ap) var(--amber);
   padding: var(--ap) calc(var(--ap) * 2);
-  font-size: calc(var(--m) * 2.6);
+  font-size: calc(var(--m) * 2.4);
+  flex-shrink: 0;
 }
-.held-icon { width: calc(var(--ap) * 15); height: calc(var(--ap) * 15); flex: 0 0 auto; }
-.held-hint { margin-left: auto; font-size: calc(var(--m) * 2.2); color: var(--bone-dim); }
+.held-icon { width: calc(var(--ap) * 14); height: calc(var(--ap) * 14); flex: 0 0 auto; }
+.held-hint { margin-left: auto; font-size: calc(var(--m) * 2); color: var(--bone-dim); }
 
-.dual-panels-container {
-  display: grid;
-  grid-template-columns: auto auto;
-  align-items: start;
-  gap: calc(var(--ap) * 6);
-  overflow-y: auto;
-  min-height: 0;
-  /* Room for the slot edges, which are drawn outside the boxes. */
-  padding: var(--ap) calc(var(--ap) * 2) calc(var(--ap) * 2) var(--ap);
-}
-.loot-panel { display: flex; flex-direction: column; gap: calc(var(--ap) * 3); }
-.panel-header {
+.container-grid-stage {
+  position: relative;
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: calc(var(--ap) * 4);
-  border-bottom: var(--ap) solid var(--ink-line);
-  padding-bottom: var(--ap);
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--ap) * 1.5);
+  background: rgba(11, 12, 16, 0.7);
+  box-shadow: inset 0 0 0 var(--ap) var(--ink-line);
+  box-sizing: border-box;
+  overflow: hidden;
+  width: fit-content;
 }
-.panel-title { margin: 0; font-size: calc(var(--m) * 3); color: var(--bone); letter-spacing: 0.5px; }
-.panel-capacity { font-size: calc(var(--m) * 2.2); color: var(--bone-dim); }
-.sub-inventory-section { display: flex; flex-direction: column; gap: calc(var(--ap) * 2); }
-.sub-section-title { margin: 0; font-size: calc(var(--m) * 2.6); color: var(--bone-dim); }
+
+.container-stage-bg-art {
+  position: absolute;
+  inset: calc(var(--ap) * 1.5);
+  width: calc(100% - calc(var(--ap) * 3));
+  height: calc(100% - calc(var(--ap) * 3));
+  object-fit: contain;
+  image-rendering: pixelated;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.85;
+  filter: drop-shadow(0 calc(var(--ap) * 2) 0 rgba(0, 0, 0, 0.7));
+}
+
+.container-grid {
+  position: relative;
+  z-index: 1;
+  background: transparent !important;
+}
+
+.container-grid .grid-cell {
+  background: rgba(11, 12, 16, 0.35);
+  box-shadow:
+    inset var(--ap) var(--ap) 0 0 rgba(0, 0, 0, 0.45),
+    inset calc(var(--ap) * -1) calc(var(--ap) * -1) 0 0 rgba(228, 220, 195, 0.12),
+    0 0 0 var(--ap) rgba(27, 31, 39, 0.75);
+}
+
+.container-grid .grid-cell:hover {
+  background: rgba(228, 220, 195, 0.15);
+}
 
 /* A slot is a shallow pit: shadow along the top and left, a lit lip along the bottom and right. */
-.gear-slots-row { display: grid; grid-template-columns: repeat(4, calc(var(--ap) * 34)); gap: calc(var(--ap) * 2); }
+.gear-slots-row {
+  display: grid;
+  grid-template-columns: repeat(4, calc(var(--ap) * 32));
+  gap: calc(var(--ap) * 2);
+}
 .gear-slot {
   background: var(--ink-raised);
   box-shadow:
     inset var(--ap) var(--ap) 0 0 var(--ink),
     inset calc(var(--ap) * -1) calc(var(--ap) * -1) 0 0 var(--ink-line),
     0 0 0 var(--ap) var(--ink-line);
-  padding: calc(var(--ap) * 2);
+  padding: calc(var(--ap) * 1.5);
   display: flex;
   flex-direction: column;
   gap: var(--ap);
   cursor: pointer;
-  min-height: calc(var(--ap) * 44);
+  min-height: calc(var(--ap) * 34);
+  box-sizing: border-box;
 }
-.gear-slot.is-occupied { box-shadow: inset var(--ap) var(--ap) 0 0 var(--ink), inset calc(var(--ap) * -1) calc(var(--ap) * -1) 0 0 var(--ink-line), 0 0 0 var(--ap) var(--bone-dim); }
-.gear-slot-tag { font-size: calc(var(--m) * 2.2); color: var(--bone-dim); font-weight: 700; }
+.gear-slot.is-occupied {
+  box-shadow:
+    inset var(--ap) var(--ap) 0 0 var(--ink),
+    inset calc(var(--ap) * -1) calc(var(--ap) * -1) 0 0 var(--ink-line),
+    0 0 0 var(--ap) var(--bone-dim);
+}
+.gear-slot-tag {
+  font-size: calc(var(--m) * 2);
+  color: var(--bone-dim);
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .gear-item-card { flex: 1 1 auto; display: grid; place-items: center; }
-.gear-empty-slot { font-size: calc(var(--m) * 2.2); color: var(--ink-line); margin: auto 0; text-align: center; }
+.gear-empty-slot { font-size: calc(var(--m) * 2); color: var(--ink-line); margin: auto 0; text-align: center; }
+
+.player-grids-column {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--ap) * 2);
+}
+
+.player-subgrids-row {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: calc(var(--ap) * 2);
+}
+
+.sub-inventory-section {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--ap) * 1.2);
+}
+.sub-section-title {
+  margin: 0;
+  font-size: calc(var(--m) * 2.2);
+  color: var(--bone-dim);
+  white-space: nowrap;
+}
 
 .grid-board {
   /* One slot holds a 15-pixel sprite with a pixel of air on each side. */
@@ -185,10 +318,69 @@
 .grid-item:hover { background: rgba(228, 220, 195, 0.16); box-shadow: 0 0 0 var(--ap) var(--bone); }
 .grid-item.is-selected { background: rgba(232, 163, 61, 0.22); box-shadow: 0 0 0 var(--ap) var(--amber); }
 
+.grid-item.is-ghost {
+  opacity: 0.45;
+  background: rgba(228, 220, 195, 0.04);
+  border: var(--ap) dashed var(--bone-dim);
+  box-shadow: none;
+  cursor: pointer;
+  pointer-events: auto;
+  z-index: 1;
+}
+.grid-item.is-ghost:hover {
+  opacity: 0.75;
+  background: rgba(232, 163, 61, 0.15);
+  border-color: var(--amber);
+}
+
 .is-valid-target { background: var(--sick) !important; }
 .is-invalid-target { background: var(--blood-bright) !important; }
 .gear-slot.is-valid-target { box-shadow: 0 0 0 var(--ap) var(--sick) !important; background: var(--ink-raised) !important; }
 .gear-slot.is-invalid-target { box-shadow: 0 0 0 var(--ap) var(--blood-bright) !important; background: var(--ink-raised) !important; }
 
-.modal-footer { border-top: var(--ap) solid var(--ink-line); padding-top: calc(var(--ap) * 2); display: flex; justify-content: space-between; }
-.footer-tip { font-size: calc(var(--m) * 2.4); color: var(--bone-dim); }
+.dock-footer {
+  border-top: var(--ap) solid var(--ink-line);
+  padding-top: calc(var(--ap) * 1.5);
+  display: flex;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.footer-tip {
+  font-size: calc(var(--m) * 2.2);
+  color: var(--bone-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Mobile Portrait & Compact Viewports */
+@media (orientation: portrait), (max-width: 820px) {
+  .dual-loot-backdrop {
+    --m: min(
+      calc(var(--u) * 2.2),
+      calc((100dvw - 16px) / 148),
+      calc((100dvh - 16px) / 235)
+    );
+  }
+  .dual-loot-overlay {
+    flex-direction: column;
+    overflow-y: auto;
+    pointer-events: auto;
+  }
+  .center-stage-spacer {
+    display: none;
+  }
+  .dock-title {
+    font-size: calc(var(--m) * 2.8);
+  }
+  .backpack-tier-badge {
+    font-size: calc(var(--m) * 1.8);
+  }
+  .action-btn {
+    padding: calc(var(--ap) * 1) calc(var(--ap) * 2);
+    font-size: calc(var(--m) * 2);
+  }
+  .footer-tip {
+    font-size: calc(var(--m) * 1.8);
+  }
+}

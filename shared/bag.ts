@@ -48,6 +48,12 @@ export interface BagDrop {
 export interface BagCommit {
   readonly layout: readonly BagLayoutRow[];
   readonly drop: readonly BagDrop[];
+  readonly container?: {
+    readonly id: number;
+    readonly items: readonly GridItem[];
+    readonly taken: readonly GridItem[];
+    readonly deposited?: readonly GridItem[];
+  };
 }
 
 export type BagWanted = Record<BagItemType, number>;

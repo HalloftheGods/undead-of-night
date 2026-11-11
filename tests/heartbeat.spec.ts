@@ -35,4 +35,20 @@ describe('heartbeat', () => {
     expect(muffleFor(0.3)).toBeGreaterThan(0);
     expect(muffleFor(0.02)).toBeGreaterThan(muffleFor(0.3));
   });
+
+  it('beats when bleeding even at full health', () => {
+    const heart = new Heartbeat();
+    expect(heart.tick(0.016, 1.0, true)).toBe(true);
+    expect(heart.pulse).toBeCloseTo(1);
+  });
+
+  it('immediately swells a beat when kicked on damage', () => {
+    const heart = new Heartbeat();
+    heart.tick(0.016, 0.2);
+    // Advance half a second so pulse fades
+    heart.tick(0.5, 0.2);
+    expect(heart.pulse).toBeLessThan(0.1);
+    heart.kick();
+    expect(heart.pulse).toBe(1);
+  });
 });
