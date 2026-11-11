@@ -38,6 +38,22 @@ onBeforeUnmount(() => setTitleShowing(false));
   flex: none;
 }
 
+/*
+ * Landscape: beside the menu, out of the flow. The install prompt arrives some time after the title does (Chrome fires it
+ * after the first input), and a cartridge in the row slid the menu sideways under the pointer, so the press that caused
+ * it landed on empty space and Play seemed dead on the first click. Out of the flow, the menu never moves.
+ */
+@media (orientation: landscape) {
+  .cartridge {
+    position: absolute;
+    left: 100%;
+    top: 0;
+    bottom: 0;
+    margin-block: auto;
+    margin-left: calc(var(--u) * 8);
+  }
+}
+
 .cartridge:hover,
 .cartridge:focus-visible {
   transform: translateY(calc(var(--u) * -2));
