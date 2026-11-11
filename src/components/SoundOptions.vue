@@ -67,9 +67,13 @@ const sfxReadout = computed(() => `${Math.round(ui.sfxVolume * 100)}%`);
 
 .sound-options-master > :first-child {
   flex: 1;
+  min-width: 0;
 }
 
 .sound-options-mute {
+  /* .px-button is full width, which left the slider no room: the button keeps its own width. */
+  flex: none;
+  width: auto;
   min-width: calc(var(--u) * 48);
   height: calc(var(--u) * 16);
 }

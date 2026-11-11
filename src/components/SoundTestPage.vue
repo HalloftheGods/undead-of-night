@@ -316,20 +316,15 @@ onBeforeUnmount(() => {
 
 .monitor-controls {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
   gap: calc(var(--u) * 3);
 }
 
+/* One wrapped block across the whole column, above the button. */
 .sound-finds {
   margin: 0;
   color: var(--bone-dim);
   font-size: calc(var(--u) * 5);
-  flex: 1;
-}
-
-.sound-stop-btn {
-  min-width: calc(var(--u) * 44);
 }
 
 /* Category Filter Tabs */
@@ -337,6 +332,12 @@ onBeforeUnmount(() => {
   display: flex;
   flex-wrap: wrap;
   gap: calc(var(--u) * 2);
+}
+
+.sound-tab {
+  /* .px-button is full width; tabs share the row instead of stacking. */
+  flex: 1 1 auto;
+  width: auto;
 }
 
 .sound-tab.is-chosen {
