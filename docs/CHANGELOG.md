@@ -2,6 +2,14 @@
 
 All notable changes to the Undead of Night: Last Round game are documented in this file.
 
+## [2026-11-11] - Carried Survival Supplies & Inventory Integration
+
+### Added
+- Carried survival supplies (bandages, canned food, water bottles, disinfectant, antibiotics) stored in bag inventory without instant consumption on pickup.
+- Pocket auto-consumption for survival supplies based on health and needs thresholds.
+- Direct USE and DROP action buttons on held item panel within the inventory modal.
+- Supply synchronization with bunker locker across banked trip receipts.
+
 ## [2026-11-11] - Noise in the Night Daily Newspaper
 
 ### Added
