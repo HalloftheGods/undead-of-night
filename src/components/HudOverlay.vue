@@ -34,6 +34,7 @@
             <SpriteImg :sprite="art.ui.pickupIcons.knife" />
           </div>
         </div>
+        <MaterialChips :hud :art />
         <ul v-if="hud.sugar.length > 0" class="hud-chip hud-sugar" aria-label="Candy working">
           <li v-for="sugar in hud.sugar" :key="sugar.name">
             <span>{{ sugar.name }}</span>
@@ -193,6 +194,7 @@ import type { TransportKind } from '../network/transport.ts';
 import { effectOf } from '../../shared/gun-upgrades.ts';
 import { GUN_EFFECTS } from '../../shared/round-effect-data.ts';
 import BossBar from './BossBar.vue';
+import MaterialChips from './MaterialChips.vue';
 import KeepsakeOffer from './KeepsakeOffer.vue';
 import EventFeed from './log/EventFeed.vue';
 import type { LogEntry } from '../game/event-log.ts';
