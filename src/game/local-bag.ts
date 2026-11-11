@@ -136,7 +136,7 @@ export class LocalBag {
         autoPackItem(container, { ...item });
       }
     }
-    const candyBag = createInventoryGrid(6, 2);
+    const candyBag = createInventoryGrid(2, 6);
     let candyIdx = 0;
     for (const stack of hud.bag ?? []) {
       for (let c = 0; c < stack.count; c += 1) {

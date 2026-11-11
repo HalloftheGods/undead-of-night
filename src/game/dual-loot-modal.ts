@@ -185,7 +185,7 @@ export function createDualLootState(options?: DualLootModalProps): DualLootState
   const containerGrid = options?.containerGrid ?? createInventoryGrid(5, 4);
   const pocketsGrid = options?.pocketsGrid ?? createInventoryGrid(2, 2);
   const backpackGrid = options?.backpackGrid ?? createInventoryGrid(tierConfig.cols, tierConfig.rows);
-  const candyBagGrid = options?.candyBagGrid ?? createInventoryGrid(6, 2);
+  const candyBagGrid = options?.candyBagGrid ?? createInventoryGrid(2, 6);
 
   return {
     containerGrid,

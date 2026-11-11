@@ -5,6 +5,7 @@
     aria-modal="true"
     aria-labelledby="modal-title"
     tabindex="-1"
+    :style="{ '--pack-cols': backpackSection.grid.cols, '--pack-rows': backpackSection.grid.rows }"
   >
     <div class="dual-loot-overlay">
       <!-- Left Dock: Container (Enlarged Prop with Overlaid Grid) -->
@@ -400,7 +401,7 @@ const pocketsSection = computed(() => ({
 
 const candyBagSection = computed(() => ({
   id: 'candyBag' as const,
-  label: 'CANDY BAG (6x2)',
+  label: 'CANDY BAG (2x6)',
   grid: modalState.candyBagGrid,
   cells: buildGridCells(modalState.candyBagGrid.cols, modalState.candyBagGrid.rows),
 }));

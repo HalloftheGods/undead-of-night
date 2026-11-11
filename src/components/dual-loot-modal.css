@@ -18,10 +18,19 @@
     max(calc(var(--u) * 2), env(safe-area-inset-right, 0px))
     max(calc(var(--u) * 1.5), env(safe-area-inset-bottom, 0px))
     max(calc(var(--u) * 2), env(safe-area-inset-left, 0px));
+  /*
+    The survivor stands at the middle of the screen, so the clear gap is centred there and each side gets an
+    equal half. The bag side is the wider one: its width (the gear row, or a big pack beside the candy bag)
+    plus a margin either side has to fit one half, and the pack's rows set how tall it stands.
+  */
+  --gap-w: 46;
+  --bag-w: max(142, calc(17 * var(--pack-cols, 5) + 46));
+  --need-w: calc(var(--gap-w) + 2 * (var(--bag-w) + 16));
+  --need-h: calc(118 + 17 * var(--pack-rows, 4));
   --m: min(
     calc(var(--u) * 2.2),
-    calc((100dvw - 24px) / 290),
-    calc((100dvh - 24px) / 185)
+    calc((100dvw - 24px) / var(--need-w)),
+    calc((100dvh - 24px) / var(--need-h))
   );
   --ap: var(--m);
   font-family: inherit;
@@ -36,21 +45,20 @@
   }
 }
 
+/* Two halves either side of a clear middle. Each side sits in the centre of its half, across and down, so neither touches an edge of the screen. */
 .dual-loot-overlay {
   width: 100%;
   height: 100%;
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) calc(var(--ap) * var(--gap-w)) minmax(0, 1fr);
   align-items: center;
-  gap: calc(var(--ap) * 3);
+  justify-items: center;
   pointer-events: none;
   box-sizing: border-box;
 }
 
-/* The clear middle: the docks hug the edges and this takes whatever is left, so the survivor stays in view. */
+/* The clear middle, where the survivor stands. */
 .center-stage-spacer {
-  flex: 1 1 0;
-  min-width: 0;
   pointer-events: none;
 }
 
@@ -58,10 +66,10 @@
 .left-column {
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
+  justify-content: center;
   align-items: stretch;
   gap: calc(var(--ap) * 3);
-  height: 100%;
+  max-height: 100%;
   min-width: calc(var(--ap) * 90);
   pointer-events: none;
   box-sizing: border-box;
@@ -107,8 +115,17 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: calc(var(--ap) * 3);
+  flex-wrap: wrap;
+  gap: calc(var(--ap) * 2) calc(var(--ap) * 3);
   flex-shrink: 0;
+}
+
+/* The bag is as wide as its slots and grids make it; its header and footer wrap to that width and never widen it. */
+.survivor-dock > .dock-header,
+.survivor-dock > .dock-footer {
+  width: 0;
+  min-width: 100%;
+  box-sizing: border-box;
 }
 
 .dock-title-group {
@@ -253,18 +270,22 @@
 .gear-item-card { flex: 1 1 auto; display: grid; place-items: center; }
 .gear-empty-slot { font-size: calc(var(--m) * 2.6); line-height: 1.25; color: var(--bone-dim); margin: auto 0; text-align: center; overflow-wrap: anywhere; }
 
+/* The pack with the pockets under it, and the candy bag standing two wide down the side of both. */
 .player-grids-column {
-  display: flex;
-  flex-direction: column;
-  gap: calc(var(--ap) * 2);
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-areas:
+    "pack candy"
+    "pockets candy";
+  justify-content: space-between;
+  align-items: start;
+  gap: calc(var(--ap) * 2) calc(var(--ap) * 4);
 }
 
-.player-subgrids-row {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  gap: calc(var(--ap) * 2);
-}
+.player-subgrids-row { display: contents; }
+.section-backpack { grid-area: pack; }
+.section-pockets { grid-area: pockets; }
+.section-candy-bag { grid-area: candy; }
 
 .sub-inventory-section {
   display: flex;
@@ -362,7 +383,10 @@
     );
   }
   .dual-loot-overlay {
+    display: flex;
     flex-direction: column;
+    align-items: center;
+    gap: calc(var(--ap) * 3);
     justify-content: flex-start;
     overflow-y: auto;
     pointer-events: auto;
