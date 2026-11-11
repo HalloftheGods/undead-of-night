@@ -36,7 +36,7 @@ const hordes: CardList = (art) => [
 ];
 
 const survivors: CardList = (art) =>
-  ['Night', 'Bear', 'Kat', 'Rex', 'Kai'].map((name, index) => ({
+  ['Night', 'Bear', 'Kat', 'Rex', 'Rich'].map((name, index) => ({
     id: name.toLowerCase(),
     title: name,
     sprite: art.survivors[index].portrait,

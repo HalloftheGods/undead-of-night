@@ -12,7 +12,7 @@ export const TEAM_COLORS: readonly string[] = [
   '#ff8a3d', // Bear: orange
   '#ff6fc8', // Kat: pink
   '#4fe08a', // Rex: dino green
-  '#4fe6e0', // Kai: teal
+  '#4fe6e0', // Rich: teal
 ];
 
 /** A teammate's colour, with the light turned down for the off beat of the blink. */

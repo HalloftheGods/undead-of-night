@@ -74,7 +74,7 @@ export const CHARACTERS: readonly Character[] = [
   { ...PLAIN, id: 'bandus', name: 'Bear', trait: 'Reloads faster', reloadTime: 0.75, costumes: BANDUS_LOOKS },
   { ...PLAIN, id: 'satori', name: 'Kat', trait: 'Runs faster', moveSpeed: 1.12, costumes: SATORI_LOOKS },
   { ...PLAIN, id: 'rex', name: 'Rex', trait: 'Shoves harder', shoveForce: 1.5, costumes: REX_LOOKS },
-  { ...PLAIN, id: 'sol', name: 'Kai', trait: 'Loots more', dropOdds: 2, searchLuck: 0.15, costumes: SOL_LOOKS },
+  { ...PLAIN, id: 'sol', name: 'Rich', trait: 'Loots more', dropOdds: 2, searchLuck: 0.15, costumes: SOL_LOOKS },
 ];
 
 export function characterOf(skin: number): Character {

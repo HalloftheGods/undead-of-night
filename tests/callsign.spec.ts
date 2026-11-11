@@ -15,7 +15,7 @@ import {
 } from '../shared/callsign.ts';
 
 // Names that must never be refused. Most of them held a blocked stem as a substring once.
-const SURVIVORS = ['Night', 'Bear', 'Kat', 'Rex', 'Kai'];
+const SURVIVORS = ['Night', 'Bear', 'Kat', 'Rex', 'Rich'];
 const HELD_A_STEM = [
   'Nigel', 'Knight', 'Midnight', 'Nightingale', 'Dickens', 'Dickson', 'Hancock', 'Peacock', 'Cocktail', 'Grape', 'Drapes',
   'Torpedo', 'Nazir', 'Pornchai', 'Scunthorpe', 'Yoshitaka', 'Fagan', 'Shiitake', 'Niger', 'Nigeria', 'Hitchcock', 'Mitchell',

@@ -293,7 +293,7 @@ export const HOW_TO_SECTIONS: readonly HowToSection[] = [
       'Bear: reloads faster.',
       'Kat: runs faster.',
       'Rex: shoves harder.',
-      'Kai: finds more in searches and on kills.',
+      'Rich: finds more in searches and on kills.',
     ],
   },
   {

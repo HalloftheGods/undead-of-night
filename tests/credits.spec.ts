@@ -9,7 +9,7 @@ describe('the end credits', () => {
     expect(texts).toContain('Hall of the Gods, Inc.');
     expect(texts).not.toContain('ExoticService');
     expect(texts).toContain('Majora D.');
-    expect(CAST).toEqual(['Night', 'Bear', 'Kat', 'Rex', 'Kai']);
+    expect(CAST).toEqual(['Night', 'Bear', 'Kat', 'Rex', 'Rich']);
     for (const name of CAST) expect(texts).toContain(name);
   });
 

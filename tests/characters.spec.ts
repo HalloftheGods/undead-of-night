@@ -10,7 +10,7 @@ const skinOf = (id: string): number => CHARACTERS.findIndex((character) => chara
 
 describe('the character table', () => {
   it('gives everyone a name, a trait and one thing they do better', () => {
-    expect(CHARACTERS.map((character) => character.name)).toEqual(['Night', 'Bear', 'Kat', 'Rex', 'Kai']);
+    expect(CHARACTERS.map((character) => character.name)).toEqual(['Night', 'Bear', 'Kat', 'Rex', 'Rich']);
     for (const { sightRange, reloadTime, moveSpeed, shoveForce, dropOdds, trait } of CHARACTERS) {
       expect(trait).not.toBe('');
       const edges = [sightRange < 1, reloadTime < 1, moveSpeed > 1, shoveForce > 1, dropOdds > 1];
