@@ -1,25 +1,15 @@
-import { bagWanted, isBagItemType, retierBag, syncBag, validateLayout, adoptLayout } from './bag.ts';
-import type { BagCommit, BagItemType, BagWanted } from './bag.ts';
+import { bagWanted, isBagItemType, isDroppableBagItem, retierBag, syncBag, validateLayout, adoptLayout } from './bag.ts';
+import type { BagCommit, BagItemType, BagWanted, DroppableBagItem } from './bag.ts';
 import { MAX_COMMIT_DROPS, MAX_COMMIT_LAYOUT } from './bag-commit.ts';
 import { FORTIFICATION_ITEMS } from './fortifications.ts';
 import { takeFromContainer } from './container-take.ts';
 import { autoPackItem, createInventoryGrid, placeItem } from './grid-inventory.ts';
 import { spawnPickup } from './pickups.ts';
-import type { PickupType } from './protocol.ts';
 import { isCandyId, type CandyId } from './candy.ts';
 import type { PlayerState, SimState } from './sim-state.ts';
-
-/** The size of the grid a searched container's contents are laid out in. */
-const CONTAINER_COLS = 5;
-const CONTAINER_ROWS = 4;
-
-/** Types that have a pickup to leave on the ground. Bottles, fireworks and fountains have none, so they cannot be dropped. */
-type Droppable = Extract<BagItemType, PickupType>;
-const DROPPABLE: readonly Droppable[] = ['medkit', 'knife', 'plank', 'hammer_tool', 'crowbar', 'sheet_curtain', 'nails'];
-
-function isDroppable(type: BagItemType): type is Droppable {
-  return (DROPPABLE as readonly BagItemType[]).includes(type);
-}
+import { useSupply } from './supplies.ts';
+import { isSupplyType } from './supply-types.ts';
+import { containerGridDimensions, townContainers } from './containers.ts';
 
 /** Takes up to `count` units of a type off the counters and returns how many it took. */
 function take(p: PlayerState, type: BagItemType, count: number): number {
@@ -27,7 +17,8 @@ function take(p: PlayerState, type: BagItemType, count: number): number {
   const taken = Math.min(held, count);
   if (taken <= 0) return 0;
   const m = p.materials;
-  if (type === 'medkit') p.medkits -= taken;
+  if (isSupplyType(type) && p.supplies) p.supplies[type] -= taken;
+  else if (type === 'medkit') p.medkits -= taken;
   else if (type === 'bottle') p.bottles -= taken;
   else if (type === 'firework') p.fireworks -= taken;
   else if (type === 'fountain') p.fountains -= taken;
@@ -41,7 +32,7 @@ function take(p: PlayerState, type: BagItemType, count: number): number {
 }
 
 /** Puts what was taken on the ground at the player's feet. A box of nails goes down as whole finds. */
-function leaveOnGround(sim: SimState, p: PlayerState, type: Droppable, count: number): void {
+function leaveOnGround(sim: SimState, p: PlayerState, type: DroppableBagItem, count: number): void {
   const per = type === 'nails' ? FORTIFICATION_ITEMS.nails.unitsPerFind : 1;
   const pieces = Math.floor(count / per);
   const taken = take(p, type, pieces * per);
@@ -60,7 +51,7 @@ export function reconcileBag(sim: SimState, p: PlayerState): void {
   const overflow: Partial<BagWanted> = syncBag(p.inventory, bagWanted(p));
   for (const item of evicted) overflow[item.type as BagItemType] = (overflow[item.type as BagItemType] ?? 0) + (item.count ?? 1);
   for (const [type, count] of Object.entries(overflow) as [BagItemType, number][]) {
-    if (isDroppable(type)) leaveOnGround(sim, p, type, count);
+    if (isDroppableBagItem(type)) leaveOnGround(sim, p, type, count);
     else take(p, type, count);
   }
   if (Object.keys(overflow).length > 0) syncBag(p.inventory, bagWanted(p));
@@ -72,13 +63,15 @@ export function reconcileBag(sim: SimState, p: PlayerState): void {
  * True when the layout was adopted.
  */
 export function applyBagCommit(sim: SimState, p: PlayerState, commit: BagCommit): boolean {
-  const tooBig = commit.layout.length > MAX_COMMIT_LAYOUT || commit.drop.length > MAX_COMMIT_DROPS;
+  const tooBig = commit.layout.length > MAX_COMMIT_LAYOUT || commit.drop.length > MAX_COMMIT_DROPS || (commit.use?.length ?? 0) > MAX_COMMIT_DROPS;
   if (tooBig || p.status !== 'alive') return false;
   if (commit.container) {
     const containerState = sim.containers[commit.container.id];
     if (containerState) {
+      const containerDef = sim.map ? townContainers(sim.map)[commit.container.id] : undefined;
+      const { cols, rows } = containerGridDimensions(containerDef?.kind);
       const held = new Map((containerState.items ?? []).map((item) => [item.id, item]));
-      const contents = createInventoryGrid(CONTAINER_COLS, CONTAINER_ROWS);
+      const contents = createInventoryGrid(cols, rows);
       for (const item of commit.container.items) placeItem(contents, { ...item });
       // Only what the host's container really held can be taken, and each piece once.
       for (const claimed of commit.container.taken) {
@@ -102,8 +95,13 @@ export function applyBagCommit(sim: SimState, p: PlayerState, commit: BagCommit)
       }
     }
   }
+  for (const row of commit.use ?? []) {
+    const isUsable = isSupplyType(row.type) && Number.isInteger(row.count) && row.count >= 1;
+    if (!isUsable) continue;
+    for (let used = 0; used < row.count && useSupply(p, row.type); used += 1);
+  }
   for (const row of commit.drop) {
-    const real = isBagItemType(row.type) && isDroppable(row.type) && Number.isFinite(row.count) && row.count >= 1;
+    const real = isBagItemType(row.type) && isDroppableBagItem(row.type) && Number.isFinite(row.count) && row.count >= 1;
     if (real) leaveOnGround(sim, p, row.type, Math.floor(row.count));
   }
   reconcileBag(sim, p);

@@ -19,6 +19,8 @@ import { containerLoot } from '../shared/container-loot.ts';
 import { isPartPickup } from '../shared/gun-upgrades.ts';
 import { isKitPickup } from '../shared/round-effects.ts';
 import { LOOT_RULES, ammoKillShare, lootSpots, restockLoot } from '../shared/loot.ts';
+import { bagWanted, syncBag } from '../shared/bag.ts';
+import { emptySupplies } from '../shared/supply-types.ts';
 import { BUILDING_DEFS, BUILDING_KINDS } from '../shared/protocol.ts';
 import type { BuildingInstance, BuildingKind, PickupType } from '../shared/protocol.ts';
 import type { PickupState, SimState } from '../shared/sim-state.ts';
@@ -91,34 +93,30 @@ describe('magazines in snapshots', () => {
 });
 
 describe('healing', () => {
-  it('a bandage heals a little on pickup, capped at max health', () => {
+  it('a bandage is carried in the bag and not used on pickup', () => {
     const { sim, state } = quietSim();
     const [p] = state.players;
     p.health = 30;
     drop(state, 'bandage', p.x, p.y);
     sim.step();
-    expect(p.health).toBe(30 + BANDAGE_HEAL);
-    expect(BANDAGE_HEAL).toBeLessThan(MEDKIT_HEAL);
+    expect(p.health).toBe(30);
+    expect(p.supplies?.bandage).toBe(1);
     expect(state.pickups.length).toBe(0);
     const [event] = eventsOf(sim.snapshot(), 'pickup');
     expect(event).toMatchObject({ playerId: 'a', pickup: 'bandage' });
-
-    p.health = p.maxHealth - 5;
-    drop(state, 'bandage', p.x, p.y);
-    sim.step();
-    expect(p.health).toBe(p.maxHealth);
   });
 
-  it('a bandage stays on the ground at full health', () => {
+  it('a bandage stays on the ground when the bag is full', () => {
     const { sim, state } = quietSim();
     const [p] = state.players;
+    p.bottles = 0;
+    const totalSlots = p.inventory.pack.rows * p.inventory.pack.cols + p.inventory.pockets.rows * p.inventory.pockets.cols;
+    p.supplies = { ...emptySupplies(), bandage: totalSlots };
+    syncBag(p.inventory, bagWanted(p));
     drop(state, 'bandage', p.x, p.y);
     steps(sim, 5);
     expect(state.pickups.length).toBe(1);
     expect(eventsOf(sim.snapshot(), 'pickup').length).toBe(0);
-    p.health = 50;
-    sim.step();
-    expect(state.pickups.length).toBe(0);
   });
 
   it('a medkit is carried, not used, and stops at the limit', () => {

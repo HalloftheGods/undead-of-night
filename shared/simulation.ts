@@ -32,6 +32,7 @@ import { updateSpinners } from './throwables.ts';
 import { updateSupplyDrop } from './supply-drop.ts';
 import { updateBosses } from './bosses.ts';
 import { applyBagCommit, reconcileBag } from './bag-sim.ts';
+import { usePocketSupplies } from './supplies.ts';
 import type { BagCommit } from './bag.ts';
 import { benchCommand, updateBench } from './workbench.ts';
 import type { BenchAction, WorkbenchMode } from './workbench.ts';
@@ -239,6 +240,7 @@ export class GameSimulation {
     updateZombies(sim);
     removeDeadZombies(sim);
     updatePickups(sim);
+    for (const p of sim.players) usePocketSupplies(p);
     for (const p of sim.players) reconcileBag(sim, p);
     updateDownedPlayers(sim);
     updateLeftBodies(sim);

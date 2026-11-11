@@ -14,10 +14,11 @@ import { EFFECT_ORDER, KIT_CARRY_CAP } from './round-effect-data.ts';
 import type { GunEffect, KitCounts } from './round-effect-data.ts';
 import { noKits } from './round-effects.ts';
 import type { GunState, PlayerState } from './sim-state.ts';
+import { emptySupplies, SUPPLY_TYPES } from './supply-types.ts';
 import { syncGun } from './weapons.ts';
 
 export function emptyLoadout(): Loadout {
-  return { guns: {}, ammoBag: { pistol: 0, carbine: 0, shotgun: 0 }, parts: noParts(), kits: noKits(), medkits: 0, knife: false, bottles: 0 };
+  return { guns: {}, ammoBag: { pistol: 0, carbine: 0, shotgun: 0 }, parts: noParts(), kits: noKits(), medkits: 0, knife: false, bottles: 0, supplies: emptySupplies() };
 }
 
 const reserveCapOf = (weapon: WeaponId, tier?: BackpackTier): number =>
@@ -49,6 +50,7 @@ export function loadoutOf(p: PlayerState): Loadout {
     medkits: p.medkits,
     knife: p.knife,
     bottles: p.bottles,
+    supplies: p.supplies ? { ...p.supplies } : emptySupplies(),
   };
 }
 
@@ -63,6 +65,7 @@ export function loadoutOfEntity(entity: PlayerEntity): Loadout {
     medkits: entity.medkits,
     knife: entity.knife,
     bottles: entity.bottles ?? 0,
+    supplies: entity.supplies ? { ...entity.supplies } : emptySupplies(),
   };
 }
 
@@ -97,6 +100,7 @@ export function applyLoadout(p: PlayerState, loadout: Loadout): void {
   p.medkits = loadout.medkits;
   p.knife = loadout.knife;
   p.bottles = loadout.bottles;
+  p.supplies = loadout.supplies ? { ...loadout.supplies } : emptySupplies();
   p.reload = 0;
   p.reloadLeft = 0;
   p.weaponQueued = null;
@@ -149,6 +153,10 @@ export function mergeHome(locker: Loadout, gear: Loadout): Loadout {
     refundParts(parts, stripped?.fit);
     refundKit(kits, stripped?.fit);
   }
+  const supplies = emptySupplies();
+  for (const type of SUPPLY_TYPES) {
+    supplies[type] = (locker.supplies?.[type] ?? 0) + (gear.supplies?.[type] ?? 0);
+  }
   return {
     guns,
     ammoBag: roundsOf(locker.ammoBag, gear.ammoBag),
@@ -157,6 +165,7 @@ export function mergeHome(locker: Loadout, gear: Loadout): Loadout {
     medkits: Math.min(MEDKIT_MAX, locker.medkits + gear.medkits),
     knife: locker.knife || gear.knife,
     bottles: Math.min(BOTTLE_CARRY, locker.bottles + gear.bottles),
+    supplies,
   };
 }
 
@@ -219,6 +228,7 @@ export function validateLoadout(value: unknown): Loadout | null {
   const parts = readCounts(value.parts, PART_ORDER, () => PART_CARRY_CAP);
   const kits = readCounts(value.kits, EFFECT_ORDER, () => KIT_CARRY_CAP);
   const legalCarry = isCount(medkits, MEDKIT_MAX) && isCount(bottles, BOTTLE_CARRY) && typeof knife === 'boolean';
-  const legal = guns && ammoBag && parts && kits && legalCarry;
-  return legal ? { guns, ammoBag, parts, kits, medkits, knife, bottles } : null;
+  const supplies = isRecord(value.supplies) ? readCounts(value.supplies, SUPPLY_TYPES, () => 9999) : emptySupplies();
+  const legal = guns && ammoBag && parts && kits && legalCarry && supplies !== null;
+  return legal ? { guns, ammoBag, parts, kits, medkits, knife, bottles, supplies } : null;
 }

@@ -1,5 +1,6 @@
 import { isBagItemType } from './bag.ts';
 import type { BagCommit, BagDrop, BagLayoutRow } from './bag.ts';
+import { isSupplyType } from './supply-types.ts';
 
 /** Most rows a commit may carry. A bigger one is not from this game and is ignored. */
 export const MAX_COMMIT_LAYOUT = 64;
@@ -32,9 +33,13 @@ function parseDrop(value: unknown): BagDrop | null {
 /** A commit off the wire: null if it is not one or is over the row caps, so it is dropped before the sim sees it. */
 export function parseBagCommit(value: unknown): BagCommit | null {
   if (!isFields(value) || !Array.isArray(value.layout) || !Array.isArray(value.drop)) return null;
-  if (value.layout.length > MAX_COMMIT_LAYOUT || value.drop.length > MAX_COMMIT_DROPS) return null;
+  const hasUse = value.use !== undefined;
+  const isUseList = !hasUse || (Array.isArray(value.use) && value.use.length <= MAX_COMMIT_DROPS);
+  if (value.layout.length > MAX_COMMIT_LAYOUT || value.drop.length > MAX_COMMIT_DROPS || !isUseList) return null;
   const layout = value.layout.map(parseRow);
   const drop = value.drop.map(parseDrop);
-  if (layout.includes(null) || drop.includes(null)) return null;
-  return { layout: layout as BagLayoutRow[], drop: drop as BagDrop[] };
+  const use = hasUse ? (value.use as unknown[]).map(parseDrop) : [];
+  const isSupplyRow = (row: BagDrop | null): boolean => row !== null && isSupplyType(row.type);
+  if (layout.includes(null) || drop.includes(null) || !use.every(isSupplyRow)) return null;
+  return { layout: layout as BagLayoutRow[], drop: drop as BagDrop[], ...(use.length > 0 ? { use: use as BagDrop[] } : {}) };
 }

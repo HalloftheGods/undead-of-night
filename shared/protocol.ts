@@ -14,6 +14,7 @@ import type { BackpackTier } from './backpack.ts';
 import type { SurvivalNeeds } from './survival-needs.ts';
 import type { FortificationInventory, FortificationItemType } from './fortifications.ts';
 import type { BagCommit } from './bag.ts';
+import type { Supplies } from './supply-types.ts';
 import type { BenchAction, BenchView } from './workbench.ts';
 import type { GridItem } from './grid-inventory.ts';
 import type { ContainerKind } from './containers.ts';
@@ -129,6 +130,8 @@ export interface PlayerEntity {
   backpackTier?: BackpackTier;
   armorTier?: ArmorTier;
   materials?: FortificationInventory;
+  /** Bandages and survival items carried (`shared/supply-types.ts`). Left off at none. */
+  supplies?: Supplies;
   /** Hash of where this survivor's things sit in the bag (`shared/bag.ts`). The layout itself is never sent. */
   bagHash?: number;
   /** Hold progress (0..1) on the radio tower alarm. Left off when 0. */

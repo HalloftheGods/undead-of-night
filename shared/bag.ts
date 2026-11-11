@@ -8,12 +8,23 @@ import {
   removeItem,
 } from './grid-inventory.ts';
 import type { GridItem, InventoryGrid } from './grid-inventory.ts';
+import { SUPPLY_TYPES } from './supply-types.ts';
+import type { Supplies } from './supply-types.ts';
 
 /** The things a survivor packs. Guns are worn, and ammo, candy, parts, kits and treasure are not bag items. */
 export const BAG_ITEM_TYPES = [
   'medkit', 'bottle', 'knife', 'plank', 'hammer_tool', 'crowbar', 'sheet_curtain', 'firework', 'fountain', 'nails',
+  ...SUPPLY_TYPES,
 ] as const;
 export type BagItemType = (typeof BAG_ITEM_TYPES)[number];
+
+/** Types that have a pickup to leave on the ground. Bottles, fireworks and fountains have none, so they cannot be dropped. */
+export const DROPPABLE_BAG_ITEMS = ['medkit', 'knife', 'plank', 'hammer_tool', 'crowbar', 'sheet_curtain', 'nails', ...SUPPLY_TYPES] as const;
+export type DroppableBagItem = (typeof DROPPABLE_BAG_ITEMS)[number];
+
+export function isDroppableBagItem(type: string): type is DroppableBagItem {
+  return (DROPPABLE_BAG_ITEMS as readonly string[]).includes(type);
+}
 
 /** One item stands for the whole count, as a box of nails does. */
 const STACKED: readonly BagItemType[] = ['firework', 'fountain', 'nails'];
@@ -48,6 +59,8 @@ export interface BagDrop {
 export interface BagCommit {
   readonly layout: readonly BagLayoutRow[];
   readonly drop: readonly BagDrop[];
+  /** Supplies used by hand while the bag was open (the USE button). Left off when there were none. */
+  readonly use?: readonly BagDrop[];
   readonly container?: {
     readonly id: number;
     readonly items: readonly GridItem[];
@@ -72,6 +85,7 @@ export interface BagSource {
     readonly hasHammer: boolean;
     readonly hasCrowbar: boolean;
   };
+  readonly supplies?: Readonly<Supplies>;
 }
 
 export function isBagItemType(value: unknown): value is BagItemType {
@@ -94,7 +108,13 @@ function whole(value: number | undefined): number {
 /** The multiset the counters imply. Stacked types hold their unit count; everything else holds one item per unit. */
 export function bagWanted(p: BagSource): BagWanted {
   const m = p.materials;
+  const s = p.supplies;
   return {
+    bandage: whole(s?.bandage),
+    canned_food: whole(s?.canned_food),
+    water_bottle: whole(s?.water_bottle),
+    disinfectant: whole(s?.disinfectant),
+    antibiotics: whole(s?.antibiotics),
     medkit: whole(p.medkits),
     bottle: whole(p.bottles),
     knife: p.knife ? 1 : 0,
@@ -146,8 +166,9 @@ export function canCarry(bag: PlayerBag, type: BagItemType): boolean {
 }
 
 /**
- * Brings the bag to what the counters say. Surplus items go newest first; missing ones are packed in a fixed type order,
- * pack before pockets. Returns what had no room, in units, and mints no id for it. Same counters in, same layout out.
+ * Brings the bag to what the counters say. Surplus items go from the pockets before the pack, newest first in each:
+ * a pocket is where the next one used comes from. Missing ones are packed in a fixed type order, pack before pockets.
+ * Returns what had no room, in units, and mints no id for it. Same counters in, same layout out.
  */
 export function syncBag(bag: PlayerBag, wanted: BagWanted): Partial<BagWanted> {
   const overflow: Partial<BagWanted> = {};
@@ -158,7 +179,8 @@ export function syncBag(bag: PlayerBag, wanted: BagWanted): Partial<BagWanted> {
       syncStack(bag, type, want, have, overflow);
       continue;
     }
-    const surplus = [...have].sort((a, b) => serialOf(b.item) - serialOf(a.item)).slice(0, Math.max(0, have.length - want));
+    const fromPocket = (entry: { grid: InventoryGrid }): number => (entry.grid === bag.pockets ? 1 : 0);
+    const surplus = [...have].sort((a, b) => fromPocket(b) - fromPocket(a) || serialOf(b.item) - serialOf(a.item)).slice(0, Math.max(0, have.length - want));
     for (const { grid, item } of surplus) removeItem(grid, item.id);
     for (let missing = want - have.length; missing > 0; missing -= 1) {
       if (pack(bag, type)) continue;

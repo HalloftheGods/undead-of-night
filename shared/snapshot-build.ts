@@ -15,6 +15,7 @@ import type { PlayerState, SimState } from './sim-state.ts';
 import { hordeHostiles } from './waves.ts';
 import { statusView } from './zombie-status.ts';
 import { benchField } from './workbench.ts';
+import { hasSupplies } from './supply-types.ts';
 
 const ROUNDED_EVENT_FIELDS = ['x', 'y', 'angle', 'radius'] as const;
 
@@ -129,6 +130,7 @@ export function playerSnapshot(p: PlayerState): PlayerEntity {
     ...(p.needs ? { needs: { ...p.needs } } : {}),
     ...(p.backpackTier ? { backpackTier: p.backpackTier } : {}),
     ...(p.materials ? { materials: { ...p.materials } } : {}),
+    ...(hasSupplies(p.supplies) ? { supplies: { ...p.supplies } } : {}),
     bagHash: bagHash(p.inventory),
     ...(p.towerHold ? { towerHold: round2(p.towerHold) } : {}),
   };

@@ -3,7 +3,6 @@ import { ammoCapOf } from './keepsakes.ts';
 import { characterOf } from './characters.ts';
 import {
   AMMO_PICKUPS,
-  BANDAGE_HEAL,
   KILL_DROP_CHANCE,
   KILL_DROP_ROUNDS,
   KILL_DROP_TTL_SEC,
@@ -17,7 +16,7 @@ import { foundGunFit, isPartPickup, takePart } from './gun-upgrades.ts';
 import { WEAPON_ORDER } from './protocol.ts';
 import type { PickupType, WeaponId } from './protocol.ts';
 import { isKitPickup, takeKit } from './round-effects.ts';
-import { bandageWound, consumeSurvivalItem, isSurvivalItem } from './survival-needs.ts';
+import { emptySupplies, isSupplyType } from './supply-types.ts';
 import { createEmptyFortificationInventory, isFortificationItem, takeFortificationItem } from './fortifications.ts';
 import type { PickupState, PlayerState, SimState } from './sim-state.ts';
 import { emit, entityId } from './sim-state.ts';
@@ -97,15 +96,10 @@ export function applyPickup(p: PlayerState, item: PickupState): boolean {
 
 export function takeItem(p: PlayerState, item: PickupState): boolean {
   const { type } = item;
-  const isBandage = type === 'bandage';
-  if (isBandage) {
-    const isFullHealth = p.health >= p.maxHealth;
-    const isBleeding = p.needs ? p.needs.bleeding : false;
-    const canTreat = !isFullHealth || isBleeding;
-    if (!canTreat) return false;
-    const shouldBandage = isBleeding && p.needs !== undefined;
-    if (shouldBandage) bandageWound(p.needs!);
-    p.health = Math.min(p.maxHealth, p.health + BANDAGE_HEAL);
+  const isSupply = isSupplyType(type);
+  if (isSupply) {
+    const supplies = p.supplies ?? (p.supplies = emptySupplies());
+    supplies[type] += 1;
     return true;
   }
   const isMedkit = type === 'medkit';
@@ -123,12 +117,6 @@ export function takeItem(p: PlayerState, item: PickupState): boolean {
   }
   const isRadio = type === 'radio';
   if (isRadio) return true;
-  const isSurvival = isSurvivalItem(type);
-  if (isSurvival) {
-    const hasNeeds = p.needs !== undefined;
-    if (!hasNeeds) return false;
-    return consumeSurvivalItem(p.needs!, p, type);
-  }
   const isFortification = isFortificationItem(type);
   if (isFortification) {
     const materials = p.materials ?? (p.materials = createEmptyFortificationInventory());

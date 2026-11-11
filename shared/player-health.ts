@@ -25,6 +25,7 @@ function resetKit(p: PlayerState, spareRounds: number): void {
   p.guns = { pistol: { ammo: pistol.magSize } };
   p.ammoBag = { pistol: spareRounds, carbine: 0, shotgun: 0 };
   p.medkits = 0;
+  delete p.supplies;
   p.knife = false;
   p.bottles = START_BOTTLES;
   p.fireworks = 0;

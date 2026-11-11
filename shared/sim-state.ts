@@ -149,6 +149,8 @@ export interface PlayerState extends Omit<PlayerEntity, 'mags' | 'gear' | 'bottl
   needs?: SurvivalNeeds;
   backpackTier?: BackpackTier;
   materials: FortificationInventory;
+  /** Bandages and survival items carried to use later (`shared/supplies.ts`). Absent means none. */
+  supplies?: Supplies;
   towerHold?: number;
   /** Seconds the search key has been held on a closed door this press (`shared/doors.ts`). */
   doorHold: number;
