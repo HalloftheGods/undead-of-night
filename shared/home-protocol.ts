@@ -7,6 +7,7 @@ import type { PartCounts } from './gun-upgrade-data.ts';
 import type { GunFit } from './gun-upgrades.ts';
 import type { WeaponId, WorldMap } from './protocol.ts';
 import type { KitCounts } from './round-effect-data.ts';
+import type { Supplies } from './supply-types.ts';
 
 /** The bunker is a map like any other, reached by a seed no town can have. */
 export const BUNKER_SEED = -1;
@@ -64,6 +65,8 @@ export interface Loadout {
   medkits: number;
   knife: boolean;
   bottles: number;
+  /** Bandages and survival items stored (`shared/supply-types.ts`). */
+  supplies?: Supplies;
 }
 
 /** What a player brings to the room. The server checks it is legal, and cannot prove it was earned. */

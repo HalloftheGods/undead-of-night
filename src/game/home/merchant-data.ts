@@ -5,6 +5,7 @@ import type { PartId } from '../../../shared/gun-upgrade-data.ts';
 import type { MerchantId } from '../../../shared/home-protocol.ts';
 import type { WeaponId } from '../../../shared/protocol.ts';
 import type { GunEffect } from '../../../shared/round-effect-data.ts';
+import type { SupplyType } from '../../../shared/supply-types.ts';
 
 /** What buying an item puts in the locker. */
 export type ItemGrant =
@@ -12,6 +13,7 @@ export type ItemGrant =
   | { kind: 'ammo'; ammo: AmmoPickup }
   | { kind: 'part'; part: PartId }
   | { kind: 'kit'; effect: GunEffect }
+  | { kind: 'supply'; supply: SupplyType }
   | { kind: 'medkit' }
   | { kind: 'knife' }
   | { kind: 'bottle' };

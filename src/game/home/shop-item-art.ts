@@ -16,6 +16,7 @@ const ICON_OF: IconPicks = {
   ammo: (icons, { ammo }) => icons.pickupIcons[ammo],
   part: (icons, { part }) => icons.pickupIcons[part],
   kit: (icons, { effect }) => icons.pickupIcons[GUN_EFFECTS[effect].kit],
+  supply: (icons, { supply }) => icons.pickupIcons[supply],
   medkit: (icons) => icons.pickupIcons.medkit,
   knife: (icons) => icons.pickupIcons.knife,
   bottle: (icons) => icons.bottle,

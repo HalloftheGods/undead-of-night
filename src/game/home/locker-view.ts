@@ -9,6 +9,7 @@ import { WEAPON_ORDER } from '../../../shared/protocol.ts';
 import type { WeaponId } from '../../../shared/protocol.ts';
 import { EFFECT_ORDER, KIT_CARRY_CAP } from '../../../shared/round-effect-data.ts';
 import type { GunEffect } from '../../../shared/round-effect-data.ts';
+import { isSupplyType, SUPPLY_TYPES } from '../../../shared/supply-types.ts';
 import type { PixelSprite } from '../../art/types.ts';
 import { loadoutRows } from '../home-screens.ts';
 import type { LockerDraft, LockerRow } from '../home-screens.ts';
@@ -41,6 +42,7 @@ const KEY_ORDER: readonly string[] = [
   ...WEAPON_ORDER.map((weapon) => `ammo:${weapon}`),
   ...PART_ORDER.map((part) => `part:${part}`),
   ...EFFECT_ORDER.map((effect) => `kit:${effect}`),
+  ...SUPPLY_TYPES.map((type) => `supply:${type}`),
   'medkit',
   'bottle',
   'knife',
@@ -65,6 +67,7 @@ const HAND_GROUPS: ReadonlyArray<{ readonly label: string; readonly kind: string
   { label: 'Ammo', kind: 'ammo', cap: sum(WEAPON_ORDER.map((weapon) => WEAPONS[weapon].reserveCap)) },
   { label: 'Parts', kind: 'part', cap: PART_ORDER.length * PART_CARRY_CAP },
   { label: 'Kits', kind: 'kit', cap: EFFECT_ORDER.length * KIT_CARRY_CAP },
+  { label: 'Supplies', kind: 'supply', cap: 20 },
   { label: 'Medkits', kind: 'medkit', cap: MEDKIT_MAX },
   { label: 'Bottles', kind: 'bottle', cap: BOTTLE_CARRY },
   { label: 'Knife', kind: 'knife', cap: 1 },
@@ -97,6 +100,7 @@ const GRANT_OF: Partial<Record<string, (id: string) => ItemGrant | null>> = {
   ammo: (id) => (isWeapon(id) ? { kind: 'ammo', ammo: AMMO_FOR[id] } : null),
   part: (id) => (isPart(id) ? { kind: 'part', part: id } : null),
   kit: (id) => (isEffect(id) ? { kind: 'kit', effect: id } : null),
+  supply: (id) => (isSupplyType(id) ? { kind: 'supply', supply: id } : null),
   medkit: () => ({ kind: 'medkit' }),
   knife: () => ({ kind: 'knife' }),
   bottle: () => ({ kind: 'bottle' }),

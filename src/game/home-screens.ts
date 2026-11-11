@@ -9,9 +9,11 @@ import { FINAL_LEVEL, LEVELS, townName } from '../../shared/levels.ts';
 import { WEAPON_ORDER } from '../../shared/protocol.ts';
 import type { WeaponId } from '../../shared/protocol.ts';
 import { coinText, jewelWorth } from '../../shared/treasure.ts';
-import type { ChestOpened, HomeActions, HomeDeath, HomeUi } from './home-hud.ts';
 import type { HomeSave } from './home/home-store.ts';
 import { COOP_LEVEL_NOTE, startAtLabel } from './level-select.ts';
+import { emptySupplies, isSupplyType, SUPPLY_TYPES } from '../../shared/supply-types.ts';
+import type { SupplyType } from '../../shared/supply-types.ts';
+import { formatItemName } from './dual-loot-modal.ts';
 
 const SMELT_SECONDS = 3;
 
@@ -41,7 +43,14 @@ export interface LockerDraft {
 const NONE: Loadout['parts'] = { barrel: 0, grip: 0, magazine: 0, suppressor: 0, toolkit: 0 };
 
 function copyOf(loadout: Loadout): Loadout {
-  return { ...loadout, guns: { ...loadout.guns }, ammoBag: { ...loadout.ammoBag }, parts: { ...NONE, ...loadout.parts }, kits: { ...loadout.kits } };
+  return {
+    ...loadout,
+    guns: { ...loadout.guns },
+    ammoBag: { ...loadout.ammoBag },
+    parts: { ...NONE, ...loadout.parts },
+    kits: { ...loadout.kits },
+    supplies: loadout.supplies ? { ...loadout.supplies } : emptySupplies(),
+  };
 }
 
 /** What a loadout holds, in the order the screens list it. */
@@ -64,6 +73,11 @@ export function loadoutRows(loadout: Loadout): readonly LockerRow[] {
     const count = loadout.kits[effect] ?? 0;
     const hasKits = count > 0;
     if (hasKits) rows.push({ key: `kit:${effect}`, label: `${GUN_EFFECTS[effect].label} kit`, count });
+  }
+  for (const type of SUPPLY_TYPES) {
+    const count = loadout.supplies?.[type] ?? 0;
+    const hasSupplies = count > 0;
+    if (hasSupplies) rows.push({ key: `supply:${type}`, label: formatItemName(type), count });
   }
   const hasMedkits = loadout.medkits > 0;
   if (hasMedkits) rows.push({ key: 'medkit', label: 'Medkit', count: loadout.medkits });
@@ -104,6 +118,14 @@ function take(from: Loadout, key: string): { rest: Loadout; item: Partial<Loadou
     pool[id] -= 1;
     return { rest, item: { [kind === 'part' ? 'parts' : 'kits']: { [id]: 1 } } };
   }
+  const isSupply = kind === 'supply';
+  if (isSupply) {
+    const supplies = rest.supplies;
+    const count = supplies?.[id as SupplyType] ?? 0;
+    if (count <= 0) return { rest: from, item: null };
+    supplies![id as SupplyType] -= 1;
+    return { rest, item: { supplies: { ...emptySupplies(), [id]: 1 } } };
+  }
   const canTakeMedkit = kind === 'medkit' && rest.medkits > 0;
   if (canTakeMedkit) return { rest: { ...rest, medkits: rest.medkits - 1 }, item: { medkits: 1 } };
   const canTakeBottle = kind === 'bottle' && rest.bottles > 0;
@@ -119,6 +141,10 @@ function put(into: Loadout, item: Partial<Loadout>): Loadout {
   for (const weapon of WEAPON_ORDER) next.ammoBag[weapon] = (next.ammoBag[weapon] ?? 0) + (item.ammoBag?.[weapon] ?? 0);
   for (const [part, count] of Object.entries(item.parts ?? {})) next.parts[part as keyof Loadout['parts']] += count;
   for (const [kit, count] of Object.entries(item.kits ?? {})) next.kits[kit as keyof Loadout['kits']] += count;
+  if (item.supplies) {
+    const target = next.supplies ?? (next.supplies = emptySupplies());
+    for (const type of SUPPLY_TYPES) target[type] = (target[type] ?? 0) + (item.supplies[type] ?? 0);
+  }
   next.medkits += item.medkits ?? 0;
   next.bottles += item.bottles ?? 0;
   next.knife = next.knife || item.knife === true;
