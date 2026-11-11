@@ -17,6 +17,7 @@ import {
 } from './constants.ts';
 import type { PlayerState, SimState, ZombieState } from './sim-state.ts';
 import { emit } from './sim-state.ts';
+import { doorBlocksSegment } from './doors.ts';
 import { segmentHitsSolid } from './world-query.ts';
 
 /** With a knife in the other hand the shove goes in point first. Just as silent, and still only every so often per body. */
@@ -54,7 +55,7 @@ function canStagger(z: ZombieState): boolean {
 function shoveTargets(sim: SimState, p: PlayerState): ZombieState[] {
   nearby.length = 0;
   sim.grid.query(p.x, p.y, MELEE_RANGE + PLAYER_RADIUS, nearby);
-  const reachable = nearby.filter((z) => canStagger(z) && inArc(p, z) && !segmentHitsSolid(sim.map, p.x, p.y, z.x, z.y));
+  const reachable = nearby.filter((z) => canStagger(z) && inArc(p, z) && !segmentHitsSolid(sim.map, p.x, p.y, z.x, z.y) && doorBlocksSegment(sim, p.x, p.y, z.x, z.y) === null);
   const distance = (z: ZombieState): number => (z.x - p.x) ** 2 + (z.y - p.y) ** 2;
   return reachable.sort((a, b) => distance(a) - distance(b)).slice(0, MELEE_MAX_TARGETS);
 }

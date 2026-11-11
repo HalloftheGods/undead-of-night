@@ -18,6 +18,8 @@ export function stepMovement(
   speed: number,
   dt: number,
   radius: number,
+  /** Something beyond the map's own solids that stops a body, as a closed door does. */
+  isBlocked?: (x: number, y: number, r: number) => boolean,
 ): { x: number; y: number } {
   const length = Math.hypot(dirX, dirY);
   const isStill = !(length > 0) || !(speed > 0) || !(dt > 0);
@@ -36,13 +38,13 @@ export function stepMovement(
     const movesSideways = stepX !== 0;
     if (movesSideways) {
       const nx = Math.min(maxX, Math.max(radius, px + stepX));
-      const isSideClear = !circleHitsSolid(map, nx, py, radius);
+      const isSideClear = !circleHitsSolid(map, nx, py, radius) && !isBlocked?.(nx, py, radius);
       if (isSideClear) px = nx;
     }
     const movesVertically = stepY !== 0;
     if (movesVertically) {
       const ny = Math.min(maxY, Math.max(radius, py + stepY));
-      const isVerticalClear = !circleHitsSolid(map, px, ny, radius);
+      const isVerticalClear = !circleHitsSolid(map, px, ny, radius) && !isBlocked?.(px, ny, radius);
       if (isVerticalClear) py = ny;
     }
   }

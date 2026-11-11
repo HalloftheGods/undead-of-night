@@ -8,6 +8,7 @@ import {
   SPRINT_SPEED_SCALE,
   TICK_DT,
 } from './constants.ts';
+import { doorBlocksCircle } from './doors.ts';
 import { stopSearch, updateSearch } from './container-search.ts';
 import { effectiveStance, updateStamina } from './stamina.ts';
 import { updateMelee } from './melee.ts';
@@ -144,7 +145,7 @@ export function updatePlayer(sim: SimState, p: PlayerState): void {
   if (p.moving) {
     const survivalSpeed = p.needs ? moveSpeedMultiplier(p.needs) : 1;
     const speed = playerSpeed(p.skin, p.stance) * candySpeed(p) * groundSpeedScale(sim.level, sim.map, p.x, p.y) * survivalSpeed;
-    const moved = stepMovement(sim.map, p.x, p.y, dirX, dirY, speed, TICK_DT, PLAYER_RADIUS);
+    const moved = stepMovement(sim.map, p.x, p.y, dirX, dirY, speed, TICK_DT, PLAYER_RADIUS, (x, y, r) => doorBlocksCircle(sim, x, y, r));
     p.x = moved.x;
     p.y = moved.y;
   }

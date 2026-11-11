@@ -38,6 +38,7 @@ const FRESH_CONNECTION = {
   search: 0,
   searchHeld: false,
   searchSpent: false,
+  doorHold: 0,
   stairsLanding: -1,
   searchingId: null,
   searchLeft: 0,

@@ -38,6 +38,7 @@ import type { BenchAction, WorkbenchMode } from './workbench.ts';
 import { ageFootprints } from './snow-tracks.ts';
 import { noteEntered } from './leftovers.ts';
 import { giveStreakKit } from './streak-kit.ts';
+import { updateDoors } from './doors.ts';
 import { rebuildZombieGrid, removeDeadZombies, updateZombies } from './zombies.ts';
 
 export type { SimulationOptions } from './sim-factory.ts';
@@ -228,6 +229,7 @@ export class GameSimulation {
     }
     rebuildZombieGrid(sim);
     for (const p of sim.players) updatePlayer(sim, p);
+    updateDoors(sim, TICK_DT);
     noteEntered(sim);
     ageFootprints(sim);
     updateSpinners(sim);

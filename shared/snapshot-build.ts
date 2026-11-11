@@ -2,6 +2,7 @@ import { bagHash } from './bag.ts';
 import { merchantView } from './bunker-merchants.ts';
 import { openedContainers } from './container-search.ts';
 import { bagOf } from './candy.ts';
+import { doorViews } from './doors.ts';
 import { SNAPSHOT_RANGE } from './constants.ts';
 import { exitEntity } from './level-exit.ts';
 import { gearField } from './gun-upgrades.ts';
@@ -134,6 +135,11 @@ export function playerSnapshot(p: PlayerState): PlayerEntity {
 }
 
 /** A detached, JSON-safe view of the world. Drains the event queue. */
+function doorsField(sim: SimState, inRange: (item: { x: number; y: number }) => boolean): Pick<SnapshotPacket, 'doors'> {
+  const doors = doorViews(sim, inRange);
+  return doors.length > 0 ? { doors } : {};
+}
+
 export function buildSnapshot(sim: SimState): SnapshotPacket {
   const events = sim.events.map(roundEvent);
   sim.events = [];
@@ -179,6 +185,7 @@ export function buildSnapshot(sim: SimState): SnapshotPacket {
     ...dropField(sim),
     ...bossField(sim),
     ...tracksField(sim, inRange),
+    ...doorsField(sim, inRange),
     ...(sim.merchants.length > 0 ? { merchants: sim.merchants.map(merchantView) } : {}),
     events,
     gameOver: sim.gameOver ? { ...sim.gameOver, players: sim.gameOver.players.map((p) => ({ ...p })) } : null,

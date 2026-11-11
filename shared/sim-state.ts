@@ -2,7 +2,7 @@ import type { PlayerBag } from './bag.ts';
 import type { SugarState } from './candy.ts';
 import type { BackpackTier } from './backpack.ts';
 import type { SurvivalNeeds } from './survival-needs.ts';
-import type { FortificationInventory } from './fortifications.ts';
+import type { BarricadeOpening, FortificationInventory } from './fortifications.ts';
 import type { SupplyDrop } from './supply-drop.ts';
 import type { BossState } from './bosses.ts';
 import type { KillChain } from './kill-chain.ts';
@@ -150,6 +150,8 @@ export interface PlayerState extends Omit<PlayerEntity, 'mags' | 'gear' | 'bottl
   backpackTier?: BackpackTier;
   materials: FortificationInventory;
   towerHold?: number;
+  /** Seconds the search key has been held on a closed door this press (`shared/doors.ts`). */
+  doorHold: number;
 }
 
 /** Unaware, walking to a noise, or after a player. */
@@ -343,6 +345,8 @@ export interface SimState {
   readonly overrunOn: boolean;
   /** Null with the overrun off, on a first visit, out on a trip, and from its end to the next arrival. */
   overrun: OverrunState | null;
+  /** The map's doors, built the first time `updateDoors` runs for a map (`shared/doors.ts`). */
+  doors?: BarricadeOpening[];
 }
 
 export function entityId(sim: SimState, prefix: string): EntityId {

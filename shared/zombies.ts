@@ -11,6 +11,7 @@ import {
   ZOMBIE_WANDER_SPEED_SCALE,
 } from './constants.ts';
 import { groundEffect } from './ground.ts';
+import { doorBlocksCircle, doorBlocksSegment } from './doors.ts';
 import { stepMovement } from './movement.ts';
 import { damageZombie } from './combat.ts';
 import { SPIKY_THORNS_DAMAGE, sugarOf } from './candy.ts';
@@ -128,7 +129,7 @@ const bodyGap = (z: ZombieState, p: Prey): number =>
 
 /** A wall is thinner than a brute's reach, so a blow has to have a clear path as well as the range. */
 const canSee = (sim: SimState, z: ZombieState, p: Prey): boolean =>
-  segmentHitsSolid(sim.map, z.x, z.y, p.x, p.y) === null;
+  segmentHitsSolid(sim.map, z.x, z.y, p.x, p.y) === null && doorBlocksSegment(sim, z.x, z.y, p.x, p.y) === null;
 
 /** Rays down the middle and both edges of the body: anything thinner than that could slip between. */
 function hasClearLane(sim: SimState, z: ZombieState, p: Prey): boolean {
@@ -138,7 +139,10 @@ function hasClearLane(sim: SimState, z: ZombieState, p: Prey): boolean {
   const sideX = (-(p.y - z.y) / distance) * z.radius;
   const sideY = ((p.x - z.x) / distance) * z.radius;
   return [-1, 0, 1].every(
-    (side) => !segmentHitsSolid(sim.map, z.x + sideX * side, z.y + sideY * side, p.x + sideX * side, p.y + sideY * side),
+    (side) => {
+      const [x0, y0, x1, y1] = [z.x + sideX * side, z.y + sideY * side, p.x + sideX * side, p.y + sideY * side];
+      return !segmentHitsSolid(sim.map, x0, y0, x1, y1) && doorBlocksSegment(sim, x0, y0, x1, y1) === null;
+    },
   );
 }
 
@@ -155,7 +159,7 @@ function applyKnockback(sim: SimState, z: ZombieState): void {
     z.knockY = 0;
     return;
   }
-  const moved = stepMovement(sim.map, z.x, z.y, z.knockX, z.knockY, speed, TICK_DT, z.radius);
+  const moved = stepMovement(sim.map, z.x, z.y, z.knockX, z.knockY, speed, TICK_DT, z.radius, (x, y, r) => doorBlocksCircle(sim, x, y, r));
   z.x = moved.x;
   z.y = moved.y;
   z.knockX *= KNOCK_DECAY;
@@ -221,6 +225,7 @@ function stride(sim: SimState, z: ZombieState, dirX: number, dirY: number, pace 
     zombieSpeed(z) * footing,
     TICK_DT,
     z.radius,
+    (x, y, r) => doorBlocksCircle(sim, x, y, r),
   );
   const progress = Math.hypot(moved.x - z.x, moved.y - z.y);
   z.x = moved.x;
@@ -232,7 +237,7 @@ function walkToward(sim: SimState, z: ZombieState, prey: Prey): void {
   let dirX = prey.x - z.x;
   let dirY = prey.y - z.y;
   const distance = Math.hypot(dirX, dirY);
-  const pointBlank = distance < POINT_BLANK_RANGE && !segmentHitsSolid(sim.map, z.x, z.y, prey.x, prey.y);
+  const pointBlank = distance < POINT_BLANK_RANGE && !segmentHitsSolid(sim.map, z.x, z.y, prey.x, prey.y) && doorBlocksSegment(sim, z.x, z.y, prey.x, prey.y) === null;
   // The field has no tile under a body in a part-blocked tile and would walk it back out, away from prey it can see.
   const offTheField = distance < DIRECT_CHASE_RANGE && sim.flow.distanceAt(z.x, z.y) === Infinity && canSee(sim, z, prey);
   const straightShot = pointBlank || offTheField || (distance < DIRECT_CHASE_RANGE && hasClearLane(sim, z, prey));
@@ -301,7 +306,7 @@ function wander(sim: SimState, z: ZombieState): void {
   if (standingStill) return;
 
   const speed = zombieSpeed(z) * ZOMBIE_WANDER_SPEED_SCALE * groundEffect(sim.map, z.x, z.y).speed;
-  const moved = stepMovement(sim.map, z.x, z.y, z.wanderX, z.wanderY, speed, TICK_DT, z.radius);
+  const moved = stepMovement(sim.map, z.x, z.y, z.wanderX, z.wanderY, speed, TICK_DT, z.radius, (x, y, r) => doorBlocksCircle(sim, x, y, r));
   const leavesHome = z.home !== null && buildingAt(sim.map, moved.x, moved.y)?.id !== z.home;
   const bumped = Math.hypot(moved.x - z.x, moved.y - z.y) < speed * TICK_DT * BLOCKED_PROGRESS;
   const turnBack = leavesHome || bumped;

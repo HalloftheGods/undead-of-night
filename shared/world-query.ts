@@ -252,7 +252,7 @@ export function circleHitsSolid(map: WorldMap, x: number, y: number, r: number):
 }
 
 /** Slab test: fraction of the segment at which it enters the box, or Infinity. */
-function segmentEntersBox(box: Box, x0: number, y0: number, dx: number, dy: number): number {
+export function segmentEntersBox(box: Box, x0: number, y0: number, dx: number, dy: number): number {
   let tMin = 0;
   let tMax = 1;
   const isVertical = dx === 0;

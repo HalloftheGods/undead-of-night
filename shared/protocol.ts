@@ -272,6 +272,8 @@ export type GameEvent =
   | { readonly type: 'trip_start'; readonly level: number; readonly attempt: number }
   /** Something at the blast door: `step` counts the warnings from 0, `left` is the clock's seconds then. */
   | { readonly type: 'overrun_warning'; readonly step: number; readonly left: number }
+  /** A door at x,y was closed, opened, boarded, pried, hit by zombies or broken. */
+  | { readonly type: 'door_closed' | 'door_opened' | 'plank_added' | 'plank_removed' | 'door_hit' | 'door_broken'; readonly x: number; readonly y: number }
   | { readonly type: 'overrun_breach'; readonly hostiles: number }
   | { readonly type: 'merchant_hurt'; readonly merchant: MerchantId; readonly x: number; readonly y: number }
   | { readonly type: 'merchant_downed'; readonly merchant: MerchantId; readonly x: number; readonly y: number }
@@ -354,6 +356,8 @@ export interface SnapshotPacket {
   readonly boss?: BossView;
   /** Footprints in a snowy town near this viewer. Left off when there are none. */
   readonly tracks?: readonly TrackEntity[];
+  /** Doors near a player that are closed, boarded or damaged. Left off when every door is as it started. */
+  readonly doors?: readonly DoorView[];
   /** The bunker's merchants, walking it, sent to everyone. Left off anywhere else. */
   readonly merchants?: readonly MerchantEntity[];
   /** Events since the previous snapshot, in order. */
@@ -363,6 +367,14 @@ export interface SnapshotPacket {
   readonly bench?: BenchView;
   /** The room's level pick and reach. Left off outside home mode. */
   readonly home?: RoomHomeView;
+}
+
+/** A door that is not as it started: `i` is its index in the map's door list (`freshDoors`). */
+export interface DoorView {
+  readonly i: number;
+  readonly open: boolean;
+  readonly planks: number;
+  readonly health: number;
 }
 
 export interface BossView {

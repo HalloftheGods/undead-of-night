@@ -4,6 +4,7 @@ import { containerInReach } from '../../shared/containers.ts';
 import type { Container } from '../../shared/containers.ts';
 import { isBunkerMap } from '../../shared/home-protocol.ts';
 import type { OverrunPhase, StationId } from '../../shared/home-protocol.ts';
+import { viewsBlockCircle } from '../../shared/doors.ts';
 import { stepMovement } from '../../shared/movement.ts';
 import { playerSpeed } from '../../shared/players.ts';
 import { effectiveStance } from '../../shared/stamina.ts';
@@ -11,7 +12,7 @@ import { manholeFlightNear } from '../../shared/take-manhole.ts';
 import { radioTowerNear } from '../../shared/radio-tower.ts';
 import { openableStation } from '../../shared/stations.ts';
 import { groundSpeedScale } from '../../shared/town-rules.ts';
-import type { EntityId, PlayerEntity, SnapshotPacket, Stance, WorldMap } from '../../shared/protocol.ts';
+import type { DoorView, EntityId, PlayerEntity, SnapshotPacket, Stance, WorldMap } from '../../shared/protocol.ts';
 import { buildingAt, circleHitsSolid } from '../../shared/world-query.ts';
 import type { SceneView } from '../engine/scene.ts';
 import { LocalPredictor } from './prediction.ts';
@@ -55,11 +56,18 @@ export class ClientWorld {
     this.localId = localId;
     this.map = map;
     this.predictor = new LocalPredictor(
-      (x, y, dirX, dirY, dt) => stepMovement(this.map, x, y, dirX, dirY, this.speed * groundSpeedScale(this.level, this.map, x, y), dt, PLAYER_RADIUS),
+      (x, y, dirX, dirY, dt) => stepMovement(this.map, x, y, dirX, dirY, this.speed * groundSpeedScale(this.level, this.map, x, y), dt, PLAYER_RADIUS, this.doorBlocks),
       TICK_DT,
-      (x, y) => circleHitsSolid(this.map, x, y, PLAYER_RADIUS),
+      (x, y) => circleHitsSolid(this.map, x, y, PLAYER_RADIUS) || this.doorBlocks(x, y, PLAYER_RADIUS),
     );
   }
+
+  /** The closed, boarded or damaged doors near the local player, as the latest snapshot lists them. For the renderer and HUD. */
+  get doors(): readonly DoorView[] {
+    return this.latest?.doors ?? [];
+  }
+
+  private readonly doorBlocks = (x: number, y: number, r: number): boolean => viewsBlockCircle(this.map, this.doors, x, y, r);
 
   get latest(): SnapshotPacket | null {
     return this.buffer.latest?.snapshot ?? null;

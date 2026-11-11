@@ -4,6 +4,7 @@ import type { Container } from './containers.ts';
 import type { Point } from './flow-field.ts';
 import type { PlayerState, SimState } from './sim-state.ts';
 import { emit } from './sim-state.ts';
+import { doorBlocksSegment } from './doors.ts';
 import { segmentHitsSolid } from './world-query.ts';
 import { makeNoise } from './zombie-senses.ts';
 
@@ -30,7 +31,7 @@ export function landingSpot(sim: SimState, p: PlayerState, range = BOTTLE_RANGE)
   let distance = Math.min(range, Math.hypot(aimed.x - p.x, aimed.y - p.y));
   const spotAt = (reach: number): Point => ({ x: p.x + Math.cos(angle) * reach, y: p.y + Math.sin(angle) * reach });
   let spot = spotAt(distance);
-  while (distance > 0 && segmentHitsSolid(sim.map, p.x, p.y, spot.x, spot.y)) {
+  while (distance > 0 && (segmentHitsSolid(sim.map, p.x, p.y, spot.x, spot.y) || doorBlocksSegment(sim, p.x, p.y, spot.x, spot.y))) {
     distance = Math.max(0, distance - BACKOFF_STEP);
     spot = spotAt(distance);
   }

@@ -26,6 +26,7 @@ import { hurtPlayer } from './player-health.ts';
 import { PIERCE_DAMAGE_SCALE } from './round-effect-data.ts';
 import type { BulletState, SimState, ZombieState } from './sim-state.ts';
 import { emit } from './sim-state.ts';
+import { doorBlocksSegment } from './doors.ts';
 import { segmentHitsSolid } from './world-query.ts';
 import { startHunting } from './zombie-senses.ts';
 import { announcePierce, applyRoundEffect, corrosionScale } from './zombie-status.ts';
@@ -37,7 +38,7 @@ const nearby: ZombieState[] = [];
 
 function burst(sim: SimState, z: ZombieState, killerId: EntityId | null): void {
   emit(sim, { type: 'bloater_burst', x: z.x, y: z.y, radius: BLOATER_BURST_RADIUS });
-  const sheltered = (target: { x: number; y: number }): boolean => segmentHitsSolid(sim.map, z.x, z.y, target.x, target.y) !== null;
+  const sheltered = (target: { x: number; y: number }): boolean => segmentHitsSolid(sim.map, z.x, z.y, target.x, target.y) !== null || doorBlocksSegment(sim, z.x, z.y, target.x, target.y) !== null;
   for (const p of sim.players) {
     const inBlast = Math.hypot(p.x - z.x, p.y - z.y) <= BLOATER_BURST_RADIUS + PLAYER_RADIUS;
     const isCaughtInBurst = inBlast && !sheltered(p);
@@ -228,7 +229,10 @@ function sweepBullet(sim: SimState, b: BulletState, length: number): boolean {
   const dy = (b.vy / speed) * length;
   const angle = Math.atan2(b.vy, b.vx);
 
-  const wall = segmentHitsSolid(sim.map, b.x, b.y, b.x + dx, b.y + dy);
+  const hitWall = segmentHitsSolid(sim.map, b.x, b.y, b.x + dx, b.y + dy);
+  const hitDoor = doorBlocksSegment(sim, b.x, b.y, b.x + dx, b.y + dy);
+  const doorIsNearer = hitDoor !== null && (hitWall === null || Math.hypot(hitDoor.x - b.x, hitDoor.y - b.y) < Math.hypot(hitWall.x - b.x, hitWall.y - b.y));
+  const wall = doorIsNearer ? hitDoor : hitWall;
   const wallT = wall ? Math.hypot(wall.x - b.x, wall.y - b.y) / length : Infinity;
   const target = firstZombieOnPath(sim, b, dx, dy);
 
