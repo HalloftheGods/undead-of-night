@@ -85,7 +85,12 @@ const FIND_NAMES: Readonly<Partial<Record<PickupType, string>>> = {
   canned_food: "Food",
   water_bottle: "Water",
   disinfectant: "Disinfectant",
-  antibiotics: "Antibiotics"
+  antibiotics: "Antibiotics",
+  plank: "Planks",
+  nails: "Nails",
+  hammer_tool: "Hammer",
+  crowbar: "Crowbar",
+  sheet_curtain: "Curtain sheets"
 };
 
 const PART_NAMES: Readonly<Record<string, string>> = {
@@ -149,7 +154,7 @@ const BLURBS: Readonly<Record<PlaceId, string>> = {
   apartment: "Like a house, with more pantries and drawers to scavenge for food and water.",
   upstairs: "Bedrooms: where a night's candy haul gets hidden.",
   cellar: "Worth the trip down for first aid, and the noise it brings.",
-  cars: "Every car has a radio. Cop cars carry extra firepower, while ambulances carry medical supplies.",
+  cars: "Every car has a radio. Cop cars carry extra firepower, while ambulances carry medical supplies. Dumpsters in the alleys can turn up anything, with luck.",
   fireworks_bus:
     "An old city bus in the downtown car park, turned fireworks stand. Fill your hands, then come back for more."
 };
@@ -332,6 +337,7 @@ const CONTAINER_ORDER: readonly ContainerKind[] = [
   "locker",
   "box",
   "car",
+  "dumpster",
   "booth"
 ];
 
@@ -484,7 +490,12 @@ const LOOKED_FOR: readonly string[] = [
   "candy",
   "parts",
   "kits",
-  "radio"
+  "radio",
+  "plank",
+  "nails",
+  "hammer_tool",
+  "crowbar",
+  "sheet_curtain"
 ];
 const PLACES_PER_LINE = 3;
 
@@ -513,6 +524,7 @@ export const GUIDE_TIPS: readonly string[] = [
   `Any search can turn up an empty bottle, about ${Math.round(BOTTLE_FIND_CHANCE * 100)} times in 100, even when there is nothing else.`,
   `About one car in ${Math.round(1 / CAR_ALARM_CHANCE)} sets its alarm off when searched. Everything nearby hears it.`,
   "Gun parts, round kits and Radios are few to a town. When one turns up, take it.",
+  "To board up a door you need planks, nails and a hammer. Garages, warehouses and cellars keep them; a crowbar or the hammer pries a board back off.",
   "Your candy bag has no bottom: empty every bowl. X opens it to pick a candy, and eating one already working makes it last longer."
 ];
 

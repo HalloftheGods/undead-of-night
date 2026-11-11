@@ -89,6 +89,28 @@ describe('the Town Guide', () => {
     expect(disinfectantLookup?.places[0].id).toBe('clinic');
   });
 
+  it('names and draws the building materials, and lists them in the index', () => {
+    const names: Record<string, string> = { plank: 'Planks', nails: 'Nails', hammer_tool: 'Hammer', crowbar: 'Crowbar', sheet_curtain: 'Curtain sheets' };
+    for (const [id, name] of Object.entries(names)) {
+      const finds = guidePlaces().flatMap((place) => place.finds.filter((find) => find.id === id));
+      expect(finds.length).toBeGreaterThan(0);
+      for (const find of finds) {
+        expect(find.name).toBe(name);
+        expect(find.icon).toBe(id);
+      }
+      expect(whereToLook().find((line) => line.id === id)?.places.length).toBeGreaterThan(0);
+    }
+    expect(tierOf('garage', 'hammer_tool')).toBeDefined();
+    expect(tierOf('cellar', 'plank')).toBeDefined();
+  });
+
+  it('lists the dumpster among the places to search in the street and the workshops', () => {
+    expect(placeOf('cars').searchIn).toContain('dumpster');
+    expect(placeOf('garage').searchIn).toContain('dumpster');
+    expect(placeOf('warehouse').searchIn).toContain('dumpster');
+    expect(placeOf('house').searchIn).not.toContain('dumpster');
+  });
+
   it('opens on the contents, then the index, then a page per place', () => {
     const leaves = guideLeaves();
     expect(leaves.map((leaf) => leaf.kind).slice(0, 2)).toEqual(['front', 'index']);

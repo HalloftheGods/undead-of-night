@@ -17,6 +17,15 @@ describe('how-to-play visuals', () => {
     }
   });
 
+  it('has How to Play pages for the bag and for doors, with their own pictures', () => {
+    const art = buildArtBook();
+    for (const id of ['bag', 'doors']) {
+      expect(HOW_TO_SECTIONS.some((section) => section.id === id)).toBe(true);
+    }
+    expect(getSectionVisuals('doors', art).map((card) => card.id)).toEqual(['plank', 'nails', 'hammer', 'crowbar', 'curtain']);
+    expect(getSectionVisuals('bag', art).length).toBeGreaterThan(0);
+  });
+
   it('has no pictures for a section it has not met', () => {
     expect(getSectionVisuals('not-a-section', buildArtBook())).toEqual([]);
   });

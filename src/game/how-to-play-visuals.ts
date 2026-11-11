@@ -123,10 +123,26 @@ const survival: CardList = (art) => [
   ...moodleCards(art),
 ];
 
+const bag: CardList = (art) => [
+  { id: 'plank', title: 'Plank', sprite: art.ui.pickupIcons.plank, scale: 3, tag: 'Four cells', caption: 'Drawn end to end across its slots.' },
+  { id: 'water-bottle', title: 'Bottled water', sprite: art.ui.pickupIcons.water_bottle, scale: 3, tag: 'Two cells' },
+  { id: 'fountain', title: 'Fountain', sprite: art.ui.fountain, scale: 3, tag: 'Two cells' },
+];
+
+const doors: CardList = (art) => [
+  { id: 'plank', title: 'Plank', sprite: art.ui.pickupIcons.plank, scale: 3, tag: 'Board', caption: 'One board for each hold of E.' },
+  { id: 'nails', title: 'Nails', sprite: art.ui.pickupIcons.nails, scale: 3, tag: 'Fasten' },
+  { id: 'hammer', title: 'Hammer', sprite: art.ui.pickupIcons.hammer_tool, scale: 3, tag: 'Tool' },
+  { id: 'crowbar', title: 'Crowbar', sprite: art.ui.pickupIcons.crowbar, scale: 3, tag: 'Pry', caption: 'Sneak and hold E.' },
+  { id: 'curtain', title: 'Curtain sheet', sprite: art.ui.pickupIcons.sheet_curtain, scale: 3, tag: 'Cover' },
+];
+
 const SECTION_CARDS: Readonly<Record<string, CardList>> = {
   supplies,
   survival,
   searching,
+  bag,
+  doors,
   hordes,
   survivors,
   noise,
