@@ -17,6 +17,7 @@ import { WEAPON_ORDER } from './protocol.ts';
 import type { PickupType, WeaponId } from './protocol.ts';
 import { isKitPickup, takeKit } from './round-effects.ts';
 import { bandageWound, consumeSurvivalItem, isSurvivalItem } from './survival-needs.ts';
+import { createEmptyFortificationInventory, isFortificationItem, takeFortificationItem } from './fortifications.ts';
 import type { PickupState, PlayerState, SimState } from './sim-state.ts';
 import { emit, entityId } from './sim-state.ts';
 import { spawnSalvage, takeSalvage } from './salvage.ts';
@@ -116,6 +117,11 @@ function applyPickup(p: PlayerState, item: PickupState): boolean {
     const hasNeeds = p.needs !== undefined;
     if (!hasNeeds) return false;
     return consumeSurvivalItem(p.needs!, p, type);
+  }
+  const isFortification = isFortificationItem(type);
+  if (isFortification) {
+    const materials = p.materials ?? (p.materials = createEmptyFortificationInventory());
+    return takeFortificationItem(materials, type, p.backpackTier);
   }
   if (isPartPickup(type)) return takePart(p, type);
   if (isKitPickup(type)) return takeKit(p, type);

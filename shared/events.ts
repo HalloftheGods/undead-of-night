@@ -15,9 +15,11 @@ export const SURVIVAL_ITEM_TYPES = ['canned_food', 'water_bottle', 'disinfectant
 /** Found in town and banked at home, where the press turns it into round kits. Never in a loadout. */
 export const SALVAGE_TYPES = ['fuel_can', 'car_battery', 'scrap_steel', 'sedatives'] as const;
 
+export const FORTIFICATION_TYPES = ['plank', 'nails', 'hammer_tool', 'sheet_curtain', 'crowbar'] as const;
+
 export const PICKUP_TYPES = [
   'bandage', 'medkit', 'pistol_ammo', 'carbine_ammo', 'shells', 'carbine', 'shotgun', 'knife', 'radio',
-  ...PART_ORDER, ...KIT_ORDER, ...TREASURE_TYPES, ...SURVIVAL_ITEM_TYPES, ...SALVAGE_TYPES,
+  ...PART_ORDER, ...KIT_ORDER, ...TREASURE_TYPES, ...SURVIVAL_ITEM_TYPES, ...SALVAGE_TYPES, ...FORTIFICATION_TYPES,
 ] as const;
 
 export const GAME_EVENT_TYPES = [

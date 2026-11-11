@@ -379,6 +379,53 @@ export function buildWeaponIcons(): Record<WeaponId, PixelSprite> {
   return { pistol: outlined(PISTOL, 32, 14), carbine: outlined(CARBINE, 32, 14), shotgun: outlined(SHOTGUN, 32, 14) };
 }
 
+export const PLANK_GRID: Grid = [
+  '..kzzzzzzzk..',
+  '.kzyyyyyyyzk.',
+  'kzyyppppyzyzk',
+  'kxxxxxxxxxxxk',
+  'kxxwyyyyywxxk',
+  '.kwwwwwwwwwk.',
+];
+
+export const NAILS_GRID: Grid = [
+  '..kppk..kppk..',
+  '..kppk..kppk..',
+  '..kmmk..kmmk..',
+  '...knk...knk..',
+  '...knk...knk..',
+  '....kk....kk..',
+];
+
+export const HAMMER_GRID: Grid = [
+  '..kppmmmoook..',
+  '.kpppmnnnnook.',
+  '..kppkkkkkkk..',
+  '....kzyzk.....',
+  '....kzyzk.....',
+  '....kxyxk.....',
+  '....kwwwwk....',
+];
+
+export const CURTAIN_GRID: Grid = [
+  'keeeeeeeeeeeek',
+  'kffgffgffgfffk',
+  'keehffhffhffek',
+  'kffgffgffgfffk',
+  'keehffhffhffek',
+  '.kkkkkkkkkkkk.',
+];
+
+export const CROWBAR_GRID: Grid = [
+  '...kppmmk.....',
+  '..kpmnnmok....',
+  '..kmnk..kmk...',
+  '..kmnk...kk...',
+  '..kmnk........',
+  '..kmnk........',
+  '...kk.........',
+];
+
 export function buildPickupIcons(): Record<PickupType, PixelSprite> {
   return {
     medkit: outlined(MEDKIT, 15, 15),
@@ -410,6 +457,11 @@ export function buildPickupIcons(): Record<PickupType, PixelSprite> {
     car_battery: outlined(KIT_ART.acid_kit.rows, 15, 15),
     scrap_steel: outlined(KIT_ART.piercing_kit.rows, 15, 15),
     sedatives: outlined(KIT_ART.tranq_kit.rows, 15, 15),
+    plank: outlined(PLANK_GRID, 15, 15),
+    nails: outlined(NAILS_GRID, 15, 15),
+    hammer_tool: outlined(HAMMER_GRID, 15, 15),
+    sheet_curtain: outlined(CURTAIN_GRID, 15, 15),
+    crowbar: outlined(CROWBAR_GRID, 15, 15),
   };
 }
 

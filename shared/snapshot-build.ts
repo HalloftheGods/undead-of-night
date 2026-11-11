@@ -126,6 +126,7 @@ export function playerSnapshot(p: PlayerState): PlayerEntity {
     ...playerHomeField(p),
     ...(p.needs ? { needs: { ...p.needs } } : {}),
     ...(p.backpackTier ? { backpackTier: p.backpackTier } : {}),
+    ...(p.materials ? { materials: { ...p.materials } } : {}),
   };
 }
 

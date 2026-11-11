@@ -14,14 +14,20 @@ import {
   FORTIFICATION_LOOT,
   HEALTH_PER_PLANK,
   installCurtain,
+  isFortificationItem,
   MAX_PLANKS_PER_OPENING,
   NAILS_PER_PLANK,
   repairBarricade,
   rollFortificationLoot,
   shatterWindow,
+  takeFortificationItem,
   toggleCurtain,
   WINDOW_SHATTER_NOISE_RADIUS,
 } from '../shared/fortifications.ts';
+import { createPlayer } from '../shared/player-roster.ts';
+import { spawnPickup, updatePickups } from '../shared/pickups.ts';
+import { createSimState } from '../shared/sim-factory.ts';
+import { generateWorldMap } from '../shared/world-map.ts';
 
 describe('Fortification Item Definitions & Loot Tables', () => {
   it('defines valid carpentry materials and tools', () => {
@@ -234,5 +240,106 @@ describe('Window Shattering, Glass Clearing & Curtains', () => {
     // Shattered window allows vaulting through
     windowOpening.isBroken = true;
     expect(blocksPassage(windowOpening)).toBe(false);
+  });
+});
+
+describe('Fortification Drops, Pickup Collection & Inventory Caps', () => {
+  it('correctly validates fortification item types', () => {
+    expect(isFortificationItem('plank')).toBe(true);
+    expect(isFortificationItem('nails')).toBe(true);
+    expect(isFortificationItem('hammer_tool')).toBe(true);
+    expect(isFortificationItem('crowbar')).toBe(true);
+    expect(isFortificationItem('sheet_curtain')).toBe(true);
+    expect(isFortificationItem('bandage')).toBe(false);
+  });
+
+  it('enforces plank storage caps based on backpack tier', () => {
+    const inv = createEmptyFortificationInventory();
+
+    // Satchel tier allows up to 2 planks
+    const satchelPlank1 = takeFortificationItem(inv, 'plank', 'satchel');
+    const satchelPlank2 = takeFortificationItem(inv, 'plank', 'satchel');
+    const satchelPlank3 = takeFortificationItem(inv, 'plank', 'satchel');
+    expect(satchelPlank1).toBe(true);
+    expect(satchelPlank2).toBe(true);
+    expect(satchelPlank3).toBe(false);
+    expect(inv.planks).toBe(2);
+
+    // Duffel tier allows up to 4 planks
+    const duffelPlank3 = takeFortificationItem(inv, 'plank', 'duffel');
+    const duffelPlank4 = takeFortificationItem(inv, 'plank', 'duffel');
+    const duffelPlank5 = takeFortificationItem(inv, 'plank', 'duffel');
+    expect(duffelPlank3).toBe(true);
+    expect(duffelPlank4).toBe(true);
+    expect(duffelPlank5).toBe(false);
+    expect(inv.planks).toBe(4);
+
+    // Alice tier allows up to 8 planks
+    inv.planks = 6;
+    const alicePlank7 = takeFortificationItem(inv, 'plank', 'alice');
+    const alicePlank8 = takeFortificationItem(inv, 'plank', 'alice');
+    const alicePlank9 = takeFortificationItem(inv, 'plank', 'alice');
+    expect(alicePlank7).toBe(true);
+    expect(alicePlank8).toBe(true);
+    expect(alicePlank9).toBe(false);
+    expect(inv.planks).toBe(8);
+  });
+
+  it('rejects duplicate hammer and crowbar tools', () => {
+    const inv = createEmptyFortificationInventory();
+
+    const hammerFirst = takeFortificationItem(inv, 'hammer_tool');
+    const hammerSecond = takeFortificationItem(inv, 'hammer_tool');
+    expect(hammerFirst).toBe(true);
+    expect(hammerSecond).toBe(false);
+    expect(inv.hasHammer).toBe(true);
+
+    const crowbarFirst = takeFortificationItem(inv, 'crowbar');
+    const crowbarSecond = takeFortificationItem(inv, 'crowbar');
+    expect(crowbarFirst).toBe(true);
+    expect(crowbarSecond).toBe(false);
+    expect(inv.hasCrowbar).toBe(true);
+  });
+
+  it('collects ground fortification pickups into player materials', () => {
+    const map = generateWorldMap(1234);
+    const sim = createSimState({ map, difficulty: 'stay_close' });
+    const player = createPlayer({ id: 'p1', name: 'Builder', token: null, skin: 0 }, { x: 100, y: 100 });
+    sim.players = [player];
+    sim.pickups = [];
+
+    spawnPickup(sim, 'plank', 100, 100);
+    spawnPickup(sim, 'nails', 100, 100);
+    spawnPickup(sim, 'hammer_tool', 100, 100);
+
+    expect(sim.pickups.length).toBe(3);
+    updatePickups(sim);
+
+    expect(player.materials.planks).toBe(1);
+    expect(player.materials.nails).toBe(8);
+    expect(player.materials.hasHammer).toBe(true);
+    expect(sim.pickups.length).toBe(0);
+
+    const pickupEvents = sim.events.filter((e) => e.type === 'pickup');
+    expect(pickupEvents.length).toBe(3);
+  });
+
+  it('leaves excess planks on the ground when player inventory is full', () => {
+    const map = generateWorldMap(5678);
+    const sim = createSimState({ map, difficulty: 'stay_close' });
+    const player = createPlayer({ id: 'p1', name: 'Survivor', token: null, skin: 0 }, { x: 200, y: 200 });
+    player.backpackTier = 'satchel';
+    player.materials.planks = 2; // Cap for satchel
+    sim.players = [player];
+    sim.pickups = [];
+
+    spawnPickup(sim, 'plank', 200, 200);
+    expect(sim.pickups.length).toBe(1);
+
+    updatePickups(sim);
+
+    // Plank could not be picked up, stays on ground
+    expect(player.materials.planks).toBe(2);
+    expect(sim.pickups.length).toBe(1);
   });
 });

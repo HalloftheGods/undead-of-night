@@ -1,6 +1,7 @@
 import type { SugarState } from './candy.ts';
 import type { BackpackTier } from './backpack.ts';
 import type { SurvivalNeeds } from './survival-needs.ts';
+import type { FortificationInventory } from './fortifications.ts';
 import type { SupplyDrop } from './supply-drop.ts';
 import type { BossState } from './bosses.ts';
 import type { KillChain } from './kill-chain.ts';
@@ -144,6 +145,7 @@ export interface PlayerState extends Omit<PlayerEntity, 'mags' | 'gear' | 'bottl
   stepNoiseLeft: number;
   needs?: SurvivalNeeds;
   backpackTier?: BackpackTier;
+  materials: FortificationInventory;
 }
 
 /** Unaware, walking to a noise, or after a player. */
@@ -319,6 +321,8 @@ export interface SimState {
   pickups: PickupState[];
   /** Town buildings, by ground floor, that any player has been inside: where the map marks supplies left behind. */
   entered: Set<string>;
+  /** Buildings revealed by a map cache clue. */
+  clues: Set<string>;
   /** At the same index as the town's container list. */
   containers: ContainerState[];
   events: GameEvent[];

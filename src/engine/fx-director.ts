@@ -87,7 +87,12 @@ const PICKUP_LABEL: Record<PickupType, string> = {
   fuel_can: "FUEL CAN",
   car_battery: "CAR BATTERY",
   scrap_steel: "SCRAP STEEL",
-  sedatives: "SEDATIVES"
+  sedatives: "SEDATIVES",
+  plank: "PLANK",
+  nails: "NAILS",
+  hammer_tool: "HAMMER",
+  sheet_curtain: "CURTAIN",
+  crowbar: "CROWBAR"
 };
 
 export interface PulseLight {

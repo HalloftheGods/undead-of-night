@@ -3,6 +3,7 @@ import { freshEmoteBudget } from './emotes.ts';
 import { createDefaultSurvivalNeeds } from './survival-needs.ts';
 import { noParts } from './gun-upgrades.ts';
 import { giveStartingLoadout } from './player-health.ts';
+import { createEmptyFortificationInventory } from './fortifications.ts';
 import { noKits } from './round-effects.ts';
 import type { PlayerState, SimState } from './sim-state.ts';
 import { moveBurnCredit } from './zombie-status.ts';
@@ -98,6 +99,7 @@ export function createPlayer(arrival: Arrival, spot: { x: number; y: number }): 
     home: null,
     needs: createDefaultSurvivalNeeds(),
     backpackTier: 'satchel',
+    materials: createEmptyFortificationInventory(),
   };
   giveStartingLoadout(player);
   return player;

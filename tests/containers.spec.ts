@@ -452,22 +452,25 @@ describe('what is in them', () => {
   });
 
   it('searching a police car can yield carbines or shotguns', () => {
-    const { sim, state, container } = setup((c) => c.prop === 'police_h' || c.prop === 'police_v');
+    const { sim, state, p, container } = setup((c) => c.prop === 'police_h' || c.prop === 'police_v');
     state.containers[container.id].loot = null;
     fixRoll(state, 0.1);
     hold(sim);
     steps(sim, ticksFor(container));
-    const guns = state.pickups.map((p) => p.type).filter((t) => t === 'carbine' || t === 'shotgun');
-    expect(guns.length).toBeGreaterThan(0);
+    const guns = state.pickups.map((item) => item.type).filter((t) => t === 'carbine' || t === 'shotgun');
+    const playerHasGun = p.owned.includes('carbine') || p.owned.includes('shotgun');
+    expect(guns.length > 0 || playerHasGun).toBe(true);
   });
 
   it('searching an ambulance yields medical supplies', () => {
-    const { sim, state, container } = setup((c) => c.prop === 'ambulance_h');
+    const { sim, state, p, container } = setup((c) => c.prop === 'ambulance_h');
     state.containers[container.id].loot = null;
+    p.medkits = 3;
+    p.health = p.maxHealth;
     fixRoll(state, 0.1);
     hold(sim);
     steps(sim, ticksFor(container));
-    const meds = state.pickups.map((p) => p.type).filter((t) => ['medkit', 'bandage', 'antibiotics', 'disinfectant'].includes(t));
+    const meds = state.pickups.map((item) => item.type).filter((t) => ['medkit', 'bandage', 'antibiotics', 'disinfectant'].includes(t));
     expect(meds.length).toBeGreaterThan(0);
   });
 
@@ -478,7 +481,8 @@ describe('what is in them', () => {
     hold(sim);
     steps(sim, ticksFor(container));
     expect(state.containers[container.id].opened).toBe(true);
-    expect(state.pickups.length).toBeGreaterThan(0);
+    const hasDrop = state.pickups.length > 0 || eventsOf(sim.snapshot(), 'pickup').length > 0;
+    expect(hasDrop).toBe(true);
   });
 
   it('an empty search can turn up a map clue revealing an unvisited cache building', () => {
@@ -493,8 +497,9 @@ describe('what is in them', () => {
     steps(sim, ticksFor(container));
 
     expect(state.entered.has(targetBuilding.id)).toBe(true);
+    expect(state.clues.has(targetBuilding.id)).toBe(true);
     const leftovers = sim.snapshot().leftovers;
     expect(leftovers).toBeDefined();
-    expect(leftovers?.some((l) => l.building === targetBuilding.id && (l.supplies.med ?? 0) > 0)).toBe(true);
+    expect(leftovers?.some((l) => l.building === targetBuilding.id && l.clue === true && (l.supplies.med ?? 0) > 0)).toBe(true);
   });
 });

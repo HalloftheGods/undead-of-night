@@ -1,5 +1,6 @@
 import type { BuildingKind } from './map-protocol.ts';
 import type { Rng } from './rng.ts';
+import { plankCapForTier, type BackpackTier } from './backpack.ts';
 
 export type FortificationItemType = 'plank' | 'nails' | 'hammer_tool' | 'sheet_curtain' | 'crowbar';
 
@@ -463,4 +464,53 @@ export function rollFortificationLoot(
   }
 
   return entries[0]?.[0] ?? null;
+}
+
+export function isFortificationItem(type: string): type is FortificationItemType {
+  return type in FORTIFICATION_ITEMS;
+}
+
+export function takeFortificationItem(
+  materials: FortificationInventory,
+  type: FortificationItemType,
+  backpackTier: BackpackTier = 'satchel'
+): boolean {
+  const isHammer = type === 'hammer_tool';
+  if (isHammer) {
+    const alreadyHas = materials.hasHammer;
+    if (alreadyHas) return false;
+    materials.hasHammer = true;
+    return true;
+  }
+
+  const isCrowbar = type === 'crowbar';
+  if (isCrowbar) {
+    const alreadyHas = materials.hasCrowbar;
+    if (alreadyHas) return false;
+    materials.hasCrowbar = true;
+    return true;
+  }
+
+  const isPlank = type === 'plank';
+  if (isPlank) {
+    const maxPlanks = plankCapForTier(backpackTier);
+    const isFull = materials.planks >= maxPlanks;
+    if (isFull) return false;
+    materials.planks += 1;
+    return true;
+  }
+
+  const isNails = type === 'nails';
+  if (isNails) {
+    materials.nails += FORTIFICATION_ITEMS.nails.unitsPerFind;
+    return true;
+  }
+
+  const isCurtain = type === 'sheet_curtain';
+  if (isCurtain) {
+    materials.sheets += 1;
+    return true;
+  }
+
+  return false;
 }
