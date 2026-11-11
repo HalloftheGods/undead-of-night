@@ -150,6 +150,23 @@ export const SHOTGUN_SMALL_OLD: Grid = [
 ];
 
 const KNIFE_SMALL: Grid = [
+  '...........ee',
+  '.........eepo',
+  '........eppo.',
+  '.......eppo..',
+  '......eppo...',
+  '.....eppo....',
+  '..n.eppo.....',
+  '...nnpo......',
+  '...zynn......',
+  '..zyx.n......',
+  '.zyx.........',
+  'zyx..........',
+  'xw...........',
+];
+
+/** The flat, horizontal knife, kept to switch back to. */
+export const KNIFE_SMALL_FLAT: Grid = [
   '......noooop.',
   'zyyyxmnpppppp',
   'zyyyxmnppeep.',
