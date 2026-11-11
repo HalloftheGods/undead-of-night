@@ -23,6 +23,7 @@ import type {
 } from '../../shared/protocol.ts';
 import { isBenchView, isPlayerGear } from './bench-guards.ts';
 import { isHomeView, isRoomHomeView } from './home-guards.ts';
+import { SUPPLY_TYPES } from '../../shared/supply-types.ts';
 
 type Fields = Record<string, unknown>;
 
@@ -63,6 +64,7 @@ export function isPlayerEntity(v: unknown): v is PlayerEntity {
     && (v.bottles === undefined || isNumber(v.bottles))
     && (v.fireworks === undefined || isNumber(v.fireworks))
     && (v.fountains === undefined || isNumber(v.fountains))
+    && (v.supplies === undefined || (isFields(v.supplies) && hasNumbers(v.supplies, SUPPLY_TYPES)))
     && (v.stamina === undefined || isNumber(v.stamina))
     && isFlag(v.winded)
     && (v.home === undefined || isHomeView(v.home))

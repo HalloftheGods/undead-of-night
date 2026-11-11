@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MEDKIT_MAX, WEAPONS } from '../shared/constants.ts';
 import { townContainers } from '../shared/containers.ts';
+import { emptySupplies } from '../shared/supply-types.ts';
 import { BUILDING_DEFS } from '../shared/protocol.ts';
 import type { PickupEntity, PlayerEntity } from '../shared/protocol.ts';
 import { generateWorldMap } from '../shared/world-map.ts';
@@ -140,8 +141,9 @@ describe('notices', () => {
     expect(pickupNote('shells', player(), after)).toBe('+6 SHELLS');
   });
 
-  it('says what a bandage healed', () => {
-    expect(pickupNote('bandage', player({ health: 40 }), player({ health: 58 }))).toBe('+18 HEALTH');
+  it('says what a bandage added to supplies', () => {
+    const after = player({ supplies: { ...emptySupplies(), bandage: 1 } });
+    expect(pickupNote('bandage', player(), after)).toBe('+1 BANDAGE');
   });
 
   it('counts a medkit as carried, not healed', () => {
@@ -154,11 +156,6 @@ describe('notices', () => {
 
   it('still says something with no player to compare', () => {
     expect(pickupNote('carbine_ammo', null, null)).toBe('CARBINE AMMO');
-  });
-
-  it('explains a bandage left on the floor', () => {
-    expect(refusalNote(player(), 'bandage')).toBe('HEALTH FULL');
-    expect(refusalNote(player({ health: 60 }), 'bandage')).toBeNull();
   });
 
   it('explains a medkit that will not fit', () => {
@@ -195,7 +192,7 @@ describe('notices', () => {
 });
 
 describe('RunNotices', () => {
-  const bandage: PickupEntity = { id: 'i1', type: 'bandage', x: 505, y: 500 };
+  const medkit: PickupEntity = { id: 'i1', type: 'medkit', x: 505, y: 500 };
 
   it('hands out a new key for each banner, so each replays', () => {
     const notices = new RunNotices();
@@ -222,17 +219,20 @@ describe('RunNotices', () => {
 
   it('speaks up about a refused item, then waits', () => {
     const notices = new RunNotices();
-    expect(notices.refusal(player(), [bandage], 0)).toBe('HEALTH FULL');
-    expect(notices.refusal(player(), [bandage], 500)).toBeNull();
-    expect(notices.refusal(player(), [bandage], 3000)).toBe('HEALTH FULL');
+    const full = player({ medkits: MEDKIT_MAX });
+    expect(notices.refusal(full, [medkit], 0)).toBe('MEDKITS FULL');
+    expect(notices.refusal(full, [medkit], 500)).toBeNull();
+    expect(notices.refusal(full, [medkit], 3000)).toBe('MEDKITS FULL');
   });
 
   it('leaves alone an item out of reach', () => {
-    expect(new RunNotices().refusal(player(), [{ ...bandage, x: 540 }], 0)).toBeNull();
+    const full = player({ medkits: MEDKIT_MAX });
+    expect(new RunNotices().refusal(full, [{ ...medkit, x: 540 }], 0)).toBeNull();
   });
 
   it('has nothing to say to a downed player', () => {
-    expect(new RunNotices().refusal(player({ status: 'downed' }), [bandage], 0)).toBeNull();
+    const downed = player({ status: 'downed', medkits: MEDKIT_MAX });
+    expect(new RunNotices().refusal(downed, [medkit], 0)).toBeNull();
   });
 
   it('clears banners only when they have run their time', () => {

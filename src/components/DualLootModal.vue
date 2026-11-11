@@ -5,7 +5,7 @@
     aria-modal="true"
     aria-labelledby="modal-title"
     tabindex="-1"
-    :style="{ '--pack-cols': backpackSection.grid.cols, '--pack-rows': backpackSection.grid.rows }"
+    :style="{ '--pack-cols': backpackSection.grid.cols, '--pack-rows': backpackSection.grid.rows, '--container-rows': modalState.containerGrid.rows }"
   >
     <div class="dual-loot-overlay">
       <!-- Left Dock: Container (Enlarged Prop with Overlaid Grid) -->
@@ -74,7 +74,7 @@
             </div>
           </div>
         </section>
-        <HeldItemPanel :art :item="modalState.heldItem?.item ?? null" />
+        <HeldItemPanel :art :item="modalState.heldItem?.item ?? null" @use="onUseHeld" @drop="onDropHeld" />
       </div>
 
       <!-- Center Spacer: Open view of player character in game world -->
@@ -577,6 +577,20 @@ function onItemClick(gridId: GridIdentifier, item: GridItem): void {
   }
   lastItemClick.value = { id: item.id, gridId, time: Date.now() };
   pickUpItemFromGrid(modalState, gridId, item.id);
+}
+
+function onUseHeld(): void {
+  const held = modalState.heldItem;
+  if (!held) return;
+  emit('use', held.item);
+  modalState.heldItem = null;
+}
+
+function onDropHeld(): void {
+  const held = modalState.heldItem;
+  if (!held) return;
+  emit('drop', held.item);
+  modalState.heldItem = null;
 }
 
 function onGhostClick(gridId: GridIdentifier): void {

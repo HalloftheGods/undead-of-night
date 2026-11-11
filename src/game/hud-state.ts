@@ -1,5 +1,6 @@
 import type { BackpackTier } from '../../shared/backpack.ts';
 import type { FortificationInventory } from '../../shared/fortifications.ts';
+import type { Supplies } from '../../shared/supply-types.ts';
 import { streetAt } from '../../shared/street-names.ts';
 import type { StreetSpot } from '../../shared/street-names.ts';
 import type { ContainerKind } from '../../shared/containers.ts';
@@ -122,6 +123,8 @@ export interface HudState {
   readonly backpackTier?: BackpackTier;
   /** Planks, nails, curtain sheets and the two tools. Absent until the sim sends it. */
   readonly materials?: FortificationInventory;
+  /** Bandages and survival items carried. Absent at none. */
+  readonly supplies?: Supplies;
   /** The host's hash of where this survivor's things sit in the bag; the client compares it with its own. */
   readonly bagHash?: number;
 }
@@ -296,6 +299,7 @@ export function buildHud(snapshot: SnapshotPacket, local: PlayerEntity, spectati
     moodles: buildMoodles(local.needs),
     ...(local.backpackTier ? { backpackTier: local.backpackTier } : {}),
     ...(local.materials ? { materials: { ...local.materials } } : {}),
+    ...(local.supplies ? { supplies: { ...local.supplies } } : {}),
     ...(local.bagHash !== undefined ? { bagHash: local.bagHash } : {}),
   };
 }

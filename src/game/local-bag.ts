@@ -1,15 +1,15 @@
-import { bagHash, bagLayout, bagWanted, createBag, isBagItemType, layoutHash, retierBag, syncBag } from '../../shared/bag.ts';
+import { bagHash, bagLayout, bagWanted, createBag, isBagItemType, isDroppableBagItem, layoutHash, retierBag, syncBag } from '../../shared/bag.ts';
 import type { BagCommit, BagDrop, BagItemType, BagWanted, PlayerBag } from '../../shared/bag.ts';
 import { backpackDef } from '../../shared/backpack.ts';
 import type { BackpackTier } from '../../shared/backpack.ts';
 import { autoPackItem, canPlaceItem, createInventoryGrid, findAvailableSlot, placeItem } from '../../shared/grid-inventory.ts';
 import type { GridItem, InventoryGrid } from '../../shared/grid-inventory.ts';
+import { containerGridDimensions } from '../../shared/containers.ts';
 import type { ContainerKind } from '../../shared/containers.ts';
 import type { WeaponId } from '../../shared/protocol.ts';
+import { isSupplyType, SUPPLY_TYPES } from '../../shared/supply-types.ts';
+import type { Supplies } from '../../shared/supply-types.ts';
 import type { HudState } from './hud-state.ts';
-
-/** Types the host can put on the ground. The rest have no pickup, so taking them out of the bag changes nothing. */
-const DROPPABLE: readonly BagItemType[] = ['medkit', 'knife', 'plank', 'hammer_tool', 'crowbar', 'sheet_curtain', 'nails'];
 
 /** How long a layout may disagree with the host's hash, bag shut, before it is sent again. */
 const HEAL_AFTER_MS = 1000;
@@ -18,7 +18,7 @@ const HEAL_TRIES = 3;
 /** How long a drop is held back from the snapshots, in case the host has not heard it yet. */
 const PENDING_MS = 2000;
 
-type Carried = Pick<HudState, 'owned' | 'weapon' | 'mags' | 'ammoBag' | 'medkits' | 'bottles' | 'fireworks' | 'fountains' | 'knife' | 'backpackTier' | 'materials' | 'bagHash'> & {
+type Carried = Pick<HudState, 'owned' | 'weapon' | 'mags' | 'ammoBag' | 'medkits' | 'bottles' | 'fireworks' | 'fountains' | 'knife' | 'backpackTier' | 'materials' | 'supplies' | 'bagHash'> & {
   bag?: HudState['bag'];
 };
 
@@ -39,6 +39,10 @@ export interface BagWorking {
   /** Items remaining in the container. */
   readonly container: InventoryGrid;
   readonly gear: WornGear;
+  /** Supplies used by hand (the USE button) while open. Sent as the commit's `use` rows. */
+  readonly used: GridItem[];
+  /** Items dropped by hand while open. */
+  readonly dropped: GridItem[];
   readonly containerTitle?: string;
   readonly containerKind?: ContainerKind;
   readonly containerId?: number | null;
@@ -130,7 +134,8 @@ export class LocalBag {
     this.openIds = new Set([...this.bag.pack.items, ...this.bag.pockets.items].map((item) => item.id));
     this.containerOriginalIds = new Set(containerItems.map((item) => item.id));
     const tier = hud.backpackTier ?? 'satchel';
-    const container = createInventoryGrid(5, 4);
+    const { cols, rows } = containerGridDimensions(containerKind);
+    const container = createInventoryGrid(cols, rows);
     for (const item of containerItems) {
       if (!placeItem(container, { ...item })) {
         autoPackItem(container, { ...item });
@@ -154,6 +159,8 @@ export class LocalBag {
       candyBag,
       container,
       gear: wornGear(hud),
+      used: [],
+      dropped: [],
       containerTitle,
       containerKind,
       containerId,
@@ -183,19 +190,41 @@ export class LocalBag {
     const dropped = new Map<BagItemType, number>();
     const isFurniture = working.containerId !== null && working.containerId !== undefined;
     const inContainer = isFurniture ? new Set(working.container.items.map((i) => i.id)) : new Set<string>();
+    const usedIds = new Set(working.used.map((item) => item.id));
+    const usedCounts = new Map<BagItemType, number>();
     for (const [id, item] of known) {
       if (placed.has(id) || inContainer.has(id)) continue;
       const type = item.type as BagItemType;
-      const meantToGo = openIds.has(id) && DROPPABLE.includes(type);
-      if (meantToGo) dropped.set(type, (dropped.get(type) ?? 0) + (item.count ?? 1));
+      const wasUsed = usedIds.has(id) && isSupplyType(type);
+      const meantToGo = openIds.has(id) && isDroppableBagItem(type);
+      if (wasUsed) usedCounts.set(type, (usedCounts.get(type) ?? 0) + 1);
+      else if (meantToGo) dropped.set(type, (dropped.get(type) ?? 0) + (item.count ?? 1));
       else if (!settle(scratch, item)) continue;
       else placed.add(id);
     }
     const layout = bagLayout({ ...scratch, serial: this.bag.serial });
-    const drop: BagDrop[] = [...dropped].map(([type, count]) => ({ type, count }));
+    const toRow = ([type, count]: [BagItemType, number]): BagDrop => ({ type, count });
+    const drop: BagDrop[] = [...dropped].map(toRow);
+    const use: BagDrop[] = [...usedCounts].map(toRow);
     const containerTaken: GridItem[] = [];
     for (const item of [...working.pack.items, ...working.pockets.items, ...working.candyBag.items]) {
       if (containerOriginalIds.has(item.id)) containerTaken.push(item);
+    }
+    for (const item of working.used) {
+      if (containerOriginalIds.has(item.id)) {
+        containerTaken.push(item);
+        if (isSupplyType(item.type)) {
+          usedCounts.set(item.type, (usedCounts.get(item.type) ?? 0) + 1);
+        }
+      }
+    }
+    for (const item of working.dropped) {
+      if (containerOriginalIds.has(item.id)) {
+        containerTaken.push(item);
+        if (isDroppableBagItem(item.type)) {
+          dropped.set(item.type, (dropped.get(item.type) ?? 0) + (item.count ?? 1));
+        }
+      }
     }
     const containerDeposited: GridItem[] = [];
     for (const item of working.container.items) {
@@ -208,9 +237,10 @@ export class LocalBag {
       deposited: containerDeposited,
     } : undefined;
 
-    if (drop.length === 0 && !container && bagHash(this.bag) === layoutHash(layout)) return null;
-    this.adopt(scratch, drop, containerDeposited);
-    const commit: BagCommit = { layout, drop, ...(container ? { container } : {}) };
+    const isUnchanged = drop.length === 0 && use.length === 0 && !container && bagHash(this.bag) === layoutHash(layout);
+    if (isUnchanged) return null;
+    this.adopt(scratch, [...drop, ...use], containerDeposited);
+    const commit: BagCommit = { layout, drop, ...(use.length > 0 ? { use } : {}), ...(container ? { container } : {}) };
     this.send(commit);
     return commit;
   }
@@ -218,11 +248,11 @@ export class LocalBag {
   /** Takes the edited layout as the bag's own. The host drops the newest of a type, but ids are not on the wire, so which survive does not matter. */
   private adopt(
     scratch: { pack: InventoryGrid; pockets: InventoryGrid },
-    drop: BagDrop[],
+    gone: BagDrop[],
     deposited: readonly GridItem[] = [],
   ): void {
     const before = bagWanted(this.currentCounters());
-    for (const { type, count } of drop) this.pending.push({ type, before: before[type], dropped: count, at: this.now() });
+    for (const { type, count } of gone) this.pending.push({ type, before: before[type], dropped: count, at: this.now() });
     for (const item of deposited) {
       const isBagItem = isBagItemType(item.type);
       if (isBagItem) {
@@ -240,10 +270,12 @@ export class LocalBag {
 
   private currentCounters(): Carried {
     const count = (type: BagItemType): number => [...this.bag.pack.items, ...this.bag.pockets.items].filter((item) => item.type === type).reduce((sum, item) => sum + (item.count ?? 1), 0);
+    const supplies = Object.fromEntries(SUPPLY_TYPES.map((type) => [type, count(type)])) as Supplies;
     return {
       owned: [], weapon: 'pistol', mags: { pistol: 0, carbine: 0, shotgun: 0 }, ammoBag: { pistol: 0, carbine: 0, shotgun: 0 },
       medkits: count('medkit'), bottles: count('bottle'), fireworks: count('firework'), fountains: count('fountain'), knife: count('knife') > 0,
       materials: { planks: count('plank'), nails: count('nails'), sheets: count('sheet_curtain'), hasHammer: count('hammer_tool') > 0, hasCrowbar: count('crowbar') > 0 },
+      supplies,
     };
   }
 }

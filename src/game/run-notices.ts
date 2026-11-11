@@ -5,6 +5,8 @@ import { BOSSES } from '../../shared/bosses.ts';
 import { MEDKIT_MAX, PICKUP_RADIUS } from '../../shared/constants.ts';
 import { PART_CARRY_CAP } from '../../shared/gun-upgrade-data.ts';
 import { isPartPickup } from '../../shared/gun-upgrades.ts';
+import { isSupplyType } from '../../shared/supply-types.ts';
+import type { SupplyType } from '../../shared/supply-types.ts';
 import type { OverrunEnd } from '../../shared/home-protocol.ts';
 import type {
   BuildingKind,
@@ -54,12 +56,13 @@ export function pickupNote(pickup: PickupType, before: PlayerEntity | null, afte
     const gained = (after?.ammoBag[gun] ?? 0) - (before?.ammoBag[gun] ?? 0);
     return gained > 0 ? `+${gained} ${AMMO_NAME[pickup]}` : `${AMMO_NAME[pickup]}`;
   }
-  const isBandage = pickup === 'bandage';
-  const isMedkit = pickup === 'medkit';
-  if (isBandage) {
-    const healed = Math.round((after?.health ?? 0) - (before?.health ?? 0));
-    return healed > 0 ? `+${healed} HEALTH` : 'BANDAGE';
+  const isSupply = isSupplyType(pickup);
+  if (isSupply) {
+    const gained = (after?.supplies?.[pickup as SupplyType] ?? 0) - (before?.supplies?.[pickup as SupplyType] ?? 0);
+    const name = pickup.replace('_', ' ').toUpperCase();
+    return gained > 0 ? `+${gained} ${name}` : name;
   }
+  const isMedkit = pickup === 'medkit';
   return isMedkit ? '+1 MEDKIT' : pickup.toUpperCase();
 }
 
@@ -67,13 +70,11 @@ export function pickupNote(pickup: PickupType, before: PlayerEntity | null, afte
 export function refusalNote(player: PlayerEntity, type: PickupType): string | null {
   const gun = AMMO_GUN[type];
   const noRoomForAmmo = gun !== undefined && player.ammoBag[gun] >= ammoCapOf(player, gun);
-  const wastedBandage = type === 'bandage' && player.health >= player.maxHealth;
   const noRoomForMedkit = type === 'medkit' && player.medkits >= MEDKIT_MAX;
   const secondKnife = type === 'knife' && player.knife;
   const noRoomForPart = isPartPickup(type) && (player.gear?.parts[type] ?? 0) >= PART_CARRY_CAP;
   if (noRoomForPart) return 'PARTS FULL';
   if (noRoomForAmmo) return 'AMMO FULL';
-  if (wastedBandage) return 'HEALTH FULL';
   if (secondKnife) return 'ALREADY ARMED';
   return noRoomForMedkit ? 'MEDKITS FULL' : null;
 }

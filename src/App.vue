@@ -38,6 +38,8 @@
           :equipped-sidearm="inventory.working.value.gear.sidearm"
           @close="onInventoryClose"
           @transfer="inventory.onTransfer()"
+          @use="inventory.onUse($event)"
+          @drop="inventory.onDrop($event)"
         />
         <EmoteWheel :art="ui.art" :enabled="emotesOn" />
         <RoomInvite v-if="ui.onlineRoom && !ui.paused && ui.hud.teammates.length === 0" :room="ui.onlineRoom" :is-public="ui.onlinePublic" />

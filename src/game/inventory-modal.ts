@@ -99,6 +99,18 @@ export function useInventoryModal(ui: Ref<UiState>, input: Held, panel: Ref<Inve
     }
   }
 
+  function onUse(item: GridItem): void {
+    if (working.value) {
+      working.value.used.push(item);
+    }
+  }
+
+  function onDrop(item: GridItem): void {
+    if (working.value) {
+      working.value.dropped.push(item);
+    }
+  }
+
   function hide(): void {
     if (!isOpen.value) return;
     panel.value?.settle();
@@ -153,5 +165,5 @@ export function useInventoryModal(ui: Ref<UiState>, input: Held, panel: Ref<Inve
     if (isOpen.value) input.setEnabled(true);
   });
 
-  return { isOpen, working, openings, show, showContainer, hide, onTransfer };
+  return { isOpen, working, openings, show, showContainer, hide, onTransfer, onUse, onDrop };
 }

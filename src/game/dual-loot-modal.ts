@@ -1,5 +1,5 @@
 import { CANDIES, isCandyId } from '../../shared/candy.ts';
-import type { ContainerKind } from '../../shared/containers.ts';
+import { containerGridDimensions, type ContainerKind } from '../../shared/containers.ts';
 import type { ArtBook } from '../art/types.ts';
 import { backpackDef, type BackpackTier } from '../../shared/backpack.ts';
 import {
@@ -121,6 +121,8 @@ export type DualLootModalEmits = {
   (e: 'update:equippedSidearm', item: GridItem | null): void;
   (e: 'update:equippedArmor', item: GridItem | null): void;
   (e: 'transfer', event: TransferEventPayload): void;
+  (e: 'use', item: GridItem): void;
+  (e: 'drop', item: GridItem): void;
 };
 
 export const ITEM_DISPLAY_NAMES: Record<string, string> = {
@@ -129,6 +131,8 @@ export const ITEM_DISPLAY_NAMES: Record<string, string> = {
   hammer_tool: 'Claw Hammer', knife: 'Combat Knife', pistol: '9mm Pistol', medkit: 'First Aid Kit',
   sheet_curtain: 'Sheet Curtain', armor_vest: 'Armor Vest', plank: 'Wooden Plank', crowbar: 'Crowbar',
   shotgun: 'Shotgun', carbine: 'Carbine',
+  bandage: 'Bandage', canned_food: 'Canned Food', water_bottle: 'Water Bottle',
+  disinfectant: 'Disinfectant', antibiotics: 'Antibiotics',
 };
 
 export function formatItemName(type: string): string {
@@ -182,7 +186,8 @@ export function createDualLootState(options?: DualLootModalProps): DualLootState
   const tier = options?.backpackTier ?? 'satchel';
   const tierConfig = backpackDef(tier);
 
-  const containerGrid = options?.containerGrid ?? createInventoryGrid(5, 4);
+  const { cols, rows } = containerGridDimensions(options?.containerKind);
+  const containerGrid = options?.containerGrid ?? createInventoryGrid(cols, rows);
   const pocketsGrid = options?.pocketsGrid ?? createInventoryGrid(2, 2);
   const backpackGrid = options?.backpackGrid ?? createInventoryGrid(tierConfig.cols, tierConfig.rows);
   const candyBagGrid = options?.candyBagGrid ?? createInventoryGrid(2, 6);
