@@ -82,6 +82,17 @@ export const CHANGE_NOTES: readonly ChangeNote[] = [
     ],
   },
   {
+    id: 'left-behind-on-map',
+    date: '2026-11-11',
+    kind: 'better',
+    title: 'What you left behind, on the map',
+    deck: 'Items left in searched containers show on your town map.',
+    points: [
+      'Leave something in a container, indoors or out, and it is stamped on the map.',
+      'Use the map to find your way back to what did not fit in the bag.',
+    ],
+  },
+  {
     id: 'small-fixes-nov-11',
     date: '2026-11-11',
     kind: 'fixed',
