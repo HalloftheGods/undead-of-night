@@ -11,6 +11,7 @@ import { planTown } from '../shared/town-plan.ts';
 import { groundSpeedScale } from '../shared/town-rules.ts';
 import { buildingAt, blockedTiles, circleHitsSolid, generateWorldMap, isBlockedAt } from '../shared/world-map.ts';
 import { groundOf } from '../shared/world-query.ts';
+import { addZombie, quietSim, steps } from './helpers/sim-harness.ts';
 
 const SEEDS = [1, 2, 3, 99, 1234, 777777];
 const ROAD_KINDS = ['asphalt', 'asphalt_cracked', 'lane_h', 'lane_v', 'crosswalk_h', 'crosswalk_v', 'parking_line'];
@@ -270,5 +271,44 @@ describe('the sewers seen from the street', () => {
     const under = map.districts.filter((d) => d.underground);
     expect(under.length).toBe(manholes(map).length);
     for (const d of under) expect(d.name.startsWith('Sewers under ')).toBe(true);
+  });
+
+  it('bloater and large zombies get stuck at the sewer entrance and cannot move', () => {
+    const { sim, state } = quietSim();
+    const flight = (state.map.flights ?? []).find((f) => f.down && f.label === 'SEWERS')!;
+    const [p] = state.players;
+    p.x = flight.to.x + 20;
+    p.y = flight.to.y;
+
+    const bloater = addZombie(state, 'bloater', flight.from.x, flight.from.y);
+    expect(bloater.radius).toBeGreaterThan(6);
+    expect(bloater.stuck).toBeUndefined();
+
+    steps(sim, 2);
+
+    expect(bloater.stuck).toBe(true);
+    expect(bloater.y).toBeLessThan((state.map.sewers?.top ?? 0) * TILE_SIZE);
+
+    const stuckX = bloater.x;
+    const stuckY = bloater.y;
+    steps(sim, 10);
+    expect(bloater.x).toBe(stuckX);
+    expect(bloater.y).toBe(stuckY);
+  });
+
+  it('regular walkers can enter sewers without getting stuck', () => {
+    const { sim, state } = quietSim();
+    const flight = (state.map.flights ?? []).find((f) => f.down && f.label === 'SEWERS')!;
+    const [p] = state.players;
+    p.x = flight.to.x + 20;
+    p.y = flight.to.y;
+
+    const walker = addZombie(state, 'walker', flight.from.x, flight.from.y);
+    expect(walker.radius).toBeLessThanOrEqual(6);
+
+    steps(sim, 2);
+
+    expect(walker.stuck).toBeFalsy();
+    expect(walker.y).toBeGreaterThanOrEqual((state.map.sewers?.top ?? 0) * TILE_SIZE);
   });
 });

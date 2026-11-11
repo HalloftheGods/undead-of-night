@@ -144,6 +144,8 @@ export interface ZombieEntity {
   tracking?: boolean;
   /** Which boss this is, drawn big. Left off for everything else. */
   boss?: BossId;
+  /** Wedged in a narrow opening like a sewer manhole, unable to move. */
+  stuck?: boolean;
 }
 
 /** A footprint in the snow, for drawing: where, which way it points, and seconds before it fills in. */

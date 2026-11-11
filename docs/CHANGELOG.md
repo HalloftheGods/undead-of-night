@@ -2,6 +2,42 @@
 
 All notable changes to the Undead of Night: Last Round game are documented in this file.
 
+## [2026-11-10] - Dumpsters, map cache clues, and knife cooldown
+
+### Added
+- Searchable outdoor dumpsters in town alleys and lots that can yield random loot: ammo, weapons, medical items, parts, or candy.
+- Scrawled map cache clues: empty searches have a 20% chance to reveal a map note that marks an unvisited building with remaining loot on the town map.
+- Emergency vehicle loot: searching police cruisers can yield a shotgun or carbine, and ambulances can yield bandages, medkits, antibiotics, or disinfectant.
+- Bunker jukebox synchronization: track selection in the bunker quarters syncs across all players in the multiplayer room.
+
+### Changed
+- Knife cooldown is reduced, allowing combat knives to strike significantly faster than unarmed shoves.
+- Dropped magazines from reloading now hit the floor as ground decals, matching spent shell casings.
+- Pressing P in solo play now triggers pause, matching Escape.
+
+## [2026-11-10] - Survival needs, moodles, and fortifications
+
+### Added
+- Survival moodle system: hunger, thirst, fatigue, infection, pain, and panic tracked and displayed as flat chip HUD badges in the pickup style.
+- Survival items: canned food, can opener, water bottles, disinfectant, antibiotics, and clean bandages.
+- Fortifications: barricading windows and doors with wooden planks, nails, and a hammer to withstand horde breaches.
+- How to Play survival chapter integrated into the Out of Town guide.
+
+## [2026-11-10] - Town salvage and bunker press station
+
+### Added
+- Salvage containers placed across towns containing scrap metal, electronics, cloth, and materials.
+- Uncapped salvage carry capacity, with carried salvage dropped on death.
+- Workshop press station in the bunker for recycling and processing salvaged materials into usable goods.
+
+## [2026-11-10] - Sewer tunnel maze and street grid
+
+### Added
+- Branching sewer tunnel maze running beneath the town with brick channels, ladder shafts, and slow sludge canals.
+- Interactive street manholes with two-way ladder access (E: CLIMB DOWN / E: CLIMB UP) between streets and sewers.
+- Underground map mode rendering the surface town semi-transparent above the sewer network.
+- Utah-style street grid (Center St, 100 South, 200 West) and HUD pixel street sign displayed at top center.
+
 ## [2026-11-09] - Town renames: Once Home, Two Lake City, and Threetropolis
 
 ### Changed

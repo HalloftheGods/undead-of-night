@@ -8,7 +8,7 @@ import type { CandyId, WorldMap } from '../../shared/protocol.ts';
 import { TILE_SIZE } from '../../shared/protocol.ts';
 import { generateWorldMap } from '../../shared/world-map.ts';
 import { buildArtBook } from '../art/index.ts';
-import { AudioEngine } from '../audio/audio-engine.ts';
+import { AudioEngine, type SfxName } from '../audio/audio-engine.ts';
 import { EMPTY_SCENE } from '../engine/scene.ts';
 import { WorldRenderer } from '../engine/world-renderer.ts';
 import { LocalSession } from '../network/local-session.ts';
@@ -341,6 +341,10 @@ export class GameController {
 
   playUi(sound: UiSound): void {
     this.audio.playUi(sound);
+  }
+
+  playSfx(name: SfxName): void {
+    this.audio.playSfx(name);
   }
 
   /** The player's pick on the Play page, remembered for next time. Starting a run does not change it. */

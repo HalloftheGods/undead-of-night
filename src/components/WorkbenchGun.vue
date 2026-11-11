@@ -19,6 +19,14 @@
       @unpeek="emit('peek', null)"
     />
   </ul>
+  <WorkbenchTactileFit
+    v-if="tactileUpgrade"
+    :weapon
+    :upgrade="tactileUpgrade"
+    :art
+    @fit="onTactileFit"
+    @cancel="onTactileCancel"
+  />
 </template>
 
 <script setup lang="ts">
@@ -26,7 +34,7 @@
  * The upgrades for the gun in focus, one framed tile each: the parts it takes, its ranks and the guns a
  * toolkit could carry a rank to. Pressing a tile fits a rank; what the gun's slots hold shows in the column.
  */
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { WEAPONS } from '../../shared/constants.ts';
 import { PART_LABELS } from '../../shared/gun-upgrade-data.ts';
 import type { GunUpgrade } from '../../shared/gun-upgrade-data.ts';
@@ -35,7 +43,9 @@ import type { WeaponId } from '../../shared/protocol.ts';
 import type { ArtBook } from '../art/types.ts';
 import { benchRows } from '../game/bench-view.ts';
 import type { BenchRow } from '../game/bench-view.ts';
+import { isTactileUpgrade } from '../game/workbench-gesture.ts';
 import { useGame } from './use-game.ts';
+import WorkbenchTactileFit from './WorkbenchTactileFit.vue';
 import WorkbenchTile from './WorkbenchTile.vue';
 
 interface GunWorkProps {
@@ -50,9 +60,27 @@ const emit = defineEmits<{ peek: [row: BenchRow | null] }>();
 const game = useGame();
 
 const rows = computed(() => benchRows(weapon, owned, gear));
+const tactileUpgrade = ref<GunUpgrade | null>(null);
 
 function install(upgrade: GunUpgrade): void {
+  const isTactile = isTactileUpgrade(upgrade);
+  if (isTactile) {
+    tactileUpgrade.value = upgrade;
+    return;
+  }
   game.bench.send({ kind: 'fit', weapon, upgrade });
+}
+
+function onTactileFit(): void {
+  const upgrade = tactileUpgrade.value;
+  if (upgrade) {
+    game.bench.send({ kind: 'fit', weapon, upgrade });
+  }
+  tactileUpgrade.value = null;
+}
+
+function onTactileCancel(): void {
+  tactileUpgrade.value = null;
 }
 
 function move(upgrade: GunUpgrade, to: WeaponId): void {

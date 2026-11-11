@@ -82,10 +82,29 @@ function planDistance(sim: SimState, z: ZombieState, p: Prey): number {
   return (to.x - from.x) ** 2 + (to.y - from.y) ** 2;
 }
 
+/** Only regular walkers and runners (radius <= 6) fit through manholes and cramped sewer shafts. */
+export const MAX_SEWER_ZOMBIE_RADIUS = 6;
+
 /** Up or down the stairs it stands on, when that is the way the field runs. */
-function takeStairs(z: ZombieState, field: FlowField): void {
+function takeStairs(sim: SimState, z: ZombieState, field: FlowField): void {
+  if (z.stuck) return;
   const out = field.stairsDown(z.x, z.y);
   if (!out) return;
+
+  const sewers = sim.map.sewers;
+  const isEnteringSewers = sewers !== undefined && out.y >= sewers.top * TILE_SIZE && z.y < sewers.top * TILE_SIZE;
+  const isTooBig = z.radius > MAX_SEWER_ZOMBIE_RADIUS;
+  if (isEnteringSewers && isTooBig) {
+    const col = Math.floor(z.x / TILE_SIZE);
+    const row = Math.floor(z.y / TILE_SIZE);
+    z.stuck = true;
+    z.x = (col + 0.5) * TILE_SIZE;
+    z.y = (row + 0.5) * TILE_SIZE;
+    z.knockX = 0;
+    z.knockY = 0;
+    return;
+  }
+
   z.x = out.x;
   z.y = out.y;
 }
@@ -124,6 +143,11 @@ function hasClearLane(sim: SimState, z: ZombieState, p: Prey): boolean {
 }
 
 function applyKnockback(sim: SimState, z: ZombieState): void {
+  if (z.stuck) {
+    z.knockX = 0;
+    z.knockY = 0;
+    return;
+  }
   const speed = Math.hypot(z.knockX, z.knockY);
   const isKnockSpent = speed < MIN_KNOCK_SPEED;
   if (isKnockSpent) {
@@ -170,6 +194,13 @@ function separation(sim: SimState, z: ZombieState): { x: number; y: number } {
 
 /** One tick of purposeful walking along a heading, in step with the crowd, at a share of full speed. */
 function stride(sim: SimState, z: ZombieState, dirX: number, dirY: number, pace = 1): void {
+  if (z.stuck) return;
+  const sewers = sim.map.sewers;
+  const inSewers = sewers !== undefined && z.y >= sewers.top * TILE_SIZE;
+  if (inSewers && z.radius > MAX_SEWER_ZOMBIE_RADIUS) {
+    z.stuck = true;
+    return;
+  }
   const length = Math.hypot(dirX, dirY);
   const isStill = length === 0;
   if (isStill) return;
@@ -213,7 +244,7 @@ function walkToward(sim: SimState, z: ZombieState, prey: Prey): void {
     }
   }
   stride(sim, z, dirX, dirY);
-  takeStairs(z, sim.flow);
+  takeStairs(sim, z, sim.flow);
 }
 
 /** A dead-on heading gives per-axis sliding nothing to slide along, so step off to one side. */
@@ -290,7 +321,7 @@ function investigate(sim: SimState, z: ZombieState): void {
   const fieldPending = sim.noises.length > 0;
   if (waypoint) stride(sim, z, waypoint.x - z.x, waypoint.y - z.y);
   else if (!fieldPending) backToRoaming(sim, z);
-  if (waypoint) takeStairs(z, sim.noiseFlow);
+  if (waypoint) takeStairs(sim, z, sim.noiseFlow);
 }
 
 /**

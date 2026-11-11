@@ -80,6 +80,7 @@ export function isZombieEntity(v: unknown): v is ZombieEntity {
     && isFlag(v.burning)
     && isFlag(v.slowed)
     && isFlag(v.tracking)
+    && isFlag(v.stuck)
     && (v.corrosion === undefined || isNumber(v.corrosion))
     && hasNumbers(v, ['x', 'y', 'angle', 'health', 'maxHealth']);
 }

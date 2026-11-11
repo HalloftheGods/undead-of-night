@@ -40,4 +40,19 @@ describe('ground effects', () => {
     const map = generateWorldMap(SEED, 4);
     expect(groundSpeedScale(4, map, spot.x, spot.y)).toBeLessThanOrEqual(FLOOD_SPEED_SCALE);
   });
+
+  it('slows movement and increases noise in walkable rubble and shrubs', () => {
+    const map = generateWorldMap(SEED, 1);
+    const bush = map.props.find((p) => p.kind === 'bush');
+    if (bush) {
+      const effect = groundEffect(map, bush.x, bush.y - 4);
+      expect(effect.speed).toBeLessThanOrEqual(0.75);
+      expect(effect.noise).toBeGreaterThanOrEqual(1.2);
+    }
+    const rubble = map.props.find((p) => p.kind === 'rubble');
+    if (rubble) {
+      const effect = groundEffect(map, rubble.x, rubble.y - 4);
+      expect(effect.speed).toBeLessThanOrEqual(0.75);
+    }
+  });
 });

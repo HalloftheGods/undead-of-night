@@ -149,6 +149,10 @@ export class AudioEngine {
     this.mixer?.play(`ui_${name}`);
   }
 
+  playSfx(name: SfxName): void {
+    this.mixer?.play(name, { local: true });
+  }
+
   /** The van's engine and door over the drive between the bunker and a town. */
   playVan(name: 'depart' | 'arrive' | 'door'): void {
     this.mixer?.play(`van_${name}`);

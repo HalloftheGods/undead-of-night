@@ -157,6 +157,7 @@ export function buildSnapshot(sim: SimState): SnapshotPacket {
       ...statusView(z),
       ...(z.trail && !z.trail.searching ? { tracking: true } : {}),
       ...(z.boss ? { boss: z.boss } : {}),
+      ...(z.stuck ? { stuck: true } : {}),
     })),
     bullets: sim.bullets.map((b) => ({
       id: b.id,

@@ -5,6 +5,110 @@ import type { ChangeNote } from './change-notes.ts';
 
 export const EARLIER_NOTES: readonly ChangeNote[] = [
   {
+    id: 'diner-knives',
+    date: '2026-11-08',
+    kind: 'better',
+    title: 'Knives in the kitchen',
+    deck: 'Diners now turn up a knife far more often, as a kitchen should.',
+    points: [
+      'About half the fridges in a diner keep a knife when nothing else is in them.',
+      'The Town Guide lists knives as Often at the Diner, and Where to Look now has a line for knives.',
+    ],
+  },
+  {
+    id: 'fireworks-spinners',
+    date: '2026-11-08',
+    kind: 'new',
+    title: 'Fireworks',
+    deck: 'Fuel is gone. Garages, warehouses and diners hide fireworks now, and T lights one.',
+    points: [
+      'A lit firework lands where you aim as a ground spinner, a flower of colored sparks whirling on the street for five seconds.',
+      'The sparks set alight any zombie that walks through, and you too if you stand in them. The whistle and crackle draw a crowd.',
+      'No bottle needed any more. Popping Eyeballs throw the sparks half as far again; the Pocket Lighter keeps them spinning longer.',
+    ],
+  },
+  {
+    id: 'team-on-map',
+    date: '2026-11-08',
+    kind: 'new',
+    title: 'Find your team on the map',
+    deck: 'In co-op, every teammate shows on the map with a flashing locator in their own colour and their name.',
+    points: [
+      'Each survivor has a team colour, so no two players look alike. The team chips in the corner wear it too.',
+      'Private rooms show callsigns. Public games show survivor names, as always.',
+      'A downed teammate says DOWN beside their name, so you know who to run to. With Motion set to Reduced, the locators hold still.',
+    ],
+  },
+  {
+    id: 'town-guide',
+    date: '2026-11-08',
+    kind: 'new',
+    title: 'Town Guide',
+    deck: 'A new book on the main menu: what every kind of building holds, and where to look for it.',
+    points: [
+      'A page per place, from the Pharmacy to Cars & Streets, with what turns up there stamped Always, Often, Sometimes or Rare.',
+      'Where to Look lists the best places for medkits, each kind of ammo, flares, fuel, candy, gun parts and more.',
+      'It reads off the same loot tables the town is stocked from, so it stays true as they change.',
+    ],
+  },
+  {
+    id: 'one-screen-setup',
+    date: '2026-11-08',
+    kind: 'better',
+    title: 'Setup on one screen',
+    deck: 'Mode, difficulty and survivor now sit side by side, each showing its picture.',
+    points: [
+      'Tap a picture to open its list, then tap what you want. No more Next, Next, Next.',
+      'Callsign and the co-op fields are on the same screen, with Start at the bottom.',
+    ],
+  },
+  {
+    id: 'option-switches',
+    date: '2026-11-08',
+    kind: 'better',
+    title: 'Flip switches',
+    deck: 'Analytics and haptic feedback on Options are now pixel switches instead of boxed buttons.',
+    points: [
+      'The knob snaps right and the track goes red when a setting is on.',
+      'Screen readers hear them as switches, and Space or Enter flips them.',
+    ],
+  },
+  {
+    id: 'candy-timer',
+    date: '2026-11-08',
+    kind: 'new',
+    title: 'Candy timer overhead',
+    deck: 'While a candy works, its boost and the seconds left float over your head.',
+    points: [
+      'A word for what it boosts (SPEED, ARMOR, RELOAD...) and a bar that drains for the whole boost.',
+      'It blinks in the last five seconds, so you know it is about to wear off.',
+      'In co-op you see your team\'s candy too. Pickup notes float clear of it.',
+    ],
+  },
+  {
+    id: 'left-behind-marks',
+    date: '2026-11-08',
+    kind: 'new',
+    title: 'Left behind',
+    deck: 'The map marks every building you walked out of with supplies still lying inside.',
+    points: [
+      'A small mark per kind sits at the building\'s foot: a red cross for medical, yellow rounds for ammo, a grey gun, a violet diamond for parts and finds.',
+      'Floors upstairs and in the cellar count toward their house. The mark goes once it is empty.',
+      'In co-op the whole team shares the marks, wherever each of you is.',
+    ],
+  },
+  {
+    id: 'mode-order',
+    date: '2026-11-08',
+    kind: 'better',
+    title: 'Daily Night up top',
+    deck: 'The main menu now reads How to Play, Daily Night, Arcade, then Campaign.',
+    points: [
+      'How to Play sits on top. The menu still opens pointed at Daily Night, so Enter starts the day\'s night.',
+      'The Play setup lists Arcade before Campaign to match.',
+    ],
+  },
+  {
     id: 'press-any-key',
     date: '2026-11-08',
     kind: 'new',
