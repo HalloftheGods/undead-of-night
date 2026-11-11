@@ -415,7 +415,25 @@ export const NAILS_GRID: Grid = [
   '....kk....kk..',
 ];
 
+/** A claw hammer on the diagonal, as the knife lies: wood handle up to a steel head set square across it. */
 export const HAMMER_GRID: Grid = [
+  '.......o.....',
+  '.....nnop....',
+  '....m..nop...',
+  '........nop..',
+  '........ynop.',
+  '.......zx.nop',
+  '......zx...mn',
+  '.....zx......',
+  '....zx.......',
+  '...zx........',
+  '..zx.........',
+  '.yw..........',
+  'yw...........',
+];
+
+/** The earlier drawing of HAMMER_GRID, kept to switch back to. */
+export const HAMMER_GRID_OLD: Grid = [
   '..kppmmmoook..',
   '.kpppmnnnnook.',
   '..kppkkkkkkk..',
