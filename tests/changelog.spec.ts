@@ -24,12 +24,12 @@ describe('Noise in the Night daily paper', () => {
 
   it('groups notes into daily issues newest first with chronological issue numbers from 1', () => {
     const issues = changeIssues();
-    expect(issues.length).toBe(4);
-    // Newest issue is 2026-11-10 with chronological number 4
-    expect(issues[0].date).toBe('2026-11-10');
-    expect(issues[0].version).toBe('26.11.10');
-    expect(issues[0].issueNumber).toBe(4);
-    expect(issueLabel(issues[0])).toBe('Issue #4 (v26.11.10)');
+    expect(issues.length).toBe(5);
+    // Newest issue is 2026-11-11 with chronological number 5
+    expect(issues[0].date).toBe('2026-11-11');
+    expect(issues[0].version).toBe('26.11.11');
+    expect(issues[0].issueNumber).toBe(5);
+    expect(issueLabel(issues[0])).toBe('Issue #5 (v26.11.11)');
 
     // Earliest issue is 2026-11-07 with chronological number 1
     const earliest = issues[issues.length - 1];
@@ -47,9 +47,9 @@ describe('Noise in the Night daily paper', () => {
     expect(ISSUES_PER_SLIDE).toBe(5);
     const issues = changeIssues();
     const newestCard = issueToCardDef(issues[0]);
-    expect(newestCard.id).toBe('26.11.10');
-    expect(newestCard.number).toBe('04');
-    expect(newestCard.tag).toBe('v26.11.10');
+    expect(newestCard.id).toBe('26.11.11');
+    expect(newestCard.number).toBe('05');
+    expect(newestCard.tag).toBe('v26.11.11');
     expect(newestCard.title).toBe(issues[0].lead.title);
     expect(newestCard.subtitle).toBe(noteDate(issues[0].date));
     expect(newestCard.description).toBe(issues[0].lead.deck);
@@ -81,7 +81,7 @@ describe('Noise in the Night daily paper', () => {
     expect(leaves[0].kind).toBe('index');
     expect(leaves[1].kind).toBe('front');
     if (leaves[1].kind === 'front') {
-      expect(leaves[1].issue.version).toBe('26.11.10');
+      expect(leaves[1].issue.version).toBe('26.11.11');
     }
 
     const collectedNotes = leaves.flatMap((leaf) => {
@@ -123,6 +123,13 @@ describe('Noise in the Night daily paper', () => {
     }
     expect(issuePage('26.11.11', notes)).toBe(2);
     expect(issuePage('26.11.10', notes)).toBeGreaterThan(2);
+  });
+
+  it('reports the bag, the loot window, doors, material chips and the redrawn art on 11 Nov', () => {
+    const ids = CHANGE_NOTES.filter((note) => note.date === '2026-11-11').map((note) => note.id);
+    expect(ids).toEqual(expect.arrayContaining(['grid-bag', 'loot-window', 'doors-boards', 'material-chips', 'redrawn-icons']));
+    const bag = CHANGE_NOTES.find((note) => note.id === 'grid-bag');
+    expect(bag?.points.join(' ')).toContain('Satchel 5 by 4, Duffel 6 by 5, ALICE 8 by 6');
   });
 
   it('dates read the way the rest of the game writes them', () => {

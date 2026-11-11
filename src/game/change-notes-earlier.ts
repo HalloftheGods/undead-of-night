@@ -2,8 +2,91 @@
 // New notes go at the top of CHANGE_NOTES there, not here.
 
 import type { ChangeNote } from './change-notes.ts';
+import { OLDEST_NOTES } from './change-notes-oldest.ts';
 
 export const EARLIER_NOTES: readonly ChangeNote[] = [
+  {
+    id: 'hud-reorder',
+    date: '2026-11-08',
+    kind: 'better',
+    title: 'A HUD you can read at a glance',
+    deck: 'Health, kills and points down the right; the guns dead centre and tappable.',
+    points: [
+      'Health leads the top-right corner, with the kill count under it behind a zombie head, and points under that.',
+      'The gun bar sits in the middle of the foot of the screen at every width, and each slot is a button: tap it to bring that gun up.',
+      'The run log moved to the right edge, halfway down, clear of both.',
+    ],
+  },
+  {
+    id: 'backpack-ring',
+    date: '2026-11-08',
+    kind: 'better',
+    title: 'The backpack opens on you',
+    deck: 'Your own gear, rung around the survivor, following them as you move.',
+    points: [
+      'The ring shows what you are actually carrying, drawn as the game draws it: the medkit, the gun you would switch to, bottles, fireworks, flares, your candy and the town map.',
+      'It opens on the survivor and keeps up with them, and it closes the moment you pick something.',
+      'What would do nothing is greyed out: a medkit at full health, a candy already working.',
+    ],
+  },
+  {
+    id: 'sprint-button',
+    date: '2026-11-08',
+    kind: 'new',
+    title: 'A Sprint button',
+    deck: 'Four pixel buttons in the corner, Sprint under the thumb.',
+    points: [
+      'Hold Sprint to run, the same as holding Shift on a keyboard.',
+      'Search, Shove, Sprint and the backpack sit two by two in the bottom-right corner, in the game\'s own pixel style.',
+    ],
+  },
+  {
+    id: 'streak-kit',
+    date: '2026-11-08',
+    kind: 'new',
+    title: 'Streak kit',
+    deck: 'Come back night after night and your runs start better armed.',
+    points: [
+      'Play the Daily Night on days in a row: night 2 starts you with a medkit and spare rounds, then a knife, a shotgun, a Jawbreaker and, by night 7, a carbine.',
+      'The Daily Night page shows tonight\'s kit and what tomorrow adds. Each run says its kit on the first title card.',
+      'Solo Arcade runs get the kit too. Campaign and co-op start as before. Miss a day and the streak starts again.',
+    ],
+  },
+  {
+    id: 'setup-portraits',
+    date: '2026-11-08',
+    kind: 'better',
+    title: 'Taller setup cards',
+    deck: 'The three Play cards stand tall now, with stat bars on every option.',
+    points: [
+      'Mode, Difficulty and Survivor cards share one tall shape, with more night sky over each scene.',
+      'Each option shows its bars: players for a mode, ammo and zombie speed, bite and horde for a difficulty, and each survivor\'s stats.',
+      'The survivor list shows them as they look in play, turning when you point at one. Point at any option to see it in its card.',
+    ],
+  },
+  {
+    id: 'menu-details-switch',
+    date: '2026-11-08',
+    kind: 'better',
+    title: 'A cleaner main menu',
+    deck: 'The main menu shows just the names now. The line under each one is a switch in Options.',
+    points: [
+      'Turn on Menu details under Options to bring back a line saying what each item opens.',
+      'On a short screen, like a phone on its side, the lines stay hidden either way so the menu fits.',
+    ],
+  },
+  {
+    id: 'menu-sections',
+    date: '2026-11-08',
+    kind: 'better',
+    title: 'Main menu in three parts',
+    deck: 'Books, Play and Extras now sit side by side, so the whole menu fits under the logo, even on a phone on its side.',
+    points: [
+      'Play is in the middle: Daily Night, Arcade, Campaign and Level Select. The menu still opens on Daily Night.',
+      'Books holds How to Play, the Town Guide and Records; Extras holds the Sound Test and Options.',
+      'Up and down move within a part; left and right (or A and D) hop to the next one.',
+    ],
+  },
   {
     id: 'diner-knives',
     date: '2026-11-08',
@@ -375,111 +458,5 @@ export const EARLIER_NOTES: readonly ChangeNote[] = [
     deck: 'A new store downtown, with a back room worth checking.',
     points: ['Shows up in two towns out of three.', 'Cheap goods on the shelves, better finds in the stockroom.'],
   },
-  {
-    id: 'chains',
-    date: '2026-11-07',
-    kind: 'new',
-    title: 'Kill chains pay, and share your Daily',
-    deck: 'Fast kills are worth more.',
-    points: [
-      'Each kill soon after your last is worth more, up to double from the fifth in a row.',
-      'The floating score shows the bonus, like +18 x1.5.',
-      'Copy result puts your Daily Night score, kills and streak on your clipboard, ready to paste anywhere.',
-    ],
-  },
-  {
-    id: 'record-book',
-    date: '2026-11-07',
-    kind: 'better',
-    title: 'Records, as a printed book',
-    deck: 'Your bests, written in by hand.',
-    points: [
-      'Personal bests for Campaign and Arcade, a ledger of your top five runs, and your Daily Night streak.',
-      'The last seven nights, each stamped Counted, Missed or Tonight.',
-      'Turn pages with Prev and Next, the arrow keys, or a swipe.',
-    ],
-  },
-  {
-    id: 'daily-night',
-    date: '2026-11-07',
-    kind: 'new',
-    title: 'Daily Night',
-    deck: 'One town a day, the same for everyone.',
-    points: [
-      'A new item on the title menu. Every player gets the same town, rule and difficulty each day.',
-      'Your first run of the day counts. The rest are practice.',
-      'Keep a streak going, and see the countdown to the next town.',
-    ],
-  },
-  {
-    id: 'supply-drops',
-    date: '2026-11-07',
-    kind: 'new',
-    title: 'Supply drops',
-    deck: 'Watch for the red flare.',
-    points: [
-      'Once a town, after the first horde, a flare goes up and a crate lands on it ten seconds later.',
-      'Inside: ammo, a medkit, a round kit and a prize.',
-      'The flare is loud and the landing is louder, so you won’t be the only one coming.',
-    ],
-  },
-  {
-    id: 'molotovs',
-    date: '2026-11-07',
-    kind: 'new',
-    title: 'Molotovs and flares',
-    deck: 'Something to throw.',
-    points: [
-      'Find fuel in garages, warehouses and diners. Press T to throw a molotov: a pool of fire for five seconds.',
-      'Find flares at the police station, in garages and in cars. Press V to throw one and pull zombies away.',
-      'Carry two of each. Don’t stand in your own fire.',
-    ],
-  },
-  {
-    id: 'kill-feel',
-    date: '2026-11-07',
-    kind: 'better',
-    title: 'Kills that land',
-    deck: 'Every big hit feels big.',
-    points: [
-      'A tiny freeze on headshots, chain kills and dropped brutes.',
-      'DOUBLE, TRIPLE, QUAD and MASSACRE callouts for quick kills.',
-      'CLOSE CALL when you kill on almost no health, and HORDE WIPED OUT when you clear the lot.',
-    ],
-  },
-  {
-    id: 'overrun',
-    date: '2026-11-07',
-    kind: 'new',
-    title: 'The Overrun',
-    deck: 'The bunker is no longer safe.',
-    points: [
-      'From level 2 in Campaign, a clock runs while you are in the bunker. When it runs out, the blast door bursts.',
-      'Kill the horde that comes in to earn a reward chest, or run for the van and leave the merchants to it.',
-      'How to Play has a new chapter on it.',
-    ],
-  },
-  {
-    id: 'online-rooms',
-    date: '2026-11-07',
-    kind: 'new',
-    title: 'Online co-op rooms',
-    deck: 'Play with a friend from anywhere.',
-    points: [
-      'Host a room right in your browser and send a friend the room code or invite link.',
-      'No server to set up on your side.',
-      'Rooms open to everyone once the online service is switched on.',
-    ],
-  },
-  {
-    id: 'setup-stepper',
-    date: '2026-11-07',
-    kind: 'better',
-    title: 'A clearer setup',
-    deck: 'Style, Mode, Difficulty, Survivor, in that order.',
-    points: [
-      'A numbered stepper shows where you are. Tap a finished step to go back to it.',
-      'Every step is the same size, so the Back and Next buttons stay put.',
-    ],
-  },
+  ...OLDEST_NOTES,
 ];

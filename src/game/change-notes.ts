@@ -2,7 +2,7 @@
 //
 // To add an update, put a new note at the TOP of CHANGE_NOTES. Each ship day becomes an issue numbered like
 // the game version (e.g. 2026-11-07 -> Issue 26.11.7). The day's first note leads the issue front page, and the rest
-// run as stories inside. Older notes live in change-notes-earlier.ts.
+// run as stories inside. Older notes live in change-notes-earlier.ts, and the oldest of all in change-notes-oldest.ts.
 
 import { EARLIER_NOTES } from './change-notes-earlier.ts';
 
@@ -22,6 +22,77 @@ export interface ChangeNote {
 }
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
+  {
+    id: 'grid-bag',
+    date: '2026-11-11',
+    kind: 'new',
+    title: 'The bag, cell by cell',
+    deck: 'Press I to open a grid bag where every item takes the room it should.',
+    points: [
+      'Items have sizes: a fountain and a water bottle take two cells, a plank takes four, and long things lie end to end.',
+      'Guns are worn in the gear slots beside the grid. The pack sets the grid: Satchel 5 by 4, Duffel 6 by 5, ALICE 8 by 6.',
+      'Shuffle things around as you like. Moves are yours alone and count when you close the bag.',
+    ],
+  },
+  {
+    id: 'loot-window',
+    date: '2026-11-11',
+    kind: 'better',
+    title: 'Loot waits in the box',
+    deck: 'A search no longer spills its finds at your feet.',
+    points: [
+      'What a container holds stays in it until you take it.',
+      'The loot window shows the container beside your bag. Move across what fits.',
+      'Taking a firework, fountain or bottle from a container counts it once.',
+    ],
+  },
+  {
+    id: 'doors-boards',
+    date: '2026-11-11',
+    kind: 'new',
+    title: 'Doors that shut and doors that hold',
+    deck: 'The search key now works doors, and the dead know a closed one when they meet it.',
+    points: [
+      'Press E at a door to close it. Tap E to open a closed one.',
+      'Hold E to board it with planks, nails and a hammer. Sneak and hold E to pry a board back off.',
+      'Closed doors stop you, your shots and their eyes. Zombies bash them, and a breaking door is loud.',
+    ],
+  },
+  {
+    id: 'material-chips',
+    date: '2026-11-11',
+    kind: 'new',
+    title: 'Materials on the HUD',
+    deck: 'What you carry for building shows as chips under your items.',
+    points: [
+      'Planks, nails and curtain sheets show with a count. A hammer or a crowbar shows once you have one.',
+      'Nothing carried, no chips. The Town Guide now lists planks, nails, hammers, crowbars and curtain sheets, and where to find them.',
+    ],
+  },
+  {
+    id: 'redrawn-icons',
+    date: '2026-11-11',
+    kind: 'better',
+    title: 'Better pictures',
+    deck: 'Survival badges, tools and a dumpster all redrawn.',
+    points: [
+      'The moodle badges are redrawn in the style of the pickup icons, and How to Play now shows each one.',
+      'The knife, hammer, crowbar and plank sit on the diagonal. Long items are drawn the full length of their slots in the bag.',
+      'A dumpster you have searched stands open and empty, its leavings on the ground.',
+    ],
+  },
+  {
+    id: 'small-fixes-nov-11',
+    date: '2026-11-11',
+    kind: 'fixed',
+    title: 'Small fixes',
+    deck: 'A steadier title menu, a tidier Sound Test and badges that stay out of the way.',
+    points: [
+      'The title menu no longer shifts under your first click.',
+      'The Sound Test deck, its finds note and its tabs are no longer squeezed by full-width buttons.',
+      'On a phone, survival badges sit in the top-left column with your items.',
+    ],
+  },
   {
     id: 'dumpsters-and-clues',
     date: '2026-11-10',
@@ -395,88 +466,6 @@ export const CHANGE_NOTES: readonly ChangeNote[] = [
       'Middle-click opens the ring on your survivor and middle-clicking again closes it. Esc or a click outside closes it too, without opening the pause menu.',
       'While it is open the scroll wheel steps round the ring instead of cycling your guns. Enter uses whatever it lands on, or just click a slot.',
       'You cannot shoot while it is up, but you can still walk: the ring comes with you.',
-    ],
-  },
-  {
-    id: 'hud-reorder',
-    date: '2026-11-08',
-    kind: 'better',
-    title: 'A HUD you can read at a glance',
-    deck: 'Health, kills and points down the right; the guns dead centre and tappable.',
-    points: [
-      'Health leads the top-right corner, with the kill count under it behind a zombie head, and points under that.',
-      'The gun bar sits in the middle of the foot of the screen at every width, and each slot is a button: tap it to bring that gun up.',
-      'The run log moved to the right edge, halfway down, clear of both.',
-    ],
-  },
-  {
-    id: 'backpack-ring',
-    date: '2026-11-08',
-    kind: 'better',
-    title: 'The backpack opens on you',
-    deck: 'Your own gear, rung around the survivor, following them as you move.',
-    points: [
-      'The ring shows what you are actually carrying, drawn as the game draws it: the medkit, the gun you would switch to, bottles, fireworks, flares, your candy and the town map.',
-      'It opens on the survivor and keeps up with them, and it closes the moment you pick something.',
-      'What would do nothing is greyed out: a medkit at full health, a candy already working.',
-    ],
-  },
-  {
-    id: 'sprint-button',
-    date: '2026-11-08',
-    kind: 'new',
-    title: 'A Sprint button',
-    deck: 'Four pixel buttons in the corner, Sprint under the thumb.',
-    points: [
-      'Hold Sprint to run, the same as holding Shift on a keyboard.',
-      'Search, Shove, Sprint and the backpack sit two by two in the bottom-right corner, in the game\'s own pixel style.',
-    ],
-  },
-  {
-    id: 'streak-kit',
-    date: '2026-11-08',
-    kind: 'new',
-    title: 'Streak kit',
-    deck: 'Come back night after night and your runs start better armed.',
-    points: [
-      'Play the Daily Night on days in a row: night 2 starts you with a medkit and spare rounds, then a knife, a shotgun, a Jawbreaker and, by night 7, a carbine.',
-      'The Daily Night page shows tonight\'s kit and what tomorrow adds. Each run says its kit on the first title card.',
-      'Solo Arcade runs get the kit too. Campaign and co-op start as before. Miss a day and the streak starts again.',
-    ],
-  },
-  {
-    id: 'setup-portraits',
-    date: '2026-11-08',
-    kind: 'better',
-    title: 'Taller setup cards',
-    deck: 'The three Play cards stand tall now, with stat bars on every option.',
-    points: [
-      'Mode, Difficulty and Survivor cards share one tall shape, with more night sky over each scene.',
-      'Each option shows its bars: players for a mode, ammo and zombie speed, bite and horde for a difficulty, and each survivor\'s stats.',
-      'The survivor list shows them as they look in play, turning when you point at one. Point at any option to see it in its card.',
-    ],
-  },
-  {
-    id: 'menu-details-switch',
-    date: '2026-11-08',
-    kind: 'better',
-    title: 'A cleaner main menu',
-    deck: 'The main menu shows just the names now. The line under each one is a switch in Options.',
-    points: [
-      'Turn on Menu details under Options to bring back a line saying what each item opens.',
-      'On a short screen, like a phone on its side, the lines stay hidden either way so the menu fits.',
-    ],
-  },
-  {
-    id: 'menu-sections',
-    date: '2026-11-08',
-    kind: 'better',
-    title: 'Main menu in three parts',
-    deck: 'Books, Play and Extras now sit side by side, so the whole menu fits under the logo, even on a phone on its side.',
-    points: [
-      'Play is in the middle: Daily Night, Arcade, Campaign and Level Select. The menu still opens on Daily Night.',
-      'Books holds How to Play, the Town Guide and Records; Extras holds the Sound Test and Options.',
-      'Up and down move within a part; left and right (or A and D) hop to the next one.',
     ],
   },
   ...EARLIER_NOTES,
