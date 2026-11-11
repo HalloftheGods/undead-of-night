@@ -22,7 +22,7 @@ describe('locker grid system', () => {
 
     it('returns default 5x4 for standard containers or undefined', () => {
       expect(containerGridDimensions('cabinet')).toEqual({ cols: 5, rows: 4 });
-      expect(containerGridDimensions('trunk')).toEqual({ cols: 5, rows: 4 });
+      expect(containerGridDimensions('box')).toEqual({ cols: 5, rows: 4 });
       expect(containerGridDimensions(undefined)).toEqual({ cols: 5, rows: 4 });
     });
   });

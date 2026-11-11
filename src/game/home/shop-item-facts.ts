@@ -2,7 +2,7 @@
 
 import { BOTTLE_CARRY, BOTTLE_NOISE_RADIUS, BOTTLE_RANGE } from '../../../shared/bottles.ts';
 import { STAT_SLOTS } from '../../../shared/character-stats.ts';
-import { AMMO_PICKUPS, MEDKIT_HEAL, MEDKIT_MAX, MELEE_DAMAGE, PLAYER_MAX_HEALTH, WEAPONS } from '../../../shared/constants.ts';
+import { AMMO_PICKUPS, BANDAGE_HEAL, MEDKIT_HEAL, MEDKIT_MAX, MELEE_DAMAGE, PLAYER_MAX_HEALTH, WEAPONS } from '../../../shared/constants.ts';
 import type { WeaponStats } from '../../../shared/constants.ts';
 import { scaleRounds } from '../../../shared/difficulty.ts';
 import type { DifficultyId } from '../../../shared/difficulty.ts';
@@ -26,6 +26,7 @@ import {
   TRANQ_SPEED,
 } from '../../../shared/round-effect-data.ts';
 import type { GunEffect } from '../../../shared/round-effect-data.ts';
+import type { SupplyType } from '../../../shared/supply-types.ts';
 import type { ItemGrant } from './merchant-data.ts';
 
 /** Cells in a gun's bars, as many as a survivor's. */
@@ -114,6 +115,29 @@ function ammoFacts(ammo: keyof typeof AMMO_PICKUPS, difficulty: DifficultyId): I
   return { note: `Spare rounds for the ${gun.label}, counted at this difficulty.`, rows };
 }
 
+const SUPPLY_FACTS: Readonly<Record<SupplyType, () => ItemFacts>> = {
+  bandage: () => ({
+    note: 'Stops bleeding and binds minor wounds.',
+    rows: [fact('Heals', `${BANDAGE_HEAL} health`), fact('Effect', 'Stops bleed'), carry(20)],
+  }),
+  canned_food: () => ({
+    note: 'Preserved rations that stave off hunger.',
+    rows: [fact('Hunger', '-45'), fact('Heals', '8 health'), carry(20)],
+  }),
+  water_bottle: () => ({
+    note: 'Clean drinking water to stay hydrated.',
+    rows: [fact('Thirst', '-55'), fact('Fatigue', '-10'), carry(20)],
+  }),
+  disinfectant: () => ({
+    note: 'Medical antiseptic to cleanse open wounds.',
+    rows: [fact('Effect', 'Cleans wounds'), fact('Treats', 'Infection'), carry(20)],
+  }),
+  antibiotics: () => ({
+    note: 'Potent medicine to combat advanced infection.',
+    rows: [fact('Effect', 'Fights fever'), fact('Treats', 'Deep infection'), carry(20)],
+  }),
+};
+
 type GrantOf<K extends ItemGrant['kind']> = Extract<ItemGrant, { kind: K }>;
 type FactPicks = { readonly [K in ItemGrant['kind']]: (grant: GrantOf<K>, difficulty: DifficultyId) => ItemFacts };
 
@@ -122,6 +146,7 @@ const FACTS_OF: FactPicks = {
   ammo: ({ ammo }, difficulty) => ammoFacts(ammo, difficulty),
   part: ({ part }) => partFacts(part),
   kit: ({ effect }) => kitFacts(effect),
+  supply: ({ supply }) => SUPPLY_FACTS[supply](),
   medkit: () => ({ note: 'Patches you up out on a run.', rows: [fact('Heals', `${MEDKIT_HEAL} of ${PLAYER_MAX_HEALTH}`), carry(MEDKIT_MAX)] }),
   knife: () => ({ note: 'Your shove goes in point first, just as silent.', rows: [fact('Shove', `${KNIFE_DAMAGE} damage`), fact('Bare hands', `${MELEE_DAMAGE} damage`), carry(1)] }),
   bottle: () => ({

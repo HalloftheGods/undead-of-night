@@ -14,6 +14,7 @@ import { COOP_LEVEL_NOTE, startAtLabel } from './level-select.ts';
 import { emptySupplies, isSupplyType, SUPPLY_TYPES } from '../../shared/supply-types.ts';
 import type { SupplyType } from '../../shared/supply-types.ts';
 import { formatItemName } from './dual-loot-modal.ts';
+import type { ChestOpened, HomeActions, HomeDeath, HomeUi } from './home-hud.ts';
 
 const SMELT_SECONDS = 3;
 
@@ -256,10 +257,12 @@ export function deathSummary(death: HomeDeath): readonly string[] {
   const lines: string[] = [];
   const hasCandy = (receipt.candy ?? 0) > 0;
   if (hasCandy) {
+    const addPieceCount = (sum: number, n: unknown): number => sum + (typeof n === 'number' ? n : 0);
     const totalPieces = receipt.candyBag
-      ? Object.values(receipt.candyBag).reduce<number>((sum, n) => sum + (n ?? 0), 0)
+      ? Object.values(receipt.candyBag).reduce(addPieceCount, 0)
       : 0;
-    if (totalPieces > 0) {
+    const hasPieces = totalPieces > 0;
+    if (hasPieces) {
       lines.push(`${receipt.candy} candy (${plural(totalPieces, 'piece')})`);
     } else {
       lines.push(`${receipt.candy} candy`);

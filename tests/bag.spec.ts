@@ -7,7 +7,23 @@ import { PICKUP_RADIUS } from '../shared/constants.ts';
 import { parseClientPacket } from '../shared/room/client-packets.ts';
 import { quietSim, steps } from './helpers/sim-harness.ts';
 
-const none: BagWanted = { medkit: 0, bottle: 0, knife: 0, plank: 0, hammer_tool: 0, crowbar: 0, sheet_curtain: 0, firework: 0, fountain: 0, nails: 0 };
+const none: BagWanted = {
+  medkit: 0,
+  bottle: 0,
+  knife: 0,
+  plank: 0,
+  hammer_tool: 0,
+  crowbar: 0,
+  sheet_curtain: 0,
+  firework: 0,
+  fountain: 0,
+  nails: 0,
+  bandage: 0,
+  canned_food: 0,
+  water_bottle: 0,
+  disinfectant: 0,
+  antibiotics: 0,
+};
 const want = (more: Partial<BagWanted>): BagWanted => ({ ...none, ...more });
 
 describe('syncBag', () => {

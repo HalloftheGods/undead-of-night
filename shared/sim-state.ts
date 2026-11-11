@@ -25,6 +25,7 @@ import type {
   ZombieType,
 } from './protocol.ts';
 import type { ContainerState } from './containers.ts';
+import type { Supplies } from './supply-types.ts';
 import type { FlowField, Point } from './flow-field.ts';
 import type { HomeView, Jewels, OverrunPhase, OverrunReceipt, SalvageCounts, TripReceipt } from './home-protocol.ts';
 import { randRange } from './rng.ts';

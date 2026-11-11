@@ -14,6 +14,7 @@ import type { WeaponId } from '../../../shared/protocol.ts';
 import type { HomeSave } from './home-store.ts';
 import { MERCHANTS, itemOf } from './merchant-data.ts';
 import type { ItemDef, MerchantDef } from './merchant-data.ts';
+import { emptySupplies } from '../../../shared/supply-types.ts';
 
 export interface MerchantStock {
   /** How many of each item are left, by item id. Items that are always on the shelf are not listed. */
@@ -130,7 +131,11 @@ function held(save: HomeSave, item: ItemDef): number {
   if (isBottle) return locker.bottles + hands.bottles;
   const isKnife = grant.kind === 'knife';
   if (isKnife) return Number(locker.knife || hands.knife);
-  return Number(ownsGun(save, grant.weapon));
+  const isSupply = grant.kind === 'supply';
+  if (isSupply) return (locker.supplies?.[grant.supply] ?? 0) + (hands.supplies?.[grant.supply] ?? 0);
+  const isGun = grant.kind === 'gun';
+  if (isGun) return Number(ownsGun(save, grant.weapon));
+  return 0;
 }
 
 /** How many of the item fit in a pocket, counting the box as one unit. */
@@ -146,6 +151,8 @@ function carryLimit(item: ItemDef): number {
   if (isMedkit) return MEDKIT_MAX;
   const isBottle = grant.kind === 'bottle';
   if (isBottle) return BOTTLE_CARRY;
+  const isSupply = grant.kind === 'supply';
+  if (isSupply) return 20;
   return 1;
 }
 
@@ -173,7 +180,14 @@ function fits(save: HomeSave, item: ItemDef, context: ShopContext): boolean {
 }
 
 function granted(locker: Loadout, item: ItemDef, context: ShopContext): Loadout {
-  const next: Loadout = { ...locker, guns: { ...locker.guns }, ammoBag: { ...locker.ammoBag }, parts: { ...locker.parts }, kits: { ...locker.kits } };
+  const next: Loadout = {
+    ...locker,
+    guns: { ...locker.guns },
+    ammoBag: { ...locker.ammoBag },
+    parts: { ...locker.parts },
+    kits: { ...locker.kits },
+    supplies: { ...(locker.supplies ?? emptySupplies()) },
+  };
   const { grant } = item;
   const isGun = grant.kind === 'gun';
   if (isGun) next.guns[grant.weapon] = {};
@@ -183,6 +197,8 @@ function granted(locker: Loadout, item: ItemDef, context: ShopContext): Loadout 
   if (isPart) next.parts[grant.part] += 1;
   const isKit = grant.kind === 'kit';
   if (isKit) next.kits[grant.effect] += 1;
+  const isSupply = grant.kind === 'supply';
+  if (isSupply) next.supplies![grant.supply] += 1;
   const isMedkit = grant.kind === 'medkit';
   if (isMedkit) next.medkits += 1;
   const isBottle = grant.kind === 'bottle';
