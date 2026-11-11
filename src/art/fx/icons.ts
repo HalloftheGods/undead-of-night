@@ -335,6 +335,8 @@ const CANDY: Grid = [
   '....sssss....',
 ];
 
+export const CANDY_GRID: Grid = CANDY;
+
 /** The earlier drawing of CANDY, kept to switch back to. */
 export const CANDY_OLD: Grid = [
   '.....CCC.....',
@@ -516,6 +518,7 @@ export function buildPickupIcons(): Record<PickupType, PixelSprite> {
     hammer_tool: outlined(HAMMER_GRID, 15, 15),
     sheet_curtain: outlined(CURTAIN_GRID, 15, 15),
     crowbar: outlined(CROWBAR_GRID, 15, 15),
+    candy: outlined(CANDY, 15, 15),
   };
 }
 

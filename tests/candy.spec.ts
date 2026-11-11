@@ -10,6 +10,7 @@ import {
   takeCandy,
   bagOf,
   MAX_CANDY_BAG,
+  eatCandyDirect,
 } from '../shared/candy.ts';
 import { POPPING_REACH, SPINNER_RADIUS } from '../shared/throwables.ts';
 import { townContainers } from '../shared/containers.ts';
@@ -249,5 +250,15 @@ describe('candy', () => {
     expect(p.status).toBe('downed');
     expect(p.sugar).toEqual([]);
     expect(p.candy).toEqual(['ghost_gum']);
+  });
+
+  it('eats candy directly without needing a tick queue', () => {
+    const { sim, state } = quietSim();
+    const [p] = state.players;
+    carrying(p, 'jawbreaker', 'ghost_gum');
+    eatCandyDirect(state, p, 'jawbreaker');
+    expect(p.candy).toEqual(['ghost_gum']);
+    expect(sugarOf(p, 'jawbreaker')).toBe(1);
+    expect(eventsOf(sim.snapshot(), 'candy_eaten')).toMatchObject([{ type: 'candy_eaten', playerId: 'a', candy: 'jawbreaker' }]);
   });
 });

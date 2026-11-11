@@ -451,8 +451,8 @@ describe('Dual-Grid Container Looting & Inventory Modal', () => {
       const componentSource = readFileSync(new URL('../src/components/DualLootModal.vue', import.meta.url), 'utf8');
       const logicSource = readFileSync(new URL('../src/game/dual-loot-modal.ts', import.meta.url), 'utf8');
 
-      expect(componentSource).not.toContain('—');
-      expect(logicSource).not.toContain('—');
+      expect(componentSource).not.toContain('\u2014');
+      expect(logicSource).not.toContain('\u2014');
     });
 
     it('formats item display names cleanly', () => {
@@ -460,6 +460,20 @@ describe('Dual-Grid Container Looting & Inventory Modal', () => {
       expect(formatItemName('armor_vest')).toBe('Armor Vest');
       expect(formatItemName('sheet_curtain')).toBe('Sheet Curtain');
       expect(formatItemName('custom_gear_piece')).toBe('Custom Gear Piece');
+    });
+
+    it('contains action verb mappings and button bindings in HeldItemPanel.vue', () => {
+      const panelSource = readFileSync(new URL('../src/components/HeldItemPanel.vue', import.meta.url), 'utf8');
+
+      expect(panelSource).toContain('actionVerb');
+      expect(panelSource).toContain("if (isFoodOrSweet) return 'EAT';");
+      expect(panelSource).toContain("if (isDrink) return 'DRINK';");
+      expect(panelSource).toContain("if (isTopical) return 'APPLY';");
+      expect(panelSource).toContain("if (isPill) return 'TAKE';");
+      expect(panelSource).toContain("if (isMedkit) return 'HEAL';");
+      expect(panelSource).toContain('{{ actionVerb }}');
+      expect(panelSource).toContain('DROP');
+      expect(panelSource).not.toContain('\u2014');
     });
   });
 });

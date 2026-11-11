@@ -7,7 +7,7 @@
         <span class="held-hint">[R] rotate. Click a cell to drop. [ESC] returns it.</span>
       </span>
       <div class="held-actions">
-        <button v-if="canUse" type="button" class="action-btn use-btn" @click.stop="$emit('use')">USE</button>
+        <button v-if="canUse" type="button" class="action-btn use-btn" @click.stop="$emit('use')">{{ actionVerb }}</button>
         <button v-if="canDrop" type="button" class="action-btn drop-btn" @click.stop="$emit('drop')">DROP</button>
       </div>
     </template>
@@ -23,6 +23,7 @@
 import { computed } from 'vue';
 import type { ArtBook } from '../art/types.ts';
 import { isDroppableBagItem } from '../../shared/bag.ts';
+import { isCandyId } from '../../shared/candy.ts';
 import { getItemFootprint, type GridItem } from '../../shared/grid-inventory.ts';
 import { isSupplyType } from '../../shared/supply-types.ts';
 import { formatItemName } from '../game/dual-loot-modal.ts';
@@ -42,8 +43,37 @@ const name = computed(() => (item ? formatItemName(item.type) : ''));
 const footprint = computed(() => (item ? getItemFootprint(item.type, item.rotated) : { width: 1, height: 1 }));
 const width = computed(() => footprint.value.width);
 const height = computed(() => footprint.value.height);
-const canUse = computed(() => Boolean(item && isSupplyType(item.type)));
-const canDrop = computed(() => Boolean(item && isDroppableBagItem(item.type)));
+
+const actionVerb = computed(() => {
+  const type = item?.type;
+  if (!type) return 'USE';
+  const isFoodOrSweet = isCandyId(type) || type === 'canned_food';
+  if (isFoodOrSweet) return 'EAT';
+  const isDrink = type === 'water_bottle' || type === 'bottle';
+  if (isDrink) return 'DRINK';
+  const isTopical = type === 'bandage' || type === 'disinfectant';
+  if (isTopical) return 'APPLY';
+  const isPill = type === 'antibiotics';
+  if (isPill) return 'TAKE';
+  const isMedkit = type === 'medkit';
+  if (isMedkit) return 'HEAL';
+  return 'USE';
+});
+
+const canUse = computed(() => {
+  if (!item) return false;
+  const isSupply = isSupplyType(item.type);
+  const isCandy = isCandyId(item.type);
+  const isMedkit = item.type === 'medkit';
+  return isSupply || isCandy || isMedkit;
+});
+
+const canDrop = computed(() => {
+  if (!item) return false;
+  const isDroppable = isDroppableBagItem(item.type);
+  const isCandy = isCandyId(item.type);
+  return isDroppable || isCandy;
+});
 </script>
 
 <style scoped>

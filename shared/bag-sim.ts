@@ -5,7 +5,7 @@ import { FORTIFICATION_ITEMS } from './fortifications.ts';
 import { takeFromContainer } from './container-take.ts';
 import { autoPackItem, createInventoryGrid, placeItem } from './grid-inventory.ts';
 import { spawnPickup } from './pickups.ts';
-import { isCandyId, type CandyId } from './candy.ts';
+import { eatCandyDirect, isCandyId, type CandyId } from './candy.ts';
 import type { PlayerState, SimState } from './sim-state.ts';
 import { useSupply } from './supplies.ts';
 import { isSupplyType } from './supply-types.ts';
@@ -39,6 +39,17 @@ function leaveOnGround(sim: SimState, p: PlayerState, type: DroppableBagItem, co
   for (let i = 0; i < taken / per; i += 1) {
     spawnPickup(sim, type, p.x, p.y);
     sim.pickups[sim.pickups.length - 1]!.leftBy = p.id;
+  }
+}
+
+function leaveCandyOnGround(sim: SimState, p: PlayerState, id: CandyId, count: number): void {
+  for (let i = 0; i < count; i += 1) {
+    const candyIndex = p.candy.indexOf(id);
+    const hasCandy = candyIndex >= 0;
+    if (hasCandy) p.candy.splice(candyIndex, 1);
+    spawnPickup(sim, 'candy', p.x, p.y, 0, null, id);
+    const lastPickup = sim.pickups[sim.pickups.length - 1];
+    if (lastPickup) lastPickup.leftBy = p.id;
   }
 }
 
@@ -96,11 +107,23 @@ export function applyBagCommit(sim: SimState, p: PlayerState, commit: BagCommit)
     }
   }
   for (const row of commit.use ?? []) {
+    const isCandy = isCandyId(row.type) && Number.isInteger(row.count) && row.count >= 1;
+    if (isCandy) {
+      for (let used = 0; used < row.count; used += 1) {
+        eatCandyDirect(sim, p, row.type as CandyId);
+      }
+      continue;
+    }
     const isUsable = isSupplyType(row.type) && Number.isInteger(row.count) && row.count >= 1;
     if (!isUsable) continue;
     for (let used = 0; used < row.count && useSupply(p, row.type); used += 1);
   }
   for (const row of commit.drop) {
+    const isCandy = isCandyId(row.type) && Number.isFinite(row.count) && row.count >= 1;
+    if (isCandy) {
+      leaveCandyOnGround(sim, p, row.type as CandyId, Math.floor(row.count));
+      continue;
+    }
     const real = isBagItemType(row.type) && isDroppableBagItem(row.type) && Number.isFinite(row.count) && row.count >= 1;
     if (real) leaveOnGround(sim, p, row.type, Math.floor(row.count));
   }

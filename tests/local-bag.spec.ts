@@ -126,4 +126,30 @@ describe('LocalBag', () => {
     local.heal();
     expect(local.bag.pack.items.length).toBeGreaterThan(0);
   });
+
+  it('commits candy use and applies the sugar buff to the player', () => {
+    const { p, local, sent, watch } = pair();
+    p.candy = ['sour_skulls'];
+    const working = local.open(watch());
+    working.used.push({ id: 'candy-carried-sour_skulls-0', type: 'sour_skulls', x: 0, y: 0, rotated: false });
+    local.close(working);
+    expect(sent).toHaveLength(1);
+    expect(sent[0]!.use).toEqual([{ type: 'sour_skulls', count: 1 }]);
+    expect(p.candy).toEqual([]);
+    expect(p.sugar.some((s) => s.id === 'sour_skulls')).toBe(true);
+  });
+
+  it('commits candy drop and leaves a candy pickup on the floor', () => {
+    const { state, p, local, sent, watch } = pair();
+    p.candy = ['fang_taffy'];
+    const working = local.open(watch());
+    working.dropped.push({ id: 'candy-carried-fang_taffy-0', type: 'fang_taffy', x: 0, y: 0, rotated: false });
+    local.close(working);
+    expect(sent).toHaveLength(1);
+    expect(sent[0]!.drop).toEqual([{ type: 'fang_taffy', count: 1 }]);
+    expect(p.candy).toEqual([]);
+    const pickup = state.pickups.find((item) => item.type === 'candy');
+    expect(pickup).toBeDefined();
+    expect(pickup?.candyId).toBe('fang_taffy');
+  });
 });

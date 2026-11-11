@@ -261,12 +261,11 @@ export function candySeconds(id: CandyId, p?: Pick<PlayerState, 'keepsakes'>): n
   return bagged ? base * TREAT_BAG_TIME : base;
 }
 
-/** Eats one candy out of the bag, if it is there. A candy already working gets the new one's time on top. */
-function eat(sim: SimState, p: PlayerState, pick: true | CandyId): void {
-  const index = pick === true ? 0 : p.candy.indexOf(pick);
-  const notInBag = index < 0 || index >= p.candy.length;
-  if (notInBag) return;
-  const [id] = p.candy.splice(index, 1);
+/** Directly eats a candy, applying or stacking its buff and emitting candy_eaten. Consumes from bag if present. */
+export function eatCandyDirect(sim: SimState, p: PlayerState, id: CandyId): void {
+  const index = p.candy.indexOf(id);
+  const inBag = index >= 0;
+  if (inBag) p.candy.splice(index, 1);
   const seconds = candySeconds(id, p);
   const working = p.sugar.find((sugar) => sugar.id === id);
   if (working) {
@@ -276,6 +275,15 @@ function eat(sim: SimState, p: PlayerState, pick: true | CandyId): void {
     p.sugar.push({ id, left: seconds, total: seconds });
   }
   emit(sim, { type: 'candy_eaten', playerId: p.id, candy: id, x: p.x, y: p.y, ...(working ? { stacked: true } : {}) });
+}
+
+/** Eats one candy out of the bag, if it is there. A candy already working gets the new one's time on top. */
+function eat(sim: SimState, p: PlayerState, pick: true | CandyId): void {
+  const index = pick === true ? 0 : p.candy.indexOf(pick);
+  const notInBag = index < 0 || index >= p.candy.length;
+  if (notInBag) return;
+  const id = p.candy[index]!;
+  eatCandyDirect(sim, p, id);
 }
 
 /** Once a tick: eats whatever was picked out of the bag, and wears the rest down. */

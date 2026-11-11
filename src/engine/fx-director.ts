@@ -92,7 +92,8 @@ const PICKUP_LABEL: Record<PickupType, string> = {
   nails: "NAILS",
   hammer_tool: "HAMMER",
   sheet_curtain: "CURTAIN",
-  crowbar: "CROWBAR"
+  crowbar: "CROWBAR",
+  candy: "CANDY"
 };
 
 export interface PulseLight {

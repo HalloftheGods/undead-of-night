@@ -11,7 +11,7 @@ import { PART_ART } from './parts.ts';
 import { JEWEL_LARGE, JEWEL_SMALL, TREASURE_LEGEND } from './treasure.ts';
 import { SURVIVAL_ITEM_ART, SURVIVAL_LEGEND } from './survival-art.ts';
 import type { Grid } from './shared.ts';
-import { CROWBAR_GRID, CURTAIN_GRID, HAMMER_GRID, NAILS_GRID, PLANK_GRID } from './icons.ts';
+import { CANDY_GRID, CROWBAR_GRID, CURTAIN_GRID, HAMMER_GRID, NAILS_GRID, PLANK_GRID } from './icons.ts';
 
 const { blood, bone, fire, ink, metal, olive, wood } = RAMPS;
 
@@ -215,6 +215,7 @@ const ITEMS: Record<PickupType, ItemSpec> = {
   hammer_tool: { rows: HAMMER_GRID, glint: [3, 1] },
   sheet_curtain: { rows: CURTAIN_GRID, glint: [2, 2] },
   crowbar: { rows: CROWBAR_GRID, glint: [2, 1] },
+  candy: { rows: CANDY_GRID, glint: [1, 1] },
 };
 
 function frame({ rows, glint, legend }: ItemSpec, index: number): PixelCanvas {

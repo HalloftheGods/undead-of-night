@@ -187,6 +187,8 @@ export interface PickupEntity {
   readonly type: PickupType;
   x: number;
   y: number;
+  /** Specific candy identifier when type is 'candy'. */
+  readonly candyId?: CandyId;
 }
 
 export interface PlayerRunStats {

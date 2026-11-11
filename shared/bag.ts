@@ -10,6 +10,7 @@ import {
 import type { GridItem, InventoryGrid } from './grid-inventory.ts';
 import { SUPPLY_TYPES } from './supply-types.ts';
 import type { Supplies } from './supply-types.ts';
+import type { CandyId } from './protocol.ts';
 
 /** The things a survivor packs. Guns are worn, and ammo, candy, parts, kits and treasure are not bag items. */
 export const BAG_ITEM_TYPES = [
@@ -51,7 +52,7 @@ export interface BagLayoutRow {
 }
 
 export interface BagDrop {
-  readonly type: BagItemType;
+  readonly type: BagItemType | CandyId;
   readonly count: number;
 }
 

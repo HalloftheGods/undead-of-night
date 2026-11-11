@@ -14,7 +14,8 @@ import {
 import type { AmmoPickup } from './constants.ts';
 import { foundGunFit, isPartPickup, takePart } from './gun-upgrades.ts';
 import { WEAPON_ORDER } from './protocol.ts';
-import type { PickupType, WeaponId } from './protocol.ts';
+import type { CandyId, PickupType, WeaponId } from './protocol.ts';
+import { takeCandy } from './candy.ts';
 import { isKitPickup, takeKit } from './round-effects.ts';
 import { emptySupplies, isSupplyType } from './supply-types.ts';
 import { createEmptyFortificationInventory, isFortificationItem, takeFortificationItem } from './fortifications.ts';
@@ -30,13 +31,14 @@ const KILL_DROP_BANDAGE_ODDS = 0.4;
 
 export const isAmmoPickup = (type: PickupType): type is AmmoPickup => type in AMMO_PICKUPS;
 
-export function spawnPickup(sim: SimState, type: PickupType, x: number, y: number, rounds = 0, ttl: number | null = null): void {
+export function spawnPickup(sim: SimState, type: PickupType, x: number, y: number, rounds = 0, ttl: number | null = null, candyId?: CandyId): void {
   // Treasure is numbered on its own counter, so it never moves `sim.nextEntity`.
   const isHomeTreasure = isTreasurePickup(type) && sim.homeRun;
   if (isHomeTreasure) return spawnTreasure(sim, type, x, y, rounds);
   const isHomeSalvage = isSalvagePickup(type) && sim.homeRun;
   if (isHomeSalvage) return spawnSalvage(sim, type, x, y, rounds);
-  sim.pickups.push({ id: entityId(sim, 'i'), type, x, y, ttl, rounds });
+  const candyProp = candyId ? { candyId } : {};
+  sim.pickups.push({ id: entityId(sim, 'i'), type, x, y, ttl, rounds, ...candyProp });
 }
 
 /** Rarely, something small falls off a body. It does not last. */
@@ -96,6 +98,11 @@ export function applyPickup(p: PlayerState, item: PickupState): boolean {
 
 export function takeItem(p: PlayerState, item: PickupState): boolean {
   const { type } = item;
+  const isCandy = type === 'candy';
+  if (isCandy) {
+    const candyId = item.candyId ?? 'sour_skulls';
+    return takeCandy(p, candyId) !== null;
+  }
   const isSupply = isSupplyType(type);
   if (isSupply) {
     const supplies = p.supplies ?? (p.supplies = emptySupplies());

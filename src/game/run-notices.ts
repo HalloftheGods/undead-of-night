@@ -62,6 +62,8 @@ export function pickupNote(pickup: PickupType, before: PlayerEntity | null, afte
     const name = pickup.replace('_', ' ').toUpperCase();
     return gained > 0 ? `+${gained} ${name}` : name;
   }
+  const isCandy = pickup === 'candy';
+  if (isCandy) return '+1 CANDY';
   const isMedkit = pickup === 'medkit';
   return isMedkit ? '+1 MEDKIT' : pickup.toUpperCase();
 }
@@ -73,6 +75,9 @@ export function refusalNote(player: PlayerEntity, type: PickupType): string | nu
   const noRoomForMedkit = type === 'medkit' && player.medkits >= MEDKIT_MAX;
   const secondKnife = type === 'knife' && player.knife;
   const noRoomForPart = isPartPickup(type) && (player.gear?.parts[type] ?? 0) >= PART_CARRY_CAP;
+  const isCandy = type === 'candy';
+  const candyBagFull = isCandy && (player.candy?.length ?? 0) >= 100;
+  if (candyBagFull) return 'CANDY BAG FULL';
   if (noRoomForPart) return 'PARTS FULL';
   if (noRoomForAmmo) return 'AMMO FULL';
   if (secondKnife) return 'ALREADY ARMED';

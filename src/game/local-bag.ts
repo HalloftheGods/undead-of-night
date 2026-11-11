@@ -7,6 +7,7 @@ import type { GridItem, InventoryGrid } from '../../shared/grid-inventory.ts';
 import { containerGridDimensions } from '../../shared/containers.ts';
 import type { ContainerKind } from '../../shared/containers.ts';
 import type { WeaponId } from '../../shared/protocol.ts';
+import { isCandyId, type CandyId } from '../../shared/candy.ts';
 import { isSupplyType, SUPPLY_TYPES } from '../../shared/supply-types.ts';
 import type { Supplies } from '../../shared/supply-types.ts';
 import type { HudState } from './hud-state.ts';
@@ -187,11 +188,11 @@ export class LocalBag {
         }
       }
     }
-    const dropped = new Map<BagItemType, number>();
+    const dropped = new Map<BagItemType | CandyId, number>();
     const isFurniture = working.containerId !== null && working.containerId !== undefined;
     const inContainer = isFurniture ? new Set(working.container.items.map((i) => i.id)) : new Set<string>();
     const usedIds = new Set(working.used.map((item) => item.id));
-    const usedCounts = new Map<BagItemType, number>();
+    const usedCounts = new Map<BagItemType | CandyId, number>();
     for (const [id, item] of known) {
       if (placed.has(id) || inContainer.has(id)) continue;
       const type = item.type as BagItemType;
@@ -202,30 +203,40 @@ export class LocalBag {
       else if (!settle(scratch, item)) continue;
       else placed.add(id);
     }
-    const layout = bagLayout({ ...scratch, serial: this.bag.serial });
-    const toRow = ([type, count]: [BagItemType, number]): BagDrop => ({ type, count });
-    const drop: BagDrop[] = [...dropped].map(toRow);
-    const use: BagDrop[] = [...usedCounts].map(toRow);
     const containerTaken: GridItem[] = [];
     for (const item of [...working.pack.items, ...working.pockets.items, ...working.candyBag.items]) {
       if (containerOriginalIds.has(item.id)) containerTaken.push(item);
     }
     for (const item of working.used) {
-      if (containerOriginalIds.has(item.id)) {
+      const isCandy = isCandyId(item.type);
+      const isSupply = isSupplyType(item.type);
+      if (isCandy) {
+        usedCounts.set(item.type, (usedCounts.get(item.type) ?? 0) + 1);
+        if (containerOriginalIds.has(item.id)) containerTaken.push(item);
+      } else if (containerOriginalIds.has(item.id)) {
         containerTaken.push(item);
-        if (isSupplyType(item.type)) {
-          usedCounts.set(item.type, (usedCounts.get(item.type) ?? 0) + 1);
+        if (isSupply) {
+          usedCounts.set(item.type as BagItemType, (usedCounts.get(item.type as BagItemType) ?? 0) + 1);
         }
       }
     }
     for (const item of working.dropped) {
-      if (containerOriginalIds.has(item.id)) {
+      const isCandy = isCandyId(item.type);
+      const isDroppable = isDroppableBagItem(item.type);
+      if (isCandy) {
+        dropped.set(item.type, (dropped.get(item.type) ?? 0) + 1);
+        if (containerOriginalIds.has(item.id)) containerTaken.push(item);
+      } else if (containerOriginalIds.has(item.id)) {
         containerTaken.push(item);
-        if (isDroppableBagItem(item.type)) {
-          dropped.set(item.type, (dropped.get(item.type) ?? 0) + (item.count ?? 1));
+        if (isDroppable) {
+          dropped.set(item.type as BagItemType, (dropped.get(item.type as BagItemType) ?? 0) + (item.count ?? 1));
         }
       }
     }
+    const layout = bagLayout({ ...scratch, serial: this.bag.serial });
+    const toRow = ([type, count]: [BagItemType | CandyId, number]): BagDrop => ({ type, count });
+    const drop: BagDrop[] = [...dropped].map(toRow);
+    const use: BagDrop[] = [...usedCounts].map(toRow);
     const containerDeposited: GridItem[] = [];
     for (const item of working.container.items) {
       if (!containerOriginalIds.has(item.id)) containerDeposited.push(item);
@@ -252,7 +263,10 @@ export class LocalBag {
     deposited: readonly GridItem[] = [],
   ): void {
     const before = bagWanted(this.currentCounters());
-    for (const { type, count } of gone) this.pending.push({ type, before: before[type], dropped: count, at: this.now() });
+    for (const { type, count } of gone) {
+      const isBagItem = isBagItemType(type);
+      if (isBagItem) this.pending.push({ type, before: before[type], dropped: count, at: this.now() });
+    }
     for (const item of deposited) {
       const isBagItem = isBagItemType(item.type);
       if (isBagItem) {
