@@ -30,9 +30,9 @@ export interface PlayerBag {
   serial: number;
 }
 
-/** What the layout says about one item: the whole of what a commit may say. */
+/** What the layout says about one item: the whole of what a commit may say. Ids never cross the wire; the type says which item. */
 export interface BagLayoutRow {
-  readonly id: string;
+  readonly type: BagItemType;
   readonly grid: BagGridId;
   readonly x: number;
   readonly y: number;
@@ -191,49 +191,57 @@ export function retierBag(bag: PlayerBag, tier: BackpackTier | undefined): GridI
 }
 
 /** Code-point order, never a locale's, so both sides sort the same. */
-function byId(a: { id: string }, b: { id: string }): number {
-  if (a.id === b.id) return 0;
-  return a.id < b.id ? -1 : 1;
+function byRow(a: BagLayoutRow, b: BagLayoutRow): number {
+  const ka = `${a.type}|${a.grid}|${String(a.x).padStart(4, '0')}|${String(a.y).padStart(4, '0')}|${a.rotated ? 1 : 0}`;
+  const kb = `${b.type}|${b.grid}|${String(b.x).padStart(4, '0')}|${String(b.y).padStart(4, '0')}|${b.rotated ? 1 : 0}`;
+  if (ka === kb) return 0;
+  return ka < kb ? -1 : 1;
 }
 
-/** The pack and pockets as one list of rows, by id. */
+/** The pack and pockets as one list of rows, sorted by what they say. No ids: two bags that look alike have equal layouts. */
 export function bagLayout(bag: PlayerBag): BagLayoutRow[] {
   const rows: BagLayoutRow[] = [];
   for (const [name, grid] of [['pack', bag.pack], ['pockets', bag.pockets]] as const) {
-    for (const item of grid.items) rows.push({ id: item.id, grid: name, x: item.x, y: item.y, rotated: item.rotated });
+    for (const item of grid.items) rows.push({ type: item.type as BagItemType, grid: name, x: item.x, y: item.y, rotated: item.rotated });
   }
-  return rows.sort(byId);
+  return rows.sort(byRow);
 }
 
-/** A small integer over (id, grid, x, y, rotated) sorted by id: the same layout hashes the same on both sides. */
-export function bagHash(bag: PlayerBag): number {
+/** A small integer over (type, grid, x, y, rotated) sorted: the same things in the same places hash the same, whatever their ids. */
+export function layoutHash(layout: readonly BagLayoutRow[]): number {
   let hash = 0x811c9dc5;
-  for (const row of bagLayout(bag)) {
-    const text = `${row.id}|${row.grid}|${row.x}|${row.y}|${row.rotated ? 1 : 0};`;
+  for (const row of [...layout].sort(byRow)) {
+    const text = `${row.type}|${row.grid}|${row.x}|${row.y}|${row.rotated ? 1 : 0};`;
     for (let i = 0; i < text.length; i += 1) hash = Math.imul(hash ^ text.charCodeAt(i), 0x01000193);
   }
   return (hash >>> 8) & 0xffffff;
 }
 
+export function bagHash(bag: PlayerBag): number {
+  return layoutHash(bagLayout(bag));
+}
+
 /**
- * Checks a layout against a bag without touching it and, if it holds, returns the placements. It must name exactly the
- * ids in the bag, each in bounds and clear of the others. Anything else is null.
+ * Checks a layout against a bag without touching it and, if it holds, returns the placements. Its rows must be exactly
+ * the multiset of types the bag holds, each in bounds and clear of the others. Each row takes an unused item of its
+ * type (items of a type are interchangeable), so the bag keeps its own ids and counts. Anything else is null.
  */
 export function validateLayout(bag: PlayerBag, layout: readonly BagLayoutRow[]): { row: BagLayoutRow; item: GridItem }[] | null {
-  const known = new Map<string, GridItem>();
-  for (const item of [...bag.pack.items, ...bag.pockets.items]) known.set(item.id, item);
-  if (layout.length !== known.size) return null;
+  const pool = new Map<string, GridItem[]>();
+  let total = 0;
+  for (const item of [...bag.pack.items, ...bag.pockets.items]) {
+    pool.set(item.type, [...(pool.get(item.type) ?? []), item]);
+    total += 1;
+  }
+  if (layout.length !== total) return null;
   const scratch = { pack: createInventoryGrid(bag.pack.cols, bag.pack.rows), pockets: createInventoryGrid(bag.pockets.cols, bag.pockets.rows) };
-  const seen = new Set<string>();
   const placements: { row: BagLayoutRow; item: GridItem }[] = [];
   for (const row of layout) {
-    const item = known.get(row.id);
     const grid = row.grid === 'pack' || row.grid === 'pockets' ? scratch[row.grid] : null;
-    const wellFormed = item !== undefined && grid !== null && !seen.has(row.id)
-      && Number.isInteger(row.x) && Number.isInteger(row.y) && typeof row.rotated === 'boolean';
+    const item = isBagItemType(row.type) ? pool.get(row.type)?.shift() : undefined;
+    const wellFormed = item !== undefined && grid !== null && Number.isInteger(row.x) && Number.isInteger(row.y) && typeof row.rotated === 'boolean';
     if (!wellFormed || !canPlaceItem(grid, item.type, row.x, row.y, row.rotated)) return null;
     placeItem(grid, { ...item, x: row.x, y: row.y, rotated: row.rotated });
-    seen.add(row.id);
     placements.push({ row, item });
   }
   return placements;
@@ -241,14 +249,10 @@ export function validateLayout(bag: PlayerBag, layout: readonly BagLayoutRow[]):
 
 /** Moves the bag's items to a layout `validateLayout` accepted. */
 export function adoptLayout(bag: PlayerBag, placements: { row: BagLayoutRow; item: GridItem }[]): void {
-  const items = new Map<string, GridItem>();
-  for (const { item } of placements) items.set(item.id, { ...item });
   bag.pack.items = [];
   bag.pockets.items = [];
-  for (const { row } of placements) {
-    const item = items.get(row.id)!;
-    const grid = row.grid === 'pack' ? bag.pack : bag.pockets;
-    grid.items.push({ ...item, x: row.x, y: row.y, rotated: row.rotated });
+  for (const { row, item } of placements) {
+    (row.grid === 'pack' ? bag.pack : bag.pockets).items.push({ ...item, x: row.x, y: row.y, rotated: row.rotated });
   }
 }
 

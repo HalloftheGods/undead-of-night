@@ -13,12 +13,11 @@ function isFields(value: unknown): value is Fields {
 
 function parseRow(value: unknown): BagLayoutRow | null {
   if (!isFields(value)) return null;
-  const { id, grid, x, y, rotated } = value;
-  const named = typeof id === 'string' && id.length > 0 && id.length <= 40;
+  const { type, grid, x, y, rotated } = value;
   const placed = Number.isInteger(x) && Number.isInteger(y);
   const grids = grid === 'pack' || grid === 'pockets';
-  return named && placed && grids && typeof rotated === 'boolean'
-    ? { id, grid, x: x as number, y: y as number, rotated }
+  return isBagItemType(type) && placed && grids && typeof rotated === 'boolean'
+    ? { type, grid, x: x as number, y: y as number, rotated }
     : null;
 }
 

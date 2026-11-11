@@ -1,5 +1,5 @@
-import { adoptLayout, bagHash, bagLayout, bagWanted, createBag, isStackedType, retierBag, syncBag, validateLayout } from '../../shared/bag.ts';
-import type { BagCommit, BagDrop, BagItemType, BagLayoutRow, BagWanted, PlayerBag } from '../../shared/bag.ts';
+import { bagHash, bagLayout, bagWanted, createBag, layoutHash, retierBag, syncBag } from '../../shared/bag.ts';
+import type { BagCommit, BagDrop, BagItemType, BagWanted, PlayerBag } from '../../shared/bag.ts';
 import { backpackDef } from '../../shared/backpack.ts';
 import type { BackpackTier } from '../../shared/backpack.ts';
 import { autoPackItem, canPlaceItem, createInventoryGrid, findAvailableSlot, placeItem } from '../../shared/grid-inventory.ts';
@@ -147,47 +147,21 @@ export class LocalBag {
       else if (!settle(scratch, item)) continue;
       else placed.add(id);
     }
-    const layout = this.relabel(scratch, dropped);
+    const layout = bagLayout({ ...scratch, serial: this.bag.serial });
     const drop: BagDrop[] = [...dropped].map(([type, count]) => ({ type, count }));
-    const unchanged = drop.length === 0 && bagHash(this.bag) === hashOf(layout, this.bag);
-    if (unchanged) return null;
-    this.adopt(layout, drop);
+    if (drop.length === 0 && bagHash(this.bag) === layoutHash(layout)) return null;
+    this.adopt(scratch, drop);
     const commit = { layout, drop };
     this.send(commit);
     return commit;
   }
 
-  /**
-   * The host takes the newest of a type when it drops some, so the survivors must be the oldest ids: kept things of a
-   * type are renamed to the oldest ids, which no one can tell apart.
-   */
-  private relabel(scratch: { pack: InventoryGrid; pockets: InventoryGrid }, dropped: Map<BagItemType, number>): BagLayoutRow[] {
-    const rows: BagLayoutRow[] = [];
-    const byType = new Map<string, BagLayoutRow[]>();
-    for (const [grid, name] of [[scratch.pack, 'pack'], [scratch.pockets, 'pockets']] as const) {
-      for (const item of grid.items) {
-        const row: BagLayoutRow = { id: item.id, grid: name, x: item.x, y: item.y, rotated: item.rotated };
-        byType.set(item.type, [...(byType.get(item.type) ?? []), row]);
-      }
-    }
-    for (const [type, kept] of byType) {
-      if (!dropped.has(type as BagItemType) || isStackedType(type as BagItemType)) {
-        rows.push(...kept);
-        continue;
-      }
-      const oldest = [...this.bag.pack.items, ...this.bag.pockets.items].filter((item) => item.type === type).map((item) => item.id).sort(bySerial);
-      kept.forEach((row, index) => rows.push({ ...row, id: oldest[index]! }));
-    }
-    return rows.sort((a, b) => (a.id < b.id ? -1 : 1));
-  }
-
-  private adopt(layout: BagLayoutRow[], drop: BagDrop[]): void {
+  /** Takes the edited layout as the bag's own. The host drops the newest of a type, but ids are not on the wire, so which survive does not matter. */
+  private adopt(scratch: { pack: InventoryGrid; pockets: InventoryGrid }, drop: BagDrop[]): void {
     const before = bagWanted(this.currentCounters());
     for (const { type, count } of drop) this.pending.push({ type, before: before[type], dropped: count, at: this.now() });
-    const keep = new Set(layout.map((row) => row.id));
-    for (const grid of [this.bag.pack, this.bag.pockets]) grid.items = grid.items.filter((item) => keep.has(item.id));
-    const placements = validateLayout(this.bag, layout);
-    if (placements) adoptLayout(this.bag, placements);
+    this.bag.pack.items = scratch.pack.items;
+    this.bag.pockets.items = scratch.pockets.items;
   }
 
   private currentCounters(): Carried {
@@ -200,9 +174,6 @@ export class LocalBag {
   }
 }
 
-const serialOf = (id: string): number => Number(id.slice(id.indexOf(':') + 1));
-const bySerial = (a: string, b: string): number => serialOf(a) - serialOf(b);
-
 /** Puts an item back where it was if that is still free, and anywhere it fits if not. False when nothing is free. */
 function settle(scratch: { pack: InventoryGrid; pockets: InventoryGrid }, item: GridItem): boolean {
   for (const grid of [scratch.pack, scratch.pockets]) {
@@ -210,17 +181,6 @@ function settle(scratch: { pack: InventoryGrid; pockets: InventoryGrid }, item: 
   }
   const grid = [scratch.pack, scratch.pockets].find((candidate) => findAvailableSlot(candidate, item.type, true) !== null);
   return grid ? autoPackItem(grid, item) : false;
-}
-
-/** The hash a bag would have with this layout, without changing the bag. */
-function hashOf(layout: readonly BagLayoutRow[], bag: PlayerBag): number {
-  const probe: PlayerBag = { pack: createInventoryGrid(bag.pack.cols, bag.pack.rows), pockets: createInventoryGrid(bag.pockets.cols, bag.pockets.rows), serial: bag.serial };
-  const items = new Map([...bag.pack.items, ...bag.pockets.items].map((item) => [item.id, item]));
-  for (const row of layout) {
-    const item = items.get(row.id);
-    if (item) (row.grid === 'pack' ? probe.pack : probe.pockets).items.push({ ...item, x: row.x, y: row.y, rotated: row.rotated });
-  }
-  return bagHash(probe);
 }
 
 export type { BagWanted };
