@@ -6,6 +6,11 @@ import type { MapBuilder } from '../shared/map-builder.ts';
 import { BUILDING_DEFS, BUILDING_KINDS, TILE_SIZE, WALL_THICKNESS } from '../shared/protocol.ts';
 import type { BuildingInstance, BuildingKind, PropInstance } from '../shared/protocol.ts';
 import { hasDiscountStore } from '../shared/town-buildings.ts';
+import { townContainers } from '../shared/containers.ts';
+import { PART_ORDER } from '../shared/gun-upgrade-data.ts';
+import { KIT_ORDER } from '../shared/round-effect-data.ts';
+import { GameSimulation } from '../shared/simulation.ts';
+import { stateOf } from '../shared/sim-state.ts';
 import { buildingBox, generateWorldMap, propBox } from '../shared/world-map.ts';
 
 const TOWNS = 200;
@@ -71,5 +76,24 @@ describe('S.O.S. Discount', () => {
   it('opens from the first level, whatever the biome', () => {
     const seed = Array.from({ length: 20 }, (_, i) => i + 1).find(hasDiscountStore) ?? 1;
     for (const level of [1, 4, 7, 10]) expect(generateWorldMap(seed, level).buildings.some((b) => b.kind === 'discount'), `level ${level}`).toBe(true);
+  });
+
+  it('always stocks canned food and bottled water on its floor', () => {
+    expect(LOOT_RULES.discount.fixed).toEqual(['canned_food', 'water_bottle']);
+  });
+
+  it('always carries a rare kit or gun part on its shelves', () => {
+    const rarePool = new Set([...KIT_ORDER, ...PART_ORDER]);
+    const seeds = Array.from({ length: 30 }, (_, i) => i + 1).filter(hasDiscountStore).slice(0, 5);
+    for (const seed of seeds) {
+      const sim = new GameSimulation({ seed });
+      const state = stateOf(sim);
+      const discountShelves = townContainers(state.map).filter(
+        (c) => c.buildingKind === 'discount' && c.kind === 'shelf'
+      );
+      const shelfLoots = discountShelves.map((c) => state.containers[c.id].loot?.type);
+      const hasRare = shelfLoots.some((type) => type !== undefined && rarePool.has(type as never));
+      expect(hasRare, `seed ${seed} discount store shelves should carry a rare item`).toBe(true);
+    }
   });
 });

@@ -32,7 +32,7 @@
         <LockerScreen v-if="ui.home.station === 'locker'" :home="ui.home" :art="ui.art" />
         <CandyShopScreen v-else-if="ui.home.station === 'candy_shop'" :home="ui.home" :art="ui.art" />
         <GarageMap v-else-if="ui.home.station === 'level_map'" :home="ui.home" :art="ui.art" />
-        <JukeboxScreen v-else-if="ui.home.station === 'jukebox'" :art="ui.art" />
+        <JukeboxScreen v-else-if="ui.home.station === 'jukebox'" :home="ui.home" :art="ui.art" />
         <MerchantScreen v-else-if="ui.home.shop && ui.art" :home="ui.home" :art="ui.art" />
         <DeathSummary v-if="ui.home.death" :death="ui.home.death" />
         <OverrunChest v-else-if="ui.home.chest" :chest="ui.home.chest" />
@@ -40,7 +40,14 @@
       </template>
       <TownMap v-if="ui.mapOpen" :mode="ui.mode" :in-bunker="ui.home?.inBunker === true" :teammates="ui.hud?.teammates ?? []" />
       <CandyBag v-if="ui.bagOpen && ui.hud && ui.art" :hud="ui.hud" :art="ui.art" :mode="ui.mode" />
-      <PauseMenu v-if="ui.paused" :ui :mode="ui.mode" />
+      <template v-if="ui.paused">
+        <BooksPage v-if="pausedBook === 'books'" :art="ui.art" @open="onOpenPausedBook" @close="pausedBook = null" />
+        <HowToPlay v-else-if="pausedBook === 'howto'" @close="onClosePausedBook" />
+        <CandyMagazinePage v-else-if="pausedBook === 'candy'" @close="onClosePausedBook" />
+        <TownGuidePage v-else-if="pausedBook === 'guide'" @close="onClosePausedBook" />
+        <RecordsPage v-else-if="pausedBook === 'records'" :ui @close="onClosePausedBook" />
+        <PauseMenu v-else :ui :mode="ui.mode" @open-book="pausedBook = 'books'" />
+      </template>
       <VanTransition :in-bunker="ui.home?.inBunker ?? null" :art="ui.art" />
       </template>
     </template>
@@ -63,7 +70,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, provide, ref, useTemplateRef } from 'vue';
+import { computed, onBeforeUnmount, onMounted, provide, ref, useTemplateRef, watch } from 'vue';
 import BackpackWheel from './components/BackpackWheel.vue';
 import ConnectionLost from './components/ConnectionLost.vue';
 import DeathSummary from './components/DeathSummary.vue';
@@ -75,7 +82,8 @@ import GarageMap from './components/GarageMap.vue';
 import HudOverlay from './components/HudOverlay.vue';
 import RoomInvite from './components/RoomInvite.vue';
 import LevelCard from './components/LevelCard.vue';
-import { EndingFlow, JukeboxScreen, prefetchLazyPages } from './components/lazy-pages.ts';
+import { BooksPage, CandyMagazinePage, EndingFlow, HowToPlay, JukeboxScreen, prefetchLazyPages, RecordsPage, TownGuidePage } from './components/lazy-pages.ts';
+import type { TitlePage } from './game/title-menu.ts';
 import LogPanel from './components/log/LogPanel.vue';
 import LockerScreen from './components/LockerScreen.vue';
 import MerchantScreen from './components/MerchantScreen.vue';
@@ -103,6 +111,19 @@ const game = new GameController();
 const ui = game.ui;
 const splashing = ref(shouldShowSplash(window.location.search));
 const canvasRef = useTemplateRef<HTMLCanvasElement>('canvasRef');
+const pausedBook = ref<TitlePage | null>(null);
+
+function onOpenPausedBook(page: TitlePage): void {
+  pausedBook.value = page;
+}
+
+function onClosePausedBook(): void {
+  pausedBook.value = 'books';
+}
+
+watch(() => ui.value.paused, (isPaused) => {
+  if (!isPaused) pausedBook.value = null;
+});
 const aiming = computed(() =>
   aimsCursor({
     screen: ui.value.screen,

@@ -143,7 +143,7 @@
     <!-- Survival moodles: docked bottom-right clear of central weapons and top vitals -->
     <aside v-if="hasMoodles" class="hud-moodles" aria-label="Survival moodles">
       <div
-        v-for="moodle in hud.moodles"
+        v-for="moodle in sortedMoodles"
         :key="moodle.id"
         class="hud-moodle-badge"
         :class="`is-${moodle.severity}`"
@@ -239,6 +239,17 @@ function glyph(code: string): string | null {
 
 const isLow = computed(() => hud.health / hud.maxHealth < LOW_HEALTH);
 const hasMoodles = computed(() => (hud.moodles?.length ?? 0) > 0);
+const SEVERITY_WEIGHT: Record<string, number> = { critical: 4, high: 3, medium: 2, low: 1 };
+const sortedMoodles = computed(() => {
+  const list = hud.moodles ? [...hud.moodles] : [];
+  return list.sort((a, b) => {
+    const weightDiff = (SEVERITY_WEIGHT[b.severity] ?? 0) - (SEVERITY_WEIGHT[a.severity] ?? 0);
+    if (weightDiff !== 0) return weightDiff;
+    const lenA = (a.label?.length ?? 0) + (a.remedy?.length ?? 0);
+    const lenB = (b.label?.length ?? 0) + (b.remedy?.length ?? 0);
+    return lenB - lenA;
+  });
+});
 const bar = computed(() => weaponBar(hud));
 const ammo = computed(() => ammoWarning(hud));
 const swapKey = computed(() => switchKey(hud));
@@ -848,7 +859,8 @@ function hold(slot: BarSlot): void {
   background: rgba(11, 12, 16, 0.78);
   border-left: calc(var(--u) * 1.5) solid var(--bone-dim);
   color: var(--bone);
-  min-width: calc(var(--u) * 56);
+  width: calc(var(--u) * 200);
+  box-sizing: border-box;
 }
 
 .hud-moodle-icon {

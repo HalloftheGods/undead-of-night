@@ -32,6 +32,8 @@
 import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue';
 import { CARD_W } from '../art/difficulty-card.ts';
 import type { ArtBook } from '../art/types.ts';
+import { getBunkerTrack } from '../audio/playlists.ts';
+import type { HomeUi } from '../game/home-hud.ts';
 import { jukeboxFacts, jukeboxPlate, JUKEBOX_PAGE, pageCount, pageOf } from '../game/home/jukebox-view.ts';
 import { loadFurthestProgress } from '../game/level-progress.ts';
 import { findCount, jukeboxEntries, musicEntries, playEntry } from '../game/sound-test.ts';
@@ -43,7 +45,7 @@ import PixelButton from './PixelButton.vue';
 import SceneCard from './SceneCard.vue';
 import { useGame } from './use-game.ts';
 
-const { art = null } = defineProps<{ art?: ArtBook | null }>();
+const { art = null, home } = defineProps<{ art?: ArtBook | null; home?: HomeUi | null }>();
 const game = useGame();
 const strip = useTemplateRef<InstanceType<typeof JukeboxTracks>>('strip');
 const progress = loadFurthestProgress();
@@ -52,7 +54,11 @@ const tracks = jukeboxEntries(progress);
 const finds = findCount(every);
 const counts = { unlocked: tracks.length, total: every.length, found: finds.found, finds: finds.total };
 const findsLine = `Radio finds: ${finds.found} of ${finds.total}. Radios out in the towns give up the rest.`;
-const playing = ref<MusicEntry | null>(null);
+
+const activeTrackFile = computed(() => home?.jukeboxTrack ?? getBunkerTrack());
+const playing = ref<MusicEntry | null>(
+  tracks.find((t) => t.file === activeTrackFile.value) ?? null,
+);
 const status = computed(() => (playing.value ? `Playing: ${playing.value.name}` : 'Choose a track. Choose it again to stop.'));
 const plate = computed(() => jukeboxPlate(playing.value));
 const rows = computed(() => jukeboxFacts(counts, playing.value));
@@ -87,6 +93,8 @@ function turn(step: number): void {
 }
 
 function stop(): void {
+  game.home.setJukeboxTrack(null);
+  game.audio.setBunkerMusic(null);
   game.audio.stopPreview();
   playing.value = null;
 }
@@ -95,6 +103,8 @@ async function toggle(entry: MusicEntry): Promise<void> {
   const stopping = playing.value?.id === entry.id;
   if (stopping) return stop();
   await game.audio.unlock();
+  game.home.setJukeboxTrack(entry.file);
+  game.audio.setBunkerMusic(entry.file);
   const started = isOpen && playEntry(entry, game.audio, () => {
     const stillThis = playing.value?.id === entry.id;
     if (stillThis) playing.value = null;
@@ -102,10 +112,12 @@ async function toggle(entry: MusicEntry): Promise<void> {
   playing.value = started ? entry : null;
 }
 
-/** The bunker's own music goes quiet while the jukebox is open, and comes back when it closes. */
+/** The bunker's own music steps aside while previewing choices, then resumes the active mood music when closed. */
 onMounted(async () => {
   void strip.value?.focus();
   await game.audio.unlock();
+  const initial = tracks.find((t) => t.file === activeTrackFile.value);
+  if (initial) playing.value = initial;
   if (isOpen) game.audio.enterPreview();
 });
 

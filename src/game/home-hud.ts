@@ -63,6 +63,8 @@ export interface HomeUi {
   readonly roomHighest: number;
   /** The room's overrun clock, or null while there is none. */
   readonly overrun: OverrunView | null;
+  /** Mood track chosen at the bunker's jukebox, or null. */
+  readonly jukeboxTrack?: string | null;
   /** This player's own highest level, which the shop's gates read. */
   readonly highest: number;
   readonly difficulty: DifficultyId;
@@ -84,6 +86,7 @@ export interface HomeUi {
 export interface HomeActions {
   pickLevel(level: number): void;
   equip(loadout: Loadout): void;
+  setJukeboxTrack(track: string | null): void;
   closeStation(): void;
   /** A screen with something still to settle says how to close it, so Esc does what its Close button does. Null when it goes. */
   closeWith(closer: (() => void) | null): void;
@@ -107,6 +110,7 @@ export interface HomeActions {
 export const NO_HOME_ACTIONS: HomeActions = {
   pickLevel() {},
   equip() {},
+  setJukeboxTrack() {},
   closeStation() {},
   closeWith() {},
   smelt() {},
@@ -175,6 +179,7 @@ export function homeUi(snapshot: SnapshotPacket, local: PlayerEntity, facts: Hom
     pickedLevel: snapshot.home?.pickedLevel ?? null,
     roomHighest: snapshot.home?.roomHighest ?? FIRST_LEVEL,
     overrun: snapshot.home?.overrun ?? null,
+    jukeboxTrack: snapshot.home?.jukeboxTrack ?? null,
     highest: facts.highest,
     difficulty: facts.difficulty,
     receipt: home.receipt,

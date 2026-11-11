@@ -286,7 +286,7 @@ describe('Kai\'s luck', () => {
       return state.pickups.map((item) => item.type);
     };
     const found = search();
-    expect(['bandage', 'medkit']).toContain(found[0]);
+    expect(['bandage', 'medkit', 'disinfectant', 'antibiotics']).toContain(found[0]);
     expect(found).toEqual(search());
   });
 
@@ -449,5 +449,52 @@ describe('what is in them', () => {
     sim.restart();
     expect(sim.snapshot().openedContainers).toEqual([]);
     expect(state.containers.length).toBe(townContainers(state.map).length);
+  });
+
+  it('searching a police car can yield carbines or shotguns', () => {
+    const { sim, state, container } = setup((c) => c.prop === 'police_h' || c.prop === 'police_v');
+    state.containers[container.id].loot = null;
+    fixRoll(state, 0.1);
+    hold(sim);
+    steps(sim, ticksFor(container));
+    const guns = state.pickups.map((p) => p.type).filter((t) => t === 'carbine' || t === 'shotgun');
+    expect(guns.length).toBeGreaterThan(0);
+  });
+
+  it('searching an ambulance yields medical supplies', () => {
+    const { sim, state, container } = setup((c) => c.prop === 'ambulance_h');
+    state.containers[container.id].loot = null;
+    fixRoll(state, 0.1);
+    hold(sim);
+    steps(sim, ticksFor(container));
+    const meds = state.pickups.map((p) => p.type).filter((t) => ['medkit', 'bandage', 'antibiotics', 'disinfectant'].includes(t));
+    expect(meds.length).toBeGreaterThan(0);
+  });
+
+  it('searching a dumpster can yield any random item in the game', () => {
+    const { sim, state, container } = setup((c) => c.kind === 'dumpster');
+    expect(state.containers[container.id].loot).toBeNull();
+    fixRoll(state, 0.1);
+    hold(sim);
+    steps(sim, ticksFor(container));
+    expect(state.containers[container.id].opened).toBe(true);
+    expect(state.pickups.length).toBeGreaterThan(0);
+  });
+
+  it('an empty search can turn up a map clue revealing an unvisited cache building', () => {
+    const { sim, state, container } = setup((c) => c.kind === 'drawer');
+    state.containers[container.id].loot = null;
+    const targetBuilding = state.map.buildings.find((b) => b.id !== container.building && b.of === undefined)!;
+    state.pickups = [{ id: 'p1', type: 'medkit', x: targetBuilding.x + 20, y: targetBuilding.y + 20, ttl: null, rounds: 0 }];
+    expect(state.entered.has(targetBuilding.id)).toBe(false);
+
+    fixRoll(state, 0.05);
+    hold(sim);
+    steps(sim, ticksFor(container));
+
+    expect(state.entered.has(targetBuilding.id)).toBe(true);
+    const leftovers = sim.snapshot().leftovers;
+    expect(leftovers).toBeDefined();
+    expect(leftovers?.some((l) => l.building === targetBuilding.id && (l.supplies.med ?? 0) > 0)).toBe(true);
   });
 });

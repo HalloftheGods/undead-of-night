@@ -24,6 +24,7 @@ const ACTION_PARSERS: Readonly<Record<HomeAction['kind'], (value: Record<string,
   ready: parseReady,
   leave_station: () => ({ kind: 'leave_station' }),
   highest: ({ highest }) => (isLevel(highest) ? { kind: 'highest', highest } : null),
+  jukebox: ({ track }) => (track === null || typeof track === 'string' ? { kind: 'jukebox', track } : null),
 };
 
 const isActionKind = (kind: unknown): kind is HomeAction['kind'] => typeof kind === 'string' && Object.hasOwn(ACTION_PARSERS, kind);

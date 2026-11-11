@@ -4,6 +4,9 @@ import type { TileKind, WorldMap } from '../../shared/protocol.ts';
 import type { ArtBook, PixelSprite } from '../art/types.ts';
 import { tileVariant } from '../engine/tile-layer.ts';
 import { propSprite } from '../engine/car-looks.ts';
+import { paintBuilding } from './map-buildings.ts';
+import { paintGround, paintScenery } from './map-ground.ts';
+import { TILE_RGB } from './town-map.ts';
 
 /** The magazine's snapshots: the game's own tiles and sprites, posed on a patch of ground and baked to one sprite. */
 export type PhotoName =
@@ -282,17 +285,54 @@ function cover(art: ArtBook): PixelSprite {
   ]);
 }
 
-function town(art: ArtBook): PixelSprite {
-  const map = generateWorldMap(POSTCARD_SEED);
-  const landmark = map.buildings.find((building) => building.kind === 'diner') ?? map.buildings[0];
-  const { w, h } = BUILDING_DEFS[landmark.kind];
-  return townClip(art, map, landmark.x + w / 2, landmark.y + h - 20, TOWN_CLIP_W, TOWN_CLIP_H);
+export function worldMapPhoto(map: WorldMap): PixelSprite {
+  const width = map.cols;
+  const height = map.townRows ?? map.rows;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d')!;
+  paintGround(ctx, map, { width, height, tilePx: 1, textured: true }, (kind) => TILE_RGB[kind]);
+  paintScenery(ctx, map.props, 1);
+  for (const building of map.buildings) {
+    const box = {
+      x0: Math.round(building.x / TILE_SIZE),
+      y0: Math.round(building.y / TILE_SIZE),
+      x1: Math.round((building.x + BUILDING_DEFS[building.kind].w) / TILE_SIZE),
+      y1: Math.round((building.y + BUILDING_DEFS[building.kind].h) / TILE_SIZE),
+    };
+    const doorPx = Math.round(BUILDING_DEFS[building.kind].doorX / TILE_SIZE);
+    paintBuilding(ctx, box, building.kind, doorPx, Math.round(building.x) ^ Math.round(building.y));
+  }
+  const imgData = ctx.getImageData(0, 0, width, height);
+  return { w: width, h: height, ax: 0, ay: 0, rgba: imgData.data };
+}
+
+function town(art: ArtBook, map?: WorldMap): PixelSprite {
+  const targetMap = map ?? generateWorldMap(POSTCARD_SEED);
+  return worldMapPhoto(targetMap);
 }
 
 const developed = new WeakMap<ArtBook, MagazinePhotos>();
 
 /** Every snapshot the magazine prints, developed once per art book. */
-export function magazinePhotos(art: ArtBook): MagazinePhotos {
+export function magazinePhotos(art: ArtBook, currentMap?: WorldMap): MagazinePhotos {
+  if (currentMap) {
+    return {
+      cover: cover(art),
+      vanRoad: vanRoad(art),
+      aiming: aiming(art),
+      gunshot: gunshot(art),
+      quiet: quiet(art),
+      stockroom: stockroom(art),
+      searching: searching(art),
+      crowd: crowd(art),
+      vanPanorama: vanPanorama(art),
+      workshop: workshop(art),
+      squad: squad(art),
+      town: town(art, currentMap),
+    };
+  }
   let photos = developed.get(art);
   if (!photos) {
     photos = {

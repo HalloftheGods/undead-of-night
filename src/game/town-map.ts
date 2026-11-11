@@ -28,7 +28,7 @@ const BUNKER_TILE_PX = 6;
 const BUNKER_FLOOR: Rgb = [70, 58, 46];
 const BUNKER_WALL: Rgb = [22, 20, 24];
 
-export { EXIT_COLOR };
+export { EXIT_COLOR, TILE_RGB };
 
 const ROAD: Rgb = [40, 41, 47];
 const PAVEMENT: Rgb = [62, 62, 66];

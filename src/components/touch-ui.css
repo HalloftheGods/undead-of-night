@@ -138,3 +138,35 @@ body {
     bottom: calc(var(--u) * 2);
   }
 }
+
+/* In-game bunker apps and workbench on mobile: take full screen and fit edge-to-edge */
+.is-touch .px-screen:has(.candy-shop),
+.is-touch .px-screen:has(.locker),
+.is-touch .px-screen:has(.jukebox-modern),
+.is-touch .px-screen:has(.bench) {
+  padding: 0;
+  justify-content: flex-start;
+  background: var(--ink);
+}
+
+.is-touch .candy-shop,
+.is-touch .locker,
+.is-touch .jukebox-modern,
+.is-touch .bench {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-height: 100% !important;
+  height: 100% !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  box-sizing: border-box !important;
+  padding: calc(var(--safe-top) + var(--u) * 3) calc(var(--safe-right) + var(--u) * 3)
+    calc(var(--safe-bottom) + var(--u) * 3) calc(var(--safe-left) + var(--u) * 3) !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+.is-touch .candy-shop .tab-content {
+  max-height: none !important;
+  flex: 1 1 auto;
+}

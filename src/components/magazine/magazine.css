@@ -10,7 +10,7 @@
 }
 
 .mag-screen {
-  --edge: max(6px, 1vmin);
+  --edge: 0px;
   --hand: 'Marker Felt', 'Bradley Hand', 'Segoe Print', 'Comic Sans MS', 'Chalkboard SE', 'Comic Neue', cursive;
   --chunky: 'Silkscreen', monospace;
   --book: Georgia, 'DejaVu Serif', 'Noto Serif', 'Times New Roman', serif;
@@ -19,9 +19,8 @@
   inset: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--edge);
-  padding: max(var(--edge), env(safe-area-inset-top)) max(var(--edge), env(safe-area-inset-right)) max(var(--edge), env(safe-area-inset-bottom))
-    max(var(--edge), env(safe-area-inset-left));
+  gap: 0;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
   background: rgba(7, 8, 12, 0.2);
   animation: px-fade-in 120ms steps(3);
 }
@@ -30,20 +29,21 @@
   position: relative;
   flex: 1;
   min-height: 0;
-  width: auto;
+  width: 100%;
   max-width: 100%;
-  aspect-ratio: 1000 / 690;
+  height: 100%;
   margin-inline: auto;
   container-type: size;
   perspective: 2400px;
   touch-action: none;
-  box-shadow: 0 0 0 2px var(--print), 0 6px 18px rgba(0, 0, 0, 0.6);
+  box-shadow: none;
 }
 
 .mag-book.is-single,
 .mag-book.is-solo {
-  aspect-ratio: 500 / 690;
-  max-width: min(100%, calc(100cqh * (500 / 690)));
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
 }
 
 .mag-open {

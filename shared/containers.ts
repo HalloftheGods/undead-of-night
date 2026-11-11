@@ -3,7 +3,7 @@ import type { BuildingKind, PickupType, PropKind, WorldMap } from './protocol.ts
 import { buildingAt, isSolidProp, propBox } from './world-query.ts';
 import type { Box } from './world-query.ts';
 
-export type ContainerKind = 'drawer' | 'locker' | 'fridge' | 'cabinet' | 'shelf' | 'box' | 'car' | 'bowl' | 'booth';
+export type ContainerKind = 'drawer' | 'locker' | 'fridge' | 'cabinet' | 'shelf' | 'box' | 'car' | 'bowl' | 'booth' | 'dumpster';
 
 /** Somewhere to search, fixed by the town itself, so a client works these out from the map alone. */
 export interface Container {
@@ -53,6 +53,7 @@ export const SEARCH_SEC: Record<ContainerKind, number> = {
   bowl: 1,
   // Picking a couple off the counter of the fireworks bus.
   booth: 1.5,
+  dumpster: 1.5,
 };
 
 export const CONTAINER_LABEL: Record<ContainerKind, string> = {
@@ -65,6 +66,7 @@ export const CONTAINER_LABEL: Record<ContainerKind, string> = {
   car: 'CAR',
   bowl: 'CANDY BOWL',
   booth: 'FIREWORKS BUS',
+  dumpster: 'DUMPSTER',
 };
 
 /** Gap from the player's edge to the furniture that still counts as within reach. */
@@ -79,8 +81,8 @@ export const ROOM_CONTAINERS: Record<BuildingKind, Partial<Record<PropKind, Cont
   apartment_upstairs: { bed: 'drawer', fridge: 'fridge', locker: 'locker', shelf: 'shelf' },
   cellar: { shelf: 'shelf', crate_stack: 'box', workbench: 'cabinet' },
   diner: { fridge: 'fridge' },
-  garage: { locker: 'locker', workbench: 'cabinet', shelf: 'shelf', car_sedan_h: 'car', crate_stack: 'box' },
-  warehouse: { workbench: 'cabinet', shelf: 'shelf', crate_stack: 'box' },
+  garage: { locker: 'locker', workbench: 'cabinet', shelf: 'shelf', car_sedan_h: 'car', crate_stack: 'box', dumpster: 'dumpster' },
+  warehouse: { workbench: 'cabinet', shelf: 'shelf', crate_stack: 'box', dumpster: 'dumpster' },
   grocery: { counter: 'cabinet', shelf: 'shelf' },
   discount: { counter: 'cabinet', shelf: 'shelf', crate_stack: 'box', locker: 'locker' },
   pharmacy: { counter: 'cabinet' },
@@ -113,6 +115,7 @@ export const OUTDOOR_CONTAINERS: Partial<Record<PropKind, ContainerKind>> = {
   crate_stack: 'box',
   candy_bowl: 'bowl',
   fireworks_bus: 'booth',
+  dumpster: 'dumpster',
 };
 
 interface TownContainers {

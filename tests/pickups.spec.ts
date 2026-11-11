@@ -13,6 +13,7 @@ import {
   TICK_RATE,
   WEAPONS,
 } from '../shared/constants.ts';
+import { isAmmoPickup } from '../shared/pickups.ts';
 import { damageZombie } from '../shared/combat.ts';
 import { containerLoot } from '../shared/container-loot.ts';
 import { isPartPickup } from '../shared/gun-upgrades.ts';
@@ -404,9 +405,9 @@ describe('town loot', () => {
       for (const [building, items] of inBuilding) {
         const count = tally.get(building.kind) ?? { heal: 0, ammo: 0 };
         for (const item of items.filter((each) => !isKitPickup(each.type))) {
-          const heals = item.type === 'bandage' || item.type === 'medkit';
+          const heals = item.type === 'bandage' || item.type === 'medkit' || item.type === 'disinfectant' || item.type === 'antibiotics';
           if (heals) count.heal += 1;
-          else count.ammo += 1;
+          else if (isAmmoPickup(item.type)) count.ammo += 1;
         }
         tally.set(building.kind, count);
       }

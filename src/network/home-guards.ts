@@ -101,5 +101,6 @@ export function isRoomHomeView(v: unknown): v is RoomHomeView {
   return isFields(v)
     && isNumber(v.roomHighest)
     && (v.pickedLevel === null || isNumber(v.pickedLevel))
-    && (v.overrun === undefined || isOverrunView(v.overrun));
+    && (v.overrun === undefined || isOverrunView(v.overrun))
+    && (v.jukeboxTrack === undefined || v.jukeboxTrack === null || typeof v.jukeboxTrack === 'string');
 }

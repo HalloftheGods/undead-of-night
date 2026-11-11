@@ -82,6 +82,7 @@ export class HomeLink {
     this.actions = {
       pickLevel: (level) => this.send({ kind: 'pick_level', level }),
       equip: (loadout) => this.sync?.equip(loadout),
+      setJukeboxTrack: (track) => this.send({ kind: 'jukebox', track }),
       closeStation: () => void this.putStationAway(),
       closeWith: (closer) => {
         this.closer = closer;

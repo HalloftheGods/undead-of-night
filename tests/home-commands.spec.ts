@@ -158,4 +158,13 @@ describe('a restart in a home room', () => {
     expect(sim.level).toBe(BUNKER_LEVEL);
     expect(state.exit).not.toBeNull();
   });
+
+  it('updates the bunker jukebox track across the room', () => {
+    const { sim, state } = homeSim({ players: [] });
+    sim.addPlayer('a', 'a', null, undefined, { loadout: emptyLoadout(), highest: 1 });
+    sim.homeCommand('a', { kind: 'jukebox', track: 'test-track.mp3' });
+    expect(state.homeRun?.jukeboxTrack).toBe('test-track.mp3');
+    sim.homeCommand('a', { kind: 'jukebox', track: null });
+    expect(state.homeRun?.jukeboxTrack).toBeNull();
+  });
 });

@@ -10,12 +10,20 @@ import { isSalvagePickup } from './salvage-data.ts';
 import { isTreasurePickup } from './treasure.ts';
 import type { PlayerState, SimState } from './sim-state.ts';
 import { emit } from './sim-state.ts';
+import { pickWeighted } from './rng.ts';
 import { makeNoise } from './zombie-senses.ts';
 import { maybeCarAlarm, scroungeBottle } from './bottles.ts';
 import { stashIn, takeStash } from './throwables.ts';
 import { candyIn, STICKY_SEARCH_SCALE, sugarOf, takeCandy } from './candy.ts';
 import { hasKeepsake, RABBIT_LUCK } from './keepsakes.ts';
 import { isBooth, sellFireworks } from './fireworks-booth.ts';
+import { AMMO_PICKUPS } from './constants.ts';
+import { PICKUP_TYPES } from './events.ts';
+import { groundBuildingId } from './leftovers.ts';
+import { isAmmoPickup } from './pickups.ts';
+import { pick } from './rng.ts';
+import type { PickupState } from './sim-state.ts';
+import { buildingAt } from './world-query.ts';
 
 /** Odds that a search knocks something over. */
 export const CLATTER_CHANCE = 0.1;
@@ -65,6 +73,69 @@ function scroungeBoxAmmo(sim: SimState, p: PlayerState, container: Container): C
   return { type: 'pistol_ammo', rounds: 4 };
 }
 
+const POLICE_CAR_GUN_CHANCE = 0.45;
+const AMBULANCE_MED_CHANCE = 0.65;
+
+const AMBULANCE_MED_TABLE: Partial<Record<PickupType, number>> = {
+  medkit: 4,
+  bandage: 3,
+  antibiotics: 3,
+  disinfectant: 3,
+};
+
+function scroungeEmergencyVehicle(sim: SimState, container: Container): ContainerLoot | null {
+  const isPolice = container.prop === 'police_h' || container.prop === 'police_v';
+  if (isPolice) {
+    const isGunFound = sim.rng() < POLICE_CAR_GUN_CHANCE;
+    if (!isGunFound) return null;
+    const rollsShotgun = sim.rng() < 0.5;
+    const gunType: PickupType = rollsShotgun ? 'shotgun' : 'carbine';
+    return { type: gunType, rounds: 0 };
+  }
+
+  const isAmbulance = container.prop === 'ambulance_h';
+  if (isAmbulance) {
+    const isMedFound = sim.rng() < AMBULANCE_MED_CHANCE;
+    if (!isMedFound) return null;
+    const medType = pickWeighted(sim.rng, AMBULANCE_MED_TABLE);
+    return { type: medType, rounds: 0 };
+  }
+
+  return null;
+}
+
+const DUMPSTER_BASE_CHANCE = 0.3;
+
+function scroungeDumpster(sim: SimState, p: PlayerState, container: Container): ContainerLoot | null {
+  const isDumpster = container.kind === 'dumpster';
+  if (!isDumpster) return null;
+  const luck = characterOf(p.skin).searchLuck + (hasKeepsake(p, 'rabbit_foot') ? RABBIT_LUCK : 0);
+  const isLucky = sim.rng() < DUMPSTER_BASE_CHANCE + luck;
+  if (!isLucky) return null;
+  const type = pick(sim.rng, PICKUP_TYPES);
+  const rounds = isAmmoPickup(type) ? Math.ceil(AMMO_PICKUPS[type].rounds / 2) : 0;
+  return { type, rounds };
+}
+
+/** Odds an empty search turns up a scrawled map of someone else's cache. */
+export const MAP_CLUE_CHANCE = 0.2;
+
+/** Marks one unvisited building that still holds loot, so the team's map shows what is in it. */
+function revealCache(sim: SimState): boolean {
+  const isHiddenCache = (item: PickupState): boolean => {
+    if (item.ttl !== null) return false;
+    const building = buildingAt(sim.map, item.x, item.y);
+    return building !== null && !sim.entered.has(groundBuildingId(building));
+  };
+  const caches = sim.pickups.filter(isHiddenCache);
+  const hasNoCache = caches.length === 0;
+  if (hasNoCache) return false;
+  const chosen = pick(sim.rng, caches);
+  const building = buildingAt(sim.map, chosen.x, chosen.y);
+  if (building) sim.entered.add(groundBuildingId(building));
+  return true;
+}
+
 function findIn(sim: SimState, p: PlayerState, id: number): Finds {
   const { loot } = sim.containers[id];
   const treasure = loot !== null && isHomeFind(loot.type) ? loot : null;
@@ -93,18 +164,25 @@ function finishSearch(sim: SimState, p: PlayerState, id: number): void {
   const { clatterChance, noise } = characterOf(p.skin);
   const noisy = sim.rng() < CLATTER_CHANCE * clatterChance;
   const container = townContainers(sim.map)[id];
-  const boxAmmo = ordinary === null ? scroungeBoxAmmo(sim, p, container) : null;
+  const serviceLoot = ordinary === null ? scroungeEmergencyVehicle(sim, container) : null;
+  const dumpsterLoot = ordinary === null && serviceLoot === null ? scroungeDumpster(sim, p, container) : null;
+  const boxAmmo = ordinary === null && serviceLoot === null ? scroungeBoxAmmo(sim, p, container) : null;
+  if (serviceLoot) spawnPickup(sim, serviceLoot.type, p.x, p.y, serviceLoot.rounds);
+  if (dumpsterLoot) spawnPickup(sim, dumpsterLoot.type, p.x, p.y, dumpsterLoot.rounds);
   if (boxAmmo) spawnPickup(sim, boxAmmo.type, p.x, p.y, boxAmmo.rounds);
-  const found = ordinary !== null || treasure !== null || boxAmmo !== null;
+  const foundLoot = ordinary !== null || treasure !== null || serviceLoot !== null || dumpsterLoot !== null || boxAmmo !== null;
+  const rollsClue = !foundLoot && container.kind !== 'bowl' && sim.rng() < MAP_CLUE_CHANCE;
+  const clue = rollsClue && revealCache(sim);
+  const found = foundLoot || clue;
   if (noisy) makeNoise(sim, p.x, p.y, CLATTER_RADIUS * noise);
   if (treasure) spawnPickup(sim, treasure.type, p.x, p.y, treasure.rounds);
   if (ordinary) spawnPickup(sim, ordinary.type, p.x, p.y, ordinary.rounds);
-  const bottle = ordinary === null && boxAmmo === null && container.kind !== 'bowl' && scroungeBottle(sim, p);
+  const bottle = ordinary === null && serviceLoot === null && boxAmmo === null && container.kind !== 'bowl' && scroungeBottle(sim, p);
   const thrown = takeStash(p, stashIn(sim.map.seed, container));
   const candy = thrown ? null : takeCandy(p, candyIn(sim.map.seed, container));
   const stash = thrown ?? (candy ? 'candy' : null);
   maybeCarAlarm(sim, container);
-  emit(sim, { type: 'container_opened', playerId: p.id, container: id, x: p.x, y: p.y, found: found || stash !== null, noisy, ...(bottle ? { bottle } : {}), ...(stash ? { stash } : {}), ...(candy ? { candy } : {}) });
+  emit(sim, { type: 'container_opened', playerId: p.id, container: id, x: p.x, y: p.y, found: found || stash !== null, noisy, ...(bottle ? { bottle } : {}), ...(stash ? { stash } : {}), ...(candy ? { candy } : {}), ...(clue ? { clue: true as const } : {}) });
   stopSearch(p);
   p.searchSpent = true;
 }

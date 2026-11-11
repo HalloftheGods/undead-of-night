@@ -72,6 +72,12 @@ export class Soundtrack {
     this.retune();
   }
 
+  /** Retunes the current scene (e.g. when bunker jukebox track changes). */
+  refreshTrack(): void {
+    this.playlist = null;
+    this.retune();
+  }
+
   /** Steps the scene's music aside, so the Sound Test starts quiet and plays only what is chosen. */
   hush(): void {
     this.auditionEnd ??= () => undefined;

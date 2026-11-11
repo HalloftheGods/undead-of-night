@@ -123,6 +123,7 @@ export class SnapshotHandler {
     this.breached = breached;
     const sceneChanged = moved || turned;
     if (bunker) {
+      audio.setBunkerMusic(snapshot.home?.jukeboxTrack ?? null);
       if (sceneChanged) audio.setScene(breached ? 'wave' : 'bunker');
       return;
     }

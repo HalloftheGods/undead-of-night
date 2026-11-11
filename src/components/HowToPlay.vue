@@ -41,7 +41,8 @@ const emit = defineEmits<{ close: [] }>();
 const game = useGame();
 trackTitlePage('howto');
 const progress = loadFurthestProgress();
-const magazine = buildMagazine(buildArtBook(), (level) => isLevelUnlocked(level, progress));
+const activeMap = game.currentMap ?? undefined;
+const magazine = buildMagazine(buildArtBook(), (level) => isLevelUnlocked(level, progress), undefined, activeMap);
 const reader = useMagazineReader(magazine, () => game.playUi('click'), () => emit('close'));
 const view = reader.view;
 

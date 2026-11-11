@@ -50,6 +50,8 @@ describe('parseHome', () => {
     expect(parseHome({ kind: 'ready', ready: true })).toEqual({ kind: 'ready', ready: true });
     expect(parseHome({ kind: 'leave_station' })).toEqual({ kind: 'leave_station' });
     expect(parseHome({ kind: 'highest', highest: FINAL_LEVEL })).toEqual({ kind: 'highest', highest: FINAL_LEVEL });
+    expect(parseHome({ kind: 'jukebox', track: 'song.mp3' })).toEqual({ kind: 'jukebox', track: 'song.mp3' });
+    expect(parseHome({ kind: 'jukebox', track: null })).toEqual({ kind: 'jukebox', track: null });
   });
 
   it('hands gear to the loadout check and keeps only what it returns', () => {
@@ -146,6 +148,7 @@ describe('home guards', () => {
   it('reads a room view with or without a pick', () => {
     expect(isRoomHomeView({ pickedLevel: 3, roomHighest: 3 })).toBe(true);
     expect(isRoomHomeView({ pickedLevel: null, roomHighest: 1 })).toBe(true);
+    expect(isRoomHomeView({ pickedLevel: null, roomHighest: 1, jukeboxTrack: 'theme.mp3' })).toBe(true);
   });
 
   it('reads an overrun receipt of each outcome, on a view or alone', () => {

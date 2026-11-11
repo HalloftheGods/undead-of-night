@@ -79,7 +79,8 @@ export type HomeAction =
   | { kind: 'equip'; loadout: Loadout }
   | { kind: 'ready'; ready: boolean }
   | { kind: 'leave_station' }
-  | { kind: 'highest'; highest: number };
+  | { kind: 'highest'; highest: number }
+  | { kind: 'jukebox'; track: string | null };
 
 /** The primary input device used during the run, for separate leaderboards. */
 export type Platform = 'desktop' | 'touch' | 'gamepad';
@@ -186,6 +187,8 @@ export interface RoomHomeView {
   roomHighest: number;
   /** Left off while there is no overrun. */
   overrun?: OverrunView;
+  /** Mood track chosen at the bunker's jukebox, heard by everyone in the room. */
+  jukeboxTrack?: string | null;
 }
 
 export const isBunkerSeed = (seed: number): boolean => seed === BUNKER_SEED;

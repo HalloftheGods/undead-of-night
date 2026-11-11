@@ -208,5 +208,8 @@ export function homeCommand(sim: SimState, p: PlayerState, action: HomeAction): 
     case 'ready':
       if (inBunker) home.ready = action.ready;
       break;
+    case 'jukebox':
+      if (inBunker) run.jukeboxTrack = action.track;
+      break;
   }
 }

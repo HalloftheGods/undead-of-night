@@ -176,6 +176,8 @@ export const WEAPON_SWITCH_DELAY_SEC = 0.15;
 
 // The gun shove: weak, silent and always there.
 export const MELEE_COOLDOWN_SEC = 0.7;
+/** With a knife in hand, attacks swing much faster and re-engage promptly. */
+export const KNIFE_COOLDOWN_SEC = 0.25;
 export const MELEE_RANGE = 24;
 /** Half-angle of the shove's arc in front of the player, radians. */
 export const MELEE_ARC_RAD = 1.2;
@@ -185,6 +187,8 @@ export const MELEE_KNOCKBACK_SPEED = 300;
 export const MELEE_STAGGER_SEC = 0.6;
 /** A shoved zombie shrugs off the next shove for this long: time for a walker to come back and land one swing. */
 export const MELEE_STAGGER_IMMUNE_SEC = 2;
+/** A stabbed zombie can be struck again quickly so follow-up hits register. */
+export const KNIFE_STAGGER_IMMUNE_SEC = 0.25;
 /** Bodies one shove can move, nearest first. */
 export const MELEE_MAX_TARGETS = 2;
 

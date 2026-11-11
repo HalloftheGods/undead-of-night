@@ -238,6 +238,8 @@ export interface HomeRun {
   nextReceipt: number;
   /** Banked receipts the trip's start would have wiped before their player applied them, by reconnect token. They go back on the body that returns. */
   unclaimed: Map<string, TripReceipt>;
+  /** Track selected at the bunker's jukebox, or null for default bunker theme. */
+  jukeboxTrack?: string | null;
 }
 
 /** The room's horde clock, from an arrival in the bunker to the horde killed or the room fallen. */

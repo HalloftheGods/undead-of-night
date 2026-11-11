@@ -19,9 +19,23 @@ const QUIET = quiet();
 const VICTORY: Playlist = { files: ['victory-dark-salvation.mp3'], fromTop: true };
 const CREDITS: Playlist = { files: ['end-credits-surviving-the-night.mp3'], fromTop: true };
 
-const BUNKER_TRACK = 'level-06-underground-bunker.mp3';
+export const BUNKER_DEFAULT_TRACK = 'level-06-underground-bunker.mp3';
+let currentBunkerTrack = BUNKER_DEFAULT_TRACK;
+let currentBunkerPlaylist = lull(BUNKER_DEFAULT_TRACK);
+
+export function getBunkerTrack(): string {
+  return currentBunkerTrack;
+}
+
+export function setBunkerTrack(file: string | null): void {
+  const target = file && file.length > 0 ? file : BUNKER_DEFAULT_TRACK;
+  if (target === currentBunkerTrack) return;
+  currentBunkerTrack = target;
+  currentBunkerPlaylist = lull(target);
+}
+
 /** The bunker's own music in Campaign, where level 6 gives the track up to it. Arcade's level 6 keeps it. */
-const BUNKER = lull(BUNKER_TRACK);
+const BUNKER = lull(BUNKER_DEFAULT_TRACK);
 const BUNKER_LEVEL_INDEX = 5;
 
 /**
@@ -57,7 +71,7 @@ const tracksOf = (playlist: Playlist, group: TrackGroup, level: number, finds = 
 
 /** Built once, so a scene keeps the same playlist object and the soundtrack does not restart it. */
 const HOME_LULLS: readonly Playlist[] = LULLS.map((playlist, index) =>
-  index === BUNKER_LEVEL_INDEX ? lull(...playlist.files.filter((file) => file !== BUNKER_TRACK)) : playlist,
+  index === BUNKER_LEVEL_INDEX ? lull(...playlist.files.filter((file) => file !== BUNKER_DEFAULT_TRACK)) : playlist,
 );
 
 const lullsFor = (style: GameStyle): readonly Playlist[] => (playsFromHome(style) ? HOME_LULLS : LULLS);
@@ -106,6 +120,6 @@ export function playlistFor(scene: Scene, level: number, style: GameStyle = 'arc
   const fixed = SCENE_PLAYLISTS[scene];
   if (fixed) return fixed;
   const isHomeBunker = scene === 'bunker' && playsFromHome(style);
-  if (isHomeBunker) return BUNKER;
+  if (isHomeBunker) return currentBunkerPlaylist;
   return heardOn(levelIndex(level), style, found);
 }

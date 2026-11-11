@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { containerLoot } from '../shared/container-loot.ts';
-import { MELEE_COOLDOWN_SEC, MELEE_DAMAGE, MELEE_MAX_TARGETS, MELEE_STAGGER_IMMUNE_SEC, TICK_RATE } from '../shared/constants.ts';
+import { KNIFE_COOLDOWN_SEC, KNIFE_STAGGER_IMMUNE_SEC, MELEE_COOLDOWN_SEC, MELEE_DAMAGE, MELEE_MAX_TARGETS, MELEE_STAGGER_IMMUNE_SEC, TICK_RATE } from '../shared/constants.ts';
 import { LOOT_RULES } from '../shared/loot.ts';
 import { KNIFE_DAMAGE } from '../shared/melee.ts';
 import { moveToNextTown } from '../shared/level-change.ts';
@@ -89,22 +89,31 @@ describe('the stab', () => {
     expect(crowd.filter((z) => z.health < z.maxHealth).length).toBe(MELEE_MAX_TARGETS);
   });
 
-  it('keeps stagger immunity: a body cannot be stabbed twice in the window', () => {
+  it('keeps stagger immunity: a body cannot be stabbed twice within the knife window', () => {
     const { sim, state, p } = armed();
     const zombie = addZombie(state, 'brute', p.x + 12, p.y);
     sim.setInput('a', input({ seq: 1, melee: true }));
     sim.step();
     const once = zombie.health;
     let seq = 2;
-    const ticks = Math.floor(MELEE_STAGGER_IMMUNE_SEC * TICK_RATE) - 2;
+    const ticks = Math.floor(KNIFE_STAGGER_IMMUNE_SEC * TICK_RATE) - 2;
     for (let tick = 0; tick < ticks; tick++) {
       zombie.x = p.x + 12;
       zombie.y = p.y;
       sim.setInput('a', input({ seq: seq++, melee: true }));
       sim.step();
     }
-    expect(MELEE_COOLDOWN_SEC).toBeLessThan(MELEE_STAGGER_IMMUNE_SEC);
+    expect(KNIFE_COOLDOWN_SEC).toBeLessThan(MELEE_COOLDOWN_SEC);
     expect(zombie.health).toBe(once);
+
+    // After knife stagger window, the second hit lands smoothly
+    p.meleeCooldown = 0;
+    zombie.staggerImmuneLeft = 0;
+    zombie.x = p.x + 12;
+    zombie.y = p.y;
+    sim.setInput('a', input({ seq: seq++, melee: true }));
+    sim.step();
+    expect(zombie.health).toBe(once - KNIFE_DAMAGE);
   });
 });
 

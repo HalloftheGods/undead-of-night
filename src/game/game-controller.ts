@@ -175,6 +175,11 @@ export class GameController {
     return this.run.transport instanceof LocalSession ? this.run.transport.sim : null;
   }
 
+  /** The map of the world currently being walked or simulated, if any. */
+  get currentMap(): WorldMap | null {
+    return this.run.world?.worldMap ?? this.sim?.map ?? null;
+  }
+
   mount(canvas: HTMLCanvasElement): void {
     this.canvas = canvas;
     this.onResize();

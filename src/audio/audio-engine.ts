@@ -7,6 +7,7 @@ import { HORDE_WARNING_LEAD, HordeWarning } from './horde-warning.ts';
 import { HEARING_RANGE, Mixer, type BusLevels } from './mixer.ts';
 import { Music, type Scene } from './music.ts';
 import { Soundtrack } from './soundtrack.ts';
+import { setBunkerTrack } from './playlists.ts';
 import { AmbienceBed, ambienceLevel, bedFor } from './sfx-ambience.ts';
 import { SFX } from './sfx-registry.ts';
 import type { SfxName } from './sfx-registry.ts';
@@ -231,6 +232,13 @@ export class AudioEngine {
     this.music?.setScene(scene);
     this.soundtrack?.setScene(scene);
     this.applyAmbience();
+  }
+
+  setBunkerMusic(file: string | null): void {
+    setBunkerTrack(file);
+    if (this.scene === 'bunker') {
+      this.soundtrack?.refreshTrack();
+    }
   }
 
   /**

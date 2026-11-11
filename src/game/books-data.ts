@@ -38,7 +38,7 @@ export const BOOKS_CATALOG: readonly BookDef[] = [
     title: 'Town Guide',
     subtitle: 'Sector Maps & Architecture',
     description: 'Architectural surveys of town landmarks, gas stations, supply points, barricades, and danger zones across sectors.',
-    pagesCount: '6 Pages',
+    pagesCount: '19 Pages',
   },
   {
     id: 'records',

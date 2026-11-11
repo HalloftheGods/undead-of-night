@@ -1,5 +1,8 @@
 import type { ArtBook } from '../art/types.ts';
 import { buildLevelThumbnail } from '../art/level-thumbnails.ts';
+import { TILE_SIZE } from '../../shared/protocol.ts';
+import type { WorldMap } from '../../shared/protocol.ts';
+import { generateWorldMap } from '../../shared/world-map.ts';
 import { HOW_TO_SECTIONS } from './how-to-play.ts';
 import type { HowToSection } from './how-to-play.ts';
 import { chapterHint } from './magazine-hints.ts';
@@ -7,6 +10,8 @@ import type { BlockHint, ChapterHint, HintContext } from './magazine-hints.ts';
 import { magazinePhotos } from './magazine-photos.ts';
 import type { MagazinePhotos } from './magazine-photos.ts';
 import type { ChapterLink, CoverLine, Magazine, MagazineBlock, MagazinePage, MagazineSpread, PageSide } from './magazine-types.ts';
+
+const POSTCARD_SEED = 1986;
 
 /** Builds the issue from the How to Play sections and works out where a reader can turn to. */
 
@@ -123,7 +128,16 @@ function page(id: string, folio: number | null, side: PageSide, layout: Magazine
   return { id, folio, side, layout, color: 'tomato', runningHead: 'Contents', blocks };
 }
 
-function frontMatter(chapters: readonly ChapterLink[], lines: readonly CoverLine[], art: ArtBook, photos: MagazinePhotos): readonly MagazineSpread[] {
+function frontMatter(
+  chapters: readonly ChapterLink[],
+  lines: readonly CoverLine[],
+  art: ArtBook,
+  photos: MagazinePhotos,
+  map: WorldMap,
+): readonly MagazineSpread[] {
+  const parkX = Math.round(map.spawn.x / TILE_SIZE);
+  const parkY = Math.round(map.spawn.y / TILE_SIZE);
+  const parkR = 15;
   const cover = page('cover', null, 'wide', 'cover', [{ kind: 'cover', art: photos.cover, logo: art.ui.logo, lines }]);
   const contents = page('contents', 2, 'left', 'contents', [{ kind: 'contents', chapters }]);
   const letter = page('letter', 3, 'right', 'letter', [
@@ -142,8 +156,8 @@ function frontMatter(chapters: readonly ChapterLink[], lines: readonly CoverLine
       caption: 'The town from above, before the visitors arrived.',
       tilt: 1.6,
       marks: [
-        { kind: 'circle', x: 196, y: 178, r: 20 },
-        { kind: 'note', x: 186, y: 142, text: 'you are here' },
+        { kind: 'circle', x: parkX, y: parkY, r: parkR },
+        { kind: 'note', x: Math.max(10, parkX - 30), y: Math.max(12, parkY - 22), text: 'you are here' },
       ],
       size: 'normal',
       extra: true,
@@ -157,8 +171,14 @@ function frontMatter(chapters: readonly ChapterLink[], lines: readonly CoverLine
 }
 
 /** The whole issue. `reached` says which levels may show their picture; the rest print as locked. */
-export function buildMagazine(art: ArtBook, reached: (level: number) => boolean, sections: readonly HowToSection[] = HOW_TO_SECTIONS): Magazine {
-  const photos = magazinePhotos(art);
+export function buildMagazine(
+  art: ArtBook,
+  reached: (level: number) => boolean,
+  sections: readonly HowToSection[] = HOW_TO_SECTIONS,
+  currentMap?: WorldMap,
+): Magazine {
+  const targetMap = currentMap ?? generateWorldMap(POSTCARD_SEED);
+  const photos = magazinePhotos(art, currentMap);
   const itinerary = Array.from({ length: LEVEL_COUNT }, (_, index) => {
     const level = index + 1;
     // A reached level prints the same scene as the Levels page; the rest stay padlocked.
@@ -167,7 +187,7 @@ export function buildMagazine(art: ArtBook, reached: (level: number) => boolean,
   });
   const context: HintContext = { art, photos, itinerary };
   const chapters = chapterLinks(sections, context);
-  const front = frontMatter(chapters, coverLines(sections, chapters, context), art, photos);
+  const front = frontMatter(chapters, coverLines(sections, chapters, context), art, photos, targetMap);
   const bodySpreads = sections.map((section, index) => ({
     pages: chapterSpread(section, index, context, photos),
     firstPage: chapterPageIndex(index),

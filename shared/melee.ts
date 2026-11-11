@@ -2,6 +2,8 @@ import { sugarOf } from './candy.ts';
 import { characterOf } from './characters.ts';
 import { damageZombie } from './combat.ts';
 import {
+  KNIFE_COOLDOWN_SEC,
+  KNIFE_STAGGER_IMMUNE_SEC,
   MELEE_ARC_RAD,
   MELEE_COOLDOWN_SEC,
   MELEE_DAMAGE,
@@ -39,8 +41,8 @@ function shove(sim: SimState, p: PlayerState, z: ZombieState): void {
   z.windupLeft = 0;
   z.recoveryLeft = 0;
   z.attacking = false;
-  z.cooldownLeft = Math.max(z.cooldownLeft, MELEE_STAGGER_SEC);
-  z.staggerImmuneLeft = MELEE_STAGGER_IMMUNE_SEC;
+  z.cooldownLeft = Math.max(z.cooldownLeft, p.knife ? KNIFE_STAGGER_IMMUNE_SEC : MELEE_STAGGER_SEC);
+  z.staggerImmuneLeft = p.knife ? KNIFE_STAGGER_IMMUNE_SEC : MELEE_STAGGER_IMMUNE_SEC;
 }
 
 /** A body still reeling from the last shove keeps its footing and keeps swinging. */
@@ -65,7 +67,7 @@ export function updateMelee(sim: SimState, p: PlayerState): void {
   const ready = wanted && p.meleeCooldown === 0;
   if (!ready) return;
 
-  p.meleeCooldown = MELEE_COOLDOWN_SEC;
+  p.meleeCooldown = p.knife ? KNIFE_COOLDOWN_SEC : MELEE_COOLDOWN_SEC;
   const targets = shoveTargets(sim, p);
   for (const z of targets) shove(sim, p, z);
   emit(sim, { type: 'melee', playerId: p.id, x: p.x, y: p.y, angle: p.angle, hit: targets.length > 0 });

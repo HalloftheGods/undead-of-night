@@ -70,15 +70,18 @@ export function stockContainers(sim: SimState, upOrDown: Rng = sim.rng): void {
     // A candy bowl holds its candy and nothing else, so it takes no roll.
     const isBowl = container.kind === 'bowl';
     if (isBowl) return { opened: false, loot: null };
+    // Dumpsters are searched on the fly by player luck.
+    const isDumpster = container.kind === 'dumpster';
+    if (isDumpster) return { opened: false, loot: null };
     // The fireworks bus is stocked with fireworks alone.
     if (isBooth(container)) return { opened: false, loot: null, fireworks: BOOTH_FIREWORKS };
     return fill(sim, container.stock, container.upOrDown ? upOrDown : sim.rng);
   });
 }
 
-/** The containers in the town itself, which its ammo budget and its homes' small finds are settled over. Bowls and the bus hold their own. */
+/** The containers in the town itself, which its ammo budget and its homes' small finds are settled over. Bowls, dumpsters and the bus hold their own. */
 const inTown = (sim: SimState) =>
-  townContainers(sim.map).filter((container) => !container.upOrDown && container.kind !== 'bowl' && !isBooth(container));
+  townContainers(sim.map).filter((container) => !container.upOrDown && container.kind !== 'bowl' && container.kind !== 'dumpster' && !isBooth(container));
 
 /**
  * Brings the ammo put away to what the town can spare, so a lucky roll never shows up as bare

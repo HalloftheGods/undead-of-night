@@ -65,7 +65,11 @@ function roomHomeField(sim: SimState): Pick<SnapshotPacket, 'home'> {
   const run = sim.homeRun;
   if (!run) return {};
   const overrun = overrunView(sim);
-  const room = { pickedLevel: run.pickedLevel, roomHighest: run.roomHighest };
+  const room = {
+    pickedLevel: run.pickedLevel,
+    roomHighest: run.roomHighest,
+    ...(run.jukeboxTrack !== undefined ? { jukeboxTrack: run.jukeboxTrack } : {}),
+  };
   return { home: overrun ? { ...room, overrun } : room };
 }
 

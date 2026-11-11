@@ -20,9 +20,12 @@ import { levelDef } from './levels.ts';
 import { placeTownParts } from './part-loot.ts';
 import { isAmmoPickup, spawnPickup } from './pickups.ts';
 import { placeRadio } from './radio.ts';
+import { PART_ORDER } from './gun-upgrade-data.ts';
+import { KIT_ORDER } from './round-effect-data.ts';
+import { townContainers } from './containers.ts';
 import { BUILDING_DEFS, TILE_SIZE } from './protocol.ts';
 import type { BuildingInstance, BuildingKind, PickupType, WeaponId, WorldMap } from './protocol.ts';
-import { createRng, pickWeighted, randInt, shuffle } from './rng.ts';
+import { createRng, pick, pickWeighted, randInt, shuffle } from './rng.ts';
 import type { Rng } from './rng.ts';
 import type { PickupState, SimState } from './sim-state.ts';
 import { blockedTiles, buildingAt, buildingBox, circleHitsSolid, doorBox, isSolidProp, propBox } from './world-query.ts';
@@ -54,10 +57,10 @@ export const LOOT_RULES: Record<BuildingKind, LootRule> = {
   garage: { items: [0, 2], table: { pistol_ammo: 3, shells: 1.5, bandage: 1, knife: 0.4, water_bottle: 0.6, disinfectant: 0.6 } },
   warehouse: { items: [0, 2], table: { pistol_ammo: 3, carbine_ammo: 1.5, shells: 1.5, bandage: 1, water_bottle: 0.6, canned_food: 0.6 } },
   grocery: { items: [1, 3], fixed: ['canned_food'], table: { water_bottle: 3.5, canned_food: 3.5, bandage: 2, pistol_ammo: 1 }, smallAmmo: true },
-  // Cheap goods off the shelves: rations, water bottles, first aid, the odd knife, a half box of rounds.
-  discount: { items: [0, 2], table: { canned_food: 2.5, water_bottle: 2.5, bandage: 2.5, pistol_ammo: 1, knife: 0.5 }, smallAmmo: true },
+  // Cheap goods off the shelves: always canned food and bottled water, bandages, the odd knife, a half box of rounds.
+  discount: { items: [0, 2], fixed: ['canned_food', 'water_bottle'], table: { canned_food: 2.5, water_bottle: 2.5, bandage: 2.5, pistol_ammo: 1, knife: 0.5 }, smallAmmo: true },
   diner: { items: [1, 2], fixed: ['canned_food'], table: { water_bottle: 2.5, canned_food: 2.5, knife: 2, bandage: 1.5, pistol_ammo: 0.5 }, smallAmmo: true },
-  house: { items: [-1, 1], table: { pistol_ammo: 2.5, canned_food: 1.5, water_bottle: 1.5, bandage: 1.5, disinfectant: 0.5, knife: 0.1 }, smallAmmo: true },
+  house: { items: [-1, 1], table: { pistol_ammo: 2, canned_food: 1.5, water_bottle: 1.5, bandage: 2.5, disinfectant: 0.5, knife: 0.1 }, smallAmmo: true },
   apartment: { items: [-1, 1], table: { pistol_ammo: 2.5, canned_food: 1.5, water_bottle: 1.5, bandage: 1.5, disinfectant: 0.5 }, smallAmmo: true },
   // What was put away upstairs, and what was hidden in the cellar: worth the trip down, and the noise it brings.
   // No ammo up or down: the town's rounds are budgeted, so these floors are for first aid, and the candy hidden in them.
@@ -220,7 +223,25 @@ export function placeTownLoot(sim: SimState): void {
   placeKitchenKnives(sim);
   placeTownParts(sim, (building) => lootSpots(sim.map, building));
   placeTownKits(sim, (building) => lootSpots(sim.map, building));
+  placeDiscountRareShelves(sim);
   stockStoreys(sim, upOrDown);
+}
+
+const DISCOUNT_RARE_SALT = 0x505d15c;
+const DISCOUNT_RARE_ITEMS: readonly PickupType[] = [...KIT_ORDER, ...PART_ORDER];
+
+/** Guarantees that S.O.S. Discount's shelves always carry a rare item (kit or gun part). */
+function placeDiscountRareShelves(sim: SimState): void {
+  const discountShelves = townContainers(sim.map).filter(
+    (container) => container.buildingKind === 'discount' && container.kind === 'shelf'
+  );
+  const hasShelves = discountShelves.length > 0;
+  if (!hasShelves) return;
+
+  const rng = createRng(sim.map.seed ^ DISCOUNT_RARE_SALT);
+  const targetShelf = pick(rng, discountShelves);
+  const rareItem = pick(rng, DISCOUNT_RARE_ITEMS);
+  sim.containers[targetShelf.id].loot = { type: rareItem, rounds: 0 };
 }
 
 /** The floors above and below get their own finds, last, on their own generator: the town's rolls are as they were. */
