@@ -1,4 +1,5 @@
 import type { Container } from '../../shared/containers.ts';
+import type { DoorChoice, PlacedDoor } from '../../shared/door-view.ts';
 import type { LeftoverView } from '../../shared/leftovers.ts';
 import type { BulletEntity, DropView, EntityId, ExitEntity, GamePhase, PickupEntity, PlayerEntity, TrackEntity, ZombieEntity } from '../../shared/protocol.ts';
 import type { MerchantEntity, MerchantId, OverrunView, StationId } from '../../shared/home-protocol.ts';
@@ -58,6 +59,10 @@ export interface SceneView {
   readonly climb?: { readonly down: boolean };
   /** The bunker station the local player could open from where they stand. Absent anywhere else. */
   readonly station?: StationId;
+  /** Doors near the local player that are shut, boarded or broken in. Absent when every one stands open. */
+  readonly doors?: readonly PlacedDoor[];
+  /** What the search key would do at the door the local player stands at. */
+  readonly door?: DoorChoice;
   /** Emergency radio tower the local player can trigger: canTrigger is true if in intermission with remaining hordes. */
   readonly radioTower?: { readonly canTrigger: boolean; readonly hold: number };
   /** The bunker's horde clock, which the door and the chest are drawn from. Absent when there is none. */

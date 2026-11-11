@@ -6,6 +6,7 @@ import { BACK_DOORS, partitionsOf } from '../../shared/building-plans.ts';
 import { flightsOf, isStoreyKind } from '../../shared/storeys.ts';
 import type { Flight } from '../../shared/storeys.ts';
 import type { EnvironmentArt, PixelSprite } from '../art/types.ts';
+import { DoorLayer } from './door-layer.ts';
 import type { ScreenRect } from './light-field.ts';
 import { fadedCanvas, FADE_STEPS, spriteCanvas } from './sprite-cache.ts';
 
@@ -153,9 +154,12 @@ export class BuildingLayer {
   private readonly stairs = new Map<string, Flight[]>();
   private readonly stairsArt = { up: null as HTMLCanvasElement | null, down: null as HTMLCanvasElement | null };
   private map: WorldMap | null = null;
+  /** Doors shut, boarded or broken in, drawn into the openings the rooms and shells leave. */
+  readonly doors: DoorLayer;
 
   constructor(art: EnvironmentArt) {
     this.art = art;
+    this.doors = new DoorLayer(art.interior.wallFace.h);
   }
 
   setMap(map: WorldMap): void {
@@ -246,6 +250,7 @@ export class BuildingLayer {
       if (!showing || isSewerBuilding(placed.building)) continue;
       ctx.drawImage(this.interior(placed.building), placed.building.x - left, placed.building.y - top);
       for (const flight of this.stairs.get(placed.building.id) ?? []) this.drawStairs(ctx, flight, left, top);
+      this.doors.drawInside(ctx, placed.building.id, placed.sprite, left, top);
     }
   }
 
@@ -270,6 +275,7 @@ export class BuildingLayer {
     if (gone) return;
     const canvas = step === 0 ? spriteCanvas(placed.sprite) : fadedCanvas(placed.sprite, step);
     ctx.drawImage(canvas, placed.x0 - left, placed.y0 - top);
+    this.doors.drawFront(ctx, placed.building.id, placed.sprite, left, top, step);
   }
 }
 

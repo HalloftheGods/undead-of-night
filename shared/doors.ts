@@ -98,7 +98,8 @@ export function doorBlocksSegment(sim: SimState, x0: number, y0: number, x1: num
 
 const viewLists = new WeakMap<WorldMap, BarricadeOpening[]>();
 
-function viewDoors(map: WorldMap): BarricadeOpening[] {
+/** The map's doors as they start, for a client to hang the snapshot's door list on. Index for index the sim's own. */
+export function mapDoors(map: WorldMap): readonly BarricadeOpening[] {
   const have = viewLists.get(map);
   if (have) return have;
   const doors = freshDoors(map);
@@ -109,7 +110,7 @@ function viewDoors(map: WorldMap): BarricadeOpening[] {
 /** The client's twin of `doorBlocksCircle`, off the snapshot's door list. Doors not listed are open. */
 export function viewsBlockCircle(map: WorldMap, views: readonly DoorView[], x: number, y: number, r: number): boolean {
   if (views.length === 0) return false;
-  const doors = viewDoors(map);
+  const doors = mapDoors(map);
   return views.some((view) => {
     const door = doors[view.i];
     return door !== undefined && !view.open && touchesBox(doorBoxOf(door), x, y, r);

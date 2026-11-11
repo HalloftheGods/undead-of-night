@@ -17,6 +17,7 @@ import { lampWorks } from './level-look.ts';
 import { flicker, Lighting } from './lighting.ts';
 import { OcclusionGrid } from './occlusion.ts';
 import { OverlayRenderer } from './overlay-renderer.ts';
+import type { PlacedDoor } from '../../shared/door-view.ts';
 import type { SceneView } from './scene.ts';
 import { ScreenEffects } from './screen-effects.ts';
 import { paintPrints, paintTrackingMarks } from './snow-prints.ts';
@@ -45,6 +46,7 @@ const VAN_GLOW_STRENGTH = 0.7;
 const VAN_GLOW_HEIGHT = 12;
 /** Flashes of light (shots, burns, blasts) one frame lights at full detail; a slow machine gets a share of it. */
 const MAX_PULSES = 24;
+const NO_DOORS: readonly PlacedDoor[] = [];
 /** Underground tunnels are near pitch black between lamps and ladder shafts. */
 const SEWER_AMBIENT: Rgb = [2, 3, 4];
 /** From this load-shedding level on, the light is worked out every other frame and moved with the camera between. */
@@ -330,6 +332,7 @@ export class WorldRenderer {
     this.effects.update(dt);
     const viewer = fullScene.players.find((player) => player.id === fullScene.viewerId);
     this.buildings.update(viewer?.indoors ?? null, dt);
+    this.buildings.doors.set(fullScene.doors ?? NO_DOORS);
     const scene = this.withoutHidden(fullScene);
     this.camera.follow(scene.focusX, scene.focusY, scene.pointerX, scene.pointerY, dt);
 

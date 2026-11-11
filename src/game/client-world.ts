@@ -5,6 +5,8 @@ import type { Container } from '../../shared/containers.ts';
 import { isBunkerMap } from '../../shared/home-protocol.ts';
 import type { OverrunPhase, StationId } from '../../shared/home-protocol.ts';
 import { viewsBlockCircle } from '../../shared/doors.ts';
+import { doorChoiceAt, placedDoors } from '../../shared/door-view.ts';
+import type { PlacedDoor } from '../../shared/door-view.ts';
 import { stepMovement } from '../../shared/movement.ts';
 import { playerSpeed } from '../../shared/players.ts';
 import { effectiveStance } from '../../shared/stamina.ts';
@@ -23,7 +25,7 @@ const MAX_BULLET_LEAD_SEC = 0.1;
 
 export type WorldEntities = Pick<
   SceneView,
-  'players' | 'zombies' | 'merchants' | 'bullets' | 'pickups' | 'exit' | 'drop' | 'openedContainers' | 'leftovers' | 'tracks' | 'searchable' | 'station' | 'climb' | 'radioTower' | 'overrun' | 'localId' | 'viewerId' | 'focusX' | 'focusY' | 'phase' | 'hostiles'
+  'players' | 'zombies' | 'merchants' | 'bullets' | 'pickups' | 'exit' | 'drop' | 'openedContainers' | 'leftovers' | 'tracks' | 'searchable' | 'station' | 'climb' | 'doors' | 'door' | 'radioTower' | 'overrun' | 'localId' | 'viewerId' | 'focusX' | 'focusY' | 'phase' | 'hostiles'
 >;
 
 /** The bunker's merchants where they are drawn; left off anywhere without them. */
@@ -68,6 +70,8 @@ export class ClientWorld {
   }
 
   private readonly doorBlocks = (x: number, y: number, r: number): boolean => viewsBlockCircle(this.map, this.doors, x, y, r);
+  private doorViewsSeen: readonly DoorView[] | null = null;
+  private doorsPlaced: readonly PlacedDoor[] = [];
 
   get latest(): SnapshotPacket | null {
     return this.buffer.latest?.snapshot ?? null;
@@ -145,6 +149,25 @@ export class ClientWorld {
     return flight ? { down: flight.down } : undefined;
   }
 
+  /** The snapshot's doors placed on the map. The same array until the snapshot's list changes, so the renderer can tell at a glance. */
+  private placedDoorsFor(views: readonly DoorView[]): readonly PlacedDoor[] {
+    const isNewList = views !== this.doorViewsSeen;
+    if (isNewList) {
+      this.doorViewsSeen = views;
+      this.doorsPlaced = placedDoors(this.map, views);
+    }
+    return this.doorsPlaced;
+  }
+
+  /** What the search key would do at the door the local player stands at, by the sim's own rules: nothing while searching, or with a container in reach. */
+  private doorBy(player: PlayerEntity | null): WorldEntities['door'] {
+    const busy = player === null || player.status !== 'alive' || player.search !== 0;
+    if (busy) return undefined;
+    const elsewhere = isBunkerMap(this.map) || containerInReach(this.map, player.x, player.y) !== null;
+    if (elsewhere) return undefined;
+    return doorChoiceAt(this.map, this.doors, player.x, player.y, this.stance === 'sneak', player.materials) ?? undefined;
+  }
+
   /** The bunker station the local player could open from where they stand, by the sim's own rule: none once one is open, or anywhere but the bunker. */
   private stationBy(player: PlayerEntity | null, phase: OverrunPhase | undefined): StationId | undefined {
     const free = player !== null && player.status === 'alive' && !player.home?.station && isBunkerMap(this.map);
@@ -180,6 +203,8 @@ export class ClientWorld {
     const overrun = newest.snapshot.home?.overrun;
     const station = this.stationBy(shownLocal, overrun?.phase);
     const climb = this.climbBy(shownLocal);
+    const door = this.doorBy(shownLocal);
+    const doors = this.placedDoorsFor(this.doors);
     const radioTower = this.radioTowerBy(shownLocal, newest.snapshot.phase);
     return {
       players,
@@ -195,6 +220,8 @@ export class ClientWorld {
       searchable: this.searchableBy(shownLocal, newest.snapshot.openedContainers),
       ...(station ? { station } : {}),
       ...(climb ? { climb } : {}),
+      ...(door ? { door } : {}),
+      ...(doors.length > 0 ? { doors } : {}),
       ...(radioTower ? { radioTower } : {}),
       ...(overrun ? { overrun } : {}),
       localId: this.localId,

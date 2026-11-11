@@ -57,11 +57,29 @@ export function startShell(kind: BuildingKind, wallHeight: number): Shell {
 
 export function bakeShell(s: Shell): PixelSprite {
   s.c.outline({ selective: true });
-  return bake(s.c, s.left, s.footW, s.ground);
+  const sprite = bake(s.c, s.left, s.footW, s.ground);
+  const spec = drawnDoors.get(s.c);
+  if (spec) shellDoors.set(sprite, spec);
+  return sprite;
 }
 
 /** glass and timber swing inward; steel is a plain fire door; shutter rolls up out of sight. */
 export type DoorKind = 'glass' | 'timber' | 'steel' | 'shutter';
+
+/** The door a shell was drawn with: what swings shut in it, and how tall the opening is. */
+export interface DoorSpec {
+  readonly kind: DoorKind;
+  readonly height: number;
+}
+
+const PLAIN_DOOR: DoorSpec = { kind: 'steel', height: 22 };
+const drawnDoors = new WeakMap<PixelCanvas, DoorSpec>();
+const shellDoors = new WeakMap<PixelSprite, DoorSpec>();
+
+/** The door of a baked shell, so a shut one can be drawn into the very opening the art left. */
+export function doorSpecOf(shell: PixelSprite): DoorSpec {
+  return shellDoors.get(shell) ?? PLAIN_DOOR;
+}
 
 const LEAF_W = 5;
 
@@ -89,6 +107,7 @@ export function doorway(s: Shell, height: number, kind: DoorKind, trim: Trim, fl
   const { c, ground, doorL, doorR } = s;
   const [dark, face, light] = trim;
   const top = ground - height;
+  drawnDoors.set(c, { kind, height });
   c.rect(doorL - 2, top - 2, DOOR_WIDTH + 4, height + 2, face);
   c.rect(doorL - 2, top - 2, DOOR_WIDTH + 4, 1, light).rect(doorL - 2, top - 2, 1, height + 2, light);
   c.rect(doorR + 1, top - 1, 1, height + 1, dark);
