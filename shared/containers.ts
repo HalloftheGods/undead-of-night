@@ -72,6 +72,22 @@ export const CONTAINER_LABEL: Record<ContainerKind, string> = {
   dumpster: 'DUMPSTER',
 };
 
+export interface ContainerGridDimensions {
+  readonly cols: number;
+  readonly rows: number;
+}
+
+export const CONTAINER_GRID_SIZE: Partial<Record<ContainerKind, ContainerGridDimensions>> = {
+  locker: { cols: 3, rows: 8 },
+};
+
+const DEFAULT_CONTAINER_GRID: ContainerGridDimensions = { cols: 5, rows: 4 };
+
+export function containerGridDimensions(kind?: ContainerKind): ContainerGridDimensions {
+  const customDimensions = kind ? CONTAINER_GRID_SIZE[kind] : undefined;
+  return customDimensions ?? DEFAULT_CONTAINER_GRID;
+}
+
 /** Gap from the player's edge to the furniture that still counts as within reach. */
 const SEARCH_GAP = 10;
 const SEARCH_REACH = PLAYER_RADIUS + SEARCH_GAP;

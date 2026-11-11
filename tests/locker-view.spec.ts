@@ -44,22 +44,23 @@ describe('the locker view', () => {
 
   it('lists what is in hand by group, against the carry caps the server checks', () => {
     const rows = handRows({ locker, hands });
-    expect(rows.map((row) => row.label)).toEqual(['Guns', 'Ammo', 'Parts', 'Kits', 'Medkits', 'Bottles', 'Knife']);
+    expect(rows.map((row) => row.label)).toEqual(['Guns', 'Ammo', 'Parts', 'Kits', 'Supplies', 'Medkits', 'Bottles', 'Knife']);
     expect(handRows({ locker: gear(), hands: gear() })).toHaveLength(HAND_ROW_COUNT);
     const ammoCap = WEAPONS.pistol.reserveCap + WEAPONS.carbine.reserveCap + WEAPONS.shotgun.reserveCap;
     expect(rows[0]).toMatchObject({ held: 1, cap: 3 });
     expect(rows[1]).toMatchObject({ held: 30, cap: ammoCap });
     expect(rows[1].items.map((item) => item.key)).toEqual(['ammo:carbine']);
-    expect(rows[4]).toMatchObject({ held: 0, cap: MEDKIT_MAX, filled: 0 });
-    expect(rows[5]).toMatchObject({ held: 1, cap: BOTTLE_CARRY });
-    expect(rows[6]).toMatchObject({ held: 1, cap: 1, filled: ITEM_SLOTS });
+    expect(rows[4]).toMatchObject({ held: 0, cap: 20, filled: 0 });
+    expect(rows[5]).toMatchObject({ held: 0, cap: MEDKIT_MAX, filled: 0 });
+    expect(rows[6]).toMatchObject({ held: 1, cap: BOTTLE_CARRY });
+    expect(rows[7]).toMatchObject({ held: 1, cap: 1, filled: ITEM_SLOTS });
   });
 
   it('lights at least one cell for anything held, and never more than the bar has', () => {
     const one = handRows({ locker: gear(), hands: gear({ ammoBag: { pistol: 1, carbine: 0, shotgun: 0 } }) });
     expect(one[1].filled).toBe(1);
     const over = handRows({ locker: gear(), hands: gear({ bottles: BOTTLE_CARRY + 2 }) });
-    expect(over[5].filled).toBe(ITEM_SLOTS);
+    expect(over[6].filled).toBe(ITEM_SLOTS);
   });
 
   it('draws every locker row with the icon the shop and the HUD use', () => {

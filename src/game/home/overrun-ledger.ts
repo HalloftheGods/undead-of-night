@@ -5,6 +5,7 @@ import { BASELINE_DIFFICULTY } from '../../../shared/difficulty.ts';
 import type { DifficultyId } from '../../../shared/difficulty.ts';
 import type { MerchantId, OverrunPhase, OverrunReceipt } from '../../../shared/home-protocol.ts';
 import { emptyLoadout, mergeHome } from '../../../shared/loadout.ts';
+import { mergeGridLocker } from './bunker-locker-grid.ts';
 import type { HomeSave, OpenOverrun, OverrunRecord } from './home-store.ts';
 import { fleeCasualties } from './overrun-merchants.ts';
 
@@ -32,6 +33,7 @@ function opened(save: HomeSave, receipt: OverrunReceipt): HomeSave {
     silver: save.silver + silver,
     rawJewels: { small: save.rawJewels.small + jewels.small, large: save.rawJewels.large + jewels.large },
     locker: chest ? mergeHome(save.locker, chest) : save.locker,
+    lockerGrid: chest && save.lockerGrid ? mergeGridLocker(save.lockerGrid, chest) : save.lockerGrid,
   };
 }
 

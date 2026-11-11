@@ -2,6 +2,7 @@
 
 import type { Jewels, TripReceipt } from '../../../shared/home-protocol.ts';
 import { emptyLoadout, mergeHome } from '../../../shared/loadout.ts';
+import { mergeGridLocker } from './bunker-locker-grid.ts';
 import type { HomeSave, OpenTrip, TripRecord } from './home-store.ts';
 import { rollStock } from './shop.ts';
 
@@ -31,6 +32,7 @@ function banked(save: HomeSave, receipt: TripReceipt): HomeSave {
     silver: save.silver + silver,
     rawJewels: nextJewels,
     locker: gear ? mergeHome(save.locker, gear) : save.locker,
+    lockerGrid: gear && save.lockerGrid ? mergeGridLocker(save.lockerGrid, gear) : save.lockerGrid,
   });
 }
 

@@ -2,6 +2,16 @@
 
 All notable changes to the Undead of Night: Last Round game are documented in this file.
 
+## [2026-11-11] - Bunker Locker 4x12 Grid & World Locker Grid Sizing
+
+### Added
+- Bunker locker physical 4x12 grid storage recycling DualLootModal interface with drag-and-drop, orientation rotation, and quick transfer.
+- World map locker container dimensions configured as 3x8 grid (replacing restrictive 2x6), fitting rotated firearms and medical supplies.
+- Bidirectional loadout-to-grid synchronization module (`bunker-locker-grid.ts`) converting between persisted Loadout counters and physical grid items.
+- Dual view modes on Bunker Locker screen: physical 4x12 grid mode and classic shelf strip view, toggleable with V key or button.
+- Banked trip loot and overrun rewards auto-packing into existing bunker grid without disturbing saved item layouts.
+- Dedicated test suite (`tests/locker-grid.spec.ts`) verifying container dimensions, bunker locker grid packing, loadout conversion, and item positioning.
+
 ## [2026-11-11] - Carried Survival Supplies & Inventory Integration
 
 ### Added

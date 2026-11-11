@@ -2,6 +2,7 @@
 
 import type { DifficultyId } from '../../../shared/difficulty.ts';
 import type { Jewels, Loadout, MerchantId } from '../../../shared/home-protocol.ts';
+import type { InventoryGrid } from '../../../shared/grid-inventory.ts';
 import { emptyLoadout } from '../../../shared/loadout.ts';
 import { QUEST_SALT, starterQuests } from './quest-state.ts';
 import type { QuestState } from './quest-state.ts';
@@ -22,6 +23,8 @@ export interface HomeSave {
   silver: number;
   rawJewels: Jewels;
   locker: Loadout;
+  /** Storage grid for the bunker locker (4x12). */
+  lockerGrid?: InventoryGrid;
   /** Taken out of the locker and still safe, until a trip opens. */
   hands: Loadout;
   openTrip: OpenTrip | null;
