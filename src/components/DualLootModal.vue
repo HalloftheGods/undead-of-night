@@ -74,7 +74,7 @@
       </section>
 
       <!-- Center Spacer: Open view of player character in game world -->
-      <div class="center-stage-spacer" />
+      <div v-if="hasContainer" class="center-stage-spacer" />
 
       <!-- Right Dock: Survivor Inventory -->
       <section class="loot-dock survivor-dock player-panel">

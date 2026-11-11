@@ -40,7 +40,7 @@
   width: 100%;
   height: 100%;
   display: flex;
-  justify-content: space-around;
+  justify-content: center;
   align-items: center;
   gap: calc(var(--ap) * 3);
   pointer-events: none;
@@ -232,7 +232,7 @@
   flex-direction: column;
   gap: var(--ap);
   cursor: pointer;
-  min-height: calc(var(--ap) * 34);
+  min-height: calc(var(--ap) * 40);
   box-sizing: border-box;
 }
 .gear-slot.is-occupied {
@@ -242,15 +242,14 @@
     0 0 0 var(--ap) var(--bone-dim);
 }
 .gear-slot-tag {
-  font-size: calc(var(--m) * 2);
+  font-size: calc(var(--m) * 2.8);
+  line-height: 1.25;
   color: var(--bone-dim);
   font-weight: 700;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
 }
 .gear-item-card { flex: 1 1 auto; display: grid; place-items: center; }
-.gear-empty-slot { font-size: calc(var(--m) * 2); color: var(--ink-line); margin: auto 0; text-align: center; }
+.gear-empty-slot { font-size: calc(var(--m) * 2.6); line-height: 1.25; color: var(--bone-dim); margin: auto 0; text-align: center; overflow-wrap: anywhere; }
 
 .player-grids-column {
   display: flex;
@@ -272,7 +271,7 @@
 }
 .sub-section-title {
   margin: 0;
-  font-size: calc(var(--m) * 2.2);
+  font-size: calc(var(--m) * 2.8);
   color: var(--bone-dim);
   white-space: nowrap;
 }
@@ -346,11 +345,9 @@
   flex-shrink: 0;
 }
 .footer-tip {
-  font-size: calc(var(--m) * 2.2);
+  font-size: calc(var(--m) * 2.6);
   color: var(--bone-dim);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
 }
 
 /* Mobile Portrait & Compact Viewports */
