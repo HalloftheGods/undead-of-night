@@ -1,12 +1,7 @@
 import type { BuildingKind } from './map-protocol.ts';
 import type { Rng } from './rng.ts';
 
-export type FortificationItemType =
-  | 'plank'
-  | 'nails'
-  | 'hammer_tool'
-  | 'sheet_curtain'
-  | 'crowbar';
+export type FortificationItemType = 'plank' | 'nails' | 'hammer_tool' | 'sheet_curtain' | 'crowbar';
 
 export interface FortificationItemDef {
   readonly type: FortificationItemType;
@@ -17,41 +12,11 @@ export interface FortificationItemDef {
 }
 
 export const FORTIFICATION_ITEMS: Record<FortificationItemType, FortificationItemDef> = {
-  plank: {
-    type: 'plank',
-    name: 'Wooden Plank',
-    description: 'Heavy construction timber for barricading doors and windows.',
-    isTool: false,
-    unitsPerFind: 2,
-  },
-  nails: {
-    type: 'nails',
-    name: 'Nails',
-    description: 'Steel framing nails needed to fasten barricade planks.',
-    isTool: false,
-    unitsPerFind: 8,
-  },
-  hammer_tool: {
-    type: 'hammer_tool',
-    name: 'Claw Hammer',
-    description: 'Carpentry tool for driving nails into wooden barricades.',
-    isTool: true,
-    unitsPerFind: 1,
-  },
-  sheet_curtain: {
-    type: 'sheet_curtain',
-    name: 'Sheet Curtain',
-    description: 'Cloth drape hung over windows to block zombie line of sight.',
-    isTool: false,
-    unitsPerFind: 1,
-  },
-  crowbar: {
-    type: 'crowbar',
-    name: 'Crowbar',
-    description: 'Heavy iron pry bar to dismantle barricades and clear broken glass.',
-    isTool: true,
-    unitsPerFind: 1,
-  },
+  plank: { type: 'plank', name: 'Wooden Plank', description: 'Heavy construction timber for barricading doors and windows.', isTool: false, unitsPerFind: 2 },
+  nails: { type: 'nails', name: 'Nails', description: 'Steel framing nails needed to fasten barricade planks.', isTool: false, unitsPerFind: 8 },
+  hammer_tool: { type: 'hammer_tool', name: 'Claw Hammer', description: 'Carpentry tool for driving nails into wooden barricades.', isTool: true, unitsPerFind: 1 },
+  sheet_curtain: { type: 'sheet_curtain', name: 'Sheet Curtain', description: 'Cloth drape hung over windows to block zombie line of sight.', isTool: false, unitsPerFind: 1 },
+  crowbar: { type: 'crowbar', name: 'Crowbar', description: 'Heavy iron pry bar to dismantle barricades and clear broken glass.', isTool: true, unitsPerFind: 1 },
 };
 
 export const MAX_PLANKS_PER_OPENING = 4;
@@ -60,6 +25,11 @@ export const NAILS_PER_PLANK = 2;
 export const WINDOW_SHATTER_NOISE_RADIUS = 300;
 export const BARRICADE_HIT_NOISE_RADIUS = 120;
 export const GLASS_LACERATION_ODDS = 0.45;
+export const DOOR_BASE_HEALTH = 150;
+export const DOOR_MAX_PLANKS = MAX_PLANKS_PER_OPENING;
+export const DOOR_MAX_HEALTH = 550;
+export const DOOR_DAMAGE_PER_ZOMBIE_SEC = 20;
+export const DOOR_SPLINTER_NOISE_RADIUS = 240;
 
 export interface FortificationInventory {
   planks: number;
@@ -70,16 +40,10 @@ export interface FortificationInventory {
 }
 
 export function createEmptyFortificationInventory(): FortificationInventory {
-  return {
-    planks: 0,
-    nails: 0,
-    sheets: 0,
-    hasHammer: false,
-    hasCrowbar: false,
-  };
+  return { planks: 0, nails: 0, sheets: 0, hasHammer: false, hasCrowbar: false };
 }
 
-export type BarricadeOpeningType = 'door' | 'window';
+export type BarricadeOpeningType = 'door' | 'window' | 'passageway' | 'passage';
 export type OpeningFacing = 'north' | 'south' | 'east' | 'west';
 
 export interface BarricadeOpening {
@@ -98,6 +62,7 @@ export interface BarricadeOpening {
   isCurtainClosed: boolean;
   isBroken: boolean;
   glassCleared: boolean;
+  isOpen: boolean;
 }
 
 export interface BarricadeOptions {
@@ -106,6 +71,9 @@ export interface BarricadeOptions {
   isCurtainClosed?: boolean;
   isBroken?: boolean;
   glassCleared?: boolean;
+  isOpen?: boolean;
+  health?: number;
+  maxHealth?: number;
 }
 
 export function createBarricadeOpening(
@@ -120,7 +88,15 @@ export function createBarricadeOpening(
   options?: BarricadeOptions
 ): BarricadeOpening {
   const initialPlanks = Math.max(0, Math.min(MAX_PLANKS_PER_OPENING, options?.planks ?? 0));
-  const calculatedHealth = initialPlanks * HEALTH_PER_PLANK;
+  const hasCustomHealth = options?.health !== undefined;
+  const defaultPlankHealth = initialPlanks * HEALTH_PER_PLANK;
+  const calculatedHealth = hasCustomHealth ? Number(options?.health) : defaultPlankHealth;
+  const calculatedMaxHealth = options?.maxHealth ?? calculatedHealth;
+
+  const hasExplicitOpenState = options?.isOpen !== undefined;
+  const isDoor = type === 'door';
+  const defaultOpenState = !isDoor;
+  const resolvedIsOpen = hasExplicitOpenState ? Boolean(options?.isOpen) : defaultOpenState;
 
   return {
     id,
@@ -133,11 +109,154 @@ export function createBarricadeOpening(
     facing,
     planks: initialPlanks,
     health: calculatedHealth,
-    maxHealth: calculatedHealth,
+    maxHealth: calculatedMaxHealth,
     hasCurtain: options?.hasCurtain ?? false,
     isCurtainClosed: options?.isCurtainClosed ?? false,
     isBroken: options?.isBroken ?? false,
     glassCleared: options?.glassCleared ?? false,
+    isOpen: resolvedIsOpen,
+  };
+}
+
+export function calculateDoorMaxHealth(planks: number): number {
+  const boundedPlanks = Math.max(0, Math.min(MAX_PLANKS_PER_OPENING, planks));
+  return DOOR_BASE_HEALTH + boundedPlanks * HEALTH_PER_PLANK;
+}
+
+export function createDoorOpening(
+  id: string,
+  buildingId: string,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  facing: OpeningFacing,
+  options?: BarricadeOptions
+): BarricadeOpening {
+  const initialPlanks = Math.max(0, Math.min(MAX_PLANKS_PER_OPENING, options?.planks ?? 0));
+  const doorMaxHealth = calculateDoorMaxHealth(initialPlanks);
+  const initialHealth = options?.health ?? doorMaxHealth;
+
+  return createBarricadeOpening(id, buildingId, 'door', x, y, w, h, facing, {
+    ...options,
+    planks: initialPlanks,
+    health: initialHealth,
+    maxHealth: options?.maxHealth ?? doorMaxHealth,
+    isOpen: options?.isOpen ?? false,
+  });
+}
+
+export function toggleDoor(opening: BarricadeOpening): boolean {
+  const isNotDoor = opening.type !== 'door';
+  if (isNotDoor) return false;
+
+  const isBroken = opening.isBroken;
+  if (isBroken) return false;
+
+  const isBarricaded = opening.planks > 0;
+  if (isBarricaded) return false;
+
+  opening.isOpen = !opening.isOpen;
+  return true;
+}
+
+export function calculateDoorDamage(zombieCount: number, dt: number): number {
+  const hasNoZombies = zombieCount <= 0;
+  const hasNoTime = dt <= 0;
+  const isInvalid = hasNoZombies || hasNoTime;
+  if (isInvalid) return 0;
+
+  return zombieCount * DOOR_DAMAGE_PER_ZOMBIE_SEC * dt;
+}
+
+export interface DoorDamageResult {
+  readonly damageDealt: number;
+  readonly remainingHealth: number;
+  readonly brokenPlanks: number;
+  readonly destroyed: boolean;
+  readonly noiseRadius: number;
+}
+
+export function damageDoorOpening(
+  opening: BarricadeOpening,
+  zombieCount: number,
+  dt: number
+): DoorDamageResult {
+  const isNotDoor = opening.type !== 'door';
+  if (isNotDoor) {
+    return {
+      damageDealt: 0,
+      remainingHealth: opening.health,
+      brokenPlanks: 0,
+      destroyed: opening.isBroken,
+      noiseRadius: 0,
+    };
+  }
+
+  const isAlreadyBroken = opening.isBroken;
+  if (isAlreadyBroken) {
+    return {
+      damageDealt: 0,
+      remainingHealth: 0,
+      brokenPlanks: 0,
+      destroyed: true,
+      noiseRadius: 0,
+    };
+  }
+
+  const needsHealthInit = opening.health <= 0 && opening.maxHealth <= 0;
+  if (needsHealthInit) {
+    const initializedMaxHealth = calculateDoorMaxHealth(opening.planks);
+    opening.health = initializedMaxHealth;
+    opening.maxHealth = initializedMaxHealth;
+  }
+
+  const damageToApply = calculateDoorDamage(zombieCount, dt);
+  const hasNoDamage = damageToApply <= 0;
+  if (hasNoDamage) {
+    return {
+      damageDealt: 0,
+      remainingHealth: opening.health,
+      brokenPlanks: 0,
+      destroyed: false,
+      noiseRadius: 0,
+    };
+  }
+
+  const previousHealth = opening.health;
+  const previousPlanks = opening.planks;
+
+  const nextHealth = Math.max(0, previousHealth - damageToApply);
+  const actualDamageDealt = previousHealth - nextHealth;
+  opening.health = nextHealth;
+
+  const isDestroyed = nextHealth <= 0;
+  if (isDestroyed) {
+    opening.isBroken = true;
+    opening.isOpen = true;
+    opening.planks = 0;
+    return {
+      damageDealt: actualDamageDealt,
+      remainingHealth: 0,
+      brokenPlanks: previousPlanks,
+      destroyed: true,
+      noiseRadius: DOOR_SPLINTER_NOISE_RADIUS,
+    };
+  }
+
+  const plankHealthRemaining = Math.max(0, nextHealth - DOOR_BASE_HEALTH);
+  const calculatedSurvivingPlanks = Math.ceil(plankHealthRemaining / HEALTH_PER_PLANK);
+  const newPlankCount = Math.min(previousPlanks, calculatedSurvivingPlanks);
+  opening.planks = newPlankCount;
+
+  const brokenPlankCount = Math.max(0, previousPlanks - newPlankCount);
+
+  return {
+    damageDealt: actualDamageDealt,
+    remainingHealth: nextHealth,
+    brokenPlanks: brokenPlankCount,
+    destroyed: false,
+    noiseRadius: 0,
   };
 }
 
@@ -161,7 +280,11 @@ export function addPlank(materials: FortificationInventory, opening: BarricadeOp
   materials.nails -= NAILS_PER_PLANK;
   opening.planks += 1;
   opening.health += HEALTH_PER_PLANK;
-  opening.maxHealth = opening.planks * HEALTH_PER_PLANK;
+
+  const isDoor = opening.type === 'door';
+  const hasDoorBaseHealth = isDoor && opening.maxHealth >= DOOR_BASE_HEALTH;
+  const baseHealth = hasDoorBaseHealth ? DOOR_BASE_HEALTH : 0;
+  opening.maxHealth = baseHealth + opening.planks * HEALTH_PER_PLANK;
   return true;
 }
 
@@ -175,9 +298,14 @@ export function dismantlePlank(materials: FortificationInventory, opening: Barri
   const eligible = canDismantlePlank(materials, opening);
   if (!eligible) return false;
 
+  const isDoor = opening.type === 'door';
+  const hasDoorBaseHealth = isDoor && opening.maxHealth > opening.planks * HEALTH_PER_PLANK;
+  const baseHealth = hasDoorBaseHealth ? DOOR_BASE_HEALTH : 0;
+
   opening.planks -= 1;
-  opening.health = Math.min(opening.health, opening.planks * HEALTH_PER_PLANK);
-  opening.maxHealth = opening.planks * HEALTH_PER_PLANK;
+  const targetMaxHealth = baseHealth + opening.planks * HEALTH_PER_PLANK;
+  opening.health = Math.min(opening.health, targetMaxHealth);
+  opening.maxHealth = targetMaxHealth;
   materials.planks += 1;
   materials.nails += 1;
   return true;

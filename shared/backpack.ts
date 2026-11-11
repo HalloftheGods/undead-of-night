@@ -14,6 +14,8 @@ export interface BackpackDef {
   readonly bottleMax: number;
   readonly throwableMax: number;
   readonly plankMax: number;
+  readonly cols: number;
+  readonly rows: number;
 }
 
 export const BACKPACK_TIERS: Record<BackpackTier, BackpackDef> = {
@@ -27,6 +29,8 @@ export const BACKPACK_TIERS: Record<BackpackTier, BackpackDef> = {
     bottleMax: BOTTLE_CARRY,
     throwableMax: 2,
     plankMax: 2,
+    cols: 5,
+    rows: 4,
   },
   duffel: {
     tier: 'duffel',
@@ -38,6 +42,8 @@ export const BACKPACK_TIERS: Record<BackpackTier, BackpackDef> = {
     bottleMax: 5,
     throwableMax: 4,
     plankMax: 4,
+    cols: 6,
+    rows: 5,
   },
   alice: {
     tier: 'alice',
@@ -49,6 +55,8 @@ export const BACKPACK_TIERS: Record<BackpackTier, BackpackDef> = {
     bottleMax: 8,
     throwableMax: 6,
     plankMax: 8,
+    cols: 8,
+    rows: 6,
   },
 };
 

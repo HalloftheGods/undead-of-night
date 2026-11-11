@@ -162,3 +162,17 @@ export function getOpeningSolidBoxes(opening: BarricadeOpening): Box[] {
     },
   ];
 }
+
+export {
+  calculateDoorDamage,
+  calculateDoorMaxHealth,
+  createDoorOpening,
+  damageDoorOpening,
+  DOOR_BASE_HEALTH,
+  DOOR_DAMAGE_PER_ZOMBIE_SEC,
+  DOOR_MAX_HEALTH,
+  DOOR_MAX_PLANKS,
+  DOOR_SPLINTER_NOISE_RADIUS,
+  toggleDoor,
+  type DoorDamageResult,
+} from './fortifications.ts';

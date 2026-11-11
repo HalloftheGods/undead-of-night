@@ -4,6 +4,8 @@ import { townContainers } from '../../shared/containers.ts';
 import { CHEST_SPOT } from '../../shared/bunker-map.ts';
 import { PROP_DEFS } from '../../shared/protocol.ts';
 import type {
+  ArmorTier,
+  BackpackTier,
   EntityId,
   ExitEntity,
   PickupEntity,
@@ -22,6 +24,8 @@ import type { Beacon } from './car-looks.ts';
 import type { ContainerArt } from '../art/containers.ts';
 import { dirFromAngle } from '../art/types.ts';
 import type { ArtBook, PixelSprite } from '../art/types.ts';
+import { buildBackpackSprite } from '../art/fx/backpack-art.ts';
+import { buildArmorSprite } from '../art/fx/armor-art.ts';
 import type { BuildingLayer, PlacedBuilding } from './building-layer.ts';
 import { chestPending, doorState, hiddenProp } from './overrun-look.ts';
 import { CHEST_HEIGHT } from './scene.ts';
@@ -140,6 +144,49 @@ function glintPhase(id: EntityId): number {
   for (let i = 0; i < id.length; i += 1) hash = (hash * 31 + id.charCodeAt(i)) % 997;
   return hash / 997;
 }
+
+const BACKPACK_CACHE = new Map<BackpackTier, PixelSprite>();
+const ARMOR_CACHE = new Map<ArmorTier, PixelSprite>();
+
+function getBackpackVisualSprite(tier: BackpackTier): PixelSprite {
+  let sprite = BACKPACK_CACHE.get(tier);
+  if (!sprite) {
+    sprite = buildBackpackSprite(tier);
+    BACKPACK_CACHE.set(tier, sprite);
+  }
+  return sprite;
+}
+
+function getArmorVisualSprite(tier: ArmorTier): PixelSprite {
+  let sprite = ARMOR_CACHE.get(tier);
+  if (!sprite) {
+    sprite = buildArmorSprite(tier);
+    ARMOR_CACHE.set(tier, sprite);
+  }
+  return sprite;
+}
+
+const BACKPACK_OFFSETS: Record<number, { dx: number; dy: number }> = {
+  0: { dx: -5, dy: -12 },
+  1: { dx: -4, dy: -11 },
+  2: { dx: 0, dy: -10 },
+  3: { dx: 4, dy: -11 },
+  4: { dx: 5, dy: -12 },
+  5: { dx: 3, dy: -13 },
+  6: { dx: 0, dy: -14 },
+  7: { dx: -3, dy: -13 },
+};
+
+const ARMOR_OFFSETS: Record<number, { dx: number; dy: number }> = {
+  0: { dx: 2, dy: -10 },
+  1: { dx: 2, dy: -10 },
+  2: { dx: 0, dy: -10 },
+  3: { dx: -2, dy: -10 },
+  4: { dx: -2, dy: -10 },
+  5: { dx: -1, dy: -11 },
+  6: { dx: 0, dy: -11 },
+  7: { dx: 1, dy: -11 },
+};
 
 /** Everything standing on the ground: y-sorted props, people, zombies, pickups and building shells. */
 export class EntityRenderer {
@@ -348,6 +395,10 @@ export class EntityRenderer {
       && chestY > art.y0 && chestY < art.y1;
   }
 
+  private drawPlayerEquipment(ctx: CanvasRenderingContext2D, sprite: PixelSprite, offset: { dx: number; dy: number }, x: number, y: number): void {
+    drawSprite(ctx, sprite, x + offset.dx, y + offset.dy);
+  }
+
   private drawPlayer(ctx: CanvasRenderingContext2D, player: PlayerEntity, left: number, top: number, time: number): void {
     const visual = this.visuals.touch(player.id);
     trackWalking(visual, player.x, player.y);
@@ -358,8 +409,33 @@ export class EntityRenderer {
     this.landMagazine(player, visual);
     const [x, y] = this.playerSpot(player, visual, left, top, time);
     const flashing = time < visual.flashUntil;
-    if (flashing) drawSilhouette(ctx, sprite, x, y);
-    else drawSprite(ctx, sprite, x, y);
+    if (flashing) {
+      drawSilhouette(ctx, sprite, x, y);
+      return;
+    }
+
+    const dir = dirFromAngle(player.angle);
+    const isFacingAway = dir === 5 || dir === 6 || dir === 7;
+    const isAlive = player.status === 'alive';
+
+    const hasBackpack = player.backpackTier !== undefined;
+    const shouldDrawBackpackBehind = isAlive && !isFacingAway && hasBackpack;
+    if (shouldDrawBackpackBehind && player.backpackTier) {
+      this.drawPlayerEquipment(ctx, getBackpackVisualSprite(player.backpackTier), BACKPACK_OFFSETS[dir], x, y);
+    }
+
+    drawSprite(ctx, sprite, x, y);
+
+    const hasArmor = player.armorTier !== undefined;
+    const shouldDrawArmor = isAlive && hasArmor;
+    if (shouldDrawArmor && player.armorTier) {
+      this.drawPlayerEquipment(ctx, getArmorVisualSprite(player.armorTier), ARMOR_OFFSETS[dir], x, y);
+    }
+
+    const shouldDrawBackpackInFront = isAlive && isFacingAway && hasBackpack;
+    if (shouldDrawBackpackInFront && player.backpackTier) {
+      this.drawPlayerEquipment(ctx, getBackpackVisualSprite(player.backpackTier), BACKPACK_OFFSETS[dir], x, y);
+    }
   }
 
   /**
