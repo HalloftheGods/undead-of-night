@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { groundBuildingId, leftoversOf, supplyKindOf } from '../shared/leftovers.ts';
+import { townContainers } from '../shared/containers.ts';
 import { BUILDING_DEFS } from '../shared/protocol.ts';
 import type { BuildingInstance, PickupType, SnapshotPacket } from '../shared/protocol.ts';
 import type { PickupState, SimState } from '../shared/sim-state.ts';
@@ -124,6 +125,57 @@ describe('supplies left behind', () => {
   });
 });
 
+describe('supplies left in searched containers', () => {
+  const item = (type: string, n = 1) => ({ id: `t${n}`, type, x: 0, y: 0, rotated: false });
+  const find = (state: SimState, indoors: boolean) => {
+    const container = townContainers(state.map).find((each) => (each.building !== undefined) === indoors);
+    if (!container) throw new Error('no such container');
+    return container;
+  };
+
+  it('stamps a house whose searched container still holds items, and clears it when the last is taken', () => {
+    const { sim, state } = quietSim();
+    const container = find(state, true);
+    state.containers[container.id] = { opened: true, loot: null, items: [item('plank'), item('canned_food', 2)] };
+    sim.step();
+    const house = state.map.buildings.find((b) => b.id === container.building) as BuildingInstance;
+    expect(sim.snapshot().leftovers).toEqual([{ building: groundBuildingId(house), supplies: { build: 1, food: 1 } }]);
+    state.containers[container.id].items = [item('plank')];
+    sim.step();
+    expect(sim.snapshot().leftovers).toEqual([{ building: groundBuildingId(house), supplies: { build: 1 } }]);
+    state.containers[container.id].items = [];
+    sim.step();
+    expect(sim.snapshot().leftovers).toBeUndefined();
+  });
+
+  it('does not reveal what an unsearched container holds', () => {
+    const { sim, state } = quietSim();
+    const container = find(state, true);
+    state.containers[container.id] = { opened: false, loot: { type: 'medkit', rounds: 0 }, items: [item('medkit')] };
+    sim.step();
+    expect(sim.snapshot().leftovers).toBeUndefined();
+  });
+
+  it('stamps an outdoor container at its own position', () => {
+    const { sim, state } = quietSim();
+    const container = find(state, false);
+    state.containers[container.id] = { opened: true, loot: null, items: [item('bandage')] };
+    sim.step();
+    expect(sim.snapshot().leftovers).toEqual([{ at: { x: Math.round(container.x), y: Math.round(container.y) }, supplies: { med: 1 } }]);
+  });
+
+  it('sorts planks and tools, and food and water, into kinds of their own', () => {
+    for (const type of ['plank', 'nails', 'hammer_tool', 'sheet_curtain', 'crowbar']) expect(supplyKindOf(type)).toBe('build');
+    for (const type of ['canned_food', 'water_bottle']) expect(supplyKindOf(type)).toBe('food');
+  });
+
+  it('passes the packet guard for an outdoor stamp, and not for one with no place', () => {
+    const packet = quietSim().sim.snapshot();
+    expect(isSnapshotPacket({ ...packet, leftovers: [{ at: { x: 10, y: 20 }, supplies: { build: 1 } }] })).toBe(true);
+    expect(isSnapshotPacket({ ...packet, leftovers: [{ at: { x: 'a' }, supplies: { build: 1 } }] })).toBe(false);
+  });
+});
+
 describe('the map marks for supplies left behind', () => {
   beforeAll(() => installFakeBrowser());
 
@@ -147,6 +199,7 @@ describe('the map marks for supplies left behind', () => {
     const leftovers = [
       { building: map.buildings[0].id, supplies: { ammo: 2 }, clue: true },
       { building: 'nope', supplies: { med: 1 } },
+      { at: { x: 100, y: 100 }, supplies: { build: 1, food: 2 } },
     ];
     const clock = { nowMs: 100, openedMs: 0, reducedMotion: false };
     expect(() => view.paint(ctx, [], null, null, [], null, clock, leftovers)).not.toThrow();

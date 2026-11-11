@@ -144,8 +144,10 @@ export function isWelcomePacket(v: unknown): v is WelcomePacket {
 const SUPPLIES: readonly string[] = SUPPLY_KINDS;
 
 function isLeftoverView(v: unknown): v is LeftoverView {
-  const isShaped = isFields(v) && isString(v.building) && isFields(v.supplies);
+  const isShaped = isFields(v) && isFields(v.supplies);
   if (!isShaped) return false;
+  const isPlaceValid = isString(v.building) || (isFields(v.at) && hasNumbers(v.at, ['x', 'y']));
+  if (!isPlaceValid) return false;
   const isClueValid = v.clue === undefined || typeof v.clue === 'boolean';
   return isClueValid && Object.entries(v.supplies as Fields).every(([kind, count]) => SUPPLIES.includes(kind) && isNumber(count));
 }

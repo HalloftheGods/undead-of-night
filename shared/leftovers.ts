@@ -3,39 +3,53 @@
 // map can mark the same houses.
 
 import { AMMO_PICKUPS } from './constants.ts';
-import type { BuildingInstance, PickupType, WorldMap } from './protocol.ts';
+import { townContainers } from './containers.ts';
+import type { ContainerState } from './containers.ts';
+import { FORTIFICATION_TYPES } from './events.ts';
+import type { BuildingInstance, WorldMap } from './protocol.ts';
 import type { PickupState, SimState } from './sim-state.ts';
 import { buildingAt } from './world-query.ts';
 
 /** How the map sorts what was left: the first three are what a player comes back for. */
-export const SUPPLY_KINDS = ['med', 'ammo', 'weapon', 'gear'] as const;
+export const SUPPLY_KINDS = ['med', 'ammo', 'weapon', 'build', 'food', 'gear'] as const;
 export type SupplyKind = (typeof SUPPLY_KINDS)[number];
 
-/** One building with something still in it, and how many of each kind. A kind with none is left off. */
+/**
+ * One place with something still in it, and how many of each kind. A kind with none is left off. A place is a
+ * building, or for a container out in the open (a car, a dumpster) the spot `at` where it stands.
+ */
 export interface LeftoverView {
-  readonly building: string;
+  readonly building?: string;
+  readonly at?: { readonly x: number; readonly y: number };
   readonly supplies: Partial<Record<SupplyKind, number>>;
   readonly clue?: boolean;
 }
 
-const MED_PICKUPS: ReadonlySet<PickupType> = new Set(['bandage', 'medkit', 'disinfectant', 'antibiotics']);
-const WEAPON_PICKUPS: ReadonlySet<PickupType> = new Set(['carbine', 'shotgun', 'knife']);
+const MED_PICKUPS: ReadonlySet<string> = new Set(['bandage', 'medkit', 'disinfectant', 'antibiotics']);
+const WEAPON_PICKUPS: ReadonlySet<string> = new Set(['carbine', 'shotgun', 'knife']);
+const BUILD_PICKUPS: ReadonlySet<string> = new Set(FORTIFICATION_TYPES);
+const FOOD_PICKUPS: ReadonlySet<string> = new Set(['canned_food', 'water_bottle', 'bottle', 'firework', 'fountain']);
 
-export function supplyKindOf(type: PickupType): SupplyKind {
+/** Sorts a pickup or a container find; a name nothing here knows is gear. */
+export function supplyKindOf(type: string): SupplyKind {
+  const isBuild = BUILD_PICKUPS.has(type);
+  if (isBuild) return 'build';
+  const isFood = FOOD_PICKUPS.has(type);
+  if (isFood) return 'food';
   const isMed = MED_PICKUPS.has(type);
   if (isMed) return 'med';
-  const isAmmo = type in AMMO_PICKUPS;
+  const isAmmo = Object.hasOwn(AMMO_PICKUPS, type);
   if (isAmmo) return 'ammo';
   const isWeapon = WEAPON_PICKUPS.has(type);
   return isWeapon ? 'weapon' : 'gear';
 }
 
-/** The town building a floor above or below belongs to, or the building itself. */
+/** The town building a groundId above or below belongs to, or the building itself. */
 export function groundBuildingId(building: BuildingInstance): string {
   return building.of ?? building.id;
 }
 
-/** Notes the building each player stands in, by its ground floor. Cleared with the town. */
+/** Notes the building each player stands in, by its ground groundId. Cleared with the town. */
 export function noteEntered(sim: SimState): void {
   for (const p of sim.players) {
     const isOutside = p.indoors === null || p.status === 'dead';
@@ -48,11 +62,40 @@ export function noteEntered(sim: SimState): void {
 /** Something that rots away, such as a kill drop, is not worth a trip back. */
 const isLasting = (item: PickupState): boolean => item.ttl === null;
 
+/** What each searched container still holds: a building's go on its entry, an open-air one's at its own spot. */
+function containerLeftovers(
+  map: WorldMap,
+  containers: readonly ContainerState[],
+  byBuilding: Map<string, Partial<Record<SupplyKind, number>>>,
+): LeftoverView[] {
+  const outdoors: LeftoverView[] = [];
+  for (const [id, container] of townContainers(map).entries()) {
+    const items = containers[id]?.opened ? containers[id].items ?? [] : [];
+    if (items.length === 0) continue;
+    const supplies: Partial<Record<SupplyKind, number>> = {};
+    for (const item of items) {
+      const kind = supplyKindOf(item.type);
+      supplies[kind] = (supplies[kind] ?? 0) + 1;
+    }
+    const home = container.building ? map.buildings.find((candidate) => candidate.id === container.building) : undefined;
+    if (!home) {
+      outdoors.push({ at: { x: Math.round(container.x), y: Math.round(container.y) }, supplies });
+      continue;
+    }
+    const groundId = groundBuildingId(home);
+    const sum = byBuilding.get(groundId) ?? {};
+    for (const [kind, count] of Object.entries(supplies) as [SupplyKind, number][]) sum[kind] = (sum[kind] ?? 0) + count;
+    byBuilding.set(groundId, sum);
+  }
+  return outdoors;
+}
+
 export function leftoversOf(
   map: WorldMap,
   pickups: readonly PickupState[],
   entered: ReadonlySet<string>,
   clues?: ReadonlySet<string>,
+  containers: readonly ContainerState[] = [],
 ): LeftoverView[] {
   const byBuilding = new Map<string, Partial<Record<SupplyKind, number>>>();
   for (const item of pickups) {
@@ -67,17 +110,19 @@ export function leftoversOf(
     supplies[kind] = (supplies[kind] ?? 0) + 1;
     byBuilding.set(id, supplies);
   }
-  return [...byBuilding].map(([building, supplies]) => ({
+  const outdoors = containerLeftovers(map, containers, byBuilding);
+  const indoors = [...byBuilding].map(([building, supplies]) => ({
     building,
     supplies,
     ...(clues?.has(building) ? { clue: true } : {}),
   }));
+  return [...indoors, ...outdoors];
 }
 
 /** Left off while nothing is left behind, so a snapshot then is what it always was. */
 export function leftoversField(sim: SimState): { leftovers?: LeftoverView[] } {
-  const hasNoVisits = sim.entered.size === 0;
+  const hasNoVisits = sim.entered.size === 0 && !sim.containers.some((state) => state.opened);
   if (hasNoVisits) return {};
-  const leftovers = leftoversOf(sim.map, sim.pickups, sim.entered, sim.clues);
+  const leftovers = leftoversOf(sim.map, sim.pickups, sim.entered, sim.clues, sim.containers);
   return leftovers.length > 0 ? { leftovers } : {};
 }

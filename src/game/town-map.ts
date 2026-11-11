@@ -11,7 +11,7 @@ import { drawCursor } from './map-cursor.ts';
 import { drawZombieBlips, MapFog } from './map-fog.ts';
 import { paintGround, paintScenery } from './map-ground.ts';
 import type { Rgb } from './map-ground.ts';
-import { drawClueCache, drawLeftovers } from './map-leftovers.ts';
+import { drawClueCache, drawLeftovers, drawLeftoversAt } from './map-leftovers.ts';
 import type { CursorClock } from './map-cursor.ts';
 import {
   CROSS_COLOR, DROP_COLOR, DROP_LABEL_RISE, drawDropSprite, drawFireworksBus, drawRadioTowerMarker, drawStation, drawTickMark, drawVan, EXIT_COLOR, TOWER_COLOR, VAN_LABEL_RISE,
@@ -368,11 +368,15 @@ export class TownMapView {
 
   /** Marks every building the team left supplies in, whoever it was that walked out. */
   private drawLeftovers(ctx: CanvasRenderingContext2D, leftovers: readonly LeftoverView[], clock: CursorClock): void {
-    for (const { building: id, supplies, clue } of leftovers) {
-      const building = this.building(id);
+    for (const { building: id, at, supplies, clue } of leftovers) {
+      if (at) {
+        drawLeftoversAt(ctx, Math.round(at.x / this.worldPerPx), Math.round(at.y / this.worldPerPx), supplies);
+        continue;
+      }
+      const building = id === undefined ? undefined : this.building(id);
       if (!building) continue;
       const box = footprint(building);
-      if (clue && !this.isCleared(id)) drawClueCache(ctx, box, clock);
+      if (clue && id !== undefined && !this.isCleared(id)) drawClueCache(ctx, box, clock);
       drawLeftovers(ctx, box, supplies);
     }
   }

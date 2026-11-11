@@ -1,4 +1,4 @@
-// The little marks on a building the team walked out of with supplies still inside: one per kind of thing
+// The little marks on a building the team walked out of with supplies still inside, or at a car or dumpster searched and left: one per kind of thing
 // left, in a row along the building's foot, so a player can see where to go back to.
 
 import { SUPPLY_KINDS } from '../../shared/leftovers.ts';
@@ -20,6 +20,8 @@ export const LEFTOVER_COLOR: Record<SupplyKind, string> = {
   med: '#ff5d73',
   ammo: '#ffe27a',
   weapon: '#d0d4dc',
+  build: '#d9a35f',
+  food: '#7be08a',
   gear: '#c58cff',
 };
 
@@ -28,6 +30,8 @@ const LEFTOVER_LABEL: Record<SupplyKind, string> = {
   med: 'Medical',
   ammo: 'Ammo',
   weapon: 'A weapon',
+  build: 'Planks and tools',
+  food: 'Food and water',
   gear: 'Parts and finds',
 };
 
@@ -39,6 +43,10 @@ const GLYPH_PIXELS: Record<SupplyKind, readonly (readonly [number, number])[]> =
   ammo: [[0, 1], [0, 2], [0, 3], [0, 4], [2, 0], [2, 1], [2, 2], [2, 3], [2, 4], [4, 1], [4, 2], [4, 3], [4, 4]],
   // A pistol side on.
   weapon: [[0, 1], [1, 1], [2, 1], [3, 1], [4, 1], [0, 2], [1, 2], [2, 2], [3, 2], [4, 2], [3, 3], [4, 3], [3, 4], [4, 4]],
+  // A hammer, head across the top.
+  build: [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0], [2, 1], [2, 2], [2, 3], [2, 4]],
+  // A tin can with a rim.
+  food: [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0], [0, 2], [1, 2], [2, 2], [3, 2], [4, 2], [0, 4], [1, 4], [2, 4], [3, 4], [4, 4]],
   // A diamond, for parts, kits and anything else worth having.
   gear: [[2, 0], [1, 1], [2, 1], [3, 1], [0, 2], [1, 2], [2, 2], [3, 2], [4, 2], [1, 3], [2, 3], [3, 3], [2, 4]],
 };
@@ -57,6 +65,15 @@ export function drawLeftovers(
   const top = box.y1 - INSET - GLYPH;
   leftoverKinds(supplies).forEach((kind, index) => {
     paintMark(ctx, box.x0 + INSET + index * STEP, top, kind);
+  });
+}
+
+/** Draws the same row of marks centred on a spot, for a container standing out in the open. */
+export function drawLeftoversAt(ctx: CanvasRenderingContext2D, x: number, y: number, supplies: Partial<Record<SupplyKind, number>>): void {
+  const kinds = leftoverKinds(supplies);
+  const left = x - Math.floor((kinds.length * STEP - 1) / 2);
+  kinds.forEach((kind, index) => {
+    paintMark(ctx, left + index * STEP, y - Math.floor(GLYPH / 2), kind);
   });
 }
 
