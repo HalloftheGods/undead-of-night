@@ -204,6 +204,11 @@ const ITEMS: Record<PickupType, ItemSpec> = {
   ...KIT_ART,
   jewel_small: { rows: JEWEL_SMALL, glint: [1, 1] },
   jewel_large: { rows: JEWEL_LARGE, glint: [3, 1] },
+  // Stand-ins drawn as the kit each makes, until salvage gets its own bob clips (#7242).
+  fuel_can: KIT_ART.incendiary_kit,
+  car_battery: KIT_ART.acid_kit,
+  scrap_steel: KIT_ART.piercing_kit,
+  sedatives: KIT_ART.tranq_kit,
 };
 
 function frame({ rows, glint, legend }: ItemSpec, index: number): PixelCanvas {

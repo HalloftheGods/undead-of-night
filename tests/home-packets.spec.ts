@@ -126,6 +126,16 @@ describe('home guards', () => {
     expect(isTripReceipt({ ...receipt, difficulty: 'nightmare fuel' })).toBe(false);
   });
 
+  it('reads a view and a receipt with or without salvage, and refuses a short count', () => {
+    const salvage = { fuel_can: 1, car_battery: 0, scrap_steel: 2, sedatives: 0 };
+    expect(isHomeView({ ...view, salvage })).toBe(true);
+    expect(isTripReceipt({ ...receipt, salvage })).toBe(true);
+    expect(isHomeView(view)).toBe(true);
+    expect(isTripReceipt(receipt)).toBe(true);
+    expect(isHomeView({ ...view, salvage: { fuel_can: 1 } })).toBe(false);
+    expect(isTripReceipt({ ...receipt, salvage: { ...salvage, sedatives: 'two' } })).toBe(false);
+  });
+
   it('checks a loadout gun by gun', () => {
     expect(isLoadout(emptyLoadout())).toBe(true);
     expect(isLoadout({ ...emptyLoadout(), guns: { pistol: {} } })).toBe(true);

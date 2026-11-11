@@ -3,14 +3,15 @@
 // aura, the haze add-back, and shadows blended the engine's way); the client's renderer is the real one,
 // and lamp pools and the beam here are still hand-placed guesses.
 
+import { PLAYER_RADIUS, ZOMBIES as ZOMBIE_STATS } from '../shared/constants.ts';
 import { TILE_SIZE } from '../shared/protocol.ts';
 import type { BuildingKind, PropKind, TileKind, WeaponId, ZombieType } from '../shared/protocol.ts';
 import type { ArtBook, PixelSprite } from '../src/art/types.ts';
 import { NIGHT_AMBIENT } from '../src/engine/lighting.ts';
 import { drawSprite, Sheet } from './sheet.ts';
 
-/** The engine's shadow: rgba(4, 5, 10, 0.42), see SHADOW_ALPHA in src/engine/entity-renderer.ts. */
-const SHADOW_ALPHA = 0.42;
+/** The engine's shadow: rgba(4, 5, 10, 0.6), see SHADOW_ALPHA in src/engine/entity-renderer.ts. */
+const SHADOW_ALPHA = 0.6;
 const SHADOW_RGB = [4, 5, 10] as const;
 /** The engine's HAZE in src/engine/lighting.ts: the light itself added back at this strength. */
 const HAZE = 0.11;
@@ -65,7 +66,10 @@ const ZOMBIES: readonly (readonly [ZombieType, number, number, number])[] = [
 
 interface Actor {
   readonly y: number;
+  /** Shadow width in pixels, 0 for none; sized like the engine's drawShadow calls. */
   readonly shadow: number;
+  /** Rows the shadow sits below the anchor (a zombie's footDrop). */
+  readonly shadowDrop: number;
   readonly sprite: PixelSprite;
   readonly x: number;
 }
@@ -82,27 +86,31 @@ function blend(sheet: Sheet, x: number, y: number, rgb: readonly number[], alpha
   for (let c = 0; c < 3; c++) sheet.data[i + c] = sheet.data[i + c] * (1 - alpha) + rgb[c] * alpha;
 }
 
-function groundShadow(sheet: Sheet, x: number, y: number, rx: number): void {
-  const ry = Math.max(2, rx * 0.4);
-  for (let j = -ry; j <= ry; j++) {
-    for (let i = -rx; i <= rx; i++) {
-      const insideShadow = (i * i) / (rx * rx) + (j * j) / (ry * ry) <= 1;
-      if (insideShadow) blend(sheet, Math.round(x + i), Math.round(y + j), SHADOW_RGB, SHADOW_ALPHA);
-    }
+/** The engine's shadowSprite rows, centred on (x, y) the way its drawShadow places them. */
+function groundShadow(sheet: Sheet, x: number, y: number, width: number): void {
+  const height = Math.max(3, Math.round(width * 0.42));
+  const left = x - Math.round(width / 2);
+  const top = y - Math.round(height / 2);
+  for (let row = 0; row < height; row++) {
+    const ny = ((row + 0.5) / height) * 2 - 1;
+    const half = Math.round((width / 2) * Math.sqrt(1 - ny * ny));
+    const start = Math.round(width / 2) - half;
+    for (let i = 0; i < half * 2; i++) blend(sheet, left + start + i, top + row, SHADOW_RGB, SHADOW_ALPHA);
   }
 }
 
 function buildActors(book: ArtBook): Actor[] {
-  const buildings = BUILDINGS.map(([kind, variant, x, y]) => ({ x, y, sprite: book.environment.buildings[kind][variant], shadow: 0 }));
-  const props = PROPS.map(([kind, x, y]) => ({ x, y, sprite: book.environment.props[kind], shadow: 0 }));
+  const buildings = BUILDINGS.map(([kind, variant, x, y]) => ({ x, y, sprite: book.environment.buildings[kind][variant], shadow: 0, shadowDrop: 0 }));
+  const props = PROPS.map(([kind, x, y]) => ({ x, y, sprite: book.environment.props[kind], shadow: 0, shadowDrop: 0 }));
   const survivors = SURVIVORS.map(([skin, weapon, dir, x, y]) => ({
-    x, y, shadow: 7, sprite: book.survivors[skin].weapons[weapon].walk[dir].frames[0],
+    x, y, shadow: PLAYER_RADIUS * 2 + 2, shadowDrop: 0, sprite: book.survivors[skin].weapons[weapon].walk[dir].frames[0],
   }));
   const zombies = ZOMBIES.map(([type, dir, x, y]) => ({
-    x, y, shadow: type === 'brute' ? 11 : 7, sprite: book.zombies[type].walk[dir].frames[0],
+    x, y, shadow: ZOMBIE_STATS[type].radius * 2 + 2, shadowDrop: book.zombies[type].footDrop ?? 0,
+    sprite: book.zombies[type].walk[dir].frames[0],
   }));
   const flames = PROPS.filter(([kind]) => kind === 'fire_barrel').map(([, x, y]) => ({
-    x, y: y + 1, shadow: 0, sprite: book.environment.barrelFire.frames[0],
+    x, y: y + 1, shadow: 0, shadowDrop: 0, sprite: book.environment.barrelFire.frames[0],
   }));
   return [...buildings, ...props, ...survivors, ...zombies, ...flames].sort((a, b) => a.y - b.y);
 }
@@ -180,11 +188,12 @@ export function renderScene(book: ArtBook, scale: number, night: boolean): Sheet
   const pickups = Object.values(book.pickups);
   pickups.forEach((clip, i) => place(scene, clip.frames[0], 130 + i * 30, 234));
   const actors = buildActors(book);
+  // Shadows first, like the engine's pre-pass, so no figure is darkened by a neighbour's shadow.
   for (const actor of actors) {
     const castsShadow = actor.shadow > 0;
-    if (castsShadow) groundShadow(scene, actor.x, actor.y, actor.shadow);
-    place(scene, actor.sprite, actor.x, actor.y);
+    if (castsShadow) groundShadow(scene, actor.x, actor.y + actor.shadowDrop, actor.shadow);
   }
+  for (const actor of actors) place(scene, actor.sprite, actor.x, actor.y);
   if (night) nightPass(scene);
   return scene.scaled(scale);
 }

@@ -2,9 +2,11 @@ import { characterOf } from './characters.ts';
 import { rollFind } from './container-loot.ts';
 import { containerInReach, SEARCH_SEC, townContainers } from './containers.ts';
 import type { Container, ContainerLoot } from './containers.ts';
+import type { PickupType } from './protocol.ts';
 import { TICK_DT } from './constants.ts';
 import { isBunkerMap } from './home-protocol.ts';
 import { spawnPickup } from './pickups.ts';
+import { isSalvagePickup } from './salvage-data.ts';
 import { isTreasurePickup } from './treasure.ts';
 import type { PlayerState, SimState } from './sim-state.ts';
 import { emit } from './sim-state.ts';
@@ -35,8 +37,11 @@ function startSearch(sim: SimState, p: PlayerState): void {
   p.searchLeft = SEARCH_SEC[target.kind] * stickyScale;
 }
 
+/** Treasure and salvage: put away for the trip home, and searched for as if the container were empty. */
+export const isHomeFind = (type: PickupType): boolean => isTreasurePickup(type) || isSalvagePickup(type);
+
 interface Finds {
-  /** Treasure put away here. It takes the place of nothing: a search of it still rolls for luck and for a bottle. */
+  /** Treasure or salvage put away here. It takes the place of nothing: a search of it still rolls for luck and for a bottle. */
   readonly treasure: ContainerLoot | null;
   /** What was put away here or, rolled now so every client agrees, what a lucky searcher turns up anyway. */
   readonly ordinary: ContainerLoot | null;
@@ -62,7 +67,7 @@ function scroungeBoxAmmo(sim: SimState, p: PlayerState, container: Container): C
 
 function findIn(sim: SimState, p: PlayerState, id: number): Finds {
   const { loot } = sim.containers[id];
-  const treasure = loot !== null && isTreasurePickup(loot.type) ? loot : null;
+  const treasure = loot !== null && isHomeFind(loot.type) ? loot : null;
   const stored = treasure ? null : loot;
   const luck = characterOf(p.skin).searchLuck + (hasKeepsake(p, 'rabbit_foot') ? RABBIT_LUCK : 0);
   // A candy bowl holds candy and nothing else, however lucky the hand in it.

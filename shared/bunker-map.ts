@@ -54,6 +54,7 @@ const STATION_PROPS: Record<StationId, PropKind> = {
   medic: 'medic',
   powder: 'powder',
   chest: 'chest',
+  press: 'press',
 };
 
 /** The overrun's door, in the hall's west wall (tile column 0, rows 4 to 6), as far from the garage as the hall goes. */
@@ -75,6 +76,8 @@ const STATION_PLACES: Record<StationId, { x: number; y: number }> = {
   medic: { x: 272, y: 40 },
   powder: { x: 368, y: 40 },
   chest: CHEST_SPOT,
+  /** In the Workshop, south of the forge. */
+  press: { x: 144, y: 304 },
 };
 
 /** Customers stand this far below the bottom edge of what they are served from. */
@@ -85,8 +88,12 @@ const LAMP_RADIUS = 200;
 const EXIT_SPOT = { x: 560, y: 350 };
 const SPAWN_SPOT = { x: 304, y: 280 };
 
-/** The chest stands only while a player's chest is unopened, so the map leaves it out and the overrun puts it in reach. The merchants walk, so their circles go with them. */
-const isStanding = (id: StationId): boolean => id !== 'chest' && !isMerchantId(id);
+/**
+ * The chest stands only while a player's chest is unopened, so the map leaves it out and the overrun puts it in reach.
+ * The press stays off the map until its screen is built (#7244 lands it last). The merchants walk, so their circles go with them.
+ */
+const UNBUILT: ReadonlySet<StationId> = new Set<StationId>(['chest', 'press']);
+const isStanding = (id: StationId): boolean => !UNBUILT.has(id) && !isMerchantId(id);
 const STANDING_IDS = STATION_IDS.filter(isStanding);
 
 const centreOf = (room: Room): { x: number; y: number } => ({

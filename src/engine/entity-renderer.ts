@@ -15,6 +15,7 @@ import type {
 } from '../../shared/protocol.ts';
 import type { MerchantEntity } from '../../shared/home-protocol.ts';
 import { containerLook } from '../art/containers.ts';
+import { magLanding } from '../art/survivors/clips.ts';
 import { drawMerchant, MERCHANT_SHADOW_WIDTH } from './merchant-figures.ts';
 import { beaconsOn, drawBeacons, paintedContainer, propSprite } from './car-looks.ts';
 import type { Beacon } from './car-looks.ts';
@@ -354,10 +355,23 @@ export class EntityRenderer {
     const sprite = this.survivorFrames.frame(player, visual, time);
     visual.sprite = sprite;
     visual.gunDrop = this.art.survivors[player.skin % this.art.survivors.length].gunDrop;
+    this.landMagazine(player, visual);
     const [x, y] = this.playerSpot(player, visual, left, top, time);
     const flashing = time < visual.flashUntil;
     if (flashing) drawSilhouette(ctx, sprite, x, y);
     else drawSprite(ctx, sprite, x, y);
+  }
+
+  /**
+   * The reload frame that stops drawing the falling magazine: stamp it into the ground where
+   * it fell, like a spent casing, so it stays put when the survivor walks or stops reloading.
+   */
+  private landMagazine(player: PlayerEntity, visual: EntityVisual): void {
+    const was = visual.reloadSeen;
+    visual.reloadSeen = player.reload;
+    const landing = magLanding(player.weapon, dirFromAngle(player.angle));
+    const lands = landing !== null && was < landing.at && player.reload >= landing.at;
+    if (lands) this.stamp(this.art.fx.droppedMag, Math.round(player.x) + landing.dx, Math.round(player.y) + landing.dy);
   }
 
   /** Where a survivor stands on screen, lurched along the aim during a shove. */

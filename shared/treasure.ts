@@ -8,6 +8,7 @@ import type { Jewels } from './home-protocol.ts';
 import { FINAL_LEVEL, FIRST_LEVEL } from './levels.ts';
 import type { PickupType } from './protocol.ts';
 import { createRng, shuffle } from './rng.ts';
+import { dropSalvage } from './salvage.ts';
 import type { PickupState, PlayerState, SimState } from './sim-state.ts';
 
 const SILVER_PER_GOLD = 100;
@@ -116,7 +117,7 @@ export function takeTreasure(p: PlayerState, item: PickupState): boolean {
 }
 
 /**
- * Every jewel carried falls where they stood, and everything carried is written down in `p.home.lost`. Runs on every death.
+ * Every jewel carried falls where they stood, salvage as one bundle per kind, and everything carried is written down in `p.home.lost`. Runs on every death.
  * Towns hold no coin, so `home.silver` stays 0 on a trip; the receipt keeps the slot, and anything in it is lost, not dropped.
  */
 export function dropCarried(sim: SimState, p: PlayerState): void {
@@ -126,7 +127,8 @@ export function dropCarried(sim: SimState, p: PlayerState): void {
   const { silver, jewels } = home;
   for (let n = 0; n < jewels.small; n++) spawnTreasure(sim, 'jewel_small', p.x, p.y, SMALL_JEWEL_SILVER);
   for (let n = 0; n < jewels.large; n++) spawnTreasure(sim, 'jewel_large', p.x, p.y, LARGE_JEWEL_SILVER);
-  home.lost = { silver: home.lost.silver + silver, jewels: { small: home.lost.jewels.small + jewels.small, large: home.lost.jewels.large + jewels.large } };
+  home.lost = { ...home.lost, silver: home.lost.silver + silver, jewels: { small: home.lost.jewels.small + jewels.small, large: home.lost.jewels.large + jewels.large } };
   home.silver = 0;
   home.jewels = { small: 0, large: 0 };
+  dropSalvage(sim, p);
 }

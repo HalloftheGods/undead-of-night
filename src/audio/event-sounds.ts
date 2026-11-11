@@ -20,6 +20,8 @@ export const PICKUP_SFX: Record<PickupType, SfxName> = {
   incendiary_kit: 'pickup_part', acid_kit: 'pickup_part', piercing_kit: 'pickup_part', tranq_kit: 'pickup_part',
   jewel_small: 'pickup_jewel', jewel_large: 'pickup_jewel_large',
   canned_food: 'pickup_medkit', water_bottle: 'pickup_bandage', disinfectant: 'pickup_medkit', antibiotics: 'pickup_bandage',
+  // Stand-ins until salvage gets its own sounds (#7242).
+  fuel_can: 'pickup_part', car_battery: 'pickup_part', scrap_steel: 'pickup_part', sedatives: 'pickup_part',
 };
 /** Each boss's trick has its own call, so a player hears which one is coming. */
 const BOSS_TRICK: Record<BossId, SfxName> = { howler: 'boss_howl', mother: 'boss_brood', butcher: 'boss_charge' };
