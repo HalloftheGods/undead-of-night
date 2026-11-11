@@ -40,13 +40,14 @@ const height = computed(() => footprint.value.height);
   min-width: 100%;
   display: flex;
   align-items: center;
-  gap: calc(var(--ap) * 2);
-  height: calc(var(--ap) * 20);
+  gap: max(calc(var(--u) * 2), calc(var(--ap) * 2));
+  min-height: max(calc(var(--u) * 16), calc(var(--ap) * 20));
+  height: auto;
   flex: 0 0 auto;
   background: rgba(11, 12, 16, 0.9);
   box-shadow: 0 0 0 var(--ap) var(--ink-line);
-  padding: var(--ap) calc(var(--ap) * 2);
-  font-size: calc(var(--m) * 2.4);
+  padding: max(calc(var(--u) * 1.5), var(--ap)) max(calc(var(--u) * 2.5), calc(var(--ap) * 2));
+  font-size: max(calc(var(--u) * 5.5), calc(var(--m) * 2.8));
   color: var(--bone-dim);
   box-sizing: border-box;
   overflow: hidden;
@@ -54,6 +55,6 @@ const height = computed(() => footprint.value.height);
 .held-panel.is-holding { box-shadow: 0 0 0 var(--ap) var(--amber); background: var(--ink-raised); color: var(--bone); }
 .held-icon { width: calc(var(--ap) * 14); height: calc(var(--ap) * 14); flex: 0 0 auto; }
 .held-text { display: flex; flex-direction: column; gap: var(--ap); min-width: 0; }
-.held-hint { font-size: calc(var(--m) * 2); color: var(--bone-dim); }
-.held-empty { font-size: calc(var(--m) * 2); }
+.held-hint { font-size: max(calc(var(--u) * 5), calc(var(--m) * 2.5)); color: var(--bone-dim); }
+.held-empty { font-size: max(calc(var(--u) * 5.5), calc(var(--m) * 2.8)); }
 </style>

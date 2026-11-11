@@ -130,31 +130,32 @@
 
 .dock-title-group {
   display: flex;
-  align-items: center;
-  gap: calc(var(--ap) * 2);
+  align-items: baseline;
+  gap: max(calc(var(--u) * 2), calc(var(--ap) * 2));
   min-width: 0;
+  flex-wrap: wrap;
 }
 
 .dock-title {
   margin: 0;
-  font-size: calc(var(--m) * 3.2);
+  font-size: max(calc(var(--u) * 7.5), calc(var(--m) * 3.8));
   color: var(--amber);
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   white-space: nowrap;
 }
 
 .dock-capacity {
-  font-size: calc(var(--m) * 2);
+  font-size: max(calc(var(--u) * 5.5), calc(var(--m) * 2.8));
   color: var(--bone-dim);
   white-space: nowrap;
 }
 
 .backpack-tier-badge {
-  font-size: calc(var(--m) * 2);
+  font-size: max(calc(var(--u) * 5.5), calc(var(--m) * 2.8));
   background: var(--ink-raised);
   color: var(--sick);
   box-shadow: 0 0 0 var(--ap) var(--ink-line);
-  padding: var(--ap) calc(var(--ap) * 1.5);
+  padding: max(2px, var(--ap)) max(5px, calc(var(--ap) * 1.5));
   font-weight: 700;
   white-space: nowrap;
 }
@@ -162,7 +163,7 @@
 .header-actions {
   display: flex;
   align-items: center;
-  gap: calc(var(--ap) * 2);
+  gap: max(calc(var(--u) * 2), calc(var(--ap) * 2));
   flex-shrink: 0;
 }
 
@@ -175,10 +176,10 @@
   box-shadow:
     0 0 0 var(--ap) var(--edge),
     0 calc(var(--ap) * 2) 0 var(--ap) var(--ink-line);
-  padding: calc(var(--ap) * 1.2) calc(var(--ap) * 2.5);
+  padding: max(calc(var(--u) * 2), calc(var(--ap) * 1.2)) max(calc(var(--u) * 3), calc(var(--ap) * 2.5));
   cursor: pointer;
   font-family: inherit;
-  font-size: calc(var(--m) * 2.4);
+  font-size: max(calc(var(--u) * 6), calc(var(--m) * 3));
   font-weight: 700;
   white-space: nowrap;
 }
@@ -237,7 +238,7 @@
 /* A slot is a shallow pit: shadow along the top and left, a lit lip along the bottom and right. */
 .gear-slots-row {
   display: grid;
-  grid-template-columns: repeat(4, calc(var(--ap) * 32));
+  grid-template-columns: repeat(4, max(calc(var(--u) * 34), calc(var(--ap) * 32)));
   gap: calc(var(--ap) * 2);
 }
 .gear-slot {
@@ -251,7 +252,7 @@
   flex-direction: column;
   gap: var(--ap);
   cursor: pointer;
-  min-height: calc(var(--ap) * 40);
+  min-height: max(calc(var(--u) * 36), calc(var(--ap) * 40));
   box-sizing: border-box;
 }
 .gear-slot.is-occupied {
@@ -261,14 +262,22 @@
     0 0 0 var(--ap) var(--bone-dim);
 }
 .gear-slot-tag {
-  font-size: calc(var(--m) * 2.8);
+  font-size: max(calc(var(--u) * 5.5), calc(var(--m) * 2.8));
   line-height: 1.25;
   color: var(--bone-dim);
   font-weight: 700;
   overflow-wrap: anywhere;
 }
 .gear-item-card { flex: 1 1 auto; display: grid; place-items: center; }
-.gear-empty-slot { font-size: calc(var(--m) * 2.6); line-height: 1.25; color: var(--bone-dim); margin: auto 0; text-align: center; overflow-wrap: anywhere; }
+.gear-empty-slot {
+  font-size: max(calc(var(--u) * 5), calc(var(--m) * 2.6));
+  line-height: 1.25;
+  color: var(--bone-dim);
+  margin: auto 0;
+  text-align: center;
+  overflow-wrap: anywhere;
+  letter-spacing: -0.2px;
+}
 
 /* The pack with the pockets under it, and the candy bag standing two wide down the side of both. */
 .player-grids-column {
@@ -294,7 +303,7 @@
 }
 .sub-section-title {
   margin: 0;
-  font-size: calc(var(--m) * 2.8);
+  font-size: max(calc(var(--u) * 6), calc(var(--m) * 3.2));
   color: var(--bone-dim);
   white-space: nowrap;
 }
@@ -368,7 +377,7 @@
   flex-shrink: 0;
 }
 .footer-tip {
-  font-size: calc(var(--m) * 2.6);
+  font-size: max(calc(var(--u) * 5.5), calc(var(--m) * 2.8));
   color: var(--bone-dim);
   overflow-wrap: anywhere;
 }
@@ -401,16 +410,16 @@
     height: auto;
   }
   .dock-title {
-    font-size: calc(var(--m) * 2.8);
+    font-size: max(calc(var(--u) * 7), calc(var(--m) * 3.4));
   }
   .backpack-tier-badge {
-    font-size: calc(var(--m) * 1.8);
+    font-size: max(calc(var(--u) * 5), calc(var(--m) * 2.5));
   }
   .action-btn {
-    padding: calc(var(--ap) * 1) calc(var(--ap) * 2);
-    font-size: calc(var(--m) * 2);
+    padding: max(calc(var(--u) * 1.5), calc(var(--ap) * 1)) max(calc(var(--u) * 2.5), calc(var(--ap) * 2));
+    font-size: max(calc(var(--u) * 5.5), calc(var(--m) * 2.8));
   }
   .footer-tip {
-    font-size: calc(var(--m) * 1.8);
+    font-size: max(calc(var(--u) * 5), calc(var(--m) * 2.5));
   }
 }

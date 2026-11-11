@@ -56,7 +56,7 @@ const badge = computed(() => lootBadge(count, ammo));
 }
 
 .loot-art-name {
-  font-size: calc(var(--m) * 2.2);
+  font-size: max(calc(var(--u) * 5), calc(var(--m) * 2.5));
   color: var(--bone);
   text-align: center;
   line-height: 1.1;
@@ -67,7 +67,7 @@ const badge = computed(() => lootBadge(count, ammo));
   position: absolute;
   right: var(--ap);
   bottom: 0;
-  font-size: calc(var(--m) * 2.4);
+  font-size: max(calc(var(--u) * 5.5), calc(var(--m) * 2.8));
   font-weight: 700;
   color: var(--bone);
   text-shadow: var(--ap) 0 0 var(--ink), calc(var(--ap) * -1) 0 0 var(--ink), 0 var(--ap) 0 var(--ink), 0 calc(var(--ap) * -1) 0 var(--ink);
