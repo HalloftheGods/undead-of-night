@@ -197,6 +197,7 @@ const props = withDefaults(defineProps<DualLootModalProps>(), {
   backpackTier: 'satchel',
   equippedPrimary: null,
   equippedSecondary: null,
+  equippedSidearm: null,
   equippedArmor: null,
 });
 
@@ -211,6 +212,7 @@ const modalState = reactive(
     pocketsGrid: props.pocketsGrid,
     primary: props.equippedPrimary,
     secondary: props.equippedSecondary,
+    sidearm: props.equippedSidearm,
     armor: props.equippedArmor,
   })
 );
@@ -222,7 +224,8 @@ const hoveredGearSlot = ref<GearSlotId | null>(null);
 
 const gearSlotDefs: { id: GearSlotId; label: string; emptyLabel: string }[] = [
   { id: 'primary', label: 'PRIMARY WEAPON', emptyLabel: '[EMPTY PRIMARY]' },
-  { id: 'secondary', label: 'SECONDARY WEAPON', emptyLabel: '[EMPTY SIDEARM]' },
+  { id: 'secondary', label: 'SECONDARY WEAPON', emptyLabel: '[EMPTY SECONDARY]' },
+  { id: 'sidearm', label: 'SIDEARM', emptyLabel: '[EMPTY SIDEARM]' },
   { id: 'armor', label: 'ARMOR VEST', emptyLabel: '[EMPTY VEST]' },
 ];
 
@@ -259,6 +262,8 @@ const totalPlayerItemsCount = computed(() => {
   if (hasPrimary) count += 1;
   const hasSecondary = modalState.gear.secondary !== null;
   if (hasSecondary) count += 1;
+  const hasSidearm = modalState.gear.sidearm !== null;
+  if (hasSidearm) count += 1;
   const hasArmor = modalState.gear.armor !== null;
   if (hasArmor) count += 1;
   return count;
@@ -344,6 +349,8 @@ function syncGearEmits(slotId: GearSlotId): void {
   if (isPrimary) emit('update:equippedPrimary', modalState.gear.primary);
   const isSecondary = slotId === 'secondary';
   if (isSecondary) emit('update:equippedSecondary', modalState.gear.secondary);
+  const isSidearm = slotId === 'sidearm';
+  if (isSidearm) emit('update:equippedSidearm', modalState.gear.sidearm);
   const isArmor = slotId === 'armor';
   if (isArmor) emit('update:equippedArmor', modalState.gear.armor);
 }
@@ -469,7 +476,12 @@ onMounted(() => {
 });
 
 /** Esc from outside: put a held item back first, and close on the next press. */
-defineExpose({ escape: onEscape, rotate: onRotateClick });
+/** Puts a held item back where it came from, so the grids are whole when the bag is read on close. */
+function settle(): void {
+  if (modalState.heldItem !== null) returnHeldItemToSource(modalState);
+}
+
+defineExpose({ escape: onEscape, rotate: onRotateClick, settle });
 
 onUnmounted(() => {
   const isWindowDefined = typeof window !== 'undefined';

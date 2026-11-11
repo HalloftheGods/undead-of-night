@@ -11,7 +11,7 @@ import type { BenchAction } from '../../shared/workbench.ts';
 import { TickClock } from './tick-clock.ts';
 import type { ConnectOptions, GameTransport } from './transport.ts';
 
-const LOCAL_PLAYER_ID = 'local';
+export const LOCAL_PLAYER_ID = 'local';
 
 /** Solo play: the same simulation the server runs, stepped in the browser. */
 export class LocalSession implements GameTransport {

@@ -20,14 +20,19 @@
           @action="game.pickFromBackpack($event)"
           @inventory="openInventory"
         />
-        <!-- The grid inventory: I on a desktop, the Grid button on the backpack ring on a phone. Local only. -->
+        <!-- The grid inventory: I on a desktop, the Grid button on the backpack ring on a phone. Edits a copy; closing sends one commit. -->
         <DualLootModal
-          v-if="inventory.isOpen.value && inventory.pack.value"
+          v-if="inventory.isOpen.value && inventory.working.value"
           :key="inventory.openings.value"
           ref="inventoryPanel"
           container-title="Nearby"
-          :backpack-tier="inventory.pack.value.tier"
-          :backpack-grid="inventory.pack.value.grid"
+          :backpack-tier="inventory.working.value.tier"
+          :backpack-grid="inventory.working.value.pack"
+          :pockets-grid="inventory.working.value.pockets"
+          :container-grid="inventory.working.value.container"
+          :equipped-primary="inventory.working.value.gear.primary"
+          :equipped-secondary="inventory.working.value.gear.secondary"
+          :equipped-sidearm="inventory.working.value.gear.sidearm"
           @close="inventory.hide()"
         />
         <EmoteWheel :art="ui.art" :enabled="emotesOn" />
@@ -118,6 +123,7 @@ import { privacyOpen, startAnalytics } from './game/analytics/index.ts';
 import { GameController } from './game/game-controller.ts';
 import { aimsCursor } from './game/home-screens.ts';
 import { useInventoryModal, type InventoryPanel } from './game/inventory-modal.ts';
+import { LOCAL_PLAYER_ID } from './network/local-session.ts';
 import { shouldShowSplash } from './game/studio-splash.ts';
 
 const game = new GameController();
@@ -126,7 +132,7 @@ const splashing = ref(shouldShowSplash(window.location.search));
 const canvasRef = useTemplateRef<HTMLCanvasElement>('canvasRef');
 const pausedBook = ref<TitlePage | null>(null);
 const inventoryPanel = useTemplateRef<InventoryPanel>('inventoryPanel');
-const inventory = useInventoryModal(ui, game.input, inventoryPanel);
+const inventory = useInventoryModal(ui, game.input, inventoryPanel, (commit) => game.sim?.bagCommand(LOCAL_PLAYER_ID, commit));
 
 function openInventory(): void {
   game.closeBackpack();

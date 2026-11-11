@@ -1,9 +1,13 @@
-import { computed, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch, type Ref } from 'vue';
+import type { BagCommit } from '../../shared/bag.ts';
 import { loadKeyBindings } from './controls-prefs.ts';
-import { carriedPack, type CarriedPack } from './carried-pack.ts';
 import { aimsCursor } from './home-screens.ts';
 import type { UiState } from './hud-state.ts';
 import type { InputManager } from './input-manager.ts';
+import { LocalBag, type BagWorking } from './local-bag.ts';
+
+/** How often a shut bag checks itself against the host's hash. */
+const HEAL_CHECK_MS = 500;
 
 /** The grid inventory opens on I. Tab is the map's, so I is the free key (`DEFAULT_KEY_BINDINGS`). */
 export const INVENTORY_CODE = 'KeyI';
@@ -12,6 +16,8 @@ export const INVENTORY_CODE = 'KeyI';
 export interface InventoryPanel {
   escape: () => void;
   rotate: () => void;
+  /** Puts back what is being held, so the grids are whole. */
+  settle: () => void;
 }
 
 type Held = Pick<InputManager, 'setEnabled' | 'letGoButtons'>;
@@ -46,12 +52,13 @@ export function inventoryReachable(ui: UiState): boolean {
 
 /**
  * The grid inventory over a live run. Opening takes the player's hands off the game (the same
- * `setEnabled` the pause menu uses); closing gives them back only if nothing else has them. It is
- * local only: what is moved in the modal never leaves this client.
+ * `setEnabled` the pause menu uses); closing gives them back only if nothing else has them. Moves in
+ * the modal edit a working copy and send nothing; closing sends one commit if anything changed.
  */
-export function useInventoryModal(ui: Ref<UiState>, input: Held, panel: Ref<InventoryPanel | null>) {
+export function useInventoryModal(ui: Ref<UiState>, input: Held, panel: Ref<InventoryPanel | null>, send: (commit: BagCommit) => void) {
   const isOpen = ref(false);
-  const pack = ref<CarriedPack | null>(null);
+  const bag = new LocalBag(send);
+  const working = shallowRef<BagWorking | null>(null);
   /** Changes on every opening, so the modal rebuilds from what is carried then. */
   const openings = ref(0);
 
@@ -59,7 +66,8 @@ export function useInventoryModal(ui: Ref<UiState>, input: Held, panel: Ref<Inve
     const hud = ui.value.hud;
     const canShow = inventoryReachable(ui.value) && hud !== null;
     if (!canShow) return false;
-    pack.value = carriedPack(hud);
+    bag.sync(hud);
+    working.value = bag.open(hud);
     openings.value += 1;
     input.letGoButtons();
     input.setEnabled(false);
@@ -69,8 +77,10 @@ export function useInventoryModal(ui: Ref<UiState>, input: Held, panel: Ref<Inve
 
   function hide(): void {
     if (!isOpen.value) return;
+    panel.value?.settle();
+    if (working.value) bag.close(working.value);
     isOpen.value = false;
-    pack.value = null;
+    working.value = null;
     if (inventoryReachable(ui.value)) input.setEnabled(true);
   }
 
@@ -104,12 +114,20 @@ export function useInventoryModal(ui: Ref<UiState>, input: Held, panel: Ref<Inve
     if (gone) hide();
   });
 
+  /** What is carried drives the local bag with every snapshot, as it drives the host's. */
+  watch(() => ui.value.hud, (hud) => {
+    if (hud) bag.sync(hud);
+    else bag.reset();
+  }, { immediate: true });
+  const healTimer = setInterval(() => bag.heal(), HEAL_CHECK_MS);
+
   /** Capture, so the press lands before the game's own listener on the same window. */
   onMounted(() => window.addEventListener('keydown', onKey, true));
   onBeforeUnmount(() => {
     window.removeEventListener('keydown', onKey, true);
+    clearInterval(healTimer);
     if (isOpen.value) input.setEnabled(true);
   });
 
-  return { isOpen, pack, openings, show, hide };
+  return { isOpen, working, openings, show, hide };
 }

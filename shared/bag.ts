@@ -190,13 +190,19 @@ export function retierBag(bag: PlayerBag, tier: BackpackTier | undefined): GridI
   return evicted;
 }
 
+/** Code-point order, never a locale's, so both sides sort the same. */
+function byId(a: { id: string }, b: { id: string }): number {
+  if (a.id === b.id) return 0;
+  return a.id < b.id ? -1 : 1;
+}
+
 /** The pack and pockets as one list of rows, by id. */
 export function bagLayout(bag: PlayerBag): BagLayoutRow[] {
   const rows: BagLayoutRow[] = [];
   for (const [name, grid] of [['pack', bag.pack], ['pockets', bag.pockets]] as const) {
     for (const item of grid.items) rows.push({ id: item.id, grid: name, x: item.x, y: item.y, rotated: item.rotated });
   }
-  return rows.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  return rows.sort(byId);
 }
 
 /** A small integer over (id, grid, x, y, rotated) sorted by id: the same layout hashes the same on both sides. */
@@ -222,7 +228,7 @@ export function validateLayout(bag: PlayerBag, layout: readonly BagLayoutRow[]):
   const placements: { row: BagLayoutRow; item: GridItem }[] = [];
   for (const row of layout) {
     const item = known.get(row.id);
-    const grid = row.grid === 'pack' ? scratch.pack : row.grid === 'pockets' ? scratch.pockets : null;
+    const grid = row.grid === 'pack' || row.grid === 'pockets' ? scratch[row.grid] : null;
     const wellFormed = item !== undefined && grid !== null && !seen.has(row.id)
       && Number.isInteger(row.x) && Number.isInteger(row.y) && typeof row.rotated === 'boolean';
     if (!wellFormed || !canPlaceItem(grid, item.type, row.x, row.y, row.rotated)) return null;

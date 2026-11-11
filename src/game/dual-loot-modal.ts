@@ -13,7 +13,7 @@ import {
 } from '../../shared/grid-inventory.ts';
 
 export type GridIdentifier = 'container' | 'pockets' | 'backpack';
-export type GearSlotId = 'primary' | 'secondary' | 'armor';
+export type GearSlotId = 'primary' | 'secondary' | 'sidearm' | 'armor';
 export type TileHighlightState = 'valid' | 'invalid' | 'none';
 
 export interface GridItemSource {
@@ -44,6 +44,7 @@ export interface HeldItemState {
 export interface GearEquipState {
   primary: GridItem | null;
   secondary: GridItem | null;
+  sidearm: GridItem | null;
   armor: GridItem | null;
 }
 
@@ -55,9 +56,11 @@ export interface DualLootModalProps {
   pocketsGrid?: InventoryGrid;
   equippedPrimary?: GridItem | null;
   equippedSecondary?: GridItem | null;
+  equippedSidearm?: GridItem | null;
   equippedArmor?: GridItem | null;
   primary?: GridItem | null;
   secondary?: GridItem | null;
+  sidearm?: GridItem | null;
   armor?: GridItem | null;
 }
 
@@ -69,7 +72,8 @@ export interface GearSlotDef {
 
 export const GEAR_SLOT_DEFS: readonly GearSlotDef[] = [
   { id: 'primary', label: 'PRIMARY WEAPON', emptyLabel: '[EMPTY PRIMARY]' },
-  { id: 'secondary', label: 'SECONDARY WEAPON', emptyLabel: '[EMPTY SIDEARM]' },
+  { id: 'secondary', label: 'SECONDARY WEAPON', emptyLabel: '[EMPTY SECONDARY]' },
+  { id: 'sidearm', label: 'SIDEARM', emptyLabel: '[EMPTY SIDEARM]' },
   { id: 'armor', label: 'ARMOR VEST', emptyLabel: '[EMPTY VEST]' },
 ];
 
@@ -105,6 +109,7 @@ export type DualLootModalEmits = {
   (e: 'close'): void;
   (e: 'update:equippedPrimary', item: GridItem | null): void;
   (e: 'update:equippedSecondary', item: GridItem | null): void;
+  (e: 'update:equippedSidearm', item: GridItem | null): void;
   (e: 'update:equippedArmor', item: GridItem | null): void;
   (e: 'transfer', event: TransferEventPayload): void;
 };
@@ -146,6 +151,9 @@ export function isItemValidForGearSlot(itemType: string, slotId: GearSlotId): bo
     return isPrimaryWeapon;
   }
 
+  const isSidearmSlot = slotId === 'sidearm';
+  if (isSidearmSlot) return itemType === 'pistol';
+
   const isSecondarySlot = slotId === 'secondary';
   if (isSecondarySlot) {
     const isPistol = itemType === 'pistol';
@@ -173,6 +181,7 @@ export function createDualLootState(options?: DualLootModalProps): DualLootState
     gear: {
       primary: options?.equippedPrimary ?? options?.primary ?? null,
       secondary: options?.equippedSecondary ?? options?.secondary ?? null,
+      sidearm: options?.equippedSidearm ?? options?.sidearm ?? null,
       armor: options?.equippedArmor ?? options?.armor ?? null,
     },
     backpackTier: tier,

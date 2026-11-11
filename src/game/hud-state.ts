@@ -120,6 +120,8 @@ export interface HudState {
   readonly backpackTier?: BackpackTier;
   /** Planks, nails, curtain sheets and the two tools. Absent until the sim sends it. */
   readonly materials?: FortificationInventory;
+  /** The host's hash of where this survivor's things sit in the bag; the client compares it with its own. */
+  readonly bagHash?: number;
 }
 
 export interface MoodleView {
@@ -284,6 +286,7 @@ export function buildHud(snapshot: SnapshotPacket, local: PlayerEntity, spectati
     moodles: buildMoodles(local.needs),
     ...(local.backpackTier ? { backpackTier: local.backpackTier } : {}),
     ...(local.materials ? { materials: { ...local.materials } } : {}),
+    ...(local.bagHash !== undefined ? { bagHash: local.bagHash } : {}),
   };
 }
 
