@@ -42,6 +42,20 @@ export const CANNED_FOOD: Grid = [
   '..mmmmmm..',
 ];
 
+/** The earlier drawing of CANNED_FOOD, kept to switch back to. */
+export const CANNED_FOOD_OLD: Grid = [
+  '..pppppp..',
+  '.pooooonp.',
+  'pmmmmmmmmp',
+  'pmrttsrrmp',
+  'pmtsesttmp',
+  'pmtseestmp',
+  'pmrttsrrmp',
+  'pmmmmmmmmp',
+  '.pooooonp.',
+  '..nnnnnn..',
+];
+
 export const WATER_BOTTLE: Grid = [
   '...aaaa...',
   '...abba...',
@@ -54,6 +68,21 @@ export const WATER_BOTTLE: Grid = [
   '..pcebbp..',
   '..pcbbap..',
   '..paaaap..',
+];
+
+/** The earlier drawing of WATER_BOTTLE, kept to switch back to. */
+export const WATER_BOTTLE_OLD: Grid = [
+  '....ee....',
+  '....ee....',
+  '...p..p...',
+  '..pcccp...',
+  '.pcbccbp..',
+  '.pcbaabp..',
+  '.pcbaabp..',
+  '.pcbccbp..',
+  '.pcbccbp..',
+  '..pbbbp...',
+  '...ppp....',
 ];
 
 export const DISINFECTANT: Grid = [
@@ -70,6 +99,20 @@ export const DISINFECTANT: Grid = [
   '..wwwwww..',
 ];
 
+/** The earlier drawing of DISINFECTANT, kept to switch back to. */
+export const DISINFECTANT_OLD: Grid = [
+  '....nn....',
+  '...nooon..',
+  '..zwwwwz..',
+  '.zwxzzxwz.',
+  '.zwxttxwz.',
+  '.zwttsswz.',
+  '.zwxttxwz.',
+  '.zwxzzxwz.',
+  '..zwwwwz..',
+  '...zzzz...',
+];
+
 export const ANTIBIOTICS: Grid = [
   '..ttteee..',
   '.tuuteeef.',
@@ -77,6 +120,18 @@ export const ANTIBIOTICS: Grid = [
   'sttttfeeef',
   '.rsssgffg.',
   '..rrrggg..',
+];
+
+/** The earlier drawing of ANTIBIOTICS, kept to switch back to. */
+export const ANTIBIOTICS_OLD: Grid = [
+  '..pppppp..',
+  '.poooooon.',
+  '.pmreermn.',
+  '.pmtseumn.',
+  '.pmreermn.',
+  '.pmtseumn.',
+  '.pnnnnnnp.',
+  '..mmmmmm..',
 ];
 
 export interface SurvivalArtSpec {

@@ -70,6 +70,18 @@ export const BANDAGE: Grid = [
   '..ggggg.gfe',
 ];
 
+/** The earlier drawing of BANDAGE, kept to switch back to. */
+export const BANDAGE_OLD: Grid = [
+  '..eeeeee....',
+  '.effffffg...',
+  'efgggggghg..',
+  'efg.kk.ghhzz',
+  'efg.kk.ghzzz',
+  'efgggggghg.z',
+  '.fhhhhhhh...',
+  '..hhhhhh....',
+];
+
 /** Small tan box, brass bullet tips showing. Wide and low. */
 export const PISTOL_AMMO: Grid = [
   '.YB.YB.YB.',
@@ -83,6 +95,19 @@ export const PISTOL_AMMO: Grid = [
 
 /** Olive rifle magazine standing upright. Tall and narrow. */
 export const CARBINE_AMMO: Grid = [
+  '.BC.BC.BC.',
+  '.YB.YB.YB.',
+  '.YB.YB.YB.',
+  'cccccccccc',
+  'cbbbbbbbba',
+  'cbeeebbbba',
+  'cbeeebbbba',
+  'cbbbbbbbba',
+  'aaaaaaaaaa',
+];
+
+/** The earlier drawing of CARBINE_AMMO, kept to switch back to. */
+export const CARBINE_AMMO_OLD: Grid = [
   '.YBYB...',
   '.ommmo..',
   '.cccccb.',

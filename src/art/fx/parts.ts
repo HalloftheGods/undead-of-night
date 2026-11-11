@@ -5,6 +5,16 @@ import type { Grid } from './shared.ts';
 
 /** A bare steel barrel with a front sight and a threaded muzzle. */
 const BARREL: Grid = [
+  '...........p.',
+  'ooo.....nnnpn',
+  'opppppppppmpm',
+  'onooooooonmom',
+  'mnnnnnnnnnmnm',
+  'mmm.....mmmmm',
+];
+
+/** The earlier drawing of BARREL, kept to switch back to. */
+export const BARREL_OLD: Grid = [
   '..........p..',
   'oopppppppppoo',
   'onnnooooonnon',
@@ -27,6 +37,20 @@ const GRIP: Grid = [
 
 /** A steel box magazine with brass showing at the lips. */
 const MAGAZINE: Grid = [
+  '.YBYBY..',
+  '.oppppn.',
+  '.opoonn.',
+  '.onnnnm.',
+  '.ommmnm.',
+  '.onnnnm.',
+  '..onnnnm',
+  '..ommmnm',
+  '..onnnnm',
+  '..mmmmmm',
+];
+
+/** The earlier drawing of MAGAZINE, kept to switch back to. */
+export const MAGAZINE_OLD: Grid = [
   '.YBYB..',
   '.ooooo.',
   '.opppn.',

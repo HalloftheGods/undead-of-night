@@ -99,6 +99,17 @@ const MEDKIT: Grid = [
 ];
 
 const CARBINE_SMALL: Grid = [
+  '......ooo....',
+  'nn...ppppccc.',
+  'onnnnooooccbp',
+  'on..nnnn.....',
+  'n....mn......',
+  '.....mn......',
+  '......m......',
+];
+
+/** The earlier drawing of CARBINE_SMALL, kept to switch back to. */
+export const CARBINE_SMALL_OLD: Grid = [
   '...........op',
   '..........opn',
   '.........opn.',
@@ -115,6 +126,14 @@ const CARBINE_SMALL: Grid = [
 ];
 
 const SHOTGUN_SMALL: Grid = [
+  '.....pppppppp',
+  'zzyxnooooooo.',
+  'zyyxnnyyyx...',
+  'yxw..........',
+];
+
+/** The earlier drawing of SHOTGUN_SMALL, kept to switch back to. */
+export const SHOTGUN_SMALL_OLD: Grid = [
   '...........pp',
   '..........pon',
   '.........pon.',
@@ -131,6 +150,15 @@ const SHOTGUN_SMALL: Grid = [
 ];
 
 const KNIFE_SMALL: Grid = [
+  '......noooop.',
+  'zyyyxmnpppppp',
+  'zyyyxmnppeep.',
+  'xxxxwmnooo...',
+  '......n......',
+];
+
+/** The earlier drawing of KNIFE_SMALL, kept to switch back to. */
+export const KNIFE_SMALL_OLD: Grid = [
   '...........pe',
   '..........ppo',
   '.........ppo.',
@@ -186,6 +214,22 @@ const FIREWORKS: Grid = [
   '....tjj.BY.',
 ];
 
+/** The earlier drawing of FIREWORKS, kept to switch back to. */
+export const FIREWORKS_OLD: Grid = [
+  '......Y....',
+  '.....YBY...',
+  '......C....',
+  '.....n.....',
+  '..gffnffg..',
+  '.gfeeeeefg.',
+  '.ijjjjjjll.',
+  '.rsssssstt.',
+  '.ijjjjjjll.',
+  '.rsssssstt.',
+  '.ijjjjjjll.',
+  '..rrsssst..',
+];
+
 /** A fountain firework: a striped cone on a card base, lit and spraying sparks straight up. */
 const FOUNTAIN: Grid = [
   '..Y..Y..Y..',
@@ -200,6 +244,22 @@ const FOUNTAIN: Grid = [
   '..YYBBBBC..',
   '..rsssttu..',
   '.gffffffee.',
+];
+
+/** The earlier drawing of FOUNTAIN, kept to switch back to. */
+export const FOUNTAIN_OLD: Grid = [
+  '.Y...B...Y.',
+  '...Y.Y.Y...',
+  '.B..YBY..B.',
+  '....YYY....',
+  '....gfe....',
+  '....HHI....',
+  '...rsstt...',
+  '...GHHHI...',
+  '..rssssst..',
+  '..GHHHHHI..',
+  '.rsssssstt.',
+  '.ggfffffee.',
 ];
 
 const SKULL: Grid = [
@@ -256,6 +316,16 @@ const CANDY: Grid = [
   'effteetteeffe',
   'e..settees..e',
   '....sssss....',
+];
+
+/** The earlier drawing of CANDY, kept to switch back to. */
+export const CANDY_OLD: Grid = [
+  '.....CCC.....',
+  '.f..CBBBC..f.',
+  'ffgCBBYBBCgff',
+  'ffgCBBBBBCgff',
+  '.f..CCCCC..f.',
+  '.....CCC.....',
 ];
 
 /** The town map, folded in three: paper, creases, blocks, and a mark where the van waits. */
