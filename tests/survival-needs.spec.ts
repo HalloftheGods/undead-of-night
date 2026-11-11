@@ -17,6 +17,7 @@ import { SURVIVAL_ITEM_ART, SURVIVAL_LEGEND } from '../src/art/fx/survival-art.t
 import { buildMoodleIcons, MOODLE_LEGEND } from '../src/art/fx/moodles.ts';
 import { buildMoodles } from '../src/game/hud-state.ts';
 import { inPalette } from '../src/art/palette.ts';
+import { quietSim } from './helpers/sim-harness.ts';
 
 describe('Survival Needs Core Data & Mechanics', () => {
   it('defines valid data for all survival items', () => {
@@ -158,6 +159,36 @@ describe('Survival Needs Core Data & Mechanics', () => {
     expect(health.health).toBeLessThan(50);
     expect(needs.infection).toBe(100);
     expect(health.health).toBe(0);
+  });
+
+  it('kills a solo survivor when bleeding drops health to zero', () => {
+    const { sim, state } = quietSim();
+    const [p] = state.players;
+    p.health = 4;
+    p.needs = {
+      ...createDefaultSurvivalNeeds(),
+      bleeding: true,
+      bleedTimer: 3.0,
+    };
+    sim.step();
+    expect(p.health).toBe(0);
+    expect(p.status).toBe('dead');
+  });
+
+  it('downs a survivor with living teammates when bleeding drops health to zero', () => {
+    const { sim, state } = quietSim(['a', 'b']);
+    const [p1, p2] = state.players;
+    p1.health = 4;
+    p1.needs = {
+      ...createDefaultSurvivalNeeds(),
+      bleeding: true,
+      bleedTimer: 3.0,
+    };
+    expect(p2.status).toBe('alive');
+    sim.step();
+    expect(p1.health).toBe(0);
+    expect(p1.status).toBe('downed');
+    expect(p1.bleedout).toBeGreaterThan(0);
   });
 });
 

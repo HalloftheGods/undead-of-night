@@ -13,7 +13,7 @@ import { effectiveStance, updateStamina } from './stamina.ts';
 import { updateMelee } from './melee.ts';
 import { stepMovement } from './movement.ts';
 import { moveSpeedMultiplier, updateSurvivalNeeds } from './survival-needs.ts';
-import { useMedkit } from './player-health.ts';
+import { collapsePlayer, useMedkit } from './player-health.ts';
 import { updateThrow } from './bottles.ts';
 import { updateThrowables } from './throwables.ts';
 import { candySpeed, queueEat, sugarOf, updateCandy } from './candy.ts';
@@ -151,6 +151,11 @@ export function updatePlayer(sim: SimState, p: PlayerState): void {
   if (hasNeeds) {
     const isSprinting = p.stance === 'sprint' && p.moving;
     updateSurvivalNeeds(p.needs!, TICK_DT, isSprinting, p.moving, p);
+    const hasDiedOfNeeds = p.health <= 0;
+    if (hasDiedOfNeeds) {
+      collapsePlayer(sim, p);
+      return;
+    }
   }
   updateStamina(p);
   footsteps(sim, p);

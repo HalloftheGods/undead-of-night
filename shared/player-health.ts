@@ -52,6 +52,7 @@ export function giveStartingLoadout(p: PlayerState): void {
 export function giveReturnKit(p: PlayerState): void {
   p.health = Math.ceil(p.maxHealth / 2);
   resetKit(p, 0);
+  if (p.needs) bandageWound(p.needs);
 }
 
 /** Uses a carried medkit on request. A wasted press keeps the kit. */
@@ -95,6 +96,16 @@ function down(sim: SimState, p: PlayerState): void {
   emit(sim, { type: 'player_downed', playerId: p.id, x: p.x, y: p.y });
 }
 
+export function collapsePlayer(sim: SimState, p: PlayerState): void {
+  const isNotAlive = p.status !== 'alive';
+  if (isNotAlive) return;
+  const caughtByCaramel = caramelCatch(sim, p);
+  if (caughtByCaramel) return;
+  const teammateCanRevive = sim.players.some((other) => other !== p && other.status === 'alive');
+  if (teammateCanRevive) down(sim, p);
+  else kill(sim, p);
+}
+
 export function hurtPlayer(sim: SimState, p: PlayerState, damage: number): void {
   const isNotAlive = p.status !== 'alive';
   if (isNotAlive) return;
@@ -104,11 +115,7 @@ export function hurtPlayer(sim: SimState, p: PlayerState, damage: number): void 
   emit(sim, { type: 'player_hurt', playerId: p.id, x: p.x, y: p.y, damage: guarded });
   const isStanding = p.health > 0;
   if (isStanding) return;
-  const caughtByCaramel = caramelCatch(sim, p);
-  if (caughtByCaramel) return;
-  const teammateCanRevive = sim.players.some((other) => other !== p && other.status === 'alive');
-  if (teammateCanRevive) down(sim, p);
-  else kill(sim, p);
+  collapsePlayer(sim, p);
 }
 
 /** Bleedout pauses while a teammate works on the player. */
@@ -128,6 +135,7 @@ export function updateDownedPlayers(sim: SimState): void {
         p.health = Math.ceil(p.maxHealth / 2);
         p.bleedout = 0;
         p.revive = 0;
+        if (p.needs) bandageWound(p.needs);
         emit(sim, { type: 'player_revived', playerId: p.id, x: p.x, y: p.y });
       }
       continue;
