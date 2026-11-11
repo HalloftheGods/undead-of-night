@@ -15,6 +15,7 @@ export type SupplyKind = (typeof SUPPLY_KINDS)[number];
 export interface LeftoverView {
   readonly building: string;
   readonly supplies: Partial<Record<SupplyKind, number>>;
+  readonly clue?: boolean;
 }
 
 const MED_PICKUPS: ReadonlySet<PickupType> = new Set(['bandage', 'medkit', 'disinfectant', 'antibiotics']);
@@ -47,7 +48,12 @@ export function noteEntered(sim: SimState): void {
 /** Something that rots away, such as a kill drop, is not worth a trip back. */
 const isLasting = (item: PickupState): boolean => item.ttl === null;
 
-export function leftoversOf(map: WorldMap, pickups: readonly PickupState[], entered: ReadonlySet<string>): LeftoverView[] {
+export function leftoversOf(
+  map: WorldMap,
+  pickups: readonly PickupState[],
+  entered: ReadonlySet<string>,
+  clues?: ReadonlySet<string>,
+): LeftoverView[] {
   const byBuilding = new Map<string, Partial<Record<SupplyKind, number>>>();
   for (const item of pickups) {
     if (!isLasting(item)) continue;
@@ -61,13 +67,17 @@ export function leftoversOf(map: WorldMap, pickups: readonly PickupState[], ente
     supplies[kind] = (supplies[kind] ?? 0) + 1;
     byBuilding.set(id, supplies);
   }
-  return [...byBuilding].map(([building, supplies]) => ({ building, supplies }));
+  return [...byBuilding].map(([building, supplies]) => ({
+    building,
+    supplies,
+    ...(clues?.has(building) ? { clue: true } : {}),
+  }));
 }
 
 /** Left off while nothing is left behind, so a snapshot then is what it always was. */
 export function leftoversField(sim: SimState): { leftovers?: LeftoverView[] } {
   const hasNoVisits = sim.entered.size === 0;
   if (hasNoVisits) return {};
-  const leftovers = leftoversOf(sim.map, sim.pickups, sim.entered);
+  const leftovers = leftoversOf(sim.map, sim.pickups, sim.entered, sim.clues);
   return leftovers.length > 0 ? { leftovers } : {};
 }

@@ -262,20 +262,33 @@ describe('game flow', () => {
     expect(switchKey(hud)).toBe(2);
   });
 
-  it('walks on after the map closes with the key still down', () => {
+  it('walks on while the map is open and after it closes with the key still down', () => {
     game.startSolo('arcade');
     pump(300);
     const local = stateOf(game.sim!).players[0];
+    const startX = local.x;
+    pressKey('Tab');
+    expect(game.ui.value.mapOpen).toBe(true);
     browser.dispatch('keydown', { code: 'KeyD', repeat: false, target: null, preventDefault() {} });
-    pressKey('Tab');
-    pump(100);
-    pressKey('Tab');
-    const { x } = local;
     pump(300);
-    expect(local.x).not.toBe(x);
+    expect(local.x).toBeGreaterThan(startX);
+    expect(local.angle).toBe(0);
+    browser.dispatch('keyup', { code: 'KeyD', target: null });
+    browser.dispatch('keydown', { code: 'KeyW', repeat: false, target: null, preventDefault() {} });
+    pump(300);
+    expect(local.angle).toBeCloseTo(-Math.PI / 2, 2);
+    browser.dispatch('keyup', { code: 'KeyW', target: null });
+    browser.dispatch('keydown', { code: 'KeyD', repeat: false, target: null, preventDefault() {} });
+    pump(300);
+    expect(local.angle).toBe(0);
+    const midX = local.x;
+    pressKey('Tab');
+    expect(game.ui.value.mapOpen).toBe(false);
+    pump(300);
+    expect(local.x).toBeGreaterThan(midX);
   });
 
-  it('stops the sim while the town map is open in solo, and carries on after', () => {
+  it('allows the sim to carry on while the town map is open in solo', () => {
     game.startSolo('arcade');
     pump(300);
     pressKey('Tab');
@@ -283,11 +296,11 @@ describe('game flow', () => {
     expect(game.ui.value.paused).toBe(false);
     const tick = game.sim!.snapshot().tick;
     pump(500);
-    expect(game.sim!.snapshot().tick).toBe(tick);
+    expect(game.sim!.snapshot().tick).toBeGreaterThan(tick);
     pressKey('KeyN');
     expect(game.ui.value.mapOpen).toBe(false);
     pump(300);
-    expect(game.sim!.snapshot().tick).toBeGreaterThan(tick);
+    expect(game.sim!.snapshot().tick).toBeGreaterThan(tick + 10);
   });
 
   it('closes the map on Escape instead of pausing on top of it', () => {

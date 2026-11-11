@@ -26,13 +26,13 @@ export class CandyBagPanel {
 
   /** True if the key did something. Going from the map to the bag swaps one for the other: the run is held already. */
   toggle(): boolean {
-    const { bagOpen, mapOpen } = this.host.ui();
+    const { bagOpen } = this.host.ui();
     if (bagOpen) {
       this.close();
       return true;
     }
     if (!this.host.canOpen()) return false;
-    if (!mapOpen) this.host.holdRun(true);
+    this.host.holdRun(true);
     this.host.closeBackpack();
     this.host.publish({ bagOpen: true, mapOpen: false });
     return true;

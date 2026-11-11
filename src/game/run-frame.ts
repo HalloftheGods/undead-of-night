@@ -71,8 +71,14 @@ export class RunFrame {
     const dirY = isTransitioning ? 0 : input.dirY;
     const pointerX = renderer.toBufferX(input.pointerClientX);
     const pointerY = renderer.toBufferY(input.pointerClientY);
-    // Behind a co-op menu the mouse belongs to the menu, not the flashlight.
-    if (!menuUp) this.aimAt(renderer, world, pointerX, pointerY);
+    const isMoving = dirX !== 0 || dirY !== 0;
+    if (ui.value.mapOpen) {
+      const padLook = input.gamepad.look(this.aim);
+      if (padLook !== null) this.aim = padLook;
+      else if (isMoving) this.aim = Math.atan2(dirY, dirX);
+    } else if (!menuUp) {
+      this.aimAt(renderer, world, pointerX, pointerY);
+    }
     const aim = this.aim;
     const delay = transport?.interpolationDelayMs ?? 0;
     world.setStance(menuUp ? 'walk' : input.stance);
@@ -108,7 +114,7 @@ export class RunFrame {
       overrunOn: this.host.overrunOn,
       pointerX: over || touch || padAims ? null : pointerX,
       pointerY: over || touch || padAims ? null : pointerY,
-      showCrosshair: this.host.playing() && !menuUp && !this.host.parts.bench.open && !isTransitioning,
+      showCrosshair: this.host.playing() && !menuUp && !ui.value.mapOpen && !this.host.parts.bench.open && !isTransitioning,
       touch,
     };
     this.lastScene = scene;

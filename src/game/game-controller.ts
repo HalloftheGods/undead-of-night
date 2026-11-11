@@ -270,7 +270,7 @@ export class GameController {
   /** The player has gone: to another tab, or to a window beside this one that leaves the game in view. */
   private readonly onAway = (): void => {
     this.input.clearHeld();
-    const shouldPause = this.run.transport?.kind === 'solo' && this.isPlaying() && !this.isMenuUp();
+    const shouldPause = this.run.transport?.kind === 'solo' && this.isPlaying() && !this.isMenuUp() && !this.ui.value.mapOpen;
     if (shouldPause) this.flipPause();
     else this.sendNeutralInput();
   };
@@ -280,7 +280,7 @@ export class GameController {
   }
 
   private isMenuUp(): boolean {
-    return this.ui.value.paused || this.ui.value.mapOpen || this.ui.value.bagOpen;
+    return this.ui.value.paused || this.ui.value.bagOpen;
   }
 
   // --- Commands from the menus ---------------------------------------------
@@ -466,10 +466,11 @@ export class GameController {
   toggleMap(): boolean {
     if (!this.canUseMap()) return false;
     const mapOpen = !this.ui.value.mapOpen;
-    // From the candy bag the map takes its place, and the run is held already.
     const fromBag = this.ui.value.bagOpen;
-    if (!fromBag) this.holdRun(mapOpen);
+    if (fromBag) this.holdRun(false);
+    if (mapOpen) this.input.letGoButtons();
     this.closeBackpack();
+    this.audio.playUi(mapOpen ? 'pause' : 'resume');
     this.publish({ mapOpen, bagOpen: false });
     return true;
   }

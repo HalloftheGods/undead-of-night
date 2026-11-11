@@ -146,7 +146,8 @@ const SUPPLIES: readonly string[] = SUPPLY_KINDS;
 function isLeftoverView(v: unknown): v is LeftoverView {
   const isShaped = isFields(v) && isString(v.building) && isFields(v.supplies);
   if (!isShaped) return false;
-  return Object.entries(v.supplies as Fields).every(([kind, count]) => SUPPLIES.includes(kind) && isNumber(count));
+  const isClueValid = v.clue === undefined || typeof v.clue === 'boolean';
+  return isClueValid && Object.entries(v.supplies as Fields).every(([kind, count]) => SUPPLIES.includes(kind) && isNumber(count));
 }
 
 export function isSnapshotPacket(v: unknown): v is SnapshotPacket {

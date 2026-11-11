@@ -1,5 +1,5 @@
 <template>
-  <section class="px-screen town" :aria-label="key.title">
+  <section class="px-screen town" :aria-label="key.title" data-touch-walk @mousedown.stop @contextmenu.prevent>
     <canvas ref="canvasRef" class="town-canvas px-frame" :style="{ '--side': canvasSide }" />
     <aside class="town-key">
       <h2 class="town-title">{{ key.title }}</h2>

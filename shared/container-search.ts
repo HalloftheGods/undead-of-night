@@ -132,7 +132,11 @@ function revealCache(sim: SimState): boolean {
   if (hasNoCache) return false;
   const chosen = pick(sim.rng, caches);
   const building = buildingAt(sim.map, chosen.x, chosen.y);
-  if (building) sim.entered.add(groundBuildingId(building));
+  if (building) {
+    const id = groundBuildingId(building);
+    sim.entered.add(id);
+    sim.clues.add(id);
+  }
   return true;
 }
 

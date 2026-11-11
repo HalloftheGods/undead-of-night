@@ -55,7 +55,7 @@ const TOWN_MARKS: KeyGroup = {
   ],
 };
 
-const waitNoteOf = (place: string) => (mode: TransportKind) => (mode === 'solo' ? 'Paused.' : `The ${place} does not wait.`);
+const waitNoteOf = (place: string) => (_mode: TransportKind) => `The ${place} does not wait.`;
 
 const TOWN_KEY: MapKey = { title: 'Town map', groups: [TOWN_MARKS, PLACES, COMING, LEFT_BEHIND], waitNote: waitNoteOf('town') };
 const BUNKER_KEY: MapKey = {

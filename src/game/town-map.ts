@@ -4,13 +4,14 @@ import { isStorey } from '../../shared/storeys.ts';
 import { groundOf } from '../../shared/world-query.ts';
 import { BUILDING_DEFS, PROP_DEFS, TILE_SIZE } from '../../shared/protocol.ts';
 import type { LeftoverView } from '../../shared/leftovers.ts';
-import type { BuildingInstance, DropView, EntityId, ExitEntity, PlayerEntity, TileKind, WorldMap } from '../../shared/protocol.ts';
+import type { BuildingInstance, DropView, EntityId, ExitEntity, PlayerEntity, TileKind, WorldMap, ZombieEntity } from '../../shared/protocol.ts';
 import { drawOutlinedText, FONT_HEIGHT, textWidth } from '../engine/bitmap-font.ts';
 import { paintBuilding } from './map-buildings.ts';
 import { drawCursor } from './map-cursor.ts';
+import { drawZombieBlips, MapFog } from './map-fog.ts';
 import { paintGround, paintScenery } from './map-ground.ts';
 import type { Rgb } from './map-ground.ts';
-import { drawLeftovers } from './map-leftovers.ts';
+import { drawClueCache, drawLeftovers } from './map-leftovers.ts';
 import type { CursorClock } from './map-cursor.ts';
 import {
   CROSS_COLOR, DROP_COLOR, DROP_LABEL_RISE, drawDropSprite, drawFireworksBus, drawStation, drawTickMark, drawVan, EXIT_COLOR, VAN_LABEL_RISE,
@@ -176,6 +177,7 @@ export class TownMapView {
   private readonly visited = new Set<string>();
   private readonly opened = new Set<number>();
   private readonly buildingContainers = new Map<string, number[]>();
+  private readonly fog: MapFog;
 
   constructor(map: WorldMap) {
     this.map = map;
@@ -184,6 +186,7 @@ export class TownMapView {
     this.width = map.cols * this.pixelsPerTile;
     // The floors above and below lie under the town, off the edge of the map: everyone on one is drawn at their house.
     this.height = (map.townRows ?? map.rows) * this.pixelsPerTile;
+    this.fog = new MapFog(this.width, this.height);
     this.base = document.createElement('canvas');
     this.base.width = this.width;
     this.base.height = this.height;
@@ -281,6 +284,10 @@ export class TownMapView {
     this.visited.clear();
   }
 
+  clearFog(): void {
+    this.fog.reset();
+  }
+
   hasVisited(id: string): boolean {
     return this.visited.has(id);
   }
@@ -321,18 +328,23 @@ export class TownMapView {
     const right = box.x1 - 1;
     const top = box.y0;
     const bottom = box.y1 - 1;
-    const seed = (Math.round(building.x) ^ Math.round(building.y)) & 1;
 
-    drawPixelLine(ctx, left, top + 1, right, bottom + 1, EDGE_COLOR);
-    drawPixelLine(ctx, right, top + 1, left, bottom + 1, EDGE_COLOR);
+    // Dark backing stroke
+    drawPixelLine(ctx, left, top + 2, right, bottom + 2, EDGE_COLOR);
+    drawPixelLine(ctx, right, top + 2, left, bottom + 2, EDGE_COLOR);
+    drawPixelLine(ctx, left, top - 1, right, bottom - 1, EDGE_COLOR);
+    drawPixelLine(ctx, right, top - 1, left, bottom - 1, EDGE_COLOR);
 
-    drawPixelLine(ctx, left - seed, top, right + seed, bottom, CROSS_COLOR);
-    drawPixelLine(ctx, right + seed, top, left - seed, bottom, CROSS_COLOR);
+    // Fat double-stroke red cross
+    drawPixelLine(ctx, left, top, right, bottom, CROSS_COLOR);
+    drawPixelLine(ctx, right, top, left, bottom, CROSS_COLOR);
+    drawPixelLine(ctx, left, top + 1, right, bottom + 1, CROSS_COLOR);
+    drawPixelLine(ctx, right, top + 1, left, bottom + 1, CROSS_COLOR);
 
     const midX = Math.round((left + right) / 2);
     const midY = Math.round((top + bottom) / 2);
     ctx.fillStyle = CROSS_COLOR;
-    ctx.fillRect(midX, midY, 2, 2);
+    ctx.fillRect(midX - 1, midY - 1, 3, 3);
   }
 
   private drawTeammate(ctx: CanvasRenderingContext2D, player: PlayerEntity, clock: CursorClock, taken: LabelBox[]): void {
@@ -341,10 +353,13 @@ export class TownMapView {
   }
 
   /** Marks every building the team left supplies in, whoever it was that walked out. */
-  private drawLeftovers(ctx: CanvasRenderingContext2D, leftovers: readonly LeftoverView[]): void {
-    for (const { building: id, supplies } of leftovers) {
+  private drawLeftovers(ctx: CanvasRenderingContext2D, leftovers: readonly LeftoverView[], clock: CursorClock): void {
+    for (const { building: id, supplies, clue } of leftovers) {
       const building = this.building(id);
-      if (building) drawLeftovers(ctx, footprint(building), supplies);
+      if (!building) continue;
+      const box = footprint(building);
+      if (clue && !this.isCleared(id)) drawClueCache(ctx, box, clock);
+      drawLeftovers(ctx, box, supplies);
     }
   }
 
@@ -372,18 +387,34 @@ export class TownMapView {
     drop: DropView | null = null,
     clock: CursorClock = STEADY_CLOCK,
     leftovers: readonly LeftoverView[] = [],
+    zombies: readonly ZombieEntity[] = [],
   ): void {
     const hasOpenedContainers = openedContainers.length > 0;
     if (hasOpenedContainers) this.syncOpened(openedContainers);
     const viewer = players.find((player) => player.id === localId);
-    const under = this.isBelow(viewer) ? this.underBase() : null;
+    const isViewerBelow = this.isBelow(viewer);
+    const onMap = players.filter((player) => player.status !== 'dead');
+
+    const sewerShift = this.map.sewers ? this.map.sewers.top * TILE_SIZE : 0;
+    for (const player of onMap) {
+      const at = groundOf(this.map, player.x, player.y);
+      const isPlayerBelow = this.isBelow(player);
+      const shiftY = isPlayerBelow ? sewerShift : 0;
+      const px = Math.round(at.x / this.worldPerPx);
+      const py = Math.round((at.y - shiftY) / this.worldPerPx);
+      this.fog.reveal(px, py, isPlayerBelow);
+    }
+
+    const under = isViewerBelow ? this.underBase() : null;
     if (under) {
       ctx.drawImage(under, 0, 0);
+      this.fog.drawFog(ctx, true);
       ctx.globalAlpha = SURFACE_GHOST_ALPHA;
       ctx.drawImage(this.base, 0, 0);
       ctx.globalAlpha = 1;
     } else {
       ctx.drawImage(this.base, 0, 0);
+      this.fog.drawFog(ctx, false);
     }
     for (const id of this.visited) {
       const building = this.building(id);
@@ -391,10 +422,10 @@ export class TownMapView {
       if (this.isCleared(id)) this.drawCross(ctx, building);
       this.drawTick(ctx, building);
     }
-    this.drawLeftovers(ctx, leftovers);
+    this.drawLeftovers(ctx, leftovers, clock);
     if (exit) this.drawExit(ctx, exit);
     if (drop) this.drawDrop(ctx, drop);
-    const onMap = players.filter((player) => player.status !== 'dead');
+    drawZombieBlips(ctx, zombies, onMap, this.worldPerPx, this.map.sewers?.top, isViewerBelow);
     // Teammates' names keep off each other, so a squad standing together stays readable.
     const teamLabels: LabelBox[] = [];
     for (const player of onMap) {

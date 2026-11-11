@@ -57,10 +57,10 @@ describe('the map key', () => {
     }
   });
 
-  it('says the run waits for a solo player and goes on for a room', () => {
-    expect(mapKey(false).waitNote('solo')).toBe('Paused.');
+  it('says the run goes on for both solo and co-op', () => {
+    expect(mapKey(false).waitNote('solo')).toBe('The town does not wait.');
     expect(mapKey(false).waitNote('coop')).toBe('The town does not wait.');
-    expect(mapKey(true).waitNote('solo')).toBe('Paused.');
+    expect(mapKey(true).waitNote('solo')).toBe('The bunker does not wait.');
     expect(mapKey(true).waitNote('coop')).toBe('The bunker does not wait.');
   });
 });

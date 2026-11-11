@@ -109,8 +109,18 @@ describe('supplies left behind', () => {
     const { sim } = quietSim();
     const packet = sim.snapshot();
     expect(isSnapshotPacket({ ...packet, leftovers: [{ building: 'b1', supplies: { med: 2, gear: 1 } }] })).toBe(true);
+    expect(isSnapshotPacket({ ...packet, leftovers: [{ building: 'b1', supplies: { med: 2, gear: 1 }, clue: true }] })).toBe(true);
     expect(isSnapshotPacket({ ...packet, leftovers: [{ building: 'b1', supplies: { cake: 1 } }] })).toBe(false);
     expect(isSnapshotPacket({ ...packet, leftovers: [{ supplies: {} }] })).toBe(false);
+  });
+
+  it('flags a building as a clue when it is in the clues set', () => {
+    const { state } = quietSim();
+    const house = firstHouse(state);
+    drop(state, 'medkit', cornerOf(house));
+    const clues = new Set([house.id]);
+    const leftovers = leftoversOf(state.map, state.pickups, new Set([house.id]), clues);
+    expect(leftovers).toEqual([{ building: house.id, supplies: { med: 1 }, clue: true }]);
   });
 });
 
@@ -130,11 +140,17 @@ describe('the map marks for supplies left behind', () => {
     expect(backings.map(([x]) => x)).toEqual([11, 18]);
   });
 
-  it('paints the town with leftovers, and skips a building it does not know', () => {
+  it('paints the town with leftovers and clue caches without trouble', () => {
     const map = generateWorldMap(4242);
     const view = new TownMapView(map);
     const ctx = fakeCanvas().getContext() as unknown as CanvasRenderingContext2D;
-    const leftovers = [{ building: map.buildings[0].id, supplies: { ammo: 2 } }, { building: 'nope', supplies: { med: 1 } }];
-    expect(() => view.paint(ctx, [], null, null, [], null, undefined, leftovers)).not.toThrow();
+    const leftovers = [
+      { building: map.buildings[0].id, supplies: { ammo: 2 }, clue: true },
+      { building: 'nope', supplies: { med: 1 } },
+    ];
+    const clock = { nowMs: 100, openedMs: 0, reducedMotion: false };
+    expect(() => view.paint(ctx, [], null, null, [], null, clock, leftovers)).not.toThrow();
+    const stillClock = { nowMs: 100, openedMs: 0, reducedMotion: true };
+    expect(() => view.paint(ctx, [], null, null, [], null, stillClock, leftovers)).not.toThrow();
   });
 });

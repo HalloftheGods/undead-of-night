@@ -3,9 +3,14 @@
 
 import { SUPPLY_KINDS } from '../../shared/leftovers.ts';
 import type { SupplyKind } from '../../shared/leftovers.ts';
+import { drawOutlinedText, FONT_HEIGHT } from '../engine/bitmap-font.ts';
+import { BLINK_HZ, blinkPhase } from './map-cursor.ts';
+import type { CursorClock } from './map-cursor.ts';
 import type { MapIcon } from './map-sprite.ts';
 
 const INK = '#0b0c10';
+export const CLUE_COLOR = '#ffe27a';
+export const CLUE_DIM_COLOR = '#8c7426';
 /** Each mark is a 5 by 5 glyph on a dark square one pixel bigger all round. */
 const GLYPH = 5;
 const STEP = GLYPH + 2;
@@ -67,3 +72,97 @@ export const LEFTOVER_KEY: readonly { readonly icon: MapIcon; readonly label: st
   label: LEFTOVER_LABEL[kind],
   icon: { w: GLYPH + 2, h: GLYPH + 2, paint: (ctx) => paintMark(ctx, 1, 1, kind) },
 }));
+
+/** Draws a crisp 1px pixel circle around (cx, cy). */
+export function drawPixelCircle(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  radius: number,
+  color: string,
+): void {
+  const isInvalid = radius <= 0;
+  if (isInvalid) return;
+  ctx.fillStyle = color;
+  let x = radius;
+  let y = 0;
+  let err = 0;
+
+  while (x >= y) {
+    ctx.fillRect(cx + x, cy + y, 1, 1);
+    ctx.fillRect(cx + y, cy + x, 1, 1);
+    ctx.fillRect(cx - y, cy + x, 1, 1);
+    ctx.fillRect(cx - x, cy + y, 1, 1);
+    ctx.fillRect(cx - x, cy - y, 1, 1);
+    ctx.fillRect(cx - y, cy - x, 1, 1);
+    ctx.fillRect(cx + y, cy - x, 1, 1);
+    ctx.fillRect(cx + x, cy - y, 1, 1);
+
+    y += 1;
+    err += 1 + 2 * y;
+    const shouldStepX = 2 * (err - x) + 1 > 0;
+    if (shouldStepX) {
+      x -= 1;
+      err += 1 - 2 * x;
+    }
+  }
+}
+
+/** Draws a pixel circle with a 1px dark border on both sides for contrast on any map terrain. */
+export function drawOutlinedPixelCircle(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  radius: number,
+  color: string,
+  outlineColor = INK,
+): void {
+  const hasInner = radius > 1;
+  if (hasInner) drawPixelCircle(ctx, cx, cy, radius - 1, outlineColor);
+  drawPixelCircle(ctx, cx, cy, radius + 1, outlineColor);
+  drawPixelCircle(ctx, cx, cy, radius, color);
+}
+
+/** Draws a glowing, blinking circle and label around a building marked by a map clue. */
+export function drawClueCache(
+  ctx: CanvasRenderingContext2D,
+  box: { readonly x0: number; readonly y0: number; readonly x1: number; readonly y1: number },
+  clock: CursorClock,
+): void {
+  const cx = Math.round((box.x0 + box.x1) / 2);
+  const cy = Math.round((box.y0 + box.y1) / 2);
+  const halfW = (box.x1 - box.x0) / 2;
+  const halfH = (box.y1 - box.y0) / 2;
+  const baseRadius = Math.ceil(Math.hypot(halfW, halfH)) + 3;
+
+  const phase = blinkPhase(clock.nowMs, clock.reducedMotion);
+  const isBright = phase === 'bright';
+  const color = isBright ? CLUE_COLOR : CLUE_DIM_COLOR;
+
+  if (isBright) {
+    ctx.fillStyle = 'rgba(255, 226, 122, 0.2)';
+    ctx.fillRect(box.x0, box.y0, box.x1 - box.x0, box.y1 - box.y0);
+  }
+
+  const period = 1000 / BLINK_HZ;
+  const beat = (((clock.nowMs % period) + period) % period) / period;
+  const pulseRadius = baseRadius + Math.round(beat * 4);
+  const shouldPulse = !clock.reducedMotion && isBright && pulseRadius > baseRadius;
+  if (shouldPulse) {
+    drawPixelCircle(ctx, cx, cy, pulseRadius, CLUE_DIM_COLOR);
+  }
+
+  drawOutlinedPixelCircle(ctx, cx, cy, baseRadius, color, INK);
+  drawOutlinedText(ctx, 'CACHE', cx, box.y0 - FONT_HEIGHT - 3, color, INK);
+}
+
+export const CLUE_ICON: MapIcon = {
+  w: 11,
+  h: 11,
+  paint: (ctx) => {
+    drawOutlinedPixelCircle(ctx, 5, 5, 4, CLUE_COLOR, INK);
+    ctx.fillStyle = CLUE_COLOR;
+    ctx.fillRect(5, 5, 1, 1);
+  },
+};
+

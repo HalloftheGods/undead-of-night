@@ -231,7 +231,7 @@ export class RunHud {
     if (!canPaint) return;
     this.mapOpenedMs ??= ms;
     const clock = { nowMs: ms, openedMs: this.mapOpenedMs, reducedMotion: motion.reduced.value };
-    this.town?.paint(ctx, scene.players, scene.localId, scene.exit, scene.openedContainers, scene.drop, clock, scene.leftovers);
+    this.town?.paint(ctx, scene.players, scene.localId, scene.exit, scene.openedContainers, scene.drop, clock, scene.leftovers, scene.zombies);
   }
 
   onEvent(event: GameEvent, now: number, ctx?: LogContext): void {
