@@ -100,11 +100,27 @@ const merchants: CardList = (art) =>
     caption: MERCHANT_CAPTIONS[id],
   }));
 
+/** The HUD's own ailment badges, so the page shows what to look for in the corner of the screen. */
+const MOODLE_CARDS = [
+  { id: 'hunger', title: 'Hunger', caption: 'Eat canned food.' },
+  { id: 'thirst', title: 'Thirst', caption: 'Drink bottled water.' },
+  { id: 'bleeding', title: 'Bleeding', caption: 'Bandages or a medkit close the wound.' },
+  { id: 'infection', title: 'Infection', caption: 'Disinfectant early, antibiotics later.' },
+  { id: 'fatigue', title: 'Fatigue', caption: 'Stop sprinting and catch your breath.' },
+] as const;
+
+const moodleCards: CardList = (art) => {
+  const moodles = art.ui.moodles;
+  if (!moodles) return [];
+  return MOODLE_CARDS.map(({ id, title, caption }) => ({ id: `moodle-${id}`, title, sprite: moodles[id], scale: 3, tag: 'HUD badge', caption }));
+};
+
 const survival: CardList = (art) => [
   { id: 'canned-food', title: 'Canned food', sprite: art.ui.pickupIcons.canned_food, scale: 3, tag: 'Rations', caption: 'Restores hunger and vitality.' },
   { id: 'water-bottle', title: 'Bottled water', sprite: art.ui.pickupIcons.water_bottle, scale: 3, tag: 'Clean', caption: 'Quenches thirst and recharges stamina.' },
   { id: 'disinfectant', title: 'Disinfectant', sprite: art.ui.pickupIcons.disinfectant, scale: 3, tag: 'First aid', caption: 'Sterilizes dirty cuts and scratches.' },
   { id: 'antibiotics', title: 'Antibiotics', sprite: art.ui.pickupIcons.antibiotics, scale: 3, tag: 'Medicine', caption: 'Arrests zombie zoonosis.' },
+  ...moodleCards(art),
 ];
 
 const SECTION_CARDS: Readonly<Record<string, CardList>> = {

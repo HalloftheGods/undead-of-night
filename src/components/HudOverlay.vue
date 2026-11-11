@@ -843,22 +843,23 @@ function hold(slot: BarSlot): void {
   display: flex;
   align-items: center;
   gap: calc(var(--u) * 3);
-  padding: calc(var(--u) * 2) calc(var(--u) * 3);
-  background: rgba(13, 11, 22, 0.92);
-  border: calc(var(--u) * 0.75) solid var(--bone-dark, #444);
-  box-shadow: 0 calc(var(--u) * 1) calc(var(--u) * 3) rgba(0, 0, 0, 0.6);
-  image-rendering: pixelated;
-  min-width: calc(var(--u) * 70);
+  padding: calc(var(--u) * 2) calc(var(--u) * 4);
+  /* The same flat plate as the other HUD chips; the left edge carries how bad it is. */
+  background: rgba(11, 12, 16, 0.78);
+  border-left: calc(var(--u) * 1.5) solid var(--bone-dim);
+  color: var(--bone);
+  min-width: calc(var(--u) * 56);
 }
 
 .hud-moodle-icon {
   flex: 0 0 auto;
+  image-rendering: pixelated;
 }
 
 .hud-moodle-info {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--u) * 0.75);
+  gap: var(--u);
   min-width: 0;
   flex: 1 1 auto;
 }
@@ -871,47 +872,36 @@ function hold(slot: BarSlot): void {
 }
 
 .hud-moodle-text {
-  font-family: 'Silkscreen', monospace;
-  font-size: calc(var(--u) * 6);
   font-weight: 700;
-  letter-spacing: 0.5px;
   text-transform: uppercase;
   line-height: 1.1;
 }
 
-.hud-moodle-pct {
-  font-family: 'Silkscreen', monospace;
-  font-size: calc(var(--u) * 5);
-  opacity: 0.85;
-}
-
+.hud-moodle-pct,
 .hud-moodle-remedy {
-  font-family: inherit;
-  font-size: calc(var(--u) * 5);
-  color: var(--bone, #e4dcc3);
-  opacity: 0.95;
-  letter-spacing: 0.25px;
+  color: var(--bone-dim);
   line-height: 1.1;
 }
 
-.hud-moodle-badge.is-low {
-  border-color: #8c8c56;
-  color: #faf2d4;
-}
-
 .hud-moodle-badge.is-medium {
-  border-color: #e8701c;
-  color: #ffc03c;
+  border-left-color: var(--amber);
 }
 
-.hud-moodle-badge.is-high {
-  border-color: #b82a30;
-  color: #e85c40;
+.hud-moodle-badge.is-medium .hud-moodle-text {
+  color: var(--amber);
+}
+
+.hud-moodle-badge.is-high,
+.hud-moodle-badge.is-critical {
+  border-left-color: var(--blood-bright);
+}
+
+.hud-moodle-badge.is-high .hud-moodle-text,
+.hud-moodle-badge.is-critical .hud-moodle-text {
+  color: var(--blood-bright);
 }
 
 .hud-moodle-badge.is-critical {
-  border-color: #e85c40;
-  background: rgba(58, 15, 42, 0.95);
-  color: #ffc03c;
+  background: rgba(58, 15, 22, 0.86);
 }
 </style>
