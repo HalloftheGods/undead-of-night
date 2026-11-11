@@ -1,3 +1,4 @@
+import { roomFor } from './bag.ts';
 import { TICK_DT } from './constants.ts';
 import type { Container } from './containers.ts';
 import type { Point } from './flow-field.ts';
@@ -52,7 +53,7 @@ export function updateThrow(sim: SimState, p: PlayerState): void {
 
 /** An empty container can still hold an empty bottle, for someone with room for one. */
 export function scroungeBottle(sim: SimState, p: PlayerState): boolean {
-  const room = p.bottles < BOTTLE_CARRY;
+  const room = p.bottles < BOTTLE_CARRY && roomFor(p, 'bottle');
   const lucky = room && sim.rng() < BOTTLE_FIND_CHANCE;
   if (lucky) p.bottles += 1;
   return lucky;

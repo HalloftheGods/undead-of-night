@@ -1,3 +1,4 @@
+import { bagHash } from './bag.ts';
 import { merchantView } from './bunker-merchants.ts';
 import { openedContainers } from './container-search.ts';
 import { bagOf } from './candy.ts';
@@ -127,6 +128,7 @@ export function playerSnapshot(p: PlayerState): PlayerEntity {
     ...(p.needs ? { needs: { ...p.needs } } : {}),
     ...(p.backpackTier ? { backpackTier: p.backpackTier } : {}),
     ...(p.materials ? { materials: { ...p.materials } } : {}),
+    bagHash: bagHash(p.inventory),
   };
 }
 

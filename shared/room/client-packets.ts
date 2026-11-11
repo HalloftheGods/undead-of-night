@@ -8,6 +8,7 @@ import { isEmoteId } from '../emotes.ts';
 import { isGameStyle } from '../game-style.ts';
 import { WEAPON_ORDER } from '../protocol.ts';
 import type { ClientInputPacket, ClientPacket, WeaponId } from '../protocol.ts';
+import { parseBagCommit } from '../bag-commit.ts';
 import { isBenchAction } from '../workbench.ts';
 import { parseHome, parseJoinHome } from './home-packets.ts';
 
@@ -104,6 +105,11 @@ export function parseClientPacket(raw: string): ClientPacket | null {
   }
   const isBench = value.type === 'bench';
   if (isBench) return isBenchAction(value.action) ? { type: 'bench', action: value.action } : null;
+  const isBag = value.type === 'bag';
+  if (isBag) {
+    const commit = parseBagCommit(value.commit);
+    return commit ? { type: 'bag', commit } : null;
+  }
   const emote = value.type === 'emote' && isEmoteId(value.emote) ? value.emote : null;
   if (emote) return { type: 'emote', emote };
   const homeAction = value.type === 'home' ? parseHome(value.action) : null;

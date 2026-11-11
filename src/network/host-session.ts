@@ -1,3 +1,4 @@
+import type { BagCommit } from '../../shared/bag.ts';
 // Hosting an online room from this tab (spec option A). The simulation and the room host run here, the
 // host's own player joins over an in-tab loopback, and each guest arrives over its own WebRTC data channel.
 // play-api only introduces the peers: game packets never pass through it.
@@ -135,6 +136,10 @@ export class HostSession implements RoomSession {
 
   sendInput(input: ClientInputPacket): void {
     this.inner?.sendInput(input);
+  }
+
+  sendBag(commit: BagCommit): void {
+    this.inner?.sendBag(commit);
   }
 
   sendBench(action: BenchAction): void {

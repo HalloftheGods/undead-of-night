@@ -1,3 +1,4 @@
+import type { BagCommit } from '../../shared/bag.ts';
 import type { EmoteId } from '../../shared/emotes.ts';
 import { closeText } from '../../shared/close-codes.ts';
 import type { GameStyle } from '../../shared/game-style.ts';
@@ -68,6 +69,10 @@ export class RemoteSession implements RoomSession {
 
   sendInput(input: ClientInputPacket): void {
     if (this.welcomed) this.send({ type: 'input', input });
+  }
+
+  sendBag(commit: BagCommit): void {
+    if (this.welcomed) this.send({ type: 'bag', commit });
   }
 
   sendBench(action: BenchAction): void {

@@ -31,6 +31,8 @@ import { updateZombieStatuses } from './zombie-burn.ts';
 import { updateSpinners } from './throwables.ts';
 import { updateSupplyDrop } from './supply-drop.ts';
 import { updateBosses } from './bosses.ts';
+import { applyBagCommit, reconcileBag } from './bag-sim.ts';
+import type { BagCommit } from './bag.ts';
 import { benchCommand, updateBench } from './workbench.ts';
 import type { BenchAction, WorkbenchMode } from './workbench.ts';
 import { ageFootprints } from './snow-tracks.ts';
@@ -183,6 +185,12 @@ export class GameSimulation {
     if (player) receiveInput(player, input);
   }
 
+  /** The bag closed on this player's end: see `applyBagCommit`. */
+  bagCommand(id: string, commit: BagCommit): void {
+    const player = this.sim.players.find((p) => p.id === id);
+    if (player) applyBagCommit(this.sim, player, commit);
+  }
+
   benchCommand(id: string, action: BenchAction): void {
     const player = this.sim.players.find((p) => p.id === id);
     if (player) benchCommand(this.sim, player, action);
@@ -229,6 +237,7 @@ export class GameSimulation {
     updateZombies(sim);
     removeDeadZombies(sim);
     updatePickups(sim);
+    for (const p of sim.players) reconcileBag(sim, p);
     updateDownedPlayers(sim);
     updateLeftBodies(sim);
     // Before the waves: a horde starting on this tick must not hand the fallen their return.

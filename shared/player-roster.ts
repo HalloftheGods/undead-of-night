@@ -1,3 +1,4 @@
+import { bagWanted, createBag, syncBag } from './bag.ts';
 import { PLAYER_MAX_HEALTH } from './constants.ts';
 import { freshEmoteBudget } from './emotes.ts';
 import { createDefaultSurvivalNeeds } from './survival-needs.ts';
@@ -100,8 +101,10 @@ export function createPlayer(arrival: Arrival, spot: { x: number; y: number }): 
     needs: createDefaultSurvivalNeeds(),
     backpackTier: 'satchel',
     materials: createEmptyFortificationInventory(),
+    inventory: createBag('satchel'),
   };
   giveStartingLoadout(player);
+  syncBag(player.inventory, bagWanted(player));
   return player;
 }
 

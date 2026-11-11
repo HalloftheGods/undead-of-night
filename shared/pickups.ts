@@ -1,3 +1,4 @@
+import { bagTypeOf, bagWanted, roomFor, syncBag } from './bag.ts';
 import { ammoCapOf } from './keepsakes.ts';
 import { characterOf } from './characters.ts';
 import {
@@ -86,6 +87,16 @@ function takeGun(p: PlayerState, item: PickupState, weapon: WeaponId): boolean {
 /** False leaves the item on the ground: it would have done nothing for this player. */
 function applyPickup(p: PlayerState, item: PickupState): boolean {
   const { type } = item;
+  const bagType = bagTypeOf(type);
+  // A thing for the bag stays on the ground when the bag has no slot for it, as when a count is at its cap.
+  if (bagType && !roomFor(p, bagType)) return false;
+  const taken = takeItem(p, item);
+  if (taken && bagType) syncBag(p.inventory, bagWanted(p));
+  return taken;
+}
+
+function takeItem(p: PlayerState, item: PickupState): boolean {
+  const { type } = item;
   const isBandage = type === 'bandage';
   if (isBandage) {
     const isFullHealth = p.health >= p.maxHealth;
@@ -135,6 +146,11 @@ function applyPickup(p: PlayerState, item: PickupState): boolean {
 function collectedBy(sim: SimState, item: PickupState): PlayerState | null {
   for (const p of sim.players) {
     const touching = p.status === 'alive' && Math.hypot(p.x - item.x, p.y - item.y) <= PICKUP_RADIUS;
+    // What a player dropped on purpose is theirs to pick up again only after they have stepped off it.
+    if (item.leftBy === p.id) {
+      if (!touching) delete item.leftBy;
+      continue;
+    }
     const picksUp = touching && applyPickup(p, item);
     if (picksUp) return p;
   }

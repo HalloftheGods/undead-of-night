@@ -1,3 +1,4 @@
+import type { PlayerBag } from './bag.ts';
 import type { SugarState } from './candy.ts';
 import type { BackpackTier } from './backpack.ts';
 import type { SurvivalNeeds } from './survival-needs.ts';
@@ -87,6 +88,8 @@ export interface PlayerState extends Omit<PlayerEntity, 'mags' | 'gear' | 'bottl
   keepsakes: KeepsakeId[];
   keepsakeOffer: KeepsakeId[] | null;
   keepsakeQueued: KeepsakeId | null;
+  /** Where the carried things sit in the pack and pockets. The counters above say what is carried; this says where it is and what still fits. */
+  inventory: PlayerBag;
   parts: PartCounts;
   kits: KitCounts;
   /** Said so at the current workbench. */
@@ -212,6 +215,8 @@ export interface PickupState extends PickupEntity {
   rounds: number;
   /** What a found gun's last owner did to it. */
   quirk?: GunQuirk;
+  /** Dropped by this player on purpose: they do not pick it back up until they have stepped off it. */
+  leftBy?: string;
 }
 
 /** The van, once it has come. */

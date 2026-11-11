@@ -1,3 +1,4 @@
+import type { BagCommit } from '../../shared/bag.ts';
 import { TICK_DT, TICK_RATE } from '../../shared/constants.ts';
 import type { EmoteId } from '../../shared/emotes.ts';
 import { playsFromHome } from '../../shared/game-style.ts';
@@ -37,6 +38,10 @@ export class LocalSession implements GameTransport {
 
   sendInput(input: ClientInputPacket): void {
     this.sim?.setInput(LOCAL_PLAYER_ID, input);
+  }
+
+  sendBag(commit: BagCommit): void {
+    this.sim?.bagCommand(LOCAL_PLAYER_ID, commit);
   }
 
   sendBench(action: BenchAction): void {

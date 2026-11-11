@@ -1,3 +1,4 @@
+import { roomFor } from './bag.ts';
 import { hasKeepsake, LIGHTER_SPIN } from './keepsakes.ts';
 // Fireworks: two throws besides the bottle, both found in town and both left behind when the town is.
 // A spinner is lit and tossed, and lands as a flower of sparks whirling on the street that sets alight
@@ -94,12 +95,12 @@ export function stashIn(seed: number, container: Container): Stash | null {
 
 /** The searcher takes it if they have room; otherwise it stays where it was, and the container is searched all the same. */
 export function takeStash(p: PlayerState, stash: Stash | null): Stash | null {
-  const takesFirework = stash === 'firework' && p.fireworks < FIREWORK_CARRY;
+  const takesFirework = stash === 'firework' && p.fireworks < FIREWORK_CARRY && roomFor(p, 'firework');
   if (takesFirework) {
     p.fireworks += 1;
     return stash;
   }
-  const takesFountain = stash === 'fountain' && p.fountains < FOUNTAIN_CARRY;
+  const takesFountain = stash === 'fountain' && p.fountains < FOUNTAIN_CARRY && roomFor(p, 'fountain');
   if (takesFountain) {
     p.fountains += 1;
     return stash;

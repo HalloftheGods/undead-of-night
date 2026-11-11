@@ -1,3 +1,4 @@
+import type { BagCommit } from '../../shared/bag.ts';
 import type { DifficultyId } from '../../shared/difficulty.ts';
 import type { EmoteId } from '../../shared/emotes.ts';
 import type { GameStyle } from '../../shared/game-style.ts';
@@ -36,6 +37,8 @@ export interface GameTransport {
   connect(options: ConnectOptions): void;
   sendInput(input: ClientInputPacket): void;
   sendBench(action: BenchAction): void;
+  /** The bag closed: where everything sits and what was dropped. One message per close. */
+  sendBag(commit: BagCommit): void;
   sendHome(action: HomeAction): void;
   sendLobbyReady?(ready?: boolean): void;
   sendLobbyStart?(): void;

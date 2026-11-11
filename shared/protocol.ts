@@ -13,6 +13,7 @@ import type { GunEffect } from './round-effect-data.ts';
 import type { BackpackTier } from './backpack.ts';
 import type { SurvivalNeeds } from './survival-needs.ts';
 import type { FortificationInventory, FortificationItemType } from './fortifications.ts';
+import type { BagCommit } from './bag.ts';
 import type { BenchAction, BenchView } from './workbench.ts';
 
 export { GAME_EVENT_TYPES, GAME_PHASES, PICKUP_TYPES };
@@ -126,6 +127,8 @@ export interface PlayerEntity {
   backpackTier?: BackpackTier;
   armorTier?: ArmorTier;
   materials?: FortificationInventory;
+  /** Hash of where this survivor's things sit in the bag (`shared/bag.ts`). The layout itself is never sent. */
+  bagHash?: number;
 }
 
 export interface ZombieEntity {
@@ -439,6 +442,8 @@ export type ClientPacket =
   | { readonly type: 'join'; readonly name: string; readonly token: string; readonly difficulty?: DifficultyId; readonly character?: number; readonly home?: JoinHome; readonly style?: GameStyle; readonly protocol?: number }
   | { readonly type: 'input'; readonly input: ClientInputPacket }
   | { readonly type: 'bench'; readonly action: BenchAction }
+  /** The bag closed: where everything now sits and what was dropped. One per close. */
+  | { readonly type: 'bag'; readonly commit: BagCommit }
   | { readonly type: 'home'; readonly action: HomeAction }
   | { readonly type: 'emote'; readonly emote: EmoteId }
   | { readonly type: 'restart' }
