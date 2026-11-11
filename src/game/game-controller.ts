@@ -4,6 +4,7 @@ import { capCallsign } from '../../shared/callsign.ts';
 import type { EmoteId } from '../../shared/emotes.ts';
 import type { GameStyle } from '../../shared/game-style.ts';
 import { levelDef, levelSeed } from '../../shared/levels.ts';
+import type { BagCommit } from '../../shared/bag.ts';
 import type { CandyId, WorldMap } from '../../shared/protocol.ts';
 import { TILE_SIZE } from '../../shared/protocol.ts';
 import { generateWorldMap } from '../../shared/world-map.ts';
@@ -456,6 +457,11 @@ export class GameController {
   /** An icon over this survivor for the team; the wheel is only offered in co-op. */
   sendEmote(emote: EmoteId): void {
     this.run.transport?.sendEmote(emote);
+  }
+
+  /** The one message a closed bag sends: its final layout and what was dropped. Solo and co-op alike. */
+  sendBag(commit: BagCommit): void {
+    this.run.transport?.sendBag(commit);
   }
 
   private canUseMap(): boolean {
