@@ -7,11 +7,6 @@
           <DisplayOptions :ui />
         </section>
 
-        <section class="options-card px-frame" aria-labelledby="options-sound">
-          <h3 id="options-sound" class="options-card-head">Sound</h3>
-          <SoundOptions :ui />
-        </section>
-
         <section class="options-card px-frame" aria-labelledby="options-motion">
           <h3 id="options-motion" class="options-card-head">Comfort</h3>
           <MotionOptions />
@@ -39,7 +34,6 @@ import DisplayOptions from './DisplayOptions.vue';
 import MenuLink from './MenuLink.vue';
 import MotionOptions from './MotionOptions.vue';
 import PixelSwitch from './PixelSwitch.vue';
-import SoundOptions from './SoundOptions.vue';
 import TitlePage from './TitlePage.vue';
 import TouchOptions from './TouchOptions.vue';
 

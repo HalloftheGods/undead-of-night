@@ -1,11 +1,38 @@
 <template>
   <div class="sound-options">
     <div class="sound-options-master">
-      <OptionSlider id="volume" label="Volume" :value="ui.volume" @change="game.setVolume" />
-      <PixelButton class="sound-options-mute" :aria-pressed="ui.muted" @press="game.toggleMute()">{{ muteLabel }}</PixelButton>
+      <OptionSlider
+        id="volume"
+        label="Master Volume"
+        :value="ui.volume"
+        :readout="masterReadout"
+        @change="game.setVolume"
+      />
+      <PixelButton
+        class="sound-options-mute"
+        :class="{ 'is-muted': ui.muted }"
+        :aria-pressed="ui.muted"
+        @press="game.toggleMute()"
+      >
+        {{ muteLabel }}
+      </PixelButton>
     </div>
-    <OptionSlider id="music-volume" label="Music" :value="ui.musicVolume" @change="game.setMusicVolume" />
-    <OptionSlider id="sfx-volume" label="Sound effects" :value="ui.sfxVolume" @change="game.setSfxVolume" />
+    <div class="sound-options-channels">
+      <OptionSlider
+        id="music-volume"
+        label="Music Volume"
+        :value="ui.musicVolume"
+        :readout="musicReadout"
+        @change="game.setMusicVolume"
+      />
+      <OptionSlider
+        id="sfx-volume"
+        label="SFX Volume"
+        :value="ui.sfxVolume"
+        :readout="sfxReadout"
+        @change="game.setSfxVolume"
+      />
+    </div>
   </div>
 </template>
 
@@ -20,27 +47,47 @@ const { ui } = defineProps<{ ui: UiState }>();
 const game = useGame();
 
 const muteLabel = computed(() => (ui.muted ? 'Unmute' : 'Mute'));
+const masterReadout = computed(() => (ui.muted ? 'MUTED' : `${Math.round(ui.volume * 100)}%`));
+const musicReadout = computed(() => `${Math.round(ui.musicVolume * 100)}%`);
+const sfxReadout = computed(() => `${Math.round(ui.sfxVolume * 100)}%`);
 </script>
 
 <style scoped>
 .sound-options {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--u) * 3);
+  gap: calc(var(--u) * 4);
 }
 
 .sound-options-master {
   display: flex;
   align-items: flex-end;
-  gap: calc(var(--u) * 6);
+  gap: calc(var(--u) * 4);
 }
 
 .sound-options-master > :first-child {
   flex: 1;
-  padding-bottom: calc(var(--u) * 3);
 }
 
 .sound-options-mute {
-  width: calc(var(--u) * 56);
+  min-width: calc(var(--u) * 48);
+  height: calc(var(--u) * 16);
+}
+
+.sound-options-mute.is-muted {
+  --edge: var(--blood-bright);
+  color: var(--blood-bright);
+}
+
+.sound-options-channels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: calc(var(--u) * 4);
+}
+
+@container (max-width: 480px) {
+  .sound-options-channels {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

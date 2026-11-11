@@ -10,10 +10,12 @@ describe('overlay polish', () => {
     expect(pause).toContain('id="pause"');
   });
 
-  it('keeps Brightness in the Display card, and the Display card above Sound so a phone on its side shows it', () => {
+  it('keeps Brightness in the Display card on Options, while sound settings live in Sound Test', () => {
     const options = source('../src/components/OptionsPage.vue');
     expect(options.indexOf('<DisplayOptions')).toBeGreaterThan(-1);
-    expect(options.indexOf('<DisplayOptions')).toBeLessThan(options.indexOf('<SoundOptions'));
+    expect(options).not.toContain('<SoundOptions');
+    const soundTest = source('../src/components/SoundTestPage.vue');
+    expect(soundTest).toContain('<SoundOptions');
     const display = source('../src/components/DisplayOptions.vue');
     expect(display).toContain('<BrightnessSlider');
     expect(display.indexOf('<BrightnessSlider')).toBeLessThan(display.indexOf('<OptionChoice'));
@@ -32,7 +34,7 @@ describe('overlay polish', () => {
 
   it('clears the level card, banners and callouts off the screen while a pause, map or bag overlay is up', () => {
     const app = source('../src/App.vue');
-    expect(app).toContain('const overlayUp = computed(() => ui.value.paused || ui.value.mapOpen || ui.value.bagOpen);');
+    expect(app).toContain('const overlayUp = computed(() => ui.value.paused || ui.value.mapOpen || ui.value.bagOpen || inventory.isOpen.value);');
     for (const banner of ['<LevelCard', '<WaveBanner', '<KillCallout']) {
       const tag = app.slice(app.indexOf(banner), app.indexOf('/>', app.indexOf(banner)));
       expect(tag, banner).toContain('v-show="!overlayUp"');
