@@ -20,6 +20,7 @@ import { MAP_INK } from './map-sprite.ts';
 import { drawTeammateLocator } from './map-teammate.ts';
 import type { LabelBox } from './map-teammate.ts';
 import { isLandmark } from './run-notices.ts';
+import { formatItemName } from './dual-loot-modal.ts';
 
 /** Map pixels per world tile. 200 tiles makes a 400px map, which scales up by whole numbers. */
 const TILE_PX = 2;
@@ -368,7 +369,7 @@ export class TownMapView {
 
   /** Marks every building the team left supplies in, whoever it was that walked out. */
   private drawLeftovers(ctx: CanvasRenderingContext2D, leftovers: readonly LeftoverView[], clock: CursorClock): void {
-    for (const { building: id, at, supplies, clue } of leftovers) {
+    for (const { building: id, at, supplies, clue, clueItem } of leftovers) {
       if (at) {
         drawLeftoversAt(ctx, Math.round(at.x / this.worldPerPx), Math.round(at.y / this.worldPerPx), supplies);
         continue;
@@ -376,7 +377,10 @@ export class TownMapView {
       const building = id === undefined ? undefined : this.building(id);
       if (!building) continue;
       const box = footprint(building);
-      if (clue && id !== undefined && !this.isCleared(id)) drawClueCache(ctx, box, clock);
+      if (clue && id !== undefined && !this.isCleared(id)) {
+        const label = clueItem ? formatItemName(clueItem).toUpperCase() : 'CACHE';
+        drawClueCache(ctx, box, clock, label);
+      }
       drawLeftovers(ctx, box, supplies);
     }
   }

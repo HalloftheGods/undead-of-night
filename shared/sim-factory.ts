@@ -83,7 +83,7 @@ export function createSimState(options: SimulationOptions): SimState {
     bullets: [],
     pickups: [],
     entered: new Set(),
-    clues: new Set(),
+    clues: new Map(),
     containers: [],
     events: [],
     gameOver: null,

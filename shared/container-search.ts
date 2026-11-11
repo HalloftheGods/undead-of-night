@@ -3,7 +3,7 @@ import { rollFind } from './container-loot.ts';
 import { containerInReach, SEARCH_SEC, townContainers } from './containers.ts';
 import type { Container, ContainerLoot } from './containers.ts';
 import { autoPackItem, createInventoryGrid } from './grid-inventory.ts';
-import type { PickupType } from './protocol.ts';
+import type { BuildingInstance, PickupType, WorldMap } from './protocol.ts';
 import { TICK_DT } from './constants.ts';
 import { isBunkerMap } from './home-protocol.ts';
 import { spawnPickup } from './pickups.ts';
@@ -139,27 +139,54 @@ function scroungeDumpster(sim: SimState, p: PlayerState, container: Container): 
   return { type, rounds };
 }
 
+/** Landmark buildings where archetype loot is already known. Map clues target non-landmarks instead. */
+export const LANDMARK_BUILDINGS: ReadonlySet<string> = new Set([
+  'police',
+  'gun_shop',
+  'hospital',
+  'hospital_upstairs',
+  'clinic',
+  'pharmacy',
+  'grocery',
+  'diner',
+  'radio_station',
+  'school',
+  'school_upstairs',
+  'sewer_maze',
+]);
+
+export function isLandmarkBuilding(map: WorldMap, building: BuildingInstance): boolean {
+  if (LANDMARK_BUILDINGS.has(building.kind)) return true;
+  if (building.of) {
+    const root = map.buildings.find((candidate) => candidate.id === building.of);
+    if (root && LANDMARK_BUILDINGS.has(root.kind)) return true;
+  }
+  return false;
+}
+
 /** Odds an empty search turns up a scrawled map of someone else's cache. */
 export const MAP_CLUE_CHANCE = 0.2;
 
 /** Marks one unvisited building that still holds loot, so the team's map shows what is in it. */
-function revealCache(sim: SimState): boolean {
+function revealCache(sim: SimState): string | null {
   const isHiddenCache = (item: PickupState): boolean => {
     if (item.ttl !== null) return false;
     const building = buildingAt(sim.map, item.x, item.y);
-    return building !== null && !sim.entered.has(groundBuildingId(building));
+    if (!building || isLandmarkBuilding(sim.map, building)) return false;
+    return !sim.entered.has(groundBuildingId(building));
   };
   const caches = sim.pickups.filter(isHiddenCache);
   const hasNoCache = caches.length === 0;
-  if (hasNoCache) return false;
+  if (hasNoCache) return null;
   const chosen = pick(sim.rng, caches);
   const building = buildingAt(sim.map, chosen.x, chosen.y);
   if (building) {
     const id = groundBuildingId(building);
     sim.entered.add(id);
-    sim.clues.add(id);
+    sim.clues.set(id, chosen.type);
+    return chosen.type;
   }
-  return true;
+  return null;
 }
 
 /** Whether a bottle turns up for a searcher with room for one. It goes in the grid; taking it from there counts it. */
@@ -240,7 +267,8 @@ function finishSearch(sim: SimState, p: PlayerState, id: number): void {
 
   const foundLoot = grid.items.length > 0;
   const rollsClue = !foundLoot && container.kind !== 'bowl' && sim.rng() < MAP_CLUE_CHANCE;
-  const clue = rollsClue && revealCache(sim);
+  const clueItem = rollsClue ? revealCache(sim) : null;
+  const clue = clueItem !== null;
   const found = foundLoot || clue;
   if (noisy) makeNoise(sim, p.x, p.y, CLATTER_RADIUS * noise);
 
@@ -259,7 +287,7 @@ function finishSearch(sim: SimState, p: PlayerState, id: number): void {
     ...(stash ? { stash } : {}),
     ...(candyFound ? { candy: candyFound } : {}),
     ...(bowlLoot ? { title: bowlLoot.label } : {}),
-    ...(clue ? { clue: true as const } : {})
+    ...(clue ? { clue: true as const, ...(clueItem ? { clueItem } : {}) } : {})
   });
   stopSearch(p);
   p.searchSpent = true;

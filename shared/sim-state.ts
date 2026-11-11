@@ -329,8 +329,8 @@ export interface SimState {
   pickups: PickupState[];
   /** Town buildings, by ground floor, that any player has been inside: where the map marks supplies left behind. */
   entered: Set<string>;
-  /** Buildings revealed by a map cache clue. */
-  clues: Set<string>;
+  /** Buildings revealed by a map cache clue, mapped to the item type found. */
+  clues: Map<string, string>;
   /** At the same index as the town's container list. */
   containers: ContainerState[];
   events: GameEvent[];

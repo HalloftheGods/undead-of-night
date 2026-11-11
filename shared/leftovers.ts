@@ -23,6 +23,7 @@ export interface LeftoverView {
   readonly at?: { readonly x: number; readonly y: number };
   readonly supplies: Partial<Record<SupplyKind, number>>;
   readonly clue?: boolean;
+  readonly clueItem?: string;
 }
 
 const MED_PICKUPS: ReadonlySet<string> = new Set(['bandage', 'medkit', 'disinfectant', 'antibiotics']);
@@ -94,7 +95,7 @@ export function leftoversOf(
   map: WorldMap,
   pickups: readonly PickupState[],
   entered: ReadonlySet<string>,
-  clues?: ReadonlySet<string>,
+  clues?: ReadonlyMap<string, string> | ReadonlySet<string>,
   containers: readonly ContainerState[] = [],
 ): LeftoverView[] {
   const byBuilding = new Map<string, Partial<Record<SupplyKind, number>>>();
@@ -111,11 +112,15 @@ export function leftoversOf(
     byBuilding.set(id, supplies);
   }
   const outdoors = containerLeftovers(map, containers, byBuilding);
-  const indoors = [...byBuilding].map(([building, supplies]) => ({
-    building,
-    supplies,
-    ...(clues?.has(building) ? { clue: true } : {}),
-  }));
+  const indoors = [...byBuilding].map(([building, supplies]) => {
+    const hasClue = clues?.has(building) ?? false;
+    const clueItem = clues instanceof Map ? clues.get(building) : undefined;
+    return {
+      building,
+      supplies,
+      ...(hasClue ? { clue: true, ...(clueItem ? { clueItem } : {}) } : {}),
+    };
+  });
   return [...indoors, ...outdoors];
 }
 

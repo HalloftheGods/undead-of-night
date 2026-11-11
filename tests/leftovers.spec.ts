@@ -123,6 +123,15 @@ describe('supplies left behind', () => {
     const leftovers = leftoversOf(state.map, state.pickups, new Set([house.id]), clues);
     expect(leftovers).toEqual([{ building: house.id, supplies: { med: 1 }, clue: true }]);
   });
+
+  it('flags a building as a clue with clueItem when clues is a map', () => {
+    const { state } = quietSim();
+    const house = firstHouse(state);
+    drop(state, 'shotgun', cornerOf(house));
+    const clues = new Map([[house.id, 'shotgun']]);
+    const leftovers = leftoversOf(state.map, state.pickups, new Set([house.id]), clues);
+    expect(leftovers).toEqual([{ building: house.id, supplies: { weapon: 1 }, clue: true, clueItem: 'shotgun' }]);
+  });
 });
 
 describe('supplies left in searched containers', () => {

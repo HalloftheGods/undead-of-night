@@ -145,6 +145,7 @@ export function drawClueCache(
   ctx: CanvasRenderingContext2D,
   box: { readonly x0: number; readonly y0: number; readonly x1: number; readonly y1: number },
   clock: CursorClock,
+  label = 'CACHE',
 ): void {
   const cx = Math.round((box.x0 + box.x1) / 2);
   const cy = Math.round((box.y0 + box.y1) / 2);
@@ -170,7 +171,7 @@ export function drawClueCache(
   }
 
   drawOutlinedPixelCircle(ctx, cx, cy, baseRadius, color, INK);
-  drawOutlinedText(ctx, 'CACHE', cx, box.y0 - FONT_HEIGHT - 3, color, INK);
+  drawOutlinedText(ctx, label, cx, box.y0 - FONT_HEIGHT - 3, color, INK);
 }
 
 export const CLUE_ICON: MapIcon = {

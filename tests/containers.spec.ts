@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CHARACTERS, characterOf } from '../shared/characters.ts';
-import { CLATTER_CHANCE, CLATTER_RADIUS } from '../shared/container-search.ts';
+import { CLATTER_CHANCE, CLATTER_RADIUS, LANDMARK_BUILDINGS } from '../shared/container-search.ts';
 import { CONTAINER_LOOT, containerLoot } from '../shared/container-loot.ts';
 import { containerInReach, SEARCH_SEC, townContainers } from '../shared/containers.ts';
 import type { Container } from '../shared/containers.ts';
@@ -501,7 +501,9 @@ describe('what is in them', () => {
   it('an empty search can turn up a map clue revealing an unvisited cache building', () => {
     const { sim, state, container } = setup((c) => c.kind === 'drawer');
     state.containers[container.id].loot = null;
-    const targetBuilding = state.map.buildings.find((b) => b.id !== container.building && b.of === undefined)!;
+    const [p] = state.players;
+    p.bottles = 4;
+    const targetBuilding = state.map.buildings.find((b) => b.id !== container.building && b.of === undefined && !LANDMARK_BUILDINGS.has(b.kind))!;
     state.pickups = [{ id: 'p1', type: 'medkit', x: targetBuilding.x + 20, y: targetBuilding.y + 20, ttl: null, rounds: 0 }];
     expect(state.entered.has(targetBuilding.id)).toBe(false);
 
@@ -509,10 +511,26 @@ describe('what is in them', () => {
     hold(sim);
     steps(sim, ticksFor(container));
 
+    expect(state.containers[container.id].opened).toBe(true);
     expect(state.entered.has(targetBuilding.id)).toBe(true);
-    expect(state.clues.has(targetBuilding.id)).toBe(true);
+    expect(state.clues.get(targetBuilding.id)).toBe('medkit');
     const leftovers = sim.snapshot().leftovers;
     expect(leftovers).toBeDefined();
-    expect(leftovers?.some((l) => l.building === targetBuilding.id && l.clue === true && (l.supplies.med ?? 0) > 0)).toBe(true);
+    expect(leftovers?.some((l) => l.building === targetBuilding.id && l.clue === true && l.clueItem === 'medkit' && (l.supplies.med ?? 0) > 0)).toBe(true);
+  });
+
+  it('map clues only reveal non-landmark buildings', () => {
+    const { sim, state, container } = setup((c) => c.kind === 'drawer');
+    state.containers[container.id].loot = null;
+    const [p] = state.players;
+    p.bottles = 4;
+    const landmarkBuilding = state.map.buildings.find((b) => b.id !== container.building && b.of === undefined && LANDMARK_BUILDINGS.has(b.kind))!;
+    state.pickups = [{ id: 'p1', type: 'shotgun', x: landmarkBuilding.x + 20, y: landmarkBuilding.y + 20, ttl: null, rounds: 0 }];
+
+    fixRoll(state, 0.05);
+    hold(sim);
+    steps(sim, ticksFor(container));
+
+    expect(state.clues.has(landmarkBuilding.id)).toBe(false);
   });
 });

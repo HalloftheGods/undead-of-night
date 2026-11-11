@@ -49,7 +49,7 @@ function emptyWorld(sim: SimState, level: number): void {
   sim.bullets = [];
   sim.pickups = [];
   sim.entered = new Set();
-  sim.clues = new Set();
+  sim.clues = new Map();
   sim.events = [];
   sim.flow.invalidate();
   sim.noiseFlow.invalidate();
