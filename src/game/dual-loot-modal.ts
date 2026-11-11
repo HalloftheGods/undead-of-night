@@ -30,6 +30,11 @@ export interface GearItemSource {
 
 export type ItemSource = GridItemSource | GearItemSource;
 
+/** Where a held item came from, by name: the grid it left or the gear slot it left. */
+export function sourceName(source: ItemSource): string {
+  return source.kind === 'grid' ? source.gridId : source.slotId;
+}
+
 export interface HeldItemState {
   readonly item: GridItem;
   readonly source: ItemSource;
@@ -386,12 +391,10 @@ export function rotateActiveItem(state: DualLootState): boolean {
     return true;
   }
 
-  const hasSelectedItem = state.selectedItemId !== null;
-  const hasSelectedGrid = state.selectedGridId !== null;
-  const canRotateSelected = hasSelectedItem && hasSelectedGrid;
-  if (canRotateSelected) {
-    const grid = resolveGridById(state, state.selectedGridId);
-    return rotateItem(grid, state.selectedItemId);
+  const { selectedGridId, selectedItemId } = state;
+  const hasSelection = selectedGridId !== null && selectedItemId !== null;
+  if (hasSelection) {
+    return rotateItem(resolveGridById(state, selectedGridId), selectedItemId);
   }
 
   return false;

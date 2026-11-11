@@ -14,6 +14,7 @@
     <div class="backpack-ring" data-touch-ui :style="{ '--slots': slots.length }">
       <span class="backpack-cord" aria-hidden="true" />
       <p v-if="lit" class="backpack-say">{{ lit.name }}</p>
+      <button class="backpack-grid-open px-frame" type="button" aria-label="Open the inventory grid" @click="emit('inventory')">Grid</button>
       <button
         v-for="(slot, index) in slots"
         :key="slot.code"
@@ -48,7 +49,7 @@ import SpriteImg from './SpriteImg.vue';
 const MIDDLE_BUTTON = 1;
 
 const props = defineProps<{ hud: HudState; art: ArtBook }>();
-const emit = defineEmits<{ close: []; action: [code: string] }>();
+const emit = defineEmits<{ close: []; action: [code: string]; inventory: [] }>();
 
 const hovered = ref<string | null>(null);
 /** When the wheel last stepped the highlight, for the cooldown. */
@@ -190,6 +191,21 @@ onBeforeUnmount(() => {
   border: calc(var(--dpx, 1px) * 2) dashed rgba(168, 154, 128, 0.4);
   border-radius: 50%;
   pointer-events: none;
+}
+
+/* The way into the grid inventory, under the survivor and clear of the ring's slots. */
+.backpack-grid-open {
+  position: absolute;
+  top: calc(var(--reach) * 0.25);
+  left: 0;
+  min-width: var(--tap, 44px);
+  min-height: var(--tap, 44px);
+  padding: 0 calc(var(--u) * 3);
+  background: rgba(11, 12, 16, 0.9);
+  color: var(--bone);
+  font-size: calc(var(--u) * 5);
+  transform: translateX(-50%);
+  cursor: pointer;
 }
 
 /* The lit slot's name, over the survivor's head where the game puts its other labels. */

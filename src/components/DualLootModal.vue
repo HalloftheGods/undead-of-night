@@ -5,7 +5,6 @@
     aria-modal="true"
     aria-labelledby="modal-title"
     tabindex="-1"
-    @keydown="onKeyDown"
   >
     <div class="dual-loot-modal px-frame">
       <header class="modal-header">
@@ -185,6 +184,7 @@ import {
   resolveGridById,
   returnHeldItemToSource,
   rotateActiveItem,
+  sourceName,
   type DualLootModalEmits,
   type DualLootModalProps,
   type GearSlotId,
@@ -367,28 +367,12 @@ function onClose(): void {
   emit('close');
 }
 
-function onKeyDown(event: KeyboardEvent): void {
-  const isEscKey = event.key === 'Escape' || event.key === 'Esc';
-  if (isEscKey) {
-    event.preventDefault();
-    onEscape();
-    return;
-  }
-  const isRotateKey = event.key === 'r' || event.key === 'R';
-  if (isRotateKey) {
-    event.preventDefault();
-    onRotateClick();
-  }
-}
-
 function onCellClick(gridId: GridIdentifier, col: number, row: number): boolean {
-  const isHolding = modalState.heldItem !== null;
-  const isNotHolding = !isHolding;
-  if (isNotHolding) return false;
-  const isFromGrid = modalState.heldItem!.source.kind === 'grid';
-  const sourceName = isFromGrid ? modalState.heldItem!.source.gridId : modalState.heldItem!.source.slotId;
+  const held = modalState.heldItem;
+  if (held === null) return false;
+  const from = sourceName(held.source);
   const placed = placeHeldItemInGrid(modalState, gridId, col, row);
-  if (placed) emit('transfer', { itemId: modalState.selectedItemId ?? '', source: sourceName, target: gridId });
+  if (placed) emit('transfer', { itemId: modalState.selectedItemId ?? '', source: from, target: gridId });
   return placed;
 }
 
@@ -483,6 +467,9 @@ onMounted(() => {
   const isWindowDefined = typeof window !== 'undefined';
   if (isWindowDefined) window.addEventListener('keydown', handleGlobalKey);
 });
+
+/** Esc from outside: put a held item back first, and close on the next press. */
+defineExpose({ escape: onEscape, rotate: onRotateClick });
 
 onUnmounted(() => {
   const isWindowDefined = typeof window !== 'undefined';

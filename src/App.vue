@@ -10,7 +10,7 @@
         <template v-if="ui.hud && ui.art">
           <HudOverlay :hud="ui.hud" :art="ui.art" :mode="ui.mode" :signal-weak="ui.signalWeak" :place="ui.place" :home="ui.home" :log="ui.log" />
         <DownedOverlay v-if="ui.hud.status !== 'alive'" :hud="ui.hud" :mode="ui.mode" />
-        <TouchControls v-if="ui.touch && !ui.bagOpen && !ui.paused" />
+        <TouchControls v-if="ui.touch && !ui.bagOpen && !ui.paused && !inventory.isOpen.value" />
         <!-- The backpack ring: the Backpack button on a phone, a middle-click on a desktop. -->
         <BackpackWheel
           v-if="ui.backpackOpen"
@@ -18,6 +18,17 @@
           :art="ui.art"
           @close="game.closeBackpack()"
           @action="game.pickFromBackpack($event)"
+          @inventory="openInventory"
+        />
+        <!-- The grid inventory: I on a desktop, the Grid button on the backpack ring on a phone. Local only. -->
+        <DualLootModal
+          v-if="inventory.isOpen.value && inventory.pack.value"
+          :key="inventory.openings.value"
+          ref="inventoryPanel"
+          container-title="Nearby"
+          :backpack-tier="inventory.pack.value.tier"
+          :backpack-grid="inventory.pack.value.grid"
+          @close="inventory.hide()"
         />
         <EmoteWheel :art="ui.art" :enabled="emotesOn" />
         <RoomInvite v-if="ui.onlineRoom && !ui.paused && ui.hud.teammates.length === 0" :room="ui.onlineRoom" :is-public="ui.onlinePublic" />
@@ -72,6 +83,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, provide, ref, useTemplateRef, watch } from 'vue';
 import BackpackWheel from './components/BackpackWheel.vue';
+import DualLootModal from './components/DualLootModal.vue';
 import ConnectionLost from './components/ConnectionLost.vue';
 import DeathSummary from './components/DeathSummary.vue';
 import DownedOverlay from './components/DownedOverlay.vue';
@@ -105,6 +117,7 @@ import WorkbenchScreen from './components/WorkbenchScreen.vue';
 import { privacyOpen, startAnalytics } from './game/analytics/index.ts';
 import { GameController } from './game/game-controller.ts';
 import { aimsCursor } from './game/home-screens.ts';
+import { useInventoryModal, type InventoryPanel } from './game/inventory-modal.ts';
 import { shouldShowSplash } from './game/studio-splash.ts';
 
 const game = new GameController();
@@ -112,6 +125,13 @@ const ui = game.ui;
 const splashing = ref(shouldShowSplash(window.location.search));
 const canvasRef = useTemplateRef<HTMLCanvasElement>('canvasRef');
 const pausedBook = ref<TitlePage | null>(null);
+const inventoryPanel = useTemplateRef<InventoryPanel>('inventoryPanel');
+const inventory = useInventoryModal(ui, game.input, inventoryPanel);
+
+function openInventory(): void {
+  game.closeBackpack();
+  inventory.show();
+}
 
 function onOpenPausedBook(page: TitlePage): void {
   pausedBook.value = page;
@@ -131,12 +151,12 @@ const aiming = computed(() =>
     mapOpen: ui.value.mapOpen || ui.value.bagOpen,
     bench: Boolean(ui.value.hud?.bench),
     home: ui.value.home,
-    backpackOpen: ui.value.backpackOpen,
+    backpackOpen: ui.value.backpackOpen || inventory.isOpen.value,
     inLobby: Boolean(ui.value.lobby && !ui.value.lobby.launched),
   })
 );
 /** The pause card, the town map and the candy bag each clear the level card and the banners off the screen. */
-const overlayUp = computed(() => ui.value.paused || ui.value.mapOpen || ui.value.bagOpen);
+const overlayUp = computed(() => ui.value.paused || ui.value.mapOpen || ui.value.bagOpen || inventory.isOpen.value);
 /** The emote wheel is for a team, and only while the keys are the game's. */
 const emotesOn = computed(() => aiming.value && ui.value.mode === 'coop');
 

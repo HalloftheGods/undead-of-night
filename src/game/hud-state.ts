@@ -1,3 +1,5 @@
+import type { BackpackTier } from '../../shared/backpack.ts';
+import type { FortificationInventory } from '../../shared/fortifications.ts';
 import { streetAt } from '../../shared/street-names.ts';
 import type { StreetSpot } from '../../shared/street-names.ts';
 import type { PaletteId, UiScale } from './display-prefs.ts';
@@ -114,6 +116,10 @@ export interface HudState {
   /** The street sign: where the survivor stands on the town's grid. Null indoors, underground and off the streets. */
   readonly street: StreetSpot | null;
   readonly moodles: readonly MoodleView[];
+  /** The pack the survivor carries, which sizes the inventory grid. Absent until the sim sends it. */
+  readonly backpackTier?: BackpackTier;
+  /** Planks, nails, curtain sheets and the two tools. Absent until the sim sends it. */
+  readonly materials?: FortificationInventory;
 }
 
 export interface MoodleView {
@@ -276,6 +282,8 @@ export function buildHud(snapshot: SnapshotPacket, local: PlayerEntity, spectati
     street: local.indoors === null ? streetAt(local.x, local.y) : null,
     boss: snapshot.boss ? { name: BOSSES[snapshot.boss.id].name, share: snapshot.boss.health / Math.max(1, snapshot.boss.maxHealth) } : null,
     moodles: buildMoodles(local.needs),
+    ...(local.backpackTier ? { backpackTier: local.backpackTier } : {}),
+    ...(local.materials ? { materials: { ...local.materials } } : {}),
   };
 }
 
