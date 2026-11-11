@@ -402,13 +402,11 @@ export class TownMapView {
 
   revealPlayers(players: readonly PlayerEntity[]): void {
     const onMap = players.filter((player) => player.status !== 'dead');
-    const sewerShift = this.map.sewers ? this.map.sewers.top * TILE_SIZE : 0;
     for (const player of onMap) {
       const at = groundOf(this.map, player.x, player.y);
       const isPlayerBelow = this.isBelow(player);
-      const shiftY = isPlayerBelow ? sewerShift : 0;
       const px = Math.round(at.x / this.worldPerPx);
-      const py = Math.round((at.y - shiftY) / this.worldPerPx);
+      const py = Math.round(at.y / this.worldPerPx);
       this.fog.reveal(px, py, isPlayerBelow);
     }
   }
@@ -434,7 +432,6 @@ export class TownMapView {
     const under = isViewerBelow ? this.underBase() : null;
     if (under) {
       ctx.drawImage(under, 0, 0);
-      this.fog.drawFog(ctx, true);
       ctx.globalAlpha = SURFACE_GHOST_ALPHA;
       ctx.drawImage(this.base, 0, 0);
       ctx.globalAlpha = 1;

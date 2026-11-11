@@ -150,4 +150,15 @@ describe('layer filtering and zombie blip rendering', () => {
     player.y = 450;
     expect(() => view.revealPlayers([player])).not.toThrow();
   });
+
+  it('paints sewer map without fog obscuring it when underground', () => {
+    const map = generateWorldMap(4242);
+    const view = new TownMapView(map);
+    const ctx = fakeCanvas().getContext() as unknown as CanvasRenderingContext2D;
+    const sewerY = (map.sewers?.top ?? 200) * 32 + 100;
+    const sewerPlayer = makePlayer({ x: 300, y: sewerY });
+
+    expect(() => view.paint(ctx, [sewerPlayer], sewerPlayer.id)).not.toThrow();
+    expect(() => view.revealPlayers([sewerPlayer])).not.toThrow();
+  });
 });
