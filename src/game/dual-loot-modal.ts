@@ -1,3 +1,4 @@
+import type { ArtBook } from '../art/types.ts';
 import { backpackDef, type BackpackTier } from '../../shared/backpack.ts';
 import {
   autoPackItem,
@@ -49,6 +50,8 @@ export interface GearEquipState {
 }
 
 export interface DualLootModalProps {
+  /** The game's sprites, for drawing each item; without it items fall back to their names. */
+  art?: ArtBook | null;
   containerTitle?: string;
   containerGrid?: InventoryGrid;
   backpackTier?: BackpackTier;

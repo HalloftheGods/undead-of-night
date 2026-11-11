@@ -25,7 +25,7 @@
         </div>
 
         <div v-if="isHoldingItem" class="held-item-banner">
-          <span class="held-icon">📦</span>
+          <span class="held-icon"><LootItemArt :art :type="modalState.heldItem!.item.type" :name="heldItemDisplayName" /></span>
           <span class="held-label">
             HOLDING: <strong>{{ heldItemDisplayName }}</strong> ({{ heldItemDimensions.width }}x{{ heldItemDimensions.height }})
           </span>
@@ -73,8 +73,7 @@
               @dragstart="onItemDragStart($event, 'container', item)"
               @dragend="onItemDragEnd"
             >
-              <span class="item-name">{{ getItemName(item.type) }}</span>
-              <span class="item-meta">{{ getItemDimensionsLabel(item) }}</span>
+              <LootItemArt :art :type="item.type" :name="getItemName(item.type)" :scale="getItemArtScale(item)" :count="item.count" :ammo="item.ammo" />
             </div>
           </div>
         </section>
@@ -102,10 +101,7 @@
             >
               <span class="gear-slot-tag">{{ slot.label }}</span>
               <div v-if="modalState.gear[slot.id]" class="gear-item-card">
-                <span class="gear-item-name">{{ getItemName(modalState.gear[slot.id]!.type) }}</span>
-                <span v-if="modalState.gear[slot.id]!.ammo !== undefined" class="gear-item-ammo">
-                  {{ modalState.gear[slot.id]!.ammo }} RDS
-                </span>
+                <LootItemArt :art :type="modalState.gear[slot.id]!.type" :name="getItemName(modalState.gear[slot.id]!.type)" :scale="2" :ammo="modalState.gear[slot.id]!.ammo" />
               </div>
               <div v-else class="gear-empty-slot">
                 <span>{{ slot.emptyLabel }}</span>
@@ -151,8 +147,7 @@
                 @dragstart="onItemDragStart($event, section.id, item)"
                 @dragend="onItemDragEnd"
               >
-                <span class="item-name">{{ getItemName(item.type) }}</span>
-                <span class="item-meta">{{ getItemDimensionsLabel(item) }}</span>
+                <LootItemArt :art :type="item.type" :name="getItemName(item.type)" :scale="getItemArtScale(item)" :count="item.count" :ammo="item.ammo" />
               </div>
             </div>
           </div>
@@ -168,6 +163,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
+import LootItemArt from './LootItemArt.vue';
 import { backpackDef } from '../../shared/backpack.ts';
 import { getItemFootprint, type GridFootprint, type GridItem } from '../../shared/grid-inventory.ts';
 import {
@@ -193,6 +189,7 @@ import {
 } from '../game/dual-loot-modal.ts';
 
 const props = withDefaults(defineProps<DualLootModalProps>(), {
+  art: null,
   containerTitle: 'Cabinet',
   backpackTier: 'satchel',
   equippedPrimary: null,
@@ -280,9 +277,10 @@ function getItemName(type: string): string {
   return formatItemName(type);
 }
 
-function getItemDimensionsLabel(item: GridItem): string {
+/** A sprite is drawn double size once the item covers at least two cells each way. */
+function getItemArtScale(item: GridItem): number {
   const dims = getItemFootprint(item.type, item.rotated);
-  return `${dims.width}x${dims.height}`;
+  return Math.min(2, dims.width, dims.height);
 }
 
 function getItemCustomProperties(item: GridItem) {

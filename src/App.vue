@@ -25,6 +25,7 @@
           v-if="inventory.isOpen.value && inventory.working.value"
           :key="inventory.openings.value"
           ref="inventoryPanel"
+          :art="ui.art"
           container-title="Nearby"
           :backpack-tier="inventory.working.value.tier"
           :backpack-grid="inventory.working.value.pack"
