@@ -19,11 +19,9 @@ defineProps<{ bars: readonly PickBar[] }>();
 
 <style scoped>
 .pick-bars {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  column-gap: calc(var(--u) * 3);
-  row-gap: calc(var(--u) * 2.5);
-  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 1.5);
   width: 100%;
   padding: calc(var(--u) * 1.5) calc(var(--u) * 2) calc(var(--u) * 1);
   box-sizing: border-box;
@@ -35,12 +33,6 @@ defineProps<{ bars: readonly PickBar[] }>();
   justify-content: space-between;
   gap: calc(var(--u) * 1.5);
   min-width: 0;
-}
-
-.pick-bar:last-child:nth-child(odd) {
-  grid-column: 1 / -1;
-  max-width: 55%;
-  justify-self: center;
   width: 100%;
 }
 
