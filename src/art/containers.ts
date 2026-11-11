@@ -4,6 +4,7 @@
 import type { Container, ContainerKind } from '../../shared/containers.ts';
 import type { PropKind } from '../../shared/protocol.ts';
 import { buildCrateArt } from './containers/cartons.ts';
+import { buildDumpsterArt } from './containers/dumpster.ts';
 import { buildBedArt, buildBenchArt, buildCounterArt, buildDeskArt } from './containers/fittings.ts';
 import { buildFridgeArt, buildLockerArt, buildShelfArt } from './containers/shelving.ts';
 import type { ContainerArt } from './containers/stage.ts';
@@ -47,6 +48,6 @@ export function buildContainers(props: Record<PropKind, PixelSprite>): Record<Co
     ...buildCarArt(props),
     bowl: buildCandyBowlArt(props.candy_bowl),
     booth: { closed: props.fireworks_bus, opened: buildFireworksBusSoldOut() },
-    dumpster: { closed: props.dumpster, opened: props.dumpster },
+    dumpster: buildDumpsterArt(props.dumpster),
   };
 }
