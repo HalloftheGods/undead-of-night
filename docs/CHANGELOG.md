@@ -2,6 +2,13 @@
 
 All notable changes to the Undead of Night: Last Round game are documented in this file.
 
+## [2026-11-12] - Record books start again at level 100
+
+### Changed
+- Personal bests, the top-five ledger, the best trip and the daily ghosts start again under `.v2` storage keys: points are now a tenth of the old ones times the town, so old records cannot be compared. The old entries stay in storage and are not shown.
+- The daily log moves to `outbreak.daily.v2`. Days played before the change are carried over, so streaks and the streak kit survive; they keep their Counted stamp, kills and town, show no points, and are never the best night.
+- The day of the change is not carried over, so its first run on the new scale is the one that counts.
+
 ## [2026-11-12] - AP upkeep: one level a week
 
 ### Changed
