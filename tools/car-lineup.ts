@@ -4,6 +4,7 @@
 
 import { writeFileSync } from 'node:fs';
 import type { PropKind } from '../shared/protocol.ts';
+import { VEHICLE_BODY_IDS, VEHICLE_FACINGS } from '../shared/vehicle-bodies.ts';
 import { buildArtBook } from '../src/art/index.ts';
 import type { PixelSprite } from '../src/art/types.ts';
 import { encodePng } from './png.ts';
@@ -27,7 +28,18 @@ const searched = Object.values(art.paintedContainers).map((coats) => coats![2].o
 const emergencyLooks = ['police', 'police_v', 'ambulance'] as const;
 rows.push({ label: 'SEARCHED', sprites: [...searched, ...emergencyLooks.map((look) => art.containers[look].opened)] });
 
-const cols = Math.max(12, ...rows.map((row) => row.sprites.length), lit.length);
+// Every body facing N, E, S, W in three coats, then the light bars lit over the four facings.
+const FACING_COATS = [0, 2, 3];
+for (const body of VEHICLE_BODY_IDS) {
+  const coats = art.vehicles[body].w.length;
+  const picks = FACING_COATS.filter((i) => i < coats);
+  rows.push({ label: `${body.toUpperCase()} NESW`, sprites: picks.flatMap((i) => VEHICLE_FACINGS.map((facing) => art.vehicles[body][facing][i])) });
+}
+const barLit = (['police', 'ambulance'] as const).flatMap((body) =>
+  VEHICLE_FACINGS.flatMap((facing) => art.vehicleBeacons[body]![facing].frames.map((frame) => ({ body: art.vehicles[body][facing][0], frame }))),
+);
+rows.push({ label: 'BARS LIT', sprites: [] });
+const cols = Math.max(12, ...rows.map((row) => row.sprites.length), lit.length, barLit.length);
 const sheet = new Sheet(cols * CELL_W, rows.length * (CELL_H + LABEL), 0x3a3c4c);
 rows.forEach((row, r) => {
   const top = r * (CELL_H + LABEL);
@@ -42,6 +54,12 @@ lit.forEach(({ kind, frame }, col) => {
   const body = art.environment.props[kind];
   drawSprite(sheet, body, col * CELL_W + 32 - body.ax, lightsTop + LABEL + CELL_H - 8 - body.ay, 1);
   drawSprite(sheet, frame, col * CELL_W + 32 - frame.ax, lightsTop + LABEL + CELL_H - 8 - frame.ay, 1);
+});
+const barsTop = rows.findIndex((row) => row.label === 'BARS LIT') * (CELL_H + LABEL);
+barLit.forEach(({ body, frame }, col) => {
+  const [x, y] = [col * CELL_W + 32, barsTop + LABEL + CELL_H - 8];
+  drawSprite(sheet, body, x - body.ax, y - body.ay, 1);
+  drawSprite(sheet, frame, x - frame.ax, y - frame.ay, 1);
 });
 const big = sheet.scaled(scale);
 writeFileSync(out, encodePng(big.w, big.h, big.data));

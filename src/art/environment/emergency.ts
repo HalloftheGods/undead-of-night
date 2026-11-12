@@ -19,7 +19,7 @@ const BEACON_FPS = 4;
 
 type Lamp = readonly [x: number, y: number, w: number, h: number];
 
-interface Bar {
+export interface Bar {
   /** Lit in the first frame. */
   readonly first: readonly Lamp[];
   readonly firstColor: readonly [dim: Color, lit: Color];
@@ -28,18 +28,18 @@ interface Bar {
   readonly secondColor: readonly [dim: Color, lit: Color];
 }
 
-const RED: readonly [Color, Color] = [blood[1], blood[3]];
-const BLUE: readonly [Color, Color] = [denim[0], denim[2]];
-const CLEAR: readonly [Color, Color] = [bone[0], bone[3]];
+export const RED: readonly [Color, Color] = [blood[1], blood[3]];
+export const BLUE: readonly [Color, Color] = [denim[0], denim[2]];
+export const CLEAR: readonly [Color, Color] = [bone[0], bone[3]];
 
-function paintBar(c: PixelCanvas, bar: Bar, litFirst: boolean | null): void {
+export function paintBar(c: PixelCanvas, bar: Bar, litFirst: boolean | null): void {
   const shade = (pair: readonly [Color, Color], lit: boolean): Color => (lit ? pair[1] : pair[0]);
   for (const [x, y, w, h] of bar.first) c.rect(x, y, w, h, shade(bar.firstColor, litFirst === true));
   for (const [x, y, w, h] of bar.second) c.rect(x, y, w, h, shade(bar.secondColor, litFirst === false));
 }
 
 /** Two frames, each with one side of the bar lit, sized and anchored like the body under them. */
-function beacon(w: number, h: number, left: number, footprintW: number, ground: number, bar: Bar): Clip {
+export function beacon(w: number, h: number, left: number, footprintW: number, ground: number, bar: Bar): Clip {
   const frame = (litFirst: boolean): PixelSprite => {
     const c = new PixelCanvas(w, h);
     const lamps = litFirst ? bar.first : bar.second;
@@ -54,7 +54,7 @@ function beacon(w: number, h: number, left: number, footprintW: number, ground: 
 const CRUISER_BAR: Bar = { first: [[20, 3, 8, 3]], firstColor: RED, second: [[20, 6, 8, 3]], secondColor: BLUE };
 
 /** Paints the parts of a black body white: the doors and the roof, the old two-tone. */
-function twoTone(c: PixelCanvas, x0: number, y0: number, x1: number, y1: number): void {
+export function twoTone(c: PixelCanvas, x0: number, y0: number, x1: number, y1: number): void {
   const swap = new Map<Color, Color>([[BLACK[1], WHITE[1]], [BLACK[2], WHITE[2]]]);
   for (let y = y0; y <= y1; y++) {
     for (let x = x0; x <= x1; x++) {

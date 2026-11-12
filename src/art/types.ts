@@ -3,6 +3,7 @@ import type { EmoteId } from '../../shared/emotes.ts';
 import type { GameStyle } from '../../shared/game-style.ts';
 import type { MerchantId } from '../../shared/home-protocol.ts';
 import type { BuildingKind, CandyId, PickupType, PropKind, TileKind, WeaponId, ZombieType } from '../../shared/protocol.ts';
+import type { VehicleBody, VehicleFacing } from '../../shared/vehicle-bodies.ts';
 import type { ContainerArt, ContainerLook } from './containers.ts';
 
 /**
@@ -229,6 +230,10 @@ export interface ArtBook {
   /** Shut and searched art for each of a car's coats, in paintJobs order. */
   readonly paintedContainers: Partial<Record<PropKind, readonly ContainerArt[]>>;
   readonly merchants: Record<MerchantId, MerchantArt>;
+  /** Every driveable body facing each way, one sprite per coat, in the order of its side-on paintJobs. Anchored like a prop at the footprint's bottom centre. */
+  readonly vehicles: Record<VehicleBody, Record<VehicleFacing, readonly PixelSprite[]>>;
+  /** The police car's and the ambulance's light bars for each facing, sized and anchored like the sprite under them. */
+  readonly vehicleBeacons: Partial<Record<VehicleBody, Record<VehicleFacing, Clip>>>;
   readonly fx: FxArt;
   readonly ui: UiArt;
 }

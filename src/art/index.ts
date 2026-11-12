@@ -4,6 +4,7 @@ import type { ArtBook } from './types.ts';
 import { buildContainers } from './containers.ts';
 import { buildPaintedCars } from './containers/vehicles.ts';
 import { buildEnvironment } from './environment.ts';
+import { buildVehicleArt } from './environment/vehicle-facings.ts';
 import { buildMerchants } from './environment/merchants.ts';
 import { buildFx, buildPickups } from './fx.ts';
 import { buildSurvivors } from './survivors.ts';
@@ -14,6 +15,7 @@ let book: ArtBook | null = null;
 
 function assemble(): ArtBook {
   const environment = buildEnvironment();
+  const { vehicles, vehicleBeacons } = buildVehicleArt(environment);
   return {
     survivors: buildSurvivors(),
     zombies: buildZombies(),
@@ -22,6 +24,8 @@ function assemble(): ArtBook {
     containers: buildContainers(environment.props),
     paintedContainers: buildPaintedCars(environment.paintJobs),
     merchants: buildMerchants(),
+    vehicles,
+    vehicleBeacons,
     fx: buildFx(),
     ui: buildUi(),
   };
