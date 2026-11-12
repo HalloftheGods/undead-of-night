@@ -49,6 +49,16 @@ All notable changes to the Undead of Night: Last Round game are documented in th
 - The floating kill text names the chain multiplier only when the chain changed the points; the HEADSHOT text shows the bonus only when the shot paid, and still counts the streak.
 - `zombie_die` events carry `chainPaid`.
 
+## [2026-11-12] - Car Handling: Driver's-Seat Steering & Turn Models
+
+### Changed
+- Cars steer from the driver's seat: up is gas, down brakes and then reverses, left and right turn the wheel. The wheel only bites while the car rolls, steering flips in reverse, and a parked car stirs on a pedal rather than the wheel alone. Keyboard, left stick and touch stick all send the same four directions.
+- Snapshots carry a car's heading to four places, since nothing pulls a steered nose back to a round number.
+
+### Added
+- Turn models: between its four hand-drawn facings a driven car is drawn from a small solid folded out of its side-on, nose-up and nose-down sprites, at 32 steps round the ring, so a turn runs from the side view to the top-down view. Sprites are drawn on first need and warmed one a frame; police and ambulance light bars turn with the car.
+- `tools/car-lineup.ts` shows every body round the ring.
+
 ## [2026-11-11] - Bunker Locker 4x12 Grid & World Locker Grid Sizing
 
 ### Added
