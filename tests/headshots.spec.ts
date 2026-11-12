@@ -227,7 +227,7 @@ describe('aim on the wire', () => {
     const sender = new InputSender({ sample: () => input() } as never);
     sender.aimPoint = aimPoint;
     const transport = { sendInput: (packet: Record<string, unknown>) => sent.push(packet) };
-    const world = { localPlayer: null, predictor: { record: () => undefined } };
+    const world = { localPlayer: null, predictor: { record: () => undefined }, recordInput: () => undefined };
     sender.send(transport as never, world as never, 0, 0, 0, 1);
     return sent[0];
   }
