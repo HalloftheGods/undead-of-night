@@ -1,14 +1,22 @@
 import { describe, expect, it, vi } from 'vitest';
 import { eventsOf, quietSim, addRoamer } from './helpers/sim-harness.ts';
 import { drive, seatDriver } from './helpers/vehicle-scene.ts';
-import { carSounds, ENGINE_NOISE_INTERVAL_SEC, ENGINE_NOISE_MIN_SPEED, HORN_COOLDOWN_SEC } from '../shared/vehicle-feel.ts';
+import { carSounds, ENGINE_NOISE_INTERVAL_SEC, ENGINE_NOISE_MIN_SPEED, HORN_COOLDOWN_SEC, HORN_NOISE_RADIUS } from '../shared/vehicle-feel.ts';
+import { VEHICLE_TOP_SPEED } from '../shared/vehicle-physics.ts';
 import { checkVehicleRoadkill, MIN_ROADKILL_SPEED } from '../shared/vehicle-combat.ts';
-import { TICK_RATE } from '../shared/constants.ts';
+import { TICK_RATE, WEAPONS } from '../shared/constants.ts';
 
-const noiseCalls = vi.hoisted(() => ({ count: 0 }));
+const noiseCalls = vi.hoisted(() => ({ count: 0, radii: [] as number[] }));
 vi.mock('../shared/zombie-senses.ts', async (importOriginal) => {
   const original = await importOriginal<typeof import('../shared/zombie-senses.ts')>();
-  return { ...original, makeNoise: (...args: Parameters<typeof original.makeNoise>) => { noiseCalls.count++; original.makeNoise(...args); } };
+  return {
+    ...original,
+    makeNoise: (...args: Parameters<typeof original.makeNoise>) => {
+      noiseCalls.count++;
+      noiseCalls.radii.push(args[3]);
+      original.makeNoise(...args);
+    },
+  };
 });
 
 /** A zombie standing `ahead` px past the car's centre along its heading and `side` px off it. */
@@ -106,9 +114,10 @@ describe('horn', () => {
 });
 
 describe('engine noise', () => {
-  it('a loud car pushes a noise every interval; a slow one stays quiet', () => {
+  it('a rolling car pushes a noise every interval; a slow empty one stays quiet', () => {
     const { sim, state } = quietSim();
     const { car } = seatDriver(sim, state);
+    car.seats[0] = null;
     noiseCalls.count = 0;
     car.speed = ENGINE_NOISE_MIN_SPEED - 1;
     for (let i = 0; i < 3 * TICK_RATE; i++, state.tick++) carSounds(state, car);
@@ -116,5 +125,50 @@ describe('engine noise', () => {
     car.speed = ENGINE_NOISE_MIN_SPEED + 40;
     for (let i = 0; i < 3 * TICK_RATE; i++, state.tick++) carSounds(state, car);
     expect(noiseCalls.count).toBe(Math.floor(3 / ENGINE_NOISE_INTERVAL_SEC));
+  });
+
+  it('is louder than any gun, and louder still at speed', () => {
+    const { sim, state } = quietSim();
+    const { car } = seatDriver(sim, state);
+    const loudest = Math.max(...Object.values(WEAPONS).map((w) => w.noiseRadius));
+    const radiusAt = (speed: number): number => {
+      noiseCalls.radii.length = 0;
+      car.speed = speed;
+      for (let i = 0; i < 2 * TICK_RATE; i++, state.tick++) carSounds(state, car);
+      return Math.max(...noiseCalls.radii);
+    };
+    expect(radiusAt(ENGINE_NOISE_MIN_SPEED + 1)).toBeGreaterThan(loudest);
+    expect(radiusAt(VEHICLE_TOP_SPEED)).toBeGreaterThan(radiusAt(ENGINE_NOISE_MIN_SPEED + 1));
+  });
+
+  it('an idling engine under a driver is heard, but only close by', () => {
+    const { sim, state } = quietSim();
+    const { car } = seatDriver(sim, state);
+    car.speed = 0;
+    noiseCalls.count = 0;
+    noiseCalls.radii.length = 0;
+    for (let i = 0; i < 3 * TICK_RATE; i++, state.tick++) carSounds(state, car);
+    expect(noiseCalls.count).toBeGreaterThan(0);
+    expect(Math.max(...noiseCalls.radii)).toBeLessThan(WEAPONS.pistol.noiseRadius);
+  });
+
+  it('draws a zombie far beyond gunshot range to a car at speed', () => {
+    const { sim, state } = quietSim();
+    const { car, nose, keys } = seatDriver(sim, state);
+    const farther = WEAPONS.shotgun.noiseRadius + 80;
+    const z = addRoamer(state, 'walker', car.x + nose.x * farther, car.y + nose.y * farther);
+    z.mode = 'wander';
+    let noticed = false;
+    for (let i = 0; i < Math.round(1.5 * TICK_RATE); i++) {
+      drive(sim, 1, keys);
+      noticed ||= z.mode !== 'wander';
+    }
+    expect(noticed).toBe(true);
+  });
+});
+
+describe('horn loudness', () => {
+  it('carries farther than a shotgun', () => {
+    expect(HORN_NOISE_RADIUS).toBeGreaterThan(WEAPONS.shotgun.noiseRadius);
   });
 });

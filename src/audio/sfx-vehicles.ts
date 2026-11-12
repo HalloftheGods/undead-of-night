@@ -9,10 +9,12 @@ export const vehicleDoor: Recipe = (v) => {
   noise(v, { at: 0.02, filter: 'lowpass', freq: 600, decay: 0.1, gain: 0.45 });
 };
 
-/** A car horn: two close notes held together, a little flat and nasal. */
+/** A car horn: two close notes and a third above them held together, loud and a little nasal, with a hard blare on the front. */
 export const carHorn: Recipe = (v) => {
-  tone(v, { type: 'sawtooth', f0: 392, attack: 0.012, hold: 0.28, decay: 0.08, gain: 0.2, lp: 2200 });
-  tone(v, { type: 'sawtooth', f0: 494, attack: 0.012, hold: 0.28, decay: 0.08, gain: 0.16, lp: 2200 });
+  noise(v, { filter: 'bandpass', freq: 1800, q: 2, decay: 0.03, gain: 0.25 });
+  tone(v, { type: 'sawtooth', f0: 392, attack: 0.008, hold: 0.42, decay: 0.12, gain: 0.5, lp: 2600 });
+  tone(v, { type: 'sawtooth', f0: 494, attack: 0.008, hold: 0.42, decay: 0.12, gain: 0.42, lp: 2600 });
+  tone(v, { type: 'square', f0: 784, attack: 0.008, hold: 0.42, decay: 0.12, gain: 0.1, lp: 2400 });
 };
 
 /** Metal against something solid: a hard bang, a crunch of noise and a ring of sheet metal. */
