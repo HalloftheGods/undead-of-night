@@ -1,4 +1,6 @@
 import type { GameStyle } from '../../shared/game-style.ts';
+import { EngineLoop } from './engine-sound.ts';
+import type { EngineTarget } from './engine-sound.ts';
 import type { GameEvent, PlayerEntity, WeaponId, WorldMap, ZombieType } from '../../shared/protocol.ts';
 import { LOW_HEALTH } from '../game/heartbeat.ts';
 import { playEventSound } from './event-sounds.ts';
@@ -97,6 +99,7 @@ export class AudioEngine {
   /** True while a recorded track is playing, which ducks the biome beds under it. */
   private trackPlaying = false;
   private readonly beds = new AmbienceBed();
+  private engine: EngineLoop | null = null;
   private readonly hordeWarning = new HordeWarning();
   private readonly hordeListeners = new Set<HordeWarningListener>();
 
@@ -340,6 +343,14 @@ export class AudioEngine {
     return true;
   }
 
+  /** The engine of the nearest occupied car, or null to let it fade out. */
+  driveEngine(target: EngineTarget | null): void {
+    const mixer = this.mixer;
+    if (!mixer) return;
+    this.engine ??= new EngineLoop(mixer.ctx, mixer.sfx);
+    this.engine.set(target);
+  }
+
   tick(dt: number, zombies: readonly { x: number; y: number; type: ZombieType }[]): void {
     const mixer = this.mixer;
     if (!mixer) return;
@@ -418,6 +429,8 @@ export class AudioEngine {
   }
 
   dispose(): void {
+    this.engine?.dispose();
+    this.engine = null;
     this.shellLoads.clear();
     this.clearPreviewTimer();
     this.beds.reset();

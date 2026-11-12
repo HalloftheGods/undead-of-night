@@ -152,6 +152,12 @@ const EVENT_SOUNDS: EventSounds = {
     const p = at(0, 0, e.playerId);
     mixer.play('emote', { local: true, pitch: EMOTE_PITCH[e.emote], gain: p.local ? 1 : OTHER_EMOTE_GAIN });
   },
+  vehicle_enter: (e, { mixer, at }) => mixer.play('vehicle_door', at(e.x, e.y, e.playerId)),
+  vehicle_exit: (e, { mixer, at }) => mixer.play('vehicle_door', at(e.x, e.y, e.playerId)),
+  vehicle_horn: (e, { mixer }) => mixer.play('car_horn', { x: e.x, y: e.y }),
+  // A crash gets louder and lower the harder the car hit.
+  vehicle_crash: (e, { mixer }) => mixer.play('car_crash', { x: e.x, y: e.y, gain: 0.4 + 0.6 * Math.min(1, e.strength), pitch: 1.15 - 0.3 * Math.min(1, e.strength) }),
+  vehicle_hit: (e, { mixer }) => mixer.play('car_hit', { x: e.x, y: e.y, gain: 0.5 + 0.5 * Math.min(1, e.strength) }),
   game_over: (e, { mixer }) => mixer.play(e.stats.outcome === 'victory' ? 'run_victory' : 'game_over', { local: true }),
 };
 

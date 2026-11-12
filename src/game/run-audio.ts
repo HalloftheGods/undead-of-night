@@ -1,3 +1,4 @@
+import { engineTarget } from '../audio/engine-sound.ts';
 import type { AudioEngine } from '../audio/audio-engine.ts';
 import type { SceneView } from '../engine/scene.ts';
 import type { ClientWorld } from './client-world.ts';
@@ -28,6 +29,7 @@ export function tickRunAudio(
   if (isHeartbeat) audio.heartbeat(health);
   const latest = world.latest;
   audio.setHordeClock(latest?.phase === 'intermission' ? latest.intermission : null);
+  audio.driveEngine(engineTarget(scene.vehicles, scene.focusX, scene.focusY));
   audio.tick(dt, scene.zombies);
   audio.stepPlayers(scene.players, world.localId, world.worldMap, dt);
   audio.stompZombies(scene.zombies);

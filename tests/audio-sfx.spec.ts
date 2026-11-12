@@ -55,6 +55,7 @@ describe('sfx registry', () => {
     'door_open', 'door_close', 'plank_nail', 'plank_pry', 'door_bang', 'door_break', 'bunker_lost', 'emote',
     'pickup_fuel', 'pickup_battery', 'pickup_metal', 'pickup_tool', 'pickup_pills', 'pickup_wood', 'pickup_nails',
     'pickup_cloth', 'pickup_can', 'pickup_water', 'pickup_candy',
+    'vehicle_door', 'car_horn', 'car_crash', 'car_hit',
   ];
 
   /** The latest time any source in a recipe is told to stop, over a few seeds. */
@@ -131,6 +132,17 @@ describe('event sounds', () => {
     const over = (outcome: string) => ev({ type: 'game_over', stats: { outcome, difficulty: 'lights_out', level: 10, wave: 3, durationSec: 1, players: [] } });
     expect(names(over('victory'))).toEqual(['run_victory']);
     expect(names(over('defeat'))).toEqual(['game_over']);
+  });
+
+  it('gives each vehicle event a sound, the crash louder with strength', () => {
+    const car = { vehicle: 1, x: 5, y: 6 };
+    expect(names(ev({ type: 'vehicle_enter', ...car, playerId: LOCAL, seat: 0 }))).toEqual(['vehicle_door']);
+    expect(names(ev({ type: 'vehicle_exit', ...car, playerId: 'p2', seat: 0 }))).toEqual(['vehicle_door']);
+    expect(soundsOf(ev({ type: 'vehicle_horn', ...car }))).toEqual([['car_horn', { x: 5, y: 6 }]]);
+    const gainOf = (strength: number) => soundsOf(ev({ type: 'vehicle_crash', ...car, strength }))[0][1]?.gain ?? 0;
+    expect(names(ev({ type: 'vehicle_crash', ...car, strength: 0.5 }))).toEqual(['car_crash']);
+    expect(gainOf(0.9)).toBeGreaterThan(gainOf(0.3));
+    expect(names(ev({ type: 'vehicle_hit', ...car, strength: 0.5, kill: false }))).toEqual(['car_hit']);
   });
 
   it('lands a supply crate with a thump of its own', () => {

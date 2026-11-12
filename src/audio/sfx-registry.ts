@@ -9,6 +9,7 @@ import * as B from './sfx-bosses.ts';
 import * as AMB from './sfx-ambience.ts';
 import * as WD from './sfx-world.ts';
 import * as SV from './sfx-salvage.ts';
+import * as VH from './sfx-vehicles.ts';
 
 export interface SfxDef {
   readonly play: Recipe;
@@ -149,6 +150,11 @@ export const SFX = {
   door_break: def(WD.doorBreak, 0.7, { gain: 1.3, voices: 2, cooldown: 0.3, vary: 0.06 }),
   bunker_lost: def(WD.bunkerLost, 2.0, { gain: 1.4, voices: 1, cooldown: 3, vary: 0 }),
   emote: def(WD.emote, 0.25, { gain: 1.4, voices: 3, cooldown: 0.1, vary: 0 }),
+  // Cars: doors, the horn, a crash and a body on the bumper. A horn and a crash are rate-limited like a door.
+  vehicle_door: def(VH.vehicleDoor, 0.3, { gain: 1.5, voices: 3, cooldown: 0.15, vary: 0.06 }),
+  car_horn: def(VH.carHorn, 0.5, { gain: 1.6, voices: 2, cooldown: 0.3, vary: 0.02 }),
+  car_crash: def(VH.carCrash, 0.55, { gain: 1.5, voices: 2, cooldown: 0.2, vary: 0.08 }),
+  car_hit: def(VH.carHit, 0.25, { gain: 1.5, voices: 4, cooldown: 0.08, vary: 0.1 }),
 } as const satisfies Record<string, SfxDef>;
 
 export type SfxName = keyof typeof SFX;
