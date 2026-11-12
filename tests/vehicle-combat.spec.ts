@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { eventsOf, quietSim, addRoamer } from './helpers/sim-harness.ts';
 import { drive, seatDriver } from './helpers/vehicle-scene.ts';
-import { carSounds, ENGINE_NOISE_INTERVAL_SEC, ENGINE_NOISE_MIN_SPEED, HORN_COOLDOWN_SEC, HORN_NOISE_RADIUS } from '../shared/vehicle-feel.ts';
+import { carSounds, ENGINE_NOISE_INTERVAL_SEC, ENGINE_NOISE_MAX_RADIUS, ENGINE_NOISE_MIN_SPEED, HORN_COOLDOWN_SEC, HORN_NOISE_RADIUS } from '../shared/vehicle-feel.ts';
 import { VEHICLE_TOP_SPEED } from '../shared/vehicle-physics.ts';
 import { checkVehicleRoadkill, MIN_ROADKILL_SPEED } from '../shared/vehicle-combat.ts';
 import { TICK_RATE, WEAPONS } from '../shared/constants.ts';
@@ -168,7 +168,8 @@ describe('engine noise', () => {
 });
 
 describe('horn loudness', () => {
-  it('carries farther than a shotgun', () => {
+  it('carries farther than a shotgun and a flat-out engine: the whole block', () => {
     expect(HORN_NOISE_RADIUS).toBeGreaterThan(WEAPONS.shotgun.noiseRadius);
+    expect(HORN_NOISE_RADIUS).toBeGreaterThan(ENGINE_NOISE_MAX_RADIUS);
   });
 });

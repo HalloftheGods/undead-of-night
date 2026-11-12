@@ -8,8 +8,8 @@ import { makeNoise } from './zombie-senses.ts';
 
 /** Seconds between one blast of the horn and the next. */
 export const HORN_COOLDOWN_SEC = 0.8;
-/** How far a horn carries, in world pixels: farther than any gun, so a honk is a dinner bell. */
-export const HORN_NOISE_RADIUS = 720;
+/** How far a horn carries, in world pixels: the whole block and then some, farther than any gun or engine, so a honk is a dinner bell. */
+export const HORN_NOISE_RADIUS = 1200;
 /** A car faster than this px/s is loud. */
 export const ENGINE_NOISE_MIN_SPEED = 20;
 /** Seconds between engine noises while a car rolls: a steady roar, not a ping. */
