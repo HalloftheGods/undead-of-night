@@ -11,6 +11,7 @@ import { PART_ART } from './parts.ts';
 import { gridSprite } from './shared.ts';
 import type { Grid } from './shared.ts';
 import { BANDAGE, CARBINE_AMMO, PISTOL_AMMO, SHELLS } from './pickups.ts';
+import { CANDY, CROWBAR_GRID, CURTAIN_GRID, HAMMER_GRID, NAILS_GRID, PLANK_GRID } from './shared-grids.ts';
 import { JEWEL_LARGE, JEWEL_SMALL, SILVER, TREASURE_LEGEND } from './treasure.ts';
 import { SURVIVAL_ITEM_ART, SURVIVAL_LEGEND } from './survival-art.ts';
 
@@ -326,17 +327,6 @@ const ZOMBIE_HEAD: Grid = [
   '...ddddd...',
 ];
 
-/** A twist-wrapped sweet: pale wrapper pinched either side of an amber body. */
-const CANDY: Grid = [
-  '....ttttt....',
-  'e..tueettr..e',
-  'effteetteeffe',
-  'e..settees..e',
-  '....sssss....',
-];
-
-export const CANDY_GRID: Grid = CANDY;
-
 /** The earlier drawing of CANDY, kept to switch back to. */
 export const CANDY_OLD: Grid = [
   '.....CCC.....',
@@ -381,106 +371,6 @@ export function buildWeaponIcons(): Record<WeaponId, PixelSprite> {
   return { pistol: outlined(PISTOL, 32, 14), carbine: outlined(CARBINE, 32, 14), shotgun: outlined(SHOTGUN, 32, 14) };
 }
 
-/** A sawn board leaning corner to corner, a nail at each end. */
-export const PLANK_GRID: Grid = [
-  '........zzzzx',
-  '.......zyyxw.',
-  '.......zypxw.',
-  '......zyyxw..',
-  '.....zyxyw...',
-  '.....zyxyw...',
-  '....zyyxw....',
-  '...zyyxw.....',
-  '...zyxxw.....',
-  '..zyyxw......',
-  '.zypxw.......',
-  '.zyyxw.......',
-  'xxxww........',
-];
-
-/** The earlier drawing of PLANK_GRID, kept to switch back to. */
-export const PLANK_GRID_OLD: Grid = [
-  '..kzzzzzzzk..',
-  '.kzyyyyyyyzk.',
-  'kzyyppppyzyzk',
-  'kxxxxxxxxxxxk',
-  'kxxwyyyyywxxk',
-  '.kwwwwwwwwwk.',
-];
-
-export const NAILS_GRID: Grid = [
-  '..kppk..kppk..',
-  '..kppk..kppk..',
-  '..kmmk..kmmk..',
-  '...knk...knk..',
-  '...knk...knk..',
-  '....kk....kk..',
-];
-
-/** A claw hammer on the diagonal, as the knife lies: wood handle up to a steel head set square across it. */
-export const HAMMER_GRID: Grid = [
-  '.......o.....',
-  '.....nnop....',
-  '....m..nop...',
-  '........nop..',
-  '........ynop.',
-  '.......zx.nop',
-  '......zx...mn',
-  '.....zx......',
-  '....zx.......',
-  '...zx........',
-  '..zx.........',
-  '.yw..........',
-  'yw...........',
-];
-
-/** The earlier drawing of HAMMER_GRID, kept to switch back to. */
-export const HAMMER_GRID_OLD: Grid = [
-  '..kppmmmoook..',
-  '.kpppmnnnnook.',
-  '..kppkkkkkkk..',
-  '....kzyzk.....',
-  '....kzyzk.....',
-  '....kxyxk.....',
-  '....kwwwwk....',
-];
-
-export const CURTAIN_GRID: Grid = [
-  'keeeeeeeeeeeek',
-  'kffgffgffgfffk',
-  'keehffhffhffek',
-  'kffgffgffgfffk',
-  'keehffhffhffek',
-  '.kkkkkkkkkkkk.',
-];
-
-/** A red wrecking bar on the diagonal, corner to corner: bare steel gooseneck up top, chisel tip below. */
-export const CROWBAR_GRID: Grid = [
-  '.......ooo...',
-  '......op.nn..',
-  '......p..nn..',
-  '.........ut..',
-  '........ut...',
-  '.......ut....',
-  '......ut.....',
-  '.....ut......',
-  '....ut.......',
-  '...ut........',
-  '..on.........',
-  '.on..........',
-  'pn...........',
-];
-
-/** The earlier drawing of CROWBAR_GRID, kept to switch back to. */
-export const CROWBAR_GRID_OLD: Grid = [
-  '...kppmmk.....',
-  '..kpmnnmok....',
-  '..kmnk..kmk...',
-  '..kmnk...kk...',
-  '..kmnk........',
-  '..kmnk........',
-  '...kk.........',
-];
 
 export function buildPickupIcons(): Record<PickupType, PixelSprite> {
   return {
