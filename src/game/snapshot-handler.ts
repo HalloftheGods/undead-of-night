@@ -25,10 +25,9 @@ import {
   allocateEarnedAp,
   isCharacterMaxed,
   loadProgression,
-  MAX_CHARACTER_LEVEL,
   pickWinningStat,
   saveProgression,
-  xpRequiredForLevel,
+  xpBarFraction,
 } from '../../shared/progression.ts';
 
 const LEVEL_UP_BOONS: readonly CandyId[] = [
@@ -204,15 +203,7 @@ export class SnapshotHandler {
       const currentProg = loadProgression();
       const gain = addExperience(currentProg, event.points);
 
-      const nextRequirement = xpRequiredForLevel(gain.newLevel + 1);
-      const isMaxLevel = gain.newLevel >= MAX_CHARACTER_LEVEL;
-      let progressFraction = 0;
-      if (isMaxLevel) {
-        progressFraction = 1;
-      } else if (nextRequirement > 0) {
-        progressFraction = gain.state.xp / nextRequirement;
-      }
-      renderer?.flashXp(progressFraction, now / 1000, gain.newLevel);
+      renderer?.flashXp(xpBarFraction(gain.state), now / 1000, gain.newLevel);
 
       if (gain.didLevelUp) {
         const playerSkin = after?.skin ?? (before?.skin ?? 0);

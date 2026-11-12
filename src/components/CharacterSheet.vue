@@ -26,7 +26,8 @@
       <section class="xp-section">
         <div class="xp-labels">
           <span class="xp-title">EXPERIENCE</span>
-          <span class="xp-numbers">{{ progression.xp }} / {{ nextLevelXp }} XP</span>
+          <span v-if="isMaxLevel" class="xp-numbers">MAX LEVEL</span>
+          <span v-else class="xp-numbers">{{ progression.xp }} / {{ nextLevelXp }} XP</span>
         </div>
         <div class="xp-bar-track">
           <div class="xp-bar-fill" :style="{ '--fill-width': `${xpRatio * 100}%` }" />
@@ -103,6 +104,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import {
+  MAX_CHARACTER_LEVEL,
   MAX_STAT_SLOT,
   SPECIALTY_STAT_BY_SKIN,
   baseStatSlotFor,
@@ -111,6 +113,7 @@ import {
   effectiveStatSlots,
   isCharacterMaxed,
   isCharacterRusty,
+  xpBarFraction,
   xpRequiredForLevel,
   type ProgressionState,
 } from '../../shared/progression.ts';
@@ -140,12 +143,8 @@ const emit = defineEmits<{
 }>();
 
 const nextLevelXp = computed(() => xpRequiredForLevel(props.progression.level + 1));
-const xpRatio = computed(() => {
-  const req = nextLevelXp.value;
-  const isZeroReq = req <= 0;
-  if (isZeroReq) return 1.0;
-  return Math.min(1.0, props.progression.xp / req);
-});
+const xpRatio = computed(() => xpBarFraction(props.progression));
+const isMaxLevel = computed(() => props.progression.level >= MAX_CHARACTER_LEVEL);
 
 const canRespec = computed(() => canRespecCharacter(props.skin, props.progression));
 const isMaxed = computed(() => isCharacterMaxed(props.skin, props.progression));

@@ -21,7 +21,7 @@ import type { VisualStore } from './visuals.ts';
 import { hitPalette } from './hit-palette.ts';
 import { formatItemName } from '../game/dual-loot-modal.ts';
 import { CLUE_COLOR } from '../game/map-leftovers.ts';
-import { loadProgression, MAX_CHARACTER_LEVEL, xpRequiredForLevel } from '../../shared/progression.ts';
+import { loadProgression, xpBarFraction } from '../../shared/progression.ts';
 
 const POINTER_INSET = 8;
 /** Clear of the HUD in every corner, and of the screen's edge, where the van must not be missed. */
@@ -210,13 +210,7 @@ export class OverlayRenderer {
     try {
       const prog = loadProgression();
       this.xpLevel = prog.level;
-      const req = xpRequiredForLevel(prog.level + 1);
-      const isMaxLevel = prog.level >= MAX_CHARACTER_LEVEL;
-      if (isMaxLevel) {
-        this.xpFraction = 1;
-      } else if (req > 0) {
-        this.xpFraction = Math.max(0, Math.min(1, prog.xp / req));
-      }
+      this.xpFraction = xpBarFraction(prog);
     } catch {
       // Storage or progression unavailable
     }

@@ -25,6 +25,7 @@ import {
   respecCharacter,
   saveProgression,
   totalXpForLevel,
+  xpBarFraction,
   xpRequiredForLevel,
 } from '../shared/progression.ts';
 import type { ProgressionState } from '../shared/progression.ts';
@@ -220,6 +221,13 @@ describe('Progression Core Logic', () => {
     const start = createInitialProgression();
     const overfull = { ...start, allocations: { ...start.allocations, 0: { spentAp: { stealth: 5, reload: 5, speed: 5, strength: 5, search: 5 } } } };
     expect(characterLevel(0, overfull)).toBe(21);
+  });
+
+  it('fills the XP bar toward the next level and shows it full at the cap', () => {
+    expect(xpBarFraction({ level: 1, xp: 0 })).toBe(0);
+    expect(xpBarFraction({ level: 99, xp: 20_000 })).toBe(0.5);
+    expect(xpBarFraction({ level: 99, xp: 90_000 })).toBe(1);
+    expect(xpBarFraction({ level: MAX_CHARACTER_LEVEL, xp: 0 })).toBe(1);
   });
 
   it('stops XP at level 100', () => {

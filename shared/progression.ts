@@ -251,6 +251,13 @@ export function totalXpForLevel(level: number): number {
   return accumulated;
 }
 
+/** How full the XP bar is: the share of the next level earned so far, and full at the cap. */
+export function xpBarFraction(state: Pick<ProgressionState, 'level' | 'xp'>): number {
+  const isAtCap = state.level >= MAX_CHARACTER_LEVEL;
+  if (isAtCap) return 1;
+  return Math.max(0, Math.min(1, state.xp / xpRequiredForLevel(state.level + 1)));
+}
+
 export interface XpGainResult {
   readonly state: ProgressionState;
   readonly levelsGained: number;
