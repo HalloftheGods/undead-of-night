@@ -22,10 +22,10 @@ const ROADKILL_KNOCK = 240;
 const SHOVE_KNOCK = 60;
 const MIN_MOVING_SPEED = 5;
 
-const lastHit = new WeakMap<VehicleState, Map<number, number>>();
+const lastHit = new WeakMap<VehicleState, Map<string, number>>();
 
-function hitLog(car: VehicleState, tick: number): Map<number, number> {
-  const log = lastHit.get(car) ?? new Map<number, number>();
+function hitLog(car: VehicleState, tick: number): Map<string, number> {
+  const log = lastHit.get(car) ?? new Map<string, number>();
   for (const [id, at] of log) if (tick - at >= ROADKILL_REHIT_SEC * TICK_RATE) log.delete(id);
   lastHit.set(car, log);
   return log;
