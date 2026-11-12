@@ -6,7 +6,7 @@ import type { PlayerEntity, SnapshotPacket } from '../../shared/protocol.ts';
 import { browserStore, readJson, writeJson } from './storage.ts';
 import type { Store } from './storage.ts';
 
-const GHOST_KEY = 'outbreak.daily-ghost';
+const GHOST_KEY = 'outbreak.daily-ghost.v2';
 /** One sample every this many sim ticks: 10 a second at 30 ticks, smoothed back out by interpolation. */
 export const SAMPLE_TICKS = 3;
 /** A ceiling on the save: about 50 minutes at 10 samples a second, far past any real Daily Night. */
@@ -47,7 +47,7 @@ function isTrack(v: unknown): v is GhostTrack {
   return fieldsOk && townsOk;
 }
 
-const GHOST_BEST_KEY = 'outbreak.daily-ghost-best';
+const GHOST_BEST_KEY = 'outbreak.daily-ghost-best.v2';
 
 export type GhostKind = 'official' | 'best';
 

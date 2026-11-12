@@ -18,6 +18,20 @@ function snapshot(level: number, tick: number, me: PlayerEntity): SnapshotPacket
 }
 
 describe('Daily Night ghost', () => {
+  it('neither plays nor keeps a ghost saved before level 100', () => {
+    const store = memoryStore();
+    const old = JSON.stringify({ day: DAY, skin: 1, score: 5000, towns: { '3': [1, 1, 0] } });
+    store.setItem('outbreak.daily-ghost', old);
+    store.setItem('outbreak.daily-ghost-best', old);
+    expect(loadGhost(DAY, store)).toBeNull();
+    expect(loadGhost(DAY, store, 'best')).toBeNull();
+    expect(new DailyGhost(DAY, store).showing).toBeNull();
+    expect(saveGhost({ day: DAY, skin: 2, score: 40, towns: { '3': [0, 0, 0] } }, store)).toBe(true);
+    expect(loadGhost(DAY, store, 'best')?.score).toBe(40);
+    expect(store.getItem('outbreak.daily-ghost')).toBe(old);
+    expect(store.getItem('outbreak.daily-ghost-best')).toBe(old);
+  });
+
   it('samples a town every few ticks, from its first tick, filling gaps from dropped snapshots', () => {
     const recorder = new GhostRecorder(DAY);
     recorder.observe(3, 100, player(0, 0));
