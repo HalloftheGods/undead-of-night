@@ -9,6 +9,7 @@ import { placeTownLoot } from './loot.ts';
 import { createRng } from './rng.ts';
 import type { SimState } from './sim-state.ts';
 import { emit } from './sim-state.ts';
+import { markTestDrive } from './vehicle-choice.ts';
 import { SpatialHashGrid } from './spatial-grid.ts';
 import { seedPopulation } from './town-population.ts';
 import { placeTownSalvage } from './salvage.ts';
@@ -30,6 +31,8 @@ export interface SimulationOptions {
   readonly home?: boolean;
   /** Run the overrun's horde clock in the bunker. Off unless asked for, and nothing without `home`. */
   readonly overrun?: boolean;
+  /** Test Drive: every car prop can be driven, and the exit van never comes. Off unless asked for. */
+  readonly testDrive?: boolean;
 }
 
 /** A level number held to the real range, so a stale or hand-edited save cannot start a town that is not there. */
@@ -93,9 +96,11 @@ export function createSimState(options: SimulationOptions): SimState {
     bench: null,
     vehicles: new Map(),
     homeRun: home ? newHomeRun(options.seed) : null,
+    testDrive: !home && options.testDrive === true,
     overrunOn: home && options.overrun === true,
     overrun: null,
   };
+  if (sim.testDrive) markTestDrive(map);
   if (home) {
     parkBunkerVan(sim);
     placeMerchants(sim);

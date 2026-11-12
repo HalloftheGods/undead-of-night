@@ -374,6 +374,8 @@ export interface SimState {
   bench: BenchState | null;
   /** Null outside home mode. */
   homeRun: HomeRun | null;
+  /** Test Drive: every car prop drives and the exit van never comes. */
+  readonly testDrive: boolean;
   /** The bunker runs a horde clock. Off unless asked for. */
   readonly overrunOn: boolean;
   /** Null with the overrun off, on a first visit, out on a trip, and from its end to the next arrival. */

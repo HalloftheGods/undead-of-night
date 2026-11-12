@@ -445,6 +445,8 @@ export interface WelcomePacket {
   readonly difficulty?: DifficultyId;
   /** This join took back a body the room was still holding. Left off for a new one. */
   readonly resumed?: boolean;
+  /** Test Drive: every car prop on this map can be driven. Left off for a normal run. */
+  readonly testDrive?: boolean;
   /** townPrint of the host's town. A guest whose own build lays that town out differently leaves. */
   readonly town?: number;
 }

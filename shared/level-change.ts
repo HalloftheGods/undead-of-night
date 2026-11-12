@@ -15,6 +15,7 @@ import { placeTownSalvage } from './salvage.ts';
 import { placeTownTreasure } from './treasure.ts';
 import { hordesSurvivedHere } from './waves.ts';
 import { clearVehicles } from './vehicles.ts';
+import { markTestDrive } from './vehicle-choice.ts';
 import { generateWorldMap } from './world-map.ts';
 
 function raiseMap(sim: SimState, seed: number, level: number): void {
@@ -23,6 +24,7 @@ function raiseMap(sim: SimState, seed: number, level: number): void {
   sim.map = generateWorldMap(seed, level);
   sim.flow = new FlowField(sim.map);
   sim.noiseFlow = new FlowField(sim.map);
+  if (sim.testDrive) markTestDrive(sim.map);
 }
 
 /** Nothing left of the last place: no horde, no bodies, no bullets. */

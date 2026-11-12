@@ -14,7 +14,7 @@ export const chooseExitSpot = exitSpotOf;
 
 /** The level's last horde is behind them: the van is there from now on, hordes or no hordes. */
 export function openExit(sim: SimState): void {
-  if (sim.exit) return;
+  if (sim.exit || sim.testDrive) return;
   const { x, y } = chooseExitSpot(sim.map);
   sim.exit = { x, y, hold: 0 };
   emit(sim, { type: 'exit_open', level: sim.level, x, y });

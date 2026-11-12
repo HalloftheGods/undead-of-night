@@ -35,8 +35,20 @@ export interface ParkedCar {
 }
 
 const parkedCars = new WeakMap<WorldMap, readonly ParkedCar[]>();
+const testDriveMaps = new WeakSet<WorldMap>();
 
-/** Every car parked on the map that could be driven: outdoors only (a garage car stays loot), never on the bunker map, never a wreck. */
+/** A wreck drives as a sedan body facing west, which is the footprint it already sits on. */
+const WRECK_BODY: ParkedVehicle = { body: 'sedan', facing: 'w' };
+
+/** Test Drive: every car prop on this map can be driven. The sim marks its map and a client marks the one it built. */
+export function markTestDrive(map: WorldMap): void {
+  testDriveMaps.add(map);
+  parkedCars.delete(map);
+}
+
+export const isTestDrive = (map: WorldMap): boolean => testDriveMaps.has(map);
+
+/** Every car parked on the map that could be driven: outdoors only (a garage car stays loot), never on the bunker map, never a wreck. Test Drive lifts the first and the last. */
 export function driveableProps(map: WorldMap): readonly ParkedCar[] {
   const have = parkedCars.get(map);
   if (have) return have;
@@ -44,8 +56,9 @@ export function driveableProps(map: WorldMap): readonly ParkedCar[] {
   const cars = onBunker
     ? []
     : map.props.flatMap((prop, id): ParkedCar[] => {
-        const parked = parkedVehicle(prop.kind);
-        const isIndoors = buildingAt(map, prop.x, prop.y - 1) !== null;
+        const testDrive = testDriveMaps.has(map);
+        const parked = parkedVehicle(prop.kind) ?? (testDrive && prop.kind === 'car_wreck_h' ? WRECK_BODY : null);
+        const isIndoors = !testDrive && buildingAt(map, prop.x, prop.y - 1) !== null;
         const isDriveable = parked !== null && isSolidProp(prop) && !isIndoors;
         if (!isDriveable) return [];
         const centre = centreOfProp(parked, prop.x, prop.y);
@@ -104,7 +117,7 @@ export function vehicleChoiceAt(
   player: { readonly vehicle?: VehicleSeat | null },
 ): VehicleChoice | null {
   if (player.vehicle) return exitChoice(cars, player.vehicle);
-  const outdoors = buildingAt(map, x, y) === null;
+  const outdoors = buildingAt(map, x, y) === null || testDriveMaps.has(map);
   return outdoors ? nearestEnterable(map, cars, x, y) : null;
 }
 
