@@ -7,7 +7,6 @@ import {
   allocateEarnedAp,
   allocateStatPoint,
   applyApDecay,
-  AP_DECAY_INACTIVITY_MS,
   AP_DECAY_INTERVAL_MS,
   baseStatSlotFor,
   canAllocateStat,
@@ -19,6 +18,7 @@ import {
   isCharacterMaxed,
   isCharacterRusty,
   loadProgression,
+  loseOnePip,
   pickWinningStat,
   PROGRESSION_STORAGE_KEY,
   respecCharacter,
@@ -260,6 +260,22 @@ describe('Saves', () => {
   });
 });
 
+/** Level 12 with one AP banked and pips on three survivors, last levelled at NOW. */
+function idleSave(): ProgressionState {
+  const start = createInitialProgression(NOW);
+  return {
+    ...start,
+    level: 12,
+    ap: 1,
+    allocations: {
+      ...start.allocations,
+      0: { spentAp: { stealth: 0, reload: 2, speed: 3, strength: 0, search: 0 } },
+      1: { spentAp: { stealth: 3, reload: 0, speed: 0, strength: 0, search: 2 } },
+      2: { spentAp: { stealth: 1, reload: 0, speed: 0, strength: 0, search: 0 } },
+    },
+  };
+}
+
 describe('Rolling Timestamp AP Decay & Rusty Survivors', () => {
   it('does not decay AP when active within the 7-day grace period', () => {
     const baseTime = 1_700_000_000_000;
@@ -274,32 +290,64 @@ describe('Rolling Timestamp AP Decay & Rusty Survivors', () => {
     expect(result.newlyRustySkins).toEqual([]);
   });
 
-  it('decays 1 AP after 7 days of inactivity and marks survivor as rusty for pip re-allocation', () => {
-    const baseTime = 1_700_000_000_000;
-    const start = createInitialProgression(baseTime);
-    let state = addExperience(start, 1676, baseTime).state;
-    state = allocateStatPoint(0, 'speed', state);
-    state = allocateStatPoint(0, 'speed', state);
-    state = allocateStatPoint(0, 'speed', state);
-    expect(state.ap).toBe(2);
-    expect(state.allocations[0].spentAp.speed).toBe(3);
-    expect(characterBadgeName(0, 'Night', state)).toBe('Night');
+  it('six days idle loses nothing', () => {
+    const save = idleSave();
+    const result = applyApDecay(save, NOW + 6 * DAY_MS);
+    expect(result.decayedAp).toBe(0);
+    expect(result.state).toBe(save);
+  });
 
-    const eightDaysLater = baseTime + 8 * 24 * 60 * 60 * 1000;
-    const result = applyApDecay(state, eightDaysLater);
+  it("three weeks idle loses banked AP, then the fullest survivor's fullest stat, and no levels", () => {
+    const result = applyApDecay(idleSave(), NOW + 21 * DAY_MS + 60_000);
+    expect(result.decayedAp).toBe(3);
+    expect(result.state).toMatchObject({ level: 12, ap: 0, owedAp: 3, lastApEarnedAt: NOW + 21 * DAY_MS });
+    expect(result.state.allocations[0].spentAp).toEqual({ stealth: 0, reload: 2, speed: 2, strength: 0, search: 0 });
+    expect(result.state.allocations[1].spentAp).toEqual({ stealth: 2, reload: 0, speed: 0, strength: 0, search: 2 });
+    expect(result.state.allocations[2].spentAp).toEqual({ stealth: 1, reload: 0, speed: 0, strength: 0, search: 0 });
+    expect(result.newlyRustySkins).toEqual([0, 1]);
+    expect(result.state.rustySkins).toEqual([0, 1]);
+  });
 
-    expect(result.decayedAp).toBe(1);
-    expect(result.state.ap).toBe(4);
-    expect(result.newlyRustySkins).toContain(0);
-    expect(isCharacterRusty(0, result.state)).toBe(true);
-    expect(characterBadgeName(0, 'Night', result.state)).toBe('Rusty Night');
-    expect(result.state.allocations[0].spentAp.speed).toBe(0);
+  it('a survivor who lost a pip is Rusty until they gain one', () => {
+    const decayed = applyApDecay(idleSave(), NOW + 21 * DAY_MS).state;
+    expect(characterBadgeName(1, 'Bear', decayed)).toBe('Rusty Bear');
+    const regained = allocateStatPoint(0, 'speed', { ...decayed, ap: 1 });
+    expect(isCharacterRusty(0, regained)).toBe(false);
+    expect(isCharacterRusty(1, regained)).toBe(true);
+  });
 
-    const reallocated = allocateStatPoint(0, 'speed', result.state);
-    expect(isCharacterRusty(0, reallocated)).toBe(false);
-    expect(characterBadgeName(0, 'Night', reallocated)).toBe('Night');
-    expect(reallocated.ap).toBe(3);
-    expect(reallocated.allocations[0].spentAp.speed).toBe(1);
+  it('takes the pip from the first stat in STATS order when two stats tie', () => {
+    const start = createInitialProgression(NOW);
+    const tied = { ...start, allocations: { ...start.allocations, 3: { spentAp: { stealth: 2, reload: 2, speed: 0, strength: 0, search: 2 } } } };
+    const after = loseOnePip(tied);
+    expect(after.allocations[3].spentAp).toEqual({ stealth: 1, reload: 2, speed: 0, strength: 0, search: 2 });
+    expect(after.owedAp).toBe(1);
+    expect(after.rustySkins).toEqual([3]);
+  });
+
+  it('lists a survivor who lost several pips once', () => {
+    const start = createInitialProgression(NOW);
+    const one = { ...start, allocations: { ...start.allocations, 0: { spentAp: { stealth: 0, reload: 4, speed: 0, strength: 0, search: 0 } } } };
+    const result = applyApDecay(one, NOW + 28 * DAY_MS);
+    expect(result.decayedAp).toBe(4);
+    expect(result.newlyRustySkins).toEqual([0]);
+    expect(result.state.rustySkins).toEqual([0]);
+  });
+
+  it('loses nothing when there is nothing to lose, but still moves the timer a whole week', () => {
+    const fresh = createInitialProgression(NOW);
+    expect(loseOnePip(fresh)).toBe(fresh);
+    const result = applyApDecay(fresh, NOW + 8 * DAY_MS);
+    expect(result.decayedAp).toBe(0);
+    expect(result.state).toMatchObject({ owedAp: 0, lastApEarnedAt: NOW + 7 * DAY_MS });
+    expect(applyApDecay(result.state, NOW + 8 * DAY_MS).state).toBe(result.state);
+  });
+
+  it('a level-100 save idle for a year loses nothing', () => {
+    const save100 = { ...createInitialProgression(NOW), level: MAX_CHARACTER_LEVEL, ap: 2 };
+    const result = applyApDecay(save100, NOW + 365 * DAY_MS);
+    expect(result.decayedAp).toBe(0);
+    expect(result.state).toBe(save100);
   });
 
   it('decays from unallocated AP without marking survivors rusty if no pips were invested', () => {
@@ -308,7 +356,7 @@ describe('Rolling Timestamp AP Decay & Rusty Survivors', () => {
     const leveled = addExperience(start, 321, baseTime).state;
     expect(leveled.ap).toBe(2);
 
-    const sevenDaysLater = baseTime + AP_DECAY_INACTIVITY_MS + 1000;
+    const sevenDaysLater = baseTime + AP_DECAY_INTERVAL_MS + 1000;
     const result = applyApDecay(leveled, sevenDaysLater);
 
     expect(result.decayedAp).toBe(1);

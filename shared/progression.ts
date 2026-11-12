@@ -6,7 +6,6 @@ export const MAX_CHARACTER_LEVEL = 100;
 export const AP_PER_LEVEL = 1;
 export const TOTAL_PIPS_TO_FILL = 20;
 export const RESPEC_COST_GP = 50;
-export const AP_DECAY_INACTIVITY_MS = 7 * 24 * 60 * 60 * 1000;
 /** Saves without a version were written on the 21-level curve and are migrated once on load. */
 export const PROGRESSION_VERSION = 2;
 export const AP_DECAY_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -148,61 +147,75 @@ export function isCharacterRusty(skin: number, current?: ProgressionState): bool
   return current.rustySkins.includes(skin);
 }
 
-export function applyApDecay(current: ProgressionState, now = Date.now()): ApDecayResult {
-  const lastEarned = current.lastApEarnedAt ?? now;
-  const elapsedMs = now - lastEarned;
-  const isInactive = elapsedMs >= AP_DECAY_INACTIVITY_MS;
-  if (!isInactive) {
-    return { state: current, decayedAp: 0, newlyRustySkins: [] };
-  }
+const investedPips = (allocation: CharacterAllocation): number =>
+  Object.values(allocation.spentAp).reduce((sum, pips) => sum + pips, 0);
 
-  const periods = Math.floor(elapsedMs / AP_DECAY_INTERVAL_MS);
-  const apToDecayRaw = Math.max(1, periods);
+/**
+ * Takes one pip for a missed week and owes it back. Banked AP goes first; after that the
+ * survivor with the most invested pips loses one from their fullest stat and goes Rusty.
+ * Ties go to the lowest skin, then the order of STATS. Returns `current` itself when nothing is left to lose.
+ */
+export function loseOnePip(current: ProgressionState): ProgressionState {
+  const hasBankedAp = current.ap > 0;
+  if (hasBankedAp) return { ...current, ap: current.ap - 1, owedAp: current.owedAp + 1 };
 
-  let totalInvestedAp = 0;
-  for (const alloc of Object.values(current.allocations)) {
-    const spent = Object.values(alloc.spentAp).reduce((sum, v) => sum + v, 0);
-    totalInvestedAp += spent;
-  }
-
-  const totalPool = current.ap + totalInvestedAp;
-  const actualDecay = Math.min(apToDecayRaw, totalPool);
-  if (actualDecay <= 0) {
-    return { state: current, decayedAp: 0, newlyRustySkins: [] };
-  }
-
-  const newlyRustySkins: number[] = [];
-  const nextAllocations = { ...current.allocations };
-  let refundedAp = 0;
-
-  for (const [skinStr, alloc] of Object.entries(current.allocations)) {
-    const skin = Number(skinStr);
-    const invested = Object.values(alloc.spentAp).reduce((sum, v) => sum + v, 0);
-    const hasInvestedPips = invested > 0;
-    if (hasInvestedPips) {
-      refundedAp += invested;
-      newlyRustySkins.push(skin);
-      nextAllocations[skin] = defaultCharacterAllocation();
+  let skin = -1;
+  let most = 0;
+  const skins = Object.keys(current.allocations).map(Number).sort((a, b) => a - b);
+  for (const candidate of skins) {
+    const invested = investedPips(current.allocations[candidate]);
+    const isFuller = invested > most;
+    if (isFuller) {
+      most = invested;
+      skin = candidate;
     }
   }
+  const nothingInvested = skin < 0;
+  if (nothingInvested) return current;
 
-  const combinedAp = current.ap + refundedAp;
-  const finalAp = Math.max(0, combinedAp - actualDecay);
-  const finalLevel = Math.max(1, current.level - actualDecay);
-  const nextTimestamp = now - (elapsedMs % AP_DECAY_INTERVAL_MS);
+  const spent = current.allocations[skin].spentAp;
+  let stat: StatKey = STATS[0].key;
+  for (const { key } of STATS) {
+    const isFuller = (spent[key] ?? 0) > (spent[stat] ?? 0);
+    if (isFuller) stat = key;
+  }
 
-  const mergedRusty = Array.from(new Set([...(current.rustySkins ?? []), ...newlyRustySkins]));
-
-  const nextState: ProgressionState = {
+  const alreadyRusty = current.rustySkins.includes(skin);
+  return {
     ...current,
-    level: finalLevel,
-    ap: finalAp,
-    lastApEarnedAt: nextTimestamp,
-    rustySkins: mergedRusty,
-    allocations: nextAllocations,
+    owedAp: current.owedAp + 1,
+    rustySkins: alreadyRusty ? current.rustySkins : [...current.rustySkins, skin],
+    allocations: { ...current.allocations, [skin]: { spentAp: { ...spent, [stat]: spent[stat] - 1 } } },
   };
+}
 
-  return { state: nextState, decayedAp: actualDecay, newlyRustySkins };
+/** Upkeep: one pip is lost for each full week since the last level-up. The level never drops, and level 100 is exempt. */
+export function applyApDecay(current: ProgressionState, now = Date.now()): ApDecayResult {
+  const untouched: ApDecayResult = { state: current, decayedAp: 0, newlyRustySkins: [] };
+  const isAtCap = current.level >= MAX_CHARACTER_LEVEL;
+  if (isAtCap) return untouched;
+
+  const elapsedMs = now - (current.lastApEarnedAt ?? now);
+  const weeks = Math.floor(elapsedMs / AP_DECAY_INTERVAL_MS);
+  const withinTheWeek = weeks < 1;
+  if (withinTheWeek) return untouched;
+
+  let state = current;
+  let decayedAp = 0;
+  const newlyRustySkins: number[] = [];
+  for (let week = 0; week < weeks; week++) {
+    const next = loseOnePip(state);
+    const nothingLeft = next === state;
+    if (nothingLeft) break;
+    const wentRusty = next.rustySkins.find((skin) => !state.rustySkins.includes(skin));
+    if (wentRusty !== undefined) newlyRustySkins.push(wentRusty);
+    decayedAp += 1;
+    state = next;
+  }
+
+  // The timer moves on by whole weeks even with nothing left to take, so the same moment is never charged twice.
+  const lastApEarnedAt = current.lastApEarnedAt + weeks * AP_DECAY_INTERVAL_MS;
+  return { state: { ...state, lastApEarnedAt }, decayedAp, newlyRustySkins };
 }
 
 export function saveProgression(state: ProgressionState, store: ProgressStorage | null = browserStorage()): void {
