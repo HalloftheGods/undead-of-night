@@ -6,6 +6,7 @@ import type { PlayerState, SimState, VehicleState } from './sim-state.ts';
 import { emit } from './sim-state.ts';
 import { groundSpeedScale } from './town-rules.ts';
 import { checkVehicleRoadkill } from './vehicle-combat.ts';
+import { carSounds, honk } from './vehicle-feel.ts';
 import { isResting } from './vehicle-choice.ts';
 import { stepVehicle, VEHICLE_TOP_SPEED } from './vehicle-physics.ts';
 import type { Blocked } from './vehicle-physics.ts';
@@ -53,6 +54,7 @@ export function driveVehicle(sim: SimState, p: PlayerState): void {
   const car = vehicleOf(sim, p);
   const atTheWheel = car !== null && p.vehicle?.seat === 0;
   if (!car || !atTheWheel) return;
+  honk(sim, car, p);
   const dirX = Number(p.right) - Number(p.left);
   const dirY = Number(p.down) - Number(p.up);
   const hasInput = dirX !== 0 || dirY !== 0;
@@ -67,6 +69,7 @@ export function driveVehicle(sim: SimState, p: PlayerState): void {
 export function updateVehicles(sim: SimState): void {
   ejectFallen(sim);
   for (const car of sim.vehicles.values()) {
+    carSounds(sim, car);
     const coasting = car.seats[0] === null && !isResting(car);
     if (coasting) roll(sim, car, 0, 0);
   }
