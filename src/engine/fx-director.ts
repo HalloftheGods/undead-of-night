@@ -1,6 +1,5 @@
 import { CANDIES } from "../../shared/candy.ts";
 import { MUZZLE_OFFSET } from "../../shared/constants.ts";
-import { chainMultiplier, headshotChainMultiplier } from "../../shared/kill-chain.ts";
 import { FLARE_SEC } from "../../shared/throwables.ts";
 import type {
   EntityId,
@@ -15,6 +14,7 @@ import { barrelOffset } from "./barrel.ts";
 import { BurningFx, FLARE_SPARKS, FOUNTAIN_SPARKS, SPINNER_PETALS } from "./burning-fx.ts";
 import { ParticleSystem } from "./particles.ts";
 import { burstFor } from "./status-bursts.ts";
+import { headshotNote, killNote } from "./score-notes.ts";
 import { CHEST_HEIGHT } from "./scene.ts";
 import type { ScreenEffects } from "./screen-effects.ts";
 import type { VisualStore } from "./visuals.ts";
@@ -329,14 +329,7 @@ export class FxDirector {
     this.burstDots(x, groundY, angle, SKULL_CHIPS, 6, 140, false, 1.1);
     const shotHere = event.playerId === ctx.localId;
     if (!shotHere) return;
-    const chained = (event.chain ?? 1) > 1;
-    const bonus = chained ? ` x${headshotChainMultiplier(event.chain ?? 1)}` : "";
-    this.particles.addText(
-      `HEADSHOT +${event.points} XP${bonus}`,
-      x,
-      y - HEADSHOT_NOTE_GAP,
-      hitPalette().strike
-    );
+    this.particles.addText(headshotNote(event), x, y - HEADSHOT_NOTE_GAP, hitPalette().strike);
     this.effects.addShake(HEADSHOT_KICK);
   }
 
@@ -348,10 +341,7 @@ export class FxDirector {
     this.stampBlood(x + Math.cos(angle) * 9, y + Math.sin(angle) * 9);
     const isLocalScore = event.killerId === ctx.localId && event.points > 0;
     if (isLocalScore) {
-      // A chained kill shows what the chain paid it, so the callout's words come with a number.
-      const chained = (event.chain ?? 1) > 1;
-      const bonus = chained ? ` x${chainMultiplier(event.chain ?? 1)}` : "";
-      this.particles.addText(`+${event.points} XP${bonus}`, x, y - 16, SCORE_COLOR);
+      this.particles.addText(killNote(event), x, y - 16, SCORE_COLOR);
     }
   }
 
