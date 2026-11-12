@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BUILDING_DEFS } from '../shared/protocol.ts';
 import type { GameEvent, GameOverStats, PlayerEntity, SnapshotPacket } from '../shared/protocol.ts';
-import { PROGRESSION_STORAGE_KEY } from '../shared/progression.ts';
+import { createInitialProgression, PROGRESSION_STORAGE_KEY } from '../shared/progression.ts';
 import type { ProgressionState } from '../shared/progression.ts';
 import { AudioEngine } from '../src/audio/audio-engine.ts';
 import { GameController } from '../src/game/game-controller.ts';
@@ -442,6 +442,28 @@ describe('game flow', () => {
     socket.receive(frame(51, { level: 2, mapSeed: 9191, events: [kill(50)] }));
     socket.receive(frame(52, { level: 2, mapSeed: 9191, events: [kill(50)] }));
     expect(savedProgression(store)?.xp ?? 0).toBe(0);
+  });
+
+  it('pays an owed AP with the level-up a kill brings', () => {
+    const store = memoryStorage();
+    store.setItem(PROGRESSION_STORAGE_KEY, JSON.stringify({ ...createInitialProgression(Date.now()), owedAp: 1 }));
+    vi.stubGlobal('localStorage', store);
+    const socket = joinRoom();
+    socket.receive(frame(50, { events: [kill(113)] }));
+    const saved = savedProgression(store)!;
+    expect(saved).toMatchObject({ level: 2, owedAp: 0, ap: 0 });
+    expect(Object.values(saved.allocations[0].spentAp).reduce((sum, n) => sum + n, 0)).toBe(2);
+  });
+
+  it('keeps banked the repaid AP that does not fit the stat it went to', () => {
+    const store = memoryStorage();
+    const start = createInitialProgression(Date.now());
+    store.setItem(PROGRESSION_STORAGE_KEY, JSON.stringify({ ...start, owedAp: 1, allocations: { ...start.allocations, 0: { spentAp: { stealth: 0, reload: 4, speed: 5, strength: 5, search: 5 } } } }));
+    vi.stubGlobal('localStorage', store);
+    const socket = joinRoom();
+    socket.receive(frame(50, { events: [kill(113)] }));
+    expect(savedProgression(store)).toMatchObject({ level: 2, ap: 1, owedAp: 0 });
+    expect(savedProgression(store)!.allocations[0].spentAp.reload).toBe(5);
   });
 
   it('keeps the best run of a player the room restarts on during the death beat', () => {

@@ -217,7 +217,9 @@ export class SnapshotHandler {
       if (gain.didLevelUp) {
         const playerSkin = after?.skin ?? (before?.skin ?? 0);
         const winningStat = pickWinningStat(this.actionScores, playerSkin, gain.state.allocations[playerSkin]) ?? 'search';
-        const updatedState = allocateEarnedAp(gain.state, playerSkin, winningStat, gain.levelsGained);
+        const updatedState = allocateEarnedAp(gain.state, playerSkin, winningStat, gain.apEarned);
+        // What did not fit the stat stays banked, so the text names only what landed.
+        const apLanded = gain.state.ap - updatedState.ap;
         saveProgression(updatedState);
 
         this.actionScores.search = 0;
@@ -231,7 +233,7 @@ export class SnapshotHandler {
 
         renderer?.triggerLevelUpFx(playerX, playerY);
         renderer?.addFloatingText('LEVEL UP!!!', playerX, playerY - 36, '#ffe066');
-        renderer?.addFloatingText(`+${gain.levelsGained} AP: ${winningStat.toUpperCase()}`, playerX, playerY - 26, '#ffc03c');
+        renderer?.addFloatingText(`+${apLanded} AP: ${winningStat.toUpperCase()}`, playerX, playerY - 26, '#ffc03c');
         audio.playSfx('level_up');
 
         const boonIndex = Math.floor(Math.random() * LEVEL_UP_BOONS.length);
@@ -243,7 +245,7 @@ export class SnapshotHandler {
           this.host.state.transport?.giveBoon?.(boonId);
         }
 
-        runHud.callout({ text: `LEVEL UP: +1 ${winningStat.toUpperCase()}`, tone: 'chain' }, now);
+        runHud.callout({ text: `LEVEL UP: +${apLanded} ${winningStat.toUpperCase()}`, tone: 'chain' }, now);
 
         const newlyMaxed = isCharacterMaxed(playerSkin, updatedState);
         if (newlyMaxed) {

@@ -243,6 +243,8 @@ export function totalXpForLevel(level: number): number {
 export interface XpGainResult {
   readonly state: ProgressionState;
   readonly levelsGained: number;
+  /** AP paid by this gain: one per level, plus one owed AP repaid per level while any is owed. */
+  readonly apEarned: number;
   readonly newLevel: number;
   readonly didLevelUp: boolean;
 }
@@ -250,12 +252,13 @@ export interface XpGainResult {
 export function addExperience(current: ProgressionState, gainedXp: number, now = Date.now()): XpGainResult {
   const isPositiveGain = gainedXp > 0;
   if (!isPositiveGain) {
-    return { state: current, levelsGained: 0, newLevel: current.level, didLevelUp: false };
+    return { state: current, levelsGained: 0, apEarned: 0, newLevel: current.level, didLevelUp: false };
   }
 
   let level = current.level;
   let xp = current.xp + gainedXp;
   let earnedAp = 0;
+  let owedAp = current.owedAp;
 
   while (level < MAX_CHARACTER_LEVEL) {
     const nextRequirement = xpRequiredForLevel(level + 1);
@@ -265,6 +268,11 @@ export function addExperience(current: ProgressionState, gainedXp: number, now =
     xp -= nextRequirement;
     level += 1;
     earnedAp += AP_PER_LEVEL;
+    const repays = owedAp > 0;
+    if (repays) {
+      owedAp -= 1;
+      earnedAp += 1;
+    }
   }
 
   // Nothing is left to buy at the cap, so XP does not pile up there.
@@ -280,10 +288,11 @@ export function addExperience(current: ProgressionState, gainedXp: number, now =
     level,
     xp,
     ap: current.ap + earnedAp,
+    owedAp,
     lastApEarnedAt: nextLastEarned,
   };
 
-  return { state: nextState, levelsGained, newLevel: level, didLevelUp };
+  return { state: nextState, levelsGained, apEarned: earnedAp, newLevel: level, didLevelUp };
 }
 
 export function baseStatSlotFor(skin: number, stat: StatKey): number {

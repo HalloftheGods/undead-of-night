@@ -82,6 +82,7 @@ describe('Progression Core Logic', () => {
     const result = addExperience(start, 150);
     expect(result.didLevelUp).toBe(true);
     expect(result.levelsGained).toBe(1);
+    expect(result.apEarned).toBe(1);
     expect(result.newLevel).toBe(2);
     expect(result.state.level).toBe(2);
     expect(result.state.xp).toBe(37);
@@ -341,6 +342,14 @@ describe('Rolling Timestamp AP Decay & Rusty Survivors', () => {
     expect(result.decayedAp).toBe(0);
     expect(result.state).toMatchObject({ owedAp: 0, lastApEarnedAt: NOW + 7 * DAY_MS });
     expect(applyApDecay(result.state, NOW + 8 * DAY_MS).state).toBe(result.state);
+  });
+
+  it('two level-ups after three idle weeks pay four AP', () => {
+    const decayed = applyApDecay(idleSave(), NOW + 21 * DAY_MS).state;
+    const gain = addExperience(decayed, xpRequiredForLevel(13) + xpRequiredForLevel(14), NOW + 22 * DAY_MS);
+    expect(gain.levelsGained).toBe(2);
+    expect(gain.apEarned).toBe(4);
+    expect(gain.state).toMatchObject({ level: 14, ap: 4, owedAp: 1 });
   });
 
   it('a level-100 save idle for a year loses nothing', () => {
