@@ -144,6 +144,9 @@ export interface ApDecayResult {
 
 export function isCharacterRusty(skin: number, current?: ProgressionState): boolean {
   if (!current?.rustySkins) return false;
+  // Level 100 keeps every survivor at their best for good.
+  const isAtCap = current.level >= MAX_CHARACTER_LEVEL;
+  if (isAtCap) return false;
   return current.rustySkins.includes(skin);
 }
 
@@ -301,7 +304,17 @@ export function baseStatSlotFor(skin: number, stat: StatKey): number {
   return isSpecialty ? MAX_STAT_SLOT : BASE_STAT_SLOT;
 }
 
-export function effectiveStatSlots(skin: number, allocation?: CharacterAllocation): Record<StatKey, number> {
+/** The bars a survivor shows. At level 100 every bar is full whatever the save holds: 99 AP cannot buy all 100 pips. */
+export function effectiveStatSlots(skin: number, allocation: CharacterAllocation | undefined, level: number): Record<StatKey, number> {
+  const isAtCap = level >= MAX_CHARACTER_LEVEL;
+  if (!isAtCap) return investedStatSlots(skin, allocation);
+  const full = {} as Record<StatKey, number>;
+  for (const { key } of STATS) full[key] = MAX_STAT_SLOT;
+  return full;
+}
+
+/** The innate specialty plus the pips the save holds, which is what earned AP is spent against. */
+function investedStatSlots(skin: number, allocation?: CharacterAllocation): Record<StatKey, number> {
   const spent = allocation?.spentAp ?? defaultCharacterAllocation().spentAp;
   const result = {} as Record<StatKey, number>;
 
@@ -317,6 +330,8 @@ export function effectiveStatSlots(skin: number, allocation?: CharacterAllocatio
 export function canAllocateStat(skin: number, stat: StatKey, current: ProgressionState): boolean {
   const hasAvailableAp = current.ap > 0;
   if (!hasAvailableAp) return false;
+  const isAtCap = current.level >= MAX_CHARACTER_LEVEL;
+  if (isAtCap) return false;
 
   const allocation = current.allocations[skin] ?? defaultCharacterAllocation();
   const currentSlot = baseStatSlotFor(skin, stat) + (allocation.spentAp[stat] ?? 0);
@@ -357,7 +372,7 @@ export function pickWinningStat(
   skin: number,
   allocation?: CharacterAllocation,
 ): StatKey | null {
-  const slots = effectiveStatSlots(skin, allocation);
+  const slots = investedStatSlots(skin, allocation);
   const candidates = STATS.map((s) => s.key).filter((key) => (slots[key] ?? 0) < MAX_STAT_SLOT);
   const hasNoCandidates = candidates.length === 0;
   if (hasNoCandidates) return null;
@@ -390,7 +405,7 @@ export function allocateEarnedAp(
   if (!isPositive) return current;
 
   const currentAllocation = current.allocations[skin] ?? defaultCharacterAllocation();
-  const currentSlots = effectiveStatSlots(skin, currentAllocation);
+  const currentSlots = investedStatSlots(skin, currentAllocation);
   const currentLevel = currentSlots[stat] ?? 0;
   const availableSpace = Math.max(0, MAX_STAT_SLOT - currentLevel);
   const pointsToApply = Math.min(amount, availableSpace);
@@ -453,7 +468,7 @@ export function addGummyPoints(current: ProgressionState, amount: number): Progr
 
 export function isCharacterMaxed(skin: number, current?: ProgressionState): boolean {
   if (!current) return false;
-  const slots = effectiveStatSlots(skin, current.allocations[skin]);
+  const slots = effectiveStatSlots(skin, current.allocations[skin], current.level);
   return STATS.every(({ key }) => (slots[key] ?? 0) >= MAX_STAT_SLOT);
 }
 
@@ -466,6 +481,8 @@ export function characterBadgeName(skin: number, baseName: string, current?: Pro
 
 export function characterLevel(skin: number, current?: ProgressionState): number {
   if (!current) return 1;
+  const isAtCap = current.level >= MAX_CHARACTER_LEVEL;
+  if (isAtCap) return 1 + TOTAL_PIPS_TO_FILL;
   const spent = current.allocations[skin]?.spentAp;
   if (!spent) return 1;
   const invested = Object.values(spent).reduce((sum, count) => sum + count, 0);

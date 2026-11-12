@@ -109,7 +109,7 @@ describe('Progression Core Logic', () => {
     expect(allocated.ap).toBe(0);
     expect(allocated.allocations[0].spentAp.reload).toBe(1);
 
-    const slots = effectiveStatSlots(0, allocated.allocations[0]);
+    const slots = effectiveStatSlots(0, allocated.allocations[0], allocated.level);
     expect(slots.stealth).toBe(5);
     expect(slots.reload).toBe(1);
     expect(slots.speed).toBe(0);
@@ -342,6 +342,20 @@ describe('Rolling Timestamp AP Decay & Rusty Survivors', () => {
     expect(result.decayedAp).toBe(0);
     expect(result.state).toMatchObject({ owedAp: 0, lastApEarnedAt: NOW + 7 * DAY_MS });
     expect(applyApDecay(result.state, NOW + 8 * DAY_MS).state).toBe(result.state);
+  });
+
+  it('reports every survivor maxed and none Rusty at level 100, from the level alone', () => {
+    const save100 = { ...createInitialProgression(NOW), level: MAX_CHARACTER_LEVEL, ap: 3, rustySkins: [0] };
+    const kept = applyApDecay(save100, NOW + 365 * DAY_MS).state;
+    for (const skin of [0, 1, 2, 3, 4]) {
+      expect(isCharacterMaxed(skin, kept)).toBe(true);
+      expect(Object.values(effectiveStatSlots(skin, kept.allocations[skin], kept.level))).toEqual([5, 5, 5, 5, 5]);
+      expect(canAllocateStat(skin, 'reload', kept)).toBe(false);
+    }
+    expect(isCharacterRusty(0, kept)).toBe(false);
+    expect(characterBadgeName(0, 'Night', kept)).toBe('OP Night');
+    expect(characterLevel(3, kept)).toBe(21);
+    expect(effectiveStatSlots(0, undefined, 99)).toEqual({ stealth: 5, reload: 0, speed: 0, strength: 0, search: 0 });
   });
 
   it('two level-ups after three idle weeks pay four AP', () => {

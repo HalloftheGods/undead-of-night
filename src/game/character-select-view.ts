@@ -17,7 +17,7 @@ export interface StatBar {
 export function statBarsOf(skin: number, progression?: ProgressionState): readonly StatBar[] {
   const specialtyKey = SPECIALTY_STAT_BY_SKIN[skin];
   const slots = progression
-    ? effectiveStatSlots(skin, progression.allocations[skin])
+    ? effectiveStatSlots(skin, progression.allocations[skin], progression.level)
     : statSlotsOf(skin);
   return STATS.map(({ key, label }) => {
     const filled = slots[key] ?? 0;

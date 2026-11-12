@@ -167,7 +167,7 @@ export interface StatRowView {
 
 const statRows = computed<StatRowView[]>(() => {
   const allocation = props.progression.allocations[props.skin];
-  const slots = effectiveStatSlots(props.skin, allocation);
+  const slots = effectiveStatSlots(props.skin, allocation, props.progression.level);
   const specialtyKey = SPECIALTY_STAT_BY_SKIN[props.skin];
 
   return STATS.map(({ key, label }) => {
