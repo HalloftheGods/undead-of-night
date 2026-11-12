@@ -62,7 +62,7 @@ import PlaySetup from './PlaySetup.vue';
 import PressAnyKey from './PressAnyKey.vue';
 import SpriteImg from './SpriteImg.vue';
 import TitleMenu from './TitleMenu.vue';
-import { checkApUpkeep } from '../../shared/progression.ts';
+import { checkApUpkeep } from '../../shared/progression-save.ts';
 import { useGame } from './use-game.ts';
 
 declare const __APP_VERSION__: string;

@@ -21,7 +21,8 @@ import type { VisualStore } from './visuals.ts';
 import { hitPalette } from './hit-palette.ts';
 import { formatItemName } from '../game/dual-loot-modal.ts';
 import { CLUE_COLOR } from '../game/map-leftovers.ts';
-import { loadProgression, xpBarFraction } from '../../shared/progression.ts';
+import { xpBarFraction } from '../../shared/progression.ts';
+import { loadProgression } from '../../shared/progression-save.ts';
 
 const POINTER_INSET = 8;
 /** Clear of the HUD in every corner, and of the screen's edge, where the van must not be missed. */

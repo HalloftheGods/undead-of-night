@@ -8,7 +8,8 @@ import { DIFFICULTIES } from '../../shared/difficulty.ts';
 import type { DifficultyDef, DifficultyId } from '../../shared/difficulty.ts';
 import { statBarsOf } from './character-select-view.ts';
 import { MODE_CARDS } from './mode-select-view.ts';
-import { allocateEarnedAp, characterBadgeName, characterLevel, checkApUpkeep, isCharacterMaxed, isCharacterRusty, pickWinningStat, saveProgression, type ProgressionState, type ProgressStorage } from '../../shared/progression.ts';
+import { allocateEarnedAp, characterBadgeName, characterLevel, isCharacterMaxed, isCharacterRusty, pickWinningStat, type ProgressionState } from '../../shared/progression.ts';
+import { checkApUpkeep, saveProgression, type ProgressStorage } from '../../shared/progression-save.ts';
 import type { PixelSprite } from '../art/types.ts';
 import type { PlayMode } from './play-flow.ts';
 

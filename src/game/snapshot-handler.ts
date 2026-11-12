@@ -20,15 +20,8 @@ import { CANDIES } from '../../shared/candy.ts';
 import type { StatKey } from '../../shared/character-stats.ts';
 import type { CandyId } from '../../shared/protocol.ts';
 import { crashShake } from '../engine/vehicle-draw.ts';
-import {
-  addExperience,
-  allocateEarnedAp,
-  isCharacterMaxed,
-  loadProgression,
-  pickWinningStat,
-  saveProgression,
-  xpBarFraction,
-} from '../../shared/progression.ts';
+import { addExperience, allocateEarnedAp, isCharacterMaxed, pickWinningStat, xpBarFraction } from '../../shared/progression.ts';
+import { loadProgression, saveProgression } from '../../shared/progression-save.ts';
 
 const LEVEL_UP_BOONS: readonly CandyId[] = [
   'corn_rush',

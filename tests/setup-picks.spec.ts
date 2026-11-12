@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { CHARACTERS } from '../shared/characters.ts';
 import { DIFFICULTIES } from '../shared/difficulty.ts';
 import { statBarsOf } from '../src/game/character-select-view.ts';
-import { createInitialProgression, PROGRESSION_STORAGE_KEY } from '../shared/progression.ts';
+import { createInitialProgression } from '../shared/progression.ts';
+import { PROGRESSION_STORAGE_KEY } from '../shared/progression-save.ts';
 import { chosenOption, dialSlots, longestWord, setupPicks, setupProgression, stepFocus } from '../src/game/setup-picks.ts';
 
 describe('setup progression', () => {
@@ -14,12 +15,14 @@ describe('setup progression', () => {
     return { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, val: string) => void memory.set(key, val) };
   }
 
-  it('takes the missed weeks before it spends banked AP on the survivor', () => {
-    const start = createInitialProgression(NOW - 15 * DAY_MS);
+  it('takes the missed week out of banked AP before any is spent on the survivor', () => {
+    const start = createInitialProgression(NOW - 8 * DAY_MS);
     const store = storeWith({ ...start, level: 3, ap: 1, allocations: { ...start.allocations, 0: { spentAp: { stealth: 0, reload: 1, speed: 0, strength: 0, search: 0 } } } });
-    const after = setupProgression(0, store, NOW);
-    expect(after).toMatchObject({ ap: 0, owedAp: 2 });
-    expect(after.allocations[0].spentAp).toEqual({ stealth: 0, reload: 0, speed: 0, strength: 0, search: 0 });
+    const after = setupProgression(1, store, NOW);
+    // Spending first would put the AP on survivor 1 and take survivor 0's pip instead.
+    expect(after).toMatchObject({ ap: 0, owedAp: 1, rustySkins: [] });
+    expect(after.allocations[0].spentAp.reload).toBe(1);
+    expect(Object.values(after.allocations[1].spentAp)).toEqual([0, 0, 0, 0, 0]);
   });
 
   it('spends banked AP on the picked survivor and saves it', () => {

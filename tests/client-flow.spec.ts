@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BUILDING_DEFS } from '../shared/protocol.ts';
 import type { GameEvent, GameOverStats, PlayerEntity, SnapshotPacket } from '../shared/protocol.ts';
-import { createInitialProgression, PROGRESSION_STORAGE_KEY } from '../shared/progression.ts';
+import { createInitialProgression } from '../shared/progression.ts';
+import { PROGRESSION_STORAGE_KEY } from '../shared/progression-save.ts';
 import type { ProgressionState } from '../shared/progression.ts';
 import { AudioEngine } from '../src/audio/audio-engine.ts';
 import { GameController } from '../src/game/game-controller.ts';

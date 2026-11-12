@@ -1,33 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { GameSimulation } from '../shared/simulation.ts';
 import { applyBagCommit } from '../shared/bag-sim.ts';
-import {
-  MAX_CHARACTER_LEVEL,
-  addExperience,
-  allocateEarnedAp,
-  allocateStatPoint,
-  applyApDecay,
-  AP_DECAY_INTERVAL_MS,
-  baseStatSlotFor,
-  canAllocateStat,
-  canRespecCharacter,
-  characterBadgeName,
-  characterLevel,
-  checkApUpkeep,
-  createInitialProgression,
-  effectiveStatSlots,
-  isCharacterMaxed,
-  isCharacterRusty,
-  loadProgression,
-  loseOnePip,
-  pickWinningStat,
-  PROGRESSION_STORAGE_KEY,
-  respecCharacter,
-  saveProgression,
-  totalXpForLevel,
-  xpBarFraction,
-  xpRequiredForLevel,
-} from '../shared/progression.ts';
+import { MAX_CHARACTER_LEVEL, addExperience, allocateEarnedAp, allocateStatPoint, applyApDecay, AP_DECAY_INTERVAL_MS, baseStatSlotFor, canAllocateStat, canRespecCharacter, characterBadgeName, characterLevel, createInitialProgression, effectiveStatSlots, isCharacterMaxed, isCharacterRusty, loseOnePip, pickWinningStat, respecCharacter, totalXpForLevel, xpBarFraction, xpRequiredForLevel } from '../shared/progression.ts';
+import { checkApUpkeep, loadProgression, PROGRESSION_STORAGE_KEY, saveProgression } from '../shared/progression-save.ts';
 import type { ProgressionState } from '../shared/progression.ts';
 
 const DAY_MS = 24 * 60 * 60 * 1000;

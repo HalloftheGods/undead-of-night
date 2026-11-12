@@ -46,7 +46,7 @@ import { countdownText, dailyShare, dayLabel, loadDailyLog, mpResultOf, msUntilT
 import type { UiState } from '../game/hud-state.ts';
 import { survivorPick } from '../game/setup-picks.ts';
 import type { FixedCard, PickKey } from '../game/setup-picks.ts';
-import { checkApUpkeep } from '../../shared/progression.ts';
+import { checkApUpkeep } from '../../shared/progression-save.ts';
 import { streakReward } from '../game/streak-reward.ts';
 import PixelButton from './PixelButton.vue';
 import SetupPicks from './SetupPicks.vue';
