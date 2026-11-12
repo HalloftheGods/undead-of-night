@@ -22,6 +22,7 @@ export interface InventoryGrid {
   readonly cols: number;
   readonly rows: number;
   items: GridItem[];
+  blocked?: readonly GridPoint[];
 }
 
 export const ITEM_FOOTPRINTS: Record<string, GridFootprint> = {
@@ -72,12 +73,27 @@ export function getItemFootprint(type: string, rotated: boolean): GridFootprint 
   };
 }
 
-export function createInventoryGrid(cols: number, rows: number): InventoryGrid {
+export function createInventoryGrid(
+  cols: number,
+  rows: number,
+  blocked?: readonly GridPoint[]
+): InventoryGrid {
   return {
     cols: Math.max(1, cols),
     rows: Math.max(1, rows),
     items: [],
+    ...(blocked && blocked.length > 0 ? { blocked: [...blocked] } : {}),
   };
+}
+
+export function isCellBlocked(grid: InventoryGrid, tileX: number, tileY: number): boolean {
+  const blockedPoints = grid.blocked;
+  const hasNoBlocked = !blockedPoints || blockedPoints.length === 0;
+  if (hasNoBlocked) {
+    return false;
+  }
+  const isTargetBlocked = (point: GridPoint): boolean => point.x === tileX && point.y === tileY;
+  return blockedPoints.some(isTargetBlocked);
 }
 
 export function isWithinGridBounds(grid: InventoryGrid, x: number, y: number, w: number, h: number): boolean {
@@ -125,10 +141,28 @@ export function canPlaceItem(
   rotated: boolean,
   excludeItemId?: string
 ): boolean {
+  const isMissingType = !itemType;
+  if (isMissingType) {
+    return false;
+  }
   const dims = getItemFootprint(itemType, rotated);
   const fitsInBounds = isWithinGridBounds(grid, targetX, targetY, dims.width, dims.height);
   if (!fitsInBounds) {
     return false;
+  }
+
+  const hasBlockedCells = grid.blocked !== undefined && grid.blocked.length > 0;
+  if (hasBlockedCells) {
+    for (let dy = 0; dy < dims.height; dy += 1) {
+      for (let dx = 0; dx < dims.width; dx += 1) {
+        const checkX = targetX + dx;
+        const checkY = targetY + dy;
+        const isBlocked = isCellBlocked(grid, checkX, checkY);
+        if (isBlocked) {
+          return false;
+        }
+      }
+    }
   }
 
   for (const existingItem of grid.items) {
@@ -151,6 +185,10 @@ export function canPlaceItem(
 }
 
 export function placeItem(grid: InventoryGrid, item: GridItem): boolean {
+  const isInvalidItem = !item || !item.type;
+  if (isInvalidItem) {
+    return false;
+  }
   const canFit = canPlaceItem(grid, item.type, item.x, item.y, item.rotated, item.id);
   if (!canFit) {
     return false;
@@ -252,6 +290,10 @@ export function findAvailableSlot(
 }
 
 export function autoPackItem(grid: InventoryGrid, item: Omit<GridItem, 'x' | 'y'>): boolean {
+  const isInvalidItem = !item || !item.type;
+  if (isInvalidItem) {
+    return false;
+  }
   const slot = findAvailableSlot(grid, item.type, true);
   const noSlotAvailable = slot === null;
   if (noSlotAvailable) {
@@ -265,3 +307,44 @@ export function autoPackItem(grid: InventoryGrid, item: Omit<GridItem, 'x' | 'y'
     rotated: slot.rotated,
   });
 }
+
+export function randomPackItem(
+  grid: InventoryGrid,
+  item: Omit<GridItem, 'x' | 'y'>,
+  rng: () => number = Math.random
+): boolean {
+  const isInvalidItem = !item || !item.type;
+  if (isInvalidItem) {
+    return false;
+  }
+
+  const validSlots: { x: number; y: number; rotated: boolean }[] = [];
+  for (let y = 0; y < grid.rows; y += 1) {
+    for (let x = 0; x < grid.cols; x += 1) {
+      const fitsStandard = canPlaceItem(grid, item.type, x, y, false);
+      if (fitsStandard) {
+        validSlots.push({ x, y, rotated: false });
+      }
+      const fitsRotated = canPlaceItem(grid, item.type, x, y, true);
+      if (fitsRotated) {
+        validSlots.push({ x, y, rotated: true });
+      }
+    }
+  }
+
+  const noValidSlots = validSlots.length === 0;
+  if (noValidSlots) {
+    return false;
+  }
+
+  const chosenIndex = Math.floor(rng() * validSlots.length);
+  const chosenSlot = validSlots[chosenIndex] ?? validSlots[0];
+
+  return placeItem(grid, {
+    ...item,
+    x: chosenSlot.x,
+    y: chosenSlot.y,
+    rotated: chosenSlot.rotated,
+  });
+}
+

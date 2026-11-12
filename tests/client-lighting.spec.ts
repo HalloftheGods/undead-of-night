@@ -188,6 +188,14 @@ describe('LightField', () => {
     expect(lit).toBeGreaterThan(200);
   });
 
+  it('drives exterior lighting to complete darkness when outsideScale is 0', () => {
+    const lights = field([52, 19, 22]);
+    lights.addPool(32, 32, 30, [255, 180, 100], 1);
+    lights.enclose({ x0: 24, y0: 24, x1: 40, y1: 40 }, [13, 13, 19], 0, 1);
+    expect(lights.brightness(32, 32)).toBe(19);
+    expect(lights.brightness(4, 4)).toBe(0);
+  });
+
   it('closes in by degrees as the shell fades', () => {
     const lights = field();
     lights.enclose({ x0: 24, y0: 24, x1: 40, y1: 40 }, [13, 13, 19], 0.42, 0.5);

@@ -134,13 +134,18 @@ describe('supplies left behind', () => {
     expect(leftovers).toEqual([{ building: house.id, supplies: { weapon: 1 }, clue: true, clueItem: 'shotgun', clueAt: cornerOf(house) }]);
   });
 
-  it('clears the clue once the clue item has been collected', () => {
+  it('retains all hints until collected and clears once house is empty', () => {
     const { state } = quietSim();
     const house = firstHouse(state);
     drop(state, 'bandage', cornerOf(house));
     const clues = new Map([[house.id, 'shotgun']]);
-    const leftovers = leftoversOf(state.map, state.pickups, new Set([house.id]), clues);
-    expect(leftovers).toEqual([{ building: house.id, supplies: { med: 1 } }]);
+    const leftoversWithItem = leftoversOf(state.map, state.pickups, new Set([house.id]), clues);
+    expect(leftoversWithItem).toEqual([{ building: house.id, supplies: { med: 1 }, clue: true, clueItem: 'bandage', clueAt: cornerOf(house) }]);
+    expect(clues.has(house.id)).toBe(true);
+
+    state.pickups = [];
+    const leftoversEmpty = leftoversOf(state.map, state.pickups, new Set([house.id]), clues);
+    expect(leftoversEmpty).toEqual([]);
     expect(clues.has(house.id)).toBe(false);
   });
 });

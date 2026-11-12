@@ -10,6 +10,7 @@ import type { WeaponId } from '../../shared/protocol.ts';
 import { isCandyId, type CandyId } from '../../shared/candy.ts';
 import { isSupplyType, SUPPLY_TYPES } from '../../shared/supply-types.ts';
 import type { Supplies } from '../../shared/supply-types.ts';
+import type { ContainerArt } from '../art/containers.ts';
 import type { HudState } from './hud-state.ts';
 
 /** How long a layout may disagree with the host's hash, bag shut, before it is sent again. */
@@ -47,6 +48,7 @@ export interface BagWorking {
   readonly containerTitle?: string;
   readonly containerKind?: ContainerKind;
   readonly containerId?: number | null;
+  readonly containerArt?: ContainerArt | null;
 }
 
 function gunItem(weapon: WeaponId, hud: Carried): GridItem {
@@ -131,12 +133,13 @@ export class LocalBag {
     containerTitle = 'Nearby',
     containerItems: readonly GridItem[] = [],
     containerKind?: ContainerKind,
+    containerArt?: ContainerArt | null,
   ): BagWorking {
     this.openIds = new Set([...this.bag.pack.items, ...this.bag.pockets.items].map((item) => item.id));
     this.containerOriginalIds = new Set(containerItems.map((item) => item.id));
     const tier = hud.backpackTier ?? 'satchel';
-    const { cols, rows } = containerGridDimensions(containerKind);
-    const container = createInventoryGrid(cols, rows);
+    const { cols, rows, blocked } = containerGridDimensions(containerKind);
+    const container = createInventoryGrid(cols, rows, blocked);
     for (const item of containerItems) {
       if (!placeItem(container, { ...item })) {
         autoPackItem(container, { ...item });
@@ -165,6 +168,7 @@ export class LocalBag {
       containerTitle,
       containerKind,
       containerId,
+      containerArt,
     };
   }
 

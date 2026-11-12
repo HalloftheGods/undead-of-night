@@ -38,7 +38,10 @@
                 v-for="cell in containerCells"
                 :key="`container-${cell.col}-${cell.row}`"
                 class="grid-cell"
-                :class="getCellHighlightClass('container', cell.col, cell.row)"
+                :class="[
+                  getCellHighlightClass('container', cell.col, cell.row),
+                  { 'is-blocked': isCellBlocked(modalState.containerGrid, cell.col, cell.row) },
+                ]"
                 :style="getCellCustomProperties(cell.col, cell.row)"
                 @pointerenter="setHoverTile('container', cell.col, cell.row)"
                 @pointerleave="clearHoverTile('container', cell.col, cell.row)"
@@ -287,7 +290,7 @@ import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
 import HeldItemPanel from './HeldItemPanel.vue';
 import LootItemArt from './LootItemArt.vue';
 import { backpackDef } from '../../shared/backpack.ts';
-import { getItemFootprint, type GridItem } from '../../shared/grid-inventory.ts';
+import { getItemFootprint, isCellBlocked, type GridItem } from '../../shared/grid-inventory.ts';
 import { spriteDataUrl } from '../engine/sprite-cache.ts';
 import {
   buildGridCells,
@@ -357,8 +360,7 @@ const isHoldingItem = computed(() => modalState.heldItem !== null);
 const hasContainer = computed(() => modalState.containerGrid.items.length > 0 || Boolean(props.containerKind));
 
 const containerArtUrl = computed(() => {
-  if (!props.art || !props.containerKind) return '';
-  const containerArt = props.art.containers[props.containerKind];
+  const containerArt = props.containerArt ?? (props.art && props.containerKind ? props.art.containers[props.containerKind] : null);
   if (!containerArt) return '';
   const hasItems = modalState.containerGrid.items.length > 0;
   const sprite = hasItems
@@ -413,7 +415,7 @@ const backpackSection = computed(() => ({
   cells: buildGridCells(modalState.backpackGrid.cols, modalState.backpackGrid.rows),
 }));
 
-function getItemName(type: string): string {
+function getItemName(type?: string | null): string {
   return formatItemName(type);
 }
 

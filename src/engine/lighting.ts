@@ -122,8 +122,8 @@ export class Lighting {
   }
 
   /** Darkens all that lies outside the room the viewer is in. amount is 0..1 as it closes in. */
-  enclose(room: ScreenRect, amount: number): void {
-    this.field.enclose(room, ROOM_AMBIENT, OUTSIDE_FROM_ROOM, amount);
+  enclose(room: ScreenRect, amount: number, outsideScale = OUTSIDE_FROM_ROOM): void {
+    this.field.enclose(room, ROOM_AMBIENT, outsideScale, amount);
   }
 
   /** World coordinates for the rays, left/top to bring the result on screen. */

@@ -6,11 +6,14 @@ import {
   findAvailableSlot,
   findItemAtTile,
   getItemFootprint,
+  isCellBlocked,
   isWithinGridBounds,
   placeItem,
+  randomPackItem,
   removeItem,
   rotateItem,
   transferItem,
+  type GridItem,
 } from '../shared/grid-inventory.ts';
 
 describe('Spatial Grid Inventory Engine', () => {
@@ -227,5 +230,68 @@ describe('Spatial Grid Inventory Engine', () => {
       rotated: false,
     });
     expect(overflowPacked).toBe(false);
+  });
+
+  it('rejects placing or auto-packing invalid items without a type', () => {
+    const grid = createInventoryGrid(2, 2);
+    expect(canPlaceItem(grid, '', 0, 0, false)).toBe(false);
+    expect(placeItem(grid, { id: 'bad-1', type: '', x: 0, y: 0, rotated: false })).toBe(false);
+    expect(placeItem(grid, null as unknown as GridItem)).toBe(false);
+    expect(autoPackItem(grid, { id: 'bad-2', type: '', rotated: false })).toBe(false);
+    expect(autoPackItem(grid, null as unknown as GridItem)).toBe(false);
+  });
+
+  it('randomPackItem places items in available random slots', () => {
+    const grid = createInventoryGrid(6, 6);
+    const rng = () => 0.5;
+    const placed = randomPackItem(grid, { id: 'random-1', type: 'bandage', rotated: false }, rng);
+    expect(placed).toBe(true);
+    expect(grid.items.length).toBe(1);
+
+    const isWithinBounds = grid.items[0].x >= 0 && grid.items[0].x < 6 && grid.items[0].y >= 0 && grid.items[0].y < 6;
+    expect(isWithinBounds).toBe(true);
+
+    // Full grid rejection
+    const fullGrid = createInventoryGrid(1, 1);
+    expect(randomPackItem(fullGrid, { id: 'medkit-1', type: 'medkit', rotated: false })).toBe(false);
+  });
+
+  it('detects blocked cells and prevents item placement on blocked cells', () => {
+    const blocked = [{ x: 1, y: 1 }, { x: 2, y: 1 }];
+    const grid = createInventoryGrid(4, 4, blocked);
+
+    expect(isCellBlocked(grid, 1, 1)).toBe(true);
+    expect(isCellBlocked(grid, 2, 1)).toBe(true);
+    expect(isCellBlocked(grid, 0, 0)).toBe(false);
+
+    // 1x1 item at blocked tile fails
+    expect(canPlaceItem(grid, 'bandage', 1, 1, false)).toBe(false);
+    expect(canPlaceItem(grid, 'bandage', 2, 1, false)).toBe(false);
+    expect(canPlaceItem(grid, 'bandage', 0, 0, false)).toBe(true);
+
+    // 2x1 item spanning over (1, 1) fails
+    expect(canPlaceItem(grid, 'full_size_bar', 0, 1, false)).toBe(false);
+    // 2x1 item on clear row succeeds
+    expect(canPlaceItem(grid, 'full_size_bar', 0, 0, false)).toBe(true);
+  });
+
+  it('autoPackItem and randomPackItem respect blocked cells', () => {
+    const blocked = [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 0, y: 1 }];
+    const grid = createInventoryGrid(2, 2, blocked);
+
+    const packed = autoPackItem(grid, { id: 'item-1', type: 'bandage', rotated: false });
+    expect(packed).toBe(true);
+    expect(grid.items[0].x).toBe(1);
+    expect(grid.items[0].y).toBe(1);
+
+    const packedSecond = autoPackItem(grid, { id: 'item-2', type: 'bandage', rotated: false });
+    expect(packedSecond).toBe(false);
+
+    const grid2 = createInventoryGrid(2, 2, blocked);
+    const rng = () => 0.1;
+    const randomPlaced = randomPackItem(grid2, { id: 'rand-1', type: 'bandage', rotated: false }, rng);
+    expect(randomPlaced).toBe(true);
+    expect(grid2.items[0].x).toBe(1);
+    expect(grid2.items[0].y).toBe(1);
   });
 });

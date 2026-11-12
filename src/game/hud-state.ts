@@ -255,13 +255,14 @@ export interface UiState {
     readonly kind?: ContainerKind;
     readonly title?: string;
     readonly items: readonly GridItem[];
+    readonly propIndex?: number;
   } | null;
 }
 
 export function buildHud(snapshot: SnapshotPacket, local: PlayerEntity, spectating: string | null): HudState {
   return {
-    health: local.health,
     seated: local.vehicle !== undefined,
+    health: local.health,
     maxHealth: local.maxHealth,
     status: local.status,
     weapon: local.weapon,

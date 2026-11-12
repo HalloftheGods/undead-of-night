@@ -114,10 +114,22 @@ export function leftoversOf(
     byBuilding.set(id, supplies);
   }
   const outdoors = containerLeftovers(map, containers, byBuilding);
+
+  if (clues) {
+    const clueBuildingIds = clues instanceof Map ? clues.keys() : clues;
+    for (const buildingId of clueBuildingIds) {
+      const alreadyTracked = byBuilding.has(buildingId);
+      if (!alreadyTracked) byBuilding.set(buildingId, {});
+    }
+  }
+
   const indoors = [...byBuilding].flatMap(([building, supplies]) => {
     const hasClue = clues?.has(building) ?? false;
     const clueItem = clues instanceof Map ? clues.get(building) : undefined;
-    if (!hasClue) return [{ building, supplies }];
+    if (!hasClue) {
+      const hasSupplies = Object.keys(supplies).length > 0;
+      return hasSupplies ? [{ building, supplies }] : [];
+    }
 
     const matchesBuildingPickup = (p: PickupState): boolean => {
       if (!isLasting(p)) return false;
@@ -132,14 +144,15 @@ export function leftoversOf(
     const populatedContainers = buildingContainers.flatMap((c) => {
       const state = containers[c.id];
       if (!state) return [];
-      const itemType = state.opened ? state.items?.[0]?.type : state.loot?.type;
-      if (!itemType) return [];
-      return [{
+      const itemTypes = state.opened
+        ? (state.items ?? []).map((it) => it.type)
+        : (state.loot ? [state.loot.type] : []);
+      return itemTypes.map((type) => ({
         x: Math.round(c.x),
         y: Math.round(c.y),
-        type: itemType,
-        kind: supplyKindOf(itemType),
-      }];
+        type,
+        kind: supplyKindOf(type),
+      }));
     });
 
     interface RevealedObject {
@@ -159,10 +172,16 @@ export function leftoversOf(
     ];
 
     const hasNoObjects = objects.length === 0;
-    const hasTarget = clueItem ? objects.some((o) => o.type === clueItem) : true;
-    if (hasNoObjects || !hasTarget) {
+    if (hasNoObjects) {
       if (clues instanceof Map) (clues as Map<string, string>).delete(building);
-      return [{ building, supplies }];
+      else if (clues instanceof Set) (clues as Set<string>).delete(building);
+      const hasSupplies = Object.keys(supplies).length > 0;
+      return hasSupplies ? [{ building, supplies }] : [];
+    }
+
+    const clueSupplies: Partial<Record<SupplyKind, number>> = {};
+    for (const obj of objects) {
+      clueSupplies[obj.kind] = (clueSupplies[obj.kind] ?? 0) + 1;
     }
 
     const primary = (clueItem ? objects.find((o) => o.type === clueItem) : undefined) ?? objects[0];
@@ -170,9 +189,9 @@ export function leftoversOf(
 
     const primaryView: LeftoverView = {
       building,
-      supplies,
+      supplies: clueSupplies,
       clue: true,
-      clueItem: primary.type,
+      ...(clueItem !== undefined || clues instanceof Map ? { clueItem: primary.type } : {}),
       clueAt: { x: primary.x, y: primary.y },
     };
 
@@ -192,7 +211,7 @@ export function leftoversOf(
 
 /** Left off while nothing is left behind, so a snapshot then is what it always was. */
 export function leftoversField(sim: SimState): { leftovers?: LeftoverView[] } {
-  const hasNoVisits = sim.entered.size === 0 && !sim.containers.some((state) => state.opened);
+  const hasNoVisits = sim.entered.size === 0 && !sim.containers.some((state) => state.opened) && (sim.clues?.size ?? 0) === 0;
   if (hasNoVisits) return {};
   const leftovers = leftoversOf(sim.map, sim.pickups, sim.entered, sim.clues, sim.containers);
   return leftovers.length > 0 ? { leftovers } : {};

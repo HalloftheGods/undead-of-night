@@ -52,6 +52,14 @@
 
             <div class="toolbar-toggles">
               <PixelButton
+                class="save-codebase-btn"
+                :primary="true"
+                :disabled="isSaving || modifiedItemsCount === 0"
+                @press="saveItemsToCodebase"
+              >
+                {{ saveItemStatus || 'Save to Codebase' }}
+              </PixelButton>
+              <PixelButton
                 class="toggle-btn"
                 :class="{ 'is-active': onlyModifiedItems }"
                 @press="toggleOnlyModifiedItems"
@@ -134,8 +142,15 @@
                 JSON
               </PixelButton>
               <PixelButton
-                class="copy-btn"
+                class="save-codebase-btn"
                 :primary="true"
+                :disabled="isSaving"
+                @press="saveItemsToCodebase"
+              >
+                {{ saveItemStatus || 'Save to Codebase' }}
+              </PixelButton>
+              <PixelButton
+                class="copy-btn"
                 @press="copyItemCode"
               >
                 {{ copyItemStatus || 'Copy Code' }}
@@ -182,6 +197,14 @@
 
             <div class="toolbar-toggles">
               <PixelButton
+                class="save-codebase-btn"
+                :primary="true"
+                :disabled="isSaving || modifiedContainersCount === 0"
+                @press="saveContainersToCodebase"
+              >
+                {{ saveContainerStatus || 'Save to Codebase' }}
+              </PixelButton>
+              <PixelButton
                 class="toggle-btn"
                 :class="{ 'is-active': onlyModifiedContainers }"
                 @press="toggleOnlyModifiedContainers"
@@ -214,8 +237,10 @@
               :entry="entry"
               :cols="containerSizes[entry.kind]?.cols ?? entry.defaultDimensions.cols"
               :rows="containerSizes[entry.kind]?.rows ?? entry.defaultDimensions.rows"
+              :blocked="containerSizes[entry.kind]?.blocked ?? entry.defaultDimensions.blocked ?? []"
               @update:cols="updateContainerCols(entry.kind, $event)"
               @update:rows="updateContainerRows(entry.kind, $event)"
+              @update:blocked="updateContainerBlocked(entry.kind, $event)"
               @preview="openPreviewModal(entry)"
             />
           </div>
@@ -252,8 +277,15 @@
                 JSON
               </PixelButton>
               <PixelButton
-                class="copy-btn"
+                class="save-codebase-btn"
                 :primary="true"
+                :disabled="isSaving"
+                @press="saveContainersToCodebase"
+              >
+                {{ saveContainerStatus || 'Save to Codebase' }}
+              </PixelButton>
+              <PixelButton
+                class="copy-btn"
                 @press="copyContainerCode"
               >
                 {{ copyContainerStatus || 'Copy Code' }}
@@ -274,6 +306,7 @@
       :art="art"
       :container-title="previewModal.title"
       :container-kind="previewModal.containerKind"
+      :container-art="previewModal.containerArt"
       :container-grid="previewModal.grid"
       backpack-tier="satchel"
       @close="closePreviewModal"
@@ -297,10 +330,13 @@ import {
   generateContainerGridSizeJson,
   type DevContainerEntry,
 } from '../../game/dev/container-catalogue.ts';
+import type { ContainerArt } from '../../art/containers.ts';
 import {
   autoPackItem,
   createInventoryGrid,
+  randomPackItem,
   type GridFootprint,
+  type GridPoint,
   type InventoryGrid,
 } from '../../../shared/grid-inventory.ts';
 import {
@@ -319,7 +355,7 @@ interface Props {
   art?: ArtBook | null;
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   art: null,
 });
 
@@ -327,6 +363,7 @@ const emit = defineEmits<{ close: [] }>();
 
 // Bench view switcher: 'items' or 'containers'
 const activeView = ref<'items' | 'containers'>('items');
+const isSaving = ref(false);
 
 // ==========================================
 // 1. ITEMS STATE & LOGIC
@@ -407,13 +444,15 @@ const formattedItemOutputCode = computed(() => {
 });
 
 const updateItemWidth = (id: string, width: number): void => {
-  if (!footprints[id]) return;
-  footprints[id].width = width;
+  const current = footprints[id];
+  if (!current) return;
+  footprints[id] = { ...current, width };
 };
 
 const updateItemHeight = (id: string, height: number): void => {
-  if (!footprints[id]) return;
-  footprints[id].height = height;
+  const current = footprints[id];
+  if (!current) return;
+  footprints[id] = { ...current, height };
 };
 
 const clearItemSearch = (): void => {
@@ -439,7 +478,41 @@ const resetAllFootprints = (): void => {
   }
 };
 
+const saveItemStatus = ref('');
 let copyItemTimeout: ReturnType<typeof setTimeout> | null = null;
+let saveItemTimeout: ReturnType<typeof setTimeout> | null = null;
+
+const saveItemsToCodebase = async (): Promise<void> => {
+  if (isSaving.value) return;
+  isSaving.value = true;
+  saveItemStatus.value = 'SAVING...';
+
+  try {
+    const response = await fetch('/api/dev/inventory-sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        target: 'items',
+        footprints,
+      }),
+    });
+
+    if (response.ok) {
+      saveItemStatus.value = 'SAVED TO CODE!';
+    } else {
+      saveItemStatus.value = 'SAVE FAILED';
+    }
+  } catch {
+    saveItemStatus.value = 'SAVE ERROR';
+  } finally {
+    isSaving.value = false;
+  }
+
+  if (saveItemTimeout) clearTimeout(saveItemTimeout);
+  saveItemTimeout = setTimeout(() => {
+    saveItemStatus.value = '';
+  }, 3000);
+};
 
 const copyItemCode = async (): Promise<void> => {
   try {
@@ -460,17 +533,27 @@ const copyItemCode = async (): Promise<void> => {
 // ==========================================
 const containerCatalogue: DevContainerEntry[] = buildContainerCatalogue();
 
+const initDimensionsFor = (kind: ContainerKind): ContainerGridDimensions => {
+  const base = containerGridDimensions(kind);
+  return {
+    cols: base.cols,
+    rows: base.rows,
+    blocked: base.blocked ? [...base.blocked] : [],
+  };
+};
+
 const initialContainerSizes: Record<ContainerKind, ContainerGridDimensions> = {
-  drawer: { cols: containerGridDimensions('drawer').cols, rows: containerGridDimensions('drawer').rows },
-  locker: { cols: containerGridDimensions('locker').cols, rows: containerGridDimensions('locker').rows },
-  fridge: { cols: containerGridDimensions('fridge').cols, rows: containerGridDimensions('fridge').rows },
-  cabinet: { cols: containerGridDimensions('cabinet').cols, rows: containerGridDimensions('cabinet').rows },
-  shelf: { cols: containerGridDimensions('shelf').cols, rows: containerGridDimensions('shelf').rows },
-  box: { cols: containerGridDimensions('box').cols, rows: containerGridDimensions('box').rows },
-  car: { cols: containerGridDimensions('car').cols, rows: containerGridDimensions('car').rows },
-  bowl: { cols: containerGridDimensions('bowl').cols, rows: containerGridDimensions('bowl').rows },
-  booth: { cols: containerGridDimensions('booth').cols, rows: containerGridDimensions('booth').rows },
-  dumpster: { cols: containerGridDimensions('dumpster').cols, rows: containerGridDimensions('dumpster').rows },
+  drawer: initDimensionsFor('drawer'),
+  locker: initDimensionsFor('locker'),
+  fridge: initDimensionsFor('fridge'),
+  cabinet: initDimensionsFor('cabinet'),
+  shelf: initDimensionsFor('shelf'),
+  box: initDimensionsFor('box'),
+  car: initDimensionsFor('car'),
+  bowl: initDimensionsFor('bowl'),
+  booth: initDimensionsFor('booth'),
+  dumpster: initDimensionsFor('dumpster'),
+  desk: initDimensionsFor('desk'),
 };
 
 const containerSizes = reactive<Record<ContainerKind, ContainerGridDimensions>>(initialContainerSizes);
@@ -480,12 +563,27 @@ const onlyModifiedContainers = ref(false);
 const containerExportMode = ref<'full' | 'modified' | 'json'>('full');
 const copyContainerStatus = ref('');
 
+const areBlockedPointsMatching = (a?: readonly GridPoint[], b?: readonly GridPoint[]): boolean => {
+  const aList = a ?? [];
+  const bList = b ?? [];
+  const hasMismatch = aList.length !== bList.length;
+  if (hasMismatch) {
+    return false;
+  }
+  const toPointKey = (pt: GridPoint): string => `${pt.x}:${pt.y}`;
+  const aKeys = [...aList].map(toPointKey).sort();
+  const bKeys = [...bList].map(toPointKey).sort();
+  return aKeys.every((key, index) => key === bKeys[index]);
+};
+
 const isContainerModified = (entry: DevContainerEntry): boolean => {
   const current = containerSizes[entry.kind];
   if (!current) return false;
   const colsMatch = current.cols === entry.defaultDimensions.cols;
   const rowsMatch = current.rows === entry.defaultDimensions.rows;
-  return !(colsMatch && rowsMatch);
+  const blockedMatch = areBlockedPointsMatching(current.blocked, entry.defaultDimensions.blocked);
+  const isAllMatching = colsMatch && rowsMatch && blockedMatch;
+  return !isAllMatching;
 };
 
 const modifiedContainersCount = computed(() => {
@@ -527,13 +625,36 @@ const formattedContainerOutputCode = computed(() => {
 });
 
 const updateContainerCols = (kind: ContainerKind, cols: number): void => {
-  if (!containerSizes[kind]) return;
-  containerSizes[kind].cols = cols;
+  const targetContainer = containerSizes[kind];
+  if (!targetContainer) return;
+  const currentBlocked = targetContainer.blocked ?? [];
+  const trimmedBlocked = currentBlocked.filter((pt) => pt.x < cols);
+  containerSizes[kind] = {
+    ...targetContainer,
+    cols,
+    blocked: trimmedBlocked,
+  };
 };
 
 const updateContainerRows = (kind: ContainerKind, rows: number): void => {
-  if (!containerSizes[kind]) return;
-  containerSizes[kind].rows = rows;
+  const targetContainer = containerSizes[kind];
+  if (!targetContainer) return;
+  const currentBlocked = targetContainer.blocked ?? [];
+  const trimmedBlocked = currentBlocked.filter((pt) => pt.y < rows);
+  containerSizes[kind] = {
+    ...targetContainer,
+    rows,
+    blocked: trimmedBlocked,
+  };
+};
+
+const updateContainerBlocked = (kind: ContainerKind, blocked: GridPoint[]): void => {
+  const targetContainer = containerSizes[kind];
+  if (!targetContainer) return;
+  containerSizes[kind] = {
+    ...targetContainer,
+    blocked,
+  };
 };
 
 const clearContainerSearch = (): void => {
@@ -556,11 +677,46 @@ const resetAllContainers = (): void => {
     containerSizes[kind] = {
       cols: original.cols,
       rows: original.rows,
+      blocked: original.blocked ? [...original.blocked] : [],
     };
   }
 };
 
+const saveContainerStatus = ref('');
 let copyContainerTimeout: ReturnType<typeof setTimeout> | null = null;
+let saveContainerTimeout: ReturnType<typeof setTimeout> | null = null;
+
+const saveContainersToCodebase = async (): Promise<void> => {
+  if (isSaving.value) return;
+  isSaving.value = true;
+  saveContainerStatus.value = 'SAVING...';
+
+  try {
+    const response = await fetch('/api/dev/inventory-sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        target: 'containers',
+        containerSizes,
+      }),
+    });
+
+    if (response.ok) {
+      saveContainerStatus.value = 'SAVED TO CODE!';
+    } else {
+      saveContainerStatus.value = 'SAVE FAILED';
+    }
+  } catch {
+    saveContainerStatus.value = 'SAVE ERROR';
+  } finally {
+    isSaving.value = false;
+  }
+
+  if (saveContainerTimeout) clearTimeout(saveContainerTimeout);
+  saveContainerTimeout = setTimeout(() => {
+    saveContainerStatus.value = '';
+  }, 3000);
+};
 
 const copyContainerCode = async (): Promise<void> => {
   try {
@@ -583,6 +739,7 @@ interface PreviewModalState {
   title: string;
   containerKind: ContainerKind;
   grid: InventoryGrid;
+  containerArt?: ContainerArt | null;
 }
 
 const previewModal = ref<PreviewModalState | null>(null);
@@ -591,19 +748,30 @@ const SAMPLE_LOOT_ITEMS = ['bandage', 'water_bottle', 'pistol_ammo', 'knife', 'm
 
 const openPreviewModal = (entry: DevContainerEntry): void => {
   const currentDimensions = containerSizes[entry.kind] ?? entry.defaultDimensions;
-  const grid = createInventoryGrid(currentDimensions.cols, currentDimensions.rows);
+  const grid = createInventoryGrid(currentDimensions.cols, currentDimensions.rows, currentDimensions.blocked);
 
   // Seed sample loot items into the container grid to test in-game packing and dragging
   let seedIndex = 0;
   for (const itemType of SAMPLE_LOOT_ITEMS) {
     const itemSeedId = `preview-${entry.kind}-${seedIndex}`;
     seedIndex += 1;
-    autoPackItem(grid, itemType, itemSeedId);
+    const itemData = {
+      id: itemSeedId,
+      type: itemType,
+      rotated: false,
+    };
+    const placed = randomPackItem(grid, itemData, Math.random);
+    if (!placed) {
+      autoPackItem(grid, itemData);
+    }
   }
+
+  const containerArt = props.art ? props.art.containers[entry.look] : null;
 
   previewModal.value = {
     title: entry.name,
     containerKind: entry.kind,
+    containerArt,
     grid,
   };
 };
@@ -707,6 +875,11 @@ const closePreviewModal = (): void => {
 .toolbar-toggles {
   display: flex;
   gap: calc(var(--u) * 2);
+}
+
+.save-codebase-btn {
+  font-weight: 700;
+  font-size: calc(var(--u) * 4);
 }
 
 .toggle-btn.is-active {

@@ -7,6 +7,7 @@ import {
   type ContainerKind,
 } from '../../../shared/containers.ts';
 import type { ContainerLook } from '../../art/containers.ts';
+import type { GridPoint } from '../../../shared/grid-inventory.ts';
 
 export interface DevContainerEntry {
   readonly id: string;
@@ -36,6 +37,7 @@ const PRIMARY_CONTAINERS: ReadonlyArray<{
   { kind: 'bowl', look: 'bowl', name: 'Trick-or-Treat Candy Bowl', description: 'Front porches and residential doorsteps.' },
   { kind: 'booth', look: 'booth', name: 'Fireworks Bus Counter', description: 'Outdoor festival bus in town squares.' },
   { kind: 'dumpster', look: 'dumpster', name: 'Commercial Dumpster', description: 'Alleyways, warehouses and garage lots.' },
+  { kind: 'desk', look: 'desk', name: 'Classroom Desk', description: 'Schools and administrative offices.' },
 ];
 
 const VARIANT_CONTAINERS: ReadonlyArray<{
@@ -45,7 +47,6 @@ const VARIANT_CONTAINERS: ReadonlyArray<{
   readonly description: string;
 }> = [
   { kind: 'cabinet', look: 'bench', name: 'Workbench (Cabinet)', description: 'Cellars, garages, warehouses and workshops.' },
-  { kind: 'drawer', look: 'desk', name: 'Classroom Desk (Drawer)', description: 'Schools and administrative offices.' },
   { kind: 'car', look: 'police', name: 'Police Cruiser Trunk', description: 'Streets near police station, armory loot.' },
   { kind: 'car', look: 'ambulance', name: 'Ambulance Medical Bay', description: 'Hospital lots and emergency zones.' },
   { kind: 'car', look: 'van', name: 'Delivery Work Van', description: 'Streets, warehouse loading docks.' },
@@ -65,11 +66,40 @@ export function buildContainerCatalogue(): DevContainerEntry[] {
       label: CONTAINER_LABEL[def.kind],
       name: def.name,
       searchSec: SEARCH_SEC[def.kind],
-      defaultDimensions: { cols: defaultDimensions.cols, rows: defaultDimensions.rows },
+      defaultDimensions: {
+        cols: defaultDimensions.cols,
+        rows: defaultDimensions.rows,
+        ...(defaultDimensions.blocked && defaultDimensions.blocked.length > 0
+          ? { blocked: [...defaultDimensions.blocked] }
+          : {}),
+      },
       isExplicitlyMapped,
       description: def.description,
     };
   });
+}
+
+function areBlockedPointsEqual(a?: readonly GridPoint[], b?: readonly GridPoint[]): boolean {
+  const aList = a ?? [];
+  const bList = b ?? [];
+  const hasLengthMismatch = aList.length !== bList.length;
+  if (hasLengthMismatch) {
+    return false;
+  }
+  const toPointKey = (pt: GridPoint): string => `${pt.x}:${pt.y}`;
+  const aKeys = [...aList].map(toPointKey).sort();
+  const bKeys = [...bList].map(toPointKey).sort();
+  return aKeys.every((key, index) => key === bKeys[index]);
+}
+
+function formatBlocked(blocked?: readonly GridPoint[]): string {
+  const hasNoBlocked = !blocked || blocked.length === 0;
+  if (hasNoBlocked) {
+    return '';
+  }
+  const sorted = [...blocked].sort((a, b) => a.y - b.y || a.x - b.x);
+  const items = sorted.map((p) => `{ x: ${p.x}, y: ${p.y} }`).join(', ');
+  return `, blocked: [${items}]`;
 }
 
 export function generateContainerGridSizeCode(
@@ -84,9 +114,12 @@ export function generateContainerGridSizeCode(
     for (const kind of kinds) {
       const current = sizes[kind];
       const original = originalSizes[kind] ?? containerGridDimensions(kind);
-      const isModified = current.cols !== original.cols || current.rows !== original.rows;
+      const isColsModified = current.cols !== original.cols;
+      const isRowsModified = current.rows !== original.rows;
+      const isBlockedModified = !areBlockedPointsEqual(current.blocked, original.blocked);
+      const isModified = isColsModified || isRowsModified || isBlockedModified;
       if (isModified) {
-        lines.push(`  ${kind}: { cols: ${current.cols}, rows: ${current.rows} },`);
+        lines.push(`  ${kind}: { cols: ${current.cols}, rows: ${current.rows}${formatBlocked(current.blocked)} },`);
       }
     }
 
@@ -102,7 +135,7 @@ export function generateContainerGridSizeCode(
 
   for (const kind of kinds) {
     const current = sizes[kind];
-    lines.push(`  ${kind}: { cols: ${current.cols}, rows: ${current.rows} },`);
+    lines.push(`  ${kind}: { cols: ${current.cols}, rows: ${current.rows}${formatBlocked(current.blocked)} },`);
   }
 
   return [
@@ -124,7 +157,10 @@ export function generateContainerGridSizeJson(
   const modified: Partial<Record<ContainerKind, ContainerGridDimensions>> = {};
   for (const [key, current] of Object.entries(sizes) as [ContainerKind, ContainerGridDimensions][]) {
     const original = originalSizes[key] ?? containerGridDimensions(key);
-    const isModified = current.cols !== original.cols || current.rows !== original.rows;
+    const isColsModified = current.cols !== original.cols;
+    const isRowsModified = current.rows !== original.rows;
+    const isBlockedModified = !areBlockedPointsEqual(current.blocked, original.blocked);
+    const isModified = isColsModified || isRowsModified || isBlockedModified;
     if (isModified) {
       modified[key] = current;
     }

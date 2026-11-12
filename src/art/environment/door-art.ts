@@ -8,6 +8,7 @@ import { PixelCanvas } from '../kit.ts';
 import { RAMPS } from '../palette.ts';
 import type { Ramp } from '../palette.ts';
 import { glass } from './facade.ts';
+import type { OpeningFacing } from '../../../shared/fortifications.ts';
 import type { DoorKind, DoorSpec } from './shell.ts';
 
 const { bone, denim, fire, ink, metal, wood } = RAMPS;
@@ -113,16 +114,21 @@ export function shutDoorFace(spec: DoorSpec, planks: number, worn: boolean): Pix
   return bakeTopLeft(c);
 }
 
-/** A shut front door from inside its room: the leaf seen edge on in the gap of the wall, any boards across it reaching onto the floor. */
-export function shutDoorFromAbove(kind: DoorKind, planks: number): PixelSprite {
+/**
+ * A shut door from inside its room: the leaf seen edge on in the gap of the wall, any boards across it reaching onto the floor.
+ * A south door's boards spill north into the room; a north door's spill south.
+ */
+export function shutDoorFromAbove(kind: DoorKind, planks: number, facing: OpeningFacing = 'south'): PixelSprite {
   const wall = WALL_THICKNESS;
   const h = BOARD_SPILL + wall;
   const c = new PixelCanvas(W, h);
   const tone = toneOf(kind);
-  c.rect(DOOR_LAP, BOARD_SPILL, DOOR_WIDTH, wall, ink[0]);
-  c.rect(DOOR_LAP, BOARD_SPILL + 1, DOOR_WIDTH, wall - 2, tone[1]).rect(DOOR_LAP, BOARD_SPILL + 1, DOOR_WIDTH, 1, tone[2]);
-  c.rect(DOOR_LAP + LEAF - 1, BOARD_SPILL + 1, 2, wall - 2, tone[0]);
-  const rows = [BOARD_SPILL - 2, 0, BOARD_SPILL + 2];
+  const north = facing === 'north';
+  const leaf = north ? 0 : BOARD_SPILL;
+  c.rect(DOOR_LAP, leaf, DOOR_WIDTH, wall, ink[0]);
+  c.rect(DOOR_LAP, leaf + 1, DOOR_WIDTH, wall - 2, tone[1]).rect(DOOR_LAP, leaf + 1, DOOR_WIDTH, 1, tone[2]);
+  c.rect(DOOR_LAP + LEAF - 1, leaf + 1, 2, wall - 2, tone[0]);
+  const rows = north ? [wall - BOARD_H + 2, wall - BOARD_H + 5, wall - BOARD_H - 2] : [BOARD_SPILL - 2, 0, BOARD_SPILL + 2];
   rows.slice(0, Math.min(planks, 3)).forEach((y, i) => board(c, y, i === 1 ? 1 : 2, 0));
   if (planks > 3) brace(c, h);
   return bakeTopLeft(c);

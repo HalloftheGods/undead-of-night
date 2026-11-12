@@ -442,6 +442,7 @@ describe('Dual-Grid Container Looting & Inventory Modal', () => {
       expect(source).toContain('[ESC] CLOSE');
       expect(source).toContain('is-valid-target');
       expect(source).toContain('is-invalid-target');
+      expect(source).toContain('is-blocked');
       expect(source).toContain('--u');
       expect(source).toContain('--sick');
       expect(source).toContain('--blood-bright');
@@ -455,11 +456,24 @@ describe('Dual-Grid Container Looting & Inventory Modal', () => {
       expect(logicSource).not.toContain('\u2014');
     });
 
+    it('supports blocked cells on containerGrid and marks highlight as invalid', () => {
+      const blockedGrid = createInventoryGrid(4, 4, [{ x: 1, y: 1 }]);
+      const state = createDualLootState({ containerGrid: blockedGrid });
+      expect(state.containerGrid.blocked).toEqual([{ x: 1, y: 1 }]);
+
+      const heldItem = { id: 'held-1', type: 'bandage', x: 0, y: 0, rotated: false };
+      const highlight = computeTileHighlight(state.containerGrid, 1, 1, 1, 1, heldItem);
+      expect(highlight).toBe('invalid');
+    });
+
     it('formats item display names cleanly', () => {
       expect(formatItemName('ammo_box')).toBe('Ammo Box');
       expect(formatItemName('armor_vest')).toBe('Armor Vest');
       expect(formatItemName('sheet_curtain')).toBe('Sheet Curtain');
       expect(formatItemName('custom_gear_piece')).toBe('Custom Gear Piece');
+      expect(formatItemName('')).toBe('');
+      expect(formatItemName(undefined)).toBe('');
+      expect(formatItemName(null as unknown as string)).toBe('');
     });
 
     it('contains action verb mappings and button bindings in HeldItemPanel.vue', () => {

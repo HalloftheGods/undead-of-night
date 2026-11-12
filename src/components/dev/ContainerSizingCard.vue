@@ -20,11 +20,20 @@
         :kind="entry.kind"
         :cols="cols"
         :rows="rows"
+        :blocked="blocked"
         :opened="isOpened"
+        @toggle-cell="toggleBlockedCell"
       />
     </div>
 
     <div class="controls-section">
+      <!-- Blocked tiles notification & clear button -->
+      <div v-if="blocked.length > 0" class="blocked-controls-row">
+        <span class="blocked-info-text">{{ blocked.length }} BLOCKED TILES (CLICK GRID TO TOGGLE)</span>
+        <PixelButton class="clear-blocked-btn" @press="clearBlockedCells">
+          Clear Blocked
+        </PixelButton>
+      </div>
       <!-- Steppers -->
       <div class="steppers-row">
         <!-- Columns -->
@@ -112,6 +121,7 @@
 import { computed, ref } from 'vue';
 import type { ArtBook } from '../../art/types.ts';
 import type { DevContainerEntry } from '../../game/dev/container-catalogue.ts';
+import type { GridPoint } from '../../../shared/grid-inventory.ts';
 import PixelButton from '../PixelButton.vue';
 import ContainerGridPreview from './ContainerGridPreview.vue';
 
@@ -120,13 +130,17 @@ interface Props {
   entry: DevContainerEntry;
   cols: number;
   rows: number;
+  blocked?: readonly GridPoint[];
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+  blocked: () => [],
+});
 
 const emit = defineEmits<{
   'update:cols': [value: number];
   'update:rows': [value: number];
+  'update:blocked': [points: GridPoint[]];
   preview: [];
 }>();
 
@@ -147,10 +161,25 @@ const CONTAINER_PRESETS = [
   { c: 6, r: 5 },
 ] as const;
 
+const areBlockedPointsEqual = (a?: readonly GridPoint[], b?: readonly GridPoint[]): boolean => {
+  const aList = a ?? [];
+  const bList = b ?? [];
+  const hasLengthMismatch = aList.length !== bList.length;
+  if (hasLengthMismatch) {
+    return false;
+  }
+  const toPointKey = (pt: GridPoint): string => `${pt.x}:${pt.y}`;
+  const aKeys = [...aList].map(toPointKey).sort();
+  const bKeys = [...bList].map(toPointKey).sort();
+  return aKeys.every((key, index) => key === bKeys[index]);
+};
+
 const isModified = computed(() => {
   const colsMatch = props.cols === props.entry.defaultDimensions.cols;
   const rowsMatch = props.rows === props.entry.defaultDimensions.rows;
-  return !(colsMatch && rowsMatch);
+  const blockedMatch = areBlockedPointsEqual(props.blocked, props.entry.defaultDimensions.blocked);
+  const isAllMatching = colsMatch && rowsMatch && blockedMatch;
+  return !isAllMatching;
 });
 
 const isPresetActive = (c: number, r: number): boolean => {
@@ -165,27 +194,44 @@ const applyPreset = (c: number, r: number): void => {
 };
 
 const increaseCols = (): void => {
-  if (props.cols < maxSize) {
+  const canIncrease = props.cols < maxSize;
+  if (canIncrease) {
     emit('update:cols', props.cols + 1);
   }
 };
 
 const decreaseCols = (): void => {
-  if (props.cols > minSize) {
+  const canDecrease = props.cols > minSize;
+  if (canDecrease) {
     emit('update:cols', props.cols - 1);
   }
 };
 
 const increaseRows = (): void => {
-  if (props.rows < maxSize) {
+  const canIncrease = props.rows < maxSize;
+  if (canIncrease) {
     emit('update:rows', props.rows + 1);
   }
 };
 
 const decreaseRows = (): void => {
-  if (props.rows > minSize) {
+  const canDecrease = props.rows > minSize;
+  if (canDecrease) {
     emit('update:rows', props.rows - 1);
   }
+};
+
+const toggleBlockedCell = (point: GridPoint): void => {
+  const currentBlocked = props.blocked ?? [];
+  const isExisting = currentBlocked.some((pt) => pt.x === point.x && pt.y === point.y);
+  const updatedPoints = isExisting
+    ? currentBlocked.filter((pt) => !(pt.x === point.x && pt.y === point.y))
+    : [...currentBlocked, point];
+  emit('update:blocked', updatedPoints);
+};
+
+const clearBlockedCells = (): void => {
+  emit('update:blocked', []);
 };
 
 const toggleSprite = (): void => {
@@ -199,6 +245,10 @@ const triggerPreview = (): void => {
 const resetToDefault = (): void => {
   emit('update:cols', props.entry.defaultDimensions.cols);
   emit('update:rows', props.entry.defaultDimensions.rows);
+  const defaultBlocked = props.entry.defaultDimensions.blocked
+    ? [...props.entry.defaultDimensions.blocked]
+    : [];
+  emit('update:blocked', defaultBlocked);
 };
 </script>
 
@@ -375,5 +425,27 @@ const resetToDefault = (): void => {
 .reset-btn {
   font-size: calc(var(--u) * 4);
   color: var(--blood-bright);
+}
+
+.blocked-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--u) * 2);
+  padding: calc(var(--u) * 1.5) calc(var(--u) * 2);
+  background: rgba(220, 38, 38, 0.15);
+  border: calc(var(--u) * 1) solid rgba(220, 38, 38, 0.35);
+}
+
+.blocked-info-text {
+  font-family: var(--font-pixel-heading);
+  font-size: calc(var(--u) * 3);
+  color: #fca5a5;
+  letter-spacing: 0.05em;
+}
+
+.clear-blocked-btn {
+  font-size: calc(var(--u) * 3);
+  padding: calc(var(--u) * 1) calc(var(--u) * 2);
 }
 </style>

@@ -42,7 +42,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
+import { isLocalHost } from '../game/analytics/analytics-config.ts';
 import { openPrivacy, privacyOpen } from '../game/analytics/index.ts';
 import type { UiState } from '../game/hud-state.ts';
 import { parseInvite, withoutJoinParam } from '../game/invite-link.ts';
@@ -68,10 +69,18 @@ const APP_VERSION = __APP_VERSION__;
 
 const { ui, splashing = false } = defineProps<{ ui: UiState; splashing?: boolean }>();
 
-const isDev = import.meta.env.DEV;
+const isDev = computed(() => {
+  if (!import.meta.env.DEV) return false;
+  if (typeof window === 'undefined') return false;
+  return isLocalHost(window.location.hostname);
+});
 
 function checkDevRouting(): boolean {
   if (typeof window === 'undefined') return false;
+  if (!import.meta.env.DEV) return false;
+  const isLocal = isLocalHost(window.location.hostname);
+  if (!isLocal) return false;
+
   const searchParams = new URLSearchParams(window.location.search);
   const devParam = searchParams.get('dev');
   const pageParam = searchParams.get('page');

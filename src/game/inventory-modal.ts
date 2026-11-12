@@ -1,5 +1,6 @@
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch, type Ref } from 'vue';
 import type { BagCommit } from '../../shared/bag.ts';
+import type { ContainerArt } from '../art/containers.ts';
 import type { ContainerKind } from '../../shared/containers.ts';
 import type { GridItem } from '../../shared/grid-inventory.ts';
 import { loadKeyBindings } from './controls-prefs.ts';
@@ -78,12 +79,18 @@ export function useInventoryModal(ui: Ref<UiState>, input: Held, panel: Ref<Inve
     return true;
   }
 
-  function showContainer(containerId: number, containerTitle: string, items: readonly GridItem[] = [], containerKind?: ContainerKind): boolean {
+  function showContainer(
+    containerId: number,
+    containerTitle: string,
+    items: readonly GridItem[] = [],
+    containerKind?: ContainerKind,
+    containerArt?: ContainerArt | null,
+  ): boolean {
     const hud = ui.value.hud;
     const canShow = inventoryReachable(ui.value) && hud !== null;
     if (!canShow) return false;
     bag.sync(hud);
-    working.value = bag.open(hud, containerId, containerTitle, items, containerKind);
+    working.value = bag.open(hud, containerId, containerTitle, items, containerKind, containerArt);
     openings.value += 1;
     input.letGoButtons();
     input.setEnabled(false);

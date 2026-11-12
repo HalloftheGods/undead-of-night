@@ -20,10 +20,16 @@
           v-for="cell in cells"
           :key="`cell-${cell.x}-${cell.y}`"
           class="grid-cell"
+          :class="{
+            'is-blocked': isCellBlocked(cell.x, cell.y),
+            'is-interactive': interactive,
+          }"
           :style="{
             '--col': cell.x + 1,
             '--row': cell.y + 1,
           }"
+          :title="`(${cell.x}, ${cell.y}) - ${isCellBlocked(cell.x, cell.y) ? 'Blocked tile (click to unblock)' : 'Open tile (click to block)'}`"
+          @click="handleCellClick(cell.x, cell.y)"
         />
       </div>
     </div>
@@ -36,6 +42,7 @@ import type { ContainerLook } from '../../art/containers.ts';
 import type { ArtBook } from '../../art/types.ts';
 import { spriteDataUrl } from '../../engine/sprite-cache.ts';
 import type { ContainerKind } from '../../../shared/containers.ts';
+import type { GridPoint } from '../../../shared/grid-inventory.ts';
 
 interface Props {
   art: ArtBook | null;
@@ -43,15 +50,36 @@ interface Props {
   kind: ContainerKind;
   cols: number;
   rows: number;
+  blocked?: readonly GridPoint[];
   opened?: boolean;
   pixelScale?: number;
+  interactive?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   art: null,
+  blocked: () => [],
   opened: false,
   pixelScale: 2,
+  interactive: true,
 });
+
+const emit = defineEmits<{
+  'toggle-cell': [point: GridPoint];
+}>();
+
+const isCellBlocked = (x: number, y: number): boolean => {
+  const isMatching = (pt: GridPoint): boolean => pt.x === x && pt.y === y;
+  return props.blocked.some(isMatching);
+};
+
+const handleCellClick = (x: number, y: number): void => {
+  const isNotInteractive = !props.interactive;
+  if (isNotInteractive) {
+    return;
+  }
+  emit('toggle-cell', { x, y });
+};
 
 const containerArtUrl = computed(() => {
   if (!props.art) return '';
@@ -141,5 +169,28 @@ const cells = computed(() => {
 
 .container-grid .grid-cell:hover {
   background: rgba(228, 220, 195, 0.2);
+}
+
+.container-grid .grid-cell.is-interactive {
+  cursor: pointer;
+}
+
+.container-grid .grid-cell.is-blocked {
+  background: rgba(220, 38, 38, 0.45);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 68, 68, 0.35),
+    rgba(255, 68, 68, 0.35) 4px,
+    transparent 4px,
+    transparent 8px
+  );
+  box-shadow:
+    inset var(--ap) var(--ap) 0 0 rgba(120, 0, 0, 0.8),
+    inset calc(var(--ap) * -1) calc(var(--ap) * -1) 0 0 rgba(255, 120, 120, 0.4),
+    0 0 0 var(--ap) rgba(220, 38, 38, 0.7);
+}
+
+.container-grid .grid-cell.is-blocked:hover {
+  background-color: rgba(239, 68, 68, 0.65);
 }
 </style>

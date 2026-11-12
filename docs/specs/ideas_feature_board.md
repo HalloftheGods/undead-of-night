@@ -63,14 +63,16 @@ Documented from playtest review and design session (Ronan and Commander).
 
 ### 6. Vehicles and Transportation
 * **Vehicle Spawning and Visual State**
-  * Status: Proposed (New)
-  * Concept: 95% wrecked static/lootable road obstacles; 5% rare running road spawns with idling lights; high-value indoor garage and storage unit spawns.
+  * Status: Partially Done
+  * Built: Existing road cars (`car_sedan_h/v`, `pickup_h`, `police_h/v`, `ambulance_h`, `van_h`) are operable and drivable; wrecks remain static containers.
+  * Remaining: Spawning distinctions for 95% wreck / 5% idling road spawns and rare indoor garage spawns.
 * **Streamlined Vehicle Controls**
-  * Status: Proposed (New)
-  * Concept: Context-sensitive `[E]` interaction (drive/exit/garages), standard WASD/arrow driving controls, Space/H horn attraction pulse.
+  * Status: Done
+  * Implementation: `shared/vehicle-drive.ts` (`[E]` drive/exit mounting, WASD throttle and steering, Space/H horn noise pulse).
 * **Vehicle Movement, Roadkill Combat, and Maintenance**
-  * Status: Proposed (New)
-  * Concept: 2D top-down vehicle physics state (acceleration, momentum, angular steering), velocity-threshold zombie roadkill with player XP, fuel/health degradation requiring gas cans or engine blocks.
+  * Status: Partially Done
+  * Built: `shared/vehicle-drive.ts` and `shared/vehicle-combat.ts` (top-down velocity physics, dynamic collision sliding, high-speed lethal roadkill with player XP and kill attribution).
+  * Remaining: Fuel consumption, degradation breakdown, and gas can/repair interactions.
 
 ### 7. UI and Tactical HUD
 * **MGS Style Soliton Radar Display (Bottom-Left)**

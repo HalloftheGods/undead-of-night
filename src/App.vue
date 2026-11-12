@@ -28,6 +28,7 @@
           :art="ui.art"
           :container-title="inventory.working.value.containerTitle || 'Nearby'"
           :container-kind="inventory.working.value.containerKind"
+          :container-art="inventory.working.value.containerArt"
           :backpack-tier="inventory.working.value.tier"
           :backpack-grid="inventory.working.value.pack"
           :pockets-grid="inventory.working.value.pockets"
@@ -126,6 +127,8 @@ import WaveBanner from './components/WaveBanner.vue';
 import KillCallout from './components/KillCallout.vue';
 import WorkbenchScreen from './components/WorkbenchScreen.vue';
 import { privacyOpen, startAnalytics } from './game/analytics/index.ts';
+import { containerLook } from './art/containers.ts';
+import { paintedContainer } from './engine/car-looks.ts';
 import { CONTAINER_LABEL } from '../shared/containers.ts';
 import { GameController } from './game/game-controller.ts';
 import { aimsCursor } from './game/home-screens.ts';
@@ -151,7 +154,10 @@ function onInventoryClose(): void {
 watch(() => ui.value.openedContainer, (loot) => {
   if (loot && loot.items.length > 0) {
     const title = loot.title ?? (loot.kind ? CONTAINER_LABEL[loot.kind] : 'Container');
-    inventory.showContainer(loot.id, title, loot.items, loot.kind);
+    const activeMap = game.currentMap;
+    const prop = loot.propIndex !== undefined && activeMap ? activeMap.props[loot.propIndex] : undefined;
+    const specificArt = prop && ui.value.art ? (paintedContainer(ui.value.art, prop) ?? ui.value.art.containers[containerLook({ kind: loot.kind ?? 'car', prop: prop.kind })]) : null;
+    inventory.showContainer(loot.id, title, loot.items, loot.kind, specificArt);
   }
 });
 

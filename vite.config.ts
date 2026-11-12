@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { readFileSync } from 'fs';
 import { defineConfig } from 'vite';
+import { devInventorySync } from './tools/vite-dev-sync.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,6 +16,7 @@ export default defineConfig({
   define: { __APP_VERSION__: JSON.stringify(version), __BUILD_YEAR__: new Date().getFullYear() },
   plugins: [
     vue(),
+    devInventorySync(__dirname),
   ],
   resolve: {
     alias: {

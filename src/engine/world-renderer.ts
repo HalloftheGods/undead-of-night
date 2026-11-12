@@ -19,6 +19,7 @@ import { OcclusionGrid } from './occlusion.ts';
 import { addVehicleHeadlights } from './vehicle-lights.ts';
 import { OverlayRenderer } from './overlay-renderer.ts';
 import type { PlacedDoor } from '../../shared/door-view.ts';
+import { isStoreyKind } from '../../shared/storeys.ts';
 import type { SceneView } from './scene.ts';
 import { ScreenEffects } from './screen-effects.ts';
 import { paintPrints, paintTrackingMarks } from './snow-prints.ts';
@@ -220,17 +221,17 @@ export class WorldRenderer {
     this.effects.reset();
   }
 
-  /** Flash the survivor's vertical retro green XP bar. */
-  flashXp(fraction: number, timeSec: number): void {
-    this.overlay.flashXp(fraction, timeSec);
+  /** Flash the survivor's vertical retro green XP bar and level number. */
+  flashXp(fraction: number, timeSec: number, level?: number): void {
+    this.overlay.flashXp(fraction, timeSec, level);
   }
 
   setAutoFadeXp(autoFade: boolean): void {
     this.overlay.setAutoFadeXp(autoFade);
   }
 
-  setXpFraction(fraction: number): void {
-    this.overlay.setXpFraction(fraction);
+  setXpFraction(fraction: number, level?: number): void {
+    this.overlay.setXpFraction(fraction, level);
   }
 
   /** Trigger radiant level up sparks, glow pulse, and flash. */
@@ -256,25 +257,28 @@ export class WorldRenderer {
     if (keptLastLight) return;
     lighting.begin(left, top);
     const look = this.atmosphere.look;
-    const lights = this.map?.lights ?? [];
-    for (let i = 0; i < lights.length; i += 1) {
-      const isLampOut = !lampWorks(look, i);
-      if (isLampOut) continue;
-      const light = lights[i];
-      const strength = (light.flicker ? flicker(this.time, i) : 1) * LAMP_STRENGTH * look.lampStrength;
-      lighting.addPool(light.x - left, light.y - top, light.radius * LAMP_REACH, look.lampColor ?? light.color, strength);
-    }
-    for (const beacon of this.entities.activeBeacons(scene)) {
-      const pool = beaconPool(beacon, this.time, this.reducedMotion);
-      lighting.addPool(pool.x - left, pool.y - top, pool.radius, pool.color, pool.strength);
-    }
-    if (scene.exit) {
-      lighting.addPool(scene.exit.x - left, scene.exit.y - VAN_GLOW_HEIGHT - top, VAN_GLOW_RADIUS, VAN_GLOW_COLOR, VAN_GLOW_STRENGTH);
-    }
     const open = this.buildings.openRoom();
+    const isStoreyRoom = open !== null && isStoreyKind(open.building.kind);
+    if (!isStoreyRoom) {
+      const lights = this.map?.lights ?? [];
+      for (let i = 0; i < lights.length; i += 1) {
+        const isLampOut = !lampWorks(look, i);
+        if (isLampOut) continue;
+        const light = lights[i];
+        const strength = (light.flicker ? flicker(this.time, i) : 1) * LAMP_STRENGTH * look.lampStrength;
+        lighting.addPool(light.x - left, light.y - top, light.radius * LAMP_REACH, look.lampColor ?? light.color, strength);
+      }
+      for (const beacon of this.entities.activeBeacons(scene)) {
+        const pool = beaconPool(beacon, this.time, this.reducedMotion);
+        lighting.addPool(pool.x - left, pool.y - top, pool.radius, pool.color, pool.strength);
+      }
+      if (scene.exit) {
+        lighting.addPool(scene.exit.x - left, scene.exit.y - VAN_GLOW_HEIGHT - top, VAN_GLOW_RADIUS, VAN_GLOW_COLOR, VAN_GLOW_STRENGTH);
+      }
+    }
     const room = open ? roomRect(open, left, top) : null;
     const inRoom = open !== null && room !== null;
-    if (inRoom) lighting.enclose(room, open.reveal);
+    if (inRoom) lighting.enclose(room, open.reveal, isStoreyRoom ? 0 : undefined);
     const pulses = this.fx.pulses;
     // The newest flashes are the ones being looked at; older ones are nearly out anyway.
     const firstPulse = Math.max(0, pulses.length - Math.round(MAX_PULSES * this.budget.share));
@@ -283,14 +287,16 @@ export class WorldRenderer {
       const x = pulse.x - left;
       const y = pulse.y - top;
       const underRoof = this.buildings.isHidden(pulse.x, pulse.y);
-      if (!underRoof) lighting.addPool(x, y, pulse.radius, pulse.color, pulse.life / pulse.maxLife, this.keepInRoom(room, x, y));
+      const clip = this.keepInRoom(room, x, y);
+      if (isStoreyRoom && !clip) continue;
+      if (!underRoof) lighting.addPool(x, y, pulse.radius, pulse.color, pulse.life / pulse.maxLife, clip);
     }
     addVehicleHeadlights(lighting, this.occlusion, scene.vehicles ?? [], FLASHLIGHT_REACH, left, top);
     for (const player of scene.players) {
-      this.addPlayerLight(player, scene.viewerId, room, left, top);
+      this.addPlayerLight(player, scene.viewerId, room, left, top, isStoreyRoom, open?.building.id);
     }
     const isGameOver = scene.phase === 'gameover';
-    if (isGameOver) {
+    if (isGameOver && !isStoreyRoom) {
       lighting.addPool(scene.focusX - left, scene.focusY - top, 120, AURA_COLOR, 0.6);
     }
     lighting.finish();
@@ -308,7 +314,16 @@ export class WorldRenderer {
     return inside ? room : undefined;
   }
 
-  private addPlayerLight(player: SceneView['players'][number], viewerId: EntityId | null, room: ScreenRect | null, left: number, top: number): void {
+  private addPlayerLight(
+    player: SceneView['players'][number],
+    viewerId: EntityId | null,
+    room: ScreenRect | null,
+    left: number,
+    top: number,
+    isStoreyRoom = false,
+    openBuildingId?: string,
+  ): void {
+    if (isStoreyRoom && player.indoors !== openBuildingId) return;
     const isViewer = player.id === viewerId;
     const x = player.x - left;
     const y = player.y - top;
@@ -381,7 +396,10 @@ export class WorldRenderer {
       }
     }
     ground.draw(ctx, left, top, viewW, viewH);
-    const notUnderground = !underground;
+    const open = this.buildings.openRoom();
+    const isStoreyRoom = open !== null && isStoreyKind(open.building.kind);
+    const room = open ? roomRect(open, left, top) : null;
+    const notUnderground = !underground && !isStoreyRoom;
     if (notUnderground) this.groundMotion.draw(ctx, left, top, viewW, viewH, time);
     paintPrints(ctx, scene.tracks ?? [], left, top, viewW, viewH);
     this.entities.drawWorld(ctx, scene, left, top, viewW, viewH, time, dt);
@@ -391,12 +409,19 @@ export class WorldRenderer {
     this.lighting.apply(ctx);
     const lightAt = (x: number, y: number) => this.lighting.brightness(x, y);
     const isKilled = (id: EntityId) => this.entities.isKilled(id);
-    // Below ground there is no sky: no weather, no wash of the night's colour.
-    const outdoors = underground ? 0 : 1 - (this.buildings.openRoom()?.reveal ?? 0);
+    // Below ground or in a storey there is no sky: no weather, no wash of the night's colour.
+    const outdoors = underground || isStoreyRoom ? 0 : 1 - (open?.reveal ?? 0);
     this.atmosphere.drawWash(ctx, viewW, viewH, time, outdoors);
     const isOutdoors = outdoors > 0;
     if (isOutdoors) this.groundMotion.draw(ctx, left, top, viewW, viewH, time, 'lit');
 
+    const shouldClip = isStoreyRoom && room !== null;
+    if (shouldClip) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(room.x0, room.y0, room.x1 - room.x0, room.y1 - room.y0);
+      ctx.clip();
+    }
     this.entities.drawEmissive(ctx, scene, left, top, viewW, viewH, time);
     paintTrackingMarks(ctx, scene.zombies, left, top, viewW, viewH, time, this.reducedMotion);
     this.entities.drawSelfLit(ctx, scene, left, top, viewW, viewH, lightAt);
@@ -405,6 +430,10 @@ export class WorldRenderer {
     this.fx.particles.drawEmissive(ctx, left, top);
     this.entities.drawOccluded(ctx, scene, left, top, viewW, viewH, time);
     this.atmosphere.drawWeather(ctx, left, top, viewW, viewH, time, outdoors);
+    if (shouldClip) {
+      ctx.restore();
+    }
+
     this.effects.draw(ctx, viewW, viewH);
     this.overlay.draw(ctx, scene, left, top, viewW, viewH, time, lightAt, isKilled);
     this.emotes.draw(ctx, scene, left, top, viewW, viewH, time, (id) => this.overlay.headroomOf(id));

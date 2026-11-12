@@ -368,6 +368,20 @@
 
 .is-valid-target { background: var(--sick) !important; }
 .is-invalid-target { background: var(--blood-bright) !important; }
+.grid-cell.is-blocked {
+  background: rgba(220, 38, 38, 0.45) !important;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 68, 68, 0.35),
+    rgba(255, 68, 68, 0.35) 4px,
+    transparent 4px,
+    transparent 8px
+  ) !important;
+  box-shadow:
+    inset var(--ap) var(--ap) 0 0 rgba(120, 0, 0, 0.8),
+    inset calc(var(--ap) * -1) calc(var(--ap) * -1) 0 0 rgba(255, 120, 120, 0.4),
+    0 0 0 var(--ap) rgba(220, 38, 38, 0.7) !important;
+}
 .gear-slot.is-valid-target { box-shadow: 0 0 0 var(--ap) var(--sick) !important; background: var(--ink-raised) !important; }
 .gear-slot.is-invalid-target { box-shadow: 0 0 0 var(--ap) var(--blood-bright) !important; background: var(--ink-raised) !important; }
 

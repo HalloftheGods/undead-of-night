@@ -1,5 +1,6 @@
 import { CANDIES, isCandyId } from '../../shared/candy.ts';
 import { containerGridDimensions, type ContainerKind } from '../../shared/containers.ts';
+import type { ContainerArt } from '../art/containers.ts';
 import type { ArtBook } from '../art/types.ts';
 import { backpackDef, type BackpackTier } from '../../shared/backpack.ts';
 import {
@@ -54,6 +55,7 @@ export interface GearEquipState {
 export interface DualLootModalProps {
   /** The game's sprites, for drawing each item; without it items fall back to their names. */
   art?: ArtBook | null;
+  containerArt?: ContainerArt | null;
   containerTitle?: string;
   containerKind?: ContainerKind;
   containerGrid?: InventoryGrid;
@@ -135,7 +137,11 @@ export const ITEM_DISPLAY_NAMES: Record<string, string> = {
   disinfectant: 'Disinfectant', antibiotics: 'Antibiotics',
 };
 
-export function formatItemName(type: string): string {
+export function formatItemName(type?: string | null): string {
+  const isMissingType = !type;
+  if (isMissingType) {
+    return '';
+  }
   if (isCandyId(type)) {
     return CANDIES[type].name;
   }
@@ -150,7 +156,9 @@ export function formatItemName(type: string): string {
     .join(' ');
 }
 
-export function formatClueLabel(clueItem: string): string {
+export function formatClueLabel(clueItem?: string | null): string {
+  const isMissingClue = !clueItem;
+  if (isMissingClue) return 'CACHE';
   const types = clueItem.split(',').map((s) => s.trim()).filter(Boolean);
   if (types.length === 0) return 'CACHE';
   const counts = new Map<string, number>();
@@ -199,8 +207,8 @@ export function createDualLootState(options?: DualLootModalProps): DualLootState
   const tier = options?.backpackTier ?? 'satchel';
   const tierConfig = backpackDef(tier);
 
-  const { cols, rows } = containerGridDimensions(options?.containerKind);
-  const containerGrid = options?.containerGrid ?? createInventoryGrid(cols, rows);
+  const { cols, rows, blocked } = containerGridDimensions(options?.containerKind);
+  const containerGrid = options?.containerGrid ?? createInventoryGrid(cols, rows, blocked);
   const pocketsGrid = options?.pocketsGrid ?? createInventoryGrid(2, 2);
   const backpackGrid = options?.backpackGrid ?? createInventoryGrid(tierConfig.cols, tierConfig.rows);
   const candyBagGrid = options?.candyBagGrid ?? createInventoryGrid(2, 6);

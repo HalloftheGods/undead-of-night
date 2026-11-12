@@ -21,6 +21,7 @@ import type { VisualStore } from './visuals.ts';
 import { hitPalette } from './hit-palette.ts';
 import { formatItemName } from '../game/dual-loot-modal.ts';
 import { CLUE_COLOR } from '../game/map-leftovers.ts';
+import { loadProgression, MAX_CHARACTER_LEVEL, xpRequiredForLevel } from '../../shared/progression.ts';
 
 const POINTER_INSET = 8;
 /** Clear of the HUD in every corner, and of the screen's edge, where the van must not be missed. */
@@ -182,6 +183,7 @@ export class OverlayRenderer {
   private readonly headroom = new Map<EntityId, number>();
   private readonly sugarTops = new Map<EntityId, number>();
   private xpFraction = 0;
+  private xpLevel = 1;
   private xpFlashUntil = 0;
   private autoFadeXp = true;
 
@@ -189,18 +191,35 @@ export class OverlayRenderer {
     this.autoFadeXp = autoFade;
   }
 
-  setXpFraction(fraction: number): void {
+  setXpFraction(fraction: number, level?: number): void {
     this.xpFraction = Math.max(0, Math.min(1, fraction));
+    const hasExplicitLevel = level !== undefined;
+    if (hasExplicitLevel) this.xpLevel = level;
   }
 
-  flashXp(fraction: number, time: number): void {
+  flashXp(fraction: number, time: number, level?: number): void {
     this.xpFraction = Math.max(0, Math.min(1, fraction));
     this.xpFlashUntil = time + XP_BAR_DURATION_SEC;
+    const hasExplicitLevel = level !== undefined;
+    if (hasExplicitLevel) this.xpLevel = level;
   }
 
   constructor(art: ArtBook, visuals: VisualStore) {
     this.art = art;
     this.visuals = visuals;
+    try {
+      const prog = loadProgression();
+      this.xpLevel = prog.level;
+      const req = xpRequiredForLevel(prog.level + 1);
+      const isMaxLevel = prog.level >= MAX_CHARACTER_LEVEL;
+      if (isMaxLevel) {
+        this.xpFraction = 1;
+      } else if (req > 0) {
+        this.xpFraction = Math.max(0, Math.min(1, prog.xp / req));
+      }
+    } catch {
+      // Storage or progression unavailable
+    }
   }
 
   /** The candy timers drawn this frame, in world pixels, for pickup notes to keep clear of. */
@@ -304,15 +323,20 @@ export class OverlayRenderer {
     const height = this.heightOf(player.id);
     const x = px - XP_BAR_OFFSET_X;
     const y = py - height + 2;
+    const textCenterX = x + 1;
+    const textY = y + XP_BAR_HEIGHT + 2;
+    const levelLabel = String(this.xpLevel);
 
     const needsAlphaAdjustment = alpha < 1;
     if (needsAlphaAdjustment) {
       const previousAlpha = ctx.globalAlpha;
       ctx.globalAlpha = previousAlpha * alpha;
       drawVerticalBar(ctx, x, y, XP_BAR_HEIGHT, this.xpFraction, RETRO_GREEN);
+      drawOutlinedText(ctx, levelLabel, textCenterX, textY, RETRO_GREEN);
       ctx.globalAlpha = previousAlpha;
     } else {
       drawVerticalBar(ctx, x, y, XP_BAR_HEIGHT, this.xpFraction, RETRO_GREEN);
+      drawOutlinedText(ctx, levelLabel, textCenterX, textY, RETRO_GREEN);
     }
   }
 
@@ -341,7 +365,9 @@ export class OverlayRenderer {
       const atClimb = isLocal && scene.climb !== undefined;
       const atRadioTower = isLocal && scene.radioTower !== undefined;
       const atDoor = isLocal && scene.door !== undefined;
+      const atVehicle = isLocal && scene.vehicle !== undefined;
       if (player.search > 0) drawBar(ctx, x - SEARCH_BAR_WIDTH / 2, y, SEARCH_BAR_WIDTH, player.search, BONE);
+      else if (atVehicle) drawOutlinedText(ctx, vehiclePrompt(scene.vehicle!, Boolean(scene.touch)), x, y, AMBER);
       else if (prompted) {
         const isOpened = scene.openedContainers.includes(scene.searchable!.id);
         const action = isOpened ? (scene.touch ? 'OPEN' : 'PRESS E') : (scene.touch ? 'SEARCH' : 'HOLD E');
@@ -365,9 +391,7 @@ export class OverlayRenderer {
   /** Who is holding pay at the stall the local player stands at, if anyone: it replaces the stall's name in the prompt. */
   private payFrom(scene: SceneView): string | undefined {
     return scene.questMarks?.find((mark) => mark.ready && mark.merchant === scene.station)?.name;
-      const atVehicle = isLocal && scene.vehicle !== undefined;
   }
-      else if (atVehicle) drawOutlinedText(ctx, vehiclePrompt(scene.vehicle!, Boolean(scene.touch)), x, y, AMBER);
 
   /** A "!" over each stall with work to take (pale) or pay to collect (amber). */
   private drawQuestMarks(ctx: CanvasRenderingContext2D, scene: SceneView, left: number, top: number): void {

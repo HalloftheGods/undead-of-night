@@ -2,9 +2,9 @@ import { PLAYER_RADIUS } from './constants.ts';
 import type { BuildingKind, PickupType, PropKind, WorldMap } from './protocol.ts';
 import { buildingAt, isSolidProp, propBox } from './world-query.ts';
 import type { Box } from './world-query.ts';
-import type { GridItem } from './grid-inventory.ts';
+import type { GridItem, GridPoint } from './grid-inventory.ts';
 
-export type ContainerKind = 'drawer' | 'locker' | 'fridge' | 'cabinet' | 'shelf' | 'box' | 'car' | 'bowl' | 'booth' | 'dumpster';
+export type ContainerKind = 'drawer' | 'locker' | 'fridge' | 'cabinet' | 'shelf' | 'box' | 'car' | 'bowl' | 'booth' | 'dumpster' | 'desk';
 
 /** Somewhere to search, fixed by the town itself, so a client works these out from the map alone. */
 export interface Container {
@@ -57,6 +57,7 @@ export const SEARCH_SEC: Record<ContainerKind, number> = {
   // Picking a couple off the counter of the fireworks bus.
   booth: 1.5,
   dumpster: 1.5,
+  desk: 1,
 };
 
 export const CONTAINER_LABEL: Record<ContainerKind, string> = {
@@ -70,24 +71,27 @@ export const CONTAINER_LABEL: Record<ContainerKind, string> = {
   bowl: 'CANDY BOWL',
   booth: 'FIREWORKS BUS',
   dumpster: 'DUMPSTER',
+  desk: 'DESK',
 };
 
 export interface ContainerGridDimensions {
   readonly cols: number;
   readonly rows: number;
+  readonly blocked?: readonly GridPoint[];
 }
 
 export const CONTAINER_GRID_SIZE: Partial<Record<ContainerKind, ContainerGridDimensions>> = {
-  booth: { cols: 10, rows: 5 },
-  bowl: { cols: 2, rows: 2 },
-  box: { cols: 5, rows: 7 },
-  cabinet: { cols: 6, rows: 4 },
-  car: { cols: 9, rows: 6 },
-  drawer: { cols: 4, rows: 4 },
-  dumpster: { cols: 5, rows: 5 },
-  fridge: { cols: 5, rows: 9 },
-  locker: { cols: 5, rows: 9 },
-  shelf: { cols: 7, rows: 7 },
+  booth: { cols: 10, rows: 5, blocked: [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }, { x: 3, y: 0 }, { x: 4, y: 0 }, { x: 5, y: 0 }, { x: 6, y: 0 }, { x: 7, y: 0 }, { x: 8, y: 0 }, { x: 9, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }, { x: 2, y: 1 }, { x: 3, y: 1 }, { x: 4, y: 1 }, { x: 5, y: 1 }, { x: 6, y: 1 }, { x: 7, y: 1 }, { x: 8, y: 1 }, { x: 9, y: 1 }, { x: 0, y: 2 }, { x: 1, y: 2 }, { x: 2, y: 2 }, { x: 7, y: 2 }, { x: 8, y: 2 }, { x: 9, y: 2 }, { x: 0, y: 3 }, { x: 1, y: 3 }, { x: 2, y: 3 }, { x: 7, y: 3 }, { x: 8, y: 3 }, { x: 9, y: 3 }, { x: 0, y: 4 }, { x: 1, y: 4 }, { x: 2, y: 4 }, { x: 3, y: 4 }, { x: 4, y: 4 }, { x: 5, y: 4 }, { x: 6, y: 4 }, { x: 7, y: 4 }, { x: 8, y: 4 }, { x: 9, y: 4 }] },
+  bowl: { cols: 2, rows: 2, blocked: [{ x: 0, y: 0 }, { x: 1, y: 0 }] },
+  box: { cols: 4, rows: 5, blocked: [{ x: 0, y: 0 }, { x: 3, y: 0 }, { x: 0, y: 1 }, { x: 3, y: 1 }, { x: 0, y: 4 }, { x: 1, y: 4 }, { x: 2, y: 4 }, { x: 3, y: 4 }] },
+  cabinet: { cols: 4, rows: 2 },
+  car: { cols: 8, rows: 4 },
+  desk: { cols: 3, rows: 3 },
+  drawer: { cols: 2, rows: 3 },
+  dumpster: { cols: 4, rows: 4 },
+  fridge: { cols: 4, rows: 7, blocked: [{ x: 0, y: 6 }, { x: 1, y: 6 }, { x: 2, y: 6 }, { x: 3, y: 6 }] },
+  locker: { cols: 4, rows: 7, blocked: [{ x: 0, y: 6 }, { x: 1, y: 6 }, { x: 2, y: 6 }, { x: 3, y: 6 }] },
+  shelf: { cols: 5, rows: 5, blocked: [{ x: 1, y: 0 }, { x: 3, y: 0 }] },
 };
 
 const DEFAULT_CONTAINER_GRID: ContainerGridDimensions = { cols: 5, rows: 4 };
@@ -117,8 +121,8 @@ export const ROOM_CONTAINERS: Record<BuildingKind, Partial<Record<PropKind, Cont
   clinic: { locker: 'locker', counter: 'cabinet', shelf: 'shelf' },
   hospital: { bed: 'drawer', locker: 'locker', counter: 'cabinet', shelf: 'shelf', workbench: 'cabinet' },
   hospital_upstairs: { bed: 'drawer', locker: 'locker', counter: 'cabinet', shelf: 'shelf' },
-  school: { table: 'drawer', locker: 'locker', shelf: 'shelf', fridge: 'fridge', counter: 'cabinet' },
-  school_upstairs: { table: 'drawer', locker: 'locker', shelf: 'shelf', workbench: 'cabinet' },
+  school: { table: 'desk', locker: 'locker', shelf: 'shelf', fridge: 'fridge', counter: 'cabinet' },
+  school_upstairs: { table: 'desk', locker: 'locker', shelf: 'shelf', workbench: 'cabinet' },
   police: { locker: 'locker', counter: 'cabinet', shelf: 'shelf' },
   gun_shop: { locker: 'locker', counter: 'cabinet', shelf: 'shelf' },
   radio_station: { locker: 'locker', counter: 'cabinet', shelf: 'shelf', fridge: 'fridge' },

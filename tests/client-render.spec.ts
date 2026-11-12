@@ -178,7 +178,9 @@ describe('retro vertical XP bar', () => {
   });
 
   it('draws the XP bar temporarily on the local player while flashing', () => {
+    installFakeBrowser();
     const rects: Array<{ x: number; y: number; w: number; h: number; color: string }> = [];
+    const images: unknown[] = [];
     let recordedAlpha = 1;
     const ctx = {
       fillStyle: '',
@@ -188,6 +190,9 @@ describe('retro vertical XP bar', () => {
           recordedAlpha = this.globalAlpha;
         }
         rects.push({ x, y, w, h, color: this.fillStyle });
+      },
+      drawImage(...args: unknown[]) {
+        images.push(args);
       },
     } as unknown as CanvasRenderingContext2D;
 
@@ -217,32 +222,41 @@ describe('retro vertical XP bar', () => {
     overlay.draw(ctx, scene, 0, 0, 200, 200, 0, () => 255, () => false);
     const hasGreenBefore = rects.some((r) => r.color === RETRO_GREEN);
     expect(hasGreenBefore).toBe(false);
+    expect(images.length).toBe(0);
 
-    overlay.flashXp(0.75, 1.0);
+    overlay.flashXp(0.75, 1.0, 5);
 
     // Full opacity period (remaining = 2.5 - 1.0 = 1.5s > 0.8s)
     rects.length = 0;
+    images.length = 0;
     overlay.draw(ctx, scene, 0, 0, 200, 200, 2.0, () => 255, () => false);
     const greenBarsDuring = rects.filter((r) => r.color === RETRO_GREEN);
     expect(greenBarsDuring.length).toBe(1);
+    expect(images.length).toBe(1);
     expect(recordedAlpha).toBe(1);
 
     // Fade period (remaining = 3.5 - 3.1 = 0.4s < 0.8s, alpha = 0.5)
     rects.length = 0;
+    images.length = 0;
     overlay.draw(ctx, scene, 0, 0, 200, 200, 3.1, () => 255, () => false);
     expect(rects.some((r) => r.color === RETRO_GREEN)).toBe(true);
+    expect(images.length).toBe(1);
     expect(recordedAlpha).toBeCloseTo(0.5, 1);
 
     // Expired
     rects.length = 0;
+    images.length = 0;
     overlay.draw(ctx, scene, 0, 0, 200, 200, 4.0, () => 255, () => false);
     const hasGreenAfter = rects.some((r) => r.color === RETRO_GREEN);
     expect(hasGreenAfter).toBe(false);
+    expect(images.length).toBe(0);
 
     // Always-show mode
     overlay.setAutoFadeXp(false);
     rects.length = 0;
+    images.length = 0;
     overlay.draw(ctx, scene, 0, 0, 200, 200, 4.0, () => 255, () => false);
     expect(rects.some((r) => r.color === RETRO_GREEN)).toBe(true);
+    expect(images.length).toBe(1);
   });
 });

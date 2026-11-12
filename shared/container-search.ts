@@ -2,7 +2,7 @@ import { characterOf } from './characters.ts';
 import { rollFind } from './container-loot.ts';
 import { containerGridDimensions, SEARCH_SEC, townContainers } from './containers.ts';
 import type { Container, ContainerLoot } from './containers.ts';
-import { autoPackItem, createInventoryGrid } from './grid-inventory.ts';
+import { autoPackItem, createInventoryGrid, randomPackItem } from './grid-inventory.ts';
 import type { BuildingInstance, PickupType, WorldMap } from './protocol.ts';
 import { TICK_DT } from './constants.ts';
 import { isBunkerMap } from './home-protocol.ts';
@@ -234,16 +234,20 @@ function finishSearch(sim: SimState, p: PlayerState, id: number): void {
   const dumpsterLoot = ordinary === null && serviceLoot === null ? scroungeDumpster(sim, p, container) : null;
   const boxAmmo = ordinary === null && serviceLoot === null ? scroungeBoxAmmo(sim, p, container) : null;
 
-  const { cols, rows } = containerGridDimensions(container?.kind);
-  const grid = createInventoryGrid(cols, rows);
+  const { cols, rows, blocked } = containerGridDimensions(container?.kind);
+  const grid = createInventoryGrid(cols, rows, blocked);
   let itemId = 1;
   const pack = (type: string, rounds = 0) => {
-    autoPackItem(grid, {
+    const itemData = {
       id: `cont-${id}-${itemId++}`,
       type,
       rotated: false,
       ...(rounds > 0 ? { ammo: rounds } : {}),
-    });
+    };
+    const placed = randomPackItem(grid, itemData, sim.rng);
+    if (!placed) {
+      autoPackItem(grid, itemData);
+    }
   };
 
   if (serviceLoot) pack(serviceLoot.type, serviceLoot.rounds);

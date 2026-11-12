@@ -209,7 +209,7 @@ export class SnapshotHandler {
       } else if (nextRequirement > 0) {
         progressFraction = gain.state.xp / nextRequirement;
       }
-      renderer?.flashXp(progressFraction, now / 1000);
+      renderer?.flashXp(progressFraction, now / 1000, gain.newLevel);
 
       if (gain.didLevelUp) {
         const playerSkin = after?.skin ?? (before?.skin ?? 0);
@@ -275,13 +275,17 @@ export class SnapshotHandler {
     }
     const openedContainer = event.type === 'container_opened' && event.playerId === world.localId;
     if (openedContainer && event.items && event.items.length > 0) {
-      const containerKind = event.kind ?? (event.container !== undefined && (world as any).map ? townContainers((world as any).map)[event.container]?.kind : undefined);
+      const activeMap = (world as any).worldMap ?? (world as any).map;
+      const containerDef = event.container !== undefined && activeMap ? townContainers(activeMap)[event.container] : undefined;
+      const containerKind = event.kind ?? containerDef?.kind;
+      const propIndex = containerDef?.propIndex;
       this.host.publish({
         openedContainer: {
           id: event.container,
           kind: containerKind,
           title: event.title,
           items: event.items,
+          propIndex,
         },
       });
     }

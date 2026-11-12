@@ -17,13 +17,6 @@ export class DoorLayer {
   private byBuilding = new Map<string, PlacedDoor[]>();
   private shown: readonly PlacedDoor[] = [];
   private readonly sprites = new Map<string, PixelSprite>();
-  /** How tall a back door stands in the north wall: the wall's top and its inner face. */
-  private readonly backHeight: number;
-
-  constructor(wallFaceHeight: number) {
-    this.backHeight = WALL_THICKNESS + wallFaceHeight;
-  }
-
   /** This frame's doors. The same list as last frame costs nothing. */
   set(doors: readonly PlacedDoor[]): void {
     if (doors === this.shown) return;
@@ -57,10 +50,10 @@ export class DoorLayer {
       const x = Math.round(door.x - HALF - left);
       const isBack = door.facing === 'north';
       if (door.broken) {
-        const y = isBack ? door.y + this.backHeight + 1 : door.y - WALL_THICKNESS - DEBRIS_H - 1;
+        const y = isBack ? door.y + WALL_THICKNESS : door.y - WALL_THICKNESS - DEBRIS_H - 1;
         ctx.drawImage(spriteCanvas(this.debris(isBack ? 'steel' : kind)), x, Math.round(y - top));
       } else if (isBack) {
-        const sprite = this.face({ kind: 'steel', height: this.backHeight + 1 }, door);
+        const sprite = this.sprite(`above:steel:north:${door.planks}`, () => shutDoorFromAbove('steel', door.planks, 'north'));
         ctx.drawImage(spriteCanvas(sprite), x, Math.round(door.y - top));
       } else {
         const sprite = this.sprite(`above:${kind}:${door.planks}`, () => shutDoorFromAbove(kind, door.planks));
