@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { SnapshotPacket, VehicleView } from '../shared/protocol.ts';
-import { driveReadout, noteDriveSnapshot, readoutOf } from '../src/game/drive-readout.ts';
+import { driveReadout, formatSpeed, noteDriveSnapshot, readoutOf } from '../src/game/drive-readout.ts';
 
 const car: VehicleView = { id: 7, body: 'sedan', x: 10, y: 10, heading: Math.PI / 2, speed: 123.4, facing: 's', seats: ['a'] };
 const frame = (events: SnapshotPacket['events'], vehicles: readonly VehicleView[] = [car]): Pick<SnapshotPacket, 'events' | 'vehicles'> => ({ events, vehicles });
@@ -27,5 +27,13 @@ describe('the test drive readout', () => {
   it('ignores another car\'s crash', () => {
     noteDriveSnapshot(frame([{ type: 'vehicle_crash', vehicle: 9, x: 0, y: 0, strength: 0.9 }]), 7);
     expect(driveReadout.value?.crash).toBeNull();
+  });
+
+  it('formats speed in mph, km/h, and px/s', () => {
+    expect(formatSpeed(220, 'mph')).toBe('31 mph');
+    expect(formatSpeed(220, 'kmh')).toBe('50 km/h');
+    expect(formatSpeed(220, 'pxs')).toBe('220 px/s');
+    expect(formatSpeed(-70, 'mph')).toBe('-10 mph');
+    expect(formatSpeed(0, 'mph')).toBe('0 mph');
   });
 });

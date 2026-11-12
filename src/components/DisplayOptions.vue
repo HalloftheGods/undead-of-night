@@ -2,10 +2,12 @@
   <div class="display-options">
     <!-- First, so a phone on its side shows it without a scroll: it is the one setting that decides if the game is playable. -->
     <BrightnessSlider id="display" />
-    <OptionChoice label="Hit colors" :options="PALETTE_OPTIONS" :value="ui.palette" @change="game.setPalette" />
+    <OptionChoice label="Hit colors" :options="PALETTE_OPTIONS" :value="ui.palette" @change="(v) => game.setPalette(v)" />
     <p class="display-options-note">{{ PALETTE_NOTES[ui.palette] }}</p>
-    <OptionChoice label="UI size" :options="SCALE_OPTIONS" :value="ui.uiScale" @change="game.setUiScale" />
-    <PixelSwitch label="Auto-fade XP bar" :on="ui.autoFadeXp" @change="game.setAutoFadeXp" />
+    <OptionChoice label="UI size" :options="SCALE_OPTIONS" :value="ui.uiScale" @change="(v) => game.setUiScale(v)" />
+    <OptionChoice label="Speed unit" :options="SPEED_OPTIONS" :value="ui.speedUnit" @change="(v) => game.setSpeedUnit(v)" />
+    <p class="display-options-note">Unit for vehicle speedometer readouts.</p>
+    <PixelSwitch label="Auto-fade XP bar" :on="ui.autoFadeXp" @change="(v) => game.setAutoFadeXp(v)" />
     <p class="display-options-note">Fades the survivor XP bar when inactive, or keeps it always visible.</p>
     <PixelSwitch label="Menu details" :on="menuInfo" @change="setMenuInfo" />
     <p class="display-options-note">A line under each main menu item saying what it opens.</p>
@@ -14,7 +16,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import type { PaletteId, UiScale } from '../game/display-prefs.ts';
+import type { PaletteId, SpeedUnit, UiScale } from '../game/display-prefs.ts';
 import type { UiState } from '../game/hud-state.ts';
 import { loadMenuInfo, saveMenuInfo } from '../game/menu-info-pref.ts';
 import BrightnessSlider from './BrightnessSlider.vue';
@@ -43,6 +45,11 @@ const SCALE_OPTIONS: readonly { id: UiScale; label: string }[] = [
   { id: 'normal', label: 'Normal' },
   { id: 'large', label: 'Large' },
   { id: 'larger', label: 'Larger' },
+];
+const SPEED_OPTIONS: readonly { id: SpeedUnit; label: string }[] = [
+  { id: 'mph', label: 'MPH' },
+  { id: 'kmh', label: 'KM/H' },
+  { id: 'pxs', label: 'PX/S' },
 ];
 </script>
 

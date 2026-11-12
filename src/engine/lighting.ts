@@ -9,6 +9,7 @@ const ROOM_AMBIENT: Rgb = [26, 25, 31];
 /** Outdoors seen from inside, as a share of what it would be. */
 const OUTSIDE_FROM_ROOM = 0.42;
 
+export const HIGHBEAM_COLOR: Rgb = [238, 246, 255];
 const BEAM_COLOR: Rgb = [255, 208, 132];
 const BEAM_RAYS = 40;
 const BEAM_HALF_ANGLE = 0.6;
@@ -136,6 +137,7 @@ export class Lighting {
     strength: number,
     left: number,
     top: number,
+    color: Rgb = BEAM_COLOR,
   ): void {
     const rays = this.rays;
     for (let i = 0; i <= BEAM_RAYS; i += 1) {
@@ -148,7 +150,7 @@ export class Lighting {
       reach,
       tanHalf: BEAM_TAN_HALF,
       rays,
-      color: BEAM_COLOR,
+      color,
       strength,
     });
   }

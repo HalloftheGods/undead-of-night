@@ -3,6 +3,7 @@
 
 import { shallowRef } from 'vue';
 import type { SnapshotPacket, VehicleView } from '../../shared/protocol.ts';
+import type { SpeedUnit } from './display-prefs.ts';
 
 export interface DriveReadout {
   /** px/s, signed: negative is reversing. */
@@ -17,6 +18,28 @@ export interface DriveReadout {
 
 export const driveReadout = shallowRef<DriveReadout | null>(null);
 let lastCrash: number | null = null;
+
+/** 220 px/s ≈ 31 mph (50 km/h) based on game scale (human walk 84 px/s, car top 220 px/s). */
+const SPEED_FACTORS: Readonly<Record<SpeedUnit, number>> = {
+  mph: 0.14,
+  kmh: 0.225,
+  pxs: 1,
+};
+
+const UNIT_LABELS: Readonly<Record<SpeedUnit, string>> = {
+  mph: 'mph',
+  kmh: 'km/h',
+  pxs: 'px/s',
+};
+
+export function formatSpeed(speedPx: number, unit: SpeedUnit = 'mph'): string {
+  const isNegative = speedPx < 0;
+  const factor = SPEED_FACTORS[unit];
+  const converted = Math.round(Math.abs(speedPx) * factor);
+  const sign = isNegative ? '-' : '';
+  const label = UNIT_LABELS[unit];
+  return `${sign}${converted} ${label}`;
+}
 
 export function readoutOf(car: VehicleView, crash: number | null): DriveReadout {
   const degrees = Math.round((car.heading * 180) / Math.PI);

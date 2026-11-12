@@ -24,12 +24,12 @@ describe('Noise in the Night daily paper', () => {
 
   it('groups notes into daily issues newest first with chronological issue numbers from 1', () => {
     const issues = changeIssues();
-    expect(issues.length).toBe(5);
-    // Newest issue is 2026-11-11 with chronological number 5
-    expect(issues[0].date).toBe('2026-11-11');
-    expect(issues[0].version).toBe('26.11.11');
-    expect(issues[0].issueNumber).toBe(5);
-    expect(issueLabel(issues[0])).toBe('Issue #5 (v26.11.11)');
+    expect(issues.length).toBe(6);
+    // Newest issue is 2026-11-12 with chronological number 6
+    expect(issues[0].date).toBe('2026-11-12');
+    expect(issues[0].version).toBe('26.11.12');
+    expect(issues[0].issueNumber).toBe(6);
+    expect(issueLabel(issues[0])).toBe('Issue #6 (v26.11.12)');
 
     // Earliest issue is 2026-11-07 with chronological number 1
     const earliest = issues[issues.length - 1];
@@ -47,9 +47,9 @@ describe('Noise in the Night daily paper', () => {
     expect(ISSUES_PER_SLIDE).toBe(5);
     const issues = changeIssues();
     const newestCard = issueToCardDef(issues[0]);
-    expect(newestCard.id).toBe('26.11.11');
-    expect(newestCard.number).toBe('05');
-    expect(newestCard.tag).toBe('v26.11.11');
+    expect(newestCard.id).toBe('26.11.12');
+    expect(newestCard.number).toBe('06');
+    expect(newestCard.tag).toBe('v26.11.12');
     expect(newestCard.title).toBe(issues[0].lead.title);
     expect(newestCard.subtitle).toBe(noteDate(issues[0].date));
     expect(newestCard.description).toBe(issues[0].lead.deck);
@@ -81,7 +81,7 @@ describe('Noise in the Night daily paper', () => {
     expect(leaves[0].kind).toBe('index');
     expect(leaves[1].kind).toBe('front');
     if (leaves[1].kind === 'front') {
-      expect(leaves[1].issue.version).toBe('26.11.11');
+      expect(leaves[1].issue.version).toBe('26.11.12');
     }
 
     const collectedNotes = leaves.flatMap((leaf) => {
@@ -105,7 +105,7 @@ describe('Noise in the Night daily paper', () => {
   it('adding a note for a new day creates a new front page at page 2', () => {
     const fresh = {
       id: 'fresh-bunker-day',
-      date: '2026-11-11',
+      date: '2026-11-13',
       kind: 'new' as const,
       title: 'Bunker Expansion',
       deck: 'A new floor uncovered.',
@@ -113,16 +113,23 @@ describe('Noise in the Night daily paper', () => {
     };
     const notes = [fresh, ...CHANGE_NOTES];
     const issues = changeIssues(notes);
-    expect(issues[0].version).toBe('26.11.11');
+    expect(issues[0].version).toBe('26.11.13');
     expect(issues[0].lead.id).toBe('fresh-bunker-day');
 
     const leaves = changeLeaves(notes);
     expect(leaves[1].kind).toBe('front');
     if (leaves[1].kind === 'front') {
-      expect(leaves[1].issue.version).toBe('26.11.11');
+      expect(leaves[1].issue.version).toBe('26.11.13');
     }
-    expect(issuePage('26.11.11', notes)).toBe(2);
-    expect(issuePage('26.11.10', notes)).toBeGreaterThan(2);
+    expect(issuePage('26.11.13', notes)).toBe(2);
+    expect(issuePage('26.11.12', notes)).toBeGreaterThan(2);
+  });
+
+  it('reports driving, roadkill, garage rollouts, smooth turns and test drive on 12 Nov', () => {
+    const ids = CHANGE_NOTES.filter((note) => note.date === '2026-11-12').map((note) => note.id);
+    expect(ids).toEqual(expect.arrayContaining(['behind-the-wheel', 'roadkill-and-horns', 'garage-rollout', 'smooth-turns', 'test-drive-mode']));
+    const wheel = CHANGE_NOTES.find((note) => note.id === 'behind-the-wheel');
+    expect(wheel?.points.join(' ')).toContain("driver's seat");
   });
 
   it('reports the bag, the loot window, doors, material chips and the redrawn art on 11 Nov', () => {

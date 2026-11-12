@@ -5,7 +5,7 @@ import { streetAt } from '../../shared/street-names.ts';
 import type { StreetSpot } from '../../shared/street-names.ts';
 import type { ContainerKind } from '../../shared/containers.ts';
 import type { GridItem } from '../../shared/grid-inventory.ts';
-import type { PaletteId, UiScale } from './display-prefs.ts';
+import type { PaletteId, SpeedUnit, UiScale } from './display-prefs.ts';
 import { KEEPSAKES } from '../../shared/keepsakes.ts';
 import type { KeepsakeId } from '../../shared/protocol.ts';
 import { CANDIES } from '../../shared/candy.ts';
@@ -250,6 +250,7 @@ export interface UiState {
   readonly palette: PaletteId;
   readonly uiScale: UiScale;
   readonly autoFadeXp: boolean;
+  readonly speedUnit: SpeedUnit;
   readonly openedContainer?: {
     readonly id: number;
     readonly kind?: ContainerKind;

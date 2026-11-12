@@ -286,7 +286,7 @@ describe('Rolling Timestamp AP Decay & Rusty Survivors', () => {
   describe('Level Up Boon Fluidity & applyBagCommit Resilience', () => {
     it('applies level up boon directly to the player without bag items or pausing', () => {
       const sim = new GameSimulation({ seed: 42 });
-      sim.addPlayer('p1', 'Player 1', 0);
+      sim.addPlayer('p1', 'Player 1', null, 0);
       const playerBefore = sim.snapshot().players.find((p) => p.id === 'p1')!;
       expect(playerBefore.sugar).toBeUndefined();
 
@@ -298,7 +298,7 @@ describe('Rolling Timestamp AP Decay & Rusty Survivors', () => {
 
     it('safely handles bag commit without layout or drop without throwing errors', () => {
       const sim = new GameSimulation({ seed: 42 });
-      sim.addPlayer('p1', 'Player 1', 0);
+      sim.addPlayer('p1', 'Player 1', null, 0);
       const p = (sim as unknown as { sim: { players: Array<{ status: string; inventory: unknown; candy: unknown[] }> } }).sim.players[0];
       const partialCommit = { use: [{ type: 'jawbreaker', count: 1 }] } as unknown as Parameters<typeof applyBagCommit>[2];
       expect(() => applyBagCommit((sim as unknown as { sim: Parameters<typeof applyBagCommit>[0] }).sim, p as unknown as Parameters<typeof applyBagCommit>[1], partialCommit)).not.toThrow();

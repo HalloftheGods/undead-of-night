@@ -7,6 +7,7 @@ import type { ClientWorld } from './client-world.ts';
 import { recordGameFinished, recordLevelReached } from './level-progress.ts';
 import type { CalloutWords } from './kill-juice.ts';
 import { KillJuice } from './kill-juice.ts';
+import { noteDriveSnapshot } from './drive-readout.ts';
 import { candyBanner, HORDE_WIPED_BANNER, pickupNote } from './run-notices.ts';
 import { finishRun, healthFraction } from './run-hud.ts';
 import type { RunHost } from './run-session.ts';
@@ -107,6 +108,7 @@ export class SnapshotHandler {
     }
     this.setMood(snapshot, world.latest === null);
     state.lastSnapshotMs = now;
+    noteDriveSnapshot(snapshot, after?.vehicle?.id ?? null);
     for (const event of snapshot.events) this.onGameEvent(event, world, now, before, after);
     const callout = this.punctuate(snapshot, world.localId, after, now);
     this.stamp(snapshot, world.localId, after, callout, now);

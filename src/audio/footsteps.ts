@@ -77,7 +77,8 @@ export class FootstepTracker {
     const dist = Math.hypot(p.x - w.x, p.y - w.y);
     w.x = p.x;
     w.y = p.y;
-    const isResting = p.status !== 'alive' || dt <= 0;
+    const isSeated = p.vehicle !== undefined;
+    const isResting = p.status !== 'alive' || dt <= 0 || isSeated;
     if (isResting) {
       w.acc = 0;
       return;

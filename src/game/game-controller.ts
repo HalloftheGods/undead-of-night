@@ -47,6 +47,7 @@ import {
   saveDisplayPrefs,
   UI_SCALES,
   type PaletteId,
+  type SpeedUnit,
   type UiScale,
 } from './display-prefs.ts';
 
@@ -337,9 +338,14 @@ export class GameController {
     this.renderer?.setAutoFadeXp(autoFadeXp);
   }
 
+  setSpeedUnit(speedUnit: SpeedUnit): void {
+    this.publish({ speedUnit });
+    this.saveDisplay();
+  }
+
   private saveDisplay(): void {
-    const { palette, uiScale, autoFadeXp } = this.ui.value;
-    saveDisplayPrefs(browserStore(), { palette, uiScale, autoFadeXp });
+    const { palette, uiScale, autoFadeXp, speedUnit } = this.ui.value;
+    saveDisplayPrefs(browserStore(), { palette, uiScale, autoFadeXp, speedUnit });
   }
 
   toggleMute(): void {

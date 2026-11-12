@@ -5,6 +5,98 @@ import type { ChangeNote } from './change-notes.ts';
 
 export const OLDEST_NOTES: readonly ChangeNote[] = [
   {
+    id: 'back-doors',
+    date: '2026-11-07',
+    kind: 'new',
+    title: 'Back doors and rooms',
+    deck: 'A crowd at the front door is no longer a trap.',
+    points: [
+      'Houses, apartments, the clinic, police station, garage, warehouse and grocery have a back door.',
+      'Houses have a bedroom, and apartments split into two flats off a shared hall.',
+      'Every room is still wide enough for the biggest survivor to get through.',
+    ],
+  },
+  {
+    id: 'keepsakes',
+    date: '2026-11-07',
+    kind: 'new',
+    title: 'Keepsakes',
+    deck: 'Pick one of three, and keep it all run.',
+    points: [
+      'Reaching towns 3, 5, 7 and 9, you are offered three keepsakes. Pick one with a click, a tap, or J, K, L.',
+      'A Rabbit’s Foot for luckier searches, Worn Sneakers for longer sprints, Dog Tags for faster revives, and more.',
+      'Each survivor gets their own offer in co-op.',
+    ],
+  },
+  {
+    id: 'candy',
+    date: '2026-11-07',
+    kind: 'new',
+    title: 'Halloween candy',
+    deck: 'Twelve short boosts hidden around town.',
+    points: [
+      'Search houses and apartments for candy. Carry two, and press X to eat one.',
+      'Sour Skulls reload twice as fast, Ghost Gum makes sprinting silent, Jawbreaker halves the damage you take.',
+      'Each lasts 75 seconds. Find a Full-Size Bar and you get a bit of everything.',
+    ],
+  },
+  {
+    id: 'furniture',
+    date: '2026-11-07',
+    kind: 'fixed',
+    title: 'Furniture against the walls',
+    deck: 'No more gaps that look like a way through.',
+    points: [
+      'Furniture now stands flush against a building’s side walls.',
+      'The narrow gaps that used to trap players are gone, and real aisles open where there is room.',
+    ],
+  },
+  {
+    id: 'stamps',
+    date: '2026-11-07',
+    kind: 'new',
+    title: 'Stamps',
+    deck: 'Achievements, inked into your Record Book.',
+    points: [
+      'Seventeen stamps to earn, from First Blood and Headhunter to beating each boss and reaching the last town.',
+      'Each one is dated the day you earn it. An empty ring tells you how to get it.',
+      'Find them on the last two pages of Records.',
+    ],
+  },
+  {
+    id: 'bosses',
+    date: '2026-11-07',
+    kind: 'new',
+    title: 'Boss nights',
+    deck: 'Levels 3, 6 and 9 end with something big.',
+    points: [
+      'The Howler screams for runners. Mother gives birth to walkers. The Butcher charges anyone who gets close.',
+      'The last horde does not end until the boss falls. A health bar shows how close you are.',
+      'Every boss drops a medkit and a prize.',
+    ],
+  },
+  {
+    id: 'night-events',
+    date: '2026-11-07',
+    kind: 'new',
+    title: 'Night events',
+    deck: 'Some nights are worse than others.',
+    points: [
+      'Fog: zombies only spot you up close, and the town turns grey.',
+      'Blood moon: hordes twice the size, but every kill is worth double.',
+      'Power cut: the lamps go dark, zombies see less and hear more.',
+      'The level card tells you what tonight brings.',
+    ],
+  },
+  {
+    id: 'sos-discount',
+    date: '2026-11-07',
+    kind: 'new',
+    title: 'S.O.S. Discount',
+    deck: 'A new store downtown, with a back room worth checking.',
+    points: ['Shows up in two towns out of three.', 'Cheap goods on the shelves, better finds in the stockroom.'],
+  },
+  {
     id: 'chains',
     date: '2026-11-07',
     kind: 'new',
