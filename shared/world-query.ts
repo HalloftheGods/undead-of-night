@@ -14,10 +14,16 @@ export interface Box {
 }
 
 interface SolidIndex {
-  /** Boxes touching each tile, row-major. */
-  readonly buckets: readonly (readonly Box[])[];
-  /** 1 where any solid overlaps the tile. Flow fields and spawning treat these as walls. */
+  /** Boxes touching each tile, row-major. Edited in place as cars are lifted and parked. */
+  readonly buckets: (readonly Box[])[];
+  /** 1 where any solid overlaps the tile. Flow fields and spawning treat these as walls, and hold it by reference. */
   readonly blocked: Uint8Array;
+  /** The box each solid prop put in the buckets, by its index in the map's props; null for a prop that is not solid. */
+  readonly propBoxes: readonly (Box | null)[];
+  /** Props taken out of the index: a parked car someone got into. */
+  readonly lifted: Set<number>;
+  /** Solids that come and go, by key: a car at rest. */
+  readonly dynamic: Map<string, Box>;
 }
 
 const NO_BOXES: readonly Box[] = [];
@@ -162,6 +168,46 @@ function rockBoxes(map: WorldMap): Box[] {
   return boxes;
 }
 
+interface TileSpan {
+  readonly minCol: number;
+  readonly maxCol: number;
+  readonly minRow: number;
+  readonly maxRow: number;
+}
+
+function tileSpan(map: WorldMap, box: Box): TileSpan {
+  return {
+    minCol: Math.max(0, Math.floor(box.x0 / TILE_SIZE)),
+    maxCol: Math.min(map.cols - 1, Math.ceil(box.x1 / TILE_SIZE) - 1),
+    minRow: Math.max(0, Math.floor(box.y0 / TILE_SIZE)),
+    maxRow: Math.min(map.rows - 1, Math.ceil(box.y1 / TILE_SIZE) - 1),
+  };
+}
+
+function eachTile(map: WorldMap, box: Box, visit: (index: number) => void): void {
+  const { minCol, maxCol, minRow, maxRow } = tileSpan(map, box);
+  for (let row = minRow; row <= maxRow; row++) {
+    for (let col = minCol; col <= maxCol; col++) visit(row * map.cols + col);
+  }
+}
+
+function addBox(map: WorldMap, index: Pick<SolidIndex, 'buckets' | 'blocked'>, box: Box): void {
+  eachTile(map, box, (tile) => {
+    const bucket = index.buckets[tile];
+    index.buckets[tile] = bucket === NO_BOXES ? [box] : [...bucket, box];
+    index.blocked[tile] = 1;
+  });
+}
+
+/** Takes one box out by identity, and re-marks each tile it touched from what is left there. */
+function removeBox(map: WorldMap, index: SolidIndex, box: Box): void {
+  eachTile(map, box, (tile) => {
+    const left = index.buckets[tile].filter((other) => other !== box);
+    index.buckets[tile] = left.length === 0 ? NO_BOXES : left;
+    index.blocked[tile] = left.length === 0 ? 0 : 1;
+  });
+}
+
 function solidIndex(map: WorldMap): SolidIndex {
   const cached = indexes.get(map);
   if (cached) return cached;
@@ -169,31 +215,61 @@ function solidIndex(map: WorldMap): SolidIndex {
   // Most tiles are open, so they all share one empty list until something lands on them.
   const buckets = new Array<readonly Box[]>(map.cols * map.rows).fill(NO_BOXES);
   const blocked = new Uint8Array(map.cols * map.rows);
-  const addBox = (box: Box): void => {
-    const minCol = Math.max(0, Math.floor(box.x0 / TILE_SIZE));
-    const maxCol = Math.min(map.cols - 1, Math.ceil(box.x1 / TILE_SIZE) - 1);
-    const minRow = Math.max(0, Math.floor(box.y0 / TILE_SIZE));
-    const maxRow = Math.min(map.rows - 1, Math.ceil(box.y1 / TILE_SIZE) - 1);
-    for (let row = minRow; row <= maxRow; row++) {
-      for (let col = minCol; col <= maxCol; col++) {
-        const index = row * map.cols + col;
-        buckets[index] = buckets[index] === NO_BOXES ? [box] : [...buckets[index], box];
-        blocked[index] = 1;
-      }
-    }
-  };
-  for (const prop of map.props) {
-    if (isSolidProp(prop)) addBox(propBox(prop));
+  const grid = { buckets, blocked };
+  const propBoxes = map.props.map((prop) => (isSolidProp(prop) ? propBox(prop) : null));
+  for (const box of propBoxes) {
+    if (box) addBox(map, grid, box);
   }
-  for (const wall of wallBoxes(map)) addBox(wall);
-  for (const dark of voidBoxes(map, buildingBox)) addBox(dark);
-  for (const rock of rockBoxes(map)) addBox(rock);
-  const index: SolidIndex = { buckets, blocked };
+  for (const wall of wallBoxes(map)) addBox(map, grid, wall);
+  for (const dark of voidBoxes(map, buildingBox)) addBox(map, grid, dark);
+  for (const rock of rockBoxes(map)) addBox(map, grid, rock);
+  const index: SolidIndex = { buckets, blocked, propBoxes, lifted: new Set(), dynamic: new Map() };
   // Settling the van's spot reads these solids, so they are cached first and the van joins them after.
   indexes.set(map, index);
   const van = settleVan(map);
-  if (van) addBox(van);
+  if (van) addBox(map, grid, van);
   return index;
+}
+
+/** Takes a map prop out of collision, for a parked car that is now a vehicle of its own. Does nothing twice. */
+export function liftProp(map: WorldMap, propIndex: number): void {
+  const index = solidIndex(map);
+  const box = index.propBoxes[propIndex];
+  const isLiftable = box !== null && box !== undefined && !index.lifted.has(propIndex);
+  if (!isLiftable) return;
+  index.lifted.add(propIndex);
+  removeBox(map, index, box);
+}
+
+/** Whether `liftProp` has taken this prop out of collision. */
+export function isLifted(map: WorldMap, propIndex: number): boolean {
+  return solidIndex(map).lifted.has(propIndex);
+}
+
+/** Places, moves or (with null) removes a solid that comes and goes under its own key, such as a resting car. */
+export function setSolid(map: WorldMap, key: string, box: Box | null): void {
+  const index = solidIndex(map);
+  const had = index.dynamic.get(key);
+  if (had) removeBox(map, index, had);
+  if (!box) {
+    index.dynamic.delete(key);
+    return;
+  }
+  const own: Box = { x0: box.x0, y0: box.y0, x1: box.x1, y1: box.y1 };
+  index.dynamic.set(key, own);
+  addBox(map, index, own);
+}
+
+/** Back to the map as built: lifted props return and keyed solids go, for a town started over on the same map. */
+export function restoreSolids(map: WorldMap): void {
+  const index = indexes.get(map);
+  if (!index) return;
+  for (const key of [...index.dynamic.keys()]) setSolid(map, key, null);
+  for (const propIndex of index.lifted) {
+    const box = index.propBoxes[propIndex];
+    if (box) addBox(map, index, box);
+  }
+  index.lifted.clear();
 }
 
 /**
