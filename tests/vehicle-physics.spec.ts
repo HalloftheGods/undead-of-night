@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { FACING_HEADING, VEHICLE_BODIES } from '../shared/vehicle-bodies.ts';
 import {
-  REVERSE_CONE,
+  VEHICLE_REVERSE_SPEED,
   VEHICLE_TOP_SPEED,
   VEHICLE_TURN_RATE,
   capsuleBlocked,
@@ -33,15 +33,28 @@ function run(m: VehicleMotion, ticks: number, dx: number, dy: number, blocked: B
   return cur;
 }
 
+const GAS = -1;
+const BRAKE = 1;
+const RIGHT = 1;
+const LEFT = -1;
+
 describe('stepVehicle', () => {
-  it('reaches and caps at top speed', () => {
-    const m = run(parked(), 200, 1, 0);
+  it('up is gas: reaches and caps at top speed along the nose', () => {
+    const m = run(parked(), 200, 0, GAS);
     expect(m.speed).toBeCloseTo(VEHICLE_TOP_SPEED, 5);
     expect(m.speed).toBeLessThanOrEqual(VEHICLE_TOP_SPEED);
+    expect(m.x).toBeGreaterThan(parked().x + 1000);
+    expect(m.y).toBe(parked().y);
+  });
+
+  it('gas drives along the nose whichever way the car points on screen', () => {
+    const m = run(parked({ heading: FACING_HEADING.s, facing: 's' }), 20, 0, GAS);
+    expect(m.y).toBeGreaterThan(parked().y + 20);
+    expect(m.x).toBeCloseTo(parked().x, 6);
   });
 
   it('paceScale lowers top speed', () => {
-    const m = run(parked(), 200, 1, 0, open, 0.5);
+    const m = run(parked(), 200, 0, GAS, open, 0.5);
     expect(m.speed).toBeCloseTo(VEHICLE_TOP_SPEED * 0.5, 5);
   });
 
@@ -52,41 +65,66 @@ describe('stepVehicle', () => {
     expect(m.heading).toBe(1);
   });
 
-  it('bounds the turn per tick', () => {
-    const m = stepVehicle(parked({ speed: 200 }), 'sedan', 0, 1, DT, open);
-    expect(Math.abs(m.heading)).toBeLessThanOrEqual(VEHICLE_TURN_RATE * DT + 1e-9);
+  it('right swings the nose clockwise, bounded per tick', () => {
+    const m = stepVehicle(parked({ speed: 200 }), 'sedan', RIGHT, GAS, DT, open);
     expect(m.heading).toBeGreaterThan(0);
+    expect(m.heading).toBeLessThanOrEqual(VEHICLE_TURN_RATE * DT + 1e-9);
   });
 
-  it('never overshoots the target heading', () => {
-    const m = run(parked({ speed: 200 }), 100, 0, 1);
-    expect(m.heading).toBeCloseTo(Math.PI / 2, 9);
+  it('left swings the nose anticlockwise', () => {
+    const m = stepVehicle(parked({ speed: 200 }), 'sedan', LEFT, GAS, DT, open);
+    expect(m.heading).toBeLessThan(0);
   });
 
-  it('lets a parked car pull out by turning slowly', () => {
-    const m = stepVehicle(parked(), 'sedan', 0, 1, DT, open);
-    expect(m.heading).toBeGreaterThan(0);
-    expect(m.heading).toBeLessThan(VEHICLE_TURN_RATE * DT);
+  it('keeps turning for as long as the wheel is held, with no target to settle on', () => {
+    const m = run(parked({ speed: 200 }), 10, RIGHT, GAS);
+    expect(m.heading).toBeCloseTo(VEHICLE_TURN_RATE * DT * 10, 6);
   });
 
-  it('opposite input brakes, then reverses with the nose kept', () => {
+  it('steers by the car, not the screen: right is clockwise when heading south too', () => {
+    const south = parked({ heading: FACING_HEADING.s, facing: 's', speed: 200 });
+    const m = stepVehicle(south, 'sedan', RIGHT, GAS, DT, open);
+    expect(m.heading).toBeGreaterThan(FACING_HEADING.s);
+  });
+
+  it('does not turn at a standstill', () => {
+    const m = run(parked(), 20, RIGHT, 0);
+    expect(m.heading).toBe(0);
+    expect(m.speed).toBe(0);
+    expect(m.x).toBe(parked().x);
+  });
+
+  it('turns slower at a crawl than at speed', () => {
+    const crawl = stepVehicle(parked({ speed: 15 }), 'sedan', RIGHT, 0, DT, open);
+    const quick = stepVehicle(parked({ speed: 150 }), 'sedan', RIGHT, 0, DT, open);
+    expect(crawl.heading).toBeGreaterThan(0);
+    expect(crawl.heading).toBeLessThan(quick.heading / 2);
+  });
+
+  it('down brakes, then reverses with the nose kept', () => {
     let m = parked({ speed: 200 });
     let reversed = false;
     for (let i = 0; i < 200; i++) {
-      m = stepVehicle(m, 'sedan', -1, 0, DT, open);
+      m = stepVehicle(m, 'sedan', 0, BRAKE, DT, open);
       if (m.speed < 0) reversed = true;
       if (!reversed) expect(m.speed).toBeGreaterThanOrEqual(0);
     }
     expect(reversed).toBe(true);
-    expect(m.speed).toBeLessThan(0);
+    expect(m.speed).toBeCloseTo(-VEHICLE_REVERSE_SPEED, 5);
     expect(m.x).toBeLessThan(parked().x + 200);
-    expect(Math.abs(m.heading)).toBeLessThan(REVERSE_CONE);
+    expect(m.heading).toBe(0);
     expect(m.facing).toBe('e');
   });
 
-  it('swings the tail toward the target while reversing', () => {
-    const m = run(parked({ speed: -60 }), 20, -1, 1);
-    // The target is behind and to the south, so the tail swings south and the nose goes north.
+  it('gas brakes a car that is backing up before it pulls forward', () => {
+    const first = stepVehicle(parked({ speed: -60 }), 'sedan', 0, GAS, DT, open);
+    expect(first.speed).toBeGreaterThan(-60);
+    expect(first.speed).toBeLessThanOrEqual(0);
+    expect(run(parked({ speed: -60 }), 40, 0, GAS).speed).toBeGreaterThan(0);
+  });
+
+  it('flips the steering in reverse, like a real car', () => {
+    const m = run(parked({ speed: -60 }), 5, RIGHT, BRAKE);
     expect(m.heading).toBeLessThan(0);
   });
 
@@ -96,7 +134,7 @@ describe('stepVehicle', () => {
     let m = parked();
     let crashed = 0;
     for (let i = 0; i < 200; i++) {
-      const s = stepVehicle(m, 'sedan', 1, 0, DT, blocked);
+      const s = stepVehicle(m, 'sedan', 0, GAS, DT, blocked);
       crashed = Math.max(crashed, s.crash);
       m = s;
       expect(capsuleBlocked('sedan', m.x, m.y, m.heading, blocked)).toBe(false);
@@ -111,9 +149,9 @@ describe('stepVehicle', () => {
   it('slides along a wall and reports only the lost share', () => {
     const wall: Box = { x0: -1000, y0: 200, x1: 1000, y1: 300 };
     const blocked = boxBlocked(wall);
-    // Heading east-ish but pushing south into a wall below.
+    // Heading east and a little south, into a wall below.
     const start = parked({ y: 200 - radiusOf - 2, speed: 150, heading: 0.1 });
-    const step = stepVehicle(start, 'sedan', 1, 0.1, DT, blocked);
+    const step = stepVehicle(start, 'sedan', 0, GAS, DT, blocked);
     expect(step.x).toBeGreaterThan(start.x + 3);
     expect(step.speed).toBeGreaterThan(100);
     expect(step.crash).toBeLessThan(40);
@@ -122,28 +160,30 @@ describe('stepVehicle', () => {
 
   it('reports a big crash when hitting a wall square', () => {
     const blocked = boxBlocked({ x0: 123, y0: -1000, x1: 300, y1: 1000 });
-    const step = stepVehicle(parked({ x: 100, speed: 200 }), 'sedan', 1, 0, DT, blocked);
+    const step = stepVehicle(parked({ x: 100, speed: 200 }), 'sedan', 0, GAS, DT, blocked);
     expect(step.crash).toBeGreaterThan(150);
   });
 
   it('reports no crash in the open', () => {
-    expect(stepVehicle(parked({ speed: 100 }), 'sedan', 1, 0, DT, open).crash).toBe(0);
+    expect(stepVehicle(parked({ speed: 100 }), 'sedan', 0, GAS, DT, open).crash).toBe(0);
   });
 
   it('refuses to rotate into a wall', () => {
-    // Wall just south of the car's side: turning toward south would sweep the tail/nose into it.
-    // A second wall at the nose keeps the car in place while it tries to turn.
-    const blocked = boxBlocked({ x0: 100 - 8, y0: 100 + 14, x1: 100 + 8, y1: 400 }, { x0: 123, y0: -1000, x1: 400, y1: 1000 });
-    expect(capsuleBlocked('sedan', 100, 100, 0, blocked)).toBe(false);
-    const m = run(parked({ speed: 0 }), 40, 0, 1, blocked);
-    expect(capsuleBlocked('sedan', m.x, m.y, m.heading, blocked)).toBe(false);
-    expect(m.heading).toBeLessThan(Math.PI / 4);
+    // A long wall 1px off the car's south side: any turn toward it would put an end of the car inside.
+    const blocked = boxBlocked({ x0: -1000, y0: 100 + radiusOf + 1, x1: 5000, y1: 400 });
+    let m = parked({ speed: 100 });
+    for (let i = 0; i < 40; i++) {
+      m = stepVehicle(m, 'sedan', RIGHT, GAS, DT, blocked);
+      expect(capsuleBlocked('sedan', m.x, m.y, m.heading, blocked)).toBe(false);
+    }
+    expect(m.heading).toBe(0);
+    expect(m.x).toBeGreaterThan(parked().x + 100);
   });
 
   it('is deterministic', () => {
     const blocked = boxBlocked({ x0: 250, y0: 90, x1: 280, y1: 400 });
-    const a = run(parked(), 120, 1, 0.4, blocked);
-    const b = run(parked(), 120, 1, 0.4, blocked);
+    const a = run(parked(), 120, 0.4, GAS, blocked);
+    const b = run(parked(), 120, 0.4, GAS, blocked);
     expect(JSON.stringify(a)).toBe(JSON.stringify(b));
   });
 });

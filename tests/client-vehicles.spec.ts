@@ -4,7 +4,6 @@ import type { PlayerEntity, SnapshotPacket, VehicleView } from '../shared/protoc
 import type { SimState } from '../shared/sim-state.ts';
 import type { GameSimulation } from '../shared/simulation.ts';
 import { FACING_HEADING, restBox } from '../shared/vehicle-bodies.ts';
-import type { VehicleFacing } from '../shared/vehicle-bodies.ts';
 import { driveableProps } from '../shared/vehicle-choice.ts';
 import type { ParkedCar } from '../shared/vehicle-choice.ts';
 import { buildingAt, circleHitsSolid, isLifted } from '../shared/world-query.ts';
@@ -22,8 +21,10 @@ import { input, quietSim } from './helpers/sim-harness.ts';
 
 type Key = 'up' | 'right' | 'down' | 'left';
 const TICK_MS = TICK_DT * 1000;
-const CLOCKWISE: readonly Key[] = ['up', 'right', 'down', 'left'];
-const NOSE_KEY: Record<VehicleFacing, Key> = { n: 'up', e: 'right', s: 'down', w: 'left' };
+/** Gas, then the wheel while it coasts, then the brake into reverse, then the wheel the other way. */
+const PEDALS_AND_WHEEL: readonly Key[] = ['up', 'right', 'down', 'left'];
+/** Gas, whichever way the car points. */
+const GAS: Key = 'up';
 
 const keysOf = (key: Key | null) => (key ? { [key]: true } : {});
 const stickOf = (key: Key | null): [number, number] => [Number(key === 'right') - Number(key === 'left'), Number(key === 'down') - Number(key === 'up')];
@@ -89,9 +90,7 @@ function seated(ticksUp = 0) {
   expect(meIn(entered).vehicle).toEqual({ id: car.id, seat: 0 });
   const world = new ClientWorld(clientMap, 'a');
   world.push(entered, 0);
-  const nose = NOSE_KEY[car.parked.facing];
-  const start = CLOCKWISE.indexOf(nose);
-  const keyAt = (frame: number): Key => CLOCKWISE[(start + Math.floor((frame - 1) / 15)) % 4];
+  const keyAt = (frame: number): Key => PEDALS_AND_WHEEL[Math.floor((frame - 1) / 15) % 4];
   return { sim, state, car, world, clientMap, keyAt, ticksUp };
 }
 
@@ -151,9 +150,8 @@ describe('driving a car on the client', () => {
     const { sim, state, car, world, clientMap } = seated();
     let frame = 0;
     let snap = sim.snapshot();
-    const nose = NOSE_KEY[car.parked.facing];
     for (; frame < 70; frame += 1) {
-      const key = frame < 20 ? nose : null;
+      const key = frame < 20 ? GAS : null;
       const [dirX, dirY] = stickOf(key);
       world.advance((frame + 1) * TICK_MS, 0, dirX, dirY, 0, TICK_DT);
       world.recordInput(frame + 1, dirX, dirY);

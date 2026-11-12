@@ -9,17 +9,14 @@ export const VEHICLE_TOP_SPEED = 220;
 export const VEHICLE_REVERSE_SPEED = 70;
 /** Speed gained per second under power, in px/s^2. */
 export const VEHICLE_ACCEL = 300;
-/** Speed shed per second when the stick points against the way the car is going. */
+/** Speed shed per second when the pedal is against the way the car is rolling. */
 export const VEHICLE_BRAKE = 520;
 /** Speed shed per second with no input. */
 export const VEHICLE_COAST = 160;
 /** How fast the heading can swing at full grip, in rad/s. */
 export const VEHICLE_TURN_RATE = 3.2;
-/** How far off the nose the stick can point (about 120 degrees) before the car brakes and backs up instead. */
-export const REVERSE_CONE = (2 * Math.PI) / 3;
 
-/** Grip a parked car has, so it can pull out; it rises to 1 by GRIP_FULL_SPEED. */
-const GRIP_AT_REST = 0.35;
+/** A car steers only while it rolls: nothing at rest, the whole turn rate from this speed up, in px/s. */
 const GRIP_FULL_SPEED = 60;
 /** Same sub-step size as walking, so stopping distance barely depends on the frame rate. */
 const MAX_SUBSTEP = 1;
@@ -82,39 +79,45 @@ export function capsuleBlocked(body: VehicleBody, x: number, y: number, heading:
   return isBlocked(front.x, front.y, radius) || isBlocked(back.x, back.y, radius);
 }
 
-const gripAt = (speed: number): number => clamp(GRIP_AT_REST + ((1 - GRIP_AT_REST) * Math.abs(speed)) / GRIP_FULL_SPEED, GRIP_AT_REST, 1);
+const gripAt = (speed: number): number => clamp(Math.abs(speed) / GRIP_FULL_SPEED, 0, 1);
 
 const approachZero = (speed: number, amount: number): number => (speed > 0 ? Math.max(0, speed - amount) : Math.min(0, speed + amount));
 
-/** The speed and heading the stick asks for this tick, before anything is in the way. */
-function drive(motion: VehicleMotion, dirX: number, dirY: number, dt: number, paceScale: number): { speed: number; heading: number } {
-  const hasInput = Math.hypot(dirX, dirY) > 1e-9;
-  if (!hasInput) return { speed: approachZero(motion.speed, VEHICLE_COAST * dt), heading: motion.heading };
+/** Gas: a car backing up brakes first, then it gathers speed to the cap. Over the cap (off the road, say) it eases down to it. */
+function gas(speed: number, dt: number, paceScale: number): number {
+  if (speed < 0) return approachZero(speed, VEHICLE_BRAKE * dt);
+  const cap = VEHICLE_TOP_SPEED * paceScale;
+  const isOverCap = speed > cap;
+  return isOverCap ? Math.max(cap, speed - VEHICLE_COAST * dt) : Math.min(cap, speed + VEHICLE_ACCEL * dt);
+}
 
-  const diff = wrapAngle(Math.atan2(dirY, dirX) - motion.heading);
-  const wantsForward = Math.abs(diff) <= REVERSE_CONE;
-  const isReversing = motion.speed < 0;
-  const isMovingForward = motion.speed > 0;
+/** The other pedal: a car rolling forward brakes, and once stopped it backs up. */
+function brakeOrReverse(speed: number, dt: number): number {
+  if (speed > 0) return approachZero(speed, VEHICLE_BRAKE * dt);
+  return Math.max(-VEHICLE_REVERSE_SPEED, speed - VEHICLE_ACCEL * dt);
+}
 
-  if (wantsForward) {
-    if (isReversing) return { speed: approachZero(motion.speed, VEHICLE_BRAKE * dt), heading: motion.heading };
-    const cap = VEHICLE_TOP_SPEED * paceScale;
-    const isOverCap = motion.speed > cap;
-    const speed = isOverCap ? Math.max(cap, motion.speed - VEHICLE_COAST * dt) : Math.min(cap, motion.speed + VEHICLE_ACCEL * dt);
-    const maxTurn = VEHICLE_TURN_RATE * gripAt(speed) * dt;
-    return { speed, heading: motion.heading + clamp(diff, -maxTurn, maxTurn) };
-  }
-
-  if (isMovingForward) return { speed: approachZero(motion.speed, VEHICLE_BRAKE * dt), heading: motion.heading };
-  const speed = Math.max(-VEHICLE_REVERSE_SPEED, motion.speed - VEHICLE_ACCEL * dt);
-  const tailDiff = wrapAngle(Math.atan2(dirY, dirX) - (motion.heading + Math.PI));
-  const maxTurn = VEHICLE_TURN_RATE * gripAt(speed) * dt;
-  return { speed, heading: motion.heading + clamp(tailDiff, -maxTurn, maxTurn) };
+function pedal(speed: number, throttle: number, dt: number, paceScale: number): number {
+  if (throttle > 0) return gas(speed, dt, paceScale);
+  if (throttle < 0) return brakeOrReverse(speed, dt);
+  return approachZero(speed, VEHICLE_COAST * dt);
 }
 
 /**
- * Advances a car one tick. The stick says where to go, not gas and steer: the car turns toward it,
- * or brakes and backs out when it points behind. Slides along walls one axis at a time like walking does.
+ * The speed and heading the driver asks for this tick, before anything is in the way. The stick is read
+ * from the driver's seat: up is gas, down is the brake and then reverse, left and right turn the wheel.
+ * The wheel only bites while the car rolls, and backing up it swings the nose the other way.
+ */
+function drive(motion: VehicleMotion, dirX: number, dirY: number, dt: number, paceScale: number): { speed: number; heading: number } {
+  const speed = pedal(motion.speed, -Math.sign(dirY), dt, paceScale);
+  const wheel = clamp(dirX, -1, 1);
+  const turn = wheel * Math.sign(speed) * VEHICLE_TURN_RATE * gripAt(speed) * dt;
+  return { speed, heading: motion.heading + turn };
+}
+
+/**
+ * Advances a car one tick. dirX is the wheel (right is positive) and dirY the pedals (up, negative, is gas),
+ * both from the driver's seat rather than the screen. Slides along walls one axis at a time like walking does.
  */
 export function stepVehicle(
   motion: VehicleMotion,

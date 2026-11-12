@@ -22,6 +22,9 @@ const ROUNDED_EVENT_FIELDS = ['x', 'y', 'angle', 'radius', 'strength'] as const;
 /** The + 0 folds -0 into 0, which JSON would otherwise change under a reader's feet. */
 export const round2 = (value: number): number => Math.round(value * 100) / 100 + 0;
 
+/** A car's heading goes finer: nothing pulls a steered nose back to a round number, so a hundredth of a radian would be 1px of drift per 100px driven. */
+const roundHeading = (value: number): number => Math.round(value * 10000) / 10000 + 0;
+
 function roundEvent(event: GameEvent): GameEvent {
   const copy: Record<string, unknown> = { ...event };
   for (const field of ROUNDED_EVENT_FIELDS) {
@@ -147,7 +150,7 @@ function vehicleView(car: VehicleState): VehicleView {
     body: car.body,
     x: round2(car.x),
     y: round2(car.y),
-    heading: round2(car.heading),
+    heading: roundHeading(car.heading),
     speed: round2(car.speed),
     facing: car.facing,
     seats: [...car.seats],

@@ -43,6 +43,8 @@ The table uses standard-mapping indexes, which are positional: index 0 is the bo
 | Home / PS / Guide | — | 16 | — | — | — | Never read. The OS or browser often claims it |
 | Keepsake pick | J K L / tap | — | — | — | — | Left to menu focus: focus a card, press A |
 
+**At the wheel of a car** the move keys are read from the driver's seat, not the screen (`drive` in `shared/vehicle-physics.ts`): up is gas, down brakes and then backs up, left and right turn the wheel. The wheel only bites while the car rolls, and in reverse it swings the nose the other way, as a real car does. A car pointing down the screen therefore turns to the screen's left when the right key is held. The keyboard, the left stick and the touch stick all send the same four directions, so no packet field changed.
+
 The pad keeps none of its own state in the packet. Each button stands in for the key it maps to (`PLAY_BINDINGS` in `src/game/gamepad-input.ts`), so `InputManager.sample()` builds the same `ClientInputPacket` with the same latch rules. Two pseudo-keys only the pad sends: `PadFire` (RT) and `PadPrevWeapon` (D-pad Left). No protocol fields changed. While the pad steers, the packet leaves out `aimX/aimY`, which is what it already does when there is no crosshair.
 
 ## Device in charge

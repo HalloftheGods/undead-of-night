@@ -26,7 +26,7 @@ export function drive(sim: GameSimulation, ticks: number, keys: Keys = {}): Snap
   return frames;
 }
 
-/** Puts player a in the driver seat of a parked car with open road 150px ahead of its nose; returns the car and its heading. */
+/** Puts player a in the driver seat of a parked car with open road 150px ahead of its nose; returns the car, its heading and the gas key. */
 export function seatDriver(sim: GameSimulation, state: SimState): { car: VehicleState; heading: number; nose: { x: number; y: number }; keys: Keys } {
   const parked = driveableProps(state.map).find((candidate: ParkedCar) => {
     const heading = FACING_HEADING[candidate.parked.facing];
@@ -51,6 +51,5 @@ export function seatDriver(sim: GameSimulation, state: SimState): { car: Vehicle
   drive(sim, 1);
   const car = state.vehicles.get(parked.id);
   if (!car) throw new Error('did not get into the car');
-  const keysByFacing: Record<string, Keys> = { n: { up: true }, s: { down: true }, e: { right: true }, w: { left: true } };
-  return { car, heading, nose: { x: Math.cos(heading), y: Math.sin(heading) }, keys: keysByFacing[parked.parked.facing] };
+  return { car, heading, nose: { x: Math.cos(heading), y: Math.sin(heading) }, keys: { up: true } };
 }

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { PLAYER_RADIUS } from '../shared/constants.ts';
 import { townContainers } from '../shared/containers.ts';
 import { FlowField } from '../shared/flow-field.ts';
@@ -8,7 +8,6 @@ import type { PlayerEntity, SnapshotPacket, VehicleView } from '../shared/protoc
 import type { SimState } from '../shared/sim-state.ts';
 import type { GameSimulation } from '../shared/simulation.ts';
 import { FACING_HEADING, parkedVehicle } from '../shared/vehicle-bodies.ts';
-import type { VehicleFacing } from '../shared/vehicle-bodies.ts';
 import { driveableProps, vehicleChoiceAt } from '../shared/vehicle-choice.ts';
 import type { ParkedCar } from '../shared/vehicle-choice.ts';
 import { buildingAt, circleHitsSolid, isLifted, setSolid } from '../shared/world-query.ts';
@@ -34,8 +33,9 @@ const me = (sim: GameSimulation): PlayerEntity => sim.snapshot().players.find((p
 const tap = (sim: GameSimulation): SnapshotPacket[] => [...run(sim, 3, { search: true }), ...run(sim, 1)];
 const press = (sim: GameSimulation): SnapshotPacket[] => [...run(sim, 1, { search: true }), ...run(sim, 1)];
 
-const NOSE_KEYS: Record<VehicleFacing, Keys> = { n: { up: true }, s: { down: true }, e: { right: true }, w: { left: true } };
-const TAIL_KEYS: Record<VehicleFacing, Keys> = { n: { down: true }, s: { up: true }, e: { left: true }, w: { right: true } };
+/** The pedals are read from the driver's seat: up is gas and down backs up, whichever way the car points. */
+const GAS: Keys = { up: true };
+const REVERSE: Keys = { down: true };
 
 function isOpen(state: SimState, x: number, y: number, r = PLAYER_RADIUS): boolean {
   const onMap = x > r && y > r && x < state.map.width - r && y < state.map.height - r;
@@ -78,9 +78,9 @@ function viewOf(sim: GameSimulation, id: number): VehicleView | undefined {
   return sim.snapshot().vehicles?.find((view) => view.id === id);
 }
 
-/** Holds the nose's key, then lets go and waits for the car to stop. */
-function driveOff(sim: GameSimulation, facing: VehicleFacing, ticks = 20): void {
-  run(sim, ticks, NOSE_KEYS[facing]);
+/** Holds the gas, then lets go and waits for the car to stop. */
+function driveOff(sim: GameSimulation, ticks = 20): void {
+  run(sim, ticks, GAS);
   run(sim, 60);
 }
 
@@ -145,8 +145,8 @@ describe('vehicles: getting in and out with the search key', () => {
     const { car, spot } = roomyCar(state);
     standAt(state, spot);
     tap(sim);
-    run(sim, 12, NOSE_KEYS[car.parked.facing]);
-    run(sim, 1, { ...NOSE_KEYS[car.parked.facing], search: true });
+    run(sim, 12, GAS);
+    run(sim, 1, { ...GAS, search: true });
     expect(me(sim).vehicle).toBeDefined();
     run(sim, 60);
     expect(viewOf(sim, car.id)?.speed).toBe(0);
@@ -203,13 +203,25 @@ describe('vehicles: getting in and out with the search key', () => {
 });
 
 describe('vehicles: a car is its own body and the map stays as built', () => {
+  it('the wheel alone does not stir a parked car: it stays a solid and no flow field is thrown away', () => {
+    const { sim, state } = quietSim();
+    const { car, spot } = roomyCar(state);
+    standAt(state, spot);
+    tap(sim);
+    const invalidate = vi.spyOn(state.flow, 'invalidate');
+    run(sim, 5, { right: true });
+    const view = viewOf(sim, car.id) as VehicleView;
+    expect([view.x, view.y, view.speed]).toEqual([car.x, car.y, 0]);
+    expect(invalidate).not.toHaveBeenCalled();
+  });
+
   it('driving moves the solid, never the map prop, and the old spot is open to flow fields (bug 4)', () => {
     const { sim, state } = quietSim();
     const { car, spot } = roomyCar(state);
     const propsBefore = structuredClone(state.map.props);
     standAt(state, spot);
     tap(sim);
-    driveOff(sim, car.parked.facing);
+    driveOff(sim);
     const view = viewOf(sim, car.id) as VehicleView;
     expect(Math.hypot(view.x - car.x, view.y - car.y)).toBeGreaterThan(40);
     expect(view.speed).toBe(0);
@@ -229,7 +241,7 @@ describe('vehicles: a car is its own body and the map stays as built', () => {
     run(sim, 90, { search: true });
     run(sim, 2);
     tap(sim);
-    driveOff(sim, car.parked.facing);
+    driveOff(sim);
     press(sim);
     expect(me(sim).vehicle).toBeUndefined();
 
@@ -284,7 +296,7 @@ describe('vehicles: a car is its own body and the map stays as built', () => {
     const { car, spot } = roomyCar(state);
     standAt(state, spot);
     tap(sim);
-    run(sim, 3, NOSE_KEYS[car.parked.facing]);
+    run(sim, 3, GAS);
     const rolling = viewOf(sim, car.id) as VehicleView;
     expect(Math.abs(rolling.speed)).toBeGreaterThan(0);
     expect(Math.abs(rolling.speed)).toBeLessThan(40);
@@ -303,7 +315,7 @@ describe('vehicles: a car is its own body and the map stays as built', () => {
     const { car, spot } = roomyCar(state);
     standAt(state, spot);
     tap(sim);
-    driveOff(sim, car.parked.facing);
+    driveOff(sim);
     sim.restart();
     expect(sim.snapshot().vehicles).toBeUndefined();
     expect(me(sim).vehicle).toBeUndefined();
@@ -335,10 +347,10 @@ describe('vehicles: every parked car on a town can be driven away', () => {
         stuck.push(`${car.id}:${state.map.props[car.id].kind} (got into ${seated?.id ?? 'nothing'})`);
       } else {
         const start = viewOf(sim, car.id) as VehicleView;
-        run(sim, 20, NOSE_KEYS[car.parked.facing]);
+        run(sim, 20, GAS);
         const forward = viewOf(sim, car.id) as VehicleView;
         const movedForward = Math.hypot(forward.x - start.x, forward.y - start.y) > 6;
-        if (!movedForward) run(sim, 45, TAIL_KEYS[car.parked.facing]);
+        if (!movedForward) run(sim, 45, REVERSE);
         const after = viewOf(sim, car.id) as VehicleView;
         const moved = Math.hypot(after.x - start.x, after.y - start.y) > 6;
         if (!moved) stuck.push(`${car.id}:${state.map.props[car.id].kind}`);

@@ -36,7 +36,10 @@ function roll(sim: SimState, car: VehicleState, dirX: number, dirY: number): voi
   carryOccupants(sim, car);
 }
 
-/** The driver's held keys steer the car they sit at the wheel of. A parked car only stirs once a key is down. */
+/**
+ * The driver's held keys work the car they sit at the wheel of: up and down are the pedals, left and right the wheel.
+ * A parked car only stirs once a pedal is down, since the wheel alone moves nothing.
+ */
 export function driveVehicle(sim: SimState, p: PlayerState): void {
   const car = vehicleOf(sim, p);
   const atTheWheel = car !== null && p.vehicle?.seat === 0;
@@ -44,9 +47,9 @@ export function driveVehicle(sim: SimState, p: PlayerState): void {
   honk(sim, car, p);
   const dirX = Number(p.right) - Number(p.left);
   const dirY = Number(p.down) - Number(p.up);
-  const hasInput = dirX !== 0 || dirY !== 0;
+  const hasPedal = dirY !== 0;
   const parked = isResting(car);
-  if (parked && !hasInput) return;
+  if (parked && !hasPedal) return;
   if (parked) unparkVehicle(sim, car);
   roll(sim, car, dirX, dirY);
   checkVehicleRoadkill(sim, car, p.id);
