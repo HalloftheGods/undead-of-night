@@ -22,6 +22,7 @@ import {
   pickWinningStat,
   respecCharacter,
   saveProgression,
+  totalXpForLevel,
   xpRequiredForLevel,
 } from '../shared/progression.ts';
 
@@ -54,29 +55,29 @@ describe('Progression Core Logic', () => {
     expect(baseStatSlotFor(4, 'search')).toBe(5);
   });
 
-  it('grants AP and levels up when XP threshold is met up to Level 21', () => {
+  it('grants AP and levels up when XP threshold is met up to Level 100', () => {
     const start = createInitialProgression();
     const reqLevel2 = xpRequiredForLevel(2);
-    expect(reqLevel2).toBe(100);
+    expect(reqLevel2).toBe(113);
 
     const result = addExperience(start, 150);
     expect(result.didLevelUp).toBe(true);
     expect(result.levelsGained).toBe(1);
     expect(result.newLevel).toBe(2);
     expect(result.state.level).toBe(2);
-    expect(result.state.xp).toBe(50);
+    expect(result.state.xp).toBe(37);
     expect(result.state.ap).toBe(1);
 
-    // Giant XP boost caps at Level 21 with 20 AP earned
-    const capped = addExperience(start, 999999);
+    // Giant XP boost caps at Level 100 with 99 AP earned
+    const capped = addExperience(start, totalXpForLevel(MAX_CHARACTER_LEVEL));
     expect(capped.newLevel).toBe(MAX_CHARACTER_LEVEL);
-    expect(capped.newLevel).toBe(21);
-    expect(capped.state.ap).toBe(20);
+    expect(capped.newLevel).toBe(100);
+    expect(capped.state.ap).toBe(99);
   });
 
   it('allows spending AP to increase stat slots up to max 5', () => {
     const base = createInitialProgression();
-    const leveled = addExperience(base, 100).state; // Level 2 with 1 AP
+    const leveled = addExperience(base, 113).state; // Level 2 with 1 AP
     expect(leveled.ap).toBe(1);
 
     // Night (skin 0) cannot allocate stealth because it is already maxed (5)
@@ -101,7 +102,7 @@ describe('Progression Core Logic', () => {
     expect(characterBadgeName(0, 'Night', state)).toBe('Night');
 
     // Night needs 20 AP to max out the 4 non-specialty stats (reload, speed, strength, search)
-    state = addExperience(state, 999999).state;
+    state = addExperience(state, totalXpForLevel(21)).state;
     expect(state.ap).toBe(20);
 
     for (let i = 0; i < 5; i++) state = allocateStatPoint(0, 'reload', state);
@@ -120,7 +121,7 @@ describe('Progression Core Logic', () => {
   it('handles respec with GP cost refunding AP', () => {
     let state = createInitialProgression();
     // Give 2 levels and 50 GP
-    state = addExperience(state, 300).state;
+    state = addExperience(state, 321).state;
     state = { ...state, gp: 50 };
     expect(state.ap).toBeGreaterThanOrEqual(2);
 
@@ -166,14 +167,14 @@ describe('Progression Core Logic', () => {
   it('calculates level up and fractional progress toward the next level', () => {
     const start = createInitialProgression();
     const nextReqLevel2 = xpRequiredForLevel(2);
-    expect(nextReqLevel2).toBe(100);
+    expect(nextReqLevel2).toBe(113);
 
-    const half = addExperience(start, 50);
+    const half = addExperience(start, 56);
     expect(half.didLevelUp).toBe(false);
     expect(half.newLevel).toBe(1);
     expect(half.state.xp / nextReqLevel2).toBeCloseTo(0.5, 2);
 
-    const full = addExperience(half.state, 50);
+    const full = addExperience(half.state, 57);
     expect(full.didLevelUp).toBe(true);
     expect(full.newLevel).toBe(2);
     expect(full.levelsGained).toBe(1);
@@ -181,7 +182,33 @@ describe('Progression Core Logic', () => {
     expect(full.state.xp).toBe(0);
 
     const nextReqLevel3 = xpRequiredForLevel(3);
-    expect(nextReqLevel3).toBe(115);
+    expect(nextReqLevel3).toBe(208);
+  });
+
+  it('prices level L at round(40 × L^1.5) up to a cap of 100', () => {
+    expect(MAX_CHARACTER_LEVEL).toBe(100);
+    expect(xpRequiredForLevel(2)).toBe(113);
+    expect(xpRequiredForLevel(100)).toBe(40_000);
+    expect(totalXpForLevel(10)).toBe(5_667);
+    expect(totalXpForLevel(21)).toBe(34_242);
+    expect(totalXpForLevel(50)).toBe(289_910);
+    expect(totalXpForLevel(100)).toBe(1_620_015);
+  });
+
+  it('caps a survivor level at 21 even when a save fills the specialty stat', () => {
+    const start = createInitialProgression();
+    const overfull = { ...start, allocations: { ...start.allocations, 0: { spentAp: { stealth: 5, reload: 5, speed: 5, strength: 5, search: 5 } } } };
+    expect(characterLevel(0, overfull)).toBe(21);
+  });
+
+  it('stops XP at level 100', () => {
+    const capped = addExperience(createInitialProgression(), totalXpForLevel(MAX_CHARACTER_LEVEL) + 5_000);
+    expect(capped.newLevel).toBe(100);
+    expect(capped.state.xp).toBe(0);
+    const after = addExperience(capped.state, 500);
+    expect(after.didLevelUp).toBe(false);
+    expect(after.state.level).toBe(100);
+    expect(after.state.xp).toBe(0);
   });
 });
 
@@ -189,7 +216,7 @@ describe('Rolling Timestamp AP Decay & Rusty Survivors', () => {
   it('does not decay AP when active within the 7-day grace period', () => {
     const baseTime = 1_700_000_000_000;
     const start = createInitialProgression(baseTime);
-    const leveled = addExperience(start, 700, baseTime).state;
+    const leveled = addExperience(start, 1676, baseTime).state;
     expect(leveled.ap).toBe(5);
 
     const threeDaysLater = baseTime + 3 * 24 * 60 * 60 * 1000;
@@ -202,7 +229,7 @@ describe('Rolling Timestamp AP Decay & Rusty Survivors', () => {
   it('decays 1 AP after 7 days of inactivity and marks survivor as rusty for pip re-allocation', () => {
     const baseTime = 1_700_000_000_000;
     const start = createInitialProgression(baseTime);
-    let state = addExperience(start, 700, baseTime).state;
+    let state = addExperience(start, 1676, baseTime).state;
     state = allocateStatPoint(0, 'speed', state);
     state = allocateStatPoint(0, 'speed', state);
     state = allocateStatPoint(0, 'speed', state);
@@ -230,7 +257,7 @@ describe('Rolling Timestamp AP Decay & Rusty Survivors', () => {
   it('decays from unallocated AP without marking survivors rusty if no pips were invested', () => {
     const baseTime = 1_700_000_000_000;
     const start = createInitialProgression(baseTime);
-    const leveled = addExperience(start, 300, baseTime).state;
+    const leveled = addExperience(start, 321, baseTime).state;
     expect(leveled.ap).toBe(2);
 
     const sevenDaysLater = baseTime + AP_DECAY_INACTIVITY_MS + 1000;

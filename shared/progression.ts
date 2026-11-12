@@ -2,7 +2,7 @@ import { STATS, STAT_SLOTS, type StatKey } from './character-stats.ts';
 
 export const BASE_STAT_SLOT = 0;
 export const MAX_STAT_SLOT = STAT_SLOTS;
-export const MAX_CHARACTER_LEVEL = 21;
+export const MAX_CHARACTER_LEVEL = 100;
 export const AP_PER_LEVEL = 1;
 export const TOTAL_PIPS_TO_FILL = 20;
 export const RESPEC_COST_GP = 50;
@@ -203,7 +203,7 @@ export function saveProgression(state: ProgressionState, store: ProgressStorage 
 export function xpRequiredForLevel(targetLevel: number): number {
   const isFirstLevel = targetLevel <= 1;
   if (isFirstLevel) return 0;
-  return Math.round(100 * Math.pow(1.15, targetLevel - 2));
+  return Math.round(40 * targetLevel ** 1.5);
 }
 
 export function totalXpForLevel(level: number): number {
@@ -240,6 +240,10 @@ export function addExperience(current: ProgressionState, gainedXp: number, now =
     level += 1;
     earnedAp += AP_PER_LEVEL;
   }
+
+  // Nothing is left to buy at the cap, so XP does not pile up there.
+  const isAtCap = level >= MAX_CHARACTER_LEVEL;
+  if (isAtCap) xp = 0;
 
   const levelsGained = level - current.level;
   const didLevelUp = levelsGained > 0;
@@ -430,5 +434,5 @@ export function characterLevel(skin: number, current?: ProgressionState): number
   const spent = current.allocations[skin]?.spentAp;
   if (!spent) return 1;
   const invested = Object.values(spent).reduce((sum, count) => sum + count, 0);
-  return Math.min(MAX_CHARACTER_LEVEL, 1 + invested);
+  return Math.min(1 + TOTAL_PIPS_TO_FILL, 1 + invested);
 }
