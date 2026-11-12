@@ -32,6 +32,7 @@ export const CHANGE_NOTES: readonly ChangeNote[] = [
       'Up is gas and down brakes, then backs up. Left and right turn the wheel, so a car heading down the screen turns to your left when you press right.',
       'A car only steers while it rolls, and backing up swings the nose the other way, just like the real thing.',
       'Between the four straight-on views, cars are drawn at every angle, with police and ambulance lights turning along.',
+      'Cars are loud: a rolling engine carries farther than a shotgun blast and roars louder the faster you go, so expect company.',
     ],
   },
   {
@@ -54,7 +55,7 @@ export const CHANGE_NOTES: readonly ChangeNote[] = [
     deck: 'Plow through wandering hordes, honk the horn, and listen for the engine.',
     points: [
       'Rolling cars crush walking corpses on impact and shove stragglers out of the lane.',
-      'Press H to sound the horn and pull every zombie in earshot straight toward your bumper.',
+      'Press Space to sound the horn. It carries farther than any gun and pulls every zombie in earshot straight toward your bumper.',
       'Rumbling engines, squealing tires, slam doors and violent crash crunches bring the street alive.',
     ],
   },
