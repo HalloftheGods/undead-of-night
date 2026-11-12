@@ -56,6 +56,8 @@ export interface Beacon {
   readonly phase: number;
   /** The map prop this bar sits on, or the driven car's id: a bar on a car that has driven off is the car's own. */
   readonly index?: number;
+  /** The ground line the road glow's height is measured up from, when it is not the bar's own y: a turned car is pinned at its centre, its glow stays on its foot. */
+  readonly groundY?: number;
 }
 
 /** The bars still standing on their parked cars, those of cars that have driven off left out. */
@@ -90,7 +92,7 @@ export interface BeaconPool {
 
 export function beaconPool(beacon: Beacon, time: number, reducedMotion: boolean): BeaconPool {
   const frame = beaconFrame(beacon, time, reducedMotion);
-  return { x: beacon.x, y: beacon.y - GLOW_HEIGHT, radius: GLOW_RADIUS, color: beacon.glow[frame % beacon.glow.length], strength: GLOW_STRENGTH };
+  return { x: beacon.x, y: (beacon.groundY ?? beacon.y) - GLOW_HEIGHT, radius: GLOW_RADIUS, color: beacon.glow[frame % beacon.glow.length], strength: GLOW_STRENGTH };
 }
 
 /** The part of the world a bar must stand in to be drawn, and the view's top-left corner. */

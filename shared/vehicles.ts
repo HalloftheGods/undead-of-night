@@ -8,7 +8,8 @@ import type { PlayerState, SimState, VehicleState, ZombieState } from './sim-sta
 import { emit } from './sim-state.ts';
 import { FACING_HEADING, VEHICLE_BODIES } from './vehicle-bodies.ts';
 import { driveableProps, isResting, restBoxOf, vehicleChoiceAt } from './vehicle-choice.ts';
-import { carMayStandAt } from './vehicle-footprint.ts';
+import { carBlockedAt, carMayStandAt } from './vehicle-footprint.ts';
+import { capsuleBlocked } from './vehicle-physics.ts';
 import { circleHitsSolid, liftProp, restoreSolids, setSolid } from './world-query.ts';
 import type { Box } from './world-query.ts';
 
@@ -101,14 +102,25 @@ function shove(sim: SimState, box: Box, body: PlayerState | ZombieState, r: numb
   body.y = spot.y;
 }
 
+/** Whether the car would still be clear of every wall, door and edge if it stood here at this heading. */
+function fitsAt(sim: SimState, car: VehicleState, heading: number): boolean {
+  const isBlocked = (x: number, y: number, r: number): boolean => carBlockedAt(sim.map, x, y, r, (dx, dy, dr) => doorBlocksCircle(sim, dx, dy, dr));
+  return !capsuleBlocked(car.body, car.x, car.y, heading, isBlocked);
+}
+
 /**
  * The car has stopped: it is a solid again, and anyone or anything it stopped on is put off its edge.
- * With nobody at the wheel it settles square to its facing, the way the art draws a parked car.
+ * With nobody at the wheel it settles square to its facing, the way the art draws a parked car, unless
+ * turning it square would swing an end into a wall: left against one at an angle it stays at that angle,
+ * since a car inside a wall can never drive off again.
  */
 export function restVehicle(sim: SimState, car: VehicleState): void {
   car.speed = 0;
   const unattended = car.seats[0] === null;
-  if (unattended) car.heading = FACING_HEADING[car.facing];
+  const square = FACING_HEADING[car.facing];
+  // The car's own solid from its last rest would block it from squaring up, so it comes out for the check.
+  setSolid(sim.map, solidKey(car), null);
+  if (unattended && fitsAt(sim, car, square)) car.heading = square;
   const box = restBoxOf(car);
   setSolid(sim.map, solidKey(car), box);
   solidsChanged(sim);

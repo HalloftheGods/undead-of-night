@@ -123,9 +123,12 @@ export function buildVehicleArt(env: SideOnArt): VehicleArt {
   const police = env.beacons.police_h!;
   const policeN = env.beacons.police_v!;
   const ambulanceW = env.beacons.ambulance_h!;
+  // Frame 0 lights the car's left half in every facing. Side-on that is the upper half going east, so going
+  // west (where the left is the lower half) the drawn clip's frames run the other way.
+  const leftFirst = (clip: Clip): Clip => ({ ...clip, frames: [...clip.frames].reverse() });
   const vehicleBeacons: Partial<Record<VehicleBody, Facings<Clip>>> = {
-    police: { w: police, e: mirrorClip(police), n: policeN, s: policeSLights() },
-    ambulance: { w: ambulanceW, e: mirrorClip(ambulanceW), n: ambulanceLights(true), s: ambulanceLights(false) },
+    police: { w: leftFirst(police), e: mirrorClip(police), n: policeN, s: policeSLights() },
+    ambulance: { w: leftFirst(ambulanceW), e: mirrorClip(ambulanceW), n: ambulanceLights(true), s: ambulanceLights(false) },
   };
   return { vehicles, vehicleBeacons };
 }

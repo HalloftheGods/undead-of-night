@@ -10,9 +10,13 @@ import type { GameSimulation } from '../shared/simulation.ts';
 import { FACING_HEADING, parkedVehicle } from '../shared/vehicle-bodies.ts';
 import { driveableProps, vehicleChoiceAt } from '../shared/vehicle-choice.ts';
 import type { ParkedCar } from '../shared/vehicle-choice.ts';
+import { capsuleBlocked } from '../shared/vehicle-physics.ts';
+import { restVehicle } from '../shared/vehicles.ts';
+import { carBlockedAt } from '../shared/vehicle-footprint.ts';
 import { buildingAt, circleHitsSolid, isLifted, setSolid } from '../shared/world-query.ts';
 import type { Box } from '../shared/world-query.ts';
 import { eventsOf, input, quietSim, steps } from './helpers/sim-harness.ts';
+import { seatDriver } from './helpers/vehicle-scene.ts';
 
 type Spot = { x: number; y: number };
 type Keys = { up?: boolean; down?: boolean; left?: boolean; right?: boolean };
@@ -361,5 +365,39 @@ describe('vehicles: every parked car on a town can be driven away', () => {
     expect(stuck).toEqual([]);
     expect(driveableProps(state.map).length).toBeGreaterThan(10);
     expect(unreachable.length).toBeLessThan(driveableProps(state.map).length / 2);
+  });
+});
+
+describe('vehicles: a car left at an angle', () => {
+  it('keeps its heading when snapping square would push an end into a wall, so it can drive off again', () => {
+    const { sim, state } = quietSim();
+    const { car, heading, nose } = seatDriver(sim, state);
+    const blocked = (x: number, y: number, r: number): boolean => carBlockedAt(state.map, x, y, r, () => false);
+    // A wall across the nose 21.5px out: the angled car's front just clears it, the square car's does not.
+    const [wx, wy] = [car.x + nose.x * 21.5, car.y + nose.y * 21.5];
+    const span = (at: number, along: number): [number, number] => [Math.min(at, at + along), Math.max(at, at + along)];
+    const [x0, x1] = nose.x !== 0 ? span(wx, nose.x * 120) : [car.x - 120, car.x + 120];
+    const [y0, y1] = nose.y !== 0 ? span(wy, nose.y * 120) : [car.y - 120, car.y + 120];
+    setSolid(state.map, 'test-wall', { x0, y0, x1, y1 });
+    setSolid(state.map, `vehicle:${car.id}`, null);
+    car.seats[0] = null;
+    car.heading = heading + 0.37;
+    expect(capsuleBlocked(car.body, car.x, car.y, car.heading, blocked)).toBe(false);
+    expect(capsuleBlocked(car.body, car.x, car.y, FACING_HEADING[car.facing], blocked)).toBe(true);
+    restVehicle(state, car);
+    expect(car.heading).toBeCloseTo(heading + 0.37, 9);
+    setSolid(state.map, `vehicle:${car.id}`, null);
+    expect(capsuleBlocked(car.body, car.x, car.y, car.heading, blocked)).toBe(false);
+  });
+
+  it('still settles square when there is room', () => {
+    const { sim, state } = quietSim();
+    const { car, heading } = seatDriver(sim, state);
+    car.seats[0] = null;
+    car.heading = heading + 0.37;
+    restVehicle(state, car);
+    expect(car.heading).toBe(heading);
+    restVehicle(state, car);
+    expect(car.heading).toBe(heading);
   });
 });

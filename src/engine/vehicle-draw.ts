@@ -42,16 +42,24 @@ export function vehicleSprite(art: ArtBook, car: Posed, parked: Pick<PropInstanc
   return turn === null ? art.vehicles[car.body][facingDrawn(car)][coat] : turnSprite(art, car.body, coat, turn);
 }
 
-/** Where the car stands on screen, in whole pixels: its footprint's bottom edge, which is also what it is sorted by. */
-export function vehicleAnchor(car: Pick<VehicleView, 'body' | 'facing' | 'x' | 'y'>): { readonly x: number; readonly y: number } {
-  const at = anchorOfCentre(car.body, car.facing, car.x, car.y);
+/**
+ * Where the car stands on screen, in whole pixels: the foot of what is drawn, which is also what it is sorted by.
+ * Square to the screen that is its footprint's bottom edge; between facings it is the foot of the turn model's ground.
+ */
+export function vehicleAnchor(car: Pick<VehicleView, 'body' | 'facing' | 'x' | 'y'> & { readonly heading?: number }): { readonly x: number; readonly y: number } {
+  const turn = turnOf(car);
+  if (turn !== null) {
+    const ground = turnGround(VEHICLE_BODIES[car.body], turnHeading(turn));
+    return { x: Math.round(car.x), y: Math.round(car.y + ground.drop + ground.h / 2) };
+  }
+  const at = anchorOfCentre(car.body, facingDrawn(car), car.x, car.y);
   return { x: Math.round(at.x), y: Math.round(at.y) };
 }
 
 /** Where the car's picture is pinned: a hand-drawn facing at its footprint's bottom edge like a prop, a turn model at the car's centre. */
 function pictureSpot(car: Placed): { readonly x: number; readonly y: number } {
   if (turnOf(car) !== null) return { x: Math.round(car.x), y: Math.round(car.y) };
-  return vehicleAnchor({ ...car, facing: facingDrawn(car) });
+  return vehicleAnchor(car);
 }
 
 /** A flat pixel ellipse, rows stepped by hand so the edge stays hard. */
@@ -96,7 +104,7 @@ export function vehicleBeacons(art: ArtBook, cars: readonly VehicleView[], props
     if (!clip || !glow) continue;
     const at = pictureSpot(car);
     const parked = props[car.id]?.prop;
-    beacons.push({ x: at.x, y: at.y, clip, glow, phase: parked ? coatIndex(parked, 1000) / 1000 : 0, index: car.id });
+    beacons.push({ x: at.x, y: at.y, groundY: vehicleAnchor(car).y, clip, glow, phase: parked ? coatIndex(parked, 1000) / 1000 : 0, index: car.id });
   }
   return beacons;
 }

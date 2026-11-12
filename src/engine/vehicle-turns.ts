@@ -67,18 +67,26 @@ export function turnSprite(art: ArtBook, body: VehicleBody, coat: number, step: 
   return remember(cacheOf(art).sprites, `${body}:${coat}:${step}`, () => renderTurn(modelOf(art, body, coat), turnHeading(step)));
 }
 
+/** Whether this body's picture and light bar at this step are already drawn, or there is nothing to draw (a hand-drawn step). */
+export function isTurnWarm(art: ArtBook, body: VehicleBody, coat: number, step: number): boolean {
+  if (squareFacing(step) !== null) return true;
+  const { sprites, beacons } = cacheOf(art);
+  const hasSprite = sprites.has(`${body}:${coat}:${step}`);
+  const hasBar = art.vehicleBeacons[body] === undefined || beacons.has(`${body}:${step}`);
+  return hasSprite && hasBar;
+}
+
 /**
- * Draws one more of a coat's turn models, the nearest to `step` not drawn yet, and says whether there
- * was one left. Called once a frame for a moving car, it spreads the ring's cost so no turn stutters.
+ * Draws one more of a coat's turn models and light bars, the nearest to `step` not drawn yet, and says
+ * whether there was one left. Called once a frame for a moving car, it spreads the ring's cost so no turn stutters.
  */
 export function warmTurn(art: ArtBook, body: VehicleBody, coat: number, step: number): boolean {
-  const { sprites } = cacheOf(art);
   for (let away = 0; away <= TURN_STEPS / 2; away += 1) {
     for (const side of [1, -1]) {
       const near = (step + side * away + TURN_STEPS) % TURN_STEPS;
-      const isWanted = squareFacing(near) === null && !sprites.has(`${body}:${coat}:${near}`);
-      if (!isWanted) continue;
+      if (isTurnWarm(art, body, coat, near)) continue;
       turnSprite(art, body, coat, near);
+      turnBeacon(art, body, near);
       return true;
     }
   }

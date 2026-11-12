@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 import type { VehicleView } from '../shared/protocol.ts';
 import { FACING_HEADING, VEHICLE_BODY_IDS } from '../shared/vehicle-bodies.ts';
 import { buildArtBook } from '../src/art/index.ts';
+import type { ArtBook } from '../src/art/types.ts';
 import type { PixelSprite } from '../src/art/types.ts';
-import { vehicleBeacons, vehicleSprite } from '../src/engine/vehicle-draw.ts';
-import { squareFacing, TURN_STEPS, turnBeacon, turnHeading, turnSprite, turnStepOf, warmTurn } from '../src/engine/vehicle-turns.ts';
+import { beaconPool } from '../src/engine/car-looks.ts';
+import { vehicleAnchor, vehicleBeacons, vehicleSprite } from '../src/engine/vehicle-draw.ts';
+import { isTurnWarm, squareFacing, TURN_STEPS, turnBeacon, turnHeading, turnSprite, turnStepOf, warmTurn } from '../src/engine/vehicle-turns.ts';
 
 const art = buildArtBook();
 const QUARTER = TURN_STEPS / 4;
@@ -154,5 +156,69 @@ describe('drawing a turning car', () => {
     const [bar] = vehicleBeacons(art, [view({ heading: 0.6 })], []);
     expect(bar.clip).toBe(turnBeacon(art, 'police', turnStepOf(0.6)));
     expect([bar.x, bar.y]).toEqual([300, 200]);
+  });
+});
+
+describe('where a turning car sorts and glows', () => {
+  const at = (heading: number): VehicleView => ({ id: 4, body: 'police', x: 300, y: 200, heading, speed: 90, facing: 'e', seats: ['a'] });
+  const lowestOffset = (sprite: PixelSprite): number => {
+    for (let y = sprite.h - 1; y >= 0; y -= 1) {
+      for (let x = 0; x < sprite.w; x += 1) if (sprite.rgba[(y * sprite.w + x) * 4 + 3] > 0) return y - sprite.ay;
+    }
+    return 0;
+  };
+
+  it('sorts a car by the foot of the picture it is drawn as, whichever facing the physics still holds', () => {
+    for (const body of VEHICLE_BODY_IDS) {
+      for (const step of betweenSteps) {
+        const car: VehicleView = { ...at(turnHeading(step)), body };
+        const sprite = vehicleSprite(art, car, undefined);
+        const foot = car.y + lowestOffset(sprite);
+        expect(Math.abs(vehicleAnchor(car).y - foot), `${body} ${step}`).toBeLessThanOrEqual(6);
+      }
+    }
+  });
+
+  it('moves the sort line smoothly through the square facings, with no jump at the boundary', () => {
+    for (const step of Array.from({ length: TURN_STEPS }, (_, i) => i)) {
+      const a = vehicleAnchor(at(turnHeading(step))).y;
+      const b = vehicleAnchor(at(turnHeading(step + 1))).y;
+      expect(Math.abs(a - b), `step ${step}`).toBeLessThanOrEqual(7);
+    }
+  });
+
+  it('keeps a light bar glow on the same ground line as the car, so it does not jump at a square facing', () => {
+    const glowY = (heading: number): number => {
+      const [bar] = vehicleBeacons(art, [at(heading)], []);
+      return beaconPool(bar, 0, true).y;
+    };
+    for (const step of Array.from({ length: TURN_STEPS }, (_, i) => i)) {
+      expect(Math.abs(glowY(turnHeading(step)) - glowY(turnHeading(step + 1))), `step ${step}`).toBeLessThanOrEqual(7);
+    }
+  });
+
+  it('lights the same half of the car on frame 0 all the way round: its left', () => {
+    const litHalf = (sprite: PixelSprite, across: 'x' | 'y', heading: number): number => {
+      let sum = 0; let count = 0;
+      for (let y = 0; y < sprite.h; y += 1) for (let x = 0; x < sprite.w; x += 1) {
+        if (sprite.rgba[(y * sprite.w + x) * 4 + 3] === 0) continue;
+        sum += across === 'x' ? x - sprite.ax : y - sprite.ay; count += 1;
+      }
+      return count ? sum / count : 0;
+    };
+    // East: the car's left is north (up), so frame 0 sits above the middle; west: the left is south, so it sits below.
+    const east = litHalf(art.vehicleBeacons.police!.e.frames[0], 'y', 0);
+    const west = litHalf(art.vehicleBeacons.police!.w.frames[0], 'y', Math.PI);
+    expect(east).toBeLessThan(litHalf(art.vehicleBeacons.police!.e.frames[1], 'y', 0));
+    expect(west).toBeGreaterThan(litHalf(art.vehicleBeacons.police!.w.frames[1], 'y', Math.PI));
+  });
+
+  it('warms the light bars too, a step at a time, so no turn builds one in the middle of a frame', () => {
+    const fresh: ArtBook = { ...art };
+    expect(isTurnWarm(fresh, 'police', 0, 3)).toBe(false);
+    let drawn = 0;
+    while (warmTurn(fresh, 'police', 0, 5)) drawn += 1;
+    expect(drawn).toBe(betweenSteps.length);
+    expect(betweenSteps.every((step) => isTurnWarm(fresh, 'police', 0, step))).toBe(true);
   });
 });
