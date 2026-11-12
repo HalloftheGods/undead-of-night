@@ -7,6 +7,7 @@ import { dirFromAngle } from '../art/types.ts';
 import type { ArtBook } from '../art/types.ts';
 import { drawOutlinedText, FONT_HEIGHT } from './bitmap-font.ts';
 import { ammoPrompt } from './ammo-prompt.ts';
+import { vehiclePrompt } from './vehicle-prompt.ts';
 import type { SceneView } from './scene.ts';
 import { climbPrompt } from '../../shared/take-manhole.ts';
 import { doorPrompt } from '../../shared/door-view.ts';
@@ -356,7 +357,7 @@ export class OverlayRenderer {
       if (!isLocal) continue;
       const call = ammoPrompt(player, { touch: Boolean(scene.touch), atHome: scene.merchants !== undefined, time });
       if (!call?.lit) continue;
-      const lineTaken = player.search > 0 || prompted || atStation || atClimb || atRadioTower || atDoor;
+      const lineTaken = player.search > 0 || atVehicle || prompted || atStation || atClimb || atRadioTower || atDoor;
       drawOutlinedText(ctx, call.text, x, lineTaken ? y - FONT_HEIGHT - 3 : y, hitPalette().danger);
     }
   }
@@ -364,7 +365,9 @@ export class OverlayRenderer {
   /** Who is holding pay at the stall the local player stands at, if anyone: it replaces the stall's name in the prompt. */
   private payFrom(scene: SceneView): string | undefined {
     return scene.questMarks?.find((mark) => mark.ready && mark.merchant === scene.station)?.name;
+      const atVehicle = isLocal && scene.vehicle !== undefined;
   }
+      else if (atVehicle) drawOutlinedText(ctx, vehiclePrompt(scene.vehicle!, Boolean(scene.touch)), x, y, AMBER);
 
   /** A "!" over each stall with work to take (pale) or pay to collect (amber). */
   private drawQuestMarks(ctx: CanvasRenderingContext2D, scene: SceneView, left: number, top: number): void {

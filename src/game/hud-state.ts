@@ -69,6 +69,8 @@ export interface KeepsakeCard {
 }
 
 export interface HudState {
+  /** The local player sits in a car, so touch shows the horn. */
+  readonly seated?: boolean;
   readonly health: number;
   readonly maxHealth: number;
   readonly status: PlayerStatus;
@@ -259,6 +261,7 @@ export interface UiState {
 export function buildHud(snapshot: SnapshotPacket, local: PlayerEntity, spectating: string | null): HudState {
   return {
     health: local.health,
+    seated: local.vehicle !== undefined,
     maxHealth: local.maxHealth,
     status: local.status,
     weapon: local.weapon,

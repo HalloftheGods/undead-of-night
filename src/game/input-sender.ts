@@ -33,7 +33,7 @@ export class InputSender {
       const point = this.aimPoint;
       const aimFields = point ? { aimX: point.x, aimY: point.y } : {};
       transport.sendInput({ ...this.input.sample(this.seq, aim, world.localPlayer), ...aimFields });
-      world.predictor.record(this.seq, dirX, dirY);
+      world.recordInput(this.seq, dirX, dirY);
     }
     const fellBehind = this.clock >= TICK_DT;
     if (fellBehind) this.clock = 0;
@@ -44,6 +44,6 @@ export class InputSender {
     this.seq += 1;
     const angle = world.localPlayer?.angle ?? 0;
     transport.sendInput(this.input.sample(this.seq, angle, null));
-    world.predictor.record(this.seq, 0, 0);
+    world.recordInput(this.seq, 0, 0);
   }
 }

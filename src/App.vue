@@ -10,7 +10,7 @@
         <template v-if="ui.hud && ui.art">
           <HudOverlay :hud="ui.hud" :art="ui.art" :mode="ui.mode" :signal-weak="ui.signalWeak" :place="ui.place" :home="ui.home" :log="ui.log" />
         <DownedOverlay v-if="ui.hud.status !== 'alive'" :hud="ui.hud" :mode="ui.mode" />
-        <TouchControls v-if="ui.touch && !ui.bagOpen && !ui.paused && !inventory.isOpen.value" />
+        <TouchControls v-if="ui.touch && !ui.bagOpen && !ui.paused && !inventory.isOpen.value" :seated="ui.hud?.seated === true" />
         <!-- The backpack ring: the Backpack button on a phone, a middle-click on a desktop. -->
         <BackpackWheel
           v-if="ui.backpackOpen"

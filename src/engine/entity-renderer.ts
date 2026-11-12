@@ -12,6 +12,7 @@ import type {
   PlayerEntity,
   PropInstance,
   WorldMap,
+  VehicleView,
   ZombieEntity,
   ZombieType,
 } from '../../shared/protocol.ts';
@@ -19,9 +20,10 @@ import type { MerchantEntity } from '../../shared/home-protocol.ts';
 import { containerLook } from '../art/containers.ts';
 import { magLanding } from '../art/survivors/clips.ts';
 import { drawMerchant, MERCHANT_SHADOW_WIDTH } from './merchant-figures.ts';
-import { beaconsOn, drawBeacons, paintedContainer, propSprite } from './car-looks.ts';
+import { beaconsOn, drawBeacons, paintedContainer, parkedBeacons, propSprite } from './car-looks.ts';
 import type { Beacon } from './car-looks.ts';
 import type { ContainerArt } from '../art/containers.ts';
+import { drawVehicle, drawVehicleShadow, vehicleAnchor, vehicleBeacons } from './vehicle-draw.ts';
 import { dirFromAngle } from '../art/types.ts';
 import type { ArtBook, PixelSprite } from '../art/types.ts';
 import { buildBackpackSprite } from '../art/fx/backpack-art.ts';
@@ -103,6 +105,7 @@ type DrawItem =
   | { readonly y: number; readonly kind: 'pickup'; readonly pickup: PickupEntity }
   | { readonly y: number; readonly kind: 'exit'; readonly exit: ExitEntity }
   | { readonly y: number; readonly kind: 'chest' };
+  | { readonly y: number; readonly kind: 'vehicle'; readonly vehicle: VehicleView }
 
 const shadows = new Map<number, HTMLCanvasElement>();
 
@@ -291,7 +294,9 @@ export class EntityRenderer {
     const visible = (x: number, y: number) =>
       x > left - CULL_MARGIN && x < right + CULL_MARGIN && y > top - CULL_MARGIN && y < bottom + CULL_MARGIN;
 
-    for (const placed of this.props) {
+    const driven = new Set((scene.vehicles ?? []).map((car) => car.id));
+    for (const [index, placed] of this.props.entries()) {
+      if (driven.has(index)) continue;
       const onScreen = placed.x1 > left && placed.x0 < right && placed.y1 > top && placed.y0 < bottom;
       const roomClosed = placed.room !== null && placed.room.reveal === 0;
       const shown = onScreen && !roomClosed && !hiddenProp(placed.prop.kind, scene.overrunOn === true);
@@ -305,7 +310,11 @@ export class EntityRenderer {
       if (onScreen) items.push({ y: placed.depthY, kind: 'building', building: placed });
     }
     for (const player of scene.players) {
-      if (visible(player.x, player.y)) items.push({ y: player.y, kind: 'player', player });
+    for (const car of scene.vehicles ?? []) {
+      if (visible(car.x, car.y)) items.push({ y: vehicleAnchor(car).y, kind: 'vehicle', vehicle: car });
+    }
+      const isSeated = player.vehicle !== undefined;
+      if (visible(player.x, player.y) && !isSeated) items.push({ y: player.y, kind: 'player', player });
     }
     for (const zombie of scene.zombies) {
       const shown = !this.killed.has(zombie.id) && visible(zombie.x, zombie.y);
@@ -364,6 +373,7 @@ export class EntityRenderer {
       else if (item.kind === 'zombie') this.drawZombie(ctx, item.zombie, left, top, time);
       else if (item.kind === 'merchant') drawMerchant(ctx, this.visuals, this.survivorFrames, item.merchant, onScreen(item.merchant, left, top), time);
       else if (item.kind === 'exit') drawSprite(ctx, this.art.environment.escapeVan, Math.round(item.exit.x) - left, Math.round(item.exit.y) - top);
+      else if (item.kind === 'vehicle') drawVehicle(ctx, this.art, item.vehicle, this.props[item.vehicle.id]?.prop, left, top);
       else if (item.kind === 'chest') drawSprite(ctx, this.art.environment.props.chest, CHEST_SPOT.x - left, CHEST_SPOT.y - top);
       else this.drawPickup(ctx, item.pickup, left, top, time);
     }
@@ -461,6 +471,15 @@ export class EntityRenderer {
     else if (item.kind === 'zombie') this.drawZombieShadow(ctx, item.zombie, left, top);
     else if (item.kind === 'merchant') this.drawMerchantShadow(ctx, item.merchant, left, top);
   }
+    else if (item.kind === 'vehicle') drawVehicleShadow(ctx, item.vehicle, left, top);
+  }
+
+  /** Every light bar to draw and glow this frame: those on cars still parked, and those on cars that have been driven. */
+  activeBeacons(scene: SceneView): Beacon[] {
+    const cars = scene.vehicles ?? [];
+    if (cars.length === 0) return this.beacons;
+    const lifted = new Set(cars.map((car) => car.id));
+    return [...parkedBeacons(this.beacons, lifted), ...vehicleBeacons(this.art, cars, this.props)];
 
   private drawMerchantShadow(ctx: CanvasRenderingContext2D, merchant: MerchantEntity, left: number, top: number): void {
     const standing = merchant.status === 'alive';
@@ -533,7 +552,7 @@ export class EntityRenderer {
       const onScreen = fire.x1 > left && fire.x0 < left + viewW && fire.y1 > top - 24 && fire.y0 < top + viewH;
       if (onScreen) drawSprite(ctx, clipFrame(flames, time + fire.prop.x), Math.round(fire.prop.x) - left, Math.round(fire.prop.y) - top);
     }
-    drawBeacons(ctx, this.beacons, { x0: left - CULL_MARGIN, y0: top, x1: left + viewW + CULL_MARGIN, y1: top + viewH + CULL_MARGIN, left, top }, time, this.reducedMotion);
+    drawBeacons(ctx, this.activeBeacons(scene), { x0: left - CULL_MARGIN, y0: top, x1: left + viewW + CULL_MARGIN, y1: top + viewH + CULL_MARGIN, left, top }, time, this.reducedMotion);
     if (scene.exit) {
       const lamps = clipFrame(this.art.environment.escapeVanLights, this.reducedMotion ? 0 : time);
       drawSprite(ctx, lamps, Math.round(scene.exit.x) - left, Math.round(scene.exit.y) - top);

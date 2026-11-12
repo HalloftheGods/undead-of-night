@@ -1,7 +1,7 @@
 import type { Container } from '../../shared/containers.ts';
 import type { DoorChoice, PlacedDoor } from '../../shared/door-view.ts';
 import type { LeftoverView } from '../../shared/leftovers.ts';
-import type { BulletEntity, DropView, EntityId, ExitEntity, GamePhase, PickupEntity, PlayerEntity, TrackEntity, ZombieEntity } from '../../shared/protocol.ts';
+import type { BulletEntity, DropView, EntityId, ExitEntity, GamePhase, PickupEntity, PlayerEntity, TrackEntity, VehicleView, ZombieEntity } from '../../shared/protocol.ts';
 import type { MerchantEntity, MerchantId, OverrunView, StationId } from '../../shared/home-protocol.ts';
 
 export { CHEST_HEIGHT } from '../../shared/constants.ts';
@@ -33,6 +33,12 @@ export interface QuestMark {
   readonly ready: boolean;
 }
 
+/** What the search key would do at a car: get in or get out, and whether a boot there could be searched too. */
+export interface VehicleHint {
+  readonly kind: 'enter' | 'exit';
+  readonly boot: boolean;
+}
+
 /** Everything the renderer draws this frame. Plain values; nothing here is reactive. */
 export interface SceneView {
   readonly players: readonly PlayerEntity[];
@@ -51,6 +57,10 @@ export interface SceneView {
   readonly leftovers?: readonly LeftoverView[];
   /** Footprints in the snow, drawn on the ground. Absent outside a snowy town. */
   readonly tracks?: readonly TrackEntity[];
+  /** Every car that has been driven, where it is drawn this frame. Absent while all of them stand parked. */
+  readonly vehicles?: readonly VehicleView[];
+  /** What the search key would do at a car, for the local player. Absent when it does neither. */
+  readonly vehicle?: VehicleHint;
   /** What the local player could search from where they stand, if anything. */
   readonly searchable: Container | null;
   /** The bunker's merchants, where they are walking. Absent anywhere else. */

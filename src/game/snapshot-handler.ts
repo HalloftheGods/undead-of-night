@@ -18,6 +18,7 @@ import { loadBests } from './trip-record.ts';
 import { CANDIES } from '../../shared/candy.ts';
 import type { StatKey } from '../../shared/character-stats.ts';
 import type { CandyId } from '../../shared/protocol.ts';
+import { crashShake } from '../engine/vehicle-draw.ts';
 import {
   addExperience,
   allocateEarnedAp,
@@ -180,6 +181,8 @@ export class SnapshotHandler {
       localY: world.predictor.y,
       pickupNote: note,
     });
+    const isLocalCrash = event.type === 'vehicle_crash' && event.vehicle === world.localVehicleId;
+    if (isLocalCrash) renderer?.effects.addShake(crashShake(event.strength));
     const isLocalContainer = event.type === 'container_opened' && event.playerId === world.localId;
     if (isLocalContainer) this.actionScores.search += 8;
     const isLocalPlank = event.type === 'plank_added';

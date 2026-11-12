@@ -16,6 +16,7 @@ import type { Rgb, ScreenRect } from './light-field.ts';
 import { lampWorks } from './level-look.ts';
 import { flicker, Lighting } from './lighting.ts';
 import { OcclusionGrid } from './occlusion.ts';
+import { addVehicleHeadlights } from './vehicle-lights.ts';
 import { OverlayRenderer } from './overlay-renderer.ts';
 import type { PlacedDoor } from '../../shared/door-view.ts';
 import type { SceneView } from './scene.ts';
@@ -263,7 +264,7 @@ export class WorldRenderer {
       const strength = (light.flicker ? flicker(this.time, i) : 1) * LAMP_STRENGTH * look.lampStrength;
       lighting.addPool(light.x - left, light.y - top, light.radius * LAMP_REACH, look.lampColor ?? light.color, strength);
     }
-    for (const beacon of this.entities.beacons) {
+    for (const beacon of this.entities.activeBeacons(scene)) {
       const pool = beaconPool(beacon, this.time, this.reducedMotion);
       lighting.addPool(pool.x - left, pool.y - top, pool.radius, pool.color, pool.strength);
     }
@@ -284,6 +285,7 @@ export class WorldRenderer {
       const underRoof = this.buildings.isHidden(pulse.x, pulse.y);
       if (!underRoof) lighting.addPool(x, y, pulse.radius, pulse.color, pulse.life / pulse.maxLife, this.keepInRoom(room, x, y));
     }
+    addVehicleHeadlights(lighting, this.occlusion, scene.vehicles ?? [], FLASHLIGHT_REACH, left, top);
     for (const player of scene.players) {
       this.addPlayerLight(player, scene.viewerId, room, left, top);
     }
@@ -314,6 +316,8 @@ export class WorldRenderer {
     // A teammate's light in another building stays in there; it would only paint the roof.
     const unlit = player.status === 'dead' || this.buildings.isHidden(player.x, player.y);
     if (unlit) return;
+    const isSeated = player.vehicle !== undefined;
+    if (isSeated) return;
     const isDowned = player.status === 'downed';
     if (isDowned) {
       this.lighting.addPool(x, y, isViewer ? DOWNED_AURA_RADIUS : TEAM_AURA_RADIUS, AURA_COLOR, TEAM_AURA_STRENGTH, clip);

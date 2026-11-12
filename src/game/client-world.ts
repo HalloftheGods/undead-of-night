@@ -1,6 +1,5 @@
 import { candySpeed } from '../../shared/candy.ts';
 import { PLAYER_RADIUS, PLAYER_SPEED, TICK_DT } from '../../shared/constants.ts';
-import { containerInReach } from '../../shared/containers.ts';
 import type { Container } from '../../shared/containers.ts';
 import { isBunkerMap } from '../../shared/home-protocol.ts';
 import type { OverrunPhase, StationId } from '../../shared/home-protocol.ts';
@@ -15,8 +14,13 @@ import { radioTowerNear } from '../../shared/radio-tower.ts';
 import { openableStation } from '../../shared/stations.ts';
 import { groundSpeedScale } from '../../shared/town-rules.ts';
 import type { DoorView, EntityId, PlayerEntity, SnapshotPacket, Stance, WorldMap } from '../../shared/protocol.ts';
+import { containerInReachOf, vehicleChoiceAt } from '../../shared/vehicle-choice.ts';
+import type { VehicleMotion } from '../../shared/vehicle-physics.ts';
+import type { VehicleView } from '../../shared/protocol.ts';
+import { restoreSolids } from '../../shared/world-query.ts';
 import { buildingAt, circleHitsSolid } from '../../shared/world-query.ts';
 import type { SceneView } from '../engine/scene.ts';
+import { ClientVehicles } from './client-vehicles.ts';
 import { LocalPredictor } from './prediction.ts';
 import { extrapolateBullets, interpolateMerchants, interpolatePlayers, interpolateZombies, SnapshotBuffer } from './snapshot-buffer.ts';
 import type { SnapshotSample } from './snapshot-buffer.ts';
@@ -25,7 +29,7 @@ const MAX_BULLET_LEAD_SEC = 0.1;
 
 export type WorldEntities = Pick<
   SceneView,
-  'players' | 'zombies' | 'merchants' | 'bullets' | 'pickups' | 'exit' | 'drop' | 'openedContainers' | 'leftovers' | 'tracks' | 'searchable' | 'station' | 'climb' | 'doors' | 'door' | 'radioTower' | 'overrun' | 'localId' | 'viewerId' | 'focusX' | 'focusY' | 'phase' | 'hostiles'
+  'players' | 'zombies' | 'merchants' | 'bullets' | 'pickups' | 'exit' | 'drop' | 'openedContainers' | 'leftovers' | 'tracks' | 'vehicles' | 'vehicle' | 'searchable' | 'station' | 'climb' | 'doors' | 'door' | 'radioTower' | 'overrun' | 'localId' | 'viewerId' | 'focusX' | 'focusY' | 'phase' | 'hostiles'
 >;
 
 /** The bunker's merchants where they are drawn; left off anywhere without them. */
@@ -69,6 +73,21 @@ export class ClientWorld {
     return this.latest?.doors ?? [];
   }
 
+  private readonly cars = new ClientVehicles({ map: () => this.map, doors: () => this.doors, level: () => this.level });
+  /** The cars as drawn this frame, for what the search key can reach. */
+  private shownCars: readonly VehicleView[] = [];
+
+  /** The car the local player sits in, if any: for what a crash should shake. */
+  get localVehicleId(): number | null {
+    return this.localPlayer?.vehicle?.id ?? null;
+  }
+
+  /** The sim has been sent this input: walking and driving prediction both replay it until it is acknowledged. */
+  recordInput(seq: number, dirX: number, dirY: number): void {
+    this.predictor.record(seq, dirX, dirY);
+    this.cars.record(seq, dirX, dirY);
+  }
+
   private readonly doorBlocks = (x: number, y: number, r: number): boolean => viewsBlockCircle(this.map, this.doors, x, y, r);
   private doorViewsSeen: readonly DoorView[] | null = null;
   private doorsPlaced: readonly PlacedDoor[] = [];
@@ -89,12 +108,14 @@ export class ClientWorld {
 
   /** A new run on the same connection. */
   restart(): void {
+    this.cars.reset();
     this.buffer.clear();
     this.predicting = false;
   }
 
   /** The run moved on. Nothing from the last town can be blended with, or predicted against, this one. */
   enterTown(map: WorldMap): void {
+    restoreSolids(this.map);
     this.map = map;
     this.restart();
   }
@@ -108,6 +129,7 @@ export class ClientWorld {
     this.winded = local?.winded === true;
     this.sugarSpeed = candySpeed({ sugar: (local?.sugar ?? []).map((sugar) => ({ ...sugar, total: sugar.total ?? sugar.left })) });
     this.refreshSpeed();
+    this.cars.sync(snapshot, local);
     const isPredictingLocal = local?.status === 'alive' && this.predicting;
     if (isPredictingLocal) {
       this.predictor.reconcile(local.x, local.y, local.lastInputSeq);
@@ -138,8 +160,8 @@ export class ClientWorld {
 
   /** What the local player could start searching: nothing while down, or already at it. */
   private searchableBy(player: PlayerEntity | null, _opened: readonly number[]): Container | null {
-    const free = player !== null && player.status === 'alive' && player.search === 0;
-    return free ? containerInReach(this.map, player.x, player.y) : null;
+    const free = player !== null && player.status === 'alive' && player.search === 0 && player.vehicle === undefined;
+    return free ? containerInReachOf(this.map, this.shownCars, player.x, player.y) : null;
   }
 
   /** The manhole or ladder the local player could climb from where they stand, by the sim's own range. */
@@ -163,9 +185,18 @@ export class ClientWorld {
   private doorBy(player: PlayerEntity | null): WorldEntities['door'] {
     const busy = player === null || player.status !== 'alive' || player.search !== 0;
     if (busy) return undefined;
-    const elsewhere = isBunkerMap(this.map) || containerInReach(this.map, player.x, player.y) !== null;
+    const elsewhere = isBunkerMap(this.map) || containerInReachOf(this.map, this.shownCars, player.x, player.y) !== null;
     if (elsewhere) return undefined;
     return doorChoiceAt(this.map, this.doors, player.x, player.y, this.stance === 'sneak', player.materials) ?? undefined;
+  }
+
+  /** What the search key would do at a car, by the sim's own rule, and whether a boot there could be searched too. */
+  private vehicleBy(player: PlayerEntity | null): WorldEntities['vehicle'] {
+    const idle = player === null || player.status !== 'alive' || player.search !== 0;
+    if (idle) return undefined;
+    const choice = vehicleChoiceAt(this.map, this.shownCars, player.x, player.y, player);
+    if (!choice) return undefined;
+    return { kind: choice.kind, boot: containerInReachOf(this.map, this.shownCars, player.x, player.y) !== null };
   }
 
   /** The bunker station the local player could open from where they stand, by the sim's own rule: none once one is open, or anywhere but the bunker. */
@@ -195,7 +226,11 @@ export class ClientWorld {
 
     const players = interpolatePlayers(sample);
     const local = newest.players.get(this.localId) ?? null;
-    if (local) this.placeLocal(players, local, dirX, dirY, aim, dt, newest.snapshot.phase !== 'gameover');
+    const running = newest.snapshot.phase !== 'gameover';
+    const drivenPose = this.cars.drive(local, dirX, dirY, dt, running);
+    const vehicles = this.cars.shown(sample);
+    this.shownCars = vehicles;
+    if (local) this.placeLocal(players, local, dirX, dirY, aim, dt, running, drivenPose);
 
     const shownLocal = players.find((player) => player.id === this.localId) ?? null;
     const viewer = shownLocal ? this.viewer(players, shownLocal) : players[0] ?? null;
@@ -206,8 +241,11 @@ export class ClientWorld {
     const door = this.doorBy(shownLocal);
     const doors = this.placedDoorsFor(this.doors);
     const radioTower = this.radioTowerBy(shownLocal, newest.snapshot.phase);
+    const vehicle = this.vehicleBy(shownLocal);
     return {
       players,
+      ...(vehicles.length > 0 ? { vehicles } : {}),
+      ...(vehicle ? { vehicle } : {}),
       zombies: interpolateZombies(sample),
       ...merchantsField(sample),
       bullets: extrapolateBullets(newest.snapshot.bullets, lead),
@@ -233,6 +271,17 @@ export class ClientWorld {
     };
   }
 
+  /** A seated survivor rides the car: the driver where prediction has it, a passenger where the delayed snapshot has them. Nobody walks. */
+  private seat(players: PlayerEntity[], local: PlayerEntity, drivenPose: VehicleMotion | null): void {
+    this.predicting = false;
+    this.predictor.reset(local.x, local.y);
+    const index = players.findIndex((player) => player.id === this.localId);
+    const base = index >= 0 ? players[index] : local;
+    const shown = drivenPose ? { ...base, ...local, x: drivenPose.x, y: drivenPose.y, indoors: null, moving: false } : { ...local, x: base.x, y: base.y };
+    if (index >= 0) players[index] = shown;
+    else players.push(shown);
+  }
+
   /** Swaps the delayed local entity for the predicted one, with the freshest stats. */
   private placeLocal(
     players: PlayerEntity[],
@@ -242,7 +291,13 @@ export class ClientWorld {
     aim: number,
     dt: number,
     running: boolean,
+    drivenPose: VehicleMotion | null,
   ): void {
+    const isSeated = local.vehicle !== undefined;
+    if (isSeated) {
+      this.seat(players, local, drivenPose);
+      return;
+    }
     const canMove = local.status === 'alive' && running;
     if (canMove) {
       if (!this.predicting) this.predictor.reset(local.x, local.y);

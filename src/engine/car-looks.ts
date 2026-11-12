@@ -2,6 +2,7 @@
 // ambulances, blinking over the art and throwing their colour on the road.
 
 import type { PropInstance, PropKind, WorldMap } from '../../shared/protocol.ts';
+import type { VehicleBody } from '../../shared/vehicle-bodies.ts';
 import type { ContainerArt } from '../art/containers.ts';
 import type { ArtBook, Clip, PixelSprite } from '../art/types.ts';
 import { clipIndex, drawSprite } from './sprite-cache.ts';
@@ -36,6 +37,11 @@ const GLOW: Partial<Record<PropKind, readonly string[]>> = {
   police_v: ['#e85c40', '#6488bc'],
   ambulance_h: ['#e85c40', '#faf2d4'],
 };
+/** The same glow for a car that has left its spot. */
+export const GLOW_BY_BODY: Partial<Record<VehicleBody, readonly string[]>> = {
+  police: ['#e85c40', '#6488bc'],
+  ambulance: ['#e85c40', '#faf2d4'],
+};
 const GLOW_RADIUS = 70;
 const GLOW_STRENGTH = 0.75;
 /** Up off the ground to the roof the bar sits on. */
@@ -48,16 +54,23 @@ export interface Beacon {
   readonly glow: readonly string[];
   /** Each car's bar runs out of step with the others. */
   readonly phase: number;
+  /** The map prop this bar sits on, or the driven car's id: a bar on a car that has driven off is the car's own. */
+  readonly index?: number;
+}
+
+/** The bars still standing on their parked cars, those of cars that have driven off left out. */
+export function parkedBeacons(beacons: readonly Beacon[], lifted: ReadonlySet<number>): Beacon[] {
+  return beacons.filter((beacon) => beacon.index === undefined || !lifted.has(beacon.index));
 }
 
 export function beaconsOn(art: ArtBook, map: WorldMap): Beacon[] {
   const beacons: Beacon[] = [];
-  for (const prop of map.props) {
+  for (const [index, prop] of map.props.entries()) {
     const clip = art.environment.beacons[prop.kind];
     const glow = GLOW[prop.kind];
     const hasLightBar = clip !== undefined && glow !== undefined;
     if (!hasLightBar) continue;
-    beacons.push({ x: Math.round(prop.x), y: Math.round(prop.y), clip, glow, phase: (spotHash(prop.x, prop.y) % 1000) / 1000 });
+    beacons.push({ x: Math.round(prop.x), y: Math.round(prop.y), clip, glow, phase: (spotHash(prop.x, prop.y) % 1000) / 1000, index });
   }
   return beacons;
 }
