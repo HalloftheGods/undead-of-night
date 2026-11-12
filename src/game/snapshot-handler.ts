@@ -198,7 +198,8 @@ export class SnapshotHandler {
 
     const isLocalZombieKill = event.type === 'zombie_die' && event.killerId === world.localId && event.points > 0;
     const isLocalHeadshot = event.type === 'headshot' && event.playerId === world.localId && event.points > 0;
-    const isLocalScoreGain = isLocalZombieKill || isLocalHeadshot;
+    const banksXp = !this.host.state.testDrive;
+    const isLocalScoreGain = banksXp && (isLocalZombieKill || isLocalHeadshot);
     if (isLocalScoreGain) {
       const currentProg = loadProgression();
       const gain = addExperience(currentProg, event.points);

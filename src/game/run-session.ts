@@ -50,6 +50,8 @@ export interface RunState {
   /** Set from the moment the run ends, a beat before the results show. */
   runResult: RunResult | null;
   welcomed: boolean;
+  /** A Dev: Test Drive run, which banks no XP. The map's own mark is lost on every town change. */
+  testDrive: boolean;
   lastSnapshotMs: number;
   gameOverAtMs: number;
   /** Highest level already written to storage this page load, so snapshots do not hit it every tick. */
@@ -90,7 +92,7 @@ export type CoopEntry = 'find' | 'host' | 'code';
 type OnlinePlan = { readonly kind: 'find' } | { readonly kind: 'host' } | { readonly kind: 'join'; readonly code: string };
 
 export function newRunState(): RunState {
-  return { transport: null, world: null, runResult: null, welcomed: false, lastSnapshotMs: 0, gameOverAtMs: 0, levelNoted: 0, inBunker: null, daily: null, ghost: null, stairsTransition: null };
+  return { transport: null, world: null, runResult: null, welcomed: false, testDrive: false, lastSnapshotMs: 0, gameOverAtMs: 0, levelNoted: 0, inBunker: null, daily: null, ghost: null, stairsTransition: null };
 }
 
 /** Starts, restarts and ends a run: the connection from menu to welcome to menu. */
@@ -346,6 +348,7 @@ export class RunSession {
     }
     const { state, stage } = this.host;
     state.welcomed = true;
+    state.testDrive = packet.testDrive === true;
     this.host.home.welcomed(packet);
     const map = stage.open(packet.mapSeed, packet.level);
     if (packet.testDrive) markTestDrive(map);

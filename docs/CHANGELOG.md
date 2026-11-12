@@ -2,6 +2,14 @@
 
 All notable changes to the Undead of Night: Last Round game are documented in this file.
 
+## [2026-11-12] - Level 100 curve
+
+### Changed
+- The character level cap is 100, up from 21, still 1 AP per level.
+- Level L costs round(40 × L^1.5) XP: 113 for level 2, 40,000 for level 100, 1,620,015 in all.
+- XP stops accumulating at level 100.
+- Dev: Test Drive runs grant no XP, in every town of the run.
+
 ## [2026-11-12] - Town-scaled points and once-per-kill headshots
 
 ### Changed

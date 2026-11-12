@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BUILDING_DEFS } from '../shared/protocol.ts';
-import type { GameOverStats, PlayerEntity, SnapshotPacket } from '../shared/protocol.ts';
+import type { GameEvent, GameOverStats, PlayerEntity, SnapshotPacket } from '../shared/protocol.ts';
+import { PROGRESSION_STORAGE_KEY } from '../shared/progression.ts';
+import type { ProgressionState } from '../shared/progression.ts';
 import { AudioEngine } from '../src/audio/audio-engine.ts';
 import { GameController } from '../src/game/game-controller.ts';
 import { ammoState, gunRounds, switchKey } from '../src/game/hud-state.ts';
@@ -62,6 +64,8 @@ function frame(tick: number, patch: Partial<SnapshotPacket> = {}): SnapshotPacke
 
 const endOfRun = (tick: number): SnapshotPacket => frame(tick, { phase: 'gameover', gameOver: stats });
 
+const kill = (points: number): GameEvent => ({ type: 'zombie_die', zombieId: 'z1', zombieType: 'walker', x: 500, y: 500, angle: 0, killerId: 'me', points });
+
 function memoryStorage() {
   const data = new Map<string, string>();
   return {
@@ -70,6 +74,11 @@ function memoryStorage() {
       data.set(key, value);
     },
   };
+}
+
+function savedProgression(store: ReturnType<typeof memoryStorage>): ProgressionState | null {
+  const raw = store.getItem(PROGRESSION_STORAGE_KEY);
+  return raw ? (JSON.parse(raw) as ProgressionState) : null;
 }
 
 function textField(id: string): object {
@@ -110,12 +119,12 @@ describe('game flow', () => {
     vi.restoreAllMocks();
   });
 
-  function joinRoom(): FakeSocket {
+  function joinRoom(welcome: object = {}): FakeSocket {
     vi.stubGlobal('WebSocket', FakeSocket);
     game.startCoop('arcade');
     const socket = FakeSocket.latest;
     socket.onopen?.();
-    socket.receive({ type: 'welcome', yourId: 'me', tickRate: 30, mapSeed: 4242 });
+    socket.receive({ type: 'welcome', yourId: 'me', tickRate: 30, mapSeed: 4242, ...welcome });
     return socket;
   }
 
@@ -407,6 +416,32 @@ describe('game flow', () => {
     expect(game.ui.value.best?.score).toBe(300);
     pump(2500);
     expect(game.ui.value.result?.isNewBest).toBe(true);
+  });
+
+  it('banks XP for a local kill', () => {
+    const store = memoryStorage();
+    vi.stubGlobal('localStorage', store);
+    const socket = joinRoom();
+    socket.receive(frame(50, { events: [kill(50)] }));
+    expect(savedProgression(store)?.xp).toBe(50);
+  });
+
+  it('banks no XP on a Dev: Test Drive run', () => {
+    const store = memoryStorage();
+    vi.stubGlobal('localStorage', store);
+    const socket = joinRoom({ testDrive: true });
+    socket.receive(frame(50, { events: [kill(50)] }));
+    expect(savedProgression(store)?.xp ?? 0).toBe(0);
+  });
+
+  it('banks no XP on a Dev: Test Drive run after the town changes', () => {
+    const store = memoryStorage();
+    vi.stubGlobal('localStorage', store);
+    const socket = joinRoom({ testDrive: true });
+    socket.receive(frame(50));
+    socket.receive(frame(51, { level: 2, mapSeed: 9191, events: [kill(50)] }));
+    socket.receive(frame(52, { level: 2, mapSeed: 9191, events: [kill(50)] }));
+    expect(savedProgression(store)?.xp ?? 0).toBe(0);
   });
 
   it('keeps the best run of a player the room restarts on during the death beat', () => {
