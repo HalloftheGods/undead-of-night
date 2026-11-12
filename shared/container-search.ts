@@ -1,6 +1,6 @@
 import { characterOf } from './characters.ts';
 import { rollFind } from './container-loot.ts';
-import { containerGridDimensions, containerInReach, SEARCH_SEC, townContainers } from './containers.ts';
+import { containerGridDimensions, SEARCH_SEC, townContainers } from './containers.ts';
 import type { Container, ContainerLoot } from './containers.ts';
 import { autoPackItem, createInventoryGrid } from './grid-inventory.ts';
 import type { BuildingInstance, PickupType, WorldMap } from './protocol.ts';
@@ -26,6 +26,8 @@ import { isAmmoPickup } from './pickups.ts';
 import { pick } from './rng.ts';
 import type { PickupState } from './sim-state.ts';
 import { buildingAt } from './world-query.ts';
+import { containerInReachOf } from './vehicle-choice.ts';
+import { carsOf, waitingOnTap } from './vehicles.ts';
 
 /** Odds that a search knocks something over. */
 export const CLATTER_CHANCE = 0.1;
@@ -38,10 +40,15 @@ export function stopSearch(p: PlayerState): void {
   p.search = 0;
 }
 
+/** The key is up: the next press is a fresh one. Every path through a player's tick runs this. */
+export function noteKeyRelease(p: PlayerState): void {
+  if (!p.searchHeld) p.searchSpent = false;
+}
+
 function startSearch(sim: SimState, p: PlayerState): void {
-  const free = p.searchHeld && !p.searchSpent && !p.moving;
+  const free = p.searchHeld && !p.searchSpent && !p.moving && !waitingOnTap(p);
   if (!free) return;
-  const target = containerInReach(sim.map, p.x, p.y);
+  const target = containerInReachOf(sim.map, carsOf(sim), p.x, p.y);
   if (!target) return;
   const state = sim.containers[target.id];
   if (state.opened) {
@@ -315,8 +322,7 @@ function advanceSearch(sim: SimState, p: PlayerState, id: number): void {
 
 /** Holding the key works through what is in reach. Moving or taking a hit undoes it, and it wants a fresh press. */
 export function updateSearch(sim: SimState, p: PlayerState): void {
-  const released = !p.searchHeld;
-  if (released) p.searchSpent = false;
+  noteKeyRelease(p);
   // The bunker has no containers, and `sim.containers` still holds the last town's.
   if (isBunkerMap(sim.map)) return;
   const hurt = p.health < p.searchHealth;

@@ -41,6 +41,8 @@ import { ageFootprints } from './snow-tracks.ts';
 import { noteEntered } from './leftovers.ts';
 import { giveStreakKit } from './streak-kit.ts';
 import { updateDoors } from './doors.ts';
+import { updateVehicles } from './vehicle-driving.ts';
+import { ejectOccupant } from './vehicles.ts';
 import { rebuildZombieGrid, removeDeadZombies, updateZombies } from './zombies.ts';
 
 export type { SimulationOptions } from './sim-factory.ts';
@@ -168,6 +170,7 @@ export class GameSimulation {
     const sim = this.sim;
     const leaving = sim.players.find((p) => p.id === id);
     const keptForTheTrip = leaving !== undefined && keepsBodyOnLeaving(sim, leaving);
+    if (leaving) ejectOccupant(sim, leaving);
     const leavesBodyBehind = leaving && keptForTheTrip;
     if (leavesBodyBehind) {
       diedOnLeaving(sim, leaving);
@@ -251,6 +254,7 @@ export class GameSimulation {
     for (const p of sim.players) usePocketSupplies(p);
     for (const p of sim.players) reconcileBag(sim, p);
     updateDownedPlayers(sim);
+    updateVehicles(sim);
     updateLeftBodies(sim);
     // Before the waves: a horde starting on this tick must not hand the fallen their return.
     checkGameOver(sim);

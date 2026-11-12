@@ -14,6 +14,7 @@ import { seedPopulation } from './town-population.ts';
 import { placeTownSalvage } from './salvage.ts';
 import { placeTownTreasure } from './treasure.ts';
 import { hordesSurvivedHere } from './waves.ts';
+import { clearVehicles } from './vehicles.ts';
 import { generateWorldMap } from './world-map.ts';
 
 function raiseMap(sim: SimState, seed: number, level: number): void {
@@ -51,6 +52,7 @@ function emptyWorld(sim: SimState, level: number): void {
   sim.entered = new Set();
   sim.clues = new Map();
   sim.events = [];
+  clearVehicles(sim);
   sim.flow.invalidate();
   sim.noiseFlow.invalidate();
 }

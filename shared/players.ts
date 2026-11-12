@@ -9,7 +9,7 @@ import {
   TICK_DT,
 } from './constants.ts';
 import { doorBlocksCircle } from './doors.ts';
-import { stopSearch, updateSearch } from './container-search.ts';
+import { noteKeyRelease, stopSearch, updateSearch } from './container-search.ts';
 import { effectiveStance, updateStamina } from './stamina.ts';
 import { updateMelee } from './melee.ts';
 import { stepMovement } from './movement.ts';
@@ -27,6 +27,8 @@ import { updateRadioTower } from './radio-tower.ts';
 import { updateStations } from './stations.ts';
 import { takeManhole } from './take-manhole.ts';
 import { takeStairs } from './take-stairs.ts';
+import { driveVehicle } from './vehicle-driving.ts';
+import { pressToLeave, tapToEnter } from './vehicles.ts';
 import { updateWeapons } from './weapons.ts';
 import { buildingAt } from './world-query.ts';
 import { leaveFootprint } from './snow-tracks.ts';
@@ -97,6 +99,7 @@ export function receiveInput(p: PlayerState, input: ClientInputPacket): void {
   queueEat(p, input.eat);
   if (input.keepsake) p.keepsakeQueued = input.keepsake;
   p.searchHeld = input.search === true;
+  p.horn = input.horn === true;
   p.stanceWanted = stanceOf(input);
   if (input.weapon) p.weaponQueued = input.weapon;
 }
@@ -120,6 +123,50 @@ function holdFire(p: PlayerState): void {
   p.fountainQueued = false;
 }
 
+/** Hands busy at the wheel or a door handle: nothing queued is fired, swung, thrown, reloaded or swapped to. */
+function stowHands(p: PlayerState): void {
+  holdFire(p);
+  p.reloadQueued = false;
+  p.weaponQueued = null;
+  p.healQueued = false;
+}
+
+function takeQueuedKeepsake(sim: SimState, p: PlayerState): void {
+  const pick = p.keepsakeQueued;
+  p.keepsakeQueued = null;
+  if (pick) takeKeepsake(sim, p, pick);
+}
+
+/** Survival needs run down whether walking or riding. Returns false when they have just put the survivor down. */
+function liveThroughNeeds(sim: SimState, p: PlayerState, moving: boolean): boolean {
+  const needs = p.needs;
+  if (!needs) return true;
+  const isSprinting = p.stance === 'sprint' && moving;
+  updateSurvivalNeeds(needs, TICK_DT, isSprinting, moving, p);
+  const hasDiedOfNeeds = p.health <= 0;
+  if (hasDiedOfNeeds) collapsePlayer(sim, p);
+  return !hasDiedOfNeeds;
+}
+
+/**
+ * A tick in a car: the key gets out, the driver drives, and the body rides along at the car's centre.
+ * No shots, swings, throws or footprints from a seat; needs, candy and the key's release still count.
+ */
+function ride(sim: SimState, p: PlayerState): void {
+  noteKeyRelease(p);
+  stopSearch(p);
+  stowHands(p);
+  pressToLeave(sim, p);
+  driveVehicle(sim, p);
+  const stillSeated = p.vehicle !== null;
+  if (stillSeated) p.indoors = null;
+  p.stance = 'walk';
+  if (!liveThroughNeeds(sim, p, false)) return;
+  updateStamina(p);
+  updateCandy(sim, p);
+  takeQueuedKeepsake(sim, p);
+}
+
 /** Applies the stored input exactly once, so speed never depends on packet rate. */
 export function updatePlayer(sim: SimState, p: PlayerState): void {
   p.lastInputSeq = p.queuedSeq;
@@ -138,6 +185,10 @@ export function updatePlayer(sim: SimState, p: PlayerState): void {
     stopSearch(p);
     return;
   }
+  if (p.vehicle) {
+    ride(sim, p);
+    return;
+  }
   const dirX = Number(p.right) - Number(p.left);
   const dirY = Number(p.down) - Number(p.up);
   p.moving = dirX !== 0 || dirY !== 0;
@@ -149,16 +200,7 @@ export function updatePlayer(sim: SimState, p: PlayerState): void {
     p.x = moved.x;
     p.y = moved.y;
   }
-  const hasNeeds = p.needs !== undefined;
-  if (hasNeeds) {
-    const isSprinting = p.stance === 'sprint' && p.moving;
-    updateSurvivalNeeds(p.needs!, TICK_DT, isSprinting, p.moving, p);
-    const hasDiedOfNeeds = p.health <= 0;
-    if (hasDiedOfNeeds) {
-      collapsePlayer(sim, p);
-      return;
-    }
-  }
+  if (!liveThroughNeeds(sim, p, p.moving)) return;
   updateStamina(p);
   footsteps(sim, p);
   takeStairs(sim, p);
@@ -173,9 +215,8 @@ export function updatePlayer(sim: SimState, p: PlayerState): void {
   updateThrow(sim, p);
   updateThrowables(sim, p);
   updateCandy(sim, p);
-  const pick = p.keepsakeQueued;
-  p.keepsakeQueued = null;
-  if (pick) takeKeepsake(sim, p, pick);
+  takeQueuedKeepsake(sim, p);
+  tapToEnter(sim, p);
   updateSearch(sim, p);
   updateStations(sim, p);
   updateRadioTower(sim, p);

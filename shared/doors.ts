@@ -2,7 +2,8 @@ import { plankCapForTier } from './backpack.ts';
 import { roomFor } from './bag.ts';
 import { deriveMapOpenings, findNearbyOpening } from './building-openings.ts';
 import { PLAYER_RADIUS, TICK_RATE } from './constants.ts';
-import { containerInReach } from './containers.ts';
+import { containerInReachOf } from './vehicle-choice.ts';
+import { carsOf } from './vehicles.ts';
 import {
   addPlank,
   calculateDoorMaxHealth,
@@ -163,8 +164,8 @@ function work(sim: SimState, p: PlayerState, door: BarricadeOpening): void {
 }
 
 function canWorkHere(sim: SimState, p: PlayerState): boolean {
-  const ready = p.status === 'alive' && p.searchingId === null && !p.moving;
-  return ready && containerInReach(sim.map, p.x, p.y) === null;
+  const ready = p.status === 'alive' && p.vehicle === null && p.searchingId === null && !p.moving;
+  return ready && containerInReachOf(sim.map, carsOf(sim), p.x, p.y) === null;
 }
 
 function playerAct(sim: SimState, p: PlayerState, doors: BarricadeOpening[]): void {
