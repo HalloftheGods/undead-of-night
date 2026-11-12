@@ -158,6 +158,21 @@ describe('coming back to a run', () => {
     expect(back).toMatchObject({ score: score + 1, kills: kills + 1 });
   });
 
+  it('keeps the headshot bonus of a round still in the air as they go', () => {
+    const { sim, state, b } = room();
+    const z = addZombie(state, 'walker', b.x + 60, b.y);
+    z.speed = 0;
+    z.health = 1;
+    const { score, kills } = b;
+    state.bullets.push({ id: 'shot', shooterId: b.id, x: b.x, y: b.y, vx: 520, vy: 0, damage: 34, rangeLeft: 300, headTarget: z });
+    sim.removePlayer('b');
+    steps(sim, 6);
+    expect(z.health).toBe(0);
+    const back = sim.addPlayer('b2', 'Bea', TOKEN);
+    // A walker in town 1 pays 1, and its head 1 more.
+    expect(back).toMatchObject({ score: score + 2, kills: kills + 1 });
+  });
+
   it('works once: a token cannot be spent twice', () => {
     const { sim, state } = room();
     sim.removePlayer('b');

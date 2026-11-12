@@ -17,7 +17,7 @@ import {
   TICK_DT,
 } from './constants.ts';
 import { chainKill, chainMultiplier } from './kill-chain.ts';
-import { killPoints, townOf } from './kill-points.ts';
+import { killPoints, scorerOf, townOf } from './kill-points.ts';
 import { eventOf } from './night-events.ts';
 import { bossDown } from './bosses.ts';
 import { headOnBulletPlane, headshotDamage, payHeadshot } from './headshots.ts';
@@ -69,10 +69,8 @@ function cherryBurst(sim: SimState, z: ZombieState, killerId: EntityId | null): 
 }
 
 function killZombie(sim: SimState, z: ZombieState, angle: number, killerId: EntityId | null): void {
-  const present = sim.players.find((p) => p.id === killerId);
-  // A killer who has dropped out (a burn lands after they go) keeps the credit for when they return.
-  const away = present ? undefined : [...sim.departed.values()].find((p) => p.id === killerId);
-  const killer = present ?? away;
+  // A killer who has dropped out keeps the credit for when they return.
+  const killer = scorerOf(sim, killerId);
   // A kill in a chain pays more, rounded to the nearest point so the chain still shows on a 1-point walker.
   const chain = killer ? chainKill(sim, killer.id) : 1;
   const town = townOf(sim);

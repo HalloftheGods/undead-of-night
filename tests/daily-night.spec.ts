@@ -171,6 +171,14 @@ describe('Daily Night', () => {
     expect(JSON.parse(store.getItem('outbreak.daily.v2')!)['2026-11-04'].carried).toBe(true);
   });
 
+  it('counts a run on a day carried from before level 100 as that day\'s first', () => {
+    const carried = { score: 0, kills: 40, level: 4, attempts: 2, practiceBest: 0, carried: true as const };
+    const { log, counted } = withRun({ '2026-11-06': carried }, '2026-11-06', run(30));
+    expect(counted).toBe(true);
+    expect(log['2026-11-06']).toMatchObject({ score: 30, kills: 3, attempts: 1 });
+    expect(log['2026-11-06'].carried).toBeUndefined();
+  });
+
   it('never takes a day from before level 100 for the best day', () => {
     const carried = { score: 0, kills: 40, level: 4, attempts: 2, practiceBest: 0, carried: true as const };
     expect(bestDay({ '2026-11-05': carried })).toBeNull();

@@ -200,7 +200,9 @@ export function loadDailyLog(store: Store | null = browserStore(), now: Date = n
 
 /** The first run of a day (solo or per party size in MP) is kept as it was; later ones only count as attempts and practice best. */
 export function withRun(log: DailyLog, key: string, run: DailyRunInput): { log: DailyLog; counted: boolean } {
-  const earlier = log[key];
+  // A day carried over from before level 100 holds no run on this scale, so the next one is its first.
+  const saved = log[key];
+  const earlier = saved?.carried ? undefined : saved;
   const isMp = run.partySize !== undefined && run.partySize >= 2 && run.partySize <= 5;
 
   let nextResult: DailyResult;

@@ -69,6 +69,16 @@ function endRun(): void {
   expect(sim.phase).toBe('gameover');
 }
 
+
+describe('a Test Drive room', () => {
+  it('says so in its welcome, and a normal room leaves the mark off', () => {
+    expect('testDrive' in joined('Ann', 'token-a').peer.packet('welcome')!).toBe(false);
+    sim = new GameSimulation({ seed: 11, testDrive: true });
+    host = createRoomHost({ sim, clock, newId: () => `p${ids++}`, restartVoteMs: RESTART_VOTE_MS, joinDeadlineMs: JOIN_DEADLINE_MS, heartbeatMs: HEARTBEAT_MS, acceptUnversioned: true });
+    expect(joined('Bea', 'token-b').peer.packet('welcome')?.testDrive).toBe(true);
+  });
+});
+
 describe('RoomHost versions', () => {
   function strictJoin(protocol?: number): FakePeer {
     const strict = createRoomHost({ sim, clock, newId: () => `p${ids++}`, restartVoteMs: RESTART_VOTE_MS, joinDeadlineMs: JOIN_DEADLINE_MS, heartbeatMs: HEARTBEAT_MS });

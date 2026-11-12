@@ -2,6 +2,18 @@
 
 All notable changes to the Undead of Night: Last Round game are documented in this file.
 
+## [2026-11-12] - Level 100 follow-ups
+
+### Changed
+- The progression save moves to `outbreak.progression.v2`. The old key is read once to bring a player over and is never written.
+
+### Fixed
+- A tab left open on an old build no longer resets XP and owed AP: it writes only the old key, which is ignored once the new save exists.
+- Hosting a solo run from the Pause menu no longer charges AP upkeep in the middle of that run.
+- A Dev: Test Drive that is then hosted still banks no XP, for the host and for anyone who joins: the room's welcome now says it is a Test Drive.
+- A player who drops out with a head round in the air keeps its headshot bonus as well as the kill (`scorerOf` in `shared/kill-points.ts`).
+- A daily run on a day carried over from before level 100 counts as that day's first run.
+
 ## [2026-11-12] - Record books start again at level 100
 
 ### Changed

@@ -94,6 +94,7 @@ What holding everything costs each week under section 3: about 10 minutes at lev
 ### 5. Saves
 
 - `ProgressionState` gains `version: 2` and `owedAp`.
+- The save lives under a new key, `outbreak.progression.v2`. The old key (`outbreak.progression`) is read only while the new one is empty, and is never written: a tab still running an old build goes on writing the old key without a version, and under one shared key that would migrate the save again and wipe its XP and owed AP. Levels earned in such a tab after the move are not brought over.
 - A save without a version is migrated once: level, banked AP and pips are kept, `xp` becomes 0, `owedAp` becomes 0 and `lastApEarnedAt` becomes the migration time, which gives a week's grace.
 - Level 21 players keep a level that now costs about three times more to earn. This is accepted.
 

@@ -5,6 +5,7 @@ import { createInitialProgression } from '../shared/progression.ts';
 import { PROGRESSION_STORAGE_KEY } from '../shared/progression-save.ts';
 import type { ProgressionState } from '../shared/progression.ts';
 import { AudioEngine } from '../src/audio/audio-engine.ts';
+import { WorldRenderer } from '../src/engine/world-renderer.ts';
 import { GameController } from '../src/game/game-controller.ts';
 import { ammoState, gunRounds, switchKey } from '../src/game/hud-state.ts';
 import { fakeCanvas, installFakeBrowser } from './client-fake-dom.ts';
@@ -483,6 +484,52 @@ describe('game flow', () => {
     vi.setSystemTime(Date.now() + 8 * 24 * 60 * 60 * 1000);
     socket.receive(frame(50, { events: [kill(1)] }));
     expect(savedProgression(store)).toMatchObject({ level: 3, ap: 1, owedAp: 0, xp: 1 });
+  });
+
+  it('charges no upkeep when a solo run under way becomes a hosted one', async () => {
+    const store = memoryStorage();
+    store.setItem(PROGRESSION_STORAGE_KEY, JSON.stringify({ ...createInitialProgression(Date.now()), level: 3, ap: 1 }));
+    vi.stubGlobal('localStorage', store);
+    const nothing = (): void => {};
+    const room = {
+      kind: 'coop', interpolationDelayMs: 0, onRoom: null, onWelcome: nothing as (packet: object) => void, onSnapshot: nothing, onClosed: nothing,
+      connect: nothing, join: nothing, disconnect: nothing, setPaused: nothing, sendInput: nothing, sendBench: nothing, sendBag: nothing, sendHome: nothing, sendEmote: nothing, requestRestart: nothing,
+    };
+    vi.doMock('../src/network/online-session.ts', () => ({ hostRoom: () => room }));
+    game.startSolo('arcade');
+    pump(300);
+    vi.setSystemTime(Date.now() + 8 * 24 * 60 * 60 * 1000);
+    game.hostCurrentRun();
+    await vi.dynamicImportSettled();
+    room.onWelcome({ type: 'welcome', yourId: 'me', tickRate: 30, mapSeed: 4242 });
+    vi.doUnmock('../src/network/online-session.ts');
+    expect(game.ui.value).toMatchObject({ screen: 'game', mode: 'coop' });
+    expect(savedProgression(store)).toMatchObject({ level: 3, ap: 1, owedAp: 0 });
+  });
+
+  it('names the AP a level-up landed, on the survivor and in the callout', () => {
+    const store = memoryStorage();
+    store.setItem(PROGRESSION_STORAGE_KEY, JSON.stringify({ ...createInitialProgression(Date.now()), owedAp: 1 }));
+    vi.stubGlobal('localStorage', store);
+    const floaters = vi.spyOn(WorldRenderer.prototype, 'addFloatingText');
+    const socket = joinRoom();
+    socket.receive(frame(50, { events: [kill(113)] }));
+    const texts = floaters.mock.calls.map(([text]) => text);
+    expect(texts).toContain('LEVEL UP!!!');
+    expect(texts.filter((text) => /^\+2 AP: [A-Z]+$/.test(text))).toHaveLength(1);
+    expect(game.ui.value.callout?.text).toMatch(/^LEVEL UP: \+2 [A-Z]+$/);
+  });
+
+  it('names only the AP that fitted the stat, not all a level-up earned', () => {
+    const store = memoryStorage();
+    const start = createInitialProgression(Date.now());
+    store.setItem(PROGRESSION_STORAGE_KEY, JSON.stringify({ ...start, owedAp: 1, allocations: { ...start.allocations, 0: { spentAp: { stealth: 0, reload: 4, speed: 5, strength: 5, search: 5 } } } }));
+    vi.stubGlobal('localStorage', store);
+    const floaters = vi.spyOn(WorldRenderer.prototype, 'addFloatingText');
+    const socket = joinRoom();
+    socket.receive(frame(50, { events: [kill(113)] }));
+    expect(floaters.mock.calls.map(([text]) => text)).toContain('+1 AP: RELOAD');
+    expect(game.ui.value.log.map((line) => line.text)).toContain('LEVEL UP: +1 RELOAD');
   });
 
   it('keeps the best run of a player the room restarts on during the death beat', () => {

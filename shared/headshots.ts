@@ -1,7 +1,7 @@
 import { LICORICE_HEAD_MARGIN, SKULL_POP_HEAD_MARGIN, sugarOf } from './candy.ts';
 import { CHEST_HEIGHT } from './constants.ts';
 import { chainHeadshot } from './kill-chain.ts';
-import { townOf } from './kill-points.ts';
+import { scorerOf, townOf } from './kill-points.ts';
 import type { EntityId, ZombieEntity, ZombieType } from './protocol.ts';
 import type { BulletState, PlayerState, SimState, ZombieState } from './sim-state.ts';
 import { emit } from './sim-state.ts';
@@ -108,7 +108,7 @@ export function payHeadshot(sim: SimState, b: BulletState, z: ZombieState, angle
   if (!aimedHere) return;
   const chain = chainHeadshot(sim, b.shooterId);
   const points = z.health <= 0 ? HEADSHOT_BONUS * townOf(sim) : 0;
-  const shooter = sim.players.find((p) => p.id === b.shooterId);
+  const shooter = scorerOf(sim, b.shooterId);
   if (shooter) shooter.score += points;
   emit(sim, { type: 'headshot', playerId: b.shooterId, zombieId: z.id, zombieType: z.type, ...headSpot(z), angle, points, chain });
 }

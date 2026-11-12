@@ -361,12 +361,13 @@ export class RunSession {
       return;
     }
     state.world = new ClientWorld(map, packet.yourId);
-    this.beginRun(this.host.ui.value.paused);
+    // A solo run that has just become a hosted one is the same run, still under way.
+    this.beginRun(this.host.ui.value.paused, !hasFallback);
   }
 
-  beginRun(preservePause = false): void {
+  beginRun(preservePause = false, chargeUpkeep = true): void {
     // The last moment before play that upkeep can be charged: the kill hook never does it.
-    checkApUpkeep();
+    if (chargeUpkeep) checkApUpkeep();
     const { state, input, inputs, runHud } = this.host;
     state.runResult = null;
     state.inBunker = null;

@@ -228,7 +228,7 @@ export function createGameRoom(options: GameRoomOptions): GameRoom {
     sim.addPlayer(id, anonymous ? '' : name, token, character, home);
     client.playerId = id;
     clock.cancel(client.joinDeadline);
-    send(client, { type: 'welcome', yourId: id, tickRate: TICK_RATE, mapSeed: sim.map.seed, level: sim.level, difficulty: sim.difficulty, town: townPrint(sim.map), ...(resumed ? { resumed } : {}) });
+    send(client, { type: 'welcome', yourId: id, tickRate: TICK_RATE, mapSeed: sim.map.seed, level: sim.level, difficulty: sim.difficulty, town: townPrint(sim.map), ...(resumed ? { resumed } : {}), ...(sim.testDrive ? { testDrive: true } : {}) });
     stale?.peer.drop();
     if (inLobby) {
       sendFrame(sim.snapshot());

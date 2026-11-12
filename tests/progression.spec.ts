@@ -455,3 +455,29 @@ describe('Rolling Timestamp AP Decay & Rusty Survivors', () => {
     });
   });
 });
+
+describe('the save key', () => {
+  const OLD_KEY = 'outbreak.progression';
+  const NEW_KEY = 'outbreak.progression.v2';
+
+  it('is the v2 key', () => {
+    expect(PROGRESSION_STORAGE_KEY).toBe(NEW_KEY);
+  });
+
+  it('takes a save from before the v2 key and writes it under the new key only', () => {
+    const store = storeWith();
+    const old = JSON.stringify({ level: 7, xp: 300, ap: 2, gp: 0, allocations: {}, lastApEarnedAt: NOW - 30 * DAY_MS, rustySkins: [] });
+    store.setItem(OLD_KEY, old);
+    checkApUpkeep(store, NOW);
+    expect(JSON.parse(store.getItem(NEW_KEY)!)).toMatchObject({ version: 2, level: 7, xp: 0, ap: 2, owedAp: 0, lastApEarnedAt: NOW });
+    expect(store.getItem(OLD_KEY)).toBe(old);
+  });
+
+  it('ignores what an old build still open writes once the new save exists', () => {
+    const store = storeWith();
+    saveProgression({ ...createInitialProgression(NOW), level: 7, xp: 120, owedAp: 1 }, store);
+    store.setItem(OLD_KEY, JSON.stringify({ level: 9, xp: 999, ap: 0, gp: 0, allocations: {}, lastApEarnedAt: NOW, rustySkins: [] }));
+    expect(loadProgression(store, NOW)).toMatchObject({ level: 7, xp: 120, owedAp: 1 });
+    expect(checkApUpkeep(store, NOW).state).toMatchObject({ level: 7, xp: 120, owedAp: 1 });
+  });
+});

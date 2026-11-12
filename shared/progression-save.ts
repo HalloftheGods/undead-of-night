@@ -11,7 +11,9 @@ import {
   type ProgressionState,
 } from './progression.ts';
 
-export const PROGRESSION_STORAGE_KEY = 'outbreak.progression';
+export const PROGRESSION_STORAGE_KEY = 'outbreak.progression.v2';
+/** Where builds before level 100 keep the save. It is read once, to bring a player over, and never written. */
+const OLD_PROGRESSION_STORAGE_KEY = 'outbreak.progression';
 
 export type ProgressStorage = Pick<Storage, 'getItem' | 'setItem'>;
 
@@ -23,10 +25,11 @@ function browserStorage(): ProgressStorage | null {
   }
 }
 
-/** Reads the save as it stands: migrates an old one and clamps its clock, but never decays and never writes. */
+/** Reads the save as it stands, or the old build's when there is none yet: migrates an old one and clamps its clock, but never decays and never writes. */
 export function loadProgression(store: ProgressStorage | null = browserStorage(), now = Date.now()): ProgressionState {
   try {
-    const raw = store?.getItem(PROGRESSION_STORAGE_KEY);
+    // A tab still running an old build goes on writing the old key, and must not undo the save this one keeps.
+    const raw = store?.getItem(PROGRESSION_STORAGE_KEY) ?? store?.getItem(OLD_PROGRESSION_STORAGE_KEY);
     const value: unknown = raw ? JSON.parse(raw) : null;
     const isObject = typeof value === 'object' && value !== null;
     if (!isObject) return createInitialProgression(now);

@@ -80,6 +80,11 @@ export class GameSimulation {
     return this.sim.level;
   }
 
+  /** A Test Drive run, which a room tells everyone who joins it. */
+  get testDrive(): boolean {
+    return this.sim.testDrive;
+  }
+
   get difficulty(): DifficultyId {
     return this.sim.difficulty;
   }
