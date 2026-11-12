@@ -30,6 +30,7 @@ import type { RunStage } from './run-stage.ts';
 import { loadLeaderboard } from './storage.ts';
 import { DIFFERENT_TOWN_TEXT } from '../../shared/close-codes.ts';
 import { townPrint } from '../../shared/town-print.ts';
+import { checkApUpkeep } from '../../shared/progression.ts';
 import { markTestDrive } from '../../shared/vehicle-choice.ts';
 import { seatRefusal } from './seat-check.ts';
 import { streakCardLine, tonightsStreakNight } from './streak-reward.ts';
@@ -364,6 +365,8 @@ export class RunSession {
   }
 
   beginRun(preservePause = false): void {
+    // The last moment before play that upkeep can be charged: the kill hook never does it.
+    checkApUpkeep();
     const { state, input, inputs, runHud } = this.host;
     state.runResult = null;
     state.inBunker = null;

@@ -13,6 +13,7 @@ import {
   canRespecCharacter,
   characterBadgeName,
   characterLevel,
+  checkApUpkeep,
   createInitialProgression,
   effectiveStatSlots,
   isCharacterMaxed,
@@ -258,6 +259,26 @@ describe('Saves', () => {
 
   it('starts version 2 with nothing owed', () => {
     expect(createInitialProgression(NOW)).toMatchObject({ version: 2, owedAp: 0 });
+  });
+});
+
+describe('The upkeep check', () => {
+  it('loads an idle save without decaying or writing it', () => {
+    const store = storeWith({ ...createInitialProgression(NOW - 21 * DAY_MS), level: 5, ap: 1 });
+    expect(loadProgression(store, NOW)).toMatchObject({ ap: 1, owedAp: 0 });
+    expect(store.writes()).toBe(0);
+  });
+
+  it('checkApUpkeep decays the save and writes it back', () => {
+    const store = storeWith({ ...createInitialProgression(NOW - 21 * DAY_MS), level: 5, ap: 1 });
+    expect(checkApUpkeep(store, NOW).decayedAp).toBe(1);
+    expect(loadProgression(store, NOW)).toMatchObject({ level: 5, ap: 0, owedAp: 1, lastApEarnedAt: NOW });
+  });
+
+  it('checkApUpkeep writes a migrated save once, so its grace week starts at the first check', () => {
+    const store = storeWith({ level: 21, xp: 3000, ap: 2, gp: 0, allocations: {}, lastApEarnedAt: NOW - 30 * DAY_MS, rustySkins: [] });
+    checkApUpkeep(store, NOW);
+    expect(loadProgression(store, NOW + 3 * DAY_MS)).toMatchObject({ version: 2, level: 21, xp: 0, ap: 2, lastApEarnedAt: NOW });
   });
 });
 

@@ -2,6 +2,16 @@
 
 All notable changes to the Undead of Night: Last Round game are documented in this file.
 
+## [2026-11-12] - AP upkeep: one level a week
+
+### Changed
+- Each full week past the last level-up removes one pip: banked AP first, then the fullest survivor's fullest stat. Only that survivor goes Rusty, until they gain a pip again.
+- The level never drops.
+- A lost pip becomes owed AP, and each level-up repays one on top of its own AP.
+- Level 100 never decays and shows every survivor OP.
+- Saves carry a version. Old saves keep their level, AP and pips, restart XP at 0, and get a week's grace.
+- Upkeep is checked on the title, setup and Daily Night screens and at run start, never on a kill, so pips do not vanish mid-run.
+
 ## [2026-11-12] - Level 100 curve
 
 ### Changed

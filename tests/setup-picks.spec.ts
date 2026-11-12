@@ -2,7 +2,34 @@ import { describe, expect, it } from 'vitest';
 import { CHARACTERS } from '../shared/characters.ts';
 import { DIFFICULTIES } from '../shared/difficulty.ts';
 import { statBarsOf } from '../src/game/character-select-view.ts';
-import { chosenOption, dialSlots, longestWord, setupPicks, stepFocus } from '../src/game/setup-picks.ts';
+import { createInitialProgression, PROGRESSION_STORAGE_KEY } from '../shared/progression.ts';
+import { chosenOption, dialSlots, longestWord, setupPicks, setupProgression, stepFocus } from '../src/game/setup-picks.ts';
+
+describe('setup progression', () => {
+  const NOW = 1_700_000_000_000;
+  const DAY_MS = 24 * 60 * 60 * 1000;
+
+  function storeWith(saved: unknown) {
+    const memory = new Map<string, string>([[PROGRESSION_STORAGE_KEY, JSON.stringify(saved)]]);
+    return { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, val: string) => void memory.set(key, val) };
+  }
+
+  it('takes the missed weeks before it spends banked AP on the survivor', () => {
+    const start = createInitialProgression(NOW - 15 * DAY_MS);
+    const store = storeWith({ ...start, level: 3, ap: 1, allocations: { ...start.allocations, 0: { spentAp: { stealth: 0, reload: 1, speed: 0, strength: 0, search: 0 } } } });
+    const after = setupProgression(0, store, NOW);
+    expect(after).toMatchObject({ ap: 0, owedAp: 2 });
+    expect(after.allocations[0].spentAp).toEqual({ stealth: 0, reload: 0, speed: 0, strength: 0, search: 0 });
+  });
+
+  it('spends banked AP on the picked survivor and saves it', () => {
+    const store = storeWith({ ...createInitialProgression(NOW), level: 3, ap: 2 });
+    const after = setupProgression(1, store, NOW);
+    expect(after.ap).toBe(0);
+    expect(Object.values(after.allocations[1].spentAp).reduce((sum, n) => sum + n, 0)).toBe(2);
+    expect(JSON.parse(store.getItem(PROGRESSION_STORAGE_KEY)!).ap).toBe(0);
+  });
+});
 
 describe('setup picks', () => {
   it('lays out mode, difficulty and survivor, numbered in that order', () => {

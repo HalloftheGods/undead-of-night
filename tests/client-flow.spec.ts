@@ -466,6 +466,24 @@ describe('game flow', () => {
     expect(savedProgression(store)!.allocations[0].spentAp.reload).toBe(5);
   });
 
+  it('checks AP upkeep when a run starts', () => {
+    const store = memoryStorage();
+    store.setItem(PROGRESSION_STORAGE_KEY, JSON.stringify({ ...createInitialProgression(Date.now() - 8 * 24 * 60 * 60 * 1000), level: 3, ap: 1 }));
+    vi.stubGlobal('localStorage', store);
+    joinRoom();
+    expect(savedProgression(store)).toMatchObject({ level: 3, ap: 0, owedAp: 1 });
+  });
+
+  it('takes no pip for a week that runs out in the middle of a run', () => {
+    const store = memoryStorage();
+    store.setItem(PROGRESSION_STORAGE_KEY, JSON.stringify({ ...createInitialProgression(Date.now()), level: 3, ap: 1 }));
+    vi.stubGlobal('localStorage', store);
+    const socket = joinRoom();
+    vi.setSystemTime(Date.now() + 8 * 24 * 60 * 60 * 1000);
+    socket.receive(frame(50, { events: [kill(1)] }));
+    expect(savedProgression(store)).toMatchObject({ level: 3, ap: 1, owedAp: 0, xp: 1 });
+  });
+
   it('keeps the best run of a player the room restarts on during the death beat', () => {
     vi.stubGlobal('localStorage', memoryStorage());
     const socket = joinRoom();

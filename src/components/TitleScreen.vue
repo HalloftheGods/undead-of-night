@@ -62,6 +62,7 @@ import PlaySetup from './PlaySetup.vue';
 import PressAnyKey from './PressAnyKey.vue';
 import SpriteImg from './SpriteImg.vue';
 import TitleMenu from './TitleMenu.vue';
+import { checkApUpkeep } from '../../shared/progression.ts';
 import { useGame } from './use-game.ts';
 
 declare const __APP_VERSION__: string;
@@ -90,6 +91,8 @@ function checkDevRouting(): boolean {
 }
 
 const game = useGame();
+// Missed weeks are charged here, between runs, and never on a kill.
+checkApUpkeep();
 const nav = ref(TITLE_HOME);
 /** Read before the invite below rewrites the address, so an invite link never waits for a key. */
 const asking = ref(shouldAskForPress(window.location.search));

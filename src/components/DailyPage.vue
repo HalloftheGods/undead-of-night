@@ -46,7 +46,7 @@ import { countdownText, dailyShare, dayLabel, loadDailyLog, mpResultOf, msUntilT
 import type { UiState } from '../game/hud-state.ts';
 import { survivorPick } from '../game/setup-picks.ts';
 import type { FixedCard, PickKey } from '../game/setup-picks.ts';
-import { loadProgression } from '../../shared/progression.ts';
+import { checkApUpkeep } from '../../shared/progression.ts';
 import { streakReward } from '../game/streak-reward.ts';
 import PixelButton from './PixelButton.vue';
 import SetupPicks from './SetupPicks.vue';
@@ -81,7 +81,8 @@ const nextLabel = computed(() => {
 });
 
 const survivor = ref(loadCharacter());
-const picks = computed(() => [survivorPick(survivor.value, 3, loadProgression())]);
+const progression = checkApUpkeep().state;
+const picks = computed(() => [survivorPick(survivor.value, 3, progression)]);
 const fixed = computed<readonly FixedCard[]>(() => [
   { key: 'town', number: 1, label: 'Tonight', name: facts.title, sprite: ui.art?.ui.levelScenes[night.level - 1] ?? null },
   { key: 'difficulty', number: 2, label: 'Difficulty', name: difficultyDef(night.difficulty).label, sprite: ui.art?.ui.difficulty[night.difficulty] ?? null },

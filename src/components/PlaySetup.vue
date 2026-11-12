@@ -100,15 +100,8 @@ import type { CoopEntry } from '../game/run-session.ts';
 import { chosenStartLevel, continueLevel, isLevelUnlocked, loadLevelProgress } from '../game/level-progress.ts';
 import { chooseMode, claimedStyle, setupFailure, setupHeading, setupStyle, showsServer, startFlow } from '../game/play-flow.ts';
 import type { PlayMode } from '../game/play-flow.ts';
-import { setupPicks } from '../game/setup-picks.ts';
+import { setupPicks, setupProgression } from '../game/setup-picks.ts';
 import type { PickKey } from '../game/setup-picks.ts';
-import {
-  allocateEarnedAp,
-  loadProgression,
-  pickWinningStat,
-  saveProgression,
-  type ProgressionState,
-} from '../../shared/progression.ts';
 import { COOP_ACTIONS, setupActionLabel, type CoopAction } from '../game/title-menu.ts';
 import PixelButton from './PixelButton.vue';
 import SetupPicks from './SetupPicks.vue';
@@ -139,26 +132,7 @@ const startLine = computed(() => levelLines.value.startLine);
 const coopNote = computed(() => levelLines.value.coopNote);
 const heading = computed(() => setupHeading(join, flow.value.mode, runStyle.value));
 
-function initialSetupProgression(): ProgressionState {
-  const loaded = loadProgression();
-  const hasBankedAp = loaded.ap > 0;
-  if (!hasBankedAp) return loaded;
-  let updated = loaded;
-  const s = survivor.value;
-  while (updated.ap > 0) {
-    const winning = pickWinningStat({}, s, updated.allocations[s]);
-    const hasCandidate = winning !== null;
-    if (!hasCandidate) break;
-    updated = allocateEarnedAp(updated, s, winning!, 1);
-  }
-  const didAllocate = updated !== loaded;
-  if (didAllocate) {
-    saveProgression(updated);
-  }
-  return updated;
-}
-
-const progression = ref(initialSetupProgression());
+const progression = ref(setupProgression(survivor.value));
 const picks = computed(() => setupPicks({ mode: flow.value.mode, difficulty: difficulty.value, survivor: survivor.value }, progression.value));
 /** The mode decides how the run starts, and whether the co-op fields show. */
 const multi = computed(() => flow.value.mode === 'multi');

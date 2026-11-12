@@ -69,7 +69,7 @@ export function createInitialProgression(now = Date.now()): ProgressionState {
 
 export const PROGRESSION_STORAGE_KEY = 'outbreak.progression';
 
-type ProgressStorage = Pick<Storage, 'getItem' | 'setItem'>;
+export type ProgressStorage = Pick<Storage, 'getItem' | 'setItem'>;
 
 function browserStorage(): ProgressStorage | null {
   try {
@@ -79,6 +79,7 @@ function browserStorage(): ProgressStorage | null {
   }
 }
 
+/** Reads the save as it stands: migrates an old one and clamps its clock, but never decays and never writes. */
 export function loadProgression(store: ProgressStorage | null = browserStorage(), now = Date.now()): ProgressionState {
   try {
     const raw = store?.getItem(PROGRESSION_STORAGE_KEY);
@@ -126,11 +127,7 @@ export function loadProgression(store: ProgressStorage | null = browserStorage()
       : [];
 
     const baseState: ProgressionState = { version: PROGRESSION_VERSION, level, xp, ap, owedAp, gp, allocations, lastApEarnedAt, rustySkins };
-    const decayResult = applyApDecay(baseState, now);
-    if (decayResult.decayedAp > 0) {
-      saveProgression(decayResult.state, store);
-    }
-    return decayResult.state;
+    return baseState;
   } catch {
     return createInitialProgression(now);
   }
@@ -219,6 +216,17 @@ export function applyApDecay(current: ProgressionState, now = Date.now()): ApDec
   // The timer moves on by whole weeks even with nothing left to take, so the same moment is never charged twice.
   const lastApEarnedAt = current.lastApEarnedAt + weeks * AP_DECAY_INTERVAL_MS;
   return { state: { ...state, lastApEarnedAt }, decayedAp, newlyRustySkins };
+}
+
+/**
+ * Charges the weeks missed since the last level-up and saves the result. Called where a player
+ * is between runs (title, setup, run start), never on a kill, so pips do not vanish mid-run.
+ * It always saves, which is also what writes a migrated save back.
+ */
+export function checkApUpkeep(store: ProgressStorage | null = browserStorage(), now = Date.now()): ApDecayResult {
+  const result = applyApDecay(loadProgression(store, now), now);
+  saveProgression(result.state, store);
+  return result;
 }
 
 export function saveProgression(state: ProgressionState, store: ProgressStorage | null = browserStorage()): void {

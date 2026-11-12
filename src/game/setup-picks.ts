@@ -8,7 +8,7 @@ import { DIFFICULTIES } from '../../shared/difficulty.ts';
 import type { DifficultyDef, DifficultyId } from '../../shared/difficulty.ts';
 import { statBarsOf } from './character-select-view.ts';
 import { MODE_CARDS } from './mode-select-view.ts';
-import { characterBadgeName, characterLevel, isCharacterMaxed, isCharacterRusty, type ProgressionState } from '../../shared/progression.ts';
+import { allocateEarnedAp, characterBadgeName, characterLevel, checkApUpkeep, isCharacterMaxed, isCharacterRusty, pickWinningStat, saveProgression, type ProgressionState, type ProgressStorage } from '../../shared/progression.ts';
 import type { PixelSprite } from '../art/types.ts';
 import type { PlayMode } from './play-flow.ts';
 
@@ -87,6 +87,27 @@ function difficultyBars(def: DifficultyDef): readonly PickBar[] {
 
 const MODE_OPTIONS: readonly PickOption[] = MODE_CARDS.map((card) => ({ id: card.mode, name: card.label, bars: modeBars(card.mode) }));
 const DIFFICULTY_OPTIONS: readonly PickOption[] = DIFFICULTIES.map((each) => ({ id: each.id, name: each.label, bars: difficultyBars(each) }));
+/**
+ * The progression the setup screen opens with: upkeep is charged first, then any AP still banked
+ * goes onto the picked survivor. Upkeep takes banked AP before pips, so the order matters.
+ */
+export function setupProgression(skin: number, store?: ProgressStorage | null, now?: number): ProgressionState {
+  const loaded = checkApUpkeep(store, now).state;
+  let updated = loaded;
+  while (updated.ap > 0) {
+    const winning = pickWinningStat({}, skin, updated.allocations[skin]);
+    const hasNoCandidate = winning === null;
+    if (hasNoCandidate) break;
+    const next = allocateEarnedAp(updated, skin, winning, 1);
+    const landedNothing = next === updated;
+    if (landedNothing) break;
+    updated = next;
+  }
+  const didAllocate = updated !== loaded;
+  if (didAllocate) saveProgression(updated, store);
+  return updated;
+}
+
 export function survivorOptions(progression?: ProgressionState): readonly PickOption[] {
   return CHARACTERS.map((each, index) => ({
     id: String(index),
