@@ -20,11 +20,30 @@ import {
   isCharacterRusty,
   loadProgression,
   pickWinningStat,
+  PROGRESSION_STORAGE_KEY,
   respecCharacter,
   saveProgression,
   totalXpForLevel,
   xpRequiredForLevel,
 } from '../shared/progression.ts';
+import type { ProgressionState } from '../shared/progression.ts';
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const NOW = 1_700_000_000_000;
+
+function storeWith(saved?: unknown) {
+  const memory = new Map<string, string>();
+  if (saved !== undefined) memory.set(PROGRESSION_STORAGE_KEY, JSON.stringify(saved));
+  let writes = 0;
+  return {
+    getItem: (key: string) => memory.get(key) ?? null,
+    setItem: (key: string, val: string) => {
+      writes += 1;
+      memory.set(key, val);
+    },
+    writes: () => writes,
+  };
+}
 
 describe('Progression Core Logic', () => {
   it('initializes with level 1, 0 XP, 0 AP, and 0 GP', () => {
@@ -209,6 +228,35 @@ describe('Progression Core Logic', () => {
     expect(after.didLevelUp).toBe(false);
     expect(after.state.level).toBe(100);
     expect(after.state.xp).toBe(0);
+  });
+});
+
+describe('Saves', () => {
+  it('migrates a version-less level-21 save: keeps level, AP and pips, zeroes xp and owed AP, starts a fresh timer', () => {
+    const pips = { stealth: 0, reload: 5, speed: 5, strength: 5, search: 3 };
+    const store = storeWith({ level: 21, xp: 3000, ap: 2, gp: 40, allocations: { 0: { spentAp: pips } }, lastApEarnedAt: NOW - 30 * DAY_MS, rustySkins: [] });
+    const loaded = loadProgression(store, NOW);
+    expect(loaded).toMatchObject({ version: 2, level: 21, xp: 0, ap: 2, gp: 40, owedAp: 0, lastApEarnedAt: NOW });
+    expect(loaded.allocations[0].spentAp).toEqual(pips);
+  });
+
+  it('clamps a lastApEarnedAt later than now to now', () => {
+    const store = storeWith({ ...createInitialProgression(NOW), lastApEarnedAt: NOW + 5 * DAY_MS });
+    expect(loadProgression(store, NOW).lastApEarnedAt).toBe(NOW);
+  });
+
+  it('round-trips owedAp, xp and the version', () => {
+    const store = storeWith({ ...createInitialProgression(NOW), xp: 70, owedAp: 3 });
+    expect(loadProgression(store, NOW)).toMatchObject({ version: 2, xp: 70, owedAp: 3 });
+  });
+
+  it('reads a save from a later version as it stands, without wiping its XP', () => {
+    const store = storeWith({ ...createInitialProgression(NOW), version: 3, xp: 70 });
+    expect(loadProgression(store, NOW)).toMatchObject({ version: 2, xp: 70 });
+  });
+
+  it('starts version 2 with nothing owed', () => {
+    expect(createInitialProgression(NOW)).toMatchObject({ version: 2, owedAp: 0 });
   });
 });
 

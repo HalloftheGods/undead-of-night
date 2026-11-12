@@ -7,6 +7,8 @@ export const AP_PER_LEVEL = 1;
 export const TOTAL_PIPS_TO_FILL = 20;
 export const RESPEC_COST_GP = 50;
 export const AP_DECAY_INACTIVITY_MS = 7 * 24 * 60 * 60 * 1000;
+/** Saves without a version were written on the 21-level curve and are migrated once on load. */
+export const PROGRESSION_VERSION = 2;
 export const AP_DECAY_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
 
 export const SPECIALTY_STAT_BY_SKIN: Readonly<Record<number, StatKey>> = {
@@ -22,9 +24,12 @@ export interface CharacterAllocation {
 }
 
 export interface ProgressionState {
+  readonly version: typeof PROGRESSION_VERSION;
   readonly level: number;
   readonly xp: number;
   readonly ap: number;
+  /** Pips lost to upkeep and not yet earned back. A level-up repays one. */
+  readonly owedAp: number;
   readonly gp: number;
   readonly allocations: Record<number, CharacterAllocation>;
   readonly lastApEarnedAt: number;
@@ -45,9 +50,11 @@ export function defaultCharacterAllocation(): CharacterAllocation {
 
 export function createInitialProgression(now = Date.now()): ProgressionState {
   return {
+    version: PROGRESSION_VERSION,
     level: 1,
     xp: 0,
     ap: 0,
+    owedAp: 0,
     gp: 0,
     allocations: {
       0: defaultCharacterAllocation(),
@@ -73,17 +80,22 @@ function browserStorage(): ProgressStorage | null {
   }
 }
 
-export function loadProgression(store: ProgressStorage | null = browserStorage()): ProgressionState {
+export function loadProgression(store: ProgressStorage | null = browserStorage(), now = Date.now()): ProgressionState {
   try {
     const raw = store?.getItem(PROGRESSION_STORAGE_KEY);
     const value: unknown = raw ? JSON.parse(raw) : null;
     const isObject = typeof value === 'object' && value !== null;
-    if (!isObject) return createInitialProgression();
+    if (!isObject) return createInitialProgression(now);
 
-    const saved = value as Partial<ProgressionState>;
-    const initial = createInitialProgression();
+    const saved = value as Partial<Omit<ProgressionState, 'version'>> & { version?: unknown };
+    const initial = createInitialProgression(now);
+    // The old curve's XP means nothing on the new one, and the old timer would cost a returning player pips at once.
+    const isOldCurveSave = saved.version === undefined;
     const level = typeof saved.level === 'number' ? Math.min(MAX_CHARACTER_LEVEL, Math.max(1, Math.floor(saved.level))) : initial.level;
-    const xp = typeof saved.xp === 'number' ? Math.max(0, Math.floor(saved.xp)) : initial.xp;
+    const savedXp = typeof saved.xp === 'number' ? Math.max(0, Math.floor(saved.xp)) : initial.xp;
+    const xp = isOldCurveSave ? 0 : savedXp;
+    const savedOwed = typeof saved.owedAp === 'number' && Number.isFinite(saved.owedAp) ? Math.max(0, Math.floor(saved.owedAp)) : 0;
+    const owedAp = isOldCurveSave ? 0 : savedOwed;
     const ap = typeof saved.ap === 'number' ? Math.max(0, Math.floor(saved.ap)) : initial.ap;
     const gp = typeof saved.gp === 'number' ? Math.max(0, Math.floor(saved.gp)) : initial.gp;
     const allocations = { ...initial.allocations };
@@ -106,21 +118,22 @@ export function loadProgression(store: ProgressStorage | null = browserStorage()
       }
     }
 
-    const lastApEarnedAt = typeof saved.lastApEarnedAt === 'number' && Number.isFinite(saved.lastApEarnedAt)
-      ? saved.lastApEarnedAt
-      : Date.now();
+    const hasSavedTimer = typeof saved.lastApEarnedAt === 'number' && Number.isFinite(saved.lastApEarnedAt);
+    // A clock set forward and back again must not buy a timer that never runs out.
+    const savedTimer = hasSavedTimer ? Math.min(now, saved.lastApEarnedAt as number) : now;
+    const lastApEarnedAt = isOldCurveSave ? now : savedTimer;
     const rustySkins = Array.isArray(saved.rustySkins)
       ? saved.rustySkins.filter((s): s is number => Number.isInteger(s) && s >= 0 && s < 5)
       : [];
 
-    const baseState: ProgressionState = { level, xp, ap, gp, allocations, lastApEarnedAt, rustySkins };
-    const decayResult = applyApDecay(baseState);
+    const baseState: ProgressionState = { version: PROGRESSION_VERSION, level, xp, ap, owedAp, gp, allocations, lastApEarnedAt, rustySkins };
+    const decayResult = applyApDecay(baseState, now);
     if (decayResult.decayedAp > 0) {
       saveProgression(decayResult.state, store);
     }
     return decayResult.state;
   } catch {
-    return createInitialProgression();
+    return createInitialProgression(now);
   }
 }
 
