@@ -2,6 +2,15 @@
 
 All notable changes to the Undead of Night: Last Round game are documented in this file.
 
+## [2026-11-12] - Town-scaled points and once-per-kill headshots
+
+### Changed
+- A kill pays a tenth of the zombie's listed worth times the town number, rounded to the nearest point: a walker is 1 point in town 1 and 10 in town 10. Bosses pay 150, 250 and 400 times their town. Score is still the XP a run earned.
+- A kill in the bunker pays as the furthest town reached.
+- The headshot bonus is 1 point times the town, paid once, on the head shot that kills. Head hits that do not kill pay nothing, and the headshot streak no longer multiplies points. Headshot damage is unchanged.
+- The floating kill text names the chain multiplier only when the chain changed the points; the HEADSHOT text shows the bonus only when the shot paid, and still counts the streak.
+- `zombie_die` events carry `chainPaid`.
+
 ## [2026-11-11] - Bunker Locker 4x12 Grid & World Locker Grid Sizing
 
 ### Added
