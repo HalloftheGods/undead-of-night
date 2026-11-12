@@ -16,11 +16,30 @@ function memoryStorage(initial: Record<string, string> = {}) {
 const receipt = (patch: Partial<TripReceipt>): TripReceipt =>
   ({ outcome: 'banked', score: 0, kills: 0, hordes: 0, seconds: 60, level: 1, difficulty: 'normal', ending: false, ...patch }) as TripReceipt;
 
+describe('a best trip from before level 100', () => {
+  const old = JSON.stringify({ score: 9000, wave: 3, kills: 50, durationSec: 600, trip: true });
+
+  beforeEach(() => {
+    vi.stubGlobal('localStorage', memoryStorage({ 'outbreak.best-trip': old }));
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('is not shown, never stands in the way, and is left in storage', () => {
+    expect(loadBestTrip()).toBeNull();
+    expect(recordTrip(receipt({ score: 30, kills: 4, hordes: 1 }), 'A')).toBe(true);
+    expect(loadBestTrip()).toMatchObject({ score: 30, trip: true });
+    expect(localStorage.getItem('outbreak.best-trip')).toBe(old);
+  });
+});
+
 describe('the best trip', () => {
   const classic = { score: 5000, wave: 9, kills: 400, durationSec: 1800 };
 
   beforeEach(() => {
-    vi.stubGlobal('localStorage', memoryStorage({ 'outbreak.best': JSON.stringify(classic) }));
+    vi.stubGlobal('localStorage', memoryStorage({ 'outbreak.best.v2': JSON.stringify(classic) }));
   });
 
   afterEach(() => {

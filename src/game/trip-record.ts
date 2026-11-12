@@ -7,8 +7,8 @@ import { beatsBest, loadBest, recordLeaderboardEntry } from './storage.ts';
 import type { BestRun, LeaderboardEntry } from './storage.ts';
 
 const FALLBACK_CALLSIGN = 'SURVIVOR';
-/** Apart from `outbreak.best`, which may hold a whole run's hordes that a trip's cannot be compared to. */
-const BEST_TRIP_KEY = 'outbreak.best-trip';
+/** Apart from `outbreak.best.v2`, which may hold a whole run's hordes that a trip's cannot be compared to. */
+const BEST_TRIP_KEY = 'outbreak.best-trip.v2';
 
 type Store = Pick<Storage, 'getItem' | 'setItem'>;
 
