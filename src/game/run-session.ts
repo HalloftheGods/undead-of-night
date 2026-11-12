@@ -30,6 +30,7 @@ import type { RunStage } from './run-stage.ts';
 import { loadLeaderboard } from './storage.ts';
 import { DIFFERENT_TOWN_TEXT } from '../../shared/close-codes.ts';
 import { townPrint } from '../../shared/town-print.ts';
+import { markTestDrive } from '../../shared/vehicle-choice.ts';
 import { seatRefusal } from './seat-check.ts';
 import { streakCardLine, tonightsStreakNight } from './streak-reward.ts';
 import { loadBests } from './trip-record.ts';
@@ -113,6 +114,17 @@ export class RunSession {
     this.host.state.daily = null;
     this.host.state.ghost = null;
     this.beginSession(new LocalSession(), style, fromLevel);
+  }
+
+  /** Test Drive: a solo Arcade run where every car drives, hordes come and the van never does. */
+  startTestDrive(): void {
+    if (!this.canStart()) return;
+    this.host.audio.unlock();
+    this.host.audio.playUi('start');
+    this.host.publish({ mode: 'solo', error: null });
+    this.host.state.daily = null;
+    this.host.state.ghost = null;
+    this.beginSession(new LocalSession(), 'arcade', undefined, { testDrive: true });
   }
 
   /** Today's town: its seed, level and difficulty, Arcade rules, solo. Its first run is the one that counts. */
@@ -336,6 +348,7 @@ export class RunSession {
     state.welcomed = true;
     this.host.home.welcomed(packet);
     const map = stage.open(packet.mapSeed, packet.level);
+    if (packet.testDrive) markTestDrive(map);
     // Walls and cars that only this copy of the town has would be walked straight through.
     const builtAnotherTown = packet.town !== undefined && packet.town !== townPrint(map);
     if (builtAnotherTown) {
@@ -398,7 +411,7 @@ export class RunSession {
     this.host.publish({ runStyle: style });
   }
 
-  private beginSession(transport: GameTransport, style: GameStyle, startLevel?: number, fixed: { seed?: number; difficulty?: DifficultyId } = {}): void {
+  private beginSession(transport: GameTransport, style: GameStyle, startLevel?: number, fixed: { seed?: number; difficulty?: DifficultyId; testDrive?: boolean } = {}): void {
     const { state, ui } = this.host;
     state.transport = transport;
     state.welcomed = false;
@@ -418,7 +431,7 @@ export class RunSession {
     const getsStreakKit = !roomDecides && !playsFromHome(style);
     const streakNight = getsStreakKit ? tonightsStreakNight() : undefined;
     this.host.runHud.setStreakLine(streakNight === undefined ? null : streakCardLine(streakNight));
-    const options = { name: cleanCallsign(ui.value.callsign), difficulty: fixed.difficulty ?? loadDifficulty(), character: loadCharacter(), style, streakNight, ...(fixed.seed === undefined ? {} : { seed: fixed.seed }) };
+    const options = { name: cleanCallsign(ui.value.callsign), difficulty: fixed.difficulty ?? loadDifficulty(), character: loadCharacter(), style, streakNight, ...(fixed.seed === undefined ? {} : { seed: fixed.seed }), ...(fixed.testDrive ? { testDrive: true } : {}) };
     const shouldConnect = roomDecides || !playsFromHome(style);
     if (shouldConnect) transport.connect({ ...options, startLevel });
     else this.readHome(transport, (home) => transport.connect({ ...options, home }));

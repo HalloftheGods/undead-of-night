@@ -366,6 +366,11 @@ export class GameController {
     this.session.startSolo(style);
   }
 
+  /** Dev: a solo run where every car drives, hordes come and the van never does. */
+  startTestDrive(): void {
+    this.session.startTestDrive();
+  }
+
   /** Arcade from `chosen` (guarded by what is unlocked) or, with none, the furthest level reached. Does nothing if there is no later level to start at. */
   continueSolo(chosen?: number): void {
     this.session.continueSolo(chosen);

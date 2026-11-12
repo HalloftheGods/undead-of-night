@@ -16,6 +16,7 @@
         <MenuLink v-if="!privacyOpen" class="title-privacy" @press="openPrivacy()">Privacy</MenuLink>
         <MenuLink class="title-version" aria-label="What's new in this version" @press="nav = openPage(nav, 'changelog')">v{{ APP_VERSION }}</MenuLink>
         <MenuLink v-if="isDev" class="title-dev" @press="nav = openPage(nav, 'dev_inventory')">Dev: Items</MenuLink>
+        <MenuLink v-if="isDev" class="title-dev" @press="game.startTestDrive()">Dev: Test Drive</MenuLink>
       </div>
       <p class="title-credit">
         <img class="title-omega" :src="BRAND_MARK" alt="" />

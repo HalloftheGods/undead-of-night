@@ -22,6 +22,8 @@ export interface ConnectOptions {
   readonly seed?: number;
   /** Solo Arcade and Daily Night only: the night of the player's streak, which picks the streak kit (`shared/streak-kit.ts`). */
   readonly streakNight?: number;
+  /** Solo only: a Test Drive run, where every car drives and the exit van never comes. */
+  readonly testDrive?: boolean;
 }
 
 /** The one seam between the game client and a simulation, in-browser or over ws. */
