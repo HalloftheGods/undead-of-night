@@ -6,32 +6,19 @@ import type { PlayerState, SimState, VehicleState } from './sim-state.ts';
 import { emit } from './sim-state.ts';
 import { groundSpeedScale } from './town-rules.ts';
 import { checkVehicleRoadkill } from './vehicle-combat.ts';
+import { carBlockedAt } from './vehicle-footprint.ts';
 import { carSounds, honk } from './vehicle-feel.ts';
 import { isResting } from './vehicle-choice.ts';
 import { stepVehicle, VEHICLE_TOP_SPEED } from './vehicle-physics.ts';
 import type { Blocked } from './vehicle-physics.ts';
 import { carryOccupants, ejectFallen, restVehicle, unparkVehicle, vehicleOf } from './vehicles.ts';
-import { buildingAt, circleHitsSolid } from './world-query.ts';
-import type { WorldMap } from './protocol.ts';
 
 /** Speed lost against a solid in one tick that is heard as a crash rather than a scrape. */
 export const CRASH_EVENT_SPEED = 60;
 
-/** Any of the circle's edge points inside a building's footprint: a car never noses into a house, even through its door. */
-function touchesBuilding(map: WorldMap, x: number, y: number, r: number): boolean {
-  const atCentre = buildingAt(map, x, y) !== null;
-  const atSide = buildingAt(map, x - r, y) !== null || buildingAt(map, x + r, y) !== null;
-  return atCentre || atSide || buildingAt(map, x, y - r) !== null || buildingAt(map, x, y + r) !== null;
-}
-
-/** What a car cannot drive into: the map's solids, closed doors, the map's edge and every building's footprint. */
+/** What a car cannot drive into: see carBlockedAt, with the sim's doors. */
 export function roadBlocked(sim: SimState): Blocked {
-  const { map } = sim;
-  return (x, y, r) => {
-    const offMap = x < r || y < r || x > map.width - r || y > map.height - r;
-    if (offMap) return true;
-    return touchesBuilding(map, x, y, r) || circleHitsSolid(map, x, y, r) || doorBlocksCircle(sim, x, y, r);
-  };
+  return (x, y, r) => carBlockedAt(sim.map, x, y, r, (dx, dy, dr) => doorBlocksCircle(sim, dx, dy, dr));
 }
 
 /** One tick of motion, then whoever sits in it comes along; a car that has come to a stop is a solid again. */

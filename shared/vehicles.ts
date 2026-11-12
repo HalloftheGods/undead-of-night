@@ -8,7 +8,8 @@ import type { PlayerState, SimState, VehicleState, ZombieState } from './sim-sta
 import { emit } from './sim-state.ts';
 import { FACING_HEADING, VEHICLE_BODIES } from './vehicle-bodies.ts';
 import { driveableProps, isResting, restBoxOf, vehicleChoiceAt } from './vehicle-choice.ts';
-import { buildingAt, circleHitsSolid, liftProp, restoreSolids, setSolid } from './world-query.ts';
+import { carMayStandAt } from './vehicle-footprint.ts';
+import { circleHitsSolid, liftProp, restoreSolids, setSolid } from './world-query.ts';
 import type { Box } from './world-query.ts';
 
 /** What a car can take before it is done for. Durability itself comes later; every car starts whole. */
@@ -73,10 +74,10 @@ const overlaps = (box: Box, x: number, y: number, r: number): boolean => {
   return dx * dx + dy * dy < r * r;
 };
 
-/** Open ground for a body of radius `r`: on the map, outdoors, and clear of every solid and closed door. */
+/** Open ground for a body of radius `r`: on the map, outdoors or in a garage, and clear of every solid and closed door. */
 function isOpenFor(sim: SimState, x: number, y: number, r: number): boolean {
   const onMap = x >= r && y >= r && x <= sim.map.width - r && y <= sim.map.height - r;
-  const outdoors = onMap && buildingAt(sim.map, x, y) === null;
+  const outdoors = onMap && carMayStandAt(sim.map, x, y);
   return outdoors && !circleHitsSolid(sim.map, x, y, r) && !doorBlocksCircle(sim, x, y, r);
 }
 

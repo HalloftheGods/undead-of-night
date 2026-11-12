@@ -104,8 +104,9 @@ const LAYOUTS: Record<BuildingKind, readonly Slot[]> = {
   garage: [
     ['shelf', 16, NORTH_WALL], ['workbench', 82, NORTH_DEEP], ['workbench', 130, NORTH_DEEP],
     ['locker', 144, 64],
-    ['car_sedan_h', 90, 80, 0.7],
-    ['crate_stack', 16, 80],
+    // Parked nose to the back wall in line with the front door (its left edge is the door's centre less half the car), so it backs straight out through the door; the lane in front of it stays clear.
+    ['car_sedan_v', 38, 80, 0.7],
+    ['crate_stack', 100, 70],
   ],
   warehouse: [
     ['shelf', 16, NORTH_WALL], ['shelf', 48, NORTH_WALL], ['shelf', 80, NORTH_WALL], ['shelf', 112, NORTH_WALL],

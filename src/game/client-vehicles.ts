@@ -6,9 +6,10 @@ import { viewsBlockCircle } from '../../shared/doors.ts';
 import type { DoorView, PlayerEntity, SnapshotPacket, VehicleView, WorldMap } from '../../shared/protocol.ts';
 import { groundSpeedScale } from '../../shared/town-rules.ts';
 import { isResting, restBoxOf } from '../../shared/vehicle-choice.ts';
+import { carBlockedAt } from '../../shared/vehicle-footprint.ts';
 import { capsuleBlocked, stepVehicle } from '../../shared/vehicle-physics.ts';
 import type { Blocked, VehicleMotion } from '../../shared/vehicle-physics.ts';
-import { buildingAt, circleHitsSolid, liftProp, restoreSolids, setSolid } from '../../shared/world-query.ts';
+import { liftProp, restoreSolids, setSolid } from '../../shared/world-query.ts';
 import { lerp, lerpAngle } from './snapshot-buffer.ts';
 import type { SnapshotSample } from './snapshot-buffer.ts';
 import { VehiclePredictor } from './vehicle-predictor.ts';
@@ -24,13 +25,6 @@ export interface CarHost {
 }
 
 const solidKey = (id: number): string => `vehicle:${id}`;
-
-/** Any of the circle's edge points inside a building's footprint, which the sim keeps cars out of. */
-function touchesBuilding(map: WorldMap, x: number, y: number, r: number): boolean {
-  const atCentre = buildingAt(map, x, y) !== null;
-  const atSide = buildingAt(map, x - r, y) !== null || buildingAt(map, x + r, y) !== null;
-  return atCentre || atSide || buildingAt(map, x, y - r) !== null || buildingAt(map, x, y + r) !== null;
-}
 
 /** The car as it was a moment ago and as it is now, blended; a car that jumped is simply where it is now. */
 export function blendVehicle(from: VehicleView | undefined, to: VehicleView, alpha: number): VehicleView {
@@ -73,13 +67,9 @@ export class ClientVehicles {
     return this.newest;
   }
 
-  /** Same rule as the sim's roadBlocked: solids, doors, the map's edge and every building's footprint. */
-  private readonly roadBlocked: Blocked = (x, y, r) => {
-    const map = this.host.map();
-    const offMap = x < r || y < r || x > map.width - r || y > map.height - r;
-    if (offMap) return true;
-    return touchesBuilding(map, x, y, r) || circleHitsSolid(map, x, y, r) || viewsBlockCircle(map, this.host.doors(), x, y, r);
-  };
+  /** Same rule as the sim's roadBlocked: the shared carBlockedAt, with the doors this client has been told of. */
+  private readonly roadBlocked: Blocked = (x, y, r) =>
+    carBlockedAt(this.host.map(), x, y, r, (dx, dy, dr) => viewsBlockCircle(this.host.map(), this.host.doors(), dx, dy, dr));
 
   private stepCar(motion: VehicleMotion, dirX: number, dirY: number, dt: number): VehicleMotion {
     const pace = groundSpeedScale(this.host.level(), this.host.map(), motion.x, motion.y);

@@ -109,7 +109,7 @@ export const ROOM_CONTAINERS: Record<BuildingKind, Partial<Record<PropKind, Cont
   apartment_upstairs: { bed: 'drawer', fridge: 'fridge', locker: 'locker', shelf: 'shelf' },
   cellar: { shelf: 'shelf', crate_stack: 'box', workbench: 'cabinet' },
   diner: { fridge: 'fridge' },
-  garage: { locker: 'locker', workbench: 'cabinet', shelf: 'shelf', car_sedan_h: 'car', crate_stack: 'box', dumpster: 'dumpster' },
+  garage: { locker: 'locker', workbench: 'cabinet', shelf: 'shelf', car_sedan_h: 'car', car_sedan_v: 'car', crate_stack: 'box', dumpster: 'dumpster' },
   warehouse: { workbench: 'cabinet', shelf: 'shelf', crate_stack: 'box', dumpster: 'dumpster' },
   grocery: { counter: 'cabinet', shelf: 'shelf' },
   discount: { counter: 'cabinet', shelf: 'shelf', crate_stack: 'box', locker: 'locker' },

@@ -7,7 +7,8 @@ import { isBunkerMap } from './home-protocol.ts';
 import type { VehicleSeat, VehicleView, WorldMap } from './protocol.ts';
 import { centreOfProp, parkedVehicle, restBox } from './vehicle-bodies.ts';
 import type { ParkedVehicle } from './vehicle-bodies.ts';
-import { buildingAt, isLifted, isSolidProp } from './world-query.ts';
+import { carMayStandAt } from './vehicle-footprint.ts';
+import { isLifted, isSolidProp } from './world-query.ts';
 import type { Box } from './world-query.ts';
 
 /** Gap from a survivor's centre to a car's resting footprint that still counts as at its door. */
@@ -48,7 +49,7 @@ export function markTestDrive(map: WorldMap): void {
 
 export const isTestDrive = (map: WorldMap): boolean => testDriveMaps.has(map);
 
-/** Every car parked on the map that could be driven: outdoors only (a garage car stays loot), never on the bunker map, never a wreck. Test Drive lifts the first and the last. */
+/** Every car parked on the map that could be driven: outdoors or in an Auto Garage (a car inside any other building stays loot), never on the bunker map, never a wreck. Test Drive lifts the first and the last. */
 export function driveableProps(map: WorldMap): readonly ParkedCar[] {
   const have = parkedCars.get(map);
   if (have) return have;
@@ -58,8 +59,8 @@ export function driveableProps(map: WorldMap): readonly ParkedCar[] {
     : map.props.flatMap((prop, id): ParkedCar[] => {
         const testDrive = testDriveMaps.has(map);
         const parked = parkedVehicle(prop.kind) ?? (testDrive && prop.kind === 'car_wreck_h' ? WRECK_BODY : null);
-        const isIndoors = !testDrive && buildingAt(map, prop.x, prop.y - 1) !== null;
-        const isDriveable = parked !== null && isSolidProp(prop) && !isIndoors;
+        const isWhereCarsCannotBe = !testDrive && !carMayStandAt(map, prop.x, prop.y - 1);
+        const isDriveable = parked !== null && isSolidProp(prop) && !isWhereCarsCannotBe;
         if (!isDriveable) return [];
         const centre = centreOfProp(parked, prop.x, prop.y);
         return [{ id, parked, x: centre.x, y: centre.y, box: restBox(parked.body, parked.facing, centre.x, centre.y) }];
@@ -117,8 +118,8 @@ export function vehicleChoiceAt(
   player: { readonly vehicle?: VehicleSeat | null },
 ): VehicleChoice | null {
   if (player.vehicle) return exitChoice(cars, player.vehicle);
-  const outdoors = buildingAt(map, x, y) === null || testDriveMaps.has(map);
-  return outdoors ? nearestEnterable(map, cars, x, y) : null;
+  const mayEnter = carMayStandAt(map, x, y) || testDriveMaps.has(map);
+  return mayEnter ? nearestEnterable(map, cars, x, y) : null;
 }
 
 /** `containerInReach` with each driven car's boot where the car is now: at its rest box, or out of reach while it rolls. */

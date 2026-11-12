@@ -7,7 +7,7 @@ import { hurtPlayer } from '../shared/player-health.ts';
 import type { PlayerEntity, SnapshotPacket, VehicleView } from '../shared/protocol.ts';
 import type { SimState } from '../shared/sim-state.ts';
 import type { GameSimulation } from '../shared/simulation.ts';
-import { FACING_HEADING } from '../shared/vehicle-bodies.ts';
+import { FACING_HEADING, parkedVehicle } from '../shared/vehicle-bodies.ts';
 import type { VehicleFacing } from '../shared/vehicle-bodies.ts';
 import { driveableProps, vehicleChoiceAt } from '../shared/vehicle-choice.ts';
 import type { ParkedCar } from '../shared/vehicle-choice.ts';
@@ -189,13 +189,16 @@ describe('vehicles: getting in and out with the search key', () => {
     expect(me(sim).vehicle).toEqual({ id: car.id, seat: 0 });
   });
 
-  it('a car parked in a garage stays loot only', () => {
+  it('a car parked in an Auto Garage can be driven; a spot inside any other building offers no car', () => {
     const { state } = quietSim();
-    const garageCar = state.map.props.findIndex((prop) => prop.kind === 'car_sedan_h' && buildingAt(state.map, prop.x, prop.y - 1)?.kind === 'garage');
-    expect(garageCar).toBeGreaterThanOrEqual(0);
-    expect(driveableProps(state.map).some((car) => car.id === garageCar)).toBe(false);
-    const prop = state.map.props[garageCar];
-    expect(vehicleChoiceAt(state.map, [], prop.x, prop.y + PLAYER_RADIUS + 2, {})).toBeNull();
+    const garageCars = state.map.props.flatMap((prop, id) => (parkedVehicle(prop.kind) && buildingAt(state.map, prop.x, prop.y - 1)?.kind === 'garage' ? [id] : []));
+    expect(garageCars.length).toBeGreaterThan(0);
+    const driveable = new Set(driveableProps(state.map).map((car) => car.id));
+    expect(garageCars.every((id) => driveable.has(id))).toBe(true);
+    const house = state.map.buildings.find((b) => b.kind === 'house');
+    if (!house) throw new Error('town has no house');
+    const inHouse = vehicleChoiceAt(state.map, [], house.x + 20, house.y + 20, {});
+    expect(inHouse).toBeNull();
   });
 });
 

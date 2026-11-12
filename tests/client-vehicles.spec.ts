@@ -33,6 +33,9 @@ function isOpen(state: SimState, x: number, y: number, r: number): boolean {
   return onMap && buildingAt(state.map, x, y) === null && !circleHitsSolid(state.map, x, y, r);
 }
 
+/** Parked cars standing in the open: the Auto Garage's car is driveable too, but its map position is inside a building. */
+const outdoorCars = (state: SimState): ParkedCar[] => driveableProps(state.map).filter((car) => buildingAt(state.map, car.x, car.y) === null);
+
 /** The parked car with the least in its way within reach of a square drive, and room beside its door. */
 function carWithRoom(state: SimState): ParkedCar {
   const blockedAround = (car: ParkedCar): number => {
@@ -45,7 +48,7 @@ function carWithRoom(state: SimState): ParkedCar {
     }
     return blocked;
   };
-  const cars = driveableProps(state.map).filter((car) => hasRoomBeside(state, car));
+  const cars = outdoorCars(state).filter((car) => hasRoomBeside(state, car));
   const [best] = cars.map((car) => ({ car, blocked: blockedAround(car) })).sort((a, b) => a.blocked - b.blocked);
   if (!best) throw new Error('no car with room beside it on this map');
   return best.car;
@@ -181,7 +184,7 @@ describe('cars on screen', () => {
 
   it('skips the lifted prop and draws the vehicle at its new place', () => {
     const { state } = quietSim();
-    const car = driveableProps(state.map)[0];
+    const car = outdoorCars(state)[0];
     const layer = new BuildingLayer(art.environment);
     layer.setMap(state.map);
     const entities = new EntityRenderer(art, { get: () => ({}) } as never, layer);
@@ -231,7 +234,7 @@ describe('the prompt over a car', () => {
 
   it('is on the scene when the local player stands at a car, and flips to EXIT once seated and slow', () => {
     const { sim, state } = quietSim();
-    const car = driveableProps(state.map)[0];
+    const car = outdoorCars(state)[0];
     Object.assign(state.players[0], beside(state, car));
     const world = new ClientWorld(structuredClone(state.map), 'a');
     world.push(sim.snapshot(), 0);
