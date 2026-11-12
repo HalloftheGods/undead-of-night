@@ -114,6 +114,7 @@ function settleInBunker(sim: SimState, p: PlayerState): void {
   leaveStation(home);
   home.silver = 0;
   home.jewels = { small: 0, large: 0 };
+  home.salvage = noSalvage();
   home.ready = false;
   home.lastActiveTick = sim.tick;
   home.leftTick = null;

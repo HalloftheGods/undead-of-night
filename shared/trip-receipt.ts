@@ -2,9 +2,11 @@
 
 import { bagOf, candyBagWorth } from './candy.ts';
 import { TICK_DT } from './constants.ts';
+import { SALVAGE_TYPES } from './events.ts';
 import type { TripReceipt } from './home-protocol.ts';
 import { FINAL_LEVEL } from './levels.ts';
 import { loadoutOf } from './loadout.ts';
+import { noSalvage } from './salvage-data.ts';
 import type { HomeRun, PlayerHome, PlayerState, SimState } from './sim-state.ts';
 import { round2 } from './snapshot-build.ts';
 import { hordesSurvivedHere } from './waves.ts';
@@ -14,11 +16,13 @@ function forfeitCarried(home: PlayerHome): void {
   home.lost.silver += home.silver;
   home.lost.jewels.small += home.jewels.small;
   home.lost.jewels.large += home.jewels.large;
+  for (const type of SALVAGE_TYPES) home.lost.salvage[type] += home.salvage[type];
   home.silver = 0;
   home.jewels = { small: 0, large: 0 };
+  home.salvage = noSalvage();
 }
 
-function tripFacts(sim: SimState, run: HomeRun, p: PlayerState, level: number): Omit<TripReceipt, 'outcome' | 'silver' | 'jewels' | 'ending' | 'gear'> {
+function tripFacts(sim: SimState, run: HomeRun, p: PlayerState, level: number): Omit<TripReceipt, 'outcome' | 'silver' | 'jewels' | 'salvage' | 'ending' | 'gear'> {
   const serial = run.nextReceipt;
   run.nextReceipt += 1;
   return {
@@ -43,6 +47,7 @@ export function bankTrip(sim: SimState, run: HomeRun, p: PlayerState, home: Play
     outcome: 'banked',
     silver: home.silver,
     jewels: { ...home.jewels },
+    salvage: { ...home.salvage },
     candy: candyWorth,
     candyBag: bagOf(p.candy),
     ending,
@@ -52,7 +57,7 @@ export function bankTrip(sim: SimState, run: HomeRun, p: PlayerState, home: Play
   home.finished ||= ending;
 }
 
-/** Nothing comes home. The silver and jewels here are what was lost, and are never credited. */
+/** Nothing comes home. The silver, jewels and salvage here are what was lost, and are never credited. */
 export function loseTrip(sim: SimState, run: HomeRun, p: PlayerState, home: PlayerHome, level: number): void {
   forfeitCarried(home);
   const candyWorth = candyBagWorth(p.candy);
@@ -62,6 +67,7 @@ export function loseTrip(sim: SimState, run: HomeRun, p: PlayerState, home: Play
     outcome: 'died',
     silver: home.lost.silver,
     jewels: { ...home.lost.jewels },
+    salvage: { ...home.lost.salvage },
     candy: candyWorth,
     candyBag: lostBag,
     ending: false,

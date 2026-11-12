@@ -58,8 +58,11 @@ function tracksField(sim: SimState, inRange: (item: { x: number; y: number }) =>
 function playerHomeField(p: PlayerState): Pick<PlayerEntity, 'home'> {
   const { home } = p;
   if (!home) return {};
-  const { silver, jewels, station, stationHold, ready, receipt, overrun, chest } = home;
-  const view = { silver, jewels: { ...jewels }, station, stationHold: round2(stationHold), ready, receipt, overrun };
+  const { silver, jewels, salvage, station, stationHold, ready, receipt, overrun, chest } = home;
+  const base = { silver, jewels: { ...jewels }, station, stationHold: round2(stationHold), ready, receipt, overrun };
+  // Left off at none, so a frame without salvage is what it always was.
+  const isCarrying = Object.values(salvage).some((count) => count > 0);
+  const view = isCarrying ? { ...base, salvage: { ...salvage } } : base;
   return { home: chest ? { ...view, chest } : view };
 }
 
