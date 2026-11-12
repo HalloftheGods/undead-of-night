@@ -23,6 +23,18 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: 'cars-turn-like-cars',
+    date: '2026-11-12',
+    kind: 'better',
+    title: 'Cars that turn like cars',
+    deck: 'Driving now works from the driver\'s seat, and a turning car sweeps smoothly from its side view to its roof.',
+    points: [
+      'Up is gas and down brakes, then backs up. Left and right turn the wheel, so a car heading down the screen turns to your left when you press right.',
+      'A car only steers while it rolls, and backing up swings the nose the other way, just like the real thing.',
+      'Between the four straight-on views, cars are drawn at every angle, with police and ambulance lights turning along.',
+    ],
+  },
+  {
     id: 'behind-the-wheel',
     date: '2026-11-12',
     kind: 'new',
