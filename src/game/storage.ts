@@ -1,6 +1,7 @@
-const BEST_KEY = 'outbreak.best';
+// Records start again at level 100: points fell to a tenth times the town, so the old books cannot be compared. The old keys are left in storage, unread.
+const BEST_KEY = 'outbreak.best.v2';
 const PREFS_KEY = 'outbreak.prefs';
-const LEADERBOARD_KEY = 'outbreak.leaderboard';
+const LEADERBOARD_KEY = 'outbreak.leaderboard.v2';
 const MAX_LEADERBOARD_ENTRIES = 5;
 
 export interface BestRun {

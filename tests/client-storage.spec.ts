@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { formatDuration } from '../src/game/hud-state.ts';
-import { beatsBest, loadBest, loadPrefs, recordRun, savePrefs } from '../src/game/storage.ts';
+import { beatsBest, loadBest, loadLeaderboard, loadPrefs, recordRun, savePrefs } from '../src/game/storage.ts';
 
 function memoryStore(initial: Record<string, string> = {}) {
   const data = new Map(Object.entries(initial));
@@ -52,8 +52,22 @@ describe('best run', () => {
   });
 
   it('ignores corrupt saved data', () => {
-    expect(loadBest(memoryStore({ 'outbreak.best': '{oops' }))).toBeNull();
-    expect(loadBest(memoryStore({ 'outbreak.best': '{"score":"lots"}' }))).toBeNull();
+    expect(loadBest(memoryStore({ 'outbreak.best.v2': '{oops' }))).toBeNull();
+    expect(loadBest(memoryStore({ 'outbreak.best.v2': '{"score":"lots"}' }))).toBeNull();
+  });
+
+  it('does not show records from before level 100, and leaves them in storage', () => {
+    const oldBest = JSON.stringify({ score: 9000, wave: 9, kills: 400, durationSec: 1800 });
+    const oldBoard = JSON.stringify([{ callsign: 'ANA', score: 9000, wave: 9, kills: 400, durationSec: 1800, timestamp: 1 }]);
+    const store = memoryStore({ 'outbreak.best': oldBest, 'outbreak.leaderboard': oldBoard });
+    expect(loadBest(store)).toBeNull();
+    expect(loadLeaderboard(store)).toEqual([]);
+    expect(recordRun(run, store)).toBe(true);
+    expect(loadBest(store)).toEqual(run);
+    expect(loadLeaderboard(store)).toHaveLength(1);
+    expect(store.getItem('outbreak.best')).toBe(oldBest);
+    expect(store.getItem('outbreak.leaderboard')).toBe(oldBoard);
+    expect(JSON.parse(store.getItem('outbreak.best.v2')!)).toEqual(run);
   });
 
   it('survives storage that throws', () => {

@@ -12,11 +12,11 @@ function memoryStore() {
 }
 
 describe('level progress', () => {
-  it('old level progress and best runs load untouched', () => {
+  it('level progress and best runs load untouched', () => {
     const store = memoryStore();
     const best = { score: 900, wave: 7, kills: 40, durationSec: 300 };
     store.setItem('outbreak.level-progress', JSON.stringify({ highest: 6, finished: false }));
-    store.setItem('outbreak.best', JSON.stringify(best));
+    store.setItem('outbreak.best.v2', JSON.stringify(best));
     expect(loadLevelProgress(store)).toEqual({ highest: 6, finished: false });
     expect(loadBest(store)).toEqual(best);
   });
