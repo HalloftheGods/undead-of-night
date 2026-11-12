@@ -149,13 +149,13 @@ describe('coming back to a run', () => {
     z.speed = 0;
     z.health = 1;
     igniteZombie(state, z, b.id);
-    const { points } = z;
     const { score, kills } = b;
     sim.removePlayer('b');
     steps(sim, 30);
     expect(z.health).toBe(0);
     const back = sim.addPlayer('b2', 'Bea', TOKEN);
-    expect(back).toMatchObject({ score: score + points, kills: kills + 1 });
+    // A walker in town 1 pays 1.
+    expect(back).toMatchObject({ score: score + 1, kills: kills + 1 });
   });
 
   it('works once: a token cannot be spent twice', () => {
