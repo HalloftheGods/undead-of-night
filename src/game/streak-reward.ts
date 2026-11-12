@@ -19,7 +19,7 @@ export function streakNightOf(log: DailyLog, todayKey: string): number {
 
 /** Tonight's night of the streak, read off the save. */
 export function tonightsStreakNight(now: Date = new Date(), store: Store | null = browserStore()): number {
-  return streakNightOf(loadDailyLog(store), dateKeyOf(now));
+  return streakNightOf(loadDailyLog(store, now), dateKeyOf(now));
 }
 
 /** Everything the kit for this night adds, in one line, or null on a night that adds nothing. */

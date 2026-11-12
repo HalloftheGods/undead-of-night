@@ -122,7 +122,7 @@ export function weekLines(log: DailyLog, now: Date = new Date()): readonly WeekL
       key,
       weekday,
       label: dayLabel(key),
-      score: result ? String(result.score) : '-',
+      score: result && !result.carried ? String(result.score) : '-',
       detail: result ? `${townName(result.level)}, ${result.kills} kills${practice}` : UNPLAYED[stamp],
       stamp,
     };

@@ -5,6 +5,12 @@ const NOW = new Date(2026, 10, 7, 20, 0);
 const run = (score: number, attempts = 1) => ({ score, kills: 10, level: 4, attempts, practiceBest: 0 });
 
 describe('the record book', () => {
+  it('stamps a night from before level 100 as counted, without its points', () => {
+    const lines = weekLines({ '2026-11-06': { score: 0, kills: 40, level: 4, attempts: 2, practiceBest: 0, carried: true } }, NOW);
+    expect(lines[1]).toMatchObject({ stamp: 'counted', score: '-', detail: 'Four Corners, 40 kills, 1 practice' });
+    expect(dailySummary({ '2026-11-06': { score: 0, kills: 40, level: 4, attempts: 1, practiceBest: 0, carried: true } }, NOW).best).toBeNull();
+  });
+
   it('reads two leaves at a time on a wide screen and one on a tall one', () => {
     expect(openLeaves(0, 'spread').map((leaf) => leaf.id)).toEqual(['bests', 'ledger']);
     expect(openLeaves(3, 'spread').map((leaf) => leaf.id)).toEqual(['daily', 'week']);

@@ -136,8 +136,45 @@ describe('Daily Night', () => {
 
   it('ignores a damaged save', () => {
     const store = memoryStore();
-    store.setItem('outbreak.daily', '{"2026-11-07":{"score":"lots"},"nonsense":{}}');
+    store.setItem('outbreak.daily.v2', '{"2026-11-07":{"score":"lots"},"nonsense":{}}');
     expect(loadDailyLog(store)).toEqual({});
+  });
+
+  const NOW = new Date(2026, 10, 7, 20, 0);
+  const oldLog = JSON.stringify({
+    '2026-11-04': { score: 300, kills: 12, level: 3, attempts: 1, practiceBest: 0 },
+    '2026-11-05': { score: 500, kills: 25, level: 5, attempts: 1, practiceBest: 0, mp: { 3: { partySize: 3, teamScore: 1450, teamKills: 70, playerScore: 500, playerKills: 25, level: 5, attempts: 1, practiceBestTeamScore: 0 } } },
+    '2026-11-06': { score: 900, kills: 40, level: 4, attempts: 2, practiceBest: 1200, solo: { score: 900, kills: 40, level: 4, attempts: 2, practiceBest: 1200 } },
+    '2026-11-07': { score: 700, kills: 30, level: 4, attempts: 1, practiceBest: 0 },
+  });
+
+  it('keeps the streak from before level 100 but none of its points', () => {
+    const store = memoryStore();
+    store.setItem('outbreak.daily', oldLog);
+    const log = loadDailyLog(store, NOW);
+    expect(log['2026-11-06']).toEqual({ score: 0, kills: 40, level: 4, attempts: 2, practiceBest: 0, carried: true });
+    expect(log['2026-11-05']).toEqual({ score: 0, kills: 25, level: 5, attempts: 1, practiceBest: 0, carried: true });
+    expect(log['2026-11-07']).toBeUndefined();
+    expect(streakOf(log, '2026-11-07')).toBe(3);
+  });
+
+  it('counts the first new run on the day of the change and leaves the old log in storage', () => {
+    const store = memoryStore();
+    store.setItem('outbreak.daily', oldLog);
+    expect(recordDaily('2026-11-07', run(30), store)).toBe(true);
+    expect(store.getItem('outbreak.daily')).toBe(oldLog);
+    const log = loadDailyLog(store, NOW);
+    expect(log['2026-11-07']).toMatchObject({ score: 30, attempts: 1 });
+    expect(log['2026-11-07'].carried).toBeUndefined();
+    expect(log['2026-11-06']).toMatchObject({ score: 0, carried: true });
+    expect(streakOf(log, '2026-11-07')).toBe(4);
+    expect(JSON.parse(store.getItem('outbreak.daily.v2')!)['2026-11-04'].carried).toBe(true);
+  });
+
+  it('never takes a day from before level 100 for the best day', () => {
+    const carried = { score: 0, kills: 40, level: 4, attempts: 2, practiceBest: 0, carried: true as const };
+    expect(bestDay({ '2026-11-05': carried })).toBeNull();
+    expect(bestDay({ '2026-11-05': carried, '2026-11-06': { ...run(20), attempts: 1, practiceBest: 0 } })?.key).toBe('2026-11-06');
   });
 });
 

@@ -9,7 +9,9 @@ import { townRule } from '../../shared/town-rules.ts';
 import { browserStore, readJson, writeJson } from './storage.ts';
 import type { Store } from './storage.ts';
 
-const DAILY_KEY = 'outbreak.daily';
+/** The log since level 100. The one before it, on the old point scale, stays in storage under its own key. */
+const DAILY_KEY = 'outbreak.daily.v2';
+const OLD_DAILY_KEY = 'outbreak.daily';
 /** The levels a day can start on: late enough to be a fight, early enough to be finished before bed. */
 const FIRST_DAILY_LEVEL = 2;
 const LAST_DAILY_LEVEL = 8;
@@ -69,6 +71,8 @@ export interface DailyResult {
   readonly practiceBest: number;
   readonly solo?: DailySoloResult;
   readonly mp?: Partial<Record<DailyPartySize, DailyMpRunResult>>;
+  /** A counted day from before level 100, kept for the streak. Its points are not kept. */
+  readonly carried?: true;
 }
 
 export interface DailyRunInput {
@@ -160,16 +164,38 @@ function isResult(v: unknown): v is DailyResult {
   return ['score', 'kills', 'level', 'attempts', 'practiceBest'].every((key) => Number.isFinite(r[key]));
 }
 
-export function loadDailyLog(store: Store | null = browserStore()): DailyLog {
-  const raw = readJson(store, DAILY_KEY);
+const isDayKey = (key: string): boolean => /^\d{4}-\d{2}-\d{2}$/.test(key);
+
+function parseLog(raw: unknown): Record<string, DailyResult> | null {
   const isNotLog = typeof raw !== 'object' || raw === null;
-  if (isNotLog) return {};
+  if (isNotLog) return null;
   const log: Record<string, DailyResult> = {};
   for (const [key, value] of Object.entries(raw)) {
-    const isDayEntry = /^\d{4}-\d{2}-\d{2}$/.test(key) && isResult(value);
+    const isDayEntry = isDayKey(key) && isResult(value);
     if (isDayEntry) log[key] = value;
   }
   return log;
+}
+
+/**
+ * The log as saved, or, until a level-100 log has been written, the days of the old one carried over:
+ * they keep the streak, with their kills, town and attempts but none of their points, which were on
+ * the old scale. Today is not carried, so tonight's first run on the new scale is the one that counts.
+ */
+function readLog(store: Store | null, todayKey: string): DailyLog {
+  const saved = parseLog(readJson(store, DAILY_KEY));
+  if (saved) return saved;
+  const old = parseLog(readJson(store, OLD_DAILY_KEY)) ?? {};
+  const carried: Record<string, DailyResult> = {};
+  for (const [key, { kills, level, attempts }] of Object.entries(old)) {
+    const isToday = key === todayKey;
+    if (!isToday) carried[key] = { score: 0, kills, level, attempts, practiceBest: 0, carried: true };
+  }
+  return carried;
+}
+
+export function loadDailyLog(store: Store | null = browserStore(), now: Date = new Date()): DailyLog {
+  return readLog(store, dateKeyOf(now));
 }
 
 /** The first run of a day (solo or per party size in MP) is kept as it was; later ones only count as attempts and practice best. */
@@ -260,7 +286,7 @@ export function withRun(log: DailyLog, key: string, run: DailyRunInput): { log: 
 
 /** Records a finished daily run and says whether it was the one that counts. */
 export function recordDaily(key: string, run: DailyRunInput, store: Store | null = browserStore()): boolean {
-  const { log, counted } = withRun(loadDailyLog(store), key, run);
+  const { log, counted } = withRun(readLog(store, key), key, run);
   writeJson(store, DAILY_KEY, log);
   return counted;
 }
@@ -312,6 +338,7 @@ export function streakOf(log: DailyLog, todayKey: string): number {
 export function bestDay(log: DailyLog): { key: string; result: DailyResult } | null {
   let best: { key: string; result: DailyResult } | null = null;
   for (const [key, result] of Object.entries(log)) {
+    if (result.carried) continue;
     const isNewBest = !best || result.score > best.result.score;
     if (isNewBest) best = { key, result };
   }
