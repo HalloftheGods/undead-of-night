@@ -4,7 +4,11 @@
       <header class="sheet-header">
         <div class="header-titles">
           <h2 class="sheet-title">CHARACTER SHEET</h2>
-          <span class="survivor-name">{{ characterName }}</span>
+          <div class="name-cluster">
+            <span v-if="isRusty" class="badge-rusty">RUSTY</span>
+            <span v-else-if="isMaxed" class="badge-op">OP</span>
+            <span class="survivor-name">{{ displayName }}</span>
+          </div>
         </div>
         <div class="currency-chips">
           <span class="chip chip-level">LVL {{ progression.level }}</span>
@@ -14,6 +18,10 @@
           <span class="chip chip-gp">{{ progression.gp }} GP</span>
         </div>
       </header>
+
+      <div v-if="isRusty" class="rusty-banner">
+        SURVIVOR IS RUSTY: RE-ALLOCATE AP TO RESTORE SHARPNESS
+      </div>
 
       <section class="xp-section">
         <div class="xp-labels">
@@ -101,6 +109,8 @@ import {
   canAllocateStat,
   canRespecCharacter,
   effectiveStatSlots,
+  isCharacterMaxed,
+  isCharacterRusty,
   xpRequiredForLevel,
   type ProgressionState,
 } from '../../shared/progression.ts';
@@ -138,6 +148,13 @@ const xpRatio = computed(() => {
 });
 
 const canRespec = computed(() => canRespecCharacter(props.skin, props.progression));
+const isMaxed = computed(() => isCharacterMaxed(props.skin, props.progression));
+const isRusty = computed(() => isCharacterRusty(props.skin, props.progression));
+const displayName = computed(() => {
+  if (isRusty.value) return `Rusty ${props.characterName}`;
+  if (isMaxed.value) return `OP ${props.characterName}`;
+  return props.characterName;
+});
 
 export interface StatRowView {
   key: StatKey;
@@ -232,6 +249,50 @@ const proficiencyRows = computed<ProficiencyRow[]>(() => {
   margin: 0;
   color: var(--fire-bright, #ffc03c);
   letter-spacing: 1px;
+}
+
+.name-cluster {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 1.5);
+}
+
+.badge-op {
+  background: var(--fire-bright, #ffc03c);
+  color: var(--ink, #0d0b16);
+  font-family: 'Silkscreen', monospace;
+  font-weight: 700;
+  font-size: calc(var(--u) * 2.5);
+  padding: 1px 6px;
+  border-radius: 2px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.badge-rusty {
+  background: #c2410c;
+  color: #fed7aa;
+  font-family: 'Silkscreen', monospace;
+  font-weight: 700;
+  font-size: calc(var(--u) * 2.5);
+  padding: 1px 6px;
+  border-radius: 2px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border: 1px solid #78350f;
+}
+
+.rusty-banner {
+  background: rgba(194, 65, 12, 0.2);
+  border: 1px solid #c2410c;
+  color: #fb923c;
+  font-family: 'Silkscreen', monospace;
+  font-size: calc(var(--u) * 2);
+  padding: calc(var(--u) * 1.5);
+  text-align: center;
+  border-radius: calc(var(--u) * 1);
+  letter-spacing: 0.05em;
+  margin-bottom: calc(var(--u) * 2);
 }
 
 .survivor-name {

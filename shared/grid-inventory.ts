@@ -36,24 +36,27 @@ export const ITEM_FOOTPRINTS: Record<string, GridFootprint> = {
   firework: { width: 1, height: 1 },
   candy: { width: 1, height: 1 },
   map: { width: 1, height: 1 },
+  bottle: { width: 1, height: 1 },
+  fountain: { width: 1, height: 1 },
+  water_bottle: { width: 1, height: 1 },
 
-  bottle: { width: 1, height: 2 },
-  fountain: { width: 1, height: 2 },
-  water_bottle: { width: 1, height: 2 },
   soda: { width: 1, height: 2 },
   hammer_tool: { width: 1, height: 2 },
   knife: { width: 1, height: 2 },
 
-  pistol: { width: 2, height: 1 },
+  full_size_bar: { width: 2, height: 1 },
+  sheet_curtain: { width: 2, height: 1 },
+  toolkit: { width: 2, height: 1 },
+
+  pistol: { width: 2, height: 2 },
   medkit: { width: 2, height: 2 },
-  sheet_curtain: { width: 2, height: 2 },
   armor_vest: { width: 2, height: 2 },
 
   crowbar: { width: 1, height: 3 },
   plank: { width: 1, height: 4 },
 
   shotgun: { width: 4, height: 1 },
-  carbine: { width: 4, height: 2 },
+  carbine: { width: 3, height: 2 },
 };
 
 const DEFAULT_FOOTPRINT: GridFootprint = { width: 1, height: 1 };

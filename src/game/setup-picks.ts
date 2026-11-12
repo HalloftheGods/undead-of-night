@@ -8,6 +8,7 @@ import { DIFFICULTIES } from '../../shared/difficulty.ts';
 import type { DifficultyDef, DifficultyId } from '../../shared/difficulty.ts';
 import { statBarsOf } from './character-select-view.ts';
 import { MODE_CARDS } from './mode-select-view.ts';
+import { characterBadgeName, characterLevel, isCharacterMaxed, isCharacterRusty, type ProgressionState } from '../../shared/progression.ts';
 import type { PixelSprite } from '../art/types.ts';
 import type { PlayMode } from './play-flow.ts';
 
@@ -26,6 +27,9 @@ export interface PickOption {
   readonly id: string;
   readonly name: string;
   readonly bars: readonly PickBar[];
+  readonly level?: number;
+  readonly isMaxed?: boolean;
+  readonly isRusty?: boolean;
 }
 
 export interface SetupPick {
@@ -83,7 +87,18 @@ function difficultyBars(def: DifficultyDef): readonly PickBar[] {
 
 const MODE_OPTIONS: readonly PickOption[] = MODE_CARDS.map((card) => ({ id: card.mode, name: card.label, bars: modeBars(card.mode) }));
 const DIFFICULTY_OPTIONS: readonly PickOption[] = DIFFICULTIES.map((each) => ({ id: each.id, name: each.label, bars: difficultyBars(each) }));
-const SURVIVOR_OPTIONS: readonly PickOption[] = CHARACTERS.map((each, index) => ({ id: String(index), name: each.name, bars: statBarsOf(index) }));
+export function survivorOptions(progression?: ProgressionState): readonly PickOption[] {
+  return CHARACTERS.map((each, index) => ({
+    id: String(index),
+    name: characterBadgeName(index, each.name, progression),
+    bars: statBarsOf(index, progression),
+    level: characterLevel(index, progression),
+    isMaxed: isCharacterMaxed(index, progression),
+    isRusty: isCharacterRusty(index, progression),
+  }));
+}
+
+const SURVIVOR_OPTIONS: readonly PickOption[] = survivorOptions();
 
 /** Where `id` sits in `options`, or the first option when it is not there. */
 function indexOf(options: readonly PickOption[], id: string): number {
@@ -91,17 +106,18 @@ function indexOf(options: readonly PickOption[], id: string): number {
 }
 
 /** The three picks, in the order the page shows them, each marked with what is chosen now. */
-export function setupPicks(choices: SetupChoices): readonly SetupPick[] {
+export function setupPicks(choices: SetupChoices, progression?: ProgressionState): readonly SetupPick[] {
   return [
     { key: 'mode', number: 1, label: 'Mode', options: MODE_OPTIONS, chosen: indexOf(MODE_OPTIONS, choices.mode) },
     { key: 'difficulty', number: 2, label: 'Difficulty', options: DIFFICULTY_OPTIONS, chosen: indexOf(DIFFICULTY_OPTIONS, choices.difficulty) },
-    survivorPick(choices.survivor),
+    survivorPick(choices.survivor, 3, progression),
   ];
 }
 
 /** The survivor pick on its own, as the Daily Night page offers it beside the cards the day has already chosen. */
-export function survivorPick(survivor: number, number: number = 3): SetupPick {
-  return { key: 'who', number, label: 'Survivor', options: SURVIVOR_OPTIONS, chosen: indexOf(SURVIVOR_OPTIONS, String(survivor)) };
+export function survivorPick(survivor: number, number: number = 3, progression?: ProgressionState): SetupPick {
+  const options = progression ? survivorOptions(progression) : SURVIVOR_OPTIONS;
+  return { key: 'who', number, label: 'Survivor', options, chosen: indexOf(options, String(survivor)) };
 }
 
 /** A card in the picks row that shows a choice already made for you, such as Daily Night's town: no list behind it. */

@@ -4,7 +4,7 @@
 import { CHARACTERS, characterOf, type Character } from './characters.ts';
 
 export const STAT_SLOTS = 5;
-export const STAT_BASELINE = 2;
+export const STAT_BASELINE = 0;
 
 export type StatKey = 'stealth' | 'reload' | 'speed' | 'strength' | 'search';
 

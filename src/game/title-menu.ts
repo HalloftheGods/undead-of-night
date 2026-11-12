@@ -19,7 +19,8 @@ export type TitlePage =
   | "radio"
   | "options"
   | "controls"
-  | "changelog";
+  | "changelog"
+  | "dev_inventory";
 
 /** The menu's three parents. */
 export type MenuGroup = "books" | "play" | "extras";

@@ -15,6 +15,7 @@
       <div class="title-links">
         <MenuLink v-if="!privacyOpen" class="title-privacy" @press="openPrivacy()">Privacy</MenuLink>
         <MenuLink class="title-version" aria-label="What's new in this version" @press="nav = openPage(nav, 'changelog')">v{{ APP_VERSION }}</MenuLink>
+        <MenuLink v-if="isDev" class="title-dev" @press="nav = openPage(nav, 'dev_inventory')">Dev: Items</MenuLink>
       </div>
       <p class="title-credit">
         <img class="title-omega" :src="BRAND_MARK" alt="" />
@@ -35,6 +36,7 @@
   <SoundTestPage v-else-if="nav.page === 'sound'" :ui @close="close" />
   <RadioPage v-else-if="nav.page === 'radio'" :ui @close="close" />
   <ControlsPage v-else-if="nav.page === 'controls'" @close="close" />
+  <DevInventoryPage v-else-if="nav.page === 'dev_inventory'" :art="ui.art" @close="close" />
   <OptionsPage v-else :ui @close="close" />
 </template>
 
@@ -51,7 +53,7 @@ import { TITLE_MENU } from '../game/title-menu.ts';
 import type { MenuGroup, TitleMenuItem, TitlePage } from '../game/title-menu.ts';
 import { closeBook, closePage, closePlay, INVITE_LANDING, openBook, openPage, pickLevel, TITLE_HOME } from '../game/title-nav.ts';
 import InstallCartridge from './InstallCartridge.vue';
-import { BooksPage, CandyMagazinePage, ChangelogPage, ControlsPage, DailyPage, HowToPlay, LevelsPage, RadioPage, RecordsPage, SoundTestPage, TownGuidePage } from './lazy-pages.ts';
+import { BooksPage, CandyMagazinePage, ChangelogPage, ControlsPage, DailyPage, DevInventoryPage, HowToPlay, LevelsPage, RadioPage, RecordsPage, SoundTestPage, TownGuidePage } from './lazy-pages.ts';
 import MenuLink from './MenuLink.vue';
 import OptionsPage from './OptionsPage.vue';
 import PlaySetup from './PlaySetup.vue';
@@ -65,12 +67,31 @@ const APP_VERSION = __APP_VERSION__;
 
 const { ui, splashing = false } = defineProps<{ ui: UiState; splashing?: boolean }>();
 
+const isDev = import.meta.env.DEV;
+
+function checkDevRouting(): boolean {
+  if (typeof window === 'undefined') return false;
+  const searchParams = new URLSearchParams(window.location.search);
+  const devParam = searchParams.get('dev');
+  const pageParam = searchParams.get('page');
+  const isDevInventoryParam = devParam === 'inventory' || pageParam === 'dev_inventory' || pageParam === 'inventory';
+  const isHashDev = window.location.hash === '#dev-inventory';
+  return isDevInventoryParam || isHashDev;
+}
+
 const game = useGame();
 const nav = ref(TITLE_HOME);
 /** Read before the invite below rewrites the address, so an invite link never waits for a key. */
 const asking = ref(shouldAskForPress(window.location.search));
 /** The menu fades in after a press, not when coming back to the title. */
 const arrived = ref(false);
+
+const opensDevInventory = checkDevRouting();
+if (opensDevInventory) {
+  nav.value = openPage(nav.value, 'dev_inventory');
+  asking.value = false;
+  arrived.value = true;
+}
 
 /**
  * An invite link opens co-op setup. ?join=host:port fills in the server address; ?room=CODE holds

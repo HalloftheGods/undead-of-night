@@ -25,6 +25,8 @@ import { spawnSalvage, takeSalvage } from './salvage.ts';
 import { isSalvagePickup } from './salvage-data.ts';
 import { isTreasurePickup, spawnTreasure, takeTreasure } from './treasure.ts';
 import { syncGun } from './weapons.ts';
+import { buildingAt } from './world-query.ts';
+import { groundBuildingId } from './leftovers.ts';
 
 /** Share of kill drops that are a bandage rather than a few rounds. */
 const KILL_DROP_BANDAGE_ODDS = 0.4;

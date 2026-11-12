@@ -6,6 +6,7 @@ import { AMMO_PICKUPS } from './constants.ts';
 import { townContainers } from './containers.ts';
 import type { ContainerState } from './containers.ts';
 import { FORTIFICATION_TYPES } from './events.ts';
+import { BUILDING_DEFS } from './protocol.ts';
 import type { BuildingInstance, WorldMap } from './protocol.ts';
 import type { PickupState, SimState } from './sim-state.ts';
 import { buildingAt } from './world-query.ts';
@@ -24,6 +25,7 @@ export interface LeftoverView {
   readonly supplies: Partial<Record<SupplyKind, number>>;
   readonly clue?: boolean;
   readonly clueItem?: string;
+  readonly clueAt?: { readonly x: number; readonly y: number };
 }
 
 const MED_PICKUPS: ReadonlySet<string> = new Set(['bandage', 'medkit', 'disinfectant', 'antibiotics']);
@@ -112,14 +114,78 @@ export function leftoversOf(
     byBuilding.set(id, supplies);
   }
   const outdoors = containerLeftovers(map, containers, byBuilding);
-  const indoors = [...byBuilding].map(([building, supplies]) => {
+  const indoors = [...byBuilding].flatMap(([building, supplies]) => {
     const hasClue = clues?.has(building) ?? false;
     const clueItem = clues instanceof Map ? clues.get(building) : undefined;
-    return {
+    if (!hasClue) return [{ building, supplies }];
+
+    const matchesBuildingPickup = (p: PickupState): boolean => {
+      if (!isLasting(p)) return false;
+      const b = buildingAt(map, p.x, p.y);
+      return b !== null && groundBuildingId(b) === building;
+    };
+    const buildingPickups = pickups.filter(matchesBuildingPickup);
+    const buildingContainers = townContainers(map).filter((c) => {
+      const home = c.building ? map.buildings.find((b) => b.id === c.building) : undefined;
+      return home !== undefined && groundBuildingId(home) === building;
+    });
+    const populatedContainers = buildingContainers.flatMap((c) => {
+      const state = containers[c.id];
+      if (!state) return [];
+      const itemType = state.opened ? state.items?.[0]?.type : state.loot?.type;
+      if (!itemType) return [];
+      return [{
+        x: Math.round(c.x),
+        y: Math.round(c.y),
+        type: itemType,
+        kind: supplyKindOf(itemType),
+      }];
+    });
+
+    interface RevealedObject {
+      x: number;
+      y: number;
+      type: string;
+      kind: SupplyKind;
+    }
+    const objects: RevealedObject[] = [
+      ...buildingPickups.map((p) => ({
+        x: Math.round(p.x),
+        y: Math.round(p.y),
+        type: p.type,
+        kind: supplyKindOf(p.type),
+      })),
+      ...populatedContainers,
+    ];
+
+    const hasNoObjects = objects.length === 0;
+    const hasTarget = clueItem ? objects.some((o) => o.type === clueItem) : true;
+    if (hasNoObjects || !hasTarget) {
+      if (clues instanceof Map) (clues as Map<string, string>).delete(building);
+      return [{ building, supplies }];
+    }
+
+    const primary = (clueItem ? objects.find((o) => o.type === clueItem) : undefined) ?? objects[0];
+    const others = objects.filter((o) => o !== primary);
+
+    const primaryView: LeftoverView = {
       building,
       supplies,
-      ...(hasClue ? { clue: true, ...(clueItem ? { clueItem } : {}) } : {}),
+      clue: true,
+      clueItem: primary.type,
+      clueAt: { x: primary.x, y: primary.y },
     };
+
+    const otherViews: LeftoverView[] = others.map((o) => ({
+      building,
+      at: { x: o.x, y: o.y },
+      supplies: { [o.kind]: 1 },
+      clue: true,
+      clueItem: o.type,
+      clueAt: { x: o.x, y: o.y },
+    }));
+
+    return [primaryView, ...otherViews];
   });
   return [...indoors, ...outdoors];
 }

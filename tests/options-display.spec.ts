@@ -11,16 +11,16 @@ function memoryStore(): Store {
 }
 
 describe('display prefs', () => {
-  it('round-trips the palette and UI size', () => {
+  it('round-trips the palette, UI size, and autoFadeXp', () => {
     const store = memoryStore();
-    saveDisplayPrefs(store, { palette: 'clear', uiScale: 'larger' });
-    expect(loadDisplayPrefs(store)).toEqual({ palette: 'clear', uiScale: 'larger' });
+    saveDisplayPrefs(store, { palette: 'clear', uiScale: 'larger', autoFadeXp: false });
+    expect(loadDisplayPrefs(store)).toEqual({ palette: 'clear', uiScale: 'larger', autoFadeXp: false });
   });
 
   it('falls back to defaults for missing or unknown values', () => {
     const store = memoryStore();
     expect(loadDisplayPrefs(store)).toEqual(DEFAULT_DISPLAY);
-    store.setItem('outbreak.display', JSON.stringify({ palette: 'neon', uiScale: 'huge' }));
+    store.setItem('outbreak.display', JSON.stringify({ palette: 'neon', uiScale: 'huge', autoFadeXp: 'invalid' }));
     expect(loadDisplayPrefs(store)).toEqual(DEFAULT_DISPLAY);
     expect(loadDisplayPrefs(null)).toEqual(DEFAULT_DISPLAY);
   });

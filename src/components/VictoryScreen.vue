@@ -10,18 +10,18 @@
       <div><dt>Hordes survived</dt><dd>{{ result.stats.wave }}</dd></div>
       <div><dt>Time survived</dt><dd>{{ formatDuration(result.stats.durationSec) }}</dd></div>
       <div><dt>Kills</dt><dd>{{ result.kills }}</dd></div>
-      <div><dt>Score</dt><dd>{{ result.score }}</dd></div>
+      <div><dt>Score</dt><dd>{{ result.score.toLocaleString() }} XP</dd></div>
     </dl>
 
     <table v-if="result.stats.players.length > 1" class="victory-table">
       <thead>
-        <tr><th>Survivor</th><th>Kills</th><th>Score</th></tr>
+        <tr><th>Survivor</th><th>Kills</th><th>XP</th></tr>
       </thead>
       <tbody>
         <tr v-for="player in ranked" :key="player.id" :class="{ 'is-you': player.id === result.localId }">
           <td>{{ displayName(player.name, player.skin) }}</td>
           <td>{{ player.kills }}</td>
-          <td>{{ player.score }}</td>
+          <td>{{ player.score.toLocaleString() }}</td>
         </tr>
       </tbody>
     </table>

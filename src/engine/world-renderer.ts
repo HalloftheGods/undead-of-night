@@ -219,6 +219,29 @@ export class WorldRenderer {
     this.effects.reset();
   }
 
+  /** Flash the survivor's vertical retro green XP bar. */
+  flashXp(fraction: number, timeSec: number): void {
+    this.overlay.flashXp(fraction, timeSec);
+  }
+
+  setAutoFadeXp(autoFade: boolean): void {
+    this.overlay.setAutoFadeXp(autoFade);
+  }
+
+  setXpFraction(fraction: number): void {
+    this.overlay.setXpFraction(fraction);
+  }
+
+  /** Trigger radiant level up sparks, glow pulse, and flash. */
+  triggerLevelUpFx(x: number, y: number): void {
+    this.fx.triggerLevelUp(x, y);
+  }
+
+  /** Add floating text over the world (e.g. "+1 AP"). */
+  addFloatingText(text: string, x: number, y: number, color: string): void {
+    this.fx.particles.addText(text, x, y, color);
+  }
+
   handleEvent(event: GameEvent, ctx: Omit<FxContext, 'time'>): void {
     this.emotes.handle(event, this.time);
     this.fx.handle(event, { ...ctx, time: this.time });

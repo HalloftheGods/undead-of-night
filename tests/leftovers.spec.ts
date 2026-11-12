@@ -111,6 +111,7 @@ describe('supplies left behind', () => {
     const packet = sim.snapshot();
     expect(isSnapshotPacket({ ...packet, leftovers: [{ building: 'b1', supplies: { med: 2, gear: 1 } }] })).toBe(true);
     expect(isSnapshotPacket({ ...packet, leftovers: [{ building: 'b1', supplies: { med: 2, gear: 1 }, clue: true }] })).toBe(true);
+    expect(isSnapshotPacket({ ...packet, leftovers: [{ building: 'b1', supplies: { med: 2, gear: 1 }, clue: true, clueAt: { x: 10, y: 20 } }] })).toBe(true);
     expect(isSnapshotPacket({ ...packet, leftovers: [{ building: 'b1', supplies: { cake: 1 } }] })).toBe(false);
     expect(isSnapshotPacket({ ...packet, leftovers: [{ supplies: {} }] })).toBe(false);
   });
@@ -121,7 +122,7 @@ describe('supplies left behind', () => {
     drop(state, 'medkit', cornerOf(house));
     const clues = new Set([house.id]);
     const leftovers = leftoversOf(state.map, state.pickups, new Set([house.id]), clues);
-    expect(leftovers).toEqual([{ building: house.id, supplies: { med: 1 }, clue: true }]);
+    expect(leftovers).toEqual([{ building: house.id, supplies: { med: 1 }, clue: true, clueAt: cornerOf(house) }]);
   });
 
   it('flags a building as a clue with clueItem when clues is a map', () => {
@@ -130,7 +131,17 @@ describe('supplies left behind', () => {
     drop(state, 'shotgun', cornerOf(house));
     const clues = new Map([[house.id, 'shotgun']]);
     const leftovers = leftoversOf(state.map, state.pickups, new Set([house.id]), clues);
-    expect(leftovers).toEqual([{ building: house.id, supplies: { weapon: 1 }, clue: true, clueItem: 'shotgun' }]);
+    expect(leftovers).toEqual([{ building: house.id, supplies: { weapon: 1 }, clue: true, clueItem: 'shotgun', clueAt: cornerOf(house) }]);
+  });
+
+  it('clears the clue once the clue item has been collected', () => {
+    const { state } = quietSim();
+    const house = firstHouse(state);
+    drop(state, 'bandage', cornerOf(house));
+    const clues = new Map([[house.id, 'shotgun']]);
+    const leftovers = leftoversOf(state.map, state.pickups, new Set([house.id]), clues);
+    expect(leftovers).toEqual([{ building: house.id, supplies: { med: 1 } }]);
+    expect(clues.has(house.id)).toBe(false);
   });
 });
 

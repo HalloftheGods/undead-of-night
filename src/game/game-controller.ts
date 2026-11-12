@@ -224,6 +224,7 @@ export class GameController {
     if (noCanvas) return;
     const art = buildArtBook();
     this.renderer = new WorldRenderer(canvas, art, motion.reduced.value, motion.shake.value);
+    this.renderer.setAutoFadeXp(this.ui.value.autoFadeXp);
     this.syncTitleMap();
     this.publish({ art });
   }
@@ -330,9 +331,15 @@ export class GameController {
     this.onResize();
   }
 
+  setAutoFadeXp(autoFadeXp: boolean): void {
+    this.publish({ autoFadeXp });
+    this.saveDisplay();
+    this.renderer?.setAutoFadeXp(autoFadeXp);
+  }
+
   private saveDisplay(): void {
-    const { palette, uiScale } = this.ui.value;
-    saveDisplayPrefs(browserStore(), { palette, uiScale });
+    const { palette, uiScale, autoFadeXp } = this.ui.value;
+    saveDisplayPrefs(browserStore(), { palette, uiScale, autoFadeXp });
   }
 
   toggleMute(): void {

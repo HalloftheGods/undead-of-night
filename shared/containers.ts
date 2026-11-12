@@ -78,7 +78,16 @@ export interface ContainerGridDimensions {
 }
 
 export const CONTAINER_GRID_SIZE: Partial<Record<ContainerKind, ContainerGridDimensions>> = {
-  locker: { cols: 3, rows: 8 },
+  booth: { cols: 10, rows: 5 },
+  bowl: { cols: 2, rows: 2 },
+  box: { cols: 5, rows: 7 },
+  cabinet: { cols: 6, rows: 4 },
+  car: { cols: 9, rows: 6 },
+  drawer: { cols: 4, rows: 4 },
+  dumpster: { cols: 5, rows: 5 },
+  fridge: { cols: 5, rows: 9 },
+  locker: { cols: 5, rows: 9 },
+  shelf: { cols: 7, rows: 7 },
 };
 
 const DEFAULT_CONTAINER_GRID: ContainerGridDimensions = { cols: 5, rows: 4 };

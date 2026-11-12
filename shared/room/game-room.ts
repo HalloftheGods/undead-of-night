@@ -280,6 +280,7 @@ export function createGameRoom(options: GameRoomOptions): GameRoom {
     else if (packet.type === 'bag') sim.bagCommand(client.playerId, packet.commit);
     else if (packet.type === 'home') sim.homeCommand(client.playerId, packet.action);
     else if (packet.type === 'emote') sim.emote(client.playerId, packet.emote);
+    else if (packet.type === 'boon') sim.giveBoon(client.playerId, packet.candy);
     else vote.ask(client);
   }
 

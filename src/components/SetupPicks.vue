@@ -32,6 +32,15 @@
             <span class="pick-caret" aria-hidden="true">▾</span>
           </span>
           <span class="pick-art">
+            <span
+              v-if="pick.key === 'who' && (chosenOption(pick).isRusty || chosenOption(pick).level)"
+              class="pick-popart-badge is-tile"
+              :class="{ 'is-op': chosenOption(pick).isMaxed, 'is-rusty': chosenOption(pick).isRusty }"
+              aria-hidden="true"
+            >
+              <span class="popart-stamp">{{ badgeStamp(chosenOption(pick)) }}</span>
+              <span v-if="!chosenOption(pick).isRusty && !chosenOption(pick).isMaxed" class="popart-num">{{ chosenOption(pick).level }}</span>
+            </span>
             <img v-if="tileUrl(pick)" :src="tileUrl(pick)" alt="" draggable="false" />
             <span :key="shownOption(pick).id" class="pick-title" :class="`is-${pick.key}`" :style="{ '--chars': longestWord(shownOption(pick).name) }">{{ shownOption(pick).name }}</span>
           </span>
@@ -65,6 +74,15 @@
             @click="choose(openPick.key, option.id)"
           >
             <span class="pick-option-art" :class="{ 'is-figure': openPick.key === 'who' }">
+              <span
+                v-if="openPick.key === 'who' && (option.isRusty || option.level)"
+                class="pick-popart-badge"
+                :class="{ 'is-op': option.isMaxed, 'is-rusty': option.isRusty }"
+                aria-hidden="true"
+              >
+                <span class="popart-stamp">{{ badgeStamp(option) }}</span>
+                <span v-if="!option.isRusty && !option.isMaxed" class="popart-num">{{ option.level }}</span>
+              </span>
               <img v-if="optionUrl(openPick.key, option.id)" :src="optionUrl(openPick.key, option.id)" alt="" draggable="false" />
               <span class="pick-option-name" :style="{ '--chars': longestWord(option.name) }">{{ option.name }}</span>
             </span>
@@ -129,6 +147,12 @@ function setOption(index: number, el: Ref): void {
 
 function listId(key: PickKey): string {
   return `setup-pick-${key}`;
+}
+
+function badgeStamp(opt?: PickOption): string {
+  if (opt?.isRusty) return 'RUSTY';
+  if (opt?.isMaxed) return 'OP';
+  return 'LVL';
 }
 
 /** What a pick's portrait shows: the option being previewed in its open list, else its choice. */

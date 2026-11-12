@@ -18,6 +18,8 @@ import { bodyHeight, drawSprite } from './sprite-cache.ts';
 import { drawFingertipBox, drawStick } from './touch-overlay.ts';
 import type { VisualStore } from './visuals.ts';
 import { hitPalette } from './hit-palette.ts';
+import { formatItemName } from '../game/dual-loot-modal.ts';
+import { CLUE_COLOR } from '../game/map-leftovers.ts';
 
 const POINTER_INSET = 8;
 /** Clear of the HUD in every corner, and of the screen's edge, where the van must not be missed. */
@@ -45,6 +47,12 @@ const STAMINA_BAR_DROP = 5;
 const STAMINA_BAR_WIDTH = 16;
 /** A winded survivor's bar blinks this many times a second. */
 const WINDED_BLINKS_PER_SEC = 3;
+/** Retro CRT phosphor green for temporary player XP bar. */
+const RETRO_GREEN = '#38ef7d';
+const XP_BAR_HEIGHT = 14;
+const XP_BAR_OFFSET_X = 11;
+const XP_BAR_DURATION_SEC = 2.5;
+const XP_BAR_FADE_SEC = 0.8;
 
 type Pixel = readonly [number, number];
 
@@ -129,6 +137,15 @@ function drawBar(ctx: CanvasRenderingContext2D, x: number, y: number, width: num
   ctx.fillRect(x, y, filled, 2);
 }
 
+export function drawVerticalBar(ctx: CanvasRenderingContext2D, x: number, y: number, height: number, fraction: number, color: string): void {
+  ctx.fillStyle = INK;
+  ctx.fillRect(x - 1, y - 1, 4, height + 2);
+  const clampedFraction = Math.min(1, Math.max(0, fraction));
+  const filled = Math.max(1, Math.round(height * clampedFraction));
+  ctx.fillStyle = color;
+  ctx.fillRect(x, y + height - filled, 2, filled);
+}
+
 /**
  * Whether a screen point is on a head the player can make out. A head in the dark
  * stays unmarked, for the same reason a hurt zombie's bar does: it would mark the spot.
@@ -163,6 +180,22 @@ export class OverlayRenderer {
   private readonly keepOuts: KeepOut[] = [];
   private readonly headroom = new Map<EntityId, number>();
   private readonly sugarTops = new Map<EntityId, number>();
+  private xpFraction = 0;
+  private xpFlashUntil = 0;
+  private autoFadeXp = true;
+
+  setAutoFadeXp(autoFade: boolean): void {
+    this.autoFadeXp = autoFade;
+  }
+
+  setXpFraction(fraction: number): void {
+    this.xpFraction = Math.max(0, Math.min(1, fraction));
+  }
+
+  flashXp(fraction: number, time: number): void {
+    this.xpFraction = Math.max(0, Math.min(1, fraction));
+    this.xpFlashUntil = time + XP_BAR_DURATION_SEC;
+  }
 
   constructor(art: ArtBook, visuals: VisualStore) {
     this.art = art;
@@ -247,6 +280,39 @@ export class OverlayRenderer {
     const x = Math.round(player.x) - left - STAMINA_BAR_WIDTH / 2;
     const y = Math.round(player.y) - top + STAMINA_BAR_DROP;
     drawBar(ctx, x, y, STAMINA_BAR_WIDTH, bar.fraction, bar.color);
+  }
+
+  /** The local survivor's retro green XP bar, vertical on the left of their sprite. */
+  private drawXp(ctx: CanvasRenderingContext2D, player: PlayerEntity, isLocal: boolean, left: number, top: number, time: number): void {
+    const isVisiblePlayer = isLocal && player.status === 'alive';
+    if (!isVisiblePlayer) return;
+
+    let alpha = 1;
+    if (this.autoFadeXp) {
+      const remaining = this.xpFlashUntil - time;
+      const isExpired = remaining <= 0;
+      if (isExpired) return;
+      const isFading = remaining < XP_BAR_FADE_SEC;
+      if (isFading) {
+        alpha = Math.max(0, Math.min(1, remaining / XP_BAR_FADE_SEC));
+      }
+    }
+
+    const px = Math.round(player.x) - left;
+    const py = Math.round(player.y) - top;
+    const height = this.heightOf(player.id);
+    const x = px - XP_BAR_OFFSET_X;
+    const y = py - height + 2;
+
+    const needsAlphaAdjustment = alpha < 1;
+    if (needsAlphaAdjustment) {
+      const previousAlpha = ctx.globalAlpha;
+      ctx.globalAlpha = previousAlpha * alpha;
+      drawVerticalBar(ctx, x, y, XP_BAR_HEIGHT, this.xpFraction, RETRO_GREEN);
+      ctx.globalAlpha = previousAlpha;
+    } else {
+      drawVerticalBar(ctx, x, y, XP_BAR_HEIGHT, this.xpFraction, RETRO_GREEN);
+    }
   }
 
   private drawPointers(ctx: CanvasRenderingContext2D, scene: SceneView, left: number, top: number, viewW: number, viewH: number): void {
@@ -349,6 +415,72 @@ export class OverlayRenderer {
     else drawOutlinedText(ctx, 'VAN', x, tagY, AMBER);
   }
 
+  /** An arrow to a map clue cache while it is out of sight; in sight, a ring and what it is. */
+  private drawClue(
+    ctx: CanvasRenderingContext2D,
+    clue: { x: number; y: number; label: string },
+    left: number,
+    top: number,
+    viewW: number,
+    viewH: number,
+    time: number,
+    single = true,
+  ): void {
+    const x = Math.round(clue.x) - left;
+    const y = Math.round(clue.y) - top;
+    const pointer = edgePointer(x, y, viewW, viewH, VAN_POINTER_INSET);
+    if (pointer) {
+      drawArrow(ctx, pointer, CLUE_COLOR);
+      const labelBelow = pointer.y < viewH / 2;
+      const labelY = labelBelow ? pointer.y + VAN_POINTER_LABEL_GAP : pointer.y - VAN_POINTER_LABEL_GAP - FONT_HEIGHT;
+      drawOutlinedText(ctx, clue.label, pointer.x, labelY, CLUE_COLOR);
+      return;
+    }
+    const blinkOn = !single || Math.floor(time * 3) % 2 === 0;
+    if (!blinkOn) return;
+    ctx.fillStyle = CLUE_COLOR;
+    for (const [dx, dy] of EXIT_RING) ctx.fillRect(x + dx, y + dy, 1, 1);
+    drawOutlinedText(ctx, clue.label, x, y - VAN_TAG_HEIGHT / 2, CLUE_COLOR);
+  }
+
+  private drawClues(
+    ctx: CanvasRenderingContext2D,
+    scene: SceneView,
+    left: number,
+    top: number,
+    viewW: number,
+    viewH: number,
+    time: number,
+  ): void {
+    const isClueLeftover = (l: { clue?: boolean; clueAt?: { x: number; y: number }; at?: { x: number; y: number } }): boolean => {
+      const hasClue = l.clue === true;
+      const hasSpot = l.clueAt !== undefined || l.at !== undefined;
+      return hasClue && hasSpot;
+    };
+    const clues = (scene.leftovers ?? []).filter(isClueLeftover);
+    if (clues.length === 0) return;
+
+    if (clues.length === 1) {
+      const leftover = clues[0];
+      const at = leftover.clueAt ?? leftover.at!;
+      const label = leftover.clueItem ? formatItemName(leftover.clueItem).toUpperCase() : 'CACHE';
+      this.drawClue(ctx, { x: at.x, y: at.y, label }, left, top, viewW, viewH, time, true);
+      return;
+    }
+
+    const SLOT_DURATION_SEC = 0.9;
+    const cyclePos = (time / SLOT_DURATION_SEC) % clues.length;
+    const activeIndex = Math.floor(cyclePos);
+    const fraction = cyclePos - activeIndex;
+    const isBlinkGap = fraction >= 0.85;
+    if (isBlinkGap) return;
+
+    const activeClue = clues[activeIndex];
+    const at = activeClue.clueAt ?? activeClue.at!;
+    const label = activeClue.clueItem ? formatItemName(activeClue.clueItem).toUpperCase() : 'CACHE';
+    this.drawClue(ctx, { x: at.x, y: at.y, label }, left, top, viewW, viewH, time, false);
+  }
+
   draw(
     ctx: CanvasRenderingContext2D,
     scene: SceneView,
@@ -371,9 +503,11 @@ export class OverlayRenderer {
     this.headroom.clear();
     this.sugarTops.clear();
     for (const player of scene.players) {
-      const above = this.drawPlayerTag(ctx, player, player.id === scene.localId, left, top, time);
+      const isLocal = player.id === scene.localId;
+      const above = this.drawPlayerTag(ctx, player, isLocal, left, top, time);
       this.drawSugar(ctx, player, left, top, above, time);
-      this.drawStamina(ctx, player, player.id === scene.localId, left, top, time);
+      this.drawStamina(ctx, player, isLocal, left, top, time);
+      this.drawXp(ctx, player, isLocal, left, top, time);
     }
     this.drawQuestMarks(ctx, scene, left, top);
     this.drawSearch(ctx, scene, left, top, time);
@@ -382,6 +516,8 @@ export class OverlayRenderer {
     if (exitShown) this.drawExit(ctx, scene.exit, left, top, viewW, viewH);
     const dropShown = scene.drop !== null && scene.phase !== 'gameover';
     if (dropShown) this.drawDrop(ctx, scene.drop, left, top, viewW, viewH, time);
+    const cluesShown = scene.phase !== 'gameover';
+    if (cluesShown) this.drawClues(ctx, scene, left, top, viewW, viewH, time);
   }
 
   drawCrosshair(

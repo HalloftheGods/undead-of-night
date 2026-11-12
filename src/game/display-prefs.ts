@@ -14,9 +14,10 @@ export const UI_SCALES: Readonly<Record<UiScale, number>> = { normal: 1, large: 
 export interface DisplayPrefs {
   readonly palette: PaletteId;
   readonly uiScale: UiScale;
+  readonly autoFadeXp?: boolean;
 }
 
-export const DEFAULT_DISPLAY: DisplayPrefs = { palette: 'classic', uiScale: 'normal' };
+export const DEFAULT_DISPLAY: DisplayPrefs = { palette: 'classic', uiScale: 'normal', autoFadeXp: true };
 
 const PALETTES: readonly PaletteId[] = ['classic', 'clear'];
 
@@ -34,6 +35,7 @@ export function loadDisplayPrefs(store: Store | null): DisplayPrefs {
   return {
     palette: isPalette(raw?.palette) ? raw.palette : DEFAULT_DISPLAY.palette,
     uiScale: isUiScale(raw?.uiScale) ? raw.uiScale : DEFAULT_DISPLAY.uiScale,
+    autoFadeXp: typeof raw?.autoFadeXp === 'boolean' ? raw.autoFadeXp : DEFAULT_DISPLAY.autoFadeXp,
   };
 }
 

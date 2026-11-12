@@ -1,5 +1,6 @@
 import { LICORICE_HEAD_MARGIN, SKULL_POP_HEAD_MARGIN, sugarOf } from './candy.ts';
 import { CHEST_HEIGHT } from './constants.ts';
+import { chainHeadshot, headshotChainMultiplier } from './kill-chain.ts';
 import type { EntityId, ZombieEntity, ZombieType } from './protocol.ts';
 import type { BulletState, PlayerState, SimState, ZombieState } from './sim-state.ts';
 import { emit } from './sim-state.ts';
@@ -100,8 +101,11 @@ export function headshotMultiplier(sim: SimState, b: BulletState, z: ZombieState
   const aimedHere = b.headTarget === z;
   if (!aimedHere) return 1;
   const { damage, score } = HEADS[z.type];
+  const chain = chainHeadshot(sim, b.shooterId);
+  const mult = headshotChainMultiplier(chain);
+  const points = Math.round(score * mult);
   const shooter = sim.players.find((p) => p.id === b.shooterId);
-  if (shooter) shooter.score += score;
-  emit(sim, { type: 'headshot', playerId: b.shooterId, zombieId: z.id, zombieType: z.type, ...headSpot(z), angle, points: score });
+  if (shooter) shooter.score += points;
+  emit(sim, { type: 'headshot', playerId: b.shooterId, zombieId: z.id, zombieType: z.type, ...headSpot(z), angle, points, chain });
   return damage;
 }

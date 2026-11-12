@@ -247,6 +247,7 @@ export interface UiState {
   readonly muted: boolean;
   readonly palette: PaletteId;
   readonly uiScale: UiScale;
+  readonly autoFadeXp: boolean;
   readonly openedContainer?: {
     readonly id: number;
     readonly kind?: ContainerKind;

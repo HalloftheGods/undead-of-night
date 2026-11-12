@@ -167,7 +167,7 @@ export function isLandmarkBuilding(map: WorldMap, building: BuildingInstance): b
 /** Odds an empty search turns up a scrawled map of someone else's cache. */
 export const MAP_CLUE_CHANCE = 0.2;
 
-/** Marks one unvisited building that still holds loot, so the team's map shows what is in it. */
+/** Marks one unvisited building that still holds loot, revealing objects hiding inside. */
 function revealCache(sim: SimState): string | null {
   const isHiddenCache = (item: PickupState): boolean => {
     if (item.ttl !== null) return false;

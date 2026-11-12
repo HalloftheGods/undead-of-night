@@ -114,3 +114,84 @@
     gap: calc(var(--u) * 3);
   }
 }
+
+/* Pop-art Level badge on survivor cards, matching magazine comic badges */
+.pick-popart-badge {
+  position: absolute;
+  top: calc(var(--u) * 2);
+  right: calc(var(--u) * 2);
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 1);
+  padding: calc(var(--u) * 0.75) calc(var(--u) * 1.5) calc(var(--u) * 0.75) calc(var(--u) * 1);
+  background: #ffffff;
+  border: calc(var(--u) * 0.75) solid #07080c;
+  box-shadow: calc(var(--u) * 1) calc(var(--u) * 1) 0 #07080c;
+  transform: rotate(-3.5deg);
+  transform-origin: center center;
+  pointer-events: none;
+  line-height: 1;
+}
+
+.pick-popart-badge.is-tile {
+  top: calc(var(--u) * 1.5);
+  right: calc(var(--u) * 1.5);
+  transform: rotate(3deg);
+}
+
+.pick-option:hover .pick-popart-badge {
+  transform: rotate(-1deg) scale(1.06);
+}
+
+.popart-stamp {
+  flex: none;
+  font-family: 'Silkscreen', monospace;
+  font-size: min(calc(var(--u) * 3), 9cqi);
+  font-weight: 700;
+  color: #ffffff;
+  background: #dc2626;
+  padding: calc(var(--u) * 0.5) calc(var(--u) * 1);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.popart-num {
+  font-family: 'Silkscreen', monospace;
+  font-size: min(calc(var(--u) * 3.5), 11cqi);
+  font-weight: 700;
+  color: #07080c;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* OP maxed survivor styling: gold/amber with fire glow */
+.pick-popart-badge.is-op {
+  background: #ffde59;
+  border-color: #07080c;
+  box-shadow: calc(var(--u) * 1) calc(var(--u) * 1) 0 var(--blood);
+  transform: rotate(-4.5deg);
+}
+
+.pick-popart-badge.is-op .popart-stamp {
+  background: #ea580c;
+  color: #ffffff;
+}
+
+.pick-popart-badge.is-op .popart-num {
+  color: #07080c;
+}
+
+/* Rusty survivor styling: weathered deep rust orange */
+.pick-popart-badge.is-rusty {
+  background: #c2410c;
+  border-color: #451a03;
+  box-shadow: calc(var(--u) * 1) calc(var(--u) * 1) 0 #000000;
+  transform: rotate(-3deg);
+}
+
+.pick-popart-badge.is-rusty .popart-stamp {
+  background: #78350f;
+  color: #fed7aa;
+  padding: calc(var(--u) * 0.5) calc(var(--u) * 2);
+}

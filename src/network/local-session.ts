@@ -4,7 +4,7 @@ import type { EmoteId } from '../../shared/emotes.ts';
 import { playsFromHome } from '../../shared/game-style.ts';
 import type { GameStyle } from '../../shared/game-style.ts';
 import type { HomeAction } from '../../shared/home-protocol.ts';
-import type { ClientInputPacket, SnapshotPacket, WelcomePacket } from '../../shared/protocol.ts';
+import type { CandyId, ClientInputPacket, SnapshotPacket, WelcomePacket } from '../../shared/protocol.ts';
 import { GameSimulation } from '../../shared/simulation.ts';
 import { overrunOn } from '../game/home-mode.ts';
 import type { BenchAction } from '../../shared/workbench.ts';
@@ -54,6 +54,10 @@ export class LocalSession implements GameTransport {
 
   sendEmote(emote: EmoteId): void {
     this.sim?.emote(LOCAL_PLAYER_ID, emote);
+  }
+
+  giveBoon(candy: CandyId): void {
+    this.sim?.giveBoon(LOCAL_PLAYER_ID, candy);
   }
 
   /**

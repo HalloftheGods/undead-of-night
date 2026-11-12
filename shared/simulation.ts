@@ -9,6 +9,7 @@ import { isBunkerMap } from './home-protocol.ts';
 import type { HomeAction, JoinHome } from './home-protocol.ts';
 import { exitBoarded } from './level-exit.ts';
 import { FIRST_LEVEL } from './levels.ts';
+import { eatCandyDirect, type CandyId } from './candy.ts';
 import { giveReturnKit, updateDownedPlayers } from './player-health.ts';
 import { reclaimDeparted, reclaimLive, rememberDeparted, createPlayer } from './player-roster.ts';
 import type { Arrival } from './player-roster.ts';
@@ -203,6 +204,13 @@ export class GameSimulation {
   giveStreakKit(id: string, night: number): void {
     const player = this.sim.players.find((p) => p.id === id);
     if (player) giveStreakKit(player, night);
+  }
+
+  /** Directly awards a level-up boon buff to the player. */
+  giveBoon(id: string, candy: CandyId): void {
+    const player = this.sim.players.find((p) => p.id === id);
+    const canReceive = player !== undefined && player.status === 'alive';
+    if (canReceive) eatCandyDirect(this.sim, player, candy);
   }
 
   emote(id: string, emote: unknown): void {

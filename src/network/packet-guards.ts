@@ -152,7 +152,8 @@ function isLeftoverView(v: unknown): v is LeftoverView {
   if (!isPlaceValid) return false;
   const isClueValid = v.clue === undefined || typeof v.clue === 'boolean';
   const isClueItemValid = v.clueItem === undefined || typeof v.clueItem === 'string';
-  return isClueValid && isClueItemValid && Object.entries(v.supplies as Fields).every(([kind, count]) => SUPPLIES.includes(kind) && isNumber(count));
+  const isClueAtValid = v.clueAt === undefined || (isFields(v.clueAt) && hasNumbers(v.clueAt, ['x', 'y']));
+  return isClueValid && isClueItemValid && isClueAtValid && Object.entries(v.supplies as Fields).every(([kind, count]) => SUPPLIES.includes(kind) && isNumber(count));
 }
 
 export function isSnapshotPacket(v: unknown): v is SnapshotPacket {

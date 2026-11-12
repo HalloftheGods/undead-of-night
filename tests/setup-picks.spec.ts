@@ -25,7 +25,46 @@ describe('setup picks', () => {
     const [mode, difficulty, who] = setupPicks({ mode: 'multi', difficulty: 'undead_tired', survivor: 3 });
     expect(chosenOption(mode).name).toBe('Multiplayer');
     expect(chosenOption(difficulty).name).toBe('Undead Tired');
-    expect(chosenOption(who)).toEqual({ id: '3', name: 'Rex', bars: statBarsOf(3) });
+    expect(chosenOption(who)).toEqual({ id: '3', name: 'Rex', bars: statBarsOf(3), level: 1, isMaxed: false, isRusty: false });
+  });
+
+  it('reflects progression and displays OP badge when survivor is maxed', () => {
+    const maxedProgression = {
+      level: 21,
+      xp: 0,
+      ap: 0,
+      gp: 0,
+      allocations: {
+        3: { spentAp: { stealth: 5, reload: 5, speed: 5, strength: 0, search: 5 } },
+      },
+    };
+    const who = setupPicks({ mode: 'solo', difficulty: 'stay_close', survivor: 3 }, maxedProgression as any)[2];
+    const rex = chosenOption(who);
+    expect(rex.name).toBe('OP Rex');
+    expect(rex.level).toBe(21);
+    expect(rex.isMaxed).toBe(true);
+    expect(rex.isRusty).toBe(false);
+    for (const bar of rex.bars) {
+      expect(bar.filled).toBe(5);
+    }
+  });
+
+  it('reflects rusty status when survivor has decayed from inactivity', () => {
+    const rustyProgression = {
+      level: 20,
+      xp: 0,
+      ap: 19,
+      gp: 0,
+      rustySkins: [3],
+      allocations: {
+        3: { spentAp: { stealth: 0, reload: 0, speed: 0, strength: 0, search: 0 } },
+      },
+    };
+    const who = setupPicks({ mode: 'solo', difficulty: 'stay_close', survivor: 3 }, rustyProgression as any)[2];
+    const rex = chosenOption(who);
+    expect(rex.name).toBe('Rusty Rex');
+    expect(rex.isRusty).toBe(true);
+    expect(rex.isMaxed).toBe(false);
   });
 
   it('gives every option stat bars of one to five cells, or none', () => {

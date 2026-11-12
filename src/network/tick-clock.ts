@@ -49,7 +49,11 @@ export class TickClock {
     while (now >= this.nextAt && ticks < MAX_CATCH_UP_TICKS) {
       this.nextAt += this.tickMs;
       ticks += 1;
-      this.onTick();
+      try {
+        this.onTick();
+      } catch (err) {
+        console.error('Tick error in game loop:', err);
+      }
       // onTick may have stopped the clock.
       const isStopped = this.timer === null;
       if (isStopped) return;

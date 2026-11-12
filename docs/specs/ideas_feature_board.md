@@ -60,3 +60,19 @@ Documented from playtest review and design session (Ronan and Commander).
 * **Endless Military Defense (Horde Mode)**
   * Status: Proposed (New)
   * Concept: Unlockable horde defense mode at Level 10 with allied military NPCs and mounted turrets.
+
+### 6. Vehicles and Transportation
+* **Vehicle Spawning and Visual State**
+  * Status: Proposed (New)
+  * Concept: 95% wrecked static/lootable road obstacles; 5% rare running road spawns with idling lights; high-value indoor garage and storage unit spawns.
+* **Streamlined Vehicle Controls**
+  * Status: Proposed (New)
+  * Concept: Context-sensitive `[E]` interaction (drive/exit/garages), standard WASD/arrow driving controls, Space/H horn attraction pulse.
+* **Vehicle Movement, Roadkill Combat, and Maintenance**
+  * Status: Proposed (New)
+  * Concept: 2D top-down vehicle physics state (acceleration, momentum, angular steering), velocity-threshold zombie roadkill with player XP, fuel/health degradation requiring gas cans or engine blocks.
+
+### 7. UI and Tactical HUD
+* **MGS Style Soliton Radar Display (Bottom-Left)**
+  * Status: Proposed (New)
+  * Concept: Bottom-left tactical radar display showing player position, enemy dots with directional field-of-view vision cones, expanding sound wave pulses (footsteps, gunfire, vehicle horns), and local wall geometry.

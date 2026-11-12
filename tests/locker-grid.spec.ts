@@ -15,14 +15,15 @@ import {
 
 describe('locker grid system', () => {
   describe('container dimensions', () => {
-    it('returns 3x8 for world locker containers', () => {
+    it('returns 5x9 for world locker containers', () => {
       const dimensions = containerGridDimensions('locker');
-      expect(dimensions).toEqual({ cols: 3, rows: 8 });
+      expect(dimensions).toEqual({ cols: 5, rows: 9 });
     });
 
-    it('returns default 5x4 for standard containers or undefined', () => {
-      expect(containerGridDimensions('cabinet')).toEqual({ cols: 5, rows: 4 });
-      expect(containerGridDimensions('box')).toEqual({ cols: 5, rows: 4 });
+    it('returns custom or default dimensions', () => {
+      expect(containerGridDimensions('cabinet')).toEqual({ cols: 6, rows: 4 });
+      expect(containerGridDimensions('box')).toEqual({ cols: 5, rows: 7 });
+      expect(containerGridDimensions('shelf')).toEqual({ cols: 7, rows: 7 });
       expect(containerGridDimensions(undefined)).toEqual({ cols: 5, rows: 4 });
     });
   });

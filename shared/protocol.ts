@@ -238,7 +238,7 @@ export type GameEvent =
   | { readonly type: 'zombie_hit'; readonly zombieId: EntityId; readonly zombieType: ZombieType; readonly x: number; readonly y: number; readonly angle: number }
   /** A round's effect took hold: a body lit (`caught` if off another body), acid went a stack deeper, a tranq landed, or a bullet went through. */
   | { readonly type: 'zombie_status'; readonly effect: GunEffect; readonly zombieId: EntityId; readonly zombieType: ZombieType; readonly x: number; readonly y: number; readonly caught?: boolean; readonly stacks?: number }
-  | { readonly type: 'headshot'; readonly playerId: EntityId; readonly zombieId: EntityId; readonly zombieType: ZombieType; readonly x: number; readonly y: number; readonly angle: number; readonly points: number }
+  | { readonly type: 'headshot'; readonly playerId: EntityId; readonly zombieId: EntityId; readonly zombieType: ZombieType; readonly x: number; readonly y: number; readonly angle: number; readonly points: number; readonly chain?: number }
   | { readonly type: 'zombie_die'; readonly zombieId: EntityId; readonly zombieType: ZombieType; readonly x: number; readonly y: number; readonly angle: number; readonly killerId: EntityId | null; readonly points: number; readonly chain?: number }
   | { readonly type: 'zombie_attack'; readonly zombieId: EntityId; readonly zombieType: ZombieType; readonly x: number; readonly y: number }
   | { readonly type: 'bloater_burst'; readonly x: number; readonly y: number; readonly radius: number }
@@ -470,6 +470,7 @@ export type ClientPacket =
   | { readonly type: 'home'; readonly action: HomeAction }
   | { readonly type: 'emote'; readonly emote: EmoteId }
   | { readonly type: 'restart' }
+  | { readonly type: 'boon'; readonly candy: CandyId }
   | { readonly type: 'lobby_ready'; readonly ready?: boolean }
   | { readonly type: 'lobby_start' }
   | { readonly type: 'lobby_toggle_timer'; readonly enabled?: boolean };

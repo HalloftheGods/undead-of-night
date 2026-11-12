@@ -250,25 +250,25 @@ describe('Dual-Grid Container Looting & Inventory Modal', () => {
     it('swaps footprint dimensions of held item when rotated', () => {
       const state = createDualLootState();
       placeItem(state.containerGrid, {
-        id: 'bottle-1',
-        type: 'bottle',
+        id: 'knife-1',
+        type: 'knife',
         x: 0,
         y: 0,
         rotated: false,
       });
-      pickUpItemFromGrid(state, 'container', 'bottle-1');
+      pickUpItemFromGrid(state, 'container', 'knife-1');
 
-      const initialDims = getItemFootprint('bottle', state.heldItem!.item.rotated);
+      const initialDims = getItemFootprint('knife', state.heldItem!.item.rotated);
       expect(initialDims).toEqual({ width: 1, height: 2 });
 
       rotateActiveItem(state);
       expect(state.heldItem?.item.rotated).toBe(true);
-      const rotatedDims = getItemFootprint('bottle', state.heldItem!.item.rotated);
+      const rotatedDims = getItemFootprint('knife', state.heldItem!.item.rotated);
       expect(rotatedDims).toEqual({ width: 2, height: 1 });
 
       rotateActiveItem(state);
       expect(state.heldItem?.item.rotated).toBe(false);
-      const backDims = getItemFootprint('bottle', state.heldItem!.item.rotated);
+      const backDims = getItemFootprint('knife', state.heldItem!.item.rotated);
       expect(backDims).toEqual({ width: 1, height: 2 });
     });
 
@@ -295,8 +295,8 @@ describe('Dual-Grid Container Looting & Inventory Modal', () => {
     it('returns valid highlight for empty available tiles within bounds', () => {
       const grid = createInventoryGrid(5, 4);
       const heldItem = {
-        id: 'bottle-1',
-        type: 'bottle',
+        id: 'knife-1',
+        type: 'knife',
         x: 0,
         y: 0,
         rotated: false, // 1x2
@@ -325,8 +325,8 @@ describe('Dual-Grid Container Looting & Inventory Modal', () => {
       });
 
       const heldItem = {
-        id: 'bottle-1',
-        type: 'bottle',
+        id: 'knife-1',
+        type: 'knife',
         x: 0,
         y: 0,
         rotated: false, // 1x2

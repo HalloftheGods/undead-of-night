@@ -33,6 +33,7 @@ export const RadioPage = lazy(() => import('./RadioPage.vue'));
 export const ControlsPage = lazy(() => import('./ControlsPage.vue'));
 export const JukeboxScreen = lazy(() => import('./JukeboxScreen.vue'));
 export const EndingFlow = lazy(() => import('./EndingFlow.vue'));
+export const DevInventoryPage = lazy(() => import('./dev/DevInventoryPage.vue'));
 
 const IDLE_FALLBACK_MS = 2_000;
 /** The fallback warm-up timer, so a second call replaces it instead of stacking another. */

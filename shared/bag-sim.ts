@@ -74,7 +74,10 @@ export function reconcileBag(sim: SimState, p: PlayerState): void {
  * True when the layout was adopted.
  */
 export function applyBagCommit(sim: SimState, p: PlayerState, commit: BagCommit): boolean {
-  const tooBig = commit.layout.length > MAX_COMMIT_LAYOUT || commit.drop.length > MAX_COMMIT_DROPS || (commit.use?.length ?? 0) > MAX_COMMIT_DROPS;
+  const layout = commit.layout ?? [];
+  const drop = commit.drop ?? [];
+  const use = commit.use ?? [];
+  const tooBig = layout.length > MAX_COMMIT_LAYOUT || drop.length > MAX_COMMIT_DROPS || use.length > MAX_COMMIT_DROPS;
   if (tooBig || p.status !== 'alive') return false;
   if (commit.container) {
     const containerState = sim.containers[commit.container.id];
@@ -106,7 +109,7 @@ export function applyBagCommit(sim: SimState, p: PlayerState, commit: BagCommit)
       }
     }
   }
-  for (const row of commit.use ?? []) {
+  for (const row of use) {
     const isCandy = isCandyId(row.type) && Number.isInteger(row.count) && row.count >= 1;
     if (isCandy) {
       for (let used = 0; used < row.count; used += 1) {
@@ -118,7 +121,7 @@ export function applyBagCommit(sim: SimState, p: PlayerState, commit: BagCommit)
     if (!isUsable) continue;
     for (let used = 0; used < row.count && useSupply(p, row.type); used += 1);
   }
-  for (const row of commit.drop) {
+  for (const row of drop) {
     const isCandy = isCandyId(row.type) && Number.isFinite(row.count) && row.count >= 1;
     if (isCandy) {
       leaveCandyOnGround(sim, p, row.type as CandyId, Math.floor(row.count));
@@ -128,7 +131,7 @@ export function applyBagCommit(sim: SimState, p: PlayerState, commit: BagCommit)
     if (real) leaveOnGround(sim, p, row.type, Math.floor(row.count));
   }
   reconcileBag(sim, p);
-  const placements = validateLayout(p.inventory, commit.layout);
+  const placements = validateLayout(p.inventory, layout);
   if (!placements) return false;
   adoptLayout(p.inventory, placements);
   return true;

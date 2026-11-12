@@ -150,6 +150,19 @@ export function formatItemName(type: string): string {
     .join(' ');
 }
 
+export function formatClueLabel(clueItem: string): string {
+  const types = clueItem.split(',').map((s) => s.trim()).filter(Boolean);
+  if (types.length === 0) return 'CACHE';
+  const counts = new Map<string, number>();
+  for (const type of types) {
+    counts.set(type, (counts.get(type) ?? 0) + 1);
+  }
+  return [...counts.entries()].map(([type, count]) => {
+    const name = formatItemName(type).toUpperCase();
+    return count > 1 ? `${name} X${count}` : name;
+  }).join(', ');
+}
+
 export function isItemValidForGearSlot(itemType: string, slotId: GearSlotId): boolean {
   const isArmorSlot = slotId === 'armor';
   if (isArmorSlot) {

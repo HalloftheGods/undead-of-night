@@ -4,7 +4,7 @@ import { closeText } from '../../shared/close-codes.ts';
 import type { GameStyle } from '../../shared/game-style.ts';
 import type { HomeAction, JoinHome } from '../../shared/home-protocol.ts';
 import { PROTOCOL_VERSION } from '../../shared/protocol.ts';
-import type { ClientInputPacket, ClientPacket, LobbyStatePacket, SnapshotPacket, WelcomePacket } from '../../shared/protocol.ts';
+import type { CandyId, ClientInputPacket, ClientPacket, LobbyStatePacket, SnapshotPacket, WelcomePacket } from '../../shared/protocol.ts';
 import type { BenchAction } from '../../shared/workbench.ts';
 import { tapRoomDifficulty } from '../game/analytics/event-tap.ts';
 import type { PacketPipe, PipeWords } from './packet-pipe.ts';
@@ -85,6 +85,10 @@ export class RemoteSession implements RoomSession {
 
   sendEmote(emote: EmoteId): void {
     if (this.welcomed) this.send({ type: 'emote', emote });
+  }
+
+  giveBoon(candy: CandyId): void {
+    if (this.welcomed) this.send({ type: 'boon', candy });
   }
 
   sendLobbyReady(ready?: boolean): void {

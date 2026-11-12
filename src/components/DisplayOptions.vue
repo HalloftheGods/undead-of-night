@@ -5,6 +5,8 @@
     <OptionChoice label="Hit colors" :options="PALETTE_OPTIONS" :value="ui.palette" @change="game.setPalette" />
     <p class="display-options-note">{{ PALETTE_NOTES[ui.palette] }}</p>
     <OptionChoice label="UI size" :options="SCALE_OPTIONS" :value="ui.uiScale" @change="game.setUiScale" />
+    <PixelSwitch label="Auto-fade XP bar" :on="ui.autoFadeXp" @change="game.setAutoFadeXp" />
+    <p class="display-options-note">Fades the survivor XP bar when inactive, or keeps it always visible.</p>
     <PixelSwitch label="Menu details" :on="menuInfo" @change="setMenuInfo" />
     <p class="display-options-note">A line under each main menu item saying what it opens.</p>
   </div>

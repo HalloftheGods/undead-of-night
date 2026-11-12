@@ -1,6 +1,6 @@
 import { CANDIES } from "../../shared/candy.ts";
 import { MUZZLE_OFFSET } from "../../shared/constants.ts";
-import { chainMultiplier } from "../../shared/kill-chain.ts";
+import { chainMultiplier, headshotChainMultiplier } from "../../shared/kill-chain.ts";
 import { FLARE_SEC } from "../../shared/throwables.ts";
 import type {
   EntityId,
@@ -329,8 +329,10 @@ export class FxDirector {
     this.burstDots(x, groundY, angle, SKULL_CHIPS, 6, 140, false, 1.1);
     const shotHere = event.playerId === ctx.localId;
     if (!shotHere) return;
+    const chained = (event.chain ?? 1) > 1;
+    const bonus = chained ? ` x${headshotChainMultiplier(event.chain ?? 1)}` : "";
     this.particles.addText(
-      `HEADSHOT +${event.points}`,
+      `HEADSHOT +${event.points} XP${bonus}`,
       x,
       y - HEADSHOT_NOTE_GAP,
       hitPalette().strike
@@ -349,7 +351,7 @@ export class FxDirector {
       // A chained kill shows what the chain paid it, so the callout's words come with a number.
       const chained = (event.chain ?? 1) > 1;
       const bonus = chained ? ` x${chainMultiplier(event.chain ?? 1)}` : "";
-      this.particles.addText(`+${event.points}${bonus}`, x, y - 16, SCORE_COLOR);
+      this.particles.addText(`+${event.points} XP${bonus}`, x, y - 16, SCORE_COLOR);
     }
   }
 
@@ -494,5 +496,13 @@ export class FxDirector {
         emissive
       });
     }
+  }
+
+  /** Radiant golden spark burst, pulse glow, and subtle screen flash on leveling up. */
+  triggerLevelUp(x: number, y: number): void {
+    this.burstDots(x, y, 0, SPARK, 28, 140, true, Math.PI);
+    this.burstDots(x, y, -Math.PI / 2, ['#ffe066', '#ffffff', '#ffd700'], 16, 160, true, Math.PI);
+    this.pulses.push({ x, y, radius: 90, color: '#ffe066', life: 0.45, maxLife: 0.45 });
+    this.effects.addFlash(0.25);
   }
 }

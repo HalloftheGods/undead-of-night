@@ -4,7 +4,7 @@ import { generateWorldMap } from '../shared/world-map.ts';
 import { GameSimulation } from '../shared/simulation.ts';
 import { buildArtBook } from '../src/art/index.ts';
 import { bodyHeight, clipFrame, clipFrameAt, strideFrame } from '../src/engine/sprite-cache.ts';
-import { OverlayRenderer } from '../src/engine/overlay-renderer.ts';
+import { drawVerticalBar, OverlayRenderer } from '../src/engine/overlay-renderer.ts';
 import { EMPTY_SCENE } from '../src/engine/scene.ts';
 import type { VisualStore } from '../src/engine/visuals.ts';
 import { WorldRenderer } from '../src/engine/world-renderer.ts';
@@ -154,5 +154,95 @@ describe('render pipeline', () => {
     renderer.setMap(generateWorldMap(2));
     renderer.render({ ...EMPTY_SCENE, focusX: 100, focusY: 100 }, 1 / 60);
     expect(renderer.camera.viewW).toBeLessThan(480);
+  });
+});
+
+describe('retro vertical XP bar', () => {
+  const RETRO_GREEN = '#38ef7d';
+  const INK = '#0b0c10';
+
+  it('draws a vertical bar filling bottom up with an ink border', () => {
+    const rects: Array<{ x: number; y: number; w: number; h: number; color: string }> = [];
+    const ctx = {
+      fillStyle: '',
+      fillRect(this: { fillStyle: string }, x: number, y: number, w: number, h: number) {
+        rects.push({ x, y, w, h, color: this.fillStyle });
+      },
+    } as unknown as CanvasRenderingContext2D;
+
+    drawVerticalBar(ctx, 10, 20, 14, 0.5, RETRO_GREEN);
+
+    expect(rects.length).toBe(2);
+    expect(rects[0]).toEqual({ x: 9, y: 19, w: 4, h: 16, color: INK });
+    expect(rects[1]).toEqual({ x: 10, y: 27, w: 2, h: 7, color: RETRO_GREEN });
+  });
+
+  it('draws the XP bar temporarily on the local player while flashing', () => {
+    const rects: Array<{ x: number; y: number; w: number; h: number; color: string }> = [];
+    let recordedAlpha = 1;
+    const ctx = {
+      fillStyle: '',
+      globalAlpha: 1,
+      fillRect(this: { fillStyle: string; globalAlpha: number }, x: number, y: number, w: number, h: number) {
+        if (this.fillStyle === RETRO_GREEN) {
+          recordedAlpha = this.globalAlpha;
+        }
+        rects.push({ x, y, w, h, color: this.fillStyle });
+      },
+    } as unknown as CanvasRenderingContext2D;
+
+    const visuals = { get: () => ({ sprite: null }) } as unknown as VisualStore;
+    const overlay = new OverlayRenderer(buildArtBook(), visuals);
+    const player = {
+      id: 'p1',
+      name: 'Night',
+      skin: 0,
+      x: 100,
+      y: 100,
+      status: 'alive',
+      health: 100,
+      maxHealth: 100,
+      stamina: 1,
+      search: 0,
+      revive: 0,
+      ammo: 10,
+      weapon: 'pistol',
+      mags: { pistol: 10 },
+      ammoBag: { pistol: 30 },
+      owned: ['pistol'],
+    } as any;
+
+    const scene = { ...EMPTY_SCENE, localId: 'p1', players: [player] };
+
+    overlay.draw(ctx, scene, 0, 0, 200, 200, 0, () => 255, () => false);
+    const hasGreenBefore = rects.some((r) => r.color === RETRO_GREEN);
+    expect(hasGreenBefore).toBe(false);
+
+    overlay.flashXp(0.75, 1.0);
+
+    // Full opacity period (remaining = 2.5 - 1.0 = 1.5s > 0.8s)
+    rects.length = 0;
+    overlay.draw(ctx, scene, 0, 0, 200, 200, 2.0, () => 255, () => false);
+    const greenBarsDuring = rects.filter((r) => r.color === RETRO_GREEN);
+    expect(greenBarsDuring.length).toBe(1);
+    expect(recordedAlpha).toBe(1);
+
+    // Fade period (remaining = 3.5 - 3.1 = 0.4s < 0.8s, alpha = 0.5)
+    rects.length = 0;
+    overlay.draw(ctx, scene, 0, 0, 200, 200, 3.1, () => 255, () => false);
+    expect(rects.some((r) => r.color === RETRO_GREEN)).toBe(true);
+    expect(recordedAlpha).toBeCloseTo(0.5, 1);
+
+    // Expired
+    rects.length = 0;
+    overlay.draw(ctx, scene, 0, 0, 200, 200, 4.0, () => 255, () => false);
+    const hasGreenAfter = rects.some((r) => r.color === RETRO_GREEN);
+    expect(hasGreenAfter).toBe(false);
+
+    // Always-show mode
+    overlay.setAutoFadeXp(false);
+    rects.length = 0;
+    overlay.draw(ctx, scene, 0, 0, 200, 200, 4.0, () => 255, () => false);
+    expect(rects.some((r) => r.color === RETRO_GREEN)).toBe(true);
   });
 });

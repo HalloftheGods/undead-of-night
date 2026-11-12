@@ -15,6 +15,34 @@ import { StampKeeper, stampName } from './stamps.ts';
 import type { StampContext, StampId } from './stamps.ts';
 import { loadLeaderboard } from './storage.ts';
 import { loadBests } from './trip-record.ts';
+import { CANDIES } from '../../shared/candy.ts';
+import type { StatKey } from '../../shared/character-stats.ts';
+import type { CandyId } from '../../shared/protocol.ts';
+import {
+  addExperience,
+  allocateEarnedAp,
+  isCharacterMaxed,
+  loadProgression,
+  MAX_CHARACTER_LEVEL,
+  pickWinningStat,
+  saveProgression,
+  xpRequiredForLevel,
+} from '../../shared/progression.ts';
+
+const LEVEL_UP_BOONS: readonly CandyId[] = [
+  'corn_rush',
+  'fang_taffy',
+  'pumpkin_fizz',
+  'witchs_brittle',
+  'bat_bites',
+  'jawbreaker',
+  'cherry_bombs',
+  'shock_tarts',
+  'everlasting_chews',
+  'frost_bites',
+  'grave_gels',
+  'full_size_bar',
+];
 
 const EVENT_MUSIC: Partial<Record<GameEvent['type'], 'wave' | 'intermission'>> = {
   wave_start: 'wave',
@@ -29,6 +57,14 @@ export class SnapshotHandler {
   private readonly stamps = new StampKeeper();
   /** Stamps earned while a kill callout had the screen, shown once it is free. */
   private stampsToShow: StampId[] = [];
+  /** In-run activity tracking for weighted AP distribution on level up. */
+  private readonly actionScores: Record<StatKey, number> = {
+    search: 0,
+    strength: 0,
+    stealth: 0,
+    reload: 0,
+    speed: 0,
+  };
 
   constructor(
     private readonly host: RunHost,
@@ -57,6 +93,8 @@ export class SnapshotHandler {
     audio.setLevel(snapshot.level);
     const before = world.localPlayer;
     const after = snapshot.players.find((player) => player.id === world.localId) ?? null;
+    const isSprinting = after?.moving === true && this.host.input.stance === 'sprint';
+    if (isSprinting) this.actionScores.speed += 0.25;
     const onATrip = after?.home !== undefined;
     // Reaching a town on a trip opens nothing: only the van home does, and that comes on a receipt.
     const inArcade = snapshot.home === undefined;
@@ -142,6 +180,72 @@ export class SnapshotHandler {
       localY: world.predictor.y,
       pickupNote: note,
     });
+    const isLocalContainer = event.type === 'container_opened' && event.playerId === world.localId;
+    if (isLocalContainer) this.actionScores.search += 8;
+    const isLocalPlank = event.type === 'plank_added';
+    if (isLocalPlank) this.actionScores.strength += 6;
+    const isLocalMelee = event.type === 'melee' && event.playerId === world.localId;
+    if (isLocalMelee) this.actionScores.strength += 4;
+    const isLocalReload = event.type === 'reload_end' && event.playerId === world.localId;
+    if (isLocalReload) this.actionScores.reload += 2;
+    const isLocalHeadshotAction = event.type === 'headshot' && event.playerId === world.localId;
+    if (isLocalHeadshotAction) this.actionScores.stealth += 3;
+
+    const isLocalZombieKill = event.type === 'zombie_die' && event.killerId === world.localId && event.points > 0;
+    const isLocalHeadshot = event.type === 'headshot' && event.playerId === world.localId && event.points > 0;
+    const isLocalScoreGain = isLocalZombieKill || isLocalHeadshot;
+    if (isLocalScoreGain) {
+      const currentProg = loadProgression();
+      const gain = addExperience(currentProg, event.points);
+
+      const nextRequirement = xpRequiredForLevel(gain.newLevel + 1);
+      const isMaxLevel = gain.newLevel >= MAX_CHARACTER_LEVEL;
+      let progressFraction = 0;
+      if (isMaxLevel) {
+        progressFraction = 1;
+      } else if (nextRequirement > 0) {
+        progressFraction = gain.state.xp / nextRequirement;
+      }
+      renderer?.flashXp(progressFraction, now / 1000);
+
+      if (gain.didLevelUp) {
+        const playerSkin = after?.skin ?? (before?.skin ?? 0);
+        const winningStat = pickWinningStat(this.actionScores, playerSkin, gain.state.allocations[playerSkin]) ?? 'search';
+        const updatedState = allocateEarnedAp(gain.state, playerSkin, winningStat, gain.levelsGained);
+        saveProgression(updatedState);
+
+        this.actionScores.search = 0;
+        this.actionScores.strength = 0;
+        this.actionScores.stealth = 0;
+        this.actionScores.reload = 0;
+        this.actionScores.speed = 0;
+
+        const playerX = after ? after.x : world.predictor.x;
+        const playerY = after ? after.y : world.predictor.y;
+
+        renderer?.triggerLevelUpFx(playerX, playerY);
+        renderer?.addFloatingText('LEVEL UP!!!', playerX, playerY - 36, '#ffe066');
+        renderer?.addFloatingText(`+${gain.levelsGained} AP: ${winningStat.toUpperCase()}`, playerX, playerY - 26, '#ffc03c');
+
+        const boonIndex = Math.floor(Math.random() * LEVEL_UP_BOONS.length);
+        const boonId = LEVEL_UP_BOONS[boonIndex];
+        const boonDef = CANDIES[boonId];
+        if (boonDef) {
+          renderer?.addFloatingText(`BOON: ${boonDef.name.toUpperCase()}`, playerX, playerY - 16, '#38ef7d');
+          runHud.say({ title: 'LEVEL UP BOON!', subtitle: `${boonDef.name}: ${boonDef.blurb}`, tone: 'hope' }, now);
+          this.host.state.transport?.giveBoon?.(boonId);
+        }
+
+        runHud.callout({ text: `LEVEL UP: +1 ${winningStat.toUpperCase()}`, tone: 'chain' }, now);
+
+        const newlyMaxed = isCharacterMaxed(playerSkin, updatedState);
+        if (newlyMaxed) {
+          runHud.callout({ text: 'OP SURVIVOR!', tone: 'chain' }, now + 800);
+        }
+      } else {
+        saveProgression(gain.state);
+      }
+    }
     const music = EVENT_MUSIC[event.type];
     if (music) audio.setScene(music);
     const nameOf = (id: string): string | null => {

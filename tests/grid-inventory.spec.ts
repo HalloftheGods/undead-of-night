@@ -23,10 +23,13 @@ describe('Spatial Grid Inventory Engine', () => {
 
   it('correctly calculates item footprints and rotation swaps', () => {
     const normalBottle = getItemFootprint('bottle', false);
-    expect(normalBottle).toEqual({ width: 1, height: 2 });
+    expect(normalBottle).toEqual({ width: 1, height: 1 });
 
-    const rotatedBottle = getItemFootprint('bottle', true);
-    expect(rotatedBottle).toEqual({ width: 2, height: 1 });
+    const normalKnife = getItemFootprint('knife', false);
+    expect(normalKnife).toEqual({ width: 1, height: 2 });
+
+    const rotatedKnife = getItemFootprint('knife', true);
+    expect(rotatedKnife).toEqual({ width: 2, height: 1 });
 
     const normalShotgun = getItemFootprint('shotgun', false);
     expect(normalShotgun).toEqual({ width: 4, height: 1 });
@@ -100,19 +103,19 @@ describe('Spatial Grid Inventory Engine', () => {
     const grid = createInventoryGrid(5, 4);
 
     placeItem(grid, {
-      id: 'bottle-1',
-      type: 'bottle',
+      id: 'knife-1',
+      type: 'knife',
       x: 0,
       y: 0,
       rotated: false,
     });
 
     // 1x2 at (0,0) rotates to 2x1 at (0,0)
-    const rotated = rotateItem(grid, 'bottle-1');
+    const rotated = rotateItem(grid, 'knife-1');
     expect(rotated).toBe(true);
     expect(grid.items[0].rotated).toBe(true);
 
-    // Place obstacle at (1, 1)
+    // Place obstacle at (0, 1)
     placeItem(grid, {
       id: 'blocker',
       type: 'ammo_box',
@@ -122,7 +125,7 @@ describe('Spatial Grid Inventory Engine', () => {
     });
 
     // Rotating back to vertical 1x2 would hit (0,1) which is occupied
-    const rotatedBackBlocked = rotateItem(grid, 'bottle-1');
+    const rotatedBackBlocked = rotateItem(grid, 'knife-1');
     expect(rotatedBackBlocked).toBe(false);
     expect(grid.items[0].rotated).toBe(true);
   });
@@ -208,13 +211,13 @@ describe('Spatial Grid Inventory Engine', () => {
     expect(secondPacked).toBe(true);
     expect(grid.items[1]).toMatchObject({ x: 1, y: 0 });
 
-    // Water bottle is 1x2, should fit at (0, 1) if rotated (2x1)
-    const bottlePacked = autoPackItem(grid, {
-      id: 'bottle-1',
-      type: 'bottle',
+    // Knife is 1x2, should fit at (0, 1) if rotated (2x1)
+    const knifePacked = autoPackItem(grid, {
+      id: 'knife-1',
+      type: 'knife',
       rotated: false,
     });
-    expect(bottlePacked).toBe(true);
+    expect(knifePacked).toBe(true);
     expect(grid.items[2]).toMatchObject({ x: 0, y: 1, rotated: true });
 
     // Grid full now

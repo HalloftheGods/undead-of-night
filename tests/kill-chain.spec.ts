@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { CHAIN_WINDOW_SEC, chainKill, chainMultiplier } from '../shared/kill-chain.ts';
+import {
+  CHAIN_WINDOW_SEC,
+  chainKill,
+  chainMultiplier,
+  HEADSHOT_CHAIN_WINDOW_SEC,
+  chainHeadshot,
+  headshotChainMultiplier,
+} from '../shared/kill-chain.ts';
 import { TICK_DT } from '../shared/constants.ts';
 import type { SimState } from '../shared/sim-state.ts';
 
-const simAt = (tick: number) => ({ tick, killChains: new Map(), players: [] }) as unknown as SimState;
+const simAt = (tick: number) => ({ tick, killChains: new Map(), headshotChains: new Map(), players: [] }) as unknown as SimState;
 
 describe('kill chains', () => {
   it('pays a quarter more for each kill in a chain, up to double', () => {
@@ -18,6 +25,25 @@ describe('kill chains', () => {
     expect(chainKill(sim, 'p2')).toBe(1);
     sim.tick += Math.round(CHAIN_WINDOW_SEC / TICK_DT) + 1;
     expect(chainKill(sim, 'p1')).toBe(1);
+  });
+});
+
+describe('headshot chains', () => {
+  it('scales multipliers by 0.5 per consecutive headshot up to 3x', () => {
+    expect([1, 2, 3, 4, 5, 8].map(headshotChainMultiplier)).toEqual([1, 1.5, 2.0, 2.5, 3.0, 3.0]);
+  });
+
+  it('chains headshots inside the generous 3.5s window and resets after expiration', () => {
+    const sim = simAt(100);
+    expect(chainHeadshot(sim, 'p1')).toBe(1);
+    // Advance 3.0s (within 3.5s window)
+    sim.tick += Math.round(3.0 / TICK_DT);
+    expect(chainHeadshot(sim, 'p1')).toBe(2);
+    expect(chainHeadshot(sim, 'p2')).toBe(1);
+
+    // Advance 4.0s (past 3.5s window)
+    sim.tick += Math.round(HEADSHOT_CHAIN_WINDOW_SEC / TICK_DT) + 1;
+    expect(chainHeadshot(sim, 'p1')).toBe(1);
   });
 });
 

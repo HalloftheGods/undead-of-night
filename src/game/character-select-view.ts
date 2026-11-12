@@ -1,8 +1,9 @@
 // The survivor select screen's plain parts: the bars each survivor shows, and where an arrow key moves the pick.
 
 import { CHARACTERS } from '../../shared/characters.ts';
-import { STAT_BASELINE, STATS, statSlotsOf } from '../../shared/character-stats.ts';
+import { STAT_BASELINE, STAT_SLOTS, STATS, statSlotsOf } from '../../shared/character-stats.ts';
 import type { StatKey } from '../../shared/character-stats.ts';
+import { effectiveStatSlots, SPECIALTY_STAT_BY_SKIN, type ProgressionState } from '../../shared/progression.ts';
 
 export interface StatBar {
   readonly key: StatKey;
@@ -13,9 +14,22 @@ export interface StatBar {
 }
 
 /** One survivor's five bars, in the order the screen lists them. */
-export function statBarsOf(skin: number): readonly StatBar[] {
-  const slots = statSlotsOf(skin);
-  return STATS.map(({ key, label }) => ({ key, label, filled: slots[key], strong: slots[key] > STAT_BASELINE }));
+export function statBarsOf(skin: number, progression?: ProgressionState): readonly StatBar[] {
+  const specialtyKey = SPECIALTY_STAT_BY_SKIN[skin];
+  const slots = progression
+    ? effectiveStatSlots(skin, progression.allocations[skin])
+    : statSlotsOf(skin);
+  return STATS.map(({ key, label }) => {
+    const filled = slots[key] ?? 0;
+    const isSpecialty = key === specialtyKey;
+    const isMaxed = filled === STAT_SLOTS;
+    return {
+      key,
+      label,
+      filled,
+      strong: isSpecialty || isMaxed || filled > STAT_BASELINE,
+    };
+  });
 }
 
 const STEPS: Partial<Record<string, number>> = { ArrowLeft: -1, ArrowUp: -1, ArrowRight: 1, ArrowDown: 1 };

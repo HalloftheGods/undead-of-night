@@ -315,6 +315,8 @@ export interface SimState {
   tracks: Footprint[];
   /** Each survivor's kill chain, for the points it multiplies (`shared/kill-chain.ts`). */
   killChains: Map<EntityId, KillChain>;
+  /** Each survivor's headshot streak (`shared/kill-chain.ts`). */
+  headshotChains: Map<EntityId, KillChain>;
   /** Lit ground spinners, and the lures that hiss: fountains and the drop's flare. */
   spinners: SpinnerState[];
   lures: LureState[];

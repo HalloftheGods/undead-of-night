@@ -82,7 +82,7 @@
           <span>{{ hud.kills }}</span>
         </div>
         <div class="hud-chip hud-score">
-          <span>{{ hud.score }}</span>
+          <span>{{ hud.score.toLocaleString() }} XP</span>
           <span v-if="mode === 'coop'" class="hud-sub" :class="signalWeak ? 'is-threat' : 'is-good'">
             {{ signalWeak ? 'Signal weak' : 'Linked' }}
           </span>
@@ -121,9 +121,8 @@
             <span class="hud-sub hud-goal" :class="{ 'is-van': hud.exitOpen }">{{ levelGoal(hud) }}</span>
           </div>
 
-          <div v-if="home" class="hud-home">
-            <TreasureChip v-if="!home.inBunker" :home />
-            <QuestTracker :home />
+          <div v-if="home && !home.inBunker" class="hud-home">
+            <TreasureChip :home />
           </div>
         </div>
 
@@ -161,6 +160,10 @@
           <span v-else-if="swapKey !== null" class="hud-sub is-threat keys-only">Press {{ swapKey }}</span>
           <span v-else-if="reloadPrompt(hud)" class="hud-sub is-threat keys-only">Press R</span>
         </div>
+      </div>
+
+      <div v-if="home" class="hud-quests">
+        <QuestTracker :home />
       </div>
     </footer>
 
@@ -354,6 +357,21 @@ function hold(slot: BarSlot): void {
   flex-direction: column;
   align-items: center;
   gap: var(--u);
+}
+
+.hud-quests {
+  position: absolute;
+  left: calc(var(--u) * 5);
+  bottom: calc(var(--u) * 5);
+  max-width: min(calc(var(--u) * 90), 32vw);
+  pointer-events: auto;
+  z-index: 10;
+}
+
+.is-touch .hud-quests {
+  left: calc(var(--safe-left) + var(--u) * 3);
+  bottom: calc(var(--tabbar) + var(--u) * 2);
+  max-width: 45vw;
 }
 
 .hud-weapon {
