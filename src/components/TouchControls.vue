@@ -5,7 +5,7 @@
   -->
   <nav class="touch-tabs" data-touch-pad aria-label="Touch controls">
     <TouchTab
-      v-for="tab in TOUCH_TABS"
+      v-for="tab in tabs"
       :key="tab.id"
       :label="tabLabel(tab, hasKnife)"
       :glyph="tab.glyph"
@@ -18,12 +18,15 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from 'vue';
-import { TOUCH_TABS, tabLabel } from '../game/touch-tabs.ts';
+import { tabLabel, touchTabsFor } from '../game/touch-tabs.ts';
 import type { TouchTab as Tab } from '../game/touch-tabs.ts';
 import TouchTab from './TouchTab.vue';
 import { useGame } from './use-game.ts';
 
+/** The local player sits in a car: the horn tab shows. */
+const props = defineProps<{ seated?: boolean }>();
 const game = useGame();
+const tabs = computed(() => touchTabsFor(props.seated === true));
 const input = game.input;
 const held = ref<string[]>([]);
 const hasKnife = computed(() => game.ui.value.hud?.knife === true);

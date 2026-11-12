@@ -1,5 +1,6 @@
 import { describe, expect, it, beforeEach, vi, afterEach } from 'vitest';
 import {
+  ACTION_METADATA,
   DEFAULT_KEY_BINDINGS,
   DEFAULT_PAD_BINDINGS,
   formatKeyCode,
@@ -65,5 +66,19 @@ describe('controls preferences', () => {
     expect(formatKeyCode('Digit1')).toBe('1');
     expect(formatKeyCode('ShiftLeft')).toBe('Shift');
     expect(formatKeyCode('MouseLeft')).toBe('Left Click');
+  });
+
+  it('lists the horn as a rebindable action, on Space by default, and round-trips a rebind', () => {
+    expect(ACTION_METADATA.some((a) => a.id === 'horn' && a.rebindableKeys && a.rebindablePad)).toBe(true);
+    expect(loadKeyBindings().horn).toEqual(['Space']);
+    saveKeyBindings({ ...DEFAULT_KEY_BINDINGS, horn: ['KeyB'] });
+    savePadBindings({ ...DEFAULT_PAD_BINDINGS, horn: 4 });
+    expect(loadKeyBindings().horn).toEqual(['KeyB']);
+    expect(loadPadBindings().horn).toBe(4);
+  });
+
+  it('gives the horn a pad button nothing else uses', () => {
+    const buttons = Object.entries(DEFAULT_PAD_BINDINGS).filter(([, button]) => button === DEFAULT_PAD_BINDINGS.horn);
+    expect(buttons).toHaveLength(1);
   });
 });

@@ -29,6 +29,7 @@ export type GameAction =
   | 'sprint'
   | 'sneak'
   | 'search'
+  | 'horn'
   | 'reload'
   | 'heal'
   | 'melee'
@@ -64,6 +65,7 @@ export const ACTION_METADATA: readonly ActionMetadata[] = [
   { id: 'melee', label: 'Shove & Stab', category: 'combat', rebindableKeys: true, rebindablePad: true },
   { id: 'reload', label: 'Reload', category: 'combat', rebindableKeys: true, rebindablePad: true },
   { id: 'search', label: 'Search / Interact', category: 'items', rebindableKeys: true, rebindablePad: true },
+  { id: 'horn', label: 'Horn (driving)', category: 'items', rebindableKeys: true, rebindablePad: true },
   { id: 'heal', label: 'Use Medkit', category: 'items', rebindableKeys: true, rebindablePad: true },
   { id: 'throw', label: 'Throw Item', category: 'items', rebindableKeys: true, rebindablePad: true },
   { id: 'spinner', label: 'Spinner', category: 'items', rebindableKeys: true, rebindablePad: true },
@@ -92,6 +94,7 @@ export const DEFAULT_KEY_BINDINGS: KeyBindings = {
   melee: ['KeyF'],
   reload: ['KeyR'],
   search: ['KeyE'],
+  horn: ['Space'],
   heal: ['KeyH'],
   throw: ['KeyG'],
   spinner: ['KeyT'],
@@ -117,6 +120,7 @@ export const DEFAULT_PAD_BINDINGS: PadBindings = {
   melee: PAD_BUTTONS.lt,
   reload: PAD_BUTTONS.x,
   search: PAD_BUTTONS.a,
+  horn: PAD_BUTTONS.home,
   heal: PAD_BUTTONS.b,
   throw: PAD_BUTTONS.rb,
   spinner: PAD_BUTTONS.up,

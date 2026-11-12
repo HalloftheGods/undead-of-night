@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ARROW_UP, swipeArrow, turnClockwise } from '../src/game/swipe-arrows.ts';
 import { glyphPath, PAUSE } from '../src/game/touch-pad.ts';
-import { SPRINT_CODE, TOUCH_TABS, tabLabel } from '../src/game/touch-tabs.ts';
+import { HORN_CODE, SPRINT_CODE, TOUCH_TABS, tabLabel, touchTabsFor } from '../src/game/touch-tabs.ts';
 
 describe('phone tab bar', () => {
   it('runs Pause to Sprint, left to right', () => {
@@ -39,5 +39,15 @@ describe('hand-drawn swipe arrows', () => {
     const right = swipeArrow('right');
     const tipColumn = right[0].length - 1;
     expect(right.some((row) => row[tipColumn] === '#')).toBe(true);
+  });
+});
+
+describe('horn tab', () => {
+  it('shows only while seated, ahead of Sprint, holding the horn key', () => {
+    expect(touchTabsFor(false).some((tab) => tab.id === 'horn')).toBe(false);
+    const seated = touchTabsFor(true);
+    expect(seated.map((tab) => tab.id)).toEqual(['pause', 'backpack', 'search', 'shove', 'horn', 'sprint']);
+    const horn = seated.find((tab) => tab.id === 'horn');
+    expect(horn?.kind === 'hold' && horn.code).toBe(HORN_CODE);
   });
 });

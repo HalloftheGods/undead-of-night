@@ -1,7 +1,7 @@
 import type { CandyId, KeepsakeId } from '../../shared/protocol.ts';
 import { WEAPON_ORDER } from '../../shared/protocol.ts';
 import type { ClientInputPacket, Stance, WeaponId } from '../../shared/protocol.ts';
-import { GamepadInput, PAD_FIRE, PAD_PREV_WEAPON } from './gamepad-input.ts';
+import { GamepadInput, PAD_FIRE, PAD_HORN, PAD_PREV_WEAPON } from './gamepad-input.ts';
 import type { NavDirection, PadConnection } from './gamepad-input.ts';
 import type { SwipeDirection } from './swipe-gesture.ts';
 import { TouchInput } from './touch-input.ts';
@@ -25,7 +25,7 @@ const RIGHT_BUTTON_BIT = 2;
 
 function isGameCode(code: string): boolean {
   const binds = loadKeyBindings();
-  return Object.values(binds).some((codes) => codes.includes(code)) || code === 'Space';
+  return Object.values(binds).some((codes) => codes.includes(code));
 }
 
 /** The last hand on the game, for button prompts and for who steers the flashlight. */
@@ -346,6 +346,7 @@ export class InputManager {
       ...(this.eatLatch ? { eat: this.eatLatch } : {}),
       ...(this.keepsakeLatch ? { keepsake: this.keepsakeLatch } : {}),
       search: this.isHeld(binds.search),
+      ...(this.isHeld([...binds.horn, PAD_HORN]) ? { horn: true } : {}),
       ...(this.stance === 'sneak' ? { sneak: true } : {}),
       ...(this.stance === 'sprint' ? { sprint: true } : {}),
     };

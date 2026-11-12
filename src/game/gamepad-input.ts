@@ -30,6 +30,8 @@ export const PAD = {
 /** Pseudo-keys for what only a pad does. The keyboard never sends them. */
 export const PAD_FIRE = 'PadFire';
 export const PAD_PREV_WEAPON = 'PadPrevWeapon';
+/** The pad's horn button, held as this pseudo-key so a rebound keyboard horn does not matter. */
+export const PAD_HORN = 'PadHorn';
 const SNEAK_CODE = 'KeyC';
 
 import { loadPadBindings } from './controls-prefs.ts';
@@ -38,6 +40,7 @@ export function getActivePadBindings(): ReadonlyMap<number, string> {
   const binds = loadPadBindings();
   const map = new Map<number, string>();
   if (binds.search !== null) map.set(binds.search, 'KeyE');
+  if (binds.horn !== null) map.set(binds.horn, PAD_HORN);
   if (binds.heal !== null) map.set(binds.heal, 'KeyH');
   if (binds.reload !== null) map.set(binds.reload, 'KeyR');
   if (binds.bag !== null) map.set(binds.bag, 'KeyX');

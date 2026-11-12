@@ -42,6 +42,14 @@ describe('InputManager', () => {
     vi.unstubAllGlobals();
   });
 
+  it('sends the horn while the horn key is held, and not otherwise', () => {
+    expect(input.sample(1, 0, null).horn).toBeUndefined();
+    browser.dispatch('keydown', key('Space'));
+    expect(input.sample(2, 0, null).horn).toBe(true);
+    browser.dispatch('keyup', key('Space'));
+    expect(input.sample(3, 0, null).horn).toBeUndefined();
+  });
+
   it('reads held keys as a direction, with opposites cancelling', () => {
     browser.dispatch('keydown', key('KeyD'));
     browser.dispatch('keydown', key('ArrowUp'));
