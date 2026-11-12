@@ -101,6 +101,7 @@ export const SFX = {
   wave_clear: def(P.waveClear, 2.0, { gain: 2, voices: 1, cooldown: 2, vary: 0 }),
   game_over: def(P.gameOver, 4.1, { gain: 0.95, voices: 1, cooldown: 4, vary: 0 }),
   run_victory: def(P.runVictory, 2.8, { gain: 1.4, voices: 1, cooldown: 4, vary: 0 }),
+  level_up: def(P.levelUp, 1.4, { gain: 1.6, voices: 2, cooldown: 0.5, vary: 0 }),
   // Biome beds: long, quiet layers that AmbienceBed overlaps; two voices so one fades as the next swells.
   amb_marsh: def(AMB.ambMarsh, 6.5, { gain: 1, voices: 2, cooldown: 3, vary: 0.03 }),
   amb_tundra: def(AMB.ambTundra, 6.5, { gain: 1, voices: 2, cooldown: 3, vary: 0.03 }),

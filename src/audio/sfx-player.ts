@@ -221,3 +221,15 @@ export const towerAlarm: Recipe = (v) => {
   noise(v, { at: 0, filter: 'bandpass', freq: 1800, q: 2, attack: 0.01, decay: 0.08, gain: 0.3 });
   noise(v, { at: 0.05, filter: 'lowpass', freq: 400, decay: 0.3, gain: 0.25 });
 };
+
+/** Rewarding level-up fanfare: bright ascending arpeggio with sparkling sine chime and warm bass note. */
+export const levelUp: Recipe = (v) => {
+  const notes = [329.6, 392, 493.9, 587.3, 659.3, 784, 987.8];
+  notes.forEach((f, i) => {
+    tone(v, { at: i * 0.065, type: 'triangle', f0: f, attack: 0.005, decay: 0.45, gain: 0.24 });
+    tone(v, { at: i * 0.065, type: 'sine', f0: f * 2, attack: 0.005, decay: 0.3, gain: 0.12 });
+  });
+  tone(v, { at: 0.45, type: 'square', f0: 1046.5, attack: 0.01, hold: 0.2, decay: 0.7, gain: 0.2, lp: 3200 });
+  tone(v, { at: 0.45, type: 'sine', f0: 523.3, attack: 0.02, hold: 0.2, decay: 0.8, gain: 0.35 });
+  noise(v, { at: 0.45, filter: 'bandpass', freq: 4200, q: 4, decay: 0.35, gain: 0.18 });
+};

@@ -226,6 +226,7 @@ export class SnapshotHandler {
         renderer?.triggerLevelUpFx(playerX, playerY);
         renderer?.addFloatingText('LEVEL UP!!!', playerX, playerY - 36, '#ffe066');
         renderer?.addFloatingText(`+${gain.levelsGained} AP: ${winningStat.toUpperCase()}`, playerX, playerY - 26, '#ffc03c');
+        audio.playSfx('level_up');
 
         const boonIndex = Math.floor(Math.random() * LEVEL_UP_BOONS.length);
         const boonId = LEVEL_UP_BOONS[boonIndex];
