@@ -29,4 +29,5 @@ export const GAME_EVENT_TYPES = [
   'wave_start', 'wave_clear', 'exit_open', 'level_complete', 'level_start', 'game_over', 'trip_start',
   'door_closed', 'door_opened', 'plank_added', 'plank_removed', 'door_hit', 'door_broken',
   'overrun_warning', 'overrun_breach', 'overrun_end', 'merchant_hurt', 'merchant_downed', 'emote',
+  'vehicle_enter', 'vehicle_exit', 'vehicle_horn', 'vehicle_crash', 'vehicle_hit',
 ] as const;

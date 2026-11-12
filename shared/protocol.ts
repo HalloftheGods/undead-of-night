@@ -18,6 +18,7 @@ import type { Supplies } from './supply-types.ts';
 import type { BenchAction, BenchView } from './workbench.ts';
 import type { GridItem } from './grid-inventory.ts';
 import type { ContainerKind } from './containers.ts';
+import type { VehicleBody, VehicleFacing } from './vehicle-bodies.ts';
 
 export { GAME_EVENT_TYPES, GAME_PHASES, PICKUP_TYPES };
 export type { BackpackTier, FortificationInventory, FortificationItemType, GridItem, SurvivalNeeds };
@@ -136,6 +137,33 @@ export interface PlayerEntity {
   bagHash?: number;
   /** Hold progress (0..1) on the radio tower alarm. Left off when 0. */
   towerHold?: number;
+  /** The car and seat this survivor sits in. Left off on foot. */
+  vehicle?: VehicleSeat;
+}
+
+/** A seat in a car: `id` is the car's (its map prop index), seat 0 drives. */
+export interface VehicleSeat {
+  readonly id: number;
+  readonly seat: number;
+}
+
+/** A car someone has got into, as every client draws it and runs the E-key rules on it (`shared/vehicle-choice.ts`). */
+export interface VehicleView {
+  /** The map prop it was parked as, which also names it. */
+  readonly id: number;
+  readonly body: VehicleBody;
+  /** Centre of the footprint. */
+  readonly x: number;
+  readonly y: number;
+  /** Radians on screen axes: east 0, south a quarter turn clockwise. */
+  readonly heading: number;
+  /** Signed px/s along the heading; 0 at rest, when the car is a solid. */
+  readonly speed: number;
+  readonly facing: VehicleFacing;
+  /** Who sits in each seat, seat 0 driving; null for an empty one. */
+  readonly seats: readonly (EntityId | null)[];
+  /** 0..1 of its health. Left off at full. */
+  readonly health?: number;
 }
 
 export interface ZombieEntity {
@@ -283,6 +311,13 @@ export type GameEvent =
   | { readonly type: 'merchant_hurt'; readonly merchant: MerchantId; readonly x: number; readonly y: number }
   | { readonly type: 'merchant_downed'; readonly merchant: MerchantId; readonly x: number; readonly y: number }
   | { readonly type: 'overrun_end'; readonly outcome: OverrunEnd }
+  /** Someone got into or out of a car: x, y is where they stand after (the car's centre on getting in). */
+  | { readonly type: 'vehicle_enter' | 'vehicle_exit'; readonly vehicle: number; readonly playerId: EntityId; readonly seat: number; readonly x: number; readonly y: number }
+  | { readonly type: 'vehicle_horn'; readonly vehicle: number; readonly x: number; readonly y: number }
+  /** A car hit something solid: `strength` is the speed lost over the car's top speed, 0..1. */
+  | { readonly type: 'vehicle_crash'; readonly vehicle: number; readonly x: number; readonly y: number; readonly strength: number }
+  /** A car ran into a zombie: `strength` as for a crash, `kill` when it went down. */
+  | { readonly type: 'vehicle_hit'; readonly vehicle: number; readonly x: number; readonly y: number; readonly strength: number; readonly kill: boolean }
   /** A survivor sent an icon. Only the id travels; the client finds the body by playerId. */
   | { readonly type: 'emote'; readonly playerId: EntityId; readonly emote: EmoteId }
   | { readonly type: 'game_over'; readonly stats: GameOverStats };
@@ -329,6 +364,8 @@ export interface ClientInputPacket {
   readonly sneak?: boolean;
   /** The sprint key is held. Left off when not. */
   readonly sprint?: boolean;
+  /** The horn key is held: only a driver honks. Left off when not. */
+  readonly horn?: boolean;
 }
 
 export interface SnapshotPacket {
@@ -363,6 +400,8 @@ export interface SnapshotPacket {
   readonly tracks?: readonly TrackEntity[];
   /** Doors near a player that are closed, boarded or damaged. Left off when every door is as it started. */
   readonly doors?: readonly DoorView[];
+  /** Every car anyone has got into this town, sent to everyone wherever they are. Left off while there are none. */
+  readonly vehicles?: readonly VehicleView[];
   /** The bunker's merchants, walking it, sent to everyone. Left off anywhere else. */
   readonly merchants?: readonly MerchantEntity[];
   /** Events since the previous snapshot, in order. */

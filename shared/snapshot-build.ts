@@ -10,14 +10,14 @@ import { overrunView } from './overrun.ts';
 import { WEAPON_ORDER } from './protocol.ts';
 import { liveBoss } from './bosses.ts';
 import { leftoversField } from './leftovers.ts';
-import type { BossView, DropView, ExitEntity, GameEvent, PlayerEntity, SnapshotPacket, WeaponId } from './protocol.ts';
-import type { PlayerState, SimState } from './sim-state.ts';
+import type { BossView, DropView, ExitEntity, GameEvent, PlayerEntity, SnapshotPacket, VehicleView, WeaponId } from './protocol.ts';
+import type { PlayerState, SimState, VehicleState } from './sim-state.ts';
 import { hordeHostiles } from './waves.ts';
 import { statusView } from './zombie-status.ts';
 import { benchField } from './workbench.ts';
 import { hasSupplies } from './supply-types.ts';
 
-const ROUNDED_EVENT_FIELDS = ['x', 'y', 'angle', 'radius'] as const;
+const ROUNDED_EVENT_FIELDS = ['x', 'y', 'angle', 'radius', 'strength'] as const;
 
 /** The + 0 folds -0 into 0, which JSON would otherwise change under a reader's feet. */
 export const round2 = (value: number): number => Math.round(value * 100) / 100 + 0;
@@ -136,7 +136,28 @@ export function playerSnapshot(p: PlayerState): PlayerEntity {
     ...(hasSupplies(p.supplies) ? { supplies: { ...p.supplies } } : {}),
     bagHash: bagHash(p.inventory),
     ...(p.towerHold ? { towerHold: round2(p.towerHold) } : {}),
+    ...(p.vehicle ? { vehicle: { ...p.vehicle } } : {}),
   };
+}
+
+function vehicleView(car: VehicleState): VehicleView {
+  const whole = car.health >= car.maxHealth;
+  return {
+    id: car.id,
+    body: car.body,
+    x: round2(car.x),
+    y: round2(car.y),
+    heading: round2(car.heading),
+    speed: round2(car.speed),
+    facing: car.facing,
+    seats: [...car.seats],
+    ...(whole ? {} : { health: round2(car.health / car.maxHealth) }),
+  };
+}
+
+/** Every car anyone has got into, for every client: not range-limited, since a car left anywhere is still the team's. */
+function vehiclesField(sim: SimState): Pick<SnapshotPacket, 'vehicles'> {
+  return sim.vehicles.size > 0 ? { vehicles: [...sim.vehicles.values()].map(vehicleView) } : {};
 }
 
 /** A detached, JSON-safe view of the world. Drains the event queue. */
@@ -191,6 +212,7 @@ export function buildSnapshot(sim: SimState): SnapshotPacket {
     ...bossField(sim),
     ...tracksField(sim, inRange),
     ...doorsField(sim, inRange),
+    ...vehiclesField(sim),
     ...(sim.merchants.length > 0 ? { merchants: sim.merchants.map(merchantView) } : {}),
     events,
     gameOver: sim.gameOver ? { ...sim.gameOver, players: sim.gameOver.players.map((p) => ({ ...p })) } : null,

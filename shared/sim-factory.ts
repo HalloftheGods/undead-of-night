@@ -91,6 +91,7 @@ export function createSimState(options: SimulationOptions): SimState {
     nextEntity: 0,
     workbench: options.workbench ?? 'off',
     bench: null,
+    vehicles: new Map(),
     homeRun: home ? newHomeRun(options.seed) : null,
     overrunOn: home && options.overrun === true,
     overrun: null,

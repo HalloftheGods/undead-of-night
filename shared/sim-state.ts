@@ -19,6 +19,7 @@ import type {
   PickupEntity,
   PlayerEntity,
   Stance,
+  VehicleSeat,
   WeaponId,
   WorldMap,
   ZombieEntity,
@@ -38,6 +39,7 @@ import type { GunFit } from './gun-upgrades.ts';
 import type { KitCounts } from './round-effect-data.ts';
 import type { BenchState, WorkbenchMode } from './workbench.ts';
 import type { ZombieStatus } from './zombie-status.ts';
+import type { VehicleBody, VehicleFacing } from './vehicle-bodies.ts';
 import type { Footprint, ZombieTrail } from './town-rules.ts';
 
 /** Rounds in the gun itself. Spare rounds live in PlayerEntity.ammoBag, gun or no gun. */
@@ -68,7 +70,7 @@ export interface PlayerHome extends Omit<HomeView, 'overrun' | 'chest' | 'salvag
 }
 
 /** Magazines live in `guns` and are read out for snapshots, so there is one copy of the count. */
-export interface PlayerState extends Omit<PlayerEntity, 'mags' | 'gear' | 'bottles' | 'fireworks' | 'fountains' | 'home' | 'candy' | 'sugar' | 'keepsakes' | 'keepsakeOffer'> {
+export interface PlayerState extends Omit<PlayerEntity, 'mags' | 'gear' | 'bottles' | 'fireworks' | 'fountains' | 'home' | 'candy' | 'sugar' | 'keepsakes' | 'keepsakeOffer' | 'vehicle'> {
   bottles: number;
   /** Spinners and fountains to light, found in town and left there (`shared/throwables.ts`). */
   fireworks: number;
@@ -155,6 +157,32 @@ export interface PlayerState extends Omit<PlayerEntity, 'mags' | 'gear' | 'bottl
   towerHold?: number;
   /** Seconds the search key has been held on a closed door this press (`shared/doors.ts`). */
   doorHold: number;
+  /** Seconds the search key has been held this press with a car to get into in reach: a tap gets in, a hold searches. */
+  vehicleHold: number;
+  /** The car and seat this survivor sits in, or null on foot (`shared/vehicles.ts`). */
+  vehicle: VehicleSeat | null;
+  /** The horn key is held. */
+  horn: boolean;
+}
+
+/** A car someone has got into: from then on it is its own body, and its map prop is out of collision. */
+export interface VehicleState {
+  /** The map prop it was parked as. */
+  readonly id: number;
+  readonly body: VehicleBody;
+  /** Centre of the footprint. */
+  x: number;
+  y: number;
+  heading: number;
+  /** Signed px/s along the heading. 0 is at rest, when it is a solid. */
+  speed: number;
+  facing: VehicleFacing;
+  /** Who sits where, seat 0 driving. As long as the body has seats. */
+  seats: (EntityId | null)[];
+  health: number;
+  maxHealth: number;
+  /** Seconds left on the horn's current blast. */
+  hornLeft: number;
 }
 
 /** Unaware, walking to a noise, or after a player. */
@@ -352,6 +380,8 @@ export interface SimState {
   overrun: OverrunState | null;
   /** The map's doors, built the first time `updateDoors` runs for a map (`shared/doors.ts`). */
   doors?: BarricadeOpening[];
+  /** Cars someone has got into this town, by map prop index (`shared/vehicles.ts`). */
+  vehicles: Map<number, VehicleState>;
 }
 
 export function entityId(sim: SimState, prefix: string): EntityId {

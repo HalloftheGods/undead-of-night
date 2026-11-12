@@ -206,14 +206,23 @@ function gapTo({ x0, y0, x1, y1 }: Box, x: number, y: number): number {
 /**
  * The nearest container still shut within reach of a spot, or null. Only the room the spot is in
  * counts, so nobody searches through a wall. When outdoors, only outdoor containers count.
+ * `moved` gives a container's current box by its prop index, for a car driven off its map spot, or null while it rolls.
  */
-export function containerInReach(map: WorldMap, x: number, y: number, isOpen?: (id: number) => boolean): Container | null {
+export function containerInReach(
+  map: WorldMap,
+  x: number,
+  y: number,
+  isOpen?: (id: number) => boolean,
+  moved?: ReadonlyMap<number, Box | null>,
+): Container | null {
   const room = buildingAt(map, x, y);
   const candidates = room ? surveyed(map).byBuilding.get(room.id) ?? [] : surveyed(map).outdoors;
   let nearest: Container | null = null;
   let nearestGap = SEARCH_REACH;
   for (const container of candidates) {
-    const gap = gapTo(container.box, x, y);
+    const box = moved?.has(container.propIndex) ? moved.get(container.propIndex) : container.box;
+    if (!box) continue;
+    const gap = gapTo(box, x, y);
     const nearer = gap <= nearestGap && (!isOpen || !isOpen(container.id));
     if (nearer) {
       nearest = container;
