@@ -328,7 +328,7 @@ describe('every effect', () => {
     expect(z.status).toBeUndefined();
   });
 
-  it('lets a headshot pay as ever', () => {
+  it('lets a headshot land as ever', () => {
     const { sim, state, p } = armed('incendiary');
     const z = dummy(state, p.x + 30, p.y, 'brute');
     p.aim = null;

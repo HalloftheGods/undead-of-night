@@ -1,11 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
 import { parseClientPacket } from '../server/packets.ts';
-import { CHEST_HEIGHT, WEAPONS } from '../shared/constants.ts';
+import { CHEST_HEIGHT, WEAPONS, ZOMBIES } from '../shared/constants.ts';
 import { gunStats } from '../shared/gun-upgrades.ts';
 import { HEAD_MARGIN, headSpot, headUnderAim, isOnHead } from '../shared/headshots.ts';
+import { BUNKER_LEVEL } from '../shared/home-protocol.ts';
+import { nightEventFor } from '../shared/night-events.ts';
 import type { ZombieType } from '../shared/protocol.ts';
 import type { PlayerState, SimState, ZombieState } from '../shared/sim-state.ts';
 import type { GameSimulation } from '../shared/simulation.ts';
+import { newHomeRun } from '../shared/trip.ts';
 import { buildBloater } from '../src/art/zombies/bloater.ts';
 import { buildBrute } from '../src/art/zombies/brute.ts';
 import { Figure } from '../src/art/zombies/rig.ts';
@@ -47,16 +50,83 @@ function target(state: SimState, type: ZombieType, dx = RANGE): ZombieState {
 
 const dealt = (z: ZombieState): number => TOUGH - z.health;
 
+const SEEDS = Array.from({ length: 2000 }, (_, i) => Math.imul(i + 1, 0x9e3779b1) >>> 0);
+
+/** One pistol round into the head of a walker at its stock health, which kills it. */
+function headKill(sim: GameSimulation, state: SimState) {
+  const z = target(state, 'walker');
+  z.health = z.maxHealth = ZOMBIES.walker.health;
+  const head = headSpot(z);
+  shootAt(sim, state.players[0], head.x, head.y);
+  const snap = sim.snapshot();
+  return { hs: eventsOf(snap, 'headshot')[0], death: eventsOf(snap, 'zombie_die')[0] };
+}
+
 describe('headshots', () => {
-  it('multiplies the damage and pays a bonus for a shot aimed at the head', () => {
+  it('multiplies the damage of a shot at the head and pays nothing while it stands', () => {
     const { sim, state } = quietSim();
     const z = target(state, 'walker');
     const head = headSpot(z);
     shootAt(sim, state.players[0], head.x, head.y);
     expect(dealt(z)).toBeCloseTo(WEAPONS.pistol.damage * 2.5);
-    expect(state.players[0].score).toBe(5);
+    expect(state.players[0].score).toBe(0);
     const [event] = eventsOf(sim.snapshot(), 'headshot');
-    expect(event).toMatchObject({ playerId: 'a', zombieId: z.id, zombieType: 'walker', points: 5 });
+    expect(event).toMatchObject({ playerId: 'a', zombieId: z.id, zombieType: 'walker', points: 0 });
+  });
+
+  it('pays the town once for the head shot that kills', () => {
+    const { sim, state } = quietSim();
+    state.level = 3;
+    const { hs, death } = headKill(sim, state);
+    expect(hs.points).toBe(3);
+    expect(state.players[0].score).toBe(3 + death.points);
+  });
+
+  it('leaves the headshot bonus out of a blood moon', () => {
+    const { sim, state } = quietSim();
+    const seed = SEEDS.find((s) => nightEventFor(s, 3)?.id === 'blood_moon')!;
+    state.level = 3;
+    state.map = { ...state.map, seed };
+    const { hs, death } = headKill(sim, state);
+    expect(hs.points).toBe(3);
+    expect(death.points).toBe(6);
+    expect(state.players[0].score).toBe(9);
+  });
+
+  it('pays a bunker head kill as the furthest town reached', () => {
+    const { sim, state } = quietSim();
+    state.level = BUNKER_LEVEL;
+    state.homeRun = { ...newHomeRun(1), roomHighest: 4 };
+    expect(headKill(sim, state).hs.points).toBe(4);
+  });
+
+  it('pays a brute killed after ten head hits the bonus once', () => {
+    const { sim, state } = quietSim();
+    const z = target(state, 'brute');
+    z.health = z.maxHealth = WEAPONS.pistol.damage * 1.5 * 9.5;
+    for (let i = 0; i < 10; i++) {
+      const head = headSpot(z);
+      shootAt(sim, state.players[0], head.x, head.y);
+    }
+    const snap = sim.snapshot();
+    expect(z.health).toBe(0);
+    expect(eventsOf(snap, 'headshot').map((e) => e.points)).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0, 1]);
+    expect(eventsOf(snap, 'headshot').map((e) => e.chain)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    expect(state.players[0].score).toBe(1 + 12);
+  });
+
+  it('keeps the bonus on a piercing round that kills', () => {
+    const { sim, state } = quietSim();
+    state.level = 2;
+    const p = state.players[0];
+    const z = target(state, 'walker');
+    z.health = z.maxHealth = ZOMBIES.walker.health;
+    sim.snapshot();
+    state.bullets.push({ id: 'b', shooterId: 'a', x: p.x, y: p.y, vx: 520, vy: 0, damage: WEAPONS.pistol.damage, rangeLeft: 300, headTarget: z, effect: 'piercing' });
+    steps(sim, 6);
+    const snap = sim.snapshot();
+    expect(eventsOf(snap, 'headshot').map((e) => e.points)).toEqual([2]);
+    expect(p.score).toBe(2 + eventsOf(snap, 'zombie_die')[0].points);
   });
 
   it('leaves a shot at the chest as it was', () => {
@@ -76,13 +146,13 @@ describe('headshots', () => {
     expect(eventsOf(sim.snapshot(), 'headshot')).toHaveLength(1);
   });
 
-  it('gives brutes a smaller bonus', () => {
+  it('multiplies a brute head by 1.5 and pays nothing while it stands', () => {
     const { sim, state } = quietSim();
     const z = target(state, 'brute');
     const head = headSpot(z);
     shootAt(sim, state.players[0], head.x, head.y);
     expect(dealt(z)).toBeCloseTo(WEAPONS.pistol.damage * 1.5);
-    expect(state.players[0].score).toBe(2);
+    expect(state.players[0].score).toBe(0);
   });
 
   it('multiplies an upgraded gun rather than the stock damage', () => {

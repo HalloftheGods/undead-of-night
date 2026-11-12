@@ -20,7 +20,7 @@ import { chainKill, chainMultiplier } from './kill-chain.ts';
 import { killPoints, townOf } from './kill-points.ts';
 import { eventOf } from './night-events.ts';
 import { bossDown } from './bosses.ts';
-import { headOnBulletPlane, headshotMultiplier } from './headshots.ts';
+import { headOnBulletPlane, headshotDamage, payHeadshot } from './headshots.ts';
 import type { EntityId } from './protocol.ts';
 import { maybeDropOnKill } from './pickups.ts';
 import { hurtPlayer } from './player-health.ts';
@@ -215,9 +215,11 @@ function passThrough(sim: SimState, b: BulletState, z: ZombieState): void {
 
 /** Lands the bullet on a body. True if it carries on out the far side. */
 function strike(sim: SimState, b: BulletState, z: ZombieState, angle: number): boolean {
-  const damage = b.damage * headshotMultiplier(sim, b, z, angle);
+  const damage = b.damage * headshotDamage(b, z);
   const acidSugar = sugarById(sim, b.shooterId, 'sour_skulls') > 0;
   damageZombie(sim, z, damage, angle, b.shooterId, b.effect === 'acid' || acidSugar);
+  // After the damage, so it knows whether the shot killed; before a piercing round forgets the head.
+  payHeadshot(sim, b, z, angle);
   if (b.effect) applyRoundEffect(sim, b.effect, z, b.shooterId, b.volley);
   if (acidSugar) applyRoundEffect(sim, 'acid', z, b.shooterId, b.volley);
   if (sugarById(sim, b.shooterId, 'frost_bites') > 0) applyRoundEffect(sim, 'tranq', z, b.shooterId, b.volley);

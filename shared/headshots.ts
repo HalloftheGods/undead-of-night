@@ -1,6 +1,7 @@
 import { LICORICE_HEAD_MARGIN, SKULL_POP_HEAD_MARGIN, sugarOf } from './candy.ts';
 import { CHEST_HEIGHT } from './constants.ts';
-import { chainHeadshot, headshotChainMultiplier } from './kill-chain.ts';
+import { chainHeadshot } from './kill-chain.ts';
+import { townOf } from './kill-points.ts';
 import type { EntityId, ZombieEntity, ZombieType } from './protocol.ts';
 import type { BulletState, PlayerState, SimState, ZombieState } from './sim-state.ts';
 import { emit } from './sim-state.ts';
@@ -13,18 +14,18 @@ interface HeadRule {
   readonly radius: number;
   /** What the shot's damage is multiplied by. */
   readonly damage: number;
-  /** Paid to the shooter on top of anything the kill pays. */
-  readonly score: number;
 }
 
-const FULL_BONUS = { damage: 2.5, score: 5 };
+const FULL_BONUS = { damage: 2.5 };
+/** Paid per town, on top of the kill, to the shooter whose head shot kills. */
+export const HEADSHOT_BONUS = 1;
 
 /** Measured off the rigs in src/art/zombies; tests/headshots.spec.ts holds them to the art. */
 const HEADS: Record<ZombieType, HeadRule> = {
   walker: { up: 20.5, forward: 4, radius: 5, ...FULL_BONUS },
   runner: { up: 14, forward: 8, radius: 4.5, ...FULL_BONUS },
   bloater: { up: 27, forward: 0.5, radius: 4, ...FULL_BONUS },
-  brute: { up: 26.5, forward: 6, radius: 5.5, damage: 1.5, score: 2 },
+  brute: { up: 26.5, forward: 6, radius: 5.5, damage: 1.5 },
   // Drawn on the walker's rig.
   screamer: { up: 20.5, forward: 4, radius: 5, ...FULL_BONUS },
 };
@@ -96,16 +97,18 @@ export function headOnBulletPlane(sim: SimState, z: ZombieState, shooterId: Enti
   return { x: spot.x, y: spot.y + CHEST_HEIGHT, radius: HEADS[z.type].radius + marginFor(sim, shooter) };
 }
 
-/** Pays out a bullet landing on the zombie it was aimed at the head of, and returns what its damage is multiplied by. */
-export function headshotMultiplier(sim: SimState, b: BulletState, z: ZombieState, angle: number): number {
+/** What a bullet's damage is multiplied by: the head's rule on the zombie it was aimed at the head of, 1 otherwise. */
+export function headshotDamage(b: BulletState, z: ZombieState): number {
+  return b.headTarget === z ? HEADS[z.type].damage : 1;
+}
+
+/** Announces a bullet that landed on the head it was aimed at, and pays the bonus if that shot killed. Call it once the damage has landed. */
+export function payHeadshot(sim: SimState, b: BulletState, z: ZombieState, angle: number): void {
   const aimedHere = b.headTarget === z;
-  if (!aimedHere) return 1;
-  const { damage, score } = HEADS[z.type];
+  if (!aimedHere) return;
   const chain = chainHeadshot(sim, b.shooterId);
-  const mult = headshotChainMultiplier(chain);
-  const points = Math.round(score * mult);
+  const points = z.health <= 0 ? HEADSHOT_BONUS * townOf(sim) : 0;
   const shooter = sim.players.find((p) => p.id === b.shooterId);
   if (shooter) shooter.score += points;
   emit(sim, { type: 'headshot', playerId: b.shooterId, zombieId: z.id, zombieType: z.type, ...headSpot(z), angle, points, chain });
-  return damage;
 }
