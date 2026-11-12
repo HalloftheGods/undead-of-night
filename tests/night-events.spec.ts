@@ -56,6 +56,6 @@ describe('a blood moon in the sim', () => {
     const zombie = addZombie(state, 'walker', a.x + 200, a.y);
     const before = a.score;
     damageZombie(state, zombie, 1e6, 0, 'a');
-    expect(a.score - before).toBe(zombie.points * 2);
+    expect(a.score - before).toBe(6);
   });
 });

@@ -48,7 +48,7 @@ describe('headshot chains', () => {
 });
 
 describe('kill chains in the sim', () => {
-  it('scores a second quick kill at a quarter more and says so on the event', async () => {
+  it('counts a second quick kill in the chain and says so on the event', async () => {
     const { damageZombie } = await import('../shared/combat.ts');
     const { addZombie, quietSim } = await import('./helpers/sim-harness.ts');
     const { state } = quietSim(['a']);
@@ -58,8 +58,19 @@ describe('kill chains in the sim', () => {
     const before = a.score;
     damageZombie(state, first, 1e6, 0, 'a');
     damageZombie(state, second, 1e6, 0, 'a');
-    expect(a.score - before).toBe(first.points + Math.floor(second.points * 1.25));
+    expect(a.score - before).toBe(2);
     const deaths = state.events.filter((event) => event.type === 'zombie_die');
     expect(deaths.map((event) => event.type === 'zombie_die' && event.chain)).toEqual([1, 2]);
+  });
+
+  it('flags the chain on the event only when it changed the points', async () => {
+    const { damageZombie } = await import('../shared/combat.ts');
+    const { addZombie, quietSim } = await import('./helpers/sim-harness.ts');
+    const { state } = quietSim(['a']);
+    const [a] = state.players;
+    for (const gap of [200, 220, 240]) damageZombie(state, addZombie(state, 'walker', a.x + gap, a.y), 1e6, 0, 'a');
+    const deaths = state.events.filter((e) => e.type === 'zombie_die');
+    expect(deaths.map((e) => e.type === 'zombie_die' && e.points)).toEqual([1, 1, 2]);
+    expect(deaths.map((e) => e.type === 'zombie_die' && e.chainPaid)).toEqual([false, false, true]);
   });
 });

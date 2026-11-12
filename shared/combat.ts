@@ -17,6 +17,7 @@ import {
   TICK_DT,
 } from './constants.ts';
 import { chainKill, chainMultiplier } from './kill-chain.ts';
+import { killPoints, townOf } from './kill-points.ts';
 import { eventOf } from './night-events.ts';
 import { bossDown } from './bosses.ts';
 import { headOnBulletPlane, headshotMultiplier } from './headshots.ts';
@@ -72,9 +73,12 @@ function killZombie(sim: SimState, z: ZombieState, angle: number, killerId: Enti
   // A killer who has dropped out (a burn lands after they go) keeps the credit for when they return.
   const away = present ? undefined : [...sim.departed.values()].find((p) => p.id === killerId);
   const killer = present ?? away;
-  // A kill in a chain pays more, the bonus rounded down so a single kill pays exactly its worth.
+  // A kill in a chain pays more, rounded to the nearest point so the chain still shows on a 1-point walker.
   const chain = killer ? chainKill(sim, killer.id) : 1;
-  const points = Math.floor(z.points * chainMultiplier(chain) * (eventOf(sim)?.points ?? 1));
+  const town = townOf(sim);
+  const event = eventOf(sim)?.points ?? 1;
+  const points = killPoints(z.points, town, chainMultiplier(chain), event);
+  const unchained = killPoints(z.points, town, 1, event);
   if (killer) {
     killer.score += points;
     killer.kills += 1;
@@ -91,8 +95,9 @@ function killZombie(sim: SimState, z: ZombieState, angle: number, killerId: Enti
     y: z.y,
     angle,
     killerId,
-    points: killer ? points : z.points,
+    points: killer ? points : unchained,
     chain,
+    chainPaid: killer !== undefined && points !== unchained,
   });
   // The bunker's horde drops nothing: the chest is the reward. Off the overrun this rolls as it always has.
   const bunkerHorde = z.horde && sim.overrun !== null;

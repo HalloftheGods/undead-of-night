@@ -454,10 +454,10 @@ describe('zombie types', () => {
     damageZombie(state, zombie, 1e6, 0, 'a');
     sim.step();
     expect(state.zombies.length).toBe(0);
-    expect(p.score).toBe(ZOMBIES.runner.points);
+    expect(p.score).toBe(2);
     expect(p.kills).toBe(1);
     const [death] = eventsOf(sim.snapshot(), 'zombie_die');
     expect(death.killerId).toBe('a');
-    expect(death.points).toBe(ZOMBIES.runner.points);
+    expect(death.points).toBe(2);
   });
 });

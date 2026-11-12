@@ -88,7 +88,7 @@ describe('boss nights', () => {
     const pickups = state.pickups.length;
     const score = a.score;
     damageZombie(state, z, 1e6, 0, 'a');
-    expect(a.score - score).toBeGreaterThanOrEqual(BOSSES.howler.points);
+    expect(a.score - score).toBeGreaterThanOrEqual((BOSSES.howler.points * 3) / 10);
     expect(state.pickups.length - pickups).toBeGreaterThanOrEqual(2);
     expect(eventsOf(sim.snapshot(), 'boss_down')).toHaveLength(1);
   });

@@ -111,7 +111,7 @@ describe('flame rounds', () => {
     steps(sim, SECOND);
     expect(caught.health).toBe(0);
     expect(p.kills).toBe(1);
-    expect(p.score).toBe(ZOMBIES.walker.points);
+    expect(p.score).toBe(1);
     expect(eventsOf(sim.snapshot(), 'zombie_die')[0].killerId).toBe('a');
   });
 
