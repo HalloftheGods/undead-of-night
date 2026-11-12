@@ -1,12 +1,14 @@
-// Every car body in every coat, shut and searched, with the light bars lit, so the town's traffic
-// can be judged side by side.
+// Every car body in every coat, shut and searched, with the light bars lit and each body turned round
+// the ring, so the town's traffic can be judged side by side.
 //   node --experimental-strip-types tools/car-lineup.ts <outfile.png> [scale]
 
 import { writeFileSync } from 'node:fs';
 import type { PropKind } from '../shared/protocol.ts';
-import { VEHICLE_BODY_IDS, VEHICLE_FACINGS } from '../shared/vehicle-bodies.ts';
+import { VEHICLE_BODIES, VEHICLE_BODY_IDS, VEHICLE_FACINGS } from '../shared/vehicle-bodies.ts';
+import type { VehicleBody } from '../shared/vehicle-bodies.ts';
 import { buildArtBook } from '../src/art/index.ts';
 import type { PixelSprite } from '../src/art/types.ts';
+import { squareFacing, TURN_STEPS, turnHeading, turnSprite } from '../src/engine/vehicle-turns.ts';
 import { encodePng } from './png.ts';
 import { drawSprite, Sheet } from './sheet.ts';
 
@@ -34,6 +36,23 @@ for (const body of VEHICLE_BODY_IDS) {
   const coats = art.vehicles[body].w.length;
   const picks = FACING_COATS.filter((i) => i < coats);
   rows.push({ label: `${body.toUpperCase()} NESW`, sprites: picks.flatMap((i) => VEHICLE_FACINGS.map((facing) => art.vehicles[body][facing][i])) });
+}
+// Every body round the ring, sixteen steps to a row from east: hand-drawn where the nose is square to the
+// screen, a turn model between. Turn models are pinned at the car's centre, so they are stood on the row's line here.
+const TURN_ROW = TURN_STEPS / 2;
+const standing = (sprite: PixelSprite, body: VehicleBody, step: number): PixelSprite => {
+  const { sideDepth, length } = VEHICLE_BODIES[body];
+  const noseness = Math.abs(Math.sin(turnHeading(step)));
+  return { ...sprite, ay: sprite.ay + Math.round((sideDepth + (length - sideDepth) * noseness) / 2) };
+};
+const ringSprite = (body: VehicleBody, step: number): PixelSprite => {
+  const facing = squareFacing(step);
+  return facing ? art.vehicles[body][facing][0] : standing(turnSprite(art, body, 0, step), body, step);
+};
+for (const body of VEHICLE_BODY_IDS) {
+  for (const half of [0, 1]) {
+    rows.push({ label: `${body.toUpperCase()} TURN ${half + 1}/2`, sprites: Array.from({ length: TURN_ROW }, (_, i) => ringSprite(body, half * TURN_ROW + i)) });
+  }
 }
 const barLit = (['police', 'ambulance'] as const).flatMap((body) =>
   VEHICLE_FACINGS.flatMap((facing) => art.vehicleBeacons[body]![facing].frames.map((frame) => ({ body: art.vehicles[body][facing][0], frame }))),
