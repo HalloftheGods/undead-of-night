@@ -5,6 +5,8 @@ import { carSounds, ENGINE_NOISE_INTERVAL_SEC, ENGINE_NOISE_MAX_RADIUS, ENGINE_N
 import { VEHICLE_TOP_SPEED } from '../shared/vehicle-physics.ts';
 import { checkVehicleRoadkill, MIN_ROADKILL_SPEED } from '../shared/vehicle-combat.ts';
 import { TICK_RATE, WEAPONS } from '../shared/constants.ts';
+import { TILE_SIZE } from '../shared/map-protocol.ts';
+import { GRID_PITCH_COLS, GRID_PITCH_ROWS } from '../shared/town-plan.ts';
 
 const noiseCalls = vi.hoisted(() => ({ count: 0, radii: [] as number[] }));
 vi.mock('../shared/zombie-senses.ts', async (importOriginal) => {
@@ -168,7 +170,10 @@ describe('engine noise', () => {
 });
 
 describe('horn loudness', () => {
-  it('carries farther than a shotgun and a flat-out engine: the whole block', () => {
+  it('carries across a whole city block, corner to corner, and farther than a shotgun and a flat-out engine', () => {
+    const blockDiagonal = Math.hypot(GRID_PITCH_COLS, GRID_PITCH_ROWS) * TILE_SIZE;
+    expect(HORN_NOISE_RADIUS).toBeGreaterThanOrEqual(blockDiagonal);
+    expect(HORN_NOISE_RADIUS).toBeLessThan(2 * blockDiagonal);
     expect(HORN_NOISE_RADIUS).toBeGreaterThan(WEAPONS.shotgun.noiseRadius);
     expect(HORN_NOISE_RADIUS).toBeGreaterThan(ENGINE_NOISE_MAX_RADIUS);
   });

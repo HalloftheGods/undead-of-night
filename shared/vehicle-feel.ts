@@ -1,14 +1,14 @@
 // What a car sounds like to the town: the driver's horn and the engine that draws zombies.
 
-import { TICK_DT, TICK_RATE } from './constants.ts';
-import type { PlayerState, SimState, VehicleState } from './sim-state.ts';
-import { emit } from './sim-state.ts';
-import { VEHICLE_TOP_SPEED } from './vehicle-physics.ts';
-import { makeNoise } from './zombie-senses.ts';
+import { TICK_DT, TICK_RATE } from "./constants.ts";
+import type { PlayerState, SimState, VehicleState } from "./sim-state.ts";
+import { emit } from "./sim-state.ts";
+import { VEHICLE_TOP_SPEED } from "./vehicle-physics.ts";
+import { makeNoise } from "./zombie-senses.ts";
 
 /** Seconds between one blast of the horn and the next. */
 export const HORN_COOLDOWN_SEC = 0.8;
-/** How far a horn carries, in world pixels: the whole block and then some, farther than any gun or engine, so a honk is a dinner bell. */
+/** How far a horn carries, in world pixels: a whole city block, corner to corner (the town grid's 36 by 32 tiles of 16px is about 770px across), and farther than any gun or engine. */
 export const HORN_NOISE_RADIUS = 1200;
 /** A car faster than this px/s is loud. */
 export const ENGINE_NOISE_MIN_SPEED = 20;
@@ -33,7 +33,7 @@ export function honk(sim: SimState, car: VehicleState, driver: PlayerState): voi
   const isReady = car.hornLeft <= 0;
   if (!isEdge || !isReady) return;
   car.hornLeft = HORN_COOLDOWN_SEC;
-  emit(sim, { type: 'vehicle_horn', vehicle: car.id, x: car.x, y: car.y });
+  emit(sim, { type: "vehicle_horn", vehicle: car.id, x: car.x, y: car.y });
   makeNoise(sim, car.x, car.y, HORN_NOISE_RADIUS);
 }
 

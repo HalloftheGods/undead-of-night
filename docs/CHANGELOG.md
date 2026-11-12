@@ -60,7 +60,7 @@ All notable changes to the Undead of Night: Last Round game are documented in th
 - A car left at an angle against a wall no longer snaps square into it and sticks for good; a turning car sorts and glows by the foot of what is drawn; light bars are built ahead of need and light the car's left half in every facing.
 
 ### Added
-- Loud cars: a rolling engine carries 460px at a crawl up to 780px at top speed (a shotgun is 420px), pulsing every half second, and an idling engine under a driver is heard close by. The horn carries 1200px, the whole block, and sounds far louder.
+- Loud cars: a rolling engine carries 460px at a crawl up to 780px at top speed (a shotgun is 420px), pulsing every half second, and an idling engine under a driver is heard close by. The horn carries 800px, a whole city block corner to corner, and sounds far louder.
 - Turn models: between its four hand-drawn facings a driven car is drawn from a small solid folded out of its side-on, nose-up and nose-down sprites, at 32 steps round the ring, so a turn runs from the side view to the top-down view. Sprites are drawn on first need and warmed one a frame; police and ambulance light bars turn with the car.
 - `tools/car-lineup.ts` shows every body round the ring.
 
