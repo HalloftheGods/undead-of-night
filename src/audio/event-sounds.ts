@@ -1,4 +1,5 @@
 // What each game event sounds like: a table from event type to the sounds it plays.
+import type { EmoteId } from '../../shared/emotes.ts';
 import type { BossId, GameEvent, PickupType, WeaponId, ZombieType } from '../../shared/protocol.ts';
 import type { GunEffect } from '../../shared/round-effect-data.ts';
 import type { Mixer } from './mixer.ts';
@@ -19,12 +20,19 @@ export const PICKUP_SFX: Record<PickupType, SfxName> = {
   barrel: 'pickup_part', grip: 'pickup_part', magazine: 'pickup_part', suppressor: 'pickup_part', toolkit: 'pickup_part',
   incendiary_kit: 'pickup_part', acid_kit: 'pickup_part', piercing_kit: 'pickup_part', tranq_kit: 'pickup_part',
   jewel_small: 'pickup_jewel', jewel_large: 'pickup_jewel_large',
-  canned_food: 'pickup_medkit', water_bottle: 'pickup_bandage', disinfectant: 'pickup_medkit', antibiotics: 'pickup_bandage',
-  // Stand-ins until salvage gets its own sounds (#7242).
-  fuel_can: 'pickup_part', car_battery: 'pickup_part', scrap_steel: 'pickup_part', sedatives: 'pickup_part',
-  plank: 'pickup_part', nails: 'pickup_shells', hammer_tool: 'pickup_weapon', sheet_curtain: 'pickup_bandage', crowbar: 'pickup_weapon',
-  candy: 'pickup_jewel',
+  canned_food: 'pickup_can', water_bottle: 'pickup_water', disinfectant: 'pickup_medkit', antibiotics: 'pickup_pills',
+  fuel_can: 'pickup_fuel', car_battery: 'pickup_battery', scrap_steel: 'pickup_metal', sedatives: 'pickup_pills',
+  plank: 'pickup_wood', nails: 'pickup_nails', hammer_tool: 'pickup_tool', sheet_curtain: 'pickup_cloth', crowbar: 'pickup_tool',
+  candy: 'pickup_candy',
 };
+const DOOR: Record<'door_closed' | 'door_opened' | 'plank_added' | 'plank_removed' | 'door_hit' | 'door_broken', SfxName> = {
+  door_opened: 'door_open', door_closed: 'door_close', plank_added: 'plank_nail', plank_removed: 'plank_pry',
+  door_hit: 'door_bang', door_broken: 'door_break',
+};
+/** Each emote chirps at its own pitch: a call for help is urgent, a warning low. */
+const EMOTE_PITCH: Record<EmoteId, number> = { help: 1.12, go: 1.06, thanks: 1, wait: 0.9, danger: 0.75, nice: 1.18 };
+/** Another survivor's emote is heard by the party wherever they are, but under one's own. */
+const OTHER_EMOTE_GAIN = 0.6;
 /** Each boss's trick has its own call, so a player hears which one is coming. */
 const BOSS_TRICK: Record<BossId, SfxName> = { howler: 'boss_howl', mother: 'boss_brood', butcher: 'boss_charge' };
 const STATUS: Record<GunEffect, SfxName> = { incendiary: 'ignite', acid: 'corrode', piercing: 'pierce', tranq: 'tranq_dart' };
@@ -131,6 +139,19 @@ const EVENT_SOUNDS: EventSounds = {
   overrun_warning: (e, { playAmbient }) => playAmbient(e.step === 0 ? 'distant_groan' : 'distant_crash'),
   overrun_breach: (_e, { mixer }) => mixer.play('wave_start'),
   wave_clear: (_e, { mixer }) => mixer.play('wave_clear'),
+  door_opened: (e, { mixer }) => mixer.play(DOOR[e.type], { x: e.x, y: e.y }),
+  door_closed: (e, { mixer }) => mixer.play(DOOR[e.type], { x: e.x, y: e.y }),
+  plank_added: (e, { mixer }) => mixer.play(DOOR[e.type], { x: e.x, y: e.y }),
+  plank_removed: (e, { mixer }) => mixer.play(DOOR[e.type], { x: e.x, y: e.y }),
+  door_hit: (e, { mixer }) => mixer.play(DOOR[e.type], { x: e.x, y: e.y }),
+  door_broken: (e, { mixer }) => mixer.play(DOOR[e.type], { x: e.x, y: e.y }),
+  // The bunker held: the same relief as a cleared wave. Lost, the room stands back up, so it gets a sting of its own, not game over's.
+  overrun_end: (e, { mixer }) => mixer.play(e.outcome === 'held' ? 'wave_clear' : 'bunker_lost', { local: true }),
+  // An emote carries no position: the party hears it as a chirp, the sender's own a little louder.
+  emote: (e, { mixer, at }) => {
+    const p = at(0, 0, e.playerId);
+    mixer.play('emote', { local: true, pitch: EMOTE_PITCH[e.emote], gain: p.local ? 1 : OTHER_EMOTE_GAIN });
+  },
   game_over: (e, { mixer }) => mixer.play(e.stats.outcome === 'victory' ? 'run_victory' : 'game_over', { local: true }),
 };
 

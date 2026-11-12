@@ -52,6 +52,9 @@ describe('sfx registry', () => {
     'keepsake', 'crate_land', 'run_victory', 'van_horn',
     'amb_marsh', 'amb_tundra', 'amb_sludge', 'amb_embers', 'amb_forest',
     'horde_warning',
+    'door_open', 'door_close', 'plank_nail', 'plank_pry', 'door_bang', 'door_break', 'bunker_lost', 'emote',
+    'pickup_fuel', 'pickup_battery', 'pickup_metal', 'pickup_tool', 'pickup_pills', 'pickup_wood', 'pickup_nails',
+    'pickup_cloth', 'pickup_can', 'pickup_water', 'pickup_candy',
   ];
 
   /** The latest time any source in a recipe is told to stop, over a few seeds. */
@@ -144,6 +147,46 @@ describe('event sounds', () => {
     const saved = soundsOf(ev({ type: 'candy_eaten', playerId: LOCAL, candy: 'any', x: 0, y: 0, saved: true }));
     expect(saved.map(([n]) => n)).toEqual(['candy_crunch', 'revive']);
     expect(saved[1][1]?.delay).toBeGreaterThan(0);
+  });
+
+  it('gives each door and board event its own sound where the door stands', () => {
+    const door = (type: string) => soundsOf(ev({ type, x: 3, y: 4 }));
+    expect(door('door_opened')).toEqual([['door_open', { x: 3, y: 4 }]]);
+    expect(door('door_closed')).toEqual([['door_close', { x: 3, y: 4 }]]);
+    expect(door('plank_added')).toEqual([['plank_nail', { x: 3, y: 4 }]]);
+    expect(door('plank_removed')).toEqual([['plank_pry', { x: 3, y: 4 }]]);
+    expect(door('door_hit')).toEqual([['door_bang', { x: 3, y: 4 }]]);
+    expect(door('door_broken')).toEqual([['door_break', { x: 3, y: 4 }]]);
+  });
+
+  it('ends an overrun on relief when the bunker holds and a sting of its own when it falls', () => {
+    expect(names(ev({ type: 'overrun_end', outcome: 'held' }))).toEqual(['wave_clear']);
+    expect(names(ev({ type: 'overrun_end', outcome: 'lost' }))).toEqual(['bunker_lost']);
+  });
+
+  it('chirps an emote for the whole party, pitched per emote, the sender loudest', () => {
+    const [mine] = soundsOf(ev({ type: 'emote', playerId: LOCAL, emote: 'danger' }));
+    const [theirs] = soundsOf(ev({ type: 'emote', playerId: 'p2', emote: 'help' }));
+    expect(mine[0]).toBe('emote');
+    expect(mine[1]?.local).toBe(true);
+    expect(theirs[1]?.local).toBe(true);
+    expect(theirs[1]?.gain).toBeLessThan(mine[1]?.gain ?? 0);
+    expect(mine[1]?.pitch).not.toBe(theirs[1]?.pitch);
+  });
+
+  it('bags salvage, supplies and candy with sounds of their own, not stand-ins', () => {
+    const bag = (pickup: string) => names(ev({ type: 'pickup', playerId: LOCAL, pickup, x: 0, y: 0 }))[0];
+    expect(bag('fuel_can')).toBe('pickup_fuel');
+    expect(bag('car_battery')).toBe('pickup_battery');
+    expect(bag('scrap_steel')).toBe('pickup_metal');
+    expect(bag('crowbar')).toBe('pickup_tool');
+    expect(bag('sedatives')).toBe('pickup_pills');
+    expect(bag('plank')).toBe('pickup_wood');
+    expect(bag('nails')).toBe('pickup_nails');
+    expect(bag('sheet_curtain')).toBe('pickup_cloth');
+    expect(bag('canned_food')).toBe('pickup_can');
+    expect(bag('water_bottle')).toBe('pickup_water');
+    expect(bag('candy')).toBe('pickup_candy');
   });
 });
 

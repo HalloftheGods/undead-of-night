@@ -7,6 +7,8 @@ import * as FX from './sfx-effects.ts';
 import * as ST from './sfx-steps.ts';
 import * as B from './sfx-bosses.ts';
 import * as AMB from './sfx-ambience.ts';
+import * as WD from './sfx-world.ts';
+import * as SV from './sfx-salvage.ts';
 
 export interface SfxDef {
   readonly play: Recipe;
@@ -85,6 +87,18 @@ export const SFX = {
   pickup_jewel: def(P.pickupJewel, 0.6, { gain: 2, voices: 2, cooldown: 0.1, vary: 0.03 }),
   pickup_jewel_large: def(P.pickupJewelLarge, 0.95, { gain: 2, voices: 2, cooldown: 0.15, vary: 0.02 }),
   pickup_part: def(P.pickupPart, 0.3, { gain: 1.8, voices: 2, cooldown: 0.1, vary: 0.05 }),
+  // Salvage, supplies and candy: each its own texture, so a player hears what went in the bag.
+  pickup_fuel: def(SV.pickupFuel, 0.4, { gain: 1.6, voices: 2, cooldown: 0.1, vary: 0.05 }),
+  pickup_battery: def(SV.pickupBattery, 0.3, { gain: 1.6, voices: 2, cooldown: 0.1, vary: 0.04 }),
+  pickup_metal: def(SV.pickupMetal, 0.35, { gain: 1.8, voices: 2, cooldown: 0.1, vary: 0.06 }),
+  pickup_tool: def(SV.pickupTool, 0.45, { gain: 1.6, voices: 2, cooldown: 0.1, vary: 0.04 }),
+  pickup_pills: def(SV.pickupPills, 0.35, { gain: 1.8, voices: 2, cooldown: 0.1, vary: 0.05 }),
+  pickup_wood: def(SV.pickupWood, 0.3, { gain: 1.6, voices: 2, cooldown: 0.1, vary: 0.06 }),
+  pickup_nails: def(SV.pickupNails, 0.3, { gain: 1.8, voices: 2, cooldown: 0.1, vary: 0.05 }),
+  pickup_cloth: def(SV.pickupCloth, 0.35, { gain: 1.8, voices: 2, cooldown: 0.1, vary: 0.06 }),
+  pickup_can: def(SV.pickupCan, 0.5, { gain: 1.6, voices: 2, cooldown: 0.1, vary: 0.03 }),
+  pickup_water: def(SV.pickupWater, 0.55, { gain: 1.6, voices: 2, cooldown: 0.1, vary: 0.03 }),
+  pickup_candy: def(SV.pickupCandy, 0.65, { gain: 1.8, voices: 2, cooldown: 0.1, vary: 0.03 }),
   candy_crunch: def(P.candyCrunch, 0.65, { gain: 1.6, voices: 2, cooldown: 0.15, vary: 0.06 }),
   keepsake: def(P.keepsake, 1.15, { gain: 1.6, voices: 1, cooldown: 0.5, vary: 0 }),
   crate_land: def(P.crateLand, 0.5, { gain: 1.4, voices: 2, cooldown: 0.3, vary: 0.06 }),
@@ -126,6 +140,15 @@ export const SFX = {
   van_arrive: def(U.vanArrive, 1.7, { gain: 1.2, voices: 1, cooldown: 0.5, vary: 0.02 }),
   van_door: def(U.vanDoor, 0.45, { gain: 1.4, voices: 1, cooldown: 0.3, vary: 0.04 }),
   van_horn: def(U.vanHorn, 0.65, { gain: 1.6, voices: 1, cooldown: 1, vary: 0 }),
+  // Doors and boards, in the bunker and in town; a pounding door repeats, so its bang is rate-limited.
+  door_open: def(WD.doorOpen, 0.55, { gain: 1.6, voices: 2, cooldown: 0.15, vary: 0.08 }),
+  door_close: def(WD.doorClose, 0.4, { gain: 1.6, voices: 2, cooldown: 0.15, vary: 0.06 }),
+  plank_nail: def(WD.plankNail, 0.5, { gain: 1.6, voices: 2, cooldown: 0.2, vary: 0.06 }),
+  plank_pry: def(WD.plankPry, 0.5, { gain: 1.6, voices: 2, cooldown: 0.2, vary: 0.06 }),
+  door_bang: def(WD.doorBang, 0.3, { gain: 1.4, voices: 3, cooldown: 0.12, vary: 0.1 }),
+  door_break: def(WD.doorBreak, 0.7, { gain: 1.3, voices: 2, cooldown: 0.3, vary: 0.06 }),
+  bunker_lost: def(WD.bunkerLost, 2.0, { gain: 1.4, voices: 1, cooldown: 3, vary: 0 }),
+  emote: def(WD.emote, 0.25, { gain: 1.4, voices: 3, cooldown: 0.1, vary: 0 }),
 } as const satisfies Record<string, SfxDef>;
 
 export type SfxName = keyof typeof SFX;
