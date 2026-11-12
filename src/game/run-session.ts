@@ -9,7 +9,7 @@ import type { JoinHome } from '../../shared/home-protocol.ts';
 import { PROTOCOL_VERSION, type SnapshotPacket, type WelcomePacket, type WorldMap } from '../../shared/protocol.ts';
 import type { AudioEngine } from '../audio/audio-engine.ts';
 import type { WorldRenderer } from '../engine/world-renderer.ts';
-import { LocalSession } from '../network/local-session.ts';
+import { LOCAL_PLAYER_ID, LocalSession } from '../network/local-session.ts';
 import { coopTarget, lookupRoom, matchRoom, onlineRoomsLive } from '../network/play-api.ts';
 import type { RoomSession } from '../network/remote-session.ts';
 import { resolveServerUrl, SocketSession } from '../network/socket-session.ts';
@@ -31,6 +31,7 @@ import { loadLeaderboard } from './storage.ts';
 import { DIFFERENT_TOWN_TEXT } from '../../shared/close-codes.ts';
 import { townPrint } from '../../shared/town-print.ts';
 import { markTestDrive } from '../../shared/vehicle-choice.ts';
+import { noteDriveSnapshot } from './drive-readout.ts';
 import { seatRefusal } from './seat-check.ts';
 import { streakCardLine, tonightsStreakNight } from './streak-reward.ts';
 import { loadBests } from './trip-record.ts';
@@ -416,7 +417,12 @@ export class RunSession {
     state.transport = transport;
     state.welcomed = false;
     transport.onWelcome = (packet) => this.onWelcome(packet);
-    transport.onSnapshot = this.onSnapshot;
+    transport.onSnapshot = fixed.testDrive
+      ? (packet) => {
+          noteDriveSnapshot(packet, packet.players.find((p) => p.id === LOCAL_PLAYER_ID)?.vehicle?.id ?? null);
+          this.onSnapshot(packet);
+        }
+      : this.onSnapshot;
     transport.onClosed = (reason) => this.onClosed(reason);
     if (transport.onLobbyState !== undefined) {
       transport.onLobbyState = (packet) => {

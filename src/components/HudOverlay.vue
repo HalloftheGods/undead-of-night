@@ -175,6 +175,8 @@
     <!-- A first-run hint: said once, then gone (game/first-run-hints.ts). -->
     <p v-if="hintText" :key="hint?.key" class="hud-hint" role="status">{{ hintText }}</p>
 
+    <DriveReadout />
+
     <!-- A bite from where the player was not looking: a short red bar on that edge. -->
     <span v-if="bite" :key="bite.key" class="hud-bite" :style="biteStyle" aria-hidden="true" />
   </section>
@@ -200,6 +202,7 @@ import MaterialChips from './MaterialChips.vue';
 import KeepsakeOffer from './KeepsakeOffer.vue';
 import EventFeed from './log/EventFeed.vue';
 import type { LogEntry } from '../game/event-log.ts';
+import DriveReadout from './DriveReadout.vue';
 import GunFitPips from './GunFitPips.vue';
 import SpriteImg from './SpriteImg.vue';
 import QuestTracker from './QuestTracker.vue';

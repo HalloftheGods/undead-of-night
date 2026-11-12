@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { PLAYER_RADIUS } from '../shared/constants.ts';
 import { levelDef } from '../shared/levels.ts';
-import type { SnapshotPacket } from '../shared/protocol.ts';
+import type { SnapshotPacket, WorldMap } from '../shared/protocol.ts';
 import type { SimState } from '../shared/sim-state.ts';
 import { GameSimulation } from '../shared/simulation.ts';
+import { driveableProps } from '../shared/vehicle-choice.ts';
 import { buildingAt, circleHitsSolid, propBox } from '../shared/world-query.ts';
 import type { Box } from '../shared/world-query.ts';
 import { eventsOf, input, SEED, stateOf, steps, surviveHorde } from './helpers/sim-harness.ts';
@@ -46,8 +47,14 @@ function tryToEnter(sim: GameSimulation, state: SimState, propIndex: number): vo
 }
 
 const wreckIndex = (state: SimState): number => state.map.props.findIndex((p) => p.kind === 'car_wreck_h');
-const garageIndex = (state: SimState): number =>
-  state.map.props.findIndex((p) => ['car_sedan_h', 'car_sedan_v', 'car_hatch_h', 'car_hatch_v', 'pickup_h', 'police_h', 'police_v', 'ambulance_h', 'van_h'].includes(p.kind) && buildingAt(state.map, p.x, p.y - 1) !== null);
+const CAR_KINDS = ['car_sedan_h', 'car_sedan_v', 'car_hatch_h', 'car_hatch_v', 'pickup_h', 'police_h', 'police_v', 'ambulance_h', 'van_h'];
+/** A car parked inside a building, preferring one a normal run leaves as loot. */
+const garageIndex = (map: WorldMap): number => {
+  const indoors = (kind: string, x: number, y: number): boolean => CAR_KINDS.includes(kind) && buildingAt(map, x, y - 1) !== null;
+  const normal = new Set(driveableProps(map).map((car) => car.id));
+  const loot = map.props.findIndex((p, id) => indoors(p.kind, p.x, p.y) && !normal.has(id));
+  return loot >= 0 ? loot : map.props.findIndex((p) => indoors(p.kind, p.x, p.y));
+};
 
 describe('test drive: what can be driven', () => {
   it('lets a wreck be driven as a sedan facing west, only with the flag', () => {
@@ -63,16 +70,18 @@ describe('test drive: what can be driven', () => {
     expect(off.state.vehicles.size).toBe(0);
   });
 
-  it('lets a car parked inside a building be driven, only with the flag', () => {
+  it('lets a car parked inside a building be driven with the flag, and only with it unless the building is an Auto Garage', () => {
     const on = townSim(true);
-    const index = garageIndex(on.state);
+    const index = garageIndex(on.state.map);
     expect(index).toBeGreaterThanOrEqual(0);
     tryToEnter(on.sim, on.state, index);
     expect(on.state.vehicles.has(index)).toBe(true);
 
     const off = townSim(false);
-    tryToEnter(off.sim, off.state, garageIndex(off.state));
-    expect(off.state.vehicles.size).toBe(0);
+    const drivenAnyway = driveableProps(off.state.map).some((car) => car.id === index);
+    tryToEnter(off.sim, off.state, index);
+    // An outdoor car close by may take the press; a car that is loot in a normal run never does.
+    expect(off.state.vehicles.has(index)).toBe(drivenAnyway);
   });
 });
 
