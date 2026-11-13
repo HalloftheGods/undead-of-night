@@ -312,6 +312,10 @@
       :grid="previewModal.grid"
       :container-art="previewModal.containerArt"
       @close="closePreviewModal"
+      @size="onCanvasSize(previewModal.containerKind, $event)"
+      @blocked="updateContainerBlocked(previewModal.containerKind, $event)"
+      @footprint="onCanvasFootprint"
+      @save="saveFromCanvas"
     />
     <DualLootModal
       v-else-if="previewModal"
@@ -789,6 +793,23 @@ const openPreviewModal = (entry: DevContainerEntry): void => {
     containerArt,
     grid,
   };
+};
+
+/** The canvas editor changed a container's size: the bench keeps it, so its own Save button writes it. */
+const onCanvasSize = (kind: ContainerKind, size: { cols: number; rows: number }): void => {
+  updateContainerCols(kind, size.cols);
+  updateContainerRows(kind, size.rows);
+};
+
+const onCanvasFootprint = (change: { type: string; width: number; height: number }): void => {
+  updateItemWidth(change.type, change.width);
+  updateItemHeight(change.type, change.height);
+};
+
+/** The editor's Save writes both what it changed: container sizes and item footprints. */
+const saveFromCanvas = async (): Promise<void> => {
+  if (modifiedContainersCount.value > 0) await saveContainersToCodebase();
+  if (modifiedItemsCount.value > 0) await saveItemsToCodebase();
 };
 
 const closePreviewModal = (): void => {

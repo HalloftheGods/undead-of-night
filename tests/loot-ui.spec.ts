@@ -45,4 +45,18 @@ describe('canvas loot window layout', () => {
     expect(anchor.x).toBe(box.x + 8);
     expect(anchor.y).toBe(box.y + 8);
   });
+
+  it('lays out the dev edit panel in the gap and finds its buttons, only when asked for', () => {
+    expect(layout.editor).toBeNull();
+    const edit = { on: true, cols: 4, rows: 2, item: { type: 'bandage', width: 1, height: 1 } };
+    const withEditor = layoutLootUi(state, 480, 270, edit);
+    const panel = withEditor.editor!;
+    expect(panel.box.x).toBeGreaterThan(withEditor.container!.x + withEditor.container!.w);
+    expect(panel.box.x + panel.box.w).toBeLessThan(withEditor.survivor.x);
+    const up = panel.buttons.find((b) => b.id === 'colsUp')!;
+    expect(lootHitAt(withEditor, up.x + 1, up.y + 1)).toEqual({ kind: 'edit', id: 'colsUp' });
+    expect(panel.buttons.some((b) => b.id === 'wUp')).toBe(true);
+    const noItem = layoutLootUi(state, 480, 270, { ...edit, item: null }).editor!;
+    expect(noItem.buttons.some((b) => b.id === 'wUp')).toBe(false);
+  });
 });

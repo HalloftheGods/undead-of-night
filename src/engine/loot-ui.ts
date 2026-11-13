@@ -62,9 +62,28 @@ export interface LootLayout {
   readonly candy: GridBox;
   readonly gear: readonly (Box & { readonly id: GearSlotId })[];
   readonly buttons: readonly (Box & { readonly id: 'rotate' | 'close'; readonly label: string })[];
+  readonly editor: EditorLayout | null;
+}
+
+/** The dev bench's edit panel buttons. */
+export type EditId = 'mode' | 'colsDown' | 'colsUp' | 'rowsDown' | 'rowsUp' | 'wDown' | 'wUp' | 'hDown' | 'hUp' | 'clear' | 'save';
+
+/** What the dev bench shows in its edit panel: the container's size and the selected item's footprint. */
+export interface LootEditView {
+  readonly on: boolean;
+  readonly cols: number;
+  readonly rows: number;
+  readonly item: { readonly type: string; readonly width: number; readonly height: number } | null;
+}
+
+export interface EditorLayout {
+  readonly box: Box;
+  readonly lines: readonly { readonly x: number; readonly y: number; readonly text: string }[];
+  readonly buttons: readonly (Box & { readonly id: EditId; readonly label: string })[];
 }
 
 export type LootHit =
+  | { readonly kind: 'edit'; readonly id: EditId }
   | { readonly kind: 'cell'; readonly gridId: GridIdentifier; readonly col: number; readonly row: number }
   | { readonly kind: 'gear'; readonly slot: GearSlotId }
   | { readonly kind: 'button'; readonly id: 'rotate' | 'close' };
@@ -76,6 +95,8 @@ export interface LootView {
   readonly hover: LootHit | null;
   /** The pointer in buffer pixels, for the item in hand. */
   readonly pointer: { readonly x: number; readonly y: number } | null;
+  /** Set on the dev bench only: draws the edit panel. */
+  readonly edit?: LootEditView | null;
 }
 
 function upper(text: string): string {
@@ -87,7 +108,7 @@ function gridBox(id: GridIdentifier, grid: InventoryGrid, title: string, x: numb
 }
 
 /** Where everything goes for a view of this size: the container on the left, the survivor's gap in the middle, the bag on the right. */
-export function layoutLootUi(state: DualLootState, viewW: number, viewH: number): LootLayout {
+export function layoutLootUi(state: DualLootState, viewW: number, viewH: number, edit: LootEditView | null = null): LootLayout {
   const pack = state.backpackGrid;
   const candyW = state.candyBagGrid.cols * TILE;
   const gridsW = pack.cols * TILE + 4 + candyW;
@@ -136,10 +157,46 @@ export function layoutLootUi(state: DualLootState, viewW: number, viewH: number)
   }
 
   const survivor: Box = { x: sx, y: sy, w: sw, h: sh };
-  return { container, survivor, pack: packBox, pockets: pocketsBox, candy: candyBox, gear, buttons };
+  return { container, survivor, pack: packBox, pockets: pocketsBox, candy: candyBox, gear, buttons, editor: edit ? layoutEditor(edit, viewW, viewH) : null };
 }
 
 const GEAR_SLOT_COUNT = GEAR_SLOT_DEFS.length;
+
+const ROW_H = 11;
+const EDITOR_W = 92;
+
+/** A column of controls in the gap between the docks: mode, the container's size, the selected item's footprint, clear and save. */
+function layoutEditor(edit: LootEditView, viewW: number, viewH: number): EditorLayout {
+  const lines: { x: number; y: number; text: string }[] = [];
+  const buttons: (Box & { id: EditId; label: string })[] = [];
+  const rows = edit.item ? 8 : 5;
+  const h = rows * ROW_H + PAD * 2;
+  const x = Math.round((viewW - EDITOR_W) / 2);
+  const y = Math.max(EDGE, Math.round((viewH - h) / 2));
+  let cy = y + PAD;
+  const wide = (id: EditId, label: string): void => {
+    buttons.push({ id, label, x: x + PAD, y: cy, w: EDITOR_W - PAD * 2, h: ROW_H - 2 });
+    cy += ROW_H;
+  };
+  const stepper = (name: string, value: number, down: EditId, up: EditId): void => {
+    lines.push({ x: x + PAD + 1, y: cy + 2, text: `${name} ${value}` });
+    buttons.push({ id: down, label: '-', x: x + EDITOR_W - PAD - 24, y: cy, w: 11, h: ROW_H - 2 });
+    buttons.push({ id: up, label: '+', x: x + EDITOR_W - PAD - 11, y: cy, w: 11, h: ROW_H - 2 });
+    cy += ROW_H;
+  };
+  wide('mode', edit.on ? 'MODE EDIT' : 'MODE PLAY');
+  stepper('COLS', edit.cols, 'colsDown', 'colsUp');
+  stepper('ROWS', edit.rows, 'rowsDown', 'rowsUp');
+  if (edit.item) {
+    lines.push({ x: x + PAD + 1, y: cy + 2, text: upper(formatItemName(edit.item.type)).slice(0, 18) });
+    cy += ROW_H;
+    stepper('W', edit.item.width, 'wDown', 'wUp');
+    stepper('H', edit.item.height, 'hDown', 'hUp');
+  }
+  wide('clear', 'CLEAR BLOCKED');
+  wide('save', 'SAVE');
+  return { box: { x, y, w: EDITOR_W, h }, lines, buttons };
+}
 
 /** Short enough for a 32 pixel slot. */
 const GEAR_TAG: Readonly<Record<GearSlotId, string>> = { primary: 'PRIMARY', secondary: 'SECOND', sidearm: 'SIDEARM', armor: 'ARMOR' };
@@ -170,6 +227,7 @@ function inside(box: Box, x: number, y: number): boolean {
 
 /** What is under a point, or null. */
 export function lootHitAt(layout: LootLayout, x: number, y: number): LootHit | null {
+  for (const button of layout.editor?.buttons ?? []) if (inside(button, x, y)) return { kind: 'edit', id: button.id };
   for (const button of layout.buttons) if (inside(button, x, y)) return { kind: 'button', id: button.id };
   for (const slot of layout.gear) if (inside(slot, x, y)) return { kind: 'gear', slot: slot.id };
   const boards = [layout.container?.board, layout.pack, layout.pockets, layout.candy];
@@ -302,7 +360,7 @@ function drawButton(ctx: CanvasRenderingContext2D, box: Box, label: string, colo
   fill(ctx, LINE, box.x, box.y + 1, box.w, box.h - 1);
   fill(ctx, active ? AMBER : RAISED, box.x, box.y, box.w, box.h - 1);
   ring(ctx, hovered ? AMBER : DIM, { x: box.x, y: box.y, w: box.w, h: box.h - 1 });
-  drawText(ctx, label, box.x + 4, box.y + 2, active ? INK : hovered ? AMBER : color);
+  drawText(ctx, label, box.x + Math.round((box.w - textWidth(label)) / 2), box.y + 2, active ? INK : hovered ? AMBER : color);
 }
 
 /** Paints the whole window over whatever is already on the canvas. The world is left as it is: dimming is the caller's call. */
@@ -352,6 +410,17 @@ export function drawLootUi(ctx: CanvasRenderingContext2D, view: LootView, layout
   for (const board of [layout.pack, layout.candy, layout.pockets]) {
     drawText(ctx, board.title, board.x, board.y - 8, DIM);
     drawBoard(ctx, view, board, false);
+  }
+
+  if (layout.editor) {
+    const editor = layout.editor;
+    plate(ctx, editor.box, 0.92);
+    for (const line of editor.lines) drawText(ctx, line.text, line.x, line.y, BONE);
+    for (const button of editor.buttons) {
+      const hovered = view.hover !== null && view.hover.kind === 'edit' && view.hover.id === button.id;
+      const active = button.id === 'mode' && view.edit?.on === true;
+      drawButton(ctx, button, button.label, button.id === 'save' ? SICK : BONE, hovered, active);
+    }
   }
 
   const holding = state.heldItem !== null;
