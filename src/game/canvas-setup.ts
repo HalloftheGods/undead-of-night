@@ -5,6 +5,7 @@ import {
   neighbour,
   setupHitAt,
   tabFrom,
+  type ButtonId,
   type Direction,
   type FocusId,
   type SetupHit,
@@ -16,7 +17,9 @@ import type { PickKey, SetupPick } from './setup-picks.ts';
 import { createSpinner, FRONT_FACING } from './survivor-spin.ts';
 import { setSetupWindow, type SetupWindow } from './setup-view.ts';
 
-export type SetupAction = 'start' | 'resume' | 'back' | 'levels';
+export type SetupAction = ButtonId | 'levels';
+/** Buttons that start a run make their own sound, so the press adds none. */
+const SILENT: readonly SetupAction[] = ['start', 'solo', 'mp'];
 
 /** What the screen hands back to the page: the same choices and presses the Vue setup makes. */
 export interface CanvasSetupHost {
@@ -119,7 +122,7 @@ export function createCanvasSetup(canvas: HTMLCanvasElement, host: CanvasSetupHo
   }
 
   function beginEditing(): void {
-    input.value = source.callsign;
+    input.value = source.callsign ?? '';
     input.focus();
     input.setSelectionRange(input.value.length, input.value.length);
     win.editing = true;
@@ -157,7 +160,7 @@ export function createCanvasSetup(canvas: HTMLCanvasElement, host: CanvasSetupHo
     }
     const button = layout().buttons.find((each) => `button:${each.id}` === id);
     if (!button?.enabled) return;
-    press(button.id, button.id === 'start');
+    press(button.id, SILENT.includes(button.id));
   }
 
   function onClick(event: MouseEvent): void {

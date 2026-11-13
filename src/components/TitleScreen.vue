@@ -34,6 +34,7 @@
     @page="setupToPage"
   />
   <PlaySetup v-else-if="nav.page === 'play'" :ui :join="nav.invited" :level="nav.startLevel" :multi="setupHome === 'multi'" @close="nav = closePlay(nav)" @levels="(style) => (nav = openLevelSetter(nav, style))" />
+  <DailyPageCanvas v-else-if="nav.page === 'daily' && dailyOnCanvas" :ui @close="close" />
   <DailyPage v-else-if="nav.page === 'daily'" :ui @close="close" />
   <LevelsPage v-else-if="nav.page === 'levels'" :art="ui.art" :setting="nav.settingLevel ?? null" @start="levelPicked" @close="close" />
   <BooksPage v-else-if="nav.page === 'books'" :art="ui.art" @open="openBookPage" @close="close" />
@@ -70,6 +71,7 @@ import InstallCartridge from './InstallCartridge.vue';
 import { AudioPage, BooksPage, CandyMagazinePage, ChangelogPage, ControlsPage, DailyPage, DevInventoryPage, DisplayPage, GameplayPage, HowToPlay, LevelsPage, RadioPage, RecordsPage, SoundTestPage, TownGuidePage } from './lazy-pages.ts';
 import MenuLink from './MenuLink.vue';
 import PlaySetup from './PlaySetup.vue';
+import DailyPageCanvas from './DailyPageCanvas.vue';
 import PlaySetupCanvas from './PlaySetupCanvas.vue';
 import PressAnyKey from './PressAnyKey.vue';
 import SpriteImg from './SpriteImg.vue';
@@ -139,18 +141,22 @@ if (invite) {
  * or on the page already set to Multiplayer after the canvas screen handed over. Sync, so it is settled before the first draw.
  */
 const setupHome = ref<'canvas' | 'page' | 'multi'>('page');
+/** Nightly Run follows the same switch, decided the same way each time it opens. */
+const dailyOnCanvas = ref(false);
+function opensOnCanvas(): boolean {
+  return usesCanvasSetup({
+    pref: canvasMenus.value,
+    touch: ui.touch,
+    invited: nav.value.invited,
+    artReady: ui.art !== null,
+    hasCanvas: document.querySelector('.game-canvas') !== null,
+  });
+}
 watch(
   () => nav.value.page,
   (page) => {
-    if (page !== 'play') return;
-    const onCanvas = usesCanvasSetup({
-      pref: canvasMenus.value,
-      touch: ui.touch,
-      invited: nav.value.invited,
-      artReady: ui.art !== null,
-      hasCanvas: document.querySelector('.game-canvas') !== null,
-    });
-    setupHome.value = onCanvas ? 'canvas' : 'page';
+    if (page === 'play') setupHome.value = opensOnCanvas() ? 'canvas' : 'page';
+    if (page === 'daily') dailyOnCanvas.value = opensOnCanvas();
   },
   { flush: 'sync', immediate: true }
 );

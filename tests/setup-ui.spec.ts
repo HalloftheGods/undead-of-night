@@ -162,3 +162,48 @@ describe('canvas setup titles', () => {
     expect(wrapWords('Extraordinarily', 10, width)).toEqual(['Extraordinarily']);
   });
 });
+
+describe('canvas setup as Nightly Run', () => {
+  const fixed = [
+    { key: 'town', number: 1, label: 'Tonight', name: 'Harbor Row', sprite: null },
+    { key: 'difficulty', number: 2, label: 'Difficulty', name: 'Hard', sprite: null },
+  ];
+  const nightly = model({
+    heading: 'Nightly Run',
+    picks: setupPicks({ mode: 'solo', difficulty: 'lights_out', survivor: 0 }).filter((pick) => pick.key === 'who'),
+    levelLink: null,
+    fixed,
+    callsign: null,
+    facts: [{ text: 'Fri 13 Nov - Harbor Row - same town for everyone, first run counts and then some more words to wrap the line', tone: 'accent' }],
+    actions: [
+      { id: 'share', label: 'Copy result', enabled: true, primary: false },
+      { id: 'mp', label: 'Nightly MP Lobby', enabled: true, primary: true },
+    ],
+  });
+  const layout = layoutSetupUi(nightly, W, H);
+
+  it('puts the fixed cards before the survivor and leaves the callsign off', () => {
+    expect(layout.cards.map((card) => card.key)).toEqual(['fixed:town', 'fixed:difficulty', 'who']);
+    expect(layout.hasCallsign).toBe(false);
+    expect(layout.buttons.map((button) => button.id)).toEqual(['back', 'share', 'mp']);
+  });
+
+  it('wraps a long fact line to the view', () => {
+    expect(layout.lines.length).toBeGreaterThan(1);
+    for (const line of layout.lines) expect(line.x).toBeGreaterThanOrEqual(0);
+  });
+
+  it('answers only the survivor card and the buttons', () => {
+    const [town, , who] = layout.cards;
+    expect(setupHitAt(layout, town.x + 4, town.y + 20)).toBeNull();
+    expect(setupHitAt(layout, who.x + 4, who.y + 20)).toEqual({ kind: 'card', key: 'who' });
+    expect(focusTargets(layout).map((target) => target.id)).toEqual(['card:who', 'button:back', 'button:share', 'button:mp']);
+  });
+
+  it('keeps everything inside the view', () => {
+    for (const box of [...layout.cards, ...layout.buttons]) {
+      expect(box.y + box.h).toBeLessThanOrEqual(H);
+      expect(box.x + box.w).toBeLessThanOrEqual(W);
+    }
+  });
+});

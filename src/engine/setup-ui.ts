@@ -1,5 +1,6 @@
-import type { LevelLinkCard, PickKey, SetupPick } from '../game/setup-picks.ts';
+import type { FixedCard, LevelLinkCard, PickKey, SetupPick } from '../game/setup-picks.ts';
 import { FONT_HEIGHT, textWidth } from './bitmap-font.ts';
+import { wrapWords } from './setup-text.ts';
 
 /**
  * The Campaign and Arcade setup screen, drawn on the game canvas in art pixels. This file is the pure part: what the
@@ -19,7 +20,14 @@ export interface SetupModel {
   readonly heading: string;
   readonly picks: readonly SetupPick[];
   readonly levelLink: LevelLinkCard | null;
-  readonly callsign: string;
+  /** The typed callsign; null leaves the field off, as on Nightly Run, whose survivor is the only pick. */
+  readonly callsign: string | null;
+  /** Cards that show a choice already made, in front of the picks: no list, no focus. */
+  readonly fixed?: readonly FixedCard[];
+  /** Lines of what the page says under the cards, before the notes. */
+  readonly facts?: readonly SetupFact[];
+  /** The buttons after Back, in place of the Start and Continue pair. */
+  readonly actions?: readonly SetupActionSpec[];
   readonly startLine: string | null;
   readonly failure: string | null;
   readonly start: { readonly label: string; readonly enabled: boolean };
@@ -28,13 +36,28 @@ export interface SetupModel {
   readonly open: PickKey | null;
 }
 
-export type CardKey = PickKey | 'level';
-export type ButtonId = 'back' | 'resume' | 'start';
+export interface SetupFact {
+  readonly text: string;
+  readonly tone: 'accent' | 'dim';
+}
+
+export interface SetupActionSpec {
+  readonly id: ActionId;
+  readonly label: string;
+  readonly enabled: boolean;
+  readonly primary: boolean;
+}
+
+export type CardKey = PickKey | 'level' | `fixed:${string}`;
+export type ActionId = 'resume' | 'start' | 'share' | 'solo' | 'mp';
+export type ButtonId = 'back' | ActionId;
 
 export interface CardBox extends Box {
   readonly key: CardKey;
-  /** Null for the Level card, which is a link and has no list. */
+  /** Null for the Level card, which is a link and has no list, and for a fixed card. */
   readonly pick: SetupPick | null;
+  /** Set for a card that only shows a choice already made. */
+  readonly fixed: FixedCard | null;
   readonly number: number;
   readonly label: string;
   readonly art: Box;
@@ -65,7 +88,9 @@ export interface SetupLayout {
   readonly heading: { readonly text: string; readonly x: number; readonly y: number; readonly scale: number };
   readonly cards: readonly CardBox[];
   readonly callsign: { readonly label: Box; readonly field: Box };
-  readonly lines: readonly { readonly text: string; readonly x: number; readonly y: number; readonly tone: 'dim' | 'error' }[];
+  /** False when the model has no callsign: the boxes are then empty and nothing hits, focuses or draws them. */
+  readonly hasCallsign: boolean;
+  readonly lines: readonly { readonly text: string; readonly x: number; readonly y: number; readonly tone: 'accent' | 'dim' | 'error' }[];
   readonly buttons: readonly ButtonBox[];
   readonly list: ListLayout | null;
 }
@@ -117,18 +142,23 @@ function buttonWidth(label: string): number {
 }
 
 /** The cards in the order the page shows them: the picks, with the Level link standing in front of the pick it names. */
-function cardSpecs(model: SetupModel): readonly { key: CardKey; pick: SetupPick | null; number: number; label: string }[] {
-  const specs: { key: CardKey; pick: SetupPick | null; number: number; label: string }[] = [];
+function cardSpecs(model: SetupModel): readonly { key: CardKey; pick: SetupPick | null; fixed: FixedCard | null; number: number; label: string }[] {
+  const specs: { key: CardKey; pick: SetupPick | null; fixed: FixedCard | null; number: number; label: string }[] = [];
+  for (const fixed of model.fixed ?? []) specs.push({ key: `fixed:${fixed.key}`, pick: null, fixed, number: fixed.number, label: fixed.label });
   for (const pick of model.picks) {
     const link = model.levelLink;
-    if (link && link.before === pick.key) specs.push({ key: 'level', pick: null, number: link.number, label: link.label });
-    specs.push({ key: pick.key, pick, number: pick.number, label: pick.label });
+    if (link && link.before === pick.key) specs.push({ key: 'level', pick: null, fixed: null, number: link.number, label: link.label });
+    specs.push({ key: pick.key, pick, fixed: null, number: pick.number, label: pick.label });
   }
   return specs;
 }
 
 function buttonSpecs(model: SetupModel): readonly Omit<ButtonBox, 'x' | 'y' | 'w' | 'h'>[] {
   const specs: Omit<ButtonBox, 'x' | 'y' | 'w' | 'h'>[] = [{ id: 'back', label: 'Back', primary: false, enabled: true }];
+  if (model.actions) {
+    specs.push(...model.actions);
+    return specs;
+  }
   if (model.resume) specs.push({ id: 'resume', label: model.resume.label, primary: false, enabled: model.resume.enabled });
   specs.push({ id: 'start', label: model.start.label, primary: true, enabled: model.start.enabled });
   return specs;
@@ -174,13 +204,18 @@ export function layoutSetupUi(model: SetupModel, viewW: number, viewH: number): 
   const buttons = buttonSpecs(model);
   const headingScale = textWidth(model.heading) * HEADING_SCALE + EDGE * 2 <= viewW ? HEADING_SCALE : 1;
   const headingH = FONT_HEIGHT * headingScale;
-  const noteLines: { text: string; tone: 'dim' | 'error' }[] = [];
-  if (model.startLine) noteLines.push({ text: model.startLine, tone: 'dim' });
-  if (model.failure) noteLines.push({ text: model.failure, tone: 'error' });
+  const noteLines: { text: string; tone: 'accent' | 'dim' | 'error' }[] = [];
+  const wrapped = (text: string, tone: 'accent' | 'dim' | 'error'): void => {
+    for (const line of wrapWords(text.toUpperCase(), viewW - EDGE * 2, textWidth)) noteLines.push({ text: line, tone });
+  };
+  for (const fact of model.facts ?? []) wrapped(fact.text, fact.tone);
+  if (model.startLine) wrapped(model.startLine, 'dim');
+  if (model.failure) wrapped(model.failure, 'error');
   const notesH = noteLines.length * FONT_HEIGHT + Math.max(0, noteLines.length - 1) * LINE_GAP;
-  const fieldBlockH = FONT_HEIGHT + LABEL_GAP + FIELD_H;
+  const hasCallsign = model.callsign !== null;
+  const fieldBlockH = hasCallsign ? FONT_HEIGHT + LABEL_GAP + FIELD_H : 0;
   const total =
-    headingH + HEADING_GAP + CARD_H + ROW_GAP + fieldBlockH + (notesH > 0 ? ROW_GAP + notesH : 0) + ROW_GAP + BUTTON_H;
+    headingH + HEADING_GAP + CARD_H + ROW_GAP + (hasCallsign ? fieldBlockH + ROW_GAP : 0) + (notesH > 0 ? notesH + ROW_GAP : 0) + BUTTON_H;
   let y = Math.max(EDGE, Math.floor((viewH - total) / 2));
 
   const heading = { text: model.heading.toUpperCase(), x: Math.floor((viewW - textWidth(model.heading) * headingScale) / 2), y, scale: headingScale };
@@ -203,11 +238,13 @@ export function layoutSetupUi(model: SetupModel, viewW: number, viewH: number): 
   y += CARD_H + ROW_GAP;
 
   const fieldX = Math.floor((viewW - FIELD_W) / 2);
-  const callsign = {
-    label: { x: fieldX, y, w: FIELD_W, h: FONT_HEIGHT },
-    field: { x: fieldX, y: y + FONT_HEIGHT + LABEL_GAP, w: FIELD_W, h: FIELD_H },
-  };
-  y += fieldBlockH + ROW_GAP;
+  const callsign = hasCallsign
+    ? {
+        label: { x: fieldX, y, w: FIELD_W, h: FONT_HEIGHT },
+        field: { x: fieldX, y: y + FONT_HEIGHT + LABEL_GAP, w: FIELD_W, h: FIELD_H },
+      }
+    : { label: { x: 0, y: 0, w: 0, h: 0 }, field: { x: 0, y: 0, w: 0, h: 0 } };
+  if (hasCallsign) y += fieldBlockH + ROW_GAP;
 
   const lines = noteLines.map((line, index) => ({
     ...line,
@@ -226,7 +263,7 @@ export function layoutSetupUi(model: SetupModel, viewW: number, viewH: number): 
   });
 
   const openPick = model.open === null ? null : (model.picks.find((pick) => pick.key === model.open) ?? null);
-  return { heading, cards, callsign, lines, buttons: placed, list: openPick ? optionLayout(openPick, viewW, viewH) : null };
+  return { heading, cards, callsign, hasCallsign, lines, buttons: placed, list: openPick ? optionLayout(openPick, viewW, viewH) : null };
 }
 
 /** What a point is over. An open list covers the screen: only its options answer, and the rest is its backdrop. */
@@ -237,10 +274,10 @@ export function setupHitAt(layout: SetupLayout, x: number, y: number): SetupHit 
   }
   const button = layout.buttons.find((each) => inside(each, x, y));
   if (button) return { kind: 'button', id: button.id };
-  const card = layout.cards.find((each) => inside(each, x, y));
+  const card = layout.cards.find((each) => each.fixed === null && inside(each, x, y));
   if (card) return { kind: 'card', key: card.key };
   const { label, field } = layout.callsign;
-  if (inside(label, x, y) || inside(field, x, y)) return { kind: 'callsign' };
+  if (layout.hasCallsign && (inside(label, x, y) || inside(field, x, y))) return { kind: 'callsign' };
   return null;
 }
 
@@ -252,8 +289,8 @@ export interface FocusTarget {
 /** Every control the keyboard can rest on, in tab order: the picks, the callsign, then Back and the actions. */
 export function focusTargets(layout: SetupLayout): readonly FocusTarget[] {
   return [
-    ...layout.cards.map((card): FocusTarget => ({ id: `card:${card.key}`, box: card })),
-    { id: 'callsign', box: layout.callsign.field },
+    ...layout.cards.filter((card) => card.fixed === null).map((card): FocusTarget => ({ id: `card:${card.key}`, box: card })),
+    ...(layout.hasCallsign ? [{ id: 'callsign', box: layout.callsign.field } satisfies FocusTarget] : []),
     ...layout.buttons.filter((button) => button.enabled).map((button): FocusTarget => ({ id: `button:${button.id}`, box: button })),
   ];
 }

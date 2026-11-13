@@ -19,6 +19,7 @@ const BLOOD = '#e0463a';
 const SICK = '#8fbf3a';
 const AMBER = '#e8a33d';
 const AMBER_TINT = 'rgba(232, 163, 61, 0.16)';
+const NOTE_TONE = { accent: AMBER, dim: DIM, error: BLOOD } as const;
 const CELL = 3;
 const CELL_GAP = 1;
 
@@ -100,7 +101,25 @@ function isFocused(win: SetupWindow, id: FocusId): boolean {
   return win.focus === id;
 }
 
+/** A card that only shows a choice made for the player, such as Nightly Run's town: no caret, and nothing lights it. */
+function drawFixedCard(ctx: CanvasRenderingContext2D, card: CardBox, fixed: NonNullable<CardBox['fixed']>): void {
+  frame(ctx, card, LINE, RAISED);
+  const head = card.head;
+  ctx.fillStyle = AMBER;
+  ctx.fillRect(head.x, head.y, 7, 7);
+  drawText(ctx, String(card.number), head.x + Math.floor((7 - textWidth(String(card.number))) / 2), head.y + 1, INK);
+  drawText(ctx, card.label.toUpperCase(), head.x + 10, head.y + 1, DIM);
+  ctx.fillStyle = INK;
+  ctx.fillRect(card.art.x, card.art.y, card.art.w, card.art.h);
+  if (fixed.sprite) drawFit(ctx, fixed.sprite, card.art, 'cover');
+  drawName(ctx, card.art, fixed.name, BONE, 2);
+}
+
 function drawCard(ctx: CanvasRenderingContext2D, win: SetupWindow, card: CardBox): void {
+  if (card.fixed) {
+    drawFixedCard(ctx, card, card.fixed);
+    return;
+  }
   const isOpen = win.model.open === card.key;
   const hovered = win.hover?.kind === 'card' && win.hover.key === card.key;
   const lit = hovered || isFocused(win, `card:${card.key}`) || isOpen;
@@ -190,11 +209,12 @@ function drawButton(ctx: CanvasRenderingContext2D, win: SetupWindow, button: But
 }
 
 function drawCallsign(ctx: CanvasRenderingContext2D, win: SetupWindow, layout: SetupLayout): void {
+  if (!layout.hasCallsign) return;
   const { label, field } = layout.callsign;
   drawText(ctx, 'CALLSIGN', label.x, label.y, DIM);
   const lit = win.editing || isFocused(win, 'callsign') || (win.hover?.kind === 'callsign');
   frame(ctx, field, lit ? AMBER : LINE, INK);
-  const typed = win.model.callsign;
+  const typed = win.model.callsign ?? '';
   const text = typed === '' ? 'SURVIVOR' : typed;
   const y = field.y + Math.floor((field.h - FONT_HEIGHT) / 2);
   const x = field.x + Math.floor((field.w - textWidth(text)) / 2);
@@ -216,7 +236,7 @@ export function drawSetupUi(ctx: CanvasRenderingContext2D, win: SetupWindow, lay
   drawTextScaled(ctx, heading.text, heading.x, heading.y, BONE, heading.scale);
   for (const card of layout.cards) drawCard(ctx, win, card);
   drawCallsign(ctx, win, layout);
-  for (const line of layout.lines) drawText(ctx, line.text.toUpperCase(), line.x, line.y, line.tone === 'error' ? BLOOD : DIM);
+  for (const line of layout.lines) drawText(ctx, line.text.toUpperCase(), line.x, line.y, NOTE_TONE[line.tone]);
   for (const button of layout.buttons) drawButton(ctx, win, button);
   drawList(ctx, win, layout, viewW, viewH);
 }
