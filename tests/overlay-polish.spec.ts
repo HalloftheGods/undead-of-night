@@ -41,6 +41,13 @@ describe('overlay polish', () => {
     }
   });
 
+  it('drops the HUD back and dims the world while the grid inventory is open', () => {
+    const app = source('../src/App.vue');
+    expect(app).toContain("'is-looting': inventory.isOpen.value");
+    expect(app).toMatch(/\.is-looting \.game-canvas \{\s*filter: brightness\(/);
+    expect(app).toMatch(/\.is-looting :deep\(\.hud\) \{\s*opacity: /);
+  });
+
   it('lays the HUD out with open center: pickups top left, numbers top right, horde and weapons bottom centre', () => {
     const hud = source('../src/components/HudOverlay.vue');
     const top = hud.slice(hud.indexOf('<header class="hud-top">'), hud.indexOf('</header>'));

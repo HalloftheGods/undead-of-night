@@ -1,5 +1,5 @@
 <template>
-  <main class="game-root" :class="{ 'is-aiming': aiming, 'is-touch': ui.touch }">
+  <main class="game-root" :class="{ 'is-aiming': aiming, 'is-touch': ui.touch, 'is-looting': inventory.isOpen.value }">
     <canvas ref="canvasRef" class="game-canvas" />
 
     <TitleScreen v-if="ui.screen === 'title'" :ui :splashing />
@@ -234,5 +234,29 @@ onBeforeUnmount(() => {
 
 .is-aiming {
   cursor: none;
+}
+
+/* The grid is part of the scene: the HUD drops back and the world dims a step, so the survivor and the crate read as the focus. Flat steps only, no blur. */
+.game-canvas {
+  transition: filter 0.2s steps(4);
+}
+
+.is-looting .game-canvas {
+  filter: brightness(0.7);
+}
+
+.is-looting :deep(.hud) {
+  opacity: 0.22;
+}
+
+.game-root :deep(.hud) {
+  transition: opacity 0.2s steps(4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-canvas,
+  .game-root :deep(.hud) {
+    transition: none;
+  }
 }
 </style>
