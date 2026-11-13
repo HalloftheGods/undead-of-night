@@ -2,7 +2,7 @@
   <main class="game-root" :class="{ 'is-aiming': aiming, 'is-touch': ui.touch, 'is-looting': inventory.isOpen.value, 'is-canvas-loot': canvasLoot.active.value }">
     <canvas ref="canvasRef" class="game-canvas" />
 
-    <TitleScreen v-if="ui.screen === 'title'" :ui :splashing />
+    <TitleScreen v-if="ui.screen === 'title'" v-show="!canvasEditing" :ui :splashing />
 
     <template v-else-if="ui.screen === 'game'">
       <DailyLobby v-if="ui.lobby && !ui.lobby.launched" :lobby="ui.lobby" />
@@ -132,6 +132,7 @@ import { paintedContainer } from './engine/car-looks.ts';
 import { CONTAINER_LABEL } from '../shared/containers.ts';
 import { isVerticalLook } from '../shared/container-flip.ts';
 import { GameController } from './game/game-controller.ts';
+import { canvasEditing } from './game/dev/canvas-edit.ts';
 import { aimsCursor } from './game/home-screens.ts';
 import { useInventoryModal, type InventoryPanel } from './game/inventory-modal.ts';
 import type { CanvasLoot } from './game/inventory/canvas-loot.ts';

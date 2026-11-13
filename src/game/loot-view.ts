@@ -1,6 +1,6 @@
 import type { ArtBook } from '../art/types.ts';
 import type { ContainerArt } from '../art/containers.ts';
-import type { LootHit } from '../engine/loot-ui.ts';
+import type { LootEditView, LootHit } from '../engine/loot-ui.ts';
 import type { DualLootState } from './inventory/dual-loot-modal.ts';
 
 /**
@@ -14,6 +14,8 @@ export interface LootWindow {
   hover: LootHit | null;
   /** The pointer in buffer pixels, or null when it is off the canvas. */
   pointer: { x: number; y: number } | null;
+  /** Set by the Dev bench's editor only: draws its edit panel and hint. */
+  edit?: LootEditView | null;
 }
 
 let current: LootWindow | null = null;

@@ -75,6 +75,8 @@ export interface LootEditView {
   readonly cols: number;
   readonly rows: number;
   readonly item: { readonly type: string; readonly width: number; readonly height: number } | null;
+  /** A line of help along the bottom of the screen. */
+  readonly hint?: string;
 }
 
 export interface EditorLayout {
@@ -409,8 +411,10 @@ function drawButton(ctx: CanvasRenderingContext2D, box: Box, label: string, colo
 }
 
 /** Paints the whole window over whatever is already on the canvas. The world is left as it is: dimming is the caller's call. */
-export function drawLootUi(ctx: CanvasRenderingContext2D, view: LootView, layout: LootLayout): void {
+export function drawLootUi(ctx: CanvasRenderingContext2D, view: LootView, given: LootLayout): void {
   const { state } = view;
+  // The editor's panel is part of the layout, so a view that carries one lays itself out with it.
+  const layout = view.edit && !given.editor ? layoutLootUi(state, ctx.canvas.width, ctx.canvas.height, view.edit) : given;
   const smoothing = ctx.imageSmoothingEnabled;
   ctx.imageSmoothingEnabled = false;
 
@@ -461,6 +465,8 @@ export function drawLootUi(ctx: CanvasRenderingContext2D, view: LootView, layout
       drawButton(ctx, button, button.label, button.id === 'save' ? SICK : BONE, hovered, active);
     }
   }
+
+  if (view.edit?.hint) drawOutlinedText(ctx, view.edit.hint, Math.round(ctx.canvas.width / 2), ctx.canvas.height - EDGE - FONT_HEIGHT, DIM);
 
   const holding = state.heldItem !== null;
   for (const button of layout.buttons) {

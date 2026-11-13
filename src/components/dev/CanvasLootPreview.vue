@@ -1,22 +1,10 @@
 <template>
-  <v-sheet class="canvas-loot-backdrop" color="transparent" @contextmenu.prevent>
-    <canvas
-      ref="canvasRef"
-      class="canvas-loot"
-      :style="{ width: `${VIEW_W * scale}px`, height: `${VIEW_H * scale}px` }"
-      :width="VIEW_W"
-      :height="VIEW_H"
-      @pointermove="onMove"
-      @pointerleave="onLeave"
-      @click="onClick"
-      @dblclick="onDoubleClick"
-    />
-    <p class="canvas-loot-note">{{ note }}</p>
-  </v-sheet>
+  <!-- Nothing here: the editor is drawn on the game's own canvas, full window, while the menu is hidden. -->
+  <span class="canvas-edit-anchor" hidden />
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { onBeforeUnmount, onMounted, ref } from 'vue';
 import type { ArtBook } from '../../art/types.ts';
 import type { ContainerArt } from '../../art/containers.ts';
 import {
@@ -32,7 +20,9 @@ import {
   type InventoryGrid,
 } from '../../../shared/grid-inventory.ts';
 import type { ContainerKind } from '../../../shared/containers.ts';
-import { drawLootUi, layoutLootUi, lootHitAt, type EditId, type LootEditView, type LootHit } from '../../engine/loot-ui.ts';
+import { layoutLootUi, lootHitAt, type EditId, type LootEditView, type LootHit } from '../../engine/loot-ui.ts';
+import { canvasEditing } from '../../game/dev/canvas-edit.ts';
+import { setLootWindow, type LootWindow } from '../../game/loot-view.ts';
 import {
   createDualLootState,
   pickUpItemFromGear,
@@ -65,23 +55,19 @@ const emit = defineEmits<{
   save: [];
 }>();
 
-/** The game draws into a 480 by 270 buffer and scales it by whole numbers; this does the same. */
-const VIEW_W = 480;
-const VIEW_H = 270;
 const MIN_SIDE = 1;
 const MAX_SIDE = 12;
 const MAX_FOOTPRINT = 6;
 const PACK_SAMPLE = ['bandage', 'medkit', 'pistol_ammo', 'water_bottle'];
 
-const canvasRef = ref<HTMLCanvasElement | null>(null);
-const scale = ref(Math.max(1, Math.floor(Math.min(window.innerWidth / VIEW_W, window.innerHeight / VIEW_H) * 0.95)));
+/** The game's own canvas: the editor is drawn on it by the renderer and clicked on it, at the window's full size. */
+const canvas = document.querySelector<HTMLCanvasElement>('canvas.game-canvas');
 const editOn = ref(true);
 const selectedType = ref<string | null>(null);
-const note = computed(() =>
-  editOn.value
-    ? 'Edit: click a container cell to block it, click an item to select it, then resize it. Switch MODE to play-test.'
-    : 'Play: click to pick up and place, R rotates, Esc closes. Switch MODE to edit.'
-);
+const HINTS = {
+  edit: 'EDIT: CLICK A CELL TO BLOCK IT. CLICK AN ITEM TO SELECT IT. ESC EXITS.',
+  play: 'PLAY: CLICK TO PICK UP AND PLACE. R ROTATES. ESC EXITS.',
+};
 
 const state = createDualLootState({
   containerKind: props.kind,
@@ -106,6 +92,7 @@ function editView(): LootEditView {
   const fp = type ? footprintOf(type) : null;
   return {
     on: editOn.value,
+    hint: editOn.value ? HINTS.edit : HINTS.play,
     cols: state.containerGrid.cols,
     rows: state.containerGrid.rows,
     item: type && fp ? { type, width: fp.width, height: fp.height } : null,
@@ -113,27 +100,21 @@ function editView(): LootEditView {
 }
 
 function bufferPoint(event: MouseEvent): { x: number; y: number } {
-  const rect = canvasRef.value!.getBoundingClientRect();
-  return { x: Math.floor(((event.clientX - rect.left) * VIEW_W) / rect.width), y: Math.floor(((event.clientY - rect.top) * VIEW_H) / rect.height) };
+  const rect = canvas!.getBoundingClientRect();
+  return { x: Math.floor(((event.clientX - rect.left) * canvas!.width) / rect.width), y: Math.floor(((event.clientY - rect.top) * canvas!.height) / rect.height) };
 }
 
 function currentLayout() {
-  return layoutLootUi(state, VIEW_W, VIEW_H, editView());
+  return layoutLootUi(state, canvas!.width, canvas!.height, editView());
 }
 
+/** The renderer reads this window every frame; what changes here shows on the next one. */
+const win: LootWindow = { state, art: props.art, containerArt: props.containerArt, hover: null, pointer: null, edit: null };
+
 function redraw(): void {
-  const canvas = canvasRef.value;
-  const ctx = canvas?.getContext('2d');
-  if (!canvas || !ctx) return;
-  ctx.imageSmoothingEnabled = false;
-  ctx.fillStyle = '#10151a';
-  ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-  for (let y = 0; y < VIEW_H; y += 16) for (let x = (y / 16) % 2 === 0 ? 0 : 16; x < VIEW_W; x += 32) {
-    ctx.fillStyle = '#141a20';
-    ctx.fillRect(x, y, 16, 16);
-  }
-  const edit = editView();
-  drawLootUi(ctx, { state, art: props.art, containerArt: props.containerArt, hover, pointer, edit }, layoutLootUi(state, VIEW_W, VIEW_H, edit));
+  win.hover = hover;
+  win.pointer = pointer;
+  win.edit = editView();
 }
 
 function hitAt(event: MouseEvent): LootHit | null {
@@ -246,7 +227,8 @@ function onPlayClick(hit: LootHit): void {
   }
 }
 
-function onMove(event: PointerEvent): void {
+function onMove(event: MouseEvent): void {
+  if (event.target !== canvas) return onLeave();
   pointer = bufferPoint(event);
   hover = hitAt(event);
   redraw();
@@ -259,6 +241,7 @@ function onLeave(): void {
 }
 
 function onClick(event: MouseEvent): void {
+  if (event.target !== canvas) return;
   const hit = hitAt(event);
   if (!hit) return;
   if (hit.kind === 'edit') onEdit(hit.id);
@@ -270,7 +253,7 @@ function onClick(event: MouseEvent): void {
 }
 
 function onDoubleClick(event: MouseEvent): void {
-  if (editOn.value) return;
+  if (event.target !== canvas || editOn.value) return;
   const hit = hitAt(event);
   if (!hit || hit.kind !== 'cell') return;
   if (state.heldItem) returnHeldItemToSource(state);
@@ -297,37 +280,23 @@ function onKey(event: KeyboardEvent): void {
 
 onMounted(() => {
   window.addEventListener('keydown', onKey, true);
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('click', onClick);
+  window.addEventListener('dblclick', onDoubleClick);
+  canvasEditing.value = true;
+  setLootWindow(win);
   redraw();
 });
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKey, true);
+  window.removeEventListener('mousemove', onMove);
+  window.removeEventListener('click', onClick);
+  window.removeEventListener('dblclick', onDoubleClick);
+  canvasEditing.value = false;
+  setLootWindow(null);
   for (const [type, fp] of originals) {
     if (fp) ITEM_FOOTPRINTS[type] = fp;
     else delete ITEM_FOOTPRINTS[type];
   }
 });
 </script>
-
-<style scoped>
-.canvas-loot-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 960;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  background: rgba(0, 0, 0, 0.88);
-}
-
-.canvas-loot {
-  image-rendering: pixelated;
-  cursor: none;
-}
-
-.canvas-loot-note {
-  color: var(--bone-dim, #938d7a);
-  font-size: 12px;
-}
-</style>

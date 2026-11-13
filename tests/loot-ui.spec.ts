@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { heldAnchor, heldBox, layoutLootUi, lootHitAt } from '../src/engine/loot-ui.ts';
+import { createInventoryGrid } from '../shared/grid-inventory.ts';
 import { createDualLootState } from '../src/game/inventory/dual-loot-modal.ts';
 
 describe('canvas loot window layout', () => {
-  const state = createDualLootState({ containerKind: 'drawer', containerTitle: 'Drawer' });
+  // An explicit grid, so the tests do not move when a container's saved size is edited on the Dev bench.
+  const state = createDualLootState({ containerKind: 'drawer', containerTitle: 'Drawer', containerGrid: createInventoryGrid(4, 2) });
   const layout = layoutLootUi(state, 480, 270);
 
   it('puts the container on the left, the survivor on the right, and leaves a gap between', () => {
