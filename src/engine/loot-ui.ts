@@ -127,11 +127,11 @@ export function layoutLootUi(state: DualLootState, viewW: number, viewH: number)
     const boardW = grid.cols * TILE;
     const boardH = grid.rows * TILE;
     const headW = textWidth(upper(state.containerTitle)) + 6 + textWidth(`${grid.items.length} ITEMS`);
-    const w = Math.max(90, boardW + 3 * 2 + PAD * 2, headW + PAD * 2);
-    const h = HEAD + GAP + boardH + 3 * 2 + PAD * 2;
+    const w = Math.max(90, boardW + PAD * 2, headW + PAD * 2);
+    const h = HEAD + GAP + boardH + PAD * 2;
     const x = EDGE;
     const y = Math.max(EDGE, Math.round((viewH - h) / 2));
-    const board = gridBox('container', grid, upper(state.containerTitle), x + Math.round((w - boardW) / 2), y + PAD + HEAD + GAP + 3);
+    const board = gridBox('container', grid, upper(state.containerTitle), x + Math.round((w - boardW) / 2), y + PAD + HEAD + GAP);
     container = { x, y, w, h, board };
   }
 
@@ -284,14 +284,11 @@ export function drawLootUi(ctx: CanvasRenderingContext2D, view: LootView, layout
     const dock = layout.container;
     plate(ctx, dock, 0.85);
     drawTitle(ctx, upper(state.containerTitle), dock, `${state.containerGrid.items.length} ITEMS`);
-    const stage = { x: dock.board.x - 3, y: dock.board.y - 3, w: dock.board.w + 6, h: dock.board.h + 6 };
-    fill(ctx, 'rgba(11,12,16,0.7)', stage.x, stage.y, stage.w, stage.h);
-    ring(ctx, LINE, stage);
     const sprite = containerSprite(view);
     if (sprite) {
       ctx.globalAlpha = 0.85;
-      const fit = Math.max(1, Math.floor(Math.min((stage.w - 4) / sprite.w, (stage.h - 4) / sprite.h)));
-      drawCentred(ctx, sprite, stage, fit);
+      const fit = Math.max(1, Math.floor(Math.min(dock.board.w / sprite.w, dock.board.h / sprite.h)));
+      drawCentred(ctx, sprite, dock.board, fit);
       ctx.globalAlpha = 1;
     }
     drawBoard(ctx, view, dock.board, true);
