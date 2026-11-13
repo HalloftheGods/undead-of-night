@@ -16,9 +16,9 @@ import { questMarks } from './home/quest-marks.ts';
 import { closedStalls } from './home/shop.ts';
 import { keyGlyph } from './hud-keys.ts';
 
-/** The word for the search key on the device in charge, for prompts drawn on the canvas. */
-function holdKeyFor(onPad: boolean): string {
-  return keyGlyph('KeyE', onPad ? 'pad' : 'keys') ?? 'E';
+/** The label of a key on the device in charge, for prompts drawn on the canvas: the bound key, or the pad's button. */
+function labelFor(code: string, onPad: boolean): string {
+  return keyGlyph(code, onPad ? 'pad' : 'keys') ?? code.slice(3);
 }
 import { Heartbeat } from './heartbeat.ts';
 import { PlayerAnchor } from './player-anchor.ts';
@@ -149,7 +149,10 @@ export class RunFrame {
       questMarks: this.questMarks(entities.merchants ?? []),
       overrunOn: this.host.overrunOn,
       padRing: padAims && !over ? this.padRing : null,
-      holdKey: holdKeyFor(padAims),
+      holdKey: labelFor('KeyE', padAims),
+      reloadKey: labelFor('KeyR', padAims),
+      meleeKey: labelFor('KeyF', padAims),
+      switchKey: padAims ? labelFor('KeyQ', true) : null,
       pointerX: over || touch ? null : padAims ? padSpot?.x ?? null : pointerX,
       pointerY: over || touch ? null : padAims ? padSpot?.y ?? null : pointerY,
       showCrosshair: this.host.playing() && !menuUp && !ui.value.mapOpen && !this.host.parts.bench.open && !isTransitioning,

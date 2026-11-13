@@ -29,6 +29,11 @@ export interface AmmoPromptContext {
   /** The overrun has freed the guns at home, so an empty gun is news again. */
   readonly gunsFree?: boolean;
   readonly time: number;
+  /** The labels of the reload, melee and weapon-switch buttons on the device in charge. */
+  readonly reloadKey?: string;
+  readonly meleeKey?: string;
+  /** A pad's weapon-switch button; null on keys, where the switch names its gun's slot number. */
+  readonly switchKey?: string | null;
 }
 
 function rounds(player: Shooter, weapon: WeaponId): number {
@@ -45,13 +50,13 @@ export function ammoPrompt(player: Shooter, context: AmmoPromptContext): AmmoPro
   const key = (glyph: string, word: string): string => (context.touch ? word : `${glyph}: ${word}`);
 
   const sparesInHand = (player.ammoBag[player.weapon] ?? 0) > 0;
-  if (sparesInHand) return { kind: 'reload', text: key('R', 'RELOAD!'), lit };
+  if (sparesInHand) return { kind: 'reload', text: key(context.reloadKey ?? 'R', 'RELOAD!'), lit };
 
   const slot = WEAPON_ORDER.findIndex((weapon) => weapon !== player.weapon && player.owned.includes(weapon) && rounds(player, weapon) > 0);
   if (slot >= 0) {
     const name = WEAPONS[WEAPON_ORDER[slot]].label.toUpperCase();
-    return { kind: 'switch', text: key(String(slot + 1), name), lit };
+    return { kind: 'switch', text: key(context.switchKey ?? String(slot + 1), name), lit };
   }
 
-  return { kind: 'melee', text: key('F', player.knife ? 'STAB' : 'SHOVE'), lit };
+  return { kind: 'melee', text: key(context.meleeKey ?? 'F', player.knife ? 'STAB' : 'SHOVE'), lit };
 }

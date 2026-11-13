@@ -79,15 +79,16 @@ export function doorChoiceAt(
 
 const count = (planks: number): string => `${planks}/${DOOR_MAX_PLANKS}`;
 
-const KEYED: Record<DoorAction, (planks: number) => string> = {
-  close: () => 'E: CLOSE DOOR',
-  open: () => 'E: OPEN DOOR',
-  open_or_board: () => 'E: OPEN  HOLD E: BOARD UP',
-  board: (planks) => `HOLD E: BOARD UP ${count(planks)}`,
-  pry: (planks) => `HOLD E: PRY PLANK ${count(planks)}`,
-  sneak_to_pry: (planks) => `BOARDED ${count(planks)}  SNEAK + HOLD E: PRY`,
+/** The keyed words for a door, with `hold` the label of the search key on the device in charge. */
+const KEYED = (hold: string): Record<DoorAction, (planks: number) => string> => ({
+  close: () => `${hold}: CLOSE DOOR`,
+  open: () => `${hold}: OPEN DOOR`,
+  open_or_board: () => `${hold}: OPEN  HOLD ${hold}: BOARD UP`,
+  board: (planks) => `HOLD ${hold}: BOARD UP ${count(planks)}`,
+  pry: (planks) => `HOLD ${hold}: PRY PLANK ${count(planks)}`,
+  sneak_to_pry: (planks) => `BOARDED ${count(planks)}  SNEAK + HOLD ${hold}: PRY`,
   boarded: (planks) => `BOARDED UP ${count(planks)}`,
-};
+});
 
 const TOUCHED: Record<DoorAction, (planks: number) => string> = {
   close: () => 'CLOSE DOOR',
@@ -100,6 +101,6 @@ const TOUCHED: Record<DoorAction, (planks: number) => string> = {
 };
 
 /** The line over the player's head at a door. */
-export function doorPrompt(choice: DoorChoice, touch: boolean): string {
-  return (touch ? TOUCHED : KEYED)[choice.action](choice.planks);
+export function doorPrompt(choice: DoorChoice, touch: boolean, hold = 'E'): string {
+  return (touch ? TOUCHED : KEYED(hold))[choice.action](choice.planks);
 }

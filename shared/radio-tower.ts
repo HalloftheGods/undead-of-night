@@ -54,9 +54,9 @@ export function triggerRadioTowerAlarm(sim: SimState, p: PlayerState, tower: Pro
 }
 
 /** What prompt to display when standing in reach of the radio tower. */
-export function radioTowerPrompt(touch: boolean, canTrigger: boolean): string {
+export function radioTowerPrompt(touch: boolean, canTrigger: boolean, hold = 'E'): string {
   if (!canTrigger) return 'HORDE ACTIVE';
-  return touch ? 'CALL HORDE' : 'HOLD E: CALL HORDE';
+  return touch ? 'CALL HORDE' : `HOLD ${hold}: CALL HORDE`;
 }
 
 /** Updates player radio tower interaction on each simulation tick. */

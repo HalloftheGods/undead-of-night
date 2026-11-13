@@ -30,8 +30,8 @@ export function manholeFlightNear(sim: Pick<SimState, 'map'>, x: number, y: numb
 }
 
 /** What the prompt says over a head at a manhole or a ladder: the way it goes, as `E: CLIMB DOWN` or `E: CLIMB UP`. */
-export function climbPrompt(flight: Pick<ManholeFlight, 'down'>, touch: boolean): string {
-  return `${touch ? '' : 'E: '}${flight.down ? 'CLIMB DOWN' : 'CLIMB UP'}`;
+export function climbPrompt(flight: Pick<ManholeFlight, 'down'>, touch: boolean, hold = 'E'): string {
+  return `${touch ? '' : `${hold}: `}${flight.down ? 'CLIMB DOWN' : 'CLIMB UP'}`;
 }
 
 /** Crosses the flight the player is pressing search at. True if it did. */

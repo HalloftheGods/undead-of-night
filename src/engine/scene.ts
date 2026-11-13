@@ -112,6 +112,11 @@ export interface SceneView {
   readonly pointerX: number | null;
   /** The label for the search key on the device in charge: 'E' on keys, the pad's own button on a pad. */
   readonly holdKey: string;
+  /** The labels of the reload and melee keys on the device in charge. */
+  readonly reloadKey: string;
+  readonly meleeKey: string;
+  /** A pad's weapon-switch label; null on keys, where a gun's slot number is named. */
+  readonly switchKey: string | null;
   readonly pointerY: number | null;
   readonly showCrosshair: boolean;
   /** The pad's closing ring on the locked zombie's head, in buffer pixels. Absent off a pad. */
@@ -149,6 +154,9 @@ export const EMPTY_SCENE: SceneView = {
   focusY: 0,
   pointerX: null,
   holdKey: 'E',
+  reloadKey: 'R',
+  meleeKey: 'F',
+  switchKey: null,
   pointerY: null,
   showCrosshair: false,
   phase: "intermission",

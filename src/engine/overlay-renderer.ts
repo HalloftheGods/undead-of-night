@@ -385,7 +385,7 @@ export class OverlayRenderer {
       const atDoor = isLocal && scene.door !== undefined;
       const atVehicle = isLocal && scene.vehicle !== undefined;
       if (player.search > 0) drawBar(ctx, x - SEARCH_BAR_WIDTH / 2, y, SEARCH_BAR_WIDTH, player.search, BONE);
-      else if (atVehicle) drawOutlinedText(ctx, vehiclePrompt(scene.vehicle!, Boolean(scene.touch)), x, y, AMBER);
+      else if (atVehicle) drawOutlinedText(ctx, vehiclePrompt(scene.vehicle!, Boolean(scene.touch), scene.holdKey), x, y, AMBER);
       else if (prompted) {
         const isOpened = scene.openedContainers.includes(scene.searchable!.id);
         const action = isOpened ? (scene.touch ? 'OPEN' : 'PRESS ' + scene.holdKey) : (scene.touch ? 'SEARCH' : 'HOLD ' + scene.holdKey);
@@ -396,15 +396,15 @@ export class OverlayRenderer {
         if (person.hold !== undefined && person.hold > 0) drawBar(ctx, x - SEARCH_BAR_WIDTH / 2, y, SEARCH_BAR_WIDTH, person.hold, AMBER);
         else drawOutlinedText(ctx, person.rescue === 'waiting' ? `${scene.touch ? 'TAKE' : 'HOLD ' + scene.holdKey + ': TAKE'} ${RESCUE_NAME[person.id]}` : `${scene.touch ? 'GIVE' : 'HOLD ' + scene.holdKey + ': GIVE'} ${WEAPONS[player.weapon].label.toUpperCase()}`, x, y, AMBER);
       }
-      else if (atClimb) drawOutlinedText(ctx, climbPrompt(scene.climb, Boolean(scene.touch)), x, y, AMBER);
-      else if (atDoor) drawOutlinedText(ctx, doorPrompt(scene.door!, Boolean(scene.touch)), x, y, AMBER);
+      else if (atClimb) drawOutlinedText(ctx, climbPrompt(scene.climb, Boolean(scene.touch), scene.holdKey), x, y, AMBER);
+      else if (atDoor) drawOutlinedText(ctx, doorPrompt(scene.door!, Boolean(scene.touch), scene.holdKey), x, y, AMBER);
       else if (atRadioTower) {
         if (scene.radioTower!.hold > 0) drawBar(ctx, x - SEARCH_BAR_WIDTH / 2, y, SEARCH_BAR_WIDTH, scene.radioTower!.hold, AMBER);
-        else drawOutlinedText(ctx, radioTowerPrompt(Boolean(scene.touch), scene.radioTower!.canTrigger), x, y, AMBER);
+        else drawOutlinedText(ctx, radioTowerPrompt(Boolean(scene.touch), scene.radioTower!.canTrigger, scene.holdKey), x, y, AMBER);
       }
       if (!isLocal) continue;
       const gunsFree = scene.overrun?.phase === "armed" || scene.overrun?.phase === "breached";
-      const call = ammoPrompt(player, { touch: Boolean(scene.touch), atHome: scene.atHome === true, gunsFree, time });
+      const call = ammoPrompt(player, { touch: Boolean(scene.touch), atHome: scene.atHome === true, gunsFree, time, reloadKey: scene.reloadKey, meleeKey: scene.meleeKey, switchKey: scene.switchKey });
       if (!call?.lit) continue;
       const lineTaken = player.search > 0 || atVehicle || prompted || atStation || atClimb || atRadioTower || atDoor;
       drawOutlinedText(ctx, call.text, x, lineTaken ? y - FONT_HEIGHT - 3 : y, hitPalette().danger);
