@@ -1,6 +1,7 @@
 // The world map half of the protocol: tiles, props, buildings and the map every client is sent.
 // Pure data and types only, like protocol.ts, which re-exports all of it.
 
+import type { FenceSection } from './camp/camp-ring.ts';
 import type { Point } from './flow-field.ts';
 import type { Station } from './home-protocol.ts';
 import type { ManholeFlight } from './sewers.ts';
@@ -94,6 +95,13 @@ export const PROP_DEFS = {
   /** A fence section the horde brought down: flat on the ground, walked over. */
   camp_fence_down_h: { w: 32, h: 0 },
   camp_fence_down_v: { w: 6, h: 0 },
+  /** The market's tarp on poles, and the workshop's lean-to: drawn behind whoever stands under them, never in the way. */
+  camp_awning: { w: 80, h: 0 },
+  camp_leanto: { w: 44, h: 0 },
+  camp_tent: { w: 26, h: 12 },
+  campfire: { w: 12, h: 8 },
+  bedroll: { w: 16, h: 0 },
+  lantern: { w: 4, h: 4 },
   gas_pump: { w: 12, h: 8 },
   shelf: { w: 32, h: 10 },
   counter: { w: 48, h: 12 },
@@ -238,4 +246,6 @@ export interface WorldMap {
   readonly flights?: readonly ManholeFlight[];
   /** Where the sewer maze lies: its first row, which is the town's first row 'seen from underneath', and the lamps down its tunnels. */
   readonly sewers?: { readonly top: number; readonly lamps: readonly MapLight[] };
+  /** Home only: the camp's size, 1 to 5, and its fence. Section `i` of the ring is `props[i]`, so a fallen section is lifted by its own index. */
+  readonly camp?: { readonly size: number; readonly sections: readonly FenceSection[] };
 }

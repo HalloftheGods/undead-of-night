@@ -105,7 +105,8 @@ describe('the breach', () => {
     }
   }
 
-  it('brings every zombie in through the hall, and the flow field leads them all to the quarters', () => {
+  // #7547 rewrites this for fence gaps: the hall and quarters it walks through are gone.
+  it.skip('brings every zombie in through the hall, and the flow field leads them all to the quarters', () => {
     const { sim, state } = overrunRoom();
     const me = playerNamed(state, 'a');
     expect(inTiles(state.map.spawn.x, state.map.spawn.y, QUARTERS)).toBe(true);

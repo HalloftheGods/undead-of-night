@@ -1,4 +1,5 @@
 import { generateBunkerMap } from './bunker-map.ts';
+import type { CampSize } from './camp/camp-ring.ts';
 import { isBunkerSeed } from './home-protocol.ts';
 import { BUILDING_DEFS, TILE_KINDS, TILE_SIZE } from './protocol.ts';
 import type { MapLight, PropInstance, WorldMap } from './protocol.ts';
@@ -196,9 +197,9 @@ function withStoreys(town: WorldMap): WorldMap {
   };
 }
 
-/** Deterministic: the same seed and level yield the same map on the server and every client. The level picks the biome. */
-export function generateWorldMap(seed: number, level = 1): WorldMap {
-  if (isBunkerSeed(seed)) return generateBunkerMap();
+/** Deterministic: the same seed and level yield the same map on the server and every client. The level picks the biome. Home is the camp at `campSize`, which a town ignores. */
+export function generateWorldMap(seed: number, level = 1, campSize: CampSize = 1): WorldMap {
+  if (isBunkerSeed(seed)) return generateBunkerMap(campSize);
   const rng = createRng(seed);
   const size = MAP_TILES * TILE_SIZE;
   const plan = planTown(rng);

@@ -214,18 +214,12 @@ describe('the bunker map', () => {
     expect(circleHitsSolid(sim.map, CHEST_STATION.x, CHEST_STATION.y, PLAYER_RADIUS)).toBe(false);
   });
 
-  it('sets the blast door in the hall\'s west wall, and lets the horde in on hall floor', () => {
+  it('has no blast door: home is a fenced camp, and until the breach picks sections (#7547) the horde comes in on open dirt', () => {
     const { map } = homeSim().sim;
     const tileAt = (x: number, y: number): string => TILE_KINDS[map.tiles[Math.floor(y / TILE_SIZE) * map.cols + Math.floor(x / TILE_SIZE)]];
-    const door = map.props.find((prop) => prop.kind === 'blast_door');
-    expect(door).toBeDefined();
-    const { w, h } = PROP_DEFS.blast_door;
-    for (let y = door!.y - h + 1; y < door!.y; y += TILE_SIZE) {
-      for (let x = door!.x - w / 2 + 1; x < door!.x + w / 2; x += TILE_SIZE) expect(tileAt(x, y)).toBe('bunker_wall');
-    }
-    expect(Math.floor(door!.x / TILE_SIZE)).toBe(0);
-    expect([Math.floor((door!.y - h) / TILE_SIZE), Math.floor((door!.y - 1) / TILE_SIZE)]).toEqual([4, 6]);
-    expect(tileAt(BLAST_DOOR_SPOT.x, BLAST_DOOR_SPOT.y)).toBe('floor_tile');
+    expect(map.props.some((prop) => prop.kind === 'blast_door')).toBe(false);
+    expect(map.camp?.sections.length).toBeGreaterThan(30);
+    expect(tileAt(BLAST_DOOR_SPOT.x, BLAST_DOOR_SPOT.y)).toBe('dirt');
     expect(circleHitsSolid(map, BLAST_DOOR_SPOT.x, BLAST_DOOR_SPOT.y, PLAYER_RADIUS)).toBe(false);
   });
 });

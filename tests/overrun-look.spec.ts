@@ -57,11 +57,9 @@ describe('the blast door by overrun phase', () => {
 describe('the blast door with the switch off', () => {
   const kinds = generateBunkerMap().props.map((prop) => prop.kind);
 
-  it('is not drawn, so the bunker looks as it did before the overrun', () => {
-    const drawn = kinds.filter((kind) => !hiddenProp(kind, false));
-    expect(kinds).toContain('blast_door');
-    expect(drawn).not.toContain('blast_door');
-    expect(drawn).toHaveLength(kinds.length - 1);
+  it('is not on the camp map, and would stay hidden with the switch off wherever it stood', () => {
+    expect(kinds).not.toContain('blast_door');
+    expect(hiddenProp('blast_door', false)).toBe(true);
   });
 
   it('is drawn with the switch on, and every other prop is drawn either way', () => {

@@ -67,7 +67,7 @@ describe('the town map in the bunker', () => {
   beforeEach(() => void installFakeBrowser());
   afterEach(() => void vi.unstubAllGlobals());
 
-  it('draws a small map with room labels', () => {
+  it('draws the camp small enough for the screen, with area labels', () => {
     const base = generateBunkerMap();
     const rooms = [
       { name: 'Workshop', x: 160, y: 120 },
@@ -148,7 +148,7 @@ describe('the bunker music', () => {
     expect(home.map((each) => each.file)).toEqual(allTracks('campaign').map((track) => track.file));
 
     const arcade = musicEntries(NO_PROGRESS, 'arcade').find((each) => each.file === BUNKER_TRACK);
-    expect(arcade).toMatchObject({ unlocked: false, where: 'SIXBURG' });
+    expect(arcade).toMatchObject({ unlocked: false, where: 'SIXINNATI' });
   });
 });
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MERCHANT_ROAM, MERCHANT_STARTS } from '../shared/bunker-map.ts';
+import { MERCHANT_STARTS, merchantRoam } from '../shared/bunker-map.ts';
 import { MERCHANT_HEALTH } from '../shared/bunker-merchants.ts';
 import type { MerchantState } from '../shared/bunker-merchants.ts';
 import { PLAYER_RADIUS, TICK_RATE } from '../shared/constants.ts';
@@ -15,8 +15,8 @@ import { addZombie, input, SEED, stateOf, stepUntil, steps } from './helpers/sim
 
 const SECONDS = (n: number): number => n * TICK_RATE;
 const merchantOf = (state: SimState, id: MerchantId): MerchantState => state.merchants.find((m) => m.id === id) as MerchantState;
-/** West of the garage's wall, where the van parks. */
-const outOfGarage = (m: MerchantState): boolean => m.x < Math.max(...MERCHANT_ROAM.map((box) => box.x1)) + 16;
+/** West of where the van parks, by the gate. */
+const outOfGarage = (m: MerchantState): boolean => m.x < Math.max(...merchantRoam(1).map((box) => box.x1)) + 16;
 
 /** A room whose clock is running, everyone far off in the garage and unhurt by anything. */
 function overrunRoom(): { sim: GameSimulation; state: SimState } {

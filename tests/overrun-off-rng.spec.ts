@@ -18,9 +18,10 @@ import { input, SEED } from './helpers/sim-harness.ts';
  * The S.O.S. Fireworks bus parked in the downtown car park: 5134.
  * A second floor over each school and hospital, and their rooms laid out off corridors: 5177.
  * Level 1's opening: three slow walkers placed near the spawn (fewer rolled elsewhere in town), rings 110, 150 and 195: 5067.
+ * Home became an outdoor camp in a fence (#7544), so where players are put down at home and what they walk into changed: 5453.
  * Re-record it only for a change like those, after checking the overrun code is not what moved it.
  */
-const OFF_PATH_DRAWS = 5067;
+const OFF_PATH_DRAWS = 5453;
 
 const BUNKER_TICKS = 200;
 const TOWN_TICKS = 600;

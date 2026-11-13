@@ -1,205 +1,105 @@
-// The bunker's map: a market hall on the north side, a workshop and quarters below it, and the garage along the east wall.
-// A tile plan carved out of solid rock, so the walls, the wall tiles and the rooms all come from the same few rectangles.
+// Home: an open-air camp inside a scrap fence, with wilderness round it. One map of one size; the fence ring sits further out as the camp grows.
+// The fence's sections come first in `props`, in ring order, so section `i` is `props[i]` and a fallen one is lifted by that index.
 
-import { BUNKER_SEED, MERCHANT_IDS, STATION_IDS, isMerchantId } from './home-protocol.ts';
+import { CAMP_COLS, CAMP_EAST_COL, CAMP_ROWS, GATE_ROWS, fenceSections, ringRect } from './camp/camp-ring.ts';
+import type { CampSize } from './camp/camp-ring.ts';
+import { CAMPFIRE_PLACE, CUSTOMER_GAP, DISTRICT_PLACES, MERCHANT_STANDS, SPAWN_PLACE, STATION_PLACES, STATION_RADIUS, VAN_PLACE, merchantRoam } from './camp/camp-layout.ts';
+import { campScenery, wilderness } from './camp/camp-scenery.ts';
+import { BUNKER_SEED, STATION_IDS, isMerchantId } from './home-protocol.ts';
 import type { MerchantId, Station, StationId } from './home-protocol.ts';
 import { TILE_KINDS, TILE_SIZE } from './protocol.ts';
-import type { PropInstance, PropKind, WorldMap } from './protocol.ts';
-import type { Box } from './world-query.ts';
+import type { MapLight, PropInstance, PropKind, WorldMap } from './protocol.ts';
 
-const COLS = 40;
-const ROWS = 24;
-const WIDTH = COLS * TILE_SIZE;
-const HEIGHT = ROWS * TILE_SIZE;
+export type { FloorBox } from './camp/camp-layout.ts';
+export { merchantRoam };
 
-const FLOOR = TILE_KINDS.indexOf('floor_concrete');
-const MARKET_FLOOR = TILE_KINDS.indexOf('floor_tile');
-const WALL = TILE_KINDS.indexOf('bunker_wall');
+const WIDTH = CAMP_COLS * TILE_SIZE;
+const HEIGHT = CAMP_ROWS * TILE_SIZE;
 
-/** Inclusive tile bounds. */
-interface TileArea {
-  readonly col0: number;
-  readonly row0: number;
-  readonly col1: number;
-  readonly row1: number;
-}
+const GRASS = TILE_KINDS.indexOf('grass');
+const DIRT = TILE_KINDS.indexOf('dirt');
 
-interface Room extends TileArea {
-  readonly name: string;
-}
+type StandingId = Exclude<StationId, MerchantId>;
 
-const HALL: Room = { name: 'Market hall', col0: 1, row0: 1, col1: 24, row1: 10 };
-const WORKSHOP: Room = { name: 'Workshop', col0: 1, row0: 12, col1: 11, row1: 22 };
-const QUARTERS: Room = { name: 'Quarters', col0: 13, row0: 12, col1: 24, row1: 22 };
-const GARAGE: Room = { name: 'Garage', col0: 26, row0: 1, col1: 38, row1: 22 };
-const ROOMS: readonly Room[] = [HALL, WORKSHOP, QUARTERS, GARAGE];
-
-/** Three or four tiles wide, so a pair of survivors passes each other in a doorway. */
-const DOORS: readonly TileArea[] = [
-  { col0: 5, row0: 11, col1: 7, row1: 11 },
-  { col0: 17, row0: 11, col1: 19, row1: 11 },
-  { col0: 12, row0: 16, col1: 12, row1: 18 },
-  { col0: 25, row0: 4, col1: 25, row1: 7 },
-  { col0: 25, row0: 16, col1: 25, row1: 18 },
-];
-
-const STATION_PROPS: Record<StationId, PropKind> = {
+const STATION_PROPS: Record<StandingId, PropKind> = {
   bench: 'workbench',
   candy_shop: 'candy_shop',
   locker: 'locker',
   level_map: 'level_map',
   jukebox: 'jukebox',
-  gunsmith: 'gunsmith',
-  quartermaster: 'quartermaster',
-  medic: 'medic',
-  powder: 'powder',
   chest: 'chest',
   press: 'press',
 };
 
-/** The overrun's door, in the hall's west wall (tile column 0, rows 4 to 6), as far from the garage as the hall goes. */
-const BLAST_DOOR: PropInstance = { kind: 'blast_door', x: TILE_SIZE / 2, y: 7 * TILE_SIZE };
-/** Where the horde comes in: hall floor just inside the blast door. */
-export const BLAST_DOOR_SPOT = { x: 2 * TILE_SIZE, y: 5.5 * TILE_SIZE } as const;
-/** Where a held overrun's chest stands, in the hall's south-west corner, clear of every station's circle. */
-export const CHEST_SPOT = { x: 40, y: 144 } as const;
+/** Where the horde comes in until the breach picks fence sections (#7547): open ground inside the smallest ring's west fence. */
+export const BLAST_DOOR_SPOT = { x: 530, y: 412 } as const;
+/** Where a held overrun's chest stands, on the south row, clear of every station's circle. */
+export const CHEST_SPOT = STATION_PLACES.chest;
 
-/** Where each station's prop stands: the bottom centre of its footprint. A merchant has no stall: this is where they first stand, and they walk from there. */
-const STATION_PLACES: Record<StationId, { x: number; y: number }> = {
-  bench: { x: 48, y: 224 },
-  candy_shop: { x: 144, y: 224 },
-  locker: { x: 240, y: 224 },
-  level_map: { x: 528, y: 48 },
-  jukebox: { x: 336, y: 224 },
-  gunsmith: { x: 80, y: 40 },
-  quartermaster: { x: 176, y: 40 },
-  medic: { x: 272, y: 40 },
-  powder: { x: 368, y: 40 },
-  chest: CHEST_SPOT,
-  /** In the Workshop, south of the forge. */
-  press: { x: 144, y: 304 },
-};
-
-/** Customers stand this far below the bottom edge of what they are served from. */
-const CUSTOMER_GAP = 20;
-const STATION_RADIUS = 28;
-const WARM_LAMP = '#ffb066';
-const LAMP_RADIUS = 200;
-const EXIT_SPOT = { x: 560, y: 350 };
-const SPAWN_SPOT = { x: 304, y: 280 };
+const FIRE_LIGHT = '#ffb066';
+const FIRE_RADIUS = 220;
+const LANTERN_LIGHT = '#ffd9a0';
+const LANTERN_RADIUS = 90;
 
 /**
  * The chest stands only while a player's chest is unopened, so the map leaves it out and the overrun puts it in reach.
  * The press stays off the map until its screen is built (#7244 lands it last). The merchants walk, so their circles go with them.
  */
 const UNBUILT: ReadonlySet<StationId> = new Set<StationId>(['chest', 'press']);
-const isStanding = (id: StationId): boolean => !UNBUILT.has(id) && !isMerchantId(id);
+const isStanding = (id: StationId): id is StandingId => !UNBUILT.has(id) && !isMerchantId(id);
 const STANDING_IDS = STATION_IDS.filter(isStanding);
 
-const centreOf = (room: Room): { x: number; y: number } => ({
-  x: ((room.col0 + room.col1 + 1) / 2) * TILE_SIZE,
-  y: ((room.row0 + room.row1 + 1) / 2) * TILE_SIZE,
-});
-
-/** Rock, then the rooms cut into it, then the doors. */
-function carve(): Uint8Array {
-  const tiles = new Uint8Array(COLS * ROWS).fill(WALL);
-  const cut = (area: TileArea, kind: number): void => {
-    for (let row = area.row0; row <= area.row1; row++) {
-      for (let col = area.col0; col <= area.col1; col++) tiles[row * COLS + col] = kind;
-    }
-  };
-  for (const room of ROOMS) cut(room, room === HALL ? MARKET_FLOOR : FLOOR);
-  for (const door of DOORS) cut(door, FLOOR);
+/** Grass everywhere, worn to dirt inside the fence and along the track from the gate to the map's east edge. */
+function groundOf(size: CampSize): Uint8Array {
+  const tiles = new Uint8Array(CAMP_COLS * CAMP_ROWS).fill(GRASS);
+  const rect = ringRect(size);
+  for (let row = rect.row0; row <= rect.row1; row++) tiles.fill(DIRT, row * CAMP_COLS + rect.col0, row * CAMP_COLS + rect.col1 + 1);
+  for (let row = GATE_ROWS.top; row <= GATE_ROWS.bottom; row++) tiles.fill(DIRT, row * CAMP_COLS + CAMP_EAST_COL, (row + 1) * CAMP_COLS);
   return tiles;
 }
 
-function wallRuns(tiles: Uint8Array): Box[] {
-  const runs: Box[] = [];
-  for (let row = 0; row < ROWS; row++) {
-    let start = -1;
-    for (let col = 0; col <= COLS; col++) {
-      const solid = col < COLS && tiles[row * COLS + col] === WALL;
-      const startsWallRun = solid && start < 0;
-      if (startsWallRun) start = col;
-      const endsWallRun = !solid && start >= 0;
-      if (endsWallRun) {
-        runs.push({ x0: start * TILE_SIZE, y0: row * TILE_SIZE, x1: col * TILE_SIZE, y1: (row + 1) * TILE_SIZE });
-        start = -1;
-      }
-    }
-  }
-  return runs;
-}
-
-/** Runs that sit directly on one another with the same width become one box. */
-function stackRuns(runs: readonly Box[]): Box[] {
-  const stacked: Box[] = [];
-  for (const run of runs) {
-    const aboveAt = stacked.findIndex((box) => box.x0 === run.x0 && box.x1 === run.x1 && box.y1 === run.y0);
-    const sitsOnOne = aboveAt >= 0;
-    if (sitsOnOne) stacked[aboveAt] = { ...stacked[aboveAt], y1: run.y1 };
-    else stacked.push(run);
-  }
-  return stacked;
-}
-
-function propsOf(): PropInstance[] {
-  const props = STANDING_IDS.map((id): PropInstance => ({ kind: STATION_PROPS[id], ...STATION_PLACES[id] }));
-  return [...props, { ...BLAST_DOOR }];
-}
-
-function stationOf(id: StationId): Station {
+function stationOf(id: StandingId): Station {
   return { id, x: STATION_PLACES[id].x, y: STATION_PLACES[id].y + CUSTOMER_GAP, radius: STATION_RADIUS };
 }
 
 /** How near a merchant a customer stands to open their shop: the same circle as a station's, centred on them. */
 export const MERCHANT_REACH = STATION_RADIUS;
 
-/** Where each merchant stands when the bunker is first raised: the hall's north wall, where the stalls were. */
-export const MERCHANT_STARTS: Readonly<Record<MerchantId, { readonly x: number; readonly y: number }>> = Object.fromEntries(
-  MERCHANT_IDS.map((id) => [id, { x: STATION_PLACES[id].x, y: STATION_PLACES[id].y + CUSTOMER_GAP }]),
-) as Record<MerchantId, { x: number; y: number }>;
-
-/** A room's floor in pixels, a tile in from its walls. */
-export interface FloorBox {
-  readonly x0: number;
-  readonly y0: number;
-  readonly x1: number;
-  readonly y1: number;
-}
-
-const floorOf = (room: Room): FloorBox => ({
-  x0: (room.col0 + 1) * TILE_SIZE,
-  y0: (room.row0 + 1) * TILE_SIZE,
-  x1: room.col1 * TILE_SIZE,
-  y1: room.row1 * TILE_SIZE,
-});
-
-/** Where the merchants wander, the hall listed three times so they keep to the market most. The garage is the van's. */
-export const MERCHANT_ROAM: readonly FloorBox[] = [HALL, HALL, HALL, WORKSHOP, QUARTERS].map(floorOf);
+/** Where each merchant stands when the camp is first raised: a line under the market awning. */
+export const MERCHANT_STARTS: Readonly<Record<MerchantId, { readonly x: number; readonly y: number }>> = MERCHANT_STANDS;
 
 /** The chest's circle, for the overrun to put in reach while a chest is unopened. */
 export const CHEST_STATION: Station = stationOf('chest');
 
-const stationsOf = (): Station[] => STANDING_IDS.map(stationOf);
+function lightsOf(scenery: readonly PropInstance[]): MapLight[] {
+  const lanterns = scenery.filter((prop) => prop.kind === 'lantern');
+  return [
+    { x: CAMPFIRE_PLACE.x, y: CAMPFIRE_PLACE.y - 6, radius: FIRE_RADIUS, color: FIRE_LIGHT, flicker: true },
+    ...lanterns.map((lantern) => ({ x: lantern.x, y: lantern.y - 14, radius: LANTERN_RADIUS, color: LANTERN_LIGHT, flicker: false })),
+  ];
+}
 
-export function generateBunkerMap(): WorldMap {
-  const tiles = carve();
+/** The camp at a size. The same size always yields the same map, on the server and every client. */
+export function generateBunkerMap(size: CampSize = 1): WorldMap {
+  const sections = fenceSections(size);
+  const fence = sections.map((section): PropInstance => ({ kind: section.kind, x: section.x, y: section.y }));
+  const stations = STANDING_IDS.map((id): PropInstance => ({ kind: STATION_PROPS[id], ...STATION_PLACES[id] }));
+  const scenery = campScenery(size);
   return {
     seed: BUNKER_SEED,
     width: WIDTH,
     height: HEIGHT,
-    cols: COLS,
-    rows: ROWS,
-    tiles,
-    props: propsOf(),
+    cols: CAMP_COLS,
+    rows: CAMP_ROWS,
+    tiles: groundOf(size),
+    props: [...fence, ...stations, ...scenery, ...wilderness()],
     buildings: [],
-    districts: ROOMS.map((room) => ({ name: room.name, ...centreOf(room) })),
-    lights: ROOMS.map((room) => ({ ...centreOf(room), radius: LAMP_RADIUS, color: WARM_LAMP, flicker: false })),
-    spawn: { ...SPAWN_SPOT },
-    walls: stackRuns(wallRuns(tiles)),
-    exit: { ...EXIT_SPOT },
-    stations: stationsOf(),
+    districts: DISTRICT_PLACES.map((place) => ({ ...place })),
+    lights: lightsOf(scenery),
+    spawn: { ...SPAWN_PLACE },
+    walls: [],
+    exit: { ...VAN_PLACE },
+    stations: STANDING_IDS.map(stationOf),
+    camp: { size, sections },
   };
 }

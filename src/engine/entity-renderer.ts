@@ -268,7 +268,7 @@ export class EntityRenderer {
         alpha: 1
       };
     });
-    this.fires = this.props.filter((placed) => placed.prop.kind === "fire_barrel");
+    this.fires = this.props.filter((placed) => placed.prop.kind === "fire_barrel" || placed.prop.kind === "campfire");
     this.beacons = beaconsOn(this.art, map);
     this.reset();
   }
@@ -721,10 +721,11 @@ export class EntityRenderer {
     viewH: number,
     time: number
   ): void {
-    const flames = this.art.environment.barrelFire;
+    const { barrelFire, campFire } = this.art.environment;
     for (const fire of this.fires) {
       const onScreen =
         fire.x1 > left && fire.x0 < left + viewW && fire.y1 > top - 24 && fire.y0 < top + viewH;
+      const flames = fire.prop.kind === "campfire" ? campFire : barrelFire;
       if (onScreen)
         drawSprite(
           ctx,

@@ -47,6 +47,7 @@ import { buildEscapeVanLights, buildVan, VAN_LIVERIES } from './environment/van.
 import { buildSedanH, buildSedanV, buildWreckH } from './environment/vehicles.ts';
 import { buildBrickWarehouse, buildSteelWarehouse } from './environment/warehouse.ts';
 import { buildCampFenceDownH, buildCampFenceDownV, buildCampFenceH, buildCampFenceV, buildCampGate, buildCampPost } from './environment/camp-fence.ts';
+import { buildBedroll, buildCampAwning, buildCampLeanto, buildCampTent, buildCampfire, buildCampfireFlames, buildLantern } from './environment/camp-props.ts';
 import { buildFenceH, buildFenceV, buildGasPump } from './environment/yard.ts';
 
 /** The sewers have no roof or walls to draw: the dark around them is the wall, so each piece is one clear pixel. */
@@ -92,6 +93,12 @@ export function buildEnvironment(): EnvironmentArt {
       camp_post: buildCampPost(),
       camp_fence_down_h: buildCampFenceDownH(),
       camp_fence_down_v: buildCampFenceDownV(),
+      camp_awning: buildCampAwning(),
+      camp_leanto: buildCampLeanto(),
+      camp_tent: buildCampTent(),
+      campfire: buildCampfire(),
+      bedroll: buildBedroll(),
+      lantern: buildLantern(),
       gas_pump: buildGasPump(),
       shelf: buildShelf(),
       counter: buildCounter(),
@@ -151,6 +158,7 @@ export function buildEnvironment(): EnvironmentArt {
     },
     interior: buildInterior(),
     barrelFire: buildBarrelFire(),
+    campFire: buildCampfireFlames(),
     escapeVan: buildVan(),
     escapeVanLights: buildEscapeVanLights(),
   };

@@ -1,7 +1,8 @@
 // The four merchants as people in the bunker: they wander its rooms, stop for whoever walks up and trade where they
 // stand. Sim state, so every client sees them in the same place. The fight with the horde is in merchant-fight.ts.
 
-import { MERCHANT_REACH, MERCHANT_ROAM, MERCHANT_STARTS } from './bunker-map.ts';
+import { MERCHANT_REACH, MERCHANT_STARTS, merchantRoam } from './bunker-map.ts';
+import { clampCampSize } from './camp/camp-ring.ts';
 import { PLAYER_RADIUS, TICK_DT, WEAPONS } from './constants.ts';
 import { FlowField } from './flow-field.ts';
 import { MERCHANT_IDS, isBunkerMap } from './home-protocol.ts';
@@ -152,8 +153,9 @@ function customerOf(sim: SimState, m: MerchantState): PlayerState | null {
 
 /** A clear spot somewhere they like to be, or null if a few tries find none. */
 function pickGoal(sim: SimState, rng: Rng): { x: number; y: number } | null {
+  const roam = merchantRoam(clampCampSize(sim.map.camp?.size ?? 1));
   for (let attempt = 0; attempt < GOAL_TRIES; attempt++) {
-    const box = MERCHANT_ROAM[Math.floor(rng() * MERCHANT_ROAM.length)];
+    const box = roam[Math.floor(rng() * roam.length)];
     const x = randRange(rng, box.x0, box.x1);
     const y = randRange(rng, box.y0, box.y1);
     const isClear = !circleHitsSolid(sim.map, x, y, PLAYER_RADIUS + 2);

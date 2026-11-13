@@ -110,6 +110,8 @@ export interface EnvironmentArt {
   readonly interior: { readonly wallFace: PixelSprite; readonly wallCap: PixelSprite; readonly doorMat: PixelSprite };
   /** fire_barrel flames, drawn over its prop. */
   readonly barrelFire: Clip;
+  /** The camp's campfire flames, drawn over its prop the same way. */
+  readonly campFire: Clip;
   /** The way out of a level, and its blinking hazard lights. */
   readonly escapeVan: PixelSprite;
   readonly escapeVanLights: Clip;

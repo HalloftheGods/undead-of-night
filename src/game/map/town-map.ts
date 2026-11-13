@@ -25,10 +25,8 @@ import { formatItemName } from '@game/dual-loot-modal.ts';
 /** Map pixels per world tile. 200 tiles makes a 400px map, which scales up by whole numbers. */
 const TILE_PX = 2;
 const WORLD_PER_PX = TILE_SIZE / TILE_PX;
-/** The bunker is 40 tiles across, so it can afford to be drawn big enough to carry its room names. */
-const BUNKER_TILE_PX = 6;
-const BUNKER_FLOOR: Rgb = [70, 58, 46];
-const BUNKER_WALL: Rgb = [22, 20, 24];
+/** The camp is 72 tiles across, so it can afford to be drawn big enough to carry its area names. */
+const BUNKER_TILE_PX = 4;
 
 export { EXIT_COLOR, TILE_RGB };
 
@@ -76,10 +74,9 @@ function overlaps(a: LabelBox, b: LabelBox): boolean {
   return a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
 }
 
-/** What a tile looks like on the map: the town's greys, or the bunker's warm floor and dark walls. */
-function tileColor(map: WorldMap, kind: TileKind): Rgb {
-  if (!isBunkerMap(map)) return TILE_RGB[kind];
-  return kind === 'bunker_wall' ? BUNKER_WALL : BUNKER_FLOOR;
+/** What a tile looks like on the map. The camp is grass and dirt, coloured as a town's are. */
+function tileColor(_map: WorldMap, kind: TileKind): Rgb {
+  return TILE_RGB[kind];
 }
 
 function footprint(building: BuildingInstance): LabelBox {
