@@ -44,7 +44,7 @@ export function getActivePadBindings(): ReadonlyMap<number, string> {
   if (binds.heal !== null) map.set(binds.heal, 'KeyH');
   if (binds.reload !== null) map.set(binds.reload, 'KeyR');
   if (binds.bag !== null) map.set(binds.bag, 'KeyX');
-  if (binds.sprint !== null) map.set(binds.sprint, 'ShiftLeft');
+  if (binds.sneak !== null) map.set(binds.sneak, SNEAK_CODE);
   if (binds.throw !== null) map.set(binds.throw, 'KeyG');
   if (binds.melee !== null) map.set(binds.melee, 'KeyF');
   if (binds.fire !== null) map.set(binds.fire, PAD_FIRE);
@@ -58,19 +58,22 @@ export function getActivePadBindings(): ReadonlyMap<number, string> {
   return map;
 }
 
-/** In play, each button stands for the key it presses. L3 is sneak toggle. */
+/**
+ * In play, each button stands for the key it presses. L3 toggles running (handled in playPress, not here).
+ * LB holds sneak. Y reloads, X toggles the map, Select toggles the run log, R3 toggles the candy bag.
+ */
 export const PLAY_BINDINGS: ReadonlyMap<number, string> = new Map<number, string>([
   [PAD.a, 'KeyE'],
   [PAD.b, 'KeyH'],
-  [PAD.x, 'KeyR'],
-  [PAD.y, 'KeyX'],
-  [PAD.lb, 'ShiftLeft'],
+  [PAD.x, 'KeyN'],
+  [PAD.y, 'KeyR'],
+  [PAD.lb, SNEAK_CODE],
   [PAD.rb, 'KeyG'],
   [PAD.lt, 'KeyF'],
   [PAD.rt, PAD_FIRE],
-  [PAD.view, 'KeyN'],
+  [PAD.view, 'KeyL'],
   [PAD.start, 'Escape'],
-  [PAD.r3, 'KeyL'],
+  [PAD.r3, 'KeyX'],
   [PAD.up, 'KeyT'],
   [PAD.down, 'KeyV'],
   [PAD.left, PAD_PREV_WEAPON],
@@ -91,6 +94,8 @@ export const STICK_DEADZONE = 0.2;
 /** An analog trigger counts as down past this, whatever the browser says `pressed` means. */
 const TRIGGER_DOWN = 0.3;
 /** How far the left stick goes, past the dead zone, before it moves menu focus. */
+/** How far the stick leans sideways before the wheel turns. */
+const WHEEL_LEAN = 0.3;
 const NAV_PUSH = 0.5;
 /** Held in a menu, a direction repeats after this long, then every NAV_REPEAT_MS. */
 export const NAV_REPEAT_DELAY_MS = 400;
@@ -123,6 +128,8 @@ export interface GamepadHost {
   back(): void;
   /** The D-pad or left stick, behind a menu. */
   navigate(direction: NavDirection): void | boolean;
+  /** A, B, X or Y behind a menu, offered to a screen that reads them itself. True if it took the press. */
+  take?(button: 'a' | 'b' | 'x' | 'y' | 'start'): boolean;
   /** The pad did something this frame. */
   onActive(): void;
   onConnection?(change: PadConnection): void;
@@ -218,7 +225,7 @@ export class GamepadInput {
   private activeIndex: number | null = null;
   private move: StickVector | null = null;
   private aim: StickVector | null = null;
-  private sneaking = false;
+  private running = false;
   private navDirection: NavDirection | null = null;
   private navNextAt = Infinity;
 
@@ -239,12 +246,22 @@ export class GamepadInput {
     window.removeEventListener('gamepaddisconnected', this.onDisconnected);
   }
 
+  /** At the wheel of a car: the left stick only steers, RT is gas and LT is brake and reverse. Set each frame by the run. */
+  driving = false;
+  private gas = false;
+  private brake = false;
+
   get dirX(): number {
-    return this.host.live() ? eightWay(this.move).x : 0;
+    if (!this.host.live()) return 0;
+    if (!this.driving) return eightWay(this.move).x;
+    const lean = this.move?.x ?? 0;
+    return Math.abs(lean) > WHEEL_LEAN ? Math.sign(lean) : 0;
   }
 
   get dirY(): number {
-    return this.host.live() ? eightWay(this.move).y : 0;
+    if (!this.host.live()) return 0;
+    if (this.driving) return Number(this.brake) - Number(this.gas);
+    return eightWay(this.move).y;
   }
 
   /** The key this pad is holding down right now. */
@@ -261,6 +278,11 @@ export class GamepadInput {
     // TODO(aim-assist): out of scope for the first slice. Bend `aim` toward the nearest zombie in a narrow cone here.
     const steer = this.aim ?? this.move;
     return steer ? Math.atan2(steer.y, steer.x) : current;
+  }
+
+  /** The right stick as it leans, 0 to 1 either way, while this pad is in charge. Null at rest: the crosshair stays where it was. */
+  reticle(): StickVector | null {
+    return this.host.inCharge() ? this.aim : null;
   }
 
   /** Once a frame: read the pad in charge, fire its presses, and settle what it holds. */
@@ -306,7 +328,9 @@ export class GamepadInput {
     this.spent.clear();
     this.move = null;
     this.aim = null;
-    this.sneaking = false;
+    this.gas = false;
+    this.brake = false;
+    this.running = false;
     this.navDirection = null;
     this.navNextAt = Infinity;
   }
@@ -316,6 +340,8 @@ export class GamepadInput {
     const before = this.lastDown.get(pad.index) ?? [];
     this.lastDown.set(pad.index, down);
     this.id = pad.id;
+    this.gas = isDown(pad.buttons[PAD.rt]);
+    this.brake = isDown(pad.buttons[PAD.lt]);
     this.move = leftStick(pad);
     this.aim = rightStick(pad);
     const pressed = down.map((isNow, index) => isNow && !before[index]);
@@ -335,25 +361,36 @@ export class GamepadInput {
   }
 
   private playPress(index: number): void {
-    const isSneakToggle = index === PAD.l3;
-    if (isSneakToggle) {
-      this.sneaking = !this.sneaking;
+    // The triggers are the pedals at the wheel, not the gun and the shove.
+    if (this.driving && (index === PAD.rt || index === PAD.lt)) return;
+    if (index === PAD.l3) {
+      this.running = !this.running;
       return;
     }
     const bindings = getActivePadBindings();
-    const sprintBtn = loadPadBindings().sprint;
-    if (sprintBtn !== null && index === sprintBtn) this.sneaking = false;
     const code = bindings.get(index);
     if (code) this.host.press(code);
   }
 
   private menuPress(index: number): void {
     this.spent.add(index);
-    if (index === PAD.start) this.host.press('Escape');
-    else if (index === PAD.view) this.host.press('KeyN');
+    if (index === PAD.start) this.start();
+    else if (index === PAD.view) this.host.press('KeyL');
+    else if (index === PAD.a && this.host.take?.('a')) return;
+    else if (index === PAD.x && this.host.take?.('x')) return;
+    else if (index === PAD.x) this.host.press('KeyN');
+    else if (index === PAD.y && this.host.take?.('y')) return;
     else if (index === PAD.a) this.confirm();
+    else if (index === PAD.b && this.host.take?.('b')) return;
     else if (index === PAD.b) this.back();
     // The D-pad is spent above and moves focus in navStep, so a held one repeats.
+  }
+
+  /** Start: the screen's main button (Start Run, or the title row in hand), else the pause path. */
+  private start(): void {
+    if (this.host.take?.('start')) return;
+    if (this.menu.start()) return;
+    this.host.press('Escape');
   }
 
   /** A: the focused control takes it; with none focused, the screen's own confirm. */
@@ -405,9 +442,10 @@ export class GamepadInput {
     const bindings = getActivePadBindings();
     for (const [index, code] of bindings) {
       const counts = down[index] && !this.spent.has(index);
-      if (counts) held.add(code);
+      const isPedal = this.driving && (index === PAD.rt || index === PAD.lt);
+      if (counts && !isPedal) held.add(code);
     }
-    if (this.sneaking) held.add(SNEAK_CODE);
+    if (this.running) held.add('ShiftLeft');
     return held;
   }
 
