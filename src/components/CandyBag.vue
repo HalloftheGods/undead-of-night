@@ -53,7 +53,7 @@
         <p class="bag-info-line">Search homes, and the candy bowls by every front door.</p>
       </template>
       <p class="px-label bag-info-note">
-        {{ waitNote }} <span class="keys-only">Click a candy or press its number to eat it. X to close.</span><span class="touch-only">Tap a candy to eat it.</span>
+        {{ waitNote }} <span class="keys-only">Click a candy or press its number to eat it. X to close.</span><span class="pad-line">Stick or D-pad to pick a candy, A to eat it, B to close.</span><span class="touch-only">Tap a candy to eat it.</span>
       </p>
     </div>
     <MenuLink ref="closeLink" class="bag-close" @press="game.toggleBag()">Close</MenuLink>
