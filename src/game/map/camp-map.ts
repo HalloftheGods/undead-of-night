@@ -4,13 +4,14 @@ import { BUILDING_DEFS, PROP_DEFS } from '@shared/protocol.ts';
 import type { WorldMap } from '@shared/protocol.ts';
 import { isLifted } from '@shared/world-query.ts';
 import { paintBuilding } from './map-buildings.ts';
+import type { MapBox } from './map-buildings.ts';
 
 const FENCE_COLOR = '#8a8f9c';
 const GATE_COLOR = '#d8a24a';
 const GAP_COLOR = '#ff5a4a';
 
 /** A footprint in map pixels at this scale. */
-function boxAt(x: number, y: number, w: number, h: number, worldPerPx: number): { x0: number; y0: number; x1: number; y1: number } {
+function boxAt(x: number, y: number, w: number, h: number, worldPerPx: number): MapBox {
   const x0 = Math.round(x / worldPerPx);
   const y0 = Math.round(y / worldPerPx);
   return { x0, y0, x1: Math.max(x0 + 1, Math.round((x + w) / worldPerPx)), y1: Math.max(y0 + 1, Math.round((y + h) / worldPerPx)) };

@@ -238,7 +238,7 @@ describe('AudioEngine with a fake AudioContext', () => {
     a.dispose();
   });
 
-  it('lays the town\'s ambience bed on its own bus out in town, and none in the bunker', async () => {
+  it('lays the town\'s ambience bed on its own bus out in town, and the night woods at the camp', async () => {
     const play = vi.spyOn(Mixer.prototype, 'play');
     const a = new AudioEngine();
     await a.unlock();
@@ -249,7 +249,9 @@ describe('AudioEngine with a fake AudioContext', () => {
     play.mockClear();
     a.setScene('bunker');
     a.tick(30, []);
-    expect(play.mock.calls.filter(([name]) => name.startsWith('amb_'))).toEqual([]);
+    const beds = play.mock.calls.filter(([name]) => name.startsWith('amb_')).map(([name]) => name);
+    expect(beds.length).toBeGreaterThan(0);
+    expect(new Set(beds)).toEqual(new Set(['amb_forest']));
     a.dispose();
     play.mockRestore();
   });

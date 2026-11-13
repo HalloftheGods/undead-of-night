@@ -126,8 +126,16 @@ export function fenceSections(size: CampSize): readonly FenceSection[] {
   return pieces.map((piece, index) => ({ index, ...piece }));
 }
 
+/** A box in world pixels. */
+export interface PixelBox {
+  readonly x0: number;
+  readonly y0: number;
+  readonly x1: number;
+  readonly y1: number;
+}
+
 /** The ground a section stands on, which is open once it falls. */
-export function gapGround(section: FenceSection): { x0: number; y0: number; x1: number; y1: number } {
+export function gapGround(section: FenceSection): PixelBox {
   const def = PROP_DEFS[section.kind];
   return { x0: section.x - def.w / 2, y0: section.y - def.h, x1: section.x + def.w / 2, y1: section.y };
 }

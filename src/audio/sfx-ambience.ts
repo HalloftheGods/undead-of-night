@@ -95,7 +95,8 @@ const CAMP_BED: AmbienceName = 'amb_forest';
 
 /** The bed under a scene: a town's, out in the town between and during hordes; the woods at the camp; none in the menus. */
 export function bedFor(scene: Scene, level: number): AmbienceName | null {
-  if (scene === 'bunker') return CAMP_BED;
+  const atCamp = scene === 'bunker';
+  if (atCamp) return CAMP_BED;
   const outInTown = scene === 'intermission' || scene === 'wave';
   return outInTown ? ambienceFor(level) : null;
 }

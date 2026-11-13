@@ -55,7 +55,8 @@ function rollWilderness(): PropInstance[] {
     const nearCamp = col >= big.col0 - WILD_CLEAR_TILES && col <= big.col1 + WILD_CLEAR_TILES && row >= big.row0 - WILD_CLEAR_TILES && row <= big.row1 + WILD_CLEAR_TILES;
     const onTrack = col >= CAMP_EAST_COL && row >= GATE_ROWS.top - 1 && row <= GATE_ROWS.bottom + 1;
     const tile = row * CAMP_COLS + col;
-    if (nearCamp || onTrack || taken.has(tile)) continue;
+    const isOffLimits = nearCamp || onTrack || taken.has(tile);
+    if (isOffLimits) continue;
     taken.add(tile);
     props.push({ kind, x: col * TILE_SIZE + TILE_SIZE / 2, y: (row + 1) * TILE_SIZE - 2 });
   }

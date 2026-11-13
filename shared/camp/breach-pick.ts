@@ -18,11 +18,15 @@ export const GAP_SPAWN_SCATTER_TILES = 1.5;
 /** A run on these gives one place more. */
 const HARD_RUNS: ReadonlySet<DifficultyId> = new Set<DifficultyId>(['lights_out', 'undead_tired']);
 
+/** From which level the fence gives in how many places, furthest first. Below the last, one. */
+const PLACES_FROM_LEVEL: readonly (readonly [number, number])[] = [
+  [7, 3],
+  [4, 2],
+];
+
 /** One place below level 4, two to level 6, three from level 7; one more on a hard run; never fewer than one or more than four. */
 export function gapCount(level: number, difficulty: DifficultyId): number {
-  let byLevel = 1;
-  if (level >= 4) byLevel = 2;
-  if (level >= 7) byLevel = 3;
+  const byLevel = PLACES_FROM_LEVEL.find(([from]) => level >= from)?.[1] ?? 1;
   const byDifficulty = HARD_RUNS.has(difficulty) ? 1 : 0;
   return Math.max(1, Math.min(OVERRUN_GAPS_MAX, byLevel + byDifficulty));
 }

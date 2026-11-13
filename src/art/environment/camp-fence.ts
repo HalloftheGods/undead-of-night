@@ -65,16 +65,22 @@ function edgePost(c: PixelCanvas, y: number, tall: number): void {
   c.rect(0, y - tall - 1, EDGE_W, 2, metal[3]).rect(0, y - tall, EDGE_W, 1, metal[2]);
 }
 
-/** One stretch of an edge-on run from `y0` to `y1`: tin ribs, pallet slats or mesh, lit on the west lip and shaded on the east. */
-function edgeRun(c: PixelCanvas, y0: number, y1: number, kind: 'tin' | 'pallet' | 'mesh'): void {
-  for (let y = y0; y < y1; y++) {
-    if (kind === 'tin') c.rect(2, y, 4, 1, y % 2 === 0 ? metal[2] : metal[1]);
-    if (kind === 'pallet') c.rect(2, y, 4, 1, y % 3 === 0 ? wood[0] : wood[2]);
-    if (kind === 'mesh' && y % 2 === 0) c.px(3, y, metal[1]).px(4, y + 1, metal[1]);
-  }
+type EdgeKind = 'tin' | 'pallet' | 'mesh';
+
+/** One row of each material, seen edge-on: tin ribs, pallet slats with their gaps, and mesh zigzagging. */
+const EDGE_ROW: Record<EdgeKind, (c: PixelCanvas, y: number) => void> = {
+  tin: (c, y) => c.rect(2, y, 4, 1, y % 2 === 0 ? metal[2] : metal[1]),
+  pallet: (c, y) => c.rect(2, y, 4, 1, y % 3 === 0 ? wood[0] : wood[2]),
+  mesh: (c, y) => c.px(3 + (y % 2), y, metal[1]),
+};
+
+/** One stretch of an edge-on run from `y0` to `y1`, lit on the west lip and shaded on the east. Tin carries a little rust. */
+function edgeRun(c: PixelCanvas, y0: number, y1: number, kind: EdgeKind): void {
+  for (let y = y0; y < y1; y++) EDGE_ROW[kind](c, y);
   c.rect(2, y0, 1, y1 - y0, kind === 'mesh' ? metal[2] : metal[3]);
   c.rect(6, y0, 1, y1 - y0, ink[1]);
-  if (kind === 'tin') c.px(4, y0 + 3, fire[0]).px(3, y1 - 3, fire[0]);
+  const isTin = kind === 'tin';
+  if (isTin) c.px(4, y0 + 3, fire[0]).px(3, y1 - 3, fire[0]);
 }
 
 export function buildCampFenceV(): PixelSprite {
@@ -141,7 +147,8 @@ function leanFrame(base: PixelSprite, by: number, rng: () => number): PixelSprit
     const shift = up > 0 ? Math.round((by * up) / base.ay) : 0;
     for (let x = 0; x < src.w; x++) {
       const color = src.get(x, y);
-      if (color !== null) c.px(x + RATTLE_PAD + shift, y, color);
+      const isInked = color !== null;
+      if (isInked) c.px(x + RATTLE_PAD + shift, y, color);
     }
   }
   const top = Math.max(1, base.ay - RISE - 2);

@@ -51,7 +51,10 @@ function roof(s: Shell, look: TentLook): void {
       const down = (y - RIDGE - 2) / slope;
       const lit = down < 0.12 || (down < 0.3 && dip < 0.5);
       const shade = down > 0.86 - dip * 0.22;
-      c.px(x, y, lit ? cloth[2] : shade ? cloth[0] : cloth[1]);
+      let tone = cloth[1];
+      if (shade) tone = cloth[0];
+      if (lit) tone = cloth[2];
+      c.px(x, y, tone);
     }
     // Scalloped valance: the canvas hangs a little lower between each pair of seams.
     const sag = Math.round(Math.sin((((x - left) % PANEL) / PANEL) * Math.PI) * 2);
@@ -77,7 +80,8 @@ function wall(s: Shell, look: TentLook): void {
     const fold = (x - left) % 6 === 5;
     c.rect(x, wallTop, 1, WALL, fold ? cloth[0] : cloth[1]);
     c.rect(x, wallTop, 1, 3, cloth[0]);
-    if ((x - left) % PANEL === 0) c.rect(x, wallTop, 1, WALL, ink[1]);
+    const isPole = (x - left) % PANEL === 0;
+    if (isPole) c.rect(x, wallTop, 1, WALL, ink[1]);
   }
   c.rect(left, wallTop, footW, 1, ink[1]);
   c.rect(left, ground - 3, footW, 3, wood[0]).rect(left, ground - 3, footW, 1, wood[1]);

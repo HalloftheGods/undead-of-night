@@ -26,7 +26,7 @@ export const STYLE_CARDS: readonly StyleCard[] = [
 const FACTS: Readonly<Record<GameStyle, readonly StyleFact[]>> = {
   campaign: [
     { key: 'plays', label: 'Plays', value: 'Trip by trip' },
-    { key: 'between', label: 'Between', value: 'Bunker' },
+    { key: 'between', label: 'Between', value: 'Camp' },
     { key: 'dying', label: 'Dying', value: 'Lose your haul' },
     { key: 'continue', label: 'Saves', value: 'Gear and gold' },
   ],
