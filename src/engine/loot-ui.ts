@@ -369,21 +369,29 @@ function containerArtOf(view: LootView): ContainerArt | null {
   return view.containerArt ?? (view.art && view.state.containerKind ? view.art.containers[view.state.containerKind] : null);
 }
 
-/** The container's picture, placed by its anchor inside one box that holds both drawings, so emptying it never shifts the art. */
+/**
+ * The container's picture, stretched so the box that holds both drawings covers the grid exactly. A cell then sits
+ * over its own piece of the object, so where a valid cell is on the picture reads at a glance, and the blocked cells
+ * fall on the parts that cannot hold anything. Each drawing is still placed by its anchor inside that box, so
+ * emptying the container never shifts it. Smoothing stays off: every art pixel is a block, a little wider or taller.
+ */
 function drawContainerArt(ctx: CanvasRenderingContext2D, view: LootView, board: Box): void {
   const art = containerArtOf(view);
   if (!art) return;
   const box = stageBox(art);
   const sprite = stageSprite(art, view.state.containerGrid.items.length > 0);
   if (!box || !sprite) return;
-  const scale = Math.max(1, Math.floor(Math.min(board.w / box.width, board.h / box.height)));
-  const left = board.x + Math.round((board.w - box.width * scale) / 2);
-  const top = board.y + Math.round((board.h - box.height * scale) / 2);
   const at = stageOffset(box, sprite);
-  ctx.globalAlpha = 0.85;
-  // drawSpriteScaled places a sprite by its anchor, so the anchor goes at its offset in the box.
-  drawSpriteScaled(ctx, sprite, left + (at.x + sprite.ax) * scale, top + (at.y + sprite.ay) * scale, scale);
+  const x0 = board.x + Math.round((at.x / box.width) * board.w);
+  const y0 = board.y + Math.round((at.y / box.height) * board.h);
+  const x1 = board.x + Math.round(((at.x + sprite.w) / box.width) * board.w);
+  const y1 = board.y + Math.round(((at.y + sprite.h) / box.height) * board.h);
+  const smoothing = ctx.imageSmoothingEnabled;
+  ctx.imageSmoothingEnabled = false;
+  ctx.globalAlpha = 0.9;
+  ctx.drawImage(spriteCanvas(sprite), x0, y0, x1 - x0, y1 - y0);
   ctx.globalAlpha = 1;
+  ctx.imageSmoothingEnabled = smoothing;
 }
 
 function gearMark(view: LootView, slot: GearSlotId): 'valid' | 'invalid' | 'none' {

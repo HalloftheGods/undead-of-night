@@ -19,12 +19,12 @@
           </header>
 
           <div class="container-grid-stage">
-            <!-- Both drawings sit by their anchors in one box, so searching the container never shifts the art. -->
+            <!-- Both drawings sit by their anchors in one box, and the box is stretched over the grid so each cell covers its own part of the object. -->
             <svg
               v-if="containerArtStage"
               class="container-stage-bg-art"
               :viewBox="containerArtStage.viewBox"
-              preserveAspectRatio="xMidYMid meet"
+              preserveAspectRatio="none"
               aria-hidden="true"
             >
               <image
