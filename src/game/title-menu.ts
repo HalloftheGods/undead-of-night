@@ -55,7 +55,13 @@ export function menuLine(item: TitleMenuItem, unlock?: SoundUnlock): string {
 
 /** Every link, section by section. */
 export const TITLE_MENU: readonly TitleMenuItem[] = [
-  // 1-5 Player (Campaign and Arcade)
+  // 1-5 Player (Nightly Run on top, then Campaign and Arcade)
+  {
+    group: "play",
+    page: "daily",
+    label: "Nightly Run",
+    line: "A fresh solo or co-op night every day. One chance."
+  },
   {
     group: "play",
     page: "play",
@@ -69,14 +75,6 @@ export const TITLE_MENU: readonly TitleMenuItem[] = [
     label: "Arcade",
     style: "arcade",
     line: "Ten levels in a row. Die and the run ends."
-  },
-
-  // Nightly Run (Top-level direct launcher with undead star indicator)
-  {
-    group: "play" as any,
-    page: "daily",
-    label: "Nightly Run",
-    line: "A fresh solo or co-op night every day. One chance."
   },
 
   // News Stand (Guides, Statistics, Level Select, and Radio)
@@ -120,7 +118,7 @@ export const TITLE_MENU: readonly TitleMenuItem[] = [
     needs: "radio"
   },
 
-  // Settings (Sorted A - Z: Audio, Controls, Display, Gameplay, Sound Test)
+  // Settings (Sorted A - Z: Audio, Controls, Display, Gameplay)
   {
     group: "settings",
     page: "audio",
@@ -146,7 +144,7 @@ export const TITLE_MENU: readonly TitleMenuItem[] = [
     line: "Camera motion, screen shake and accessibility."
   },
   {
-    group: "settings",
+    group: "radio",
     page: "sound",
     label: "Sound Test",
     line: "Hear the music and effects."
@@ -168,12 +166,12 @@ export const MENU_SECTIONS: readonly MenuSection[] = [
   {
     group: "play",
     label: "1-5 Player",
-    line: "Campaign and Arcade."
+    line: "Nightly Run, Campaign and Arcade."
   },
   {
     group: "radio",
     label: "Radio",
-    line: "Tapes, tunes and radio finds.",
+    line: "Tapes, tunes, radio finds and the Sound Test.",
     needs: "radio"
   },
   {
@@ -184,7 +182,7 @@ export const MENU_SECTIONS: readonly MenuSection[] = [
   {
     group: "settings",
     label: "Settings",
-    line: "Audio, Controls, Display, Gameplay and Sound Test."
+    line: "Audio, Controls, Display and Gameplay."
   }
 ];
 
@@ -227,42 +225,18 @@ export function menuRows(
       group: each.group
     }));
 
-    // Find the direct Nightly Run item and add it as a top-level item row with its undead star badge
-    const nightlyRunItem = entries.find(
-      (item) => item.page === "daily" && item.group === ("play" as any)
-    );
-    const nightlyRunRow: MenuRow | null = nightlyRunItem
-      ? {
-          kind: "item",
-          label: menuLabel(nightlyRunItem, unlock),
-          line: menuLine(nightlyRunItem, unlock),
-          primary: false,
-          item: nightlyRunItem,
-          badgeType: dailyCompleted ? "star" : "undead_star"
-        }
-      : null;
-
-    // Insert Nightly Run right after 1-5 Player for optimal placement on the title screen
-    const rows = [...parentRows];
-    if (nightlyRunRow) {
-      rows.splice(1, 0, nightlyRunRow);
-    }
-    return rows;
+    return parentRows;
   }
 
-  const links = entries.filter((item) => {
-    if (item.group !== section) return false;
-    // Exclude the top-level nightly run item when rendering standard submenus
-    if (item.page === "daily" && item.group === ("play" as any)) return false;
-    return true;
-  });
+  const links = entries.filter((item) => item.group === section);
 
   const rows: MenuRow[] = links.map((item) => ({
     kind: "item",
     label: menuLabel(item, unlock),
     line: menuLine(item, unlock),
     primary: false,
-    item
+    item,
+    ...(item.page === "daily" ? { badgeType: dailyCompleted ? ("star" as const) : ("undead_star" as const) } : {})
   }));
   return [...rows, { kind: "back", label: "Back", line: "", primary: false }];
 }
