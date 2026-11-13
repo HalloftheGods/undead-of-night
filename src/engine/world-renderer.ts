@@ -230,9 +230,9 @@ export class WorldRenderer {
     this.effects.reset();
   }
 
-  /** Flash the survivor's vertical retro green XP bar and level number. */
-  flashXp(fraction: number, timeSec: number, level?: number): void {
-    this.overlay.flashXp(fraction, timeSec, level);
+  /** Shows the XP bar now. Timed on this renderer's own clock, the one the frame draws by, not the page's. */
+  flashXp(fraction: number, level?: number): void {
+    this.overlay.flashXp(fraction, this.time, level);
   }
 
   setAutoFadeXp(autoFade: boolean): void {

@@ -231,7 +231,7 @@ export class SnapshotHandler {
       const currentProg = loadProgression(playerSkin);
       const gain = addExperience(currentProg, event.points);
 
-      renderer?.flashXp(xpBarFraction(gain.state), now / 1000, gain.newLevel);
+      renderer?.flashXp(xpBarFraction(gain.state), gain.newLevel);
 
       if (gain.didLevelUp) {
         const winningStat =
