@@ -45,6 +45,8 @@ export class Soundtrack {
   private current: Track | null = null;
   /** Set while the Sound Test is playing one track on its own. */
   private auditionEnd: (() => void) | null = null;
+  /** True while that hold is a Radio's find rather than the Sound Test. */
+  private holdingFound = false;
   private readonly listening = new AbortController();
 
   constructor(
@@ -56,14 +58,30 @@ export class Soundtrack {
   ) {}
 
   setScene(scene: Scene): void {
+    const changed = scene !== this.scene;
     this.scene = scene;
+    if (changed) this.letGoOfFound();
     this.retune();
   }
 
   /** The town being played picks the music between hordes. */
   setLevel(level: number): void {
+    const changed = level !== this.level;
     this.level = level;
+    if (changed) this.letGoOfFound();
     this.retune();
+  }
+
+  /** A track a Radio gave up, playing in place of the scene's music until it ends or the scene or town changes. */
+  playFound(file: string): void {
+    this.audition(file, () => this.letGoOfFound());
+    this.holdingFound = true;
+  }
+
+  private letGoOfFound(): void {
+    if (!this.holdingFound) return;
+    this.holdingFound = false;
+    this.stopAudition();
   }
 
   /** The run's style, which says what the bunker and level 6 play. */

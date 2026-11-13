@@ -258,4 +258,25 @@ describe('the soundtrack', () => {
     music.dispose();
     expect(playing()).toEqual([]);
   });
+
+  it('plays a Radio find in place of the scene, then hands the scene back when it ends', () => {
+    music.setScene('intermission');
+    music.playFound('level-01-sunken-tomb.mp3');
+    vi.runAllTimers();
+    expect(playing()).toEqual(['music/level-01-sunken-tomb.mp3']);
+    music.setScene('intermission');
+    expect(playing()).toEqual(['music/level-01-sunken-tomb.mp3']);
+    made.find((element) => element.src.includes('sunken-tomb'))?.fire('ended');
+    vi.runAllTimers();
+    expect(playing()).toEqual(['music/level-01-abandoned-streets.mp3']);
+  });
+
+  it('lets a Radio find go when the scene changes', () => {
+    music.setScene('intermission');
+    music.playFound('level-01-sunken-tomb.mp3');
+    music.setScene('wave');
+    vi.runAllTimers();
+    expect(playing().includes('music/level-01-sunken-tomb.mp3')).toBe(false);
+    expect(playing()).toHaveLength(1);
+  });
 });

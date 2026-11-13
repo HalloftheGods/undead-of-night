@@ -270,7 +270,8 @@ export class RunHud {
     );
   }
 
-  onEvent(event: GameEvent, now: number, ctx?: LogContext): void {
+  /** Returns the track a Radio gave up, when this event is one, so the run's music can switch to it. */
+  onEvent(event: GameEvent, now: number, ctx?: LogContext): string | null {
     tapGameEvent(event);
     deathWitness.see(event, ctx?.localId ?? null, now);
     const track = isRadioFound(event) ? this.giveUpTrack() : null;
@@ -282,6 +283,7 @@ export class RunHud {
     const line = ctx ? eventLine(event, ctx) : null;
     if (line) this.note(line, now);
     this.noticeBite(event, now, ctx?.localId ?? null);
+    return track;
   }
 
   /** A bite from outside the player's facing: a short red mark on that edge of the screen. */

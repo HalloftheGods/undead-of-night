@@ -161,6 +161,11 @@ export class AudioEngine {
     this.mixer?.play(`van_${name}`);
   }
 
+  /** A Radio gave up this track: it plays over the run in place of the scene's music, and the scene's returns when it ends. */
+  playFoundTrack(file: string): void {
+    this.soundtrack?.playFound(file);
+  }
+
   /** The Sound Test opens quiet: the scene's music steps aside until leavePreview(). */
   enterPreview(): void {
     this.soundtrack?.hush();

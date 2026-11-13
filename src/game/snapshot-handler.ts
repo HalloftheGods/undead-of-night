@@ -298,11 +298,12 @@ export class SnapshotHandler {
         after?.id === id ? after : world.latest?.players.find((each) => each.id === id);
       return player ? displayName(player.name, player.skin) : null;
     };
-    runHud.onEvent(event, now, {
+    const foundTrack = runHud.onEvent(event, now, {
       localId: world.localId,
       nameOf,
       ...(note ? { pickupNote: note } : {})
     });
+    if (foundTrack !== null) audio.playFoundTrack(foundTrack);
     const ateIt = event.type === "candy_eaten" && event.playerId === world.localId;
     if (ateIt)
       runHud.say(candyBanner(event.candy, event.saved === true, event.stacked === true), now);
