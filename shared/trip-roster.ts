@@ -1,6 +1,8 @@
 // Who is in a home room: how far the room can go, and what happens to a body left behind.
 
+import { latchCamp } from './camp/camp-latch.ts';
 import { TICK_RATE } from './constants.ts';
+import { raiseCamp } from './level-change.ts';
 import { FIRST_LEVEL } from './levels.ts';
 import { startOverrunClock } from './overrun.ts';
 import type { HomeRun, PlayerState, SimState } from './sim-state.ts';
@@ -54,9 +56,13 @@ export function arriveInRoom(sim: SimState, p: PlayerState): void {
   startFreshRoomClock(sim);
 }
 
-/** The first player into a fresh home room starts its clock. Later arrivals, and rooms already under way, share what stands. */
+/** The first player into a fresh home room sizes its camp and starts its clock. Later arrivals, and rooms already under way, share what stands. */
 function startFreshRoomClock(sim: SimState): void {
   const firstIntoFreshRoom = sim.tick === 0 && sim.players.length === 1 && sim.homeRun?.tripLevel === null;
+  if (firstIntoFreshRoom) {
+    latchCamp(sim);
+    raiseCamp(sim);
+  }
   const clockAlreadyRunning = sim.overrun !== null;
   const shouldStartClock = firstIntoFreshRoom && !clockAlreadyRunning;
   if (shouldStartClock) startOverrunClock(sim);

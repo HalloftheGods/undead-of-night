@@ -34,7 +34,8 @@ describe('holding E at a station', () => {
     const { sim, p } = atStation('locker');
     sim.setInput('a', input({ seq: 1, search: true }));
     expect(stepUntil(sim, () => p.home?.station === 'locker', HOLD_TICKS)).toBeGreaterThanOrEqual(0);
-    sim.setInput('a', input({ seq: 2, down: true }));
+    // Along the quarters' floor, since the tent's back wall is a step behind the locker's customers.
+    sim.setInput('a', input({ seq: 2, right: true }));
     expect(stepUntil(sim, () => p.home?.station === null, HOLD_TICKS)).toBeGreaterThanOrEqual(0);
   });
 

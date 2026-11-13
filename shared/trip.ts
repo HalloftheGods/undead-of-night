@@ -1,6 +1,7 @@
 // Out to a town and back: the room's side of a trip, and everything a player can ask of the bunker.
 
 import type { HomeAction, JoinHome } from './home-protocol.ts';
+import { latchCamp } from './camp/camp-latch.ts';
 import { enterBunker, enterTown, placeAtEntry } from './level-change.ts';
 import { FIRST_LEVEL } from './levels.ts';
 import { applyLoadout, emptyLoadout, issueFreePistol, validateLoadout } from './loadout.ts';
@@ -24,7 +25,7 @@ function newSimId(seed: number): string {
 }
 
 export function newHomeRun(seed: number): HomeRun {
-  return { simId: newSimId(seed), tripLevel: null, tripReplay: false, pickedLevel: null, attempt: 0, roomHighest: FIRST_LEVEL, nextTreasure: 0, nextReceipt: 1, unclaimed: new Map() };
+  return { simId: newSimId(seed), tripLevel: null, tripReplay: false, pickedLevel: null, attempt: 0, roomHighest: FIRST_LEVEL, campLevel: FIRST_LEVEL, campSize: 1, nextTreasure: 0, nextReceipt: 1, unclaimed: new Map() };
 }
 
 /** A newcomer to a home room, with the gear and highest level they brought. Anyone joining a trip lands in it armed. Does nothing with home off. */
@@ -135,9 +136,11 @@ function endTrip(sim: SimState, banks: (p: PlayerState) => boolean): void {
   for (const p of sim.players) close(p, banks(p));
   for (const p of sim.departed.values()) close(p, false);
   run.tripLevel = null;
+  // The banked level counts for the camp this arrival raises, so the room's reach is settled before the camp is.
+  syncRoomHighest(sim);
+  latchCamp(sim);
   enterBunker(sim);
   for (const p of everyBody(sim)) settleInBunker(sim, p);
-  syncRoomHighest(sim);
   startOverrunClock(sim);
 }
 

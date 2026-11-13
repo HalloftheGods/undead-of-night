@@ -1,4 +1,5 @@
 import type { PlayerBag } from './bag.ts';
+import type { CampSize } from './camp/camp-ring.ts';
 import type { SugarState } from './candy.ts';
 import type { BackpackTier } from './backpack.ts';
 import type { SurvivalNeeds } from './survival-needs.ts';
@@ -273,6 +274,10 @@ export interface HomeRun {
   /** The room's trip serial, which makes each trip's town a fresh one. */
   attempt: number;
   roomHighest: number;
+  /** `roomHighest` as it stood when the room last came home: what the camp's size and the breach go by until the next arrival. */
+  campLevel: number;
+  /** The camp's size for this visit, from `campLevel`. */
+  campSize: CampSize;
   /** Treasure's own id counter, kept off `entityId()`. */
   nextTreasure: number;
   /** The serial the next receipt takes, from 1, for the whole room. No reset or restart puts it back, so `${simId}:${serial}` never repeats. */

@@ -1,6 +1,8 @@
 import { placeMerchants } from './bunker-merchants.ts';
 import { offerKeepsakes } from './keepsakes.ts';
 import { LEVEL_CLEAR_HEAL, PLAYER_RADIUS, SPAWN_SCATTER } from './constants.ts';
+import { campSizeOf } from './camp/camp-latch.ts';
+import type { CampSize } from './camp/camp-ring.ts';
 import { stopSearch } from './container-search.ts';
 import { FlowField } from './flow-field.ts';
 import { BUNKER_LEVEL, BUNKER_SEED } from './home-protocol.ts';
@@ -18,10 +20,10 @@ import { clearVehicles } from './vehicles.ts';
 import { markTestDrive } from './vehicle-choice.ts';
 import { generateWorldMap } from './world-map.ts';
 
-function raiseMap(sim: SimState, seed: number, level: number): void {
-  const sameMap = seed === sim.map.seed;
+function raiseMap(sim: SimState, seed: number, level: number, campSize: CampSize = 1): void {
+  const sameMap = seed === sim.map.seed && campSize === (sim.map.camp?.size ?? 1);
   if (sameMap) return;
-  sim.map = generateWorldMap(seed, level);
+  sim.map = generateWorldMap(seed, level, campSize);
   sim.flow = new FlowField(sim.map);
   sim.noiseFlow = new FlowField(sim.map);
   if (sim.testDrive) markTestDrive(sim.map);
@@ -71,11 +73,20 @@ export function enterTown(sim: SimState, level: number): void {
 
 /** Empties the world and goes home: no loot, no containers, no zombies, and the van parked. */
 export function enterBunker(sim: SimState): void {
-  raiseMap(sim, BUNKER_SEED, BUNKER_LEVEL);
+  raiseMap(sim, BUNKER_SEED, BUNKER_LEVEL, campSizeOf(sim));
   emptyWorld(sim, BUNKER_LEVEL);
   sim.containers = [];
   parkBunkerVan(sim);
   placeMerchants(sim);
+}
+
+/**
+ * Rebuilds the camp at its latched size without emptying anything, for a fresh room whose first player has been further than the camp it was raised as.
+ * Everything placed in the camp stands where it did, since nothing inside the smallest ring moves between sizes.
+ */
+export function raiseCamp(sim: SimState): void {
+  const inCamp = sim.map.seed === BUNKER_SEED;
+  if (inCamp) raiseMap(sim, BUNKER_SEED, BUNKER_LEVEL, campSizeOf(sim));
 }
 
 /** Puts someone down beside the town's entry. */
