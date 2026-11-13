@@ -10,7 +10,8 @@ import { loadKeyBindings } from '@game/controls-prefs.ts';
 
 /** A keydown the pad made: marked so the input manager does not take it for the keyboard. */
 function dispatchPadKeyDown(code: string): void {
-  if (typeof document === 'undefined') return;
+  // Node test runs have no document or KeyboardEvent; there is no listener to reach there anyway.
+  if (typeof document === 'undefined' || typeof KeyboardEvent === 'undefined') return;
   const event = new KeyboardEvent('keydown', { code, key: code, bubbles: true, cancelable: true });
   Object.defineProperty(event, 'fromPad', { value: true });
   (document.body ?? document).dispatchEvent(event);
