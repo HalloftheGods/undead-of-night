@@ -33,7 +33,7 @@ const SICK = '#8fbf3a';
 const AMBER = '#e8a33d';
 
 /** One bag slot: a 15 pixel sprite with a pixel of air each side. */
-const TILE = 17;
+export const TILE = 17;
 const PAD = 3;
 const HEAD = 9;
 const GEAR_W = 32;

@@ -43,6 +43,14 @@ export interface RunFrameHost {
 }
 
 /** One frame of a run: aim, predict, send input, draw, and the HUD after. Keeps the last picture for a held or frozen frame. */
+/** How the ring's clock and the crosshair's circling change with the survivor's feet. */
+const WALK_RING_SPEED = 1.25;
+const RUN_RING_SPEED = 0.7;
+const RUN_ORBIT_SPEED = 2;
+/** Turns the crosshair makes round the head per second of ring clock, and how flat the circle is on the ground plane. */
+const ORBIT_TURNS_PER_SEC = 1.6;
+const ORBIT_SQUASH = 0.75;
+
 /** How far past the gun's range a zombie can still be locked. */
 const LOCK_SLACK = 40;
 
@@ -59,6 +67,7 @@ export class RunFrame {
   private lockId: EntityId | null = null;
   private lastPush: NavDirection | null = null;
   private ringClock = 0;
+  private orbit = -Math.PI / 2;
   private lastPadMs = 0;
   private seenHeadshots = 0;
   private padRing: PadRing | null = null;
@@ -227,7 +236,9 @@ export class RunFrame {
   private aimPad(renderer: WorldRenderer, world: ClientWorld, padLook: number, ms: number): void {
     const { input, inputs } = this.host.parts;
     const player = world.localPlayer;
-    const weapon = player ? WEAPONS[player.weapon] : null;
+    // Nothing in the gun and nothing to load into it: no lock, no ring and no crosshair until there is.
+    const hasRounds = player !== null && (player.ammo > 0 || player.reserve > 0);
+    const weapon = player && hasRounds ? WEAPONS[player.weapon] : null;
     const push = stickPush(input.gamepad.reticle());
     const edge = push !== null && push !== this.lastPush;
     this.lastPush = push;
@@ -242,8 +253,17 @@ export class RunFrame {
     const crowd = weapon ? zombies.filter((zombie) => zombie.health > 0 && Math.hypot(zombie.x - me.x, zombie.y - me.y) <= weapon.range + LOCK_SLACK && sameSpace(zombie)).length : 0;
     const step = Math.min(0.1, Math.max(0, (ms - this.lastPadMs) / 1000));
     this.lastPadMs = ms;
-    this.ringClock += step * crowdSpeed(crowd);
-    if (next !== this.lockId || kills !== this.seenHeadshots) this.ringClock = 0;
+    // Moving changes the fight: walking quickens the ring, and running slows it and sends the crosshair round wildly.
+    const moving = input.dirX !== 0 || input.dirY !== 0;
+    const running = moving && input.stance === 'sprint';
+    const pace = running ? RUN_RING_SPEED : moving ? WALK_RING_SPEED : 1;
+    const swing = running ? RUN_ORBIT_SPEED : 1;
+    this.ringClock += step * crowdSpeed(crowd) * pace;
+    this.orbit += step * crowdSpeed(crowd) * pace * swing * ORBIT_TURNS_PER_SEC * Math.PI * 2;
+    if (next !== this.lockId || kills !== this.seenHeadshots) {
+      this.ringClock = 0;
+      this.orbit = -Math.PI / 2;
+    }
     this.lockId = next;
     this.seenHeadshots = kills;
     const target = zombies.find((zombie) => zombie.id === next);
@@ -260,14 +280,14 @@ export class RunFrame {
     const perfect = headable && ring.perfect;
     const head = headSpot(target);
     const at = (x: number, y: number) => ({ x: camera.screenX(target.x) + (x - target.x), y: camera.screenY(target.y) + (y - target.y) });
-    // The crosshair starts on the chest and finds its way to the middle of the head as the ring closes, easing in so it
-    // settles late; in the last moment it is dead on.
-    const chestY = target.y - CHEST_HEIGHT;
-    const pull = ring.progress * ring.progress;
-    const aimed = at(target.x + (head.x - target.x) * pull, perfect || !headable ? (headable ? head.y : chestY) : chestY + (head.y - chestY) * pull);
+    // The crosshair circles the head on the ring's own radius and spirals in as it closes, so it is dead on at the end.
+    // The shot still flies at the chest; the circling point only decides whether the bullet counts as aimed at the head.
+    const turn = perfect ? 0 : ring.radius;
+    const aimed = at(head.x + Math.cos(this.orbit) * turn, head.y + Math.sin(this.orbit) * turn * ORBIT_SQUASH);
+    const chestSpot = at(target.x, target.y - CHEST_HEIGHT);
     const headBuffer = at(head.x, head.y);
     const chest = { x: camera.screenX(me.x), y: camera.screenY(me.y) - CHEST_HEIGHT };
-    this.aim = Math.atan2(aimed.y - chest.y, aimed.x - chest.x);
+    this.aim = Math.atan2(chestSpot.y - chest.y, chestSpot.x - chest.x);
     this.padSpot = aimed;
     this.padRing = { x: headBuffer.x, y: headBuffer.y, radius: ring.radius, perfect, ring: headable };
     inputs.aimPoint = renderer.toWorld(this.padSpot.x, this.padSpot.y);

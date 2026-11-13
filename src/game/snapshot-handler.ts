@@ -12,6 +12,7 @@ import type { ClientWorld } from "./client-world.ts";
 import { recordGameFinished, recordLevelReached } from "./level-progress.ts";
 import type { CalloutWords } from "./kill-juice.ts";
 import { KillJuice } from "./kill-juice.ts";
+import { noteHeadshotStreak } from "./input/pad-lock.ts";
 import { noteDriveSnapshot } from "./drive-readout.ts";
 import { candyBanner, HORDE_WIPED_BANNER, pickupNote, readMs } from "./run-notices.ts";
 import { finishRun, healthFraction } from "./run-hud.ts";
@@ -112,7 +113,11 @@ export class SnapshotHandler {
     this.setMood(snapshot, world.latest === null);
     state.lastSnapshotMs = now;
     noteDriveSnapshot(snapshot, after?.vehicle?.id ?? null);
-    for (const event of snapshot.events) this.onGameEvent(event, world, now, before, after);
+    for (const event of snapshot.events) {
+      this.onGameEvent(event, world, now, before, after);
+      // The pad's ring speeds up with the local player's headshot streak.
+      if (event.type === 'headshot' && event.playerId === world.localId) noteHeadshotStreak(event.chain ?? 1, now);
+    }
     const callout = this.punctuate(snapshot, world.localId, after, now);
     this.stamp(snapshot, world.localId, after, callout, now);
     world.push(snapshot, now);

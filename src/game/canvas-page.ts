@@ -1,3 +1,4 @@
+import { keyBridgePad, setLootPad } from './inventory/loot-pad.ts';
 import {
   layoutPageUi,
   pageFocusTargets,
@@ -195,6 +196,15 @@ export function createCanvasPage(canvas: HTMLCanvasElement, host: CanvasPageHost
   window.addEventListener('mouseup', onUp);
   window.addEventListener('wheel', onWheel, { passive: false });
   setPageWindow(win);
+  setLootPad(
+    keyBridgePad(() => {
+      const main = win.model.buttons.find((button) => button.primary && button.enabled);
+      if (!main) return false;
+      host.playUi('click');
+      host.press(main.id);
+      return true;
+    }),
+  );
 
   return {
     update(model) {
@@ -208,6 +218,7 @@ export function createCanvasPage(canvas: HTMLCanvasElement, host: CanvasPageHost
       window.removeEventListener('mouseup', onUp);
       window.removeEventListener('wheel', onWheel);
       setPageWindow(null);
+      setLootPad(null);
     },
   };
 }

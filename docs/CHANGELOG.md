@@ -2,6 +2,16 @@
 
 All notable changes to the Undead of Night: Last Round game are documented in this file.
 
+## [2026-11-13] - Controller headshots: lock on and close the ring
+
+### Added
+- On a controller the right stick locks a zombie only when you push it that way, and each further push steps the lock to the next one that way. A ring closes on its head; fire as it closes for a headshot, earlier for a chest shot. Single-pellet guns only; bosses show the lock mark and no ring.
+- Gas and brake on RT and LT in a car; the left stick only steers. Start starts the run on the setup screens and opens the highlighted title row.
+- Container grids and the in-game menu screens answer the D-pad, A, B, X and Y.
+
+### Changed
+- A headshot streak now multiplies the bonus on the killing headshot (1x, 1.5x, 2x, 2.5x, up to 3x) for every input, so daily scores can run higher than before.
+
 ## [2026-11-13] - Home is an outdoor camp the horde breaks into
 
 ### Changed

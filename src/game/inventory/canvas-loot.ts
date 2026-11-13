@@ -1,9 +1,10 @@
 import type { SfxName } from '../../audio/sfx-registry.ts';
 import type { ArtBook } from '../../art/types.ts';
 import { findItemAtTile, getItemFootprint, type InventoryGrid } from '../../../shared/grid-inventory.ts';
-import { heldAnchor, layoutLootUi, lootHitAt, type LootHit, type LootLayout } from '../../engine/loot-ui.ts';
+import { heldAnchor, layoutLootUi, lootHitAt, TILE, type LootHit, type LootLayout } from '../../engine/loot-ui.ts';
 import { heldButtonAt, heldOnSurvivor, setHeld } from '../held-cursor.ts';
 import { setLootWindow, type LootWindow } from '../loot-view.ts';
+import { isLootPadInCharge, moveCursor, setLootPad, settleCursor, startCursor, type LootButton, type LootCursor, type LootDirection } from './loot-pad.ts';
 import { itemBlurb } from './item-blurb.ts';
 import { heldActions, isLoadable } from './held-actions.ts';
 import { useSoundOf } from './use-sound.ts';
@@ -258,10 +259,61 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
     window_.hover = hitFor(point);
   }
 
+
+  /** The controller's highlight. It shows as the pointer's hover does, and an item in hand rides it. */
+  let cursor: LootCursor | null = null;
+
+  function showCursor(): void {
+    if (!cursor) return;
+    const at = cursor;
+    window_.hover = { kind: 'cell', gridId: at.gridId, col: at.col, row: at.row };
+    const held = state.heldItem;
+    const l = layout();
+    const board = [l.container?.board, l.pack, l.pockets, l.candy].find((each) => each?.id === at.gridId);
+    if (!held || !board) return;
+    const dims = getItemFootprint(held.item.type, held.item.rotated);
+    window_.pointer = {
+      x: board.x + at.col * TILE + 1 + (dims.width * TILE - 2) / 2,
+      y: board.y + at.row * TILE + 1 + (dims.height * TILE - 2) / 2,
+    };
+  }
+
+  function padMove(direction: LootDirection): boolean {
+    // The first push only shows the highlight, so a player is never moved off the item they meant.
+    cursor = cursor ? moveCursor(cursor, direction, gridOf) ?? cursor : startCursor(gridOf);
+    showCursor();
+    return true;
+  }
+
+  /** A takes the item under the highlight across, or sets a held one down; X lifts it to move it; Y turns it. */
+  function padPress(button: LootButton): boolean {
+    if (button === 'b') return false;
+    cursor = cursor ?? startCursor(gridOf);
+    if (button === 'y') {
+      rotate();
+      showCursor();
+      return true;
+    }
+    const at = cursor;
+    const under = findItemAtTile(gridOf(at.gridId), at.col, at.row);
+    if (state.heldItem) onCell({ kind: 'cell', gridId: at.gridId, col: at.col, row: at.row });
+    else if (under && button === 'x') onCell({ kind: 'cell', gridId: at.gridId, col: at.col, row: at.row });
+    else if (under) quickTransfer(at.gridId, under.id);
+    if (!state.heldItem) cursor = settleCursor(at, gridOf);
+    syncHeld();
+    showCursor();
+    return true;
+  }
+
   window.addEventListener('mousemove', onMove);
   window.addEventListener('click', onClick);
   window.addEventListener('dblclick', onDoubleClick);
   setLootWindow(window_);
+  setLootPad({ move: padMove, press: padPress });
+  if (isLootPadInCharge()) {
+    cursor = startCursor(gridOf);
+    showCursor();
+  }
   syncHeld();
 
   return {
@@ -273,6 +325,7 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
       window.removeEventListener('click', onClick);
       window.removeEventListener('dblclick', onDoubleClick);
       setLootWindow(null);
+      setLootPad(null);
       setHeld(null);
     },
   };

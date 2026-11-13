@@ -101,6 +101,8 @@ export interface PadMenu {
   activate(): boolean;
   /** B: clicks the screen's Back or Close. True if there was one. */
   back(): boolean;
+  /** Start: clicks the screen's main button, or opens the title row in hand. True if there was one. */
+  start(): boolean;
 }
 
 function hasDom(doc: Document | undefined): doc is Document {
@@ -223,11 +225,30 @@ export function pressBack(doc: Document | undefined = globalThis.document): bool
   return true;
 }
 
+/**
+ * Start: a `data-pad-start` control, else the screen's primary button (Start Run, Play), else the title menu's
+ * highlighted row, so Start on 1-5 Player opens that list. Null-safe: a screen with none leaves Start to pause.
+ */
+export function pressStart(doc: Document | undefined = globalThis.document): boolean {
+  if (!hasDom(doc)) return false;
+  const targets = focusTargets(doc);
+  const pick = (selector: string) => targets.find((target) => target.ref.matches(selector));
+  const button =
+    pick('[data-pad-start]') ??
+    pick('.px-button.is-primary') ??
+    pick('.px-menu-item[aria-current="true"]') ??
+    pick('.px-menu-item.is-primary');
+  if (!button) return false;
+  button.ref.click();
+  return true;
+}
+
 /** The pad's hands on the page. */
 export const DOM_PAD_MENU: PadMenu = {
   navigate: (direction) => navigateFocus(direction),
   activate: () => activateFocus(),
   back: () => pressBack(),
+  start: () => pressStart(),
 };
 
 /** Puts focus on the screen's default control, for a screen that opens with the pad in charge. True if it did. */

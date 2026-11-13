@@ -306,6 +306,27 @@ describe('a gamepad on the game', () => {
     });
   });
 
+  describe('at the wheel of a car', () => {
+    beforeEach(() => { input.gamepad.driving = true; });
+
+    it('gives gas to RT and the brake to LT, and leaves the left stick to steer', () => {
+      frame(pad({ buttons: { [PAD.rt]: 1 } }));
+      expect(input.sample(1, 0, null)).toMatchObject({ up: true, down: false, shoot: false });
+      frame(pad({ buttons: { [PAD.lt]: 1 } }));
+      expect(input.sample(2, 0, null)).toMatchObject({ up: false, down: true, melee: false });
+      frame(pad({ axes: [0, -1, 0, 0] }));
+      expect(input.sample(3, 0, null)).toMatchObject({ up: false, down: false, left: false, right: false });
+      frame(pad({ axes: [0.9, -0.2, 0, 0] }));
+      expect(input.sample(4, 0, null)).toMatchObject({ right: true, up: false });
+    });
+
+    it('goes back to the stick and the gun on foot', () => {
+      input.gamepad.driving = false;
+      frame(pad({ axes: [0, -1, 0, 0], buttons: { [PAD.rt]: 1 } }));
+      expect(input.sample(1, 0, null)).toMatchObject({ up: true, shoot: true });
+    });
+  });
+
   describe('the last hand on the game', () => {
     it('becomes the pad on a press or a push, and the keys again on a key', () => {
       frame(pad({ buttons: { [PAD.x]: 1 } }));

@@ -23,7 +23,7 @@ describe('a gamepad behind a menu', () => {
   let live: boolean;
   let log: string[];
   let hostMoves: boolean;
-  let menuHas: { activate: boolean; back: boolean };
+  let menuHas: { activate: boolean; back: boolean; start: boolean };
   let input: GamepadInput;
 
   const host: GamepadHost = {
@@ -43,6 +43,7 @@ describe('a gamepad behind a menu', () => {
     navigate: (direction) => { log.push(`menu.nav:${direction}`); return true; },
     activate: () => { log.push('menu.activate'); return menuHas.activate; },
     back: () => { log.push('menu.back'); return menuHas.back; },
+    start: () => { if (menuHas.start) log.push('menu.start'); return menuHas.start; },
   };
 
   /** Runs one frame at the current clock. */
@@ -59,7 +60,7 @@ describe('a gamepad behind a menu', () => {
     live = false;
     log = [];
     hostMoves = false;
-    menuHas = { activate: false, back: false };
+    menuHas = { activate: false, back: false, start: false };
     vi.stubGlobal('navigator', { getGamepads: () => pads });
     input = new GamepadInput(host, { now: () => clock, menu });
   });
@@ -213,5 +214,11 @@ describe('a gamepad behind a menu', () => {
   it('Start and View still pause and open the map behind a menu', () => {
     frame({ buttons: { [PAD.start]: 1, [PAD.view]: 1 } });
     expect(log).toEqual(['press:KeyN', 'press:Escape']);
+  });
+
+  it('Start presses the screen\'s main button when it has one, and only pauses when it has none', () => {
+    menuHas.start = true;
+    frame({ buttons: { [PAD.start]: 1 } });
+    expect(log).toEqual(['menu.start']);
   });
 });

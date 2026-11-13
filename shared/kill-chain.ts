@@ -14,7 +14,7 @@ export const CHAIN_MAX_MULTIPLIER = 2;
 
 /** Headshots this close together chain. Generous window (3.5s) to allow deliberate aim. */
 export const HEADSHOT_CHAIN_WINDOW_SEC = 3.5;
-/** No longer paid: a headshot pays a flat 1 x town on the killing shot, and the streak only counts for the HEADSHOT xN callout. Kept for its tests. */
+/** Each headshot in a streak past the first adds this to the multiplier on the killing shot's bonus, up to the cap. */
 export const HEADSHOT_CHAIN_STEP = 0.5;
 export const HEADSHOT_MAX_MULTIPLIER = 3;
 
@@ -29,7 +29,7 @@ export function chainMultiplier(count: number): number {
   return Math.min(CHAIN_MAX_MULTIPLIER, 1 + CHAIN_STEP * Math.max(0, count - 1));
 }
 
-/** Unused at runtime since headshots stopped chaining their points: 1, 1.5, 2.0, 2.5, 3.0. */
+/** What the nth headshot in a streak multiplies its bonus by: 1, 1.5, 2.0, 2.5, 3.0. */
 export function headshotChainMultiplier(count: number): number {
   return Math.min(HEADSHOT_MAX_MULTIPLIER, 1 + HEADSHOT_CHAIN_STEP * Math.max(0, count - 1));
 }

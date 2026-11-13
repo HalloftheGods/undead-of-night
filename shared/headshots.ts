@@ -1,6 +1,6 @@
 import { LICORICE_HEAD_MARGIN, SKULL_POP_HEAD_MARGIN, sugarOf } from './candy.ts';
 import { CHEST_HEIGHT } from './constants.ts';
-import { chainHeadshot } from './kill-chain.ts';
+import { chainHeadshot, headshotChainMultiplier } from './kill-chain.ts';
 import { scorerOf, townOf } from './kill-points.ts';
 import type { EntityId, ZombieEntity, ZombieType } from './protocol.ts';
 import type { BulletState, PlayerState, SimState, ZombieState } from './sim-state.ts';
@@ -107,7 +107,8 @@ export function payHeadshot(sim: SimState, b: BulletState, z: ZombieState, angle
   const aimedHere = b.headTarget === z;
   if (!aimedHere) return;
   const chain = chainHeadshot(sim, b.shooterId);
-  const points = z.health <= 0 ? HEADSHOT_BONUS * townOf(sim) : 0;
+  // A streak multiplies the bonus the killing head shot pays: 1x, 1.5x, 2x, 2.5x, then 3x from the fifth.
+  const points = z.health <= 0 ? Math.round(HEADSHOT_BONUS * townOf(sim) * headshotChainMultiplier(chain)) : 0;
   const shooter = scorerOf(sim, b.shooterId);
   if (shooter) shooter.score += points;
   emit(sim, { type: 'headshot', playerId: b.shooterId, zombieId: z.id, zombieType: z.type, ...headSpot(z), angle, points, chain });

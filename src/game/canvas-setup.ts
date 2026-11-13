@@ -1,3 +1,4 @@
+import { keyBridgePad, setLootPad } from './inventory/loot-pad.ts';
 import type { ArtBook } from '../art/types.ts';
 import {
   focusTargets,
@@ -210,7 +211,10 @@ export function createCanvasSetup(canvas: HTMLCanvasElement, host: CanvasSetupHo
     const from = win.focus ?? targets[0]?.id ?? null;
     if (from === null) return;
     const dir = ARROWS[key];
-    const to = win.focus === null ? from : dir ? neighbour(targets, from, dir) : null;
+    // Left and Right walk the screen in reading order (portraits, then the callsign, then the buttons), so no
+    // portrait is skipped when the nearest centre sideways happens to be the field. Up and Down stay spatial.
+    const sideways = dir === 'left' || dir === 'right';
+    const to = win.focus === null ? from : sideways ? tabFrom(targets, from, dir === 'right' ? 1 : -1) : dir ? neighbour(targets, from, dir) : null;
     if (to) win.focus = to;
   }
 
@@ -306,9 +310,18 @@ export function createCanvasSetup(canvas: HTMLCanvasElement, host: CanvasSetupHo
       window.removeEventListener('click', onClick);
       input.removeEventListener('input', onInput);
       input.removeEventListener('blur', onBlur);
+  setLootPad(
+    keyBridgePad(() => {
+      const main = layout().buttons.find((button) => button.primary && button.enabled);
+      if (!main) return false;
+      activate(`button:${main.id}`);
+      return true;
+    }),
+  );
       spinner.stop();
       input.remove();
       setSetupWindow(null);
     },
   };
 }
+      setLootPad(null);

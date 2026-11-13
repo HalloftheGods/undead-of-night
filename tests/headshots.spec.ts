@@ -110,9 +110,9 @@ describe('headshots', () => {
     }
     const snap = sim.snapshot();
     expect(z.health).toBe(0);
-    expect(eventsOf(snap, 'headshot').map((e) => e.points)).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0, 1]);
+    expect(eventsOf(snap, 'headshot').map((e) => e.points)).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0, 3]);
     expect(eventsOf(snap, 'headshot').map((e) => e.chain)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-    expect(state.players[0].score).toBe(1 + 12);
+    expect(state.players[0].score).toBe(3 + 12);
   });
 
   it('keeps the bonus on a piercing round that kills', () => {
