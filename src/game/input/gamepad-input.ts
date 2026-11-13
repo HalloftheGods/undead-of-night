@@ -34,7 +34,12 @@ export const PAD_PREV_WEAPON = 'PadPrevWeapon';
 export const PAD_HORN = 'PadHorn';
 const SNEAK_CODE = 'Space';
 
-import { loadPadBindings } from '@game/controls-prefs.ts';
+import { loadKeyBindings, loadPadBindings } from '@game/controls-prefs.ts';
+
+/** The keyboard key that opens the inventory, so a pad press sends what the keyboard would. */
+function inventoryCode(): string {
+  return loadKeyBindings().inventory[0] ?? 'KeyI';
+}
 
 export function getActivePadBindings(): ReadonlyMap<number, string> {
   const binds = loadPadBindings();
@@ -50,6 +55,7 @@ export function getActivePadBindings(): ReadonlyMap<number, string> {
   if (binds.fire !== null) map.set(binds.fire, PAD_FIRE);
   if (binds.map !== null) map.set(binds.map, 'KeyN');
   if (binds.log !== null) map.set(binds.log, 'KeyL');
+  if (binds.inventory !== null) map.set(binds.inventory, inventoryCode());
   if (binds.spinner !== null) map.set(binds.spinner, 'KeyT');
   if (binds.fountain !== null) map.set(binds.fountain, 'KeyV');
   if (binds.prevWeapon !== null) map.set(binds.prevWeapon, PAD_PREV_WEAPON);
@@ -375,7 +381,7 @@ export class GamepadInput {
   private menuPress(index: number): void {
     this.spent.add(index);
     if (index === PAD.start) this.start();
-    else if (index === PAD.view) this.host.press('KeyI');
+    else if (index === PAD.view) this.host.press(inventoryCode());
     else if (index === PAD.a && this.host.take?.('a')) return;
     else if (index === PAD.x && this.host.take?.('x')) return;
     else if (index === PAD.x) this.host.press('KeyN');

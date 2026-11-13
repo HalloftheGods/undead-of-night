@@ -50,9 +50,10 @@ function isTypingTarget(target: EventTarget | null): boolean {
 /** True if the press is an inventory key (I or B), bare, on its own, not in a text field and not a key the player rebound. */
 export function isInventoryKey(
   event: Pick<KeyboardEvent, "code" | "repeat" | "ctrlKey" | "metaKey" | "altKey" | "target">,
+  inventoryCodes: readonly string[],
   reboundCodes: readonly string[]
 ): boolean {
-  const isTheKey = INVENTORY_CODES.includes(event.code) && !event.repeat;
+  const isTheKey = inventoryCodes.includes(event.code) && !event.repeat;
   const isBare = !event.ctrlKey && !event.metaKey && !event.altKey;
   const isFree = !isTypingTarget(event.target) && !reboundCodes.includes(event.code);
   return isTheKey && isBare && isFree;
@@ -92,6 +93,8 @@ export function useInventoryModal(
   const working = shallowRef<BagWorking | null>(null);
   /** Changes on every opening, so the modal rebuilds from what is carried then. */
   const openings = ref(0);
+  /** The window was opened by a search that is still under way: its grid is empty and being swept. */
+  const searchingOpen = ref(false);
   /** How the grid was last opened, so a live use or drop can rebuild it the same way. */
   let lastOpen: OpenedGrid | null = null;
 
@@ -115,7 +118,9 @@ export function useInventoryModal(
     items: readonly GridItem[] = [],
     containerKind?: ContainerKind,
     containerArt?: ContainerArt | null,
-    flipped = false
+    flipped = false,
+    /** Opened at the start of a search: the hands stay on the game, so the search key keeps counting. */
+    searching = false
   ): boolean {
     const hud = ui.value.hud;
     const canShow = inventoryReachable(ui.value) && hud !== null;
@@ -124,8 +129,11 @@ export function useInventoryModal(
     lastOpen = { containerId, title: containerTitle, items, kind: containerKind, art: containerArt, flipped };
     working.value = bag.open(hud, containerId, containerTitle, items, containerKind, containerArt, flipped);
     openings.value += 1;
-    input.letGoButtons();
-    input.setWalkOnly();
+    searchingOpen.value = searching;
+    if (!searching) {
+      input.letGoButtons();
+      input.setWalkOnly();
+    }
     isOpen.value = true;
     return true;
   }
@@ -181,11 +189,13 @@ export function useInventoryModal(
 
   function hide(): void {
     if (!isOpen.value) return;
+    const wasSearching = searchingOpen.value;
+    searchingOpen.value = false;
     panel.value?.settle();
     if (working.value) bag.close(working.value);
     isOpen.value = false;
     working.value = null;
-    if (inventoryReachable(ui.value)) input.setEnabled(true);
+    if (!wasSearching && inventoryReachable(ui.value)) input.setEnabled(true);
   }
 
   /** A grid over a searched container shuts itself when the survivor walks away from it. */
@@ -198,14 +208,17 @@ export function useInventoryModal(
   /** Swallows the press so the game's own key listener never sees it, and answers the few the modal knows. */
   function onKey(event: KeyboardEvent): void {
     if (!isOpen.value) {
-      const reboundCodes = Object.values(loadKeyBindings()).flat();
-      if (!isInventoryKey(event, reboundCodes)) return;
+      const { inventory, ...others } = loadKeyBindings();
+      const reboundCodes = Object.values(others).flat();
+      if (!isInventoryKey(event, inventory, reboundCodes)) return;
       event.preventDefault();
       event.stopPropagation();
       show();
       return;
     }
     if (isTypingTarget(event.target)) return;
+    // Mid-search the hands are still on the game: every key, the search key above all, goes straight through.
+    if (searchingOpen.value) return;
     // The feet are free: a walking key goes on to the game's own listener, which is what walks the survivor.
     const binds = loadKeyBindings();
     const isWalkKey = [...binds.moveUp, ...binds.moveDown, ...binds.moveLeft, ...binds.moveRight, ...binds.sprint, ...binds.sneak].includes(event.code);
@@ -214,7 +227,7 @@ export function useInventoryModal(
     if (event.code === "Escape") {
       event.preventDefault();
       panel.value?.escape();
-    } else if (INVENTORY_CODES.includes(event.code)) {
+    } else if (loadKeyBindings().inventory.includes(event.code)) {
       event.preventDefault();
       if (!event.repeat) hide();
     } else if (event.code === "KeyR") {
@@ -250,5 +263,5 @@ export function useInventoryModal(
     if (isOpen.value) input.setEnabled(true);
   });
 
-  return { isOpen, working, openings, show, showContainer, hide, onTransfer, onUse, onDrop };
+  return { isOpen, working, openings, searchingOpen, show, showContainer, hide, onTransfer, onUse, onDrop };
 }

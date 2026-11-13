@@ -44,6 +44,7 @@ export type GameAction =
   | 'bag'
   | 'map'
   | 'log'
+  | 'inventory'
   | 'fire';
 
 export interface ActionMetadata {
@@ -78,6 +79,7 @@ export const ACTION_METADATA: readonly ActionMetadata[] = [
   { id: 'weapon3', label: 'Weapon 3 (Shotgun)', category: 'combat', rebindableKeys: true, rebindablePad: false },
   { id: 'map', label: 'Map', category: 'interface', rebindableKeys: true, rebindablePad: true },
   { id: 'log', label: 'Log', category: 'interface', rebindableKeys: true, rebindablePad: true },
+  { id: 'inventory', label: 'Inventory', category: 'interface', rebindableKeys: true, rebindablePad: true },
 ];
 
 export type KeyBindings = Record<GameAction, readonly string[]>;
@@ -107,6 +109,7 @@ export const DEFAULT_KEY_BINDINGS: KeyBindings = {
   weapon3: ['Digit3'],
   map: ['Tab', 'KeyN'],
   log: ['KeyL'],
+  inventory: ['KeyI', 'KeyB'],
 };
 
 export const DEFAULT_PAD_BINDINGS: PadBindings = {
@@ -133,6 +136,7 @@ export const DEFAULT_PAD_BINDINGS: PadBindings = {
   weapon3: null,
   map: PAD_BUTTONS.x,
   log: null,
+  inventory: PAD_BUTTONS.view,
 };
 
 const KEYS_STORAGE_KEY = 'outbreak.controls.keys';
