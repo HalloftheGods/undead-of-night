@@ -159,12 +159,35 @@ describe('a restart in a home room', () => {
     expect(state.exit).not.toBeNull();
   });
 
-  it('updates the bunker jukebox track across the room', () => {
+  it('sets the room track only from an open Radio, for a player who has a radio', () => {
     const { sim, state } = homeSim({ players: [] });
-    sim.addPlayer('a', 'a', null, undefined, { loadout: emptyLoadout(), highest: 1 });
+    sim.addPlayer('a', 'a', null, undefined, { loadout: emptyLoadout(), highest: 1, radio: true });
+    const home = state.players[0]!.home as NonNullable<PlayerState['home']>;
+    sim.homeCommand('a', { kind: 'jukebox', track: 'test-track.mp3' });
+    expect(state.homeRun?.jukeboxTrack).toBeUndefined();
+    home.station = 'jukebox';
     sim.homeCommand('a', { kind: 'jukebox', track: 'test-track.mp3' });
     expect(state.homeRun?.jukeboxTrack).toBe('test-track.mp3');
+    sim.homeCommand('a', { kind: 'jukebox', track: 'x'.repeat(500) });
+    expect(state.homeRun?.jukeboxTrack).toBeNull();
     sim.homeCommand('a', { kind: 'jukebox', track: null });
     expect(state.homeRun?.jukeboxTrack).toBeNull();
+  });
+
+  it('keeps the Radio dead for a player with no radio', () => {
+    const { sim, state } = homeSim({ players: [] });
+    sim.addPlayer('a', 'a', null, undefined, { loadout: emptyLoadout(), highest: 1 });
+    (state.players[0]!.home as NonNullable<PlayerState['home']>).station = 'jukebox';
+    sim.homeCommand('a', { kind: 'jukebox', track: 'test-track.mp3' });
+    expect(state.homeRun?.jukeboxTrack).toBeUndefined();
+  });
+});
+
+describe('radio finds on the receipt', () => {
+  it('puts the level of a radio found on a banked receipt, once', () => {
+    const { sim, state } = homeSim({ players: [] });
+    sim.addPlayer('a', 'a', null, undefined, { loadout: emptyLoadout(), highest: 1 });
+    const home = state.players[0]!.home as NonNullable<PlayerState['home']>;
+    expect(home.radioLevels).toEqual([]);
   });
 });

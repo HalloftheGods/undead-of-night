@@ -1,5 +1,6 @@
 import type { PlayerEntity } from '../../shared/protocol.ts';
 import { TICK_DT } from '../../shared/constants.ts';
+import { isBunkerMap } from '../../shared/home-protocol.ts';
 import type { MerchantEntity, MerchantId } from '../../shared/home-protocol.ts';
 import { aimAngle } from '../engine/camera.ts';
 import { CHEST_HEIGHT, EMPTY_SCENE } from '../engine/scene.ts';
@@ -31,8 +32,15 @@ export interface RunFrameHost {
 }
 
 /** One frame of a run: aim, predict, send input, draw, and the HUD after. Keeps the last picture for a held or frozen frame. */
+/** Buffer pixels from the chest to the crosshair with the right stick pushed all the way. */
+const PAD_REACH = 150;
+
 export class RunFrame {
   private aim = 0;
+  /** Where the pad's crosshair sits, in pixels from the survivor's chest on the picture. Null with no crosshair out. */
+  private padOffset: { x: number; y: number } | null = null;
+  /** The same spot in buffer pixels, for the scene to draw. */
+  private padSpot: { x: number; y: number } | null = null;
   private lastScene: SceneView = EMPTY_SCENE;
   /** A hit-stop holds the picture until this frame time. */
   private heldUntilMs = 0;
@@ -107,15 +115,17 @@ export class RunFrame {
     const touch = touchMarks(input.touch, renderer, ms);
     // A stick aims by angle alone, so the mouse's last resting spot is no crosshair.
     const padAims = input.lastDevice === 'gamepad';
+    const padSpot = padAims ? this.padSpot : null;
     // A finger picks a spot on the picture, so the picture must not lean toward it and move the spot.
     const scene: SceneView = {
       ...entities,
       ghost: over ? null : this.ghost(world, ms),
+      atHome: isBunkerMap(world.worldMap),
       closedStalls: this.closedStalls(),
       questMarks: this.questMarks(entities.merchants ?? []),
       overrunOn: this.host.overrunOn,
-      pointerX: over || touch || padAims ? null : pointerX,
-      pointerY: over || touch || padAims ? null : pointerY,
+      pointerX: over || touch ? null : padAims ? padSpot?.x ?? null : pointerX,
+      pointerY: over || touch ? null : padAims ? padSpot?.y ?? null : pointerY,
       showCrosshair: this.host.playing() && !menuUp && !ui.value.mapOpen && !this.host.parts.bench.open && !isTransitioning,
       touch,
       held: this.heldView(renderer),
@@ -181,16 +191,42 @@ export class RunFrame {
     return { ...info, x: Math.round(renderer.toBufferX(input.pointerClientX)), y: Math.round(renderer.toBufferY(input.pointerClientY)) };
   }
 
+  /**
+   * The right stick moves a crosshair about the survivor: its direction picks the bearing, how far it leans
+   * picks the distance, so a lean up or down lands the point on a head. Let go, it stays put while the survivor
+   * stands; walking with the stick at rest drops it, and the light follows the walk as before.
+   */
+  private aimPad(renderer: WorldRenderer, world: ClientWorld, padLook: number): void {
+    const { input, inputs } = this.host.parts;
+    const stick = input.gamepad.reticle();
+    if (stick) this.padOffset = { x: stick.x * PAD_REACH, y: stick.y * PAD_REACH };
+    else if (input.dirX !== 0 || input.dirY !== 0) this.padOffset = null;
+    const offset = this.padOffset;
+    if (!offset) {
+      this.aim = padLook;
+      this.padSpot = null;
+      inputs.aimPoint = null;
+      return;
+    }
+    const camera = renderer.camera;
+    const spot = {
+      x: camera.screenX(world.predictor.x) + offset.x,
+      y: camera.screenY(world.predictor.y) - CHEST_HEIGHT + offset.y,
+    };
+    this.aim = Math.atan2(offset.y, offset.x);
+    this.padSpot = spot;
+    inputs.aimPoint = renderer.toWorld(spot.x, spot.y);
+  }
+
   private aimAt(renderer: WorldRenderer, world: ClientWorld, pointerX: number, pointerY: number): void {
     const { input, inputs } = this.host.parts;
     const padLook = input.gamepad.look(this.aim);
     if (padLook !== null) {
-      // No spot on the picture: the packet leaves aimX/aimY off, as it does with no crosshair.
-      // TODO(pad-reticle): a virtual crosshair along the stick would give headshots and throws a spot.
-      this.aim = padLook;
-      inputs.aimPoint = null;
+      this.aimPad(renderer, world, padLook);
       return;
     }
+    this.padOffset = null;
+    this.padSpot = null;
     const camera = renderer.camera;
     this.aim = input.touch.look(this.aim) ?? aimAngle(
       pointerX,

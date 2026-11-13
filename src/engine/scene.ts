@@ -80,6 +80,8 @@ export interface SceneView {
   readonly vehicle?: VehicleHint;
   /** What the local player could search from where they stand, if anything. */
   readonly searchable: Container | null;
+  /** The camp is the map being walked. Absent or false in a town; set by the frame, never read from the merchants. */
+  readonly atHome?: boolean;
   /** The bunker's merchants, where they are walking. Absent anywhere else. */
   readonly merchants?: readonly MerchantEntity[];
   /** A manhole (topside) or sewer ladder (below) the local player is close enough to climb with the search key: which way it goes. */

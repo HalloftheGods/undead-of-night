@@ -24,6 +24,13 @@ function newSimId(seed: number): string {
   return `${seed.toString(36)}-${noise}`;
 }
 
+/** Longest track name taken from the wire; real names are file names. */
+const TRACK_NAME_MAX = 80;
+
+/** Null clears the track. Anything not a short plain name is dropped to null. */
+const cleanTrack = (track: string | null): string | null =>
+  typeof track === 'string' && track.length > 0 && track.length <= TRACK_NAME_MAX ? track : null;
+
 export function newHomeRun(seed: number): HomeRun {
   return { simId: newSimId(seed), tripLevel: null, tripReplay: false, pickedLevel: null, attempt: 0, roomHighest: FIRST_LEVEL, campLevel: FIRST_LEVEL, campSize: 1, nextTreasure: 0, nextReceipt: 1, unclaimed: new Map() };
 }
@@ -42,6 +49,8 @@ export function enterHome(sim: SimState, p: PlayerState, join?: JoinHome): void 
     overrun: null,
     highest: clampLevel(join?.highest),
     finished: join?.finished === true,
+    radio: join?.radio === true,
+    radioLevels: [],
     salvage: noSalvage(),
     lost: { silver: 0, jewels: { small: 0, large: 0 }, salvage: noSalvage() },
     chest: false,
@@ -213,7 +222,7 @@ export function homeCommand(sim: SimState, p: PlayerState, action: HomeAction): 
       if (inBunker) home.ready = action.ready;
       break;
     case 'jukebox':
-      if (inBunker) run.jukeboxTrack = action.track;
+      if (inBunker && home.station === 'jukebox' && home.radio) run.jukeboxTrack = cleanTrack(action.track);
       break;
   }
 }

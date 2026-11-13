@@ -8,7 +8,7 @@ export const STATION_LABEL: Record<StationId, string> & { forge?: string } = {
   forge: 'FORGE',
   locker: 'LOCKER',
   level_map: 'LEVEL MAP',
-  jukebox: 'JUKEBOX',
+  jukebox: 'RADIO',
   gunsmith: 'GUNSMITH',
   quartermaster: 'QUARTERMASTER',
   medic: 'MEDIC',
@@ -18,7 +18,8 @@ export const STATION_LABEL: Record<StationId, string> & { forge?: string } = {
 };
 
 /** What to show over a head: the key to hold, or the word a finger can press. */
-export function stationPrompt(station: StationId, touch: boolean, payFrom?: string): string {
+export function stationPrompt(station: StationId, touch: boolean, payFrom?: string, dead = false): string {
   const verb = touch ? 'OPEN' : 'HOLD E';
+  if (dead) return 'NO SIGNAL';
   return payFrom === undefined ? `${verb}: ${STATION_LABEL[station]}` : `${verb}: ${payFrom.toUpperCase()} HAS YOUR PAY`;
 }

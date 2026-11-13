@@ -51,7 +51,7 @@ export interface GunState {
 }
 
 /** What the sim holds for one player in a home room: what they see, and what stays on this side of the wire. */
-export interface PlayerHome extends Omit<HomeView, 'overrun' | 'chest' | 'salvage'> {
+export interface PlayerHome extends Omit<HomeView, 'overrun' | 'chest' | 'salvage' | 'radio'> {
   /** Carried on this trip, uncapped, as treasure is. */
   salvage: SalvageCounts;
   /** The last overrun's receipt, until the next arrival in the bunker. The sim always has a word here; only an older wire leaves it off. */
@@ -60,6 +60,10 @@ export interface PlayerHome extends Omit<HomeView, 'overrun' | 'chest' | 'salvag
   highest: number;
   /** Has cleared the last level, as they said when they joined or since, so the ending is behind them. */
   finished: boolean;
+  /** Has a radio, as they said when they joined, so The Radio opens for them. */
+  radio: boolean;
+  /** The level of each radio found while they were in the room, for their receipt. */
+  radioLevels: number[];
   /** What `dropCarried` took off them on this trip, for a died receipt, since their carried treasure is gone by then. */
   lost: { silver: number; jewels: Jewels; salvage: SalvageCounts };
   /** A held overrun's reward chest is waiting unopened. Only its owner's view of the snapshot carries it, so the chest is drawn for them alone. */
@@ -404,6 +408,12 @@ export function entityId(sim: SimState, prefix: string): EntityId {
 
 export function emit(sim: SimState, event: GameEvent): void {
   sim.events.push(event);
+  if (event.type === 'pickup' && event.pickup === 'radio') noteRadioFound(sim);
+}
+
+/** A radio picked up is found by everyone in the room, and counts on their receipt even if they never reach the van. */
+function noteRadioFound(sim: SimState): void {
+  for (const p of sim.players) p.home?.radioLevels.push(sim.level);
 }
 
 export const alivePlayers = (sim: SimState): PlayerState[] => sim.players.filter((p) => p.status === 'alive');

@@ -1,5 +1,7 @@
 // The save in this browser. Read, compare and write are one step, so a second tab cannot slip between them.
 
+import { loadSoundUnlock } from '../sound-unlock.ts';
+import { migrateCamp } from './camp-migrate.ts';
 import { reviveSave } from './home-save-revive.ts';
 import { emptySave } from './home-store.ts';
 import type { HomeSave, HomeStore, SaveResult } from './home-store.ts';
@@ -54,7 +56,8 @@ export function createBrowserHomeStore(store: Store | null = browserStore()): Ho
   return {
     async load(): Promise<HomeSave> {
       try {
-        return parsed(store?.getItem(HOME_KEY)) ?? freshSave();
+        const found = parsed(store?.getItem(HOME_KEY));
+        return found ? migrateCamp(found, loadSoundUnlock()) : migrateCamp(freshSave(), loadSoundUnlock());
       } catch {
         return freshSave();
       }

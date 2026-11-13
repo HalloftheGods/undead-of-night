@@ -22,6 +22,15 @@ function forfeitCarried(home: PlayerHome): void {
   home.salvage = noSalvage();
 }
 
+/** The radios found this trip ride the receipt once, and the list starts again for the next trip. */
+function radioFinds(p: PlayerState): { radioLevels?: number[] } {
+  const found = p.home?.radioLevels ?? [];
+  if (found.length === 0 || !p.home) return {};
+  const radioLevels = [...found];
+  p.home.radioLevels = [];
+  return { radioLevels };
+}
+
 function tripFacts(sim: SimState, run: HomeRun, p: PlayerState, level: number): Omit<TripReceipt, 'outcome' | 'silver' | 'jewels' | 'salvage' | 'ending' | 'gear'> {
   const serial = run.nextReceipt;
   run.nextReceipt += 1;
@@ -35,6 +44,7 @@ function tripFacts(sim: SimState, run: HomeRun, p: PlayerState, level: number): 
     kills: p.kills,
     hordes: sim.hordesBehind + hordesSurvivedHere(sim),
     seconds: round2((sim.tick - sim.runStartTick) * TICK_DT),
+    ...radioFinds(p),
   };
 }
 

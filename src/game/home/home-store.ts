@@ -37,7 +37,20 @@ export interface HomeSave {
   overruns: readonly OverrunRecord[];
   /** Written when a breach is first seen. Still here on load, it is an overrun died in. */
   openOverrun: OpenOverrun | null;
+  /** The camp's people and the Radio. Absent on a save from before they existed. */
+  camp?: CampSave;
 }
+
+/** What the camp has gained: the people brought home, and whether a radio has been found. */
+export interface CampSave {
+  rescued: MerchantId[];
+  radio: boolean;
+  tracks: string[];
+  rosterUnlocked: MerchantId[];
+  character: number | null;
+}
+
+export const emptyCamp = (): CampSave => ({ rescued: [], radio: false, tracks: [], rosterUnlocked: [], character: null });
 
 /** Written before a player counts as ready. Still here on load, it is a trip that never came home. */
 export interface OpenTrip {
@@ -99,5 +112,6 @@ export function emptySave(shopSeed: number): HomeSave {
     quests: starterQuests(shopSeed ^ QUEST_SALT),
     overruns: [],
     openOverrun: null,
+    camp: emptyCamp(),
   };
 }

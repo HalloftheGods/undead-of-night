@@ -386,7 +386,7 @@ export class OverlayRenderer {
         const action = isOpened ? (scene.touch ? 'OPEN' : 'PRESS E') : (scene.touch ? 'SEARCH' : 'HOLD E');
         drawOutlinedText(ctx, `${action}: ${CONTAINER_LABEL[scene.searchable!.kind]}`, x, y, AMBER);
       }
-      else if (atStation) drawOutlinedText(ctx, stationPrompt(scene.station, Boolean(scene.touch), this.payFrom(scene)), x, y, AMBER);
+      else if (atStation) drawOutlinedText(ctx, stationPrompt(scene.station, Boolean(scene.touch), this.payFrom(scene), scene.station === 'jukebox' && player.home?.radio !== true), x, y, AMBER);
       else if (atClimb) drawOutlinedText(ctx, climbPrompt(scene.climb, Boolean(scene.touch)), x, y, AMBER);
       else if (atDoor) drawOutlinedText(ctx, doorPrompt(scene.door!, Boolean(scene.touch)), x, y, AMBER);
       else if (atRadioTower) {
@@ -395,7 +395,7 @@ export class OverlayRenderer {
       }
       if (!isLocal) continue;
       const gunsFree = scene.overrun?.phase === "armed" || scene.overrun?.phase === "breached";
-      const call = ammoPrompt(player, { touch: Boolean(scene.touch), atHome: scene.merchants !== undefined, gunsFree, time });
+      const call = ammoPrompt(player, { touch: Boolean(scene.touch), atHome: scene.atHome === true, gunsFree, time });
       if (!call?.lit) continue;
       const lineTaken = player.search > 0 || atVehicle || prompted || atStation || atClimb || atRadioTower || atDoor;
       drawOutlinedText(ctx, call.text, x, lineTaken ? y - FONT_HEIGHT - 3 : y, hitPalette().danger);

@@ -67,10 +67,14 @@ function playerHomeField(p: PlayerState): Pick<PlayerEntity, 'home'> {
   // Left off at none, so a frame without salvage is what it always was.
   const isCarrying = Object.values(salvage).some((count) => count > 0);
   const view = isCarrying ? { ...base, salvage: { ...salvage } } : base;
-  return { home: chest ? { ...view, chest } : view };
+  const shown = home.radio ? { ...view, radio: true as const } : view;
+  return { home: chest ? { ...shown, chest } : shown };
 }
 
 /** The overrun is left off while there is none, so a room without one sends what it always did. */
+/** The room's track plays only while someone in it can work The Radio. */
+const someoneHasARadio = (sim: SimState): boolean => sim.players.some((p) => p.home?.radio === true);
+
 function roomHomeField(sim: SimState): Pick<SnapshotPacket, 'home'> {
   const run = sim.homeRun;
   if (!run) return {};
@@ -78,7 +82,7 @@ function roomHomeField(sim: SimState): Pick<SnapshotPacket, 'home'> {
   const room = {
     pickedLevel: run.pickedLevel,
     roomHighest: run.roomHighest,
-    ...(run.jukeboxTrack !== undefined ? { jukeboxTrack: run.jukeboxTrack } : {}),
+    ...(run.jukeboxTrack !== undefined && someoneHasARadio(sim) ? { jukeboxTrack: run.jukeboxTrack } : {}),
   };
   return { home: overrun ? { ...room, overrun } : room };
 }

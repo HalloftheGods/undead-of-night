@@ -59,7 +59,8 @@ export function openableStation(
 
 /** What this player can open from where they stand. */
 function stationHere(sim: SimState, p: PlayerState): Station | null {
-  return openableStation(sim.map, p.x, p.y, chestStands(p), sim.overrun?.phase, sim.merchants);
+  const target = openableStation(sim.map, p.x, p.y, chestStands(p), sim.overrun?.phase, sim.merchants);
+  return target?.id === 'jukebox' && p.home?.radio !== true ? null : target;
 }
 
 function closeStation(home: NonNullable<PlayerState['home']>): void {

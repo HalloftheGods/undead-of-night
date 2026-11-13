@@ -39,5 +39,6 @@ export function parseHome(value: unknown): HomeAction | null {
 export function parseJoinHome(value: unknown): JoinHome | undefined {
   if (!isRecord(value)) return undefined;
   const finished = value.finished === true ? { finished: true } : {};
-  return { loadout: validateLoadout(value.loadout) ?? emptyLoadout(), highest: isLevel(value.highest) ? value.highest : FIRST_LEVEL, ...finished };
+  const radio = value.radio === true ? { radio: true } : {};
+  return { loadout: validateLoadout(value.loadout) ?? emptyLoadout(), highest: isLevel(value.highest) ? value.highest : FIRST_LEVEL, ...finished, ...radio };
 }

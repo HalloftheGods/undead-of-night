@@ -75,6 +75,8 @@ export interface JoinHome {
   highest: number;
   /** Has seen the ending, so clearing the last level is a normal trip. Left off for no. */
   finished?: boolean;
+  /** Has found a radio, so The Radio works for them. Left off for no. */
+  radio?: boolean;
 }
 
 export type HomeAction =
@@ -117,6 +119,8 @@ export interface TripReceipt {
   platform?: Platform;
   /** As `silver`. Left off by a server from before salvage, and read as none. */
   salvage?: SalvageCounts;
+  /** The level each radio was found on, for any receipt of a player who was in the room. Left off for none. */
+  radioLevels?: number[];
 }
 
 /** Counting down to the breach, guns free near the end, the horde in, then the room held or fallen. */
@@ -184,6 +188,8 @@ export interface HomeView {
   overrun?: OverrunReceipt | null;
   /** This player's chest from a held overrun is waiting unopened. Left off otherwise, and off every other player's body. */
   chest?: true;
+  /** This player has a radio, so The Radio works for them. Left off for none. */
+  radio?: true;
 }
 
 /** The room's side, on SnapshotPacket. */

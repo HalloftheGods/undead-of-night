@@ -3,6 +3,8 @@
 import type { Jewels, TripReceipt } from '../../../shared/home-protocol.ts';
 import { emptyLoadout, mergeHome } from '../../../shared/loadout.ts';
 import { mergeGridLocker } from './bunker-locker-grid.ts';
+import { lockedTracksOf } from '../../audio/playlists.ts';
+import { emptyCamp } from './home-store.ts';
 import type { HomeSave, OpenTrip, TripRecord } from './home-store.ts';
 import { rollStock } from './shop.ts';
 
@@ -36,6 +38,18 @@ function banked(save: HomeSave, receipt: TripReceipt): HomeSave {
   });
 }
 
+/** Each radio found sets the flag and gives up the next locked track of the level it was found on, in the existing order. */
+function withRadios(save: HomeSave, levels: readonly number[]): HomeSave {
+  if (levels.length === 0) return save;
+  const camp = { ...(save.camp ?? emptyCamp()), radio: true };
+  const tracks = [...camp.tracks];
+  for (const level of levels) {
+    const [next] = lockedTracksOf(level, new Set(tracks), 'campaign');
+    if (next) tracks.push(next);
+  }
+  return { ...save, camp: { ...camp, tracks } };
+}
+
 /**
  * Applies a trip's result, once. The key goes in the same save as the credit, so a refresh either finds
  * both or neither. A died receipt's amounts are what was lost: the ledger keeps them and nothing is credited.
@@ -45,7 +59,8 @@ export function applyReceipt(save: HomeSave, receipt: TripReceipt): HomeSave {
   const alreadyApplied = save.appliedReceipts.includes(key);
   if (alreadyApplied) return save;
   const credited = receipt.outcome === 'banked' ? banked(save, receipt) : save;
-  return { ...closed(credited, recordOf(receipt)), appliedReceipts: [...save.appliedReceipts, key] };
+  const found = withRadios(credited, receipt.radioLevels ?? []);
+  return { ...closed(found, recordOf(receipt)), appliedReceipts: [...save.appliedReceipts, key] };
 }
 
 function neverCameHome(trip: OpenTrip): TripRecord {
