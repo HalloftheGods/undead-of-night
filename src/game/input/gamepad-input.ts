@@ -66,11 +66,11 @@ export function getActivePadBindings(): ReadonlyMap<number, string> {
 
 /**
  * In play, each button stands for the key it presses. L3 toggles running (handled in playPress, not here).
- * LB holds sneak. Y reloads, X toggles the map, Select opens the inventory, R3 toggles the candy bag.
+ * LB holds sneak. Y reloads, X toggles the map, B toggles the candy bag, R3 uses a medkit, Select opens the inventory.
  */
 export const PLAY_BINDINGS: ReadonlyMap<number, string> = new Map<number, string>([
   [PAD.a, 'KeyE'],
-  [PAD.b, 'KeyH'],
+  [PAD.b, 'KeyX'],
   [PAD.x, 'KeyN'],
   [PAD.y, 'KeyR'],
   [PAD.lb, SNEAK_CODE],
@@ -79,7 +79,7 @@ export const PLAY_BINDINGS: ReadonlyMap<number, string> = new Map<number, string
   [PAD.rt, PAD_FIRE],
   [PAD.view, 'KeyI'],
   [PAD.start, 'Escape'],
-  [PAD.r3, 'KeyX'],
+  [PAD.r3, 'KeyH'],
   [PAD.up, 'KeyT'],
   [PAD.down, 'KeyV'],
   [PAD.left, PAD_PREV_WEAPON],
