@@ -380,17 +380,16 @@
 .is-valid-target { background: var(--sick) !important; }
 .is-invalid-target { background: var(--blood-bright) !important; }
 .grid-cell.is-blocked {
-  /* Not part of this container: a dashed, sunken plate that reads as switched off, with no colour of its own. */
-  background-color: var(--ink) !important;
+  /* Not part of this container: a light darkening with dashed diagonals over it, so the object's art still shows through. */
+  background-color: rgba(0, 0, 0, 0.4) !important;
   background-image: repeating-linear-gradient(
     -45deg,
-    var(--ink-line) 0,
-    var(--ink-line) var(--ap),
+    rgba(147, 141, 122, 0.7) 0,
+    rgba(147, 141, 122, 0.7) var(--ap),
     transparent var(--ap),
     transparent calc(var(--ap) * 3)
   ) !important;
-  box-shadow: inset 0 0 0 var(--ap) var(--ink-line) !important;
-  opacity: 0.8;
+  box-shadow: inset 0 0 0 var(--ap) rgba(51, 52, 60, 0.8) !important;
 }
 .gear-slot.is-valid-target { box-shadow: 0 0 0 var(--ap) var(--sick) !important; background: var(--ink-raised) !important; }
 .gear-slot.is-invalid-target { box-shadow: 0 0 0 var(--ap) var(--blood-bright) !important; background: var(--ink-raised) !important; }

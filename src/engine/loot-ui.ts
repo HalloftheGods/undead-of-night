@@ -3,7 +3,7 @@ import type { ContainerArt } from '../art/containers.ts';
 import { backpackDef } from '../../shared/backpack.ts';
 import { getItemFootprint, type GridItem, type InventoryGrid } from '../../shared/grid-inventory.ts';
 import { drawOutlinedText, drawText, FONT_HEIGHT, textWidth } from './bitmap-font.ts';
-import { drawSpriteScaled } from './sprite-cache.ts';
+import { drawSpriteScaled, spriteCanvas } from './sprite-cache.ts';
 import {
   computeTileHighlight,
   formatItemName,
@@ -13,7 +13,7 @@ import {
   type GearSlotId,
   type GridIdentifier,
 } from '../game/inventory/dual-loot-modal.ts';
-import { lootBadge, lootSprite } from '../game/inventory/loot-item-art.ts';
+import { longSprite, lootBadge, lootSprite } from '../game/inventory/loot-item-art.ts';
 
 /**
  * The loot window drawn on the game canvas, in art pixels, like the rest of the game. A pure layout step
@@ -271,9 +271,30 @@ function drawCentred(ctx: CanvasRenderingContext2D, sprite: PixelSprite, box: Bo
   drawSpriteScaled(ctx, sprite, x, y, scale);
 }
 
-function artScale(item: GridItem): number {
-  const dims = getItemFootprint(item.type, item.rotated);
-  return Math.min(2, dims.width, dims.height);
+/**
+ * An item's art, stretched to fill the whole footprint, so a two wide item reads two wide. A long item uses its
+ * end-to-end drawing, turned a quarter when the item is. Smoothing stays off, so every art pixel is still a block.
+ */
+function drawStretched(ctx: CanvasRenderingContext2D, art: ArtBook, item: GridItem, box: Box): boolean {
+  const long = longSprite(art, item.type);
+  const sprite = long ?? lootSprite(art, item.type, false);
+  if (!sprite) return false;
+  const canvas = spriteCanvas(sprite);
+  const w = box.w - 2;
+  const h = box.h - 2;
+  const smoothing = ctx.imageSmoothingEnabled;
+  ctx.imageSmoothingEnabled = false;
+  if (long && item.rotated) {
+    ctx.save();
+    ctx.translate(box.x + Math.floor(box.w / 2), box.y + Math.floor(box.h / 2));
+    ctx.rotate(Math.PI / 2);
+    ctx.drawImage(canvas, -Math.floor(h / 2), -Math.floor(w / 2), h, w);
+    ctx.restore();
+  } else {
+    ctx.drawImage(canvas, box.x + 1, box.y + 1, w, h);
+  }
+  ctx.imageSmoothingEnabled = smoothing;
+  return true;
 }
 
 function drawItem(ctx: CanvasRenderingContext2D, art: ArtBook | null, item: GridItem, box: Box, selected: boolean, hovered: boolean): void {
@@ -281,9 +302,9 @@ function drawItem(ctx: CanvasRenderingContext2D, art: ArtBook | null, item: Grid
   fill(ctx, selected ? AMBER : BONE, box.x, box.y, box.w, box.h);
   ctx.globalAlpha = 1;
   ring(ctx, selected ? AMBER : hovered ? BONE : DIM, box);
-  const sprite = art ? lootSprite(art, item.type, false) : null;
-  if (sprite) drawCentred(ctx, sprite, box, artScale(item));
-  else drawOutlinedText(ctx, upper(formatItemName(item.type)).slice(0, 8), box.x + box.w / 2, box.y + box.h / 2 - 2, BONE);
+  if (art && drawStretched(ctx, art, item, box)) {
+    // drawn: the art fills its footprint
+  } else drawOutlinedText(ctx, upper(formatItemName(item.type)).slice(0, 8), box.x + box.w / 2, box.y + box.h / 2 - 2, BONE);
   const badge = lootBadge(item.count, item.ammo);
   if (badge !== '') drawOutlinedText(ctx, badge.toUpperCase(), box.x + box.w - textWidth(badge) / 2 - 2, box.y + box.h - FONT_HEIGHT - 2, BONE);
 }
@@ -292,10 +313,10 @@ function cellBox(board: GridBox, col: number, row: number, w = 1, h = 1): Box {
   return { x: board.x + col * TILE, y: board.y + row * TILE, w: w * TILE, h: h * TILE };
 }
 
-/** A cell that is not part of this container: sunken ink with dashed diagonals, no colour, so it reads as switched off. */
+/** A cell that is not part of this container: a light darkening with dashed diagonals over it, so the object's art still shows through and the cell reads as switched off. */
 function drawDisabledCell(ctx: CanvasRenderingContext2D, box: Box): void {
-  fill(ctx, INK, box.x + 1, box.y + 1, TILE - 2, TILE - 2);
-  ctx.fillStyle = LINE;
+  fill(ctx, 'rgba(0,0,0,0.3)', box.x + 1, box.y + 1, TILE - 2, TILE - 2);
+  ctx.fillStyle = 'rgba(147,141,122,0.7)';
   for (let j = 0; j < TILE - 4; j += 1) {
     for (let i = 0; i < TILE - 4; i += 1) {
       const onDiagonal = (i + j) % 4 === 0;
@@ -308,7 +329,8 @@ function drawDisabledCell(ctx: CanvasRenderingContext2D, box: Box): void {
 function drawBoard(ctx: CanvasRenderingContext2D, view: LootView, board: GridBox, translucent: boolean): void {
   const { state } = view;
   const grid = board.grid;
-  fill(ctx, translucent ? 'rgba(11,12,16,0.35)' : INK, board.x - 1, board.y - 1, board.w + 2, board.h + 2);
+  // A container board is see-through: the object's art shows, and each cell tints it a little.
+  if (!translucent) fill(ctx, INK, board.x - 1, board.y - 1, board.w + 2, board.h + 2);
   if (!translucent) ring(ctx, LINE, { x: board.x - 1, y: board.y - 1, w: board.w + 2, h: board.h + 2 });
   const hover = view.hover && view.hover.kind === 'cell' && view.hover.gridId === board.id ? view.hover : null;
   const held = state.heldItem ? state.heldItem.item : null;
