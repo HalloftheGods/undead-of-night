@@ -10,10 +10,11 @@ describe('overlay polish', () => {
     expect(pause).toContain('id="pause"');
   });
 
-  it('gives Audio, Display and Gameplay & Comfort each their own page, with sound levels also in Sound Test', () => {
+  it('gives Audio, Display and Gameplay each their own page, with sound levels also in Sound Test', () => {
     expect(source('../src/components/DisplayPage.vue')).toContain('<DisplayOptions');
     expect(source('../src/components/AudioPage.vue')).toContain('<SoundOptions');
-    expect(source('../src/components/GameplayPage.vue')).toContain('<MotionOptions');
+    expect(source('../src/components/GameplayPage.vue')).toContain('<TouchOptions');
+    expect(source('../src/components/DisplayPage.vue')).toContain('<MotionOptions');
     const soundTest = source('../src/components/SoundTestPage.vue');
     expect(soundTest).toContain('<SoundOptions');
     const display = source('../src/components/DisplayOptions.vue');

@@ -16,7 +16,7 @@ import { useGame } from './use-game.ts';
 /** Which Options screen. */
 export type OptionsKind = 'gameplay' | 'display' | 'audio';
 
-const HEADINGS: Readonly<Record<OptionsKind, string>> = { gameplay: 'Gameplay & Comfort', display: 'Display', audio: 'Audio' };
+const HEADINGS: Readonly<Record<OptionsKind, string>> = { gameplay: 'Gameplay', display: 'Display', audio: 'Audio' };
 const PALETTES: readonly ChoiceOption[] = [{ id: 'classic', label: 'Classic' }, { id: 'clear', label: 'Colorblind' }];
 const PALETTE_NOTES: Readonly<Record<PaletteId, string>> = {
   classic: 'Red for danger, green for health.',
@@ -52,8 +52,6 @@ export function useOptionsPanels(getUi: () => UiState, kind: OptionsKind) {
       { kind: 'choice', id: 'scale', label: 'UI size', options: SCALES, value: ui().uiScale },
       { kind: 'choice', id: 'speed', label: 'Speed unit', options: SPEEDS, value: ui().speedUnit },
       { kind: 'text', text: 'Unit for vehicle speedometer readouts.', tone: 'dim' },
-      { kind: 'switch', id: 'xp', label: 'Auto-fade XP bar', on: ui().autoFadeXp, enabled: true },
-      { kind: 'text', text: 'Fades the survivor XP bar when inactive, or keeps it always visible.', tone: 'dim' },
       { kind: 'switch', id: 'menuinfo', label: 'Menu details', on: menuInfo.value, enabled: true },
       { kind: 'text', text: 'A line under each main menu item saying what it opens.', tone: 'dim' },
     ],
@@ -70,6 +68,8 @@ export function useOptionsPanels(getUi: () => UiState, kind: OptionsKind) {
   const gameplay = computed<PagePanel>(() => ({
     heading: 'Gameplay',
     items: [
+      { kind: 'switch', id: 'xp', label: 'Auto-fade XP bar', on: ui().autoFadeXp, enabled: true },
+      { kind: 'text', text: 'Fades the survivor XP bar when inactive, or keeps it always visible.', tone: 'dim' },
       { kind: 'switch', id: 'autoclose', label: 'Auto-close empty loot', on: autoCloseLoot.value, enabled: true },
       { kind: 'text', text: 'Automatically closes the loot screen when the last item is taken from a container.', tone: 'dim' },
       { kind: 'switch', id: 'canvasloot', label: 'In-game loot window', on: canvasLoot.value, enabled: true },
@@ -100,9 +100,9 @@ export function useOptionsPanels(getUi: () => UiState, kind: OptionsKind) {
 
   const panels: ComputedRef<readonly PagePanel[]> = computed(() => {
     const byKind: Record<OptionsKind, readonly PagePanel[]> = {
-      display: [display.value],
+      display: [display.value, comfort.value],
       audio: [volume.value],
-      gameplay: [comfort.value, gameplay.value, privacy.value],
+      gameplay: [gameplay.value, privacy.value],
     };
     return byKind[kind];
   });

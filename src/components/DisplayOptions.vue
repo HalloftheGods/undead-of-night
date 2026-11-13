@@ -7,8 +7,6 @@
     <OptionChoice label="UI size" :options="SCALE_OPTIONS" :value="ui.uiScale" @change="(v) => game.setUiScale(v)" />
     <OptionChoice label="Speed unit" :options="SPEED_OPTIONS" :value="ui.speedUnit" @change="(v) => game.setSpeedUnit(v)" />
     <p class="display-options-note">Unit for vehicle speedometer readouts.</p>
-    <PixelSwitch label="Auto-fade XP bar" :on="ui.autoFadeXp" @change="(v) => game.setAutoFadeXp(v)" />
-    <p class="display-options-note">Fades the survivor XP bar when inactive, or keeps it always visible.</p>
     <PixelSwitch label="Menu details" :on="menuInfo" @change="setMenuInfo" />
     <p class="display-options-note">A line under each main menu item saying what it opens.</p>
   </div>

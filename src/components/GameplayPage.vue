@@ -1,12 +1,10 @@
 <template>
-  <OptionsShell heading="Gameplay & Comfort" @close="emit('close')">
-    <OptionsCard heading="Comfort">
-      <MotionOptions />
-      <TouchOptions />
-    </OptionsCard>
-
+  <OptionsShell heading="Gameplay" @close="emit('close')">
     <OptionsCard heading="Gameplay">
+      <TouchOptions />
       <div class="gameplay-switch">
+        <PixelSwitch label="Auto-fade XP bar" :on="ui.autoFadeXp" @change="(v) => game.setAutoFadeXp(v)" />
+        <p class="gameplay-note">Fades the survivor XP bar when inactive, or keeps it always visible.</p>
         <PixelSwitch label="Auto-close empty loot" :on="autoCloseLoot" @change="setAutoCloseLoot" />
         <p class="gameplay-note">Automatically closes the loot screen when the last item is taken from a container.</p>
         <PixelSwitch label="In-game loot window" :on="canvasLoot" @change="saveCanvasLoot" />
@@ -32,13 +30,16 @@ import { consent, openPrivacy } from '../game/analytics/index.ts';
 import { canvasMenus, saveCanvasMenus } from '../game/canvas-menu-prefs.ts';
 import { canvasLoot, loadAutoCloseEmptyLoot, saveAutoCloseEmptyLoot, saveCanvasLoot } from '../game/loot-prefs.ts';
 import MenuLink from './MenuLink.vue';
-import MotionOptions from './MotionOptions.vue';
 import OptionsCard from './OptionsCard.vue';
 import OptionsShell from './OptionsShell.vue';
 import PixelSwitch from './PixelSwitch.vue';
 import TouchOptions from './TouchOptions.vue';
+import type { UiState } from '../game/hud-state.ts';
+import { useGame } from './use-game.ts';
 
+const { ui } = defineProps<{ ui: UiState }>();
 const emit = defineEmits<{ close: [] }>();
+const game = useGame();
 
 const autoCloseLoot = ref(loadAutoCloseEmptyLoot());
 function setAutoCloseLoot(on: boolean): void {
