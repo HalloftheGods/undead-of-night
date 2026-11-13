@@ -74,6 +74,18 @@ describe('InputManager', () => {
     expect(onPause).toHaveBeenCalledTimes(2);
   });
 
+  it('walks on WASD in walk-only mode, but fires and searches nothing, and goes back to full on enable', () => {
+    input.setWalkOnly();
+    browser.dispatch('keydown', key('KeyD'));
+    browser.dispatch('keydown', key('KeyE'));
+    const walking = input.sample(1, 0, null);
+    expect(walking.right).toBe(true);
+    expect(walking.search).toBe(false);
+    expect(input.dirX).toBe(1);
+    input.setEnabled(false);
+    expect(input.sample(2, 0, null).right).toBe(false);
+  });
+
   it('moves right while D is held, also with input back on after a pause', () => {
     browser.dispatch('keydown', key('KeyD'));
     expect(input.dirX).toBe(1);

@@ -1,9 +1,9 @@
-import { BOSSES } from '../../shared/bosses.ts';
-import { PLAYER_RADIUS, ZOMBIES } from '../../shared/constants.ts';
-import { townContainers } from '../../shared/containers.ts';
-import { CHEST_SPOT } from '../../shared/bunker-map.ts';
-import { isStoreyKind } from '../../shared/storeys.ts';
-import { PROP_DEFS } from '../../shared/protocol.ts';
+import { BOSSES } from "../../shared/bosses.ts";
+import { PLAYER_RADIUS, ZOMBIES } from "../../shared/constants.ts";
+import { townContainers } from "../../shared/containers.ts";
+import { CHEST_SPOT } from "../../shared/bunker-map.ts";
+import { isStoreyKind } from "../../shared/storeys.ts";
+import { PROP_DEFS } from "../../shared/protocol.ts";
 import type {
   ArmorTier,
   BackpackTier,
@@ -15,33 +15,47 @@ import type {
   VehicleView,
   WorldMap,
   ZombieEntity,
-  ZombieType,
-} from '../../shared/protocol.ts';
-import type { MerchantEntity } from '../../shared/home-protocol.ts';
-import { containerLook } from '../art/containers.ts';
-import { magLanding } from '../art/survivors/clips.ts';
-import { drawMerchant, MERCHANT_SHADOW_WIDTH } from './merchant-figures.ts';
-import { beaconsOn, drawBeacons, paintedContainer, parkedBeacons, propSprite } from './car-looks.ts';
-import type { Beacon } from './car-looks.ts';
-import { drawVehicle, drawVehicleShadow, vehicleAnchor, vehicleBeacons } from './vehicle-draw.ts';
-import type { ContainerArt } from '../art/containers.ts';
-import { dirFromAngle } from '../art/types.ts';
-import type { ArtBook, PixelSprite } from '../art/types.ts';
-import { buildBackpackSprite } from '../art/fx/backpack-art.ts';
-import { buildArmorSprite } from '../art/fx/armor-art.ts';
-import type { BuildingLayer, PlacedBuilding } from './building-layer.ts';
-import { chestPending, doorState, hiddenProp } from './overrun-look.ts';
-import { CHEST_HEIGHT } from './scene.ts';
-import type { SceneView } from './scene.ts';
-import { bodyHeight, clipFrame, drawSilhouette, drawSprite, drawSpriteScaled, spriteCanvas, strideFrame } from './sprite-cache.ts';
-import { beginStatusFrame, paintBurn, paintEffectTrail, paintTint } from './status-fx.ts';
-import { SurvivorFrames } from './survivor-frames.ts';
-import { trackWalking } from './visuals.ts';
-import { glowOf } from '../art/glow.ts';
-import { paintSelfLit } from './self-lit.ts';
-import type { Body } from './self-lit.ts';
-import { blinking, eyeGlow, eyePhase, eyesOf, paintEyes } from './zombie-eyes.ts';
-import type { EntityVisual, VisualStore } from './visuals.ts';
+  ZombieType
+} from "../../shared/protocol.ts";
+import type { MerchantEntity } from "../../shared/home-protocol.ts";
+import { containerLook } from "../art/containers.ts";
+import { magLanding } from "../art/survivors/clips.ts";
+import { drawMerchant, MERCHANT_SHADOW_WIDTH } from "./merchant-figures.ts";
+import {
+  beaconsOn,
+  drawBeacons,
+  paintedContainer,
+  parkedBeacons,
+  propSprite
+} from "./car-looks.ts";
+import type { Beacon } from "./car-looks.ts";
+import { drawVehicle, drawVehicleShadow, vehicleAnchor, vehicleBeacons } from "./vehicle-draw.ts";
+import type { ContainerArt } from "../art/containers.ts";
+import { dirFromAngle } from "../art/types.ts";
+import type { ArtBook, PixelSprite } from "../art/types.ts";
+import { buildBackpackSprite } from "../art/fx/backpack-art.ts";
+import { buildArmorSprite } from "../art/fx/armor-art.ts";
+import type { BuildingLayer, PlacedBuilding } from "./building-layer.ts";
+import { chestPending, doorState, hiddenProp } from "./overrun-look.ts";
+import { CHEST_HEIGHT } from "./scene.ts";
+import type { SceneView } from "./scene.ts";
+import {
+  bodyHeight,
+  clipFrame,
+  drawSilhouette,
+  drawSprite,
+  drawSpriteScaled,
+  spriteCanvas,
+  strideFrame
+} from "./sprite-cache.ts";
+import { beginStatusFrame, paintBurn, paintEffectTrail, paintTint } from "./status-fx.ts";
+import { SurvivorFrames } from "./survivor-frames.ts";
+import { trackWalking } from "./visuals.ts";
+import { glowOf } from "../art/glow.ts";
+import { paintSelfLit } from "./self-lit.ts";
+import type { Body } from "./self-lit.ts";
+import { blinking, eyeGlow, eyePhase, eyesOf, paintEyes } from "./zombie-eyes.ts";
+import type { EntityVisual, VisualStore } from "./visuals.ts";
 
 const CULL_MARGIN = 40;
 const DEFAULT_BODY_HEIGHT = 24;
@@ -51,7 +65,7 @@ const KILLED_MEMORY_SEC = 2;
 const FADED_ALPHA = 0.42;
 const FADE_RATE = 7;
 const SILHOUETTE_ALPHA = 0.34;
-/** The Daily Night ghost: a faint figure with a pale glow, drawn over the dark so it can be followed. */
+/** The Nightly Run ghost: a faint figure with a pale glow, drawn over the dark so it can be followed. */
 const GHOST_ALPHA = 0.38;
 const GHOST_GLOW_ALPHA = 0.22;
 /** Firm enough to read as a contact puddle on near-black asphalt; a darker core would blot snow. */
@@ -64,8 +78,8 @@ const GLINT_LIGHT = 70;
 const GLINT_CYCLE_SEC = 1.3;
 const GLINT_SHARE = 0.22;
 const GLINT_HEIGHT = 5;
-const GLINT_CORE = '#fff6d8';
-const GLINT_RAY = '#e8c878';
+const GLINT_CORE = "#fff6d8";
+const GLINT_RAY = "#e8c878";
 
 interface PlacedProp {
   readonly prop: PropInstance;
@@ -98,20 +112,20 @@ interface Standing {
 }
 
 type DrawItem =
-  | { readonly y: number; readonly kind: 'prop'; readonly prop: PlacedProp }
-  | { readonly y: number; readonly kind: 'building'; readonly building: PlacedBuilding }
-  | { readonly y: number; readonly kind: 'player'; readonly player: PlayerEntity }
-  | { readonly y: number; readonly kind: 'zombie'; readonly zombie: ZombieEntity }
-  | { readonly y: number; readonly kind: 'merchant'; readonly merchant: MerchantEntity }
-  | { readonly y: number; readonly kind: 'pickup'; readonly pickup: PickupEntity }
-  | { readonly y: number; readonly kind: 'exit'; readonly exit: ExitEntity }
-  | { readonly y: number; readonly kind: 'vehicle'; readonly vehicle: VehicleView }
-  | { readonly y: number; readonly kind: 'chest' };
+  | { readonly y: number; readonly kind: "prop"; readonly prop: PlacedProp }
+  | { readonly y: number; readonly kind: "building"; readonly building: PlacedBuilding }
+  | { readonly y: number; readonly kind: "player"; readonly player: PlayerEntity }
+  | { readonly y: number; readonly kind: "zombie"; readonly zombie: ZombieEntity }
+  | { readonly y: number; readonly kind: "merchant"; readonly merchant: MerchantEntity }
+  | { readonly y: number; readonly kind: "pickup"; readonly pickup: PickupEntity }
+  | { readonly y: number; readonly kind: "exit"; readonly exit: ExitEntity }
+  | { readonly y: number; readonly kind: "vehicle"; readonly vehicle: VehicleView }
+  | { readonly y: number; readonly kind: "chest" };
 
 const shadows = new Map<number, HTMLCanvasElement>();
 
 /** Props lying flat on the ground, drawn beneath everything that stands. */
-const GROUND_FLAT_PROPS: ReadonlySet<string> = new Set(['manhole']);
+const GROUND_FLAT_PROPS: ReadonlySet<string> = new Set(["manhole"]);
 const GROUND_DEPTH = 100000;
 
 /** A flat pixel ellipse. Rows are stepped by hand so the edge stays hard. */
@@ -119,10 +133,10 @@ function shadowSprite(width: number): HTMLCanvasElement {
   let canvas = shadows.get(width);
   if (!canvas) {
     const height = Math.max(3, Math.round(width * 0.42));
-    canvas = document.createElement('canvas');
+    canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;
-    const ctx = canvas.getContext('2d')!;
+    const ctx = canvas.getContext("2d")!;
     ctx.fillStyle = `rgba(4, 5, 10, ${SHADOW_ALPHA})`;
     for (let y = 0; y < height; y += 1) {
       const ny = ((y + 0.5) / height) * 2 - 1;
@@ -140,7 +154,10 @@ function drawShadow(ctx: CanvasRenderingContext2D, x: number, y: number, width: 
 }
 
 /** Where a point on the ground lands on screen, in whole pixels. */
-const onScreen = (at: Standing, left: number, top: number): Standing => ({ x: Math.round(at.x) - left, y: Math.round(at.y) - top });
+const onScreen = (at: Standing, left: number, top: number): Standing => ({
+  x: Math.round(at.x) - left,
+  y: Math.round(at.y) - top
+});
 
 /** A stable offset per item, so the glints around a room do not blink in time. */
 function glintPhase(id: EntityId): number {
@@ -178,7 +195,7 @@ const BACKPACK_OFFSETS: Record<number, { dx: number; dy: number }> = {
   4: { dx: 5, dy: -12 },
   5: { dx: 3, dy: -13 },
   6: { dx: 0, dy: -14 },
-  7: { dx: -3, dy: -13 },
+  7: { dx: -3, dy: -13 }
 };
 
 const ARMOR_OFFSETS: Record<number, { dx: number; dy: number }> = {
@@ -189,7 +206,7 @@ const ARMOR_OFFSETS: Record<number, { dx: number; dy: number }> = {
   4: { dx: -2, dy: -10 },
   5: { dx: -1, dy: -11 },
   6: { dx: 0, dy: -11 },
-  7: { dx: 1, dy: -11 },
+  7: { dx: 1, dy: -11 }
 };
 
 /** Everything standing on the ground: y-sorted props, people, zombies, pickups and building shells. */
@@ -221,12 +238,19 @@ export class EntityRenderer {
     this.reducedMotion = reducedMotion;
   }
 
-  setMap(map: WorldMap, stamp: (sprite: PixelSprite, x: number, y: number, alpha?: number) => void): void {
+  setMap(
+    map: WorldMap,
+    stamp: (sprite: PixelSprite, x: number, y: number, alpha?: number) => void
+  ): void {
     this.stamp = stamp;
-    const containers = new Map(townContainers(map).map((container) => [container.propIndex, container]));
+    const containers = new Map(
+      townContainers(map).map((container) => [container.propIndex, container])
+    );
     this.props = map.props.map((prop, index) => {
       const found = containers.get(index);
-      const art = found ? (paintedContainer(this.art, prop) ?? this.art.containers[containerLook(found)]) : null;
+      const art = found
+        ? (paintedContainer(this.art, prop) ?? this.art.containers[containerLook(found)])
+        : null;
       const sprite = art ? art.closed : propSprite(this.art, prop);
       const states = art ? [art.closed, art.opened] : [sprite];
       const x = Math.round(prop.x);
@@ -241,10 +265,10 @@ export class EntityRenderer {
         y1: Math.max(...states.map((state) => y - state.ay + state.h)),
         tall: sprite.ay > PROP_DEFS[prop.kind].h + 8,
         room: this.buildings.placedAt(prop.x, prop.y - PROP_DEFS[prop.kind].h / 2),
-        alpha: 1,
+        alpha: 1
       };
     });
-    this.fires = this.props.filter((placed) => placed.prop.kind === 'fire_barrel');
+    this.fires = this.props.filter((placed) => placed.prop.kind === "fire_barrel");
     this.beacons = beaconsOn(this.art, map);
     this.reset();
   }
@@ -276,10 +300,20 @@ export class EntityRenderer {
     }
   }
 
-  private drawCorpses(ctx: CanvasRenderingContext2D, left: number, top: number, time: number): void {
+  private drawCorpses(
+    ctx: CanvasRenderingContext2D,
+    left: number,
+    top: number,
+    time: number
+  ): void {
     for (const corpse of this.corpses) {
       const clip = this.art.zombies[corpse.type].death;
-      drawSprite(ctx, clipFrame(clip, time - corpse.bornAt), Math.round(corpse.x) - left, Math.round(corpse.y) - top);
+      drawSprite(
+        ctx,
+        clipFrame(clip, time - corpse.bornAt),
+        Math.round(corpse.x) - left,
+        Math.round(corpse.y) - top
+      );
     }
   }
 
@@ -288,49 +322,68 @@ export class EntityRenderer {
     return this.killed.has(id);
   }
 
-  private collect(scene: SceneView, left: number, top: number, viewW: number, viewH: number): DrawItem[] {
+  private collect(
+    scene: SceneView,
+    left: number,
+    top: number,
+    viewW: number,
+    viewH: number
+  ): DrawItem[] {
     const items: DrawItem[] = [];
     const right = left + viewW;
     const bottom = top + viewH;
     const visible = (x: number, y: number) =>
-      x > left - CULL_MARGIN && x < right + CULL_MARGIN && y > top - CULL_MARGIN && y < bottom + CULL_MARGIN;
+      x > left - CULL_MARGIN &&
+      x < right + CULL_MARGIN &&
+      y > top - CULL_MARGIN &&
+      y < bottom + CULL_MARGIN;
 
     const driven = new Set((scene.vehicles ?? []).map((car) => car.id));
     for (const [index, placed] of this.props.entries()) {
       if (driven.has(index)) continue;
-      const onScreen = placed.x1 > left && placed.x0 < right && placed.y1 > top && placed.y0 < bottom;
+      const onScreen =
+        placed.x1 > left && placed.x0 < right && placed.y1 > top && placed.y0 < bottom;
       const roomClosed = placed.room !== null && placed.room.reveal === 0;
-      const shown = onScreen && !roomClosed && !hiddenProp(placed.prop.kind, scene.overrunOn === true);
+      const shown =
+        onScreen && !roomClosed && !hiddenProp(placed.prop.kind, scene.overrunOn === true);
       // Flat ground fittings (manhole covers) are painted under every actor, never over a character standing on them.
-      if (shown) items.push({ y: GROUND_FLAT_PROPS.has(placed.prop.kind) ? placed.prop.y - GROUND_DEPTH : placed.prop.y, kind: 'prop', prop: placed });
+      if (shown)
+        items.push({
+          y: GROUND_FLAT_PROPS.has(placed.prop.kind) ? placed.prop.y - GROUND_DEPTH : placed.prop.y,
+          kind: "prop",
+          prop: placed
+        });
     }
     const local = scene.players.find((player) => player.id === scene.localId) ?? null;
-    if (chestPending(scene.overrun, local)) items.push({ y: CHEST_SPOT.y, kind: 'chest' });
+    if (chestPending(scene.overrun, local)) items.push({ y: CHEST_SPOT.y, kind: "chest" });
     for (const placed of this.buildings.placed) {
-      const onScreen = placed.x1 > left && placed.x0 < right && placed.y1 > top && placed.y0 < bottom;
-      if (onScreen) items.push({ y: placed.depthY, kind: 'building', building: placed });
+      const onScreen =
+        placed.x1 > left && placed.x0 < right && placed.y1 > top && placed.y0 < bottom;
+      if (onScreen) items.push({ y: placed.depthY, kind: "building", building: placed });
     }
     for (const car of scene.vehicles ?? []) {
-      if (visible(car.x, car.y)) items.push({ y: vehicleAnchor(car).y, kind: 'vehicle', vehicle: car });
+      if (visible(car.x, car.y))
+        items.push({ y: vehicleAnchor(car).y, kind: "vehicle", vehicle: car });
     }
     for (const player of scene.players) {
       const isSeated = player.vehicle !== undefined;
-      if (visible(player.x, player.y) && !isSeated) items.push({ y: player.y, kind: 'player', player });
+      if (visible(player.x, player.y) && !isSeated)
+        items.push({ y: player.y, kind: "player", player });
     }
     for (const zombie of scene.zombies) {
       const shown = !this.killed.has(zombie.id) && visible(zombie.x, zombie.y);
-      if (shown) items.push({ y: zombie.y, kind: 'zombie', zombie });
+      if (shown) items.push({ y: zombie.y, kind: "zombie", zombie });
     }
     for (const merchant of scene.merchants ?? []) {
       const shown = visible(merchant.x, merchant.y) && !this.standsDown(merchant, scene);
-      if (shown) items.push({ y: merchant.y, kind: 'merchant', merchant });
+      if (shown) items.push({ y: merchant.y, kind: "merchant", merchant });
     }
     for (const pickup of scene.pickups) {
-      if (visible(pickup.x, pickup.y)) items.push({ y: pickup.y, kind: 'pickup', pickup });
+      if (visible(pickup.x, pickup.y)) items.push({ y: pickup.y, kind: "pickup", pickup });
     }
     const { exit } = scene;
     const exitShown = exit !== null && visible(exit.x, exit.y);
-    if (exitShown) items.push({ y: exit.y, kind: 'exit', exit });
+    if (exitShown) items.push({ y: exit.y, kind: "exit", exit });
     return items.sort((a, b) => a.y - b.y);
   }
 
@@ -341,7 +394,7 @@ export class EntityRenderer {
 
   /** The blast door's frame for how far the overrun has come; every other prop keeps its own sprite. */
   private spriteOf(placed: PlacedProp, scene: SceneView): PixelSprite {
-    const isDoor = placed.prop.kind === 'blast_door';
+    const isDoor = placed.prop.kind === "blast_door";
     if (!isDoor) return placed.sprite;
     const { doorBuckling, doorBurst } = this.art.environment.overrun;
     const frames = { shut: placed.sprite, buckling: doorBuckling, burst: doorBurst };
@@ -357,7 +410,7 @@ export class EntityRenderer {
     viewW: number,
     viewH: number,
     time: number,
-    dt: number,
+    dt: number
   ): void {
     this.settleCorpses(time);
     this.buildings.drawInteriors(ctx, left, top);
@@ -368,14 +421,30 @@ export class EntityRenderer {
     // Every shadow goes down before any figure, so a firm shadow never darkens a neighbour's boots.
     for (const item of items) this.drawShadowOf(ctx, item, left, top, time);
     for (const item of items) {
-      if (item.kind === 'prop') this.drawProp(ctx, item.prop, scene, viewer, left, top, blend);
-      else if (item.kind === 'building') this.buildings.drawShell(ctx, item.building, left, top);
-      else if (item.kind === 'player') this.drawPlayer(ctx, item.player, left, top, time);
-      else if (item.kind === 'zombie') this.drawZombie(ctx, item.zombie, left, top, time);
-      else if (item.kind === 'merchant') drawMerchant(ctx, this.visuals, this.survivorFrames, item.merchant, onScreen(item.merchant, left, top), time);
-      else if (item.kind === 'vehicle') drawVehicle(ctx, this.art, item.vehicle, this.props[item.vehicle.id]?.prop, left, top);
-      else if (item.kind === 'exit') drawSprite(ctx, this.art.environment.escapeVan, Math.round(item.exit.x) - left, Math.round(item.exit.y) - top);
-      else if (item.kind === 'chest') drawSprite(ctx, this.art.environment.props.chest, CHEST_SPOT.x - left, CHEST_SPOT.y - top);
+      if (item.kind === "prop") this.drawProp(ctx, item.prop, scene, viewer, left, top, blend);
+      else if (item.kind === "building") this.buildings.drawShell(ctx, item.building, left, top);
+      else if (item.kind === "player") this.drawPlayer(ctx, item.player, left, top, time);
+      else if (item.kind === "zombie") this.drawZombie(ctx, item.zombie, left, top, time);
+      else if (item.kind === "merchant")
+        drawMerchant(
+          ctx,
+          this.visuals,
+          this.survivorFrames,
+          item.merchant,
+          onScreen(item.merchant, left, top),
+          time
+        );
+      else if (item.kind === "vehicle")
+        drawVehicle(ctx, this.art, item.vehicle, this.props[item.vehicle.id]?.prop, left, top);
+      else if (item.kind === "exit")
+        drawSprite(
+          ctx,
+          this.art.environment.escapeVan,
+          Math.round(item.exit.x) - left,
+          Math.round(item.exit.y) - top
+        );
+      else if (item.kind === "chest")
+        drawSprite(ctx, this.art.environment.props.chest, CHEST_SPOT.x - left, CHEST_SPOT.y - top);
       else this.drawPickup(ctx, item.pickup, left, top, time);
     }
   }
@@ -387,30 +456,55 @@ export class EntityRenderer {
     viewer: PlayerEntity | null,
     left: number,
     top: number,
-    blend: number,
+    blend: number
   ): void {
-    const hidesViewer = viewer !== null && placed.tall && this.covers(placed, placed.prop.y, viewer);
+    const hidesViewer =
+      viewer !== null && placed.tall && this.covers(placed, placed.prop.y, viewer);
     placed.alpha += ((hidesViewer ? FADED_ALPHA : 1) - placed.alpha) * blend;
     const { container } = placed;
     const searched = container !== null && scene.openedContainers.includes(container.id);
     const sprite = searched ? container.art.opened : this.spriteOf(placed, scene);
     ctx.globalAlpha = placed.alpha;
-    ctx.drawImage(spriteCanvas(sprite), Math.round(placed.prop.x) - sprite.ax - left, Math.round(placed.prop.y) - sprite.ay - top);
+    ctx.drawImage(
+      spriteCanvas(sprite),
+      Math.round(placed.prop.x) - sprite.ax - left,
+      Math.round(placed.prop.y) - sprite.ay - top
+    );
     ctx.globalAlpha = 1;
   }
 
-  private covers(art: Pick<PlacedProp, 'x0' | 'y0' | 'x1' | 'y1'>, depthY: number, player: Standing): boolean {
+  private covers(
+    art: Pick<PlacedProp, "x0" | "y0" | "x1" | "y1">,
+    depthY: number,
+    player: Standing
+  ): boolean {
     const chestY = player.y - CHEST_HEIGHT;
-    return player.y < depthY
-      && player.x > art.x0 && player.x < art.x1
-      && chestY > art.y0 && chestY < art.y1;
+    return (
+      player.y < depthY &&
+      player.x > art.x0 &&
+      player.x < art.x1 &&
+      chestY > art.y0 &&
+      chestY < art.y1
+    );
   }
 
-  private drawPlayerEquipment(ctx: CanvasRenderingContext2D, sprite: PixelSprite, offset: { dx: number; dy: number }, x: number, y: number): void {
+  private drawPlayerEquipment(
+    ctx: CanvasRenderingContext2D,
+    sprite: PixelSprite,
+    offset: { dx: number; dy: number },
+    x: number,
+    y: number
+  ): void {
     drawSprite(ctx, sprite, x + offset.dx, y + offset.dy);
   }
 
-  private drawPlayer(ctx: CanvasRenderingContext2D, player: PlayerEntity, left: number, top: number, time: number): void {
+  private drawPlayer(
+    ctx: CanvasRenderingContext2D,
+    player: PlayerEntity,
+    left: number,
+    top: number,
+    time: number
+  ): void {
     const visual = this.visuals.touch(player.id);
     trackWalking(visual, player.x, player.y);
     this.survivorFrames.track(visual, player.status, time);
@@ -427,12 +521,18 @@ export class EntityRenderer {
 
     const dir = dirFromAngle(player.angle);
     const isFacingAway = dir === 5 || dir === 6 || dir === 7;
-    const isAlive = player.status === 'alive';
+    const isAlive = player.status === "alive";
 
     const hasBackpack = player.backpackTier !== undefined;
     const shouldDrawBackpackBehind = isAlive && !isFacingAway && hasBackpack;
     if (shouldDrawBackpackBehind && player.backpackTier) {
-      this.drawPlayerEquipment(ctx, getBackpackVisualSprite(player.backpackTier), BACKPACK_OFFSETS[dir], x, y);
+      this.drawPlayerEquipment(
+        ctx,
+        getBackpackVisualSprite(player.backpackTier),
+        BACKPACK_OFFSETS[dir],
+        x,
+        y
+      );
     }
 
     drawSprite(ctx, sprite, x, y);
@@ -440,12 +540,24 @@ export class EntityRenderer {
     const hasArmor = player.armorTier !== undefined;
     const shouldDrawArmor = isAlive && hasArmor;
     if (shouldDrawArmor && player.armorTier) {
-      this.drawPlayerEquipment(ctx, getArmorVisualSprite(player.armorTier), ARMOR_OFFSETS[dir], x, y);
+      this.drawPlayerEquipment(
+        ctx,
+        getArmorVisualSprite(player.armorTier),
+        ARMOR_OFFSETS[dir],
+        x,
+        y
+      );
     }
 
     const shouldDrawBackpackInFront = isAlive && isFacingAway && hasBackpack;
     if (shouldDrawBackpackInFront && player.backpackTier) {
-      this.drawPlayerEquipment(ctx, getBackpackVisualSprite(player.backpackTier), BACKPACK_OFFSETS[dir], x, y);
+      this.drawPlayerEquipment(
+        ctx,
+        getBackpackVisualSprite(player.backpackTier),
+        BACKPACK_OFFSETS[dir],
+        x,
+        y
+      );
     }
   }
 
@@ -458,20 +570,40 @@ export class EntityRenderer {
     visual.reloadSeen = player.reload;
     const landing = magLanding(player.weapon, dirFromAngle(player.angle));
     const lands = landing !== null && was < landing.at && player.reload >= landing.at;
-    if (lands) this.stamp(this.art.fx.droppedMag, Math.round(player.x) + landing.dx, Math.round(player.y) + landing.dy);
+    if (lands)
+      this.stamp(
+        this.art.fx.droppedMag,
+        Math.round(player.x) + landing.dx,
+        Math.round(player.y) + landing.dy
+      );
   }
 
   /** Where a survivor stands on screen, lurched along the aim during a shove. */
-  private playerSpot(player: PlayerEntity, visual: EntityVisual, left: number, top: number, time: number): [number, number] {
+  private playerSpot(
+    player: PlayerEntity,
+    visual: EntityVisual,
+    left: number,
+    top: number,
+    time: number
+  ): [number, number] {
     const lunge = this.lunge(time - visual.meleeAt);
-    return [Math.round(player.x + Math.cos(player.angle) * lunge) - left, Math.round(player.y + Math.sin(player.angle) * lunge) - top];
+    return [
+      Math.round(player.x + Math.cos(player.angle) * lunge) - left,
+      Math.round(player.y + Math.sin(player.angle) * lunge) - top
+    ];
   }
 
-  private drawShadowOf(ctx: CanvasRenderingContext2D, item: DrawItem, left: number, top: number, time: number): void {
-    if (item.kind === 'player') this.drawPlayerShadow(ctx, item.player, left, top, time);
-    else if (item.kind === 'zombie') this.drawZombieShadow(ctx, item.zombie, left, top);
-    else if (item.kind === 'merchant') this.drawMerchantShadow(ctx, item.merchant, left, top);
-    else if (item.kind === 'vehicle') drawVehicleShadow(ctx, item.vehicle, left, top);
+  private drawShadowOf(
+    ctx: CanvasRenderingContext2D,
+    item: DrawItem,
+    left: number,
+    top: number,
+    time: number
+  ): void {
+    if (item.kind === "player") this.drawPlayerShadow(ctx, item.player, left, top, time);
+    else if (item.kind === "zombie") this.drawZombieShadow(ctx, item.zombie, left, top);
+    else if (item.kind === "merchant") this.drawMerchantShadow(ctx, item.merchant, left, top);
+    else if (item.kind === "vehicle") drawVehicleShadow(ctx, item.vehicle, left, top);
   }
 
   /** Every light bar to draw and glow this frame: those on cars still parked, and those on cars that have been driven. */
@@ -482,32 +614,59 @@ export class EntityRenderer {
     return [...parkedBeacons(this.beacons, lifted), ...vehicleBeacons(this.art, cars, this.props)];
   }
 
-  private drawMerchantShadow(ctx: CanvasRenderingContext2D, merchant: MerchantEntity, left: number, top: number): void {
-    const standing = merchant.status === 'alive';
+  private drawMerchantShadow(
+    ctx: CanvasRenderingContext2D,
+    merchant: MerchantEntity,
+    left: number,
+    top: number
+  ): void {
+    const standing = merchant.status === "alive";
     if (!standing) return;
     const spot = onScreen(merchant, left, top);
     drawShadow(ctx, spot.x, spot.y, MERCHANT_SHADOW_WIDTH);
   }
 
-  private drawPlayerShadow(ctx: CanvasRenderingContext2D, player: PlayerEntity, left: number, top: number, time: number): void {
-    const standing = player.status === 'alive';
+  private drawPlayerShadow(
+    ctx: CanvasRenderingContext2D,
+    player: PlayerEntity,
+    left: number,
+    top: number,
+    time: number
+  ): void {
+    const standing = player.status === "alive";
     if (!standing) return;
     const [x, y] = this.playerSpot(player, this.visuals.get(player.id), left, top, time);
     drawShadow(ctx, x, y, PLAYER_RADIUS * 2 + 2);
   }
 
   /** Centred on the planted soles, which hang a few rows below a zombie's anchor. */
-  private drawZombieShadow(ctx: CanvasRenderingContext2D, zombie: ZombieEntity, left: number, top: number): void {
+  private drawZombieShadow(
+    ctx: CanvasRenderingContext2D,
+    zombie: ZombieEntity,
+    left: number,
+    top: number
+  ): void {
     const footDrop = this.art.zombies[zombie.type].footDrop ?? 0;
     const scale = zombie.boss ? BOSSES[zombie.boss].scale : 1;
-    drawShadow(ctx, Math.round(zombie.x) - left, Math.round(zombie.y) - top + footDrop * scale, ZOMBIES[zombie.type].radius * 2 * scale + 2);
+    drawShadow(
+      ctx,
+      Math.round(zombie.x) - left,
+      Math.round(zombie.y) - top + footDrop * scale,
+      ZOMBIES[zombie.type].radius * 2 * scale + 2
+    );
   }
 
   private lunge(sinceShove: number): number {
     return sinceShove < LUNGE_SEC ? Math.sin((sinceShove / LUNGE_SEC) * Math.PI) * LUNGE_PX : 0;
   }
 
-  private drawZombie(ctx: CanvasRenderingContext2D, zombie: ZombieEntity, left: number, top: number, time: number): void {
+  private drawZombie(
+    ctx: CanvasRenderingContext2D,
+    zombie: ZombieEntity,
+    left: number,
+    top: number,
+    time: number
+  ): void {
     const visual = this.visuals.touch(zombie.id);
     trackWalking(visual, zombie.x, zombie.y);
     const lunging = zombie.attacking && !visual.attacking;
@@ -533,7 +692,13 @@ export class EntityRenderer {
     }
   }
 
-  private drawPickup(ctx: CanvasRenderingContext2D, pickup: PickupEntity, left: number, top: number, time: number): void {
+  private drawPickup(
+    ctx: CanvasRenderingContext2D,
+    pickup: PickupEntity,
+    left: number,
+    top: number,
+    time: number
+  ): void {
     const x = Math.round(pickup.x) - left;
     const y = Math.round(pickup.y) - top;
     drawShadow(ctx, x, y, 10);
@@ -547,21 +712,63 @@ export class EntityRenderer {
     return sprite ? bodyHeight(sprite) : DEFAULT_BODY_HEIGHT;
   }
 
-  drawEmissive(ctx: CanvasRenderingContext2D, scene: SceneView, left: number, top: number, viewW: number, viewH: number, time: number): void {
+  drawEmissive(
+    ctx: CanvasRenderingContext2D,
+    scene: SceneView,
+    left: number,
+    top: number,
+    viewW: number,
+    viewH: number,
+    time: number
+  ): void {
     const flames = this.art.environment.barrelFire;
     for (const fire of this.fires) {
-      const onScreen = fire.x1 > left && fire.x0 < left + viewW && fire.y1 > top - 24 && fire.y0 < top + viewH;
-      if (onScreen) drawSprite(ctx, clipFrame(flames, time + fire.prop.x), Math.round(fire.prop.x) - left, Math.round(fire.prop.y) - top);
+      const onScreen =
+        fire.x1 > left && fire.x0 < left + viewW && fire.y1 > top - 24 && fire.y0 < top + viewH;
+      if (onScreen)
+        drawSprite(
+          ctx,
+          clipFrame(flames, time + fire.prop.x),
+          Math.round(fire.prop.x) - left,
+          Math.round(fire.prop.y) - top
+        );
     }
-    drawBeacons(ctx, this.activeBeacons(scene), { x0: left - CULL_MARGIN, y0: top, x1: left + viewW + CULL_MARGIN, y1: top + viewH + CULL_MARGIN, left, top }, time, this.reducedMotion);
+    drawBeacons(
+      ctx,
+      this.activeBeacons(scene),
+      {
+        x0: left - CULL_MARGIN,
+        y0: top,
+        x1: left + viewW + CULL_MARGIN,
+        y1: top + viewH + CULL_MARGIN,
+        left,
+        top
+      },
+      time,
+      this.reducedMotion
+    );
     if (scene.exit) {
       const lamps = clipFrame(this.art.environment.escapeVanLights, this.reducedMotion ? 0 : time);
       drawSprite(ctx, lamps, Math.round(scene.exit.x) - left, Math.round(scene.exit.y) - top);
     }
     beginStatusFrame();
     for (const zombie of scene.zombies) {
-      const onScreen = zombie.burning && zombie.x > left - CULL_MARGIN && zombie.x < left + viewW + CULL_MARGIN && zombie.y > top && zombie.y < top + viewH + CULL_MARGIN;
-      if (onScreen) paintBurn(ctx, zombie, Math.round(zombie.x) - left, Math.round(zombie.y) - top, this.bodyHeightOf(zombie.id), time, this.reducedMotion);
+      const onScreen =
+        zombie.burning &&
+        zombie.x > left - CULL_MARGIN &&
+        zombie.x < left + viewW + CULL_MARGIN &&
+        zombie.y > top &&
+        zombie.y < top + viewH + CULL_MARGIN;
+      if (onScreen)
+        paintBurn(
+          ctx,
+          zombie,
+          Math.round(zombie.x) - left,
+          Math.round(zombie.y) - top,
+          this.bodyHeightOf(zombie.id),
+          time,
+          this.reducedMotion
+        );
     }
     for (const bullet of scene.bullets) {
       const clip = this.art.fx.tracer[dirFromAngle(Math.atan2(bullet.vy, bullet.vx))];
@@ -576,18 +783,35 @@ export class EntityRenderer {
    * Zombie eyes, after the lightmap: full in the dark, down to a glint where the light already
    * shows the face. None for a zombie under a closed roof or behind a building, nor mid hit flash.
    */
-  drawEyes(ctx: CanvasRenderingContext2D, scene: SceneView, left: number, top: number, viewW: number, viewH: number, time: number, lightAt: (x: number, y: number) => number): void {
+  drawEyes(
+    ctx: CanvasRenderingContext2D,
+    scene: SceneView,
+    left: number,
+    top: number,
+    viewW: number,
+    viewH: number,
+    time: number,
+    lightAt: (x: number, y: number) => number
+  ): void {
     for (const zombie of scene.zombies) {
-      const onScreen = zombie.x > left - CULL_MARGIN && zombie.x < left + viewW + CULL_MARGIN
-        && zombie.y > top - CULL_MARGIN && zombie.y < top + viewH + CULL_MARGIN;
+      const onScreen =
+        zombie.x > left - CULL_MARGIN &&
+        zombie.x < left + viewW + CULL_MARGIN &&
+        zombie.y > top - CULL_MARGIN &&
+        zombie.y < top + viewH + CULL_MARGIN;
       if (!onScreen || this.killed.has(zombie.id)) continue;
       const visual = this.visuals.get(zombie.id);
       const sprite = visual.sprite;
-      const shut = sprite === null || time < visual.flashUntil || (!this.reducedMotion && blinking(time, eyePhase(zombie.id)));
+      const shut =
+        sprite === null ||
+        time < visual.flashUntil ||
+        (!this.reducedMotion && blinking(time, eyePhase(zombie.id)));
       if (shut) continue;
       const eyes = eyesOf(sprite, zombie.type);
       if (eyes.length === 0) continue;
-      const hidden = this.buildings.isHidden(zombie.x, zombie.y) || this.hiddenByShell(zombie, left, top, viewW, viewH);
+      const hidden =
+        this.buildings.isHidden(zombie.x, zombie.y) ||
+        this.hiddenByShell(zombie, left, top, viewW, viewH);
       if (hidden) continue;
       const x = Math.round(zombie.x) - left;
       const y = Math.round(zombie.y) - top;
@@ -602,11 +826,21 @@ export class EntityRenderer {
    * in front of one hides it. A house that has opened around the player stops shining with its shell,
    * and a searched pail has put its candle out.
    */
-  drawSelfLit(ctx: CanvasRenderingContext2D, scene: SceneView, left: number, top: number, viewW: number, viewH: number, lightAt: (x: number, y: number) => number): void {
+  drawSelfLit(
+    ctx: CanvasRenderingContext2D,
+    scene: SceneView,
+    left: number,
+    top: number,
+    viewW: number,
+    viewH: number,
+    lightAt: (x: number, y: number) => number
+  ): void {
     const bodies: Body[] = [];
-    for (const player of scene.players) bodies.push({ x: Math.round(player.x) - left, y: Math.round(player.y) - top });
+    for (const player of scene.players)
+      bodies.push({ x: Math.round(player.x) - left, y: Math.round(player.y) - top });
     for (const zombie of scene.zombies) {
-      if (!this.killed.has(zombie.id)) bodies.push({ x: Math.round(zombie.x) - left, y: Math.round(zombie.y) - top });
+      if (!this.killed.has(zombie.id))
+        bodies.push({ x: Math.round(zombie.x) - left, y: Math.round(zombie.y) - top });
     }
     const shine = (sprite: PixelSprite, x: number, y: number, strength: number): void => {
       const pixels = glowOf(sprite);
@@ -617,27 +851,51 @@ export class EntityRenderer {
     };
     for (const placed of this.buildings.placed) {
       if (isStoreyKind(placed.building.kind)) continue;
-      const onScreen = placed.x1 > left && placed.x0 < left + viewW && placed.y1 > top && placed.y0 < top + viewH;
-      if (onScreen && placed.reveal < 1) shine(placed.sprite, placed.x0 + placed.sprite.ax - left, placed.y0 + placed.sprite.ay - top, 1 - placed.reveal);
+      const onScreen =
+        placed.x1 > left && placed.x0 < left + viewW && placed.y1 > top && placed.y0 < top + viewH;
+      if (onScreen && placed.reveal < 1)
+        shine(
+          placed.sprite,
+          placed.x0 + placed.sprite.ax - left,
+          placed.y0 + placed.sprite.ay - top,
+          1 - placed.reveal
+        );
     }
     for (const placed of this.props) {
       const { container } = placed;
       if (container === null) continue;
-      const onScreen = placed.x1 > left && placed.x0 < left + viewW && placed.y1 > top && placed.y0 < top + viewH;
+      const onScreen =
+        placed.x1 > left && placed.x0 < left + viewW && placed.y1 > top && placed.y0 < top + viewH;
       const roomClosed = placed.room !== null && placed.room.reveal === 0;
       const lit = onScreen && !roomClosed && !scene.openedContainers.includes(container.id);
-      if (lit) shine(container.art.closed, Math.round(placed.prop.x) - left, Math.round(placed.prop.y) - top, 1);
+      if (lit)
+        shine(
+          container.art.closed,
+          Math.round(placed.prop.x) - left,
+          Math.round(placed.prop.y) - top,
+          1
+        );
     }
   }
 
   /** A small star where the light lands on loot: enough to catch the eye, no pool to give the room away. */
-  drawGlints(ctx: CanvasRenderingContext2D, scene: SceneView, left: number, top: number, viewW: number, viewH: number, time: number, lightAt: (x: number, y: number) => number): void {
+  drawGlints(
+    ctx: CanvasRenderingContext2D,
+    scene: SceneView,
+    left: number,
+    top: number,
+    viewW: number,
+    viewH: number,
+    time: number,
+    lightAt: (x: number, y: number) => number
+  ): void {
     for (const pickup of scene.pickups) {
       const x = Math.round(pickup.x) - left;
       const y = Math.round(pickup.y) - top - GLINT_HEIGHT;
       const onScreen = x >= 0 && y >= 0 && x < viewW && y < viewH;
       const cycle = (time / GLINT_CYCLE_SEC + glintPhase(pickup.id)) % 1;
-      const showing = onScreen && cycle < GLINT_SHARE && lightAt(x, y + GLINT_HEIGHT) >= GLINT_LIGHT;
+      const showing =
+        onScreen && cycle < GLINT_SHARE && lightAt(x, y + GLINT_HEIGHT) >= GLINT_LIGHT;
       if (!showing) continue;
       const reach = cycle < GLINT_SHARE / 2 ? 1 : 2;
       ctx.fillStyle = GLINT_RAY;
@@ -648,31 +906,61 @@ export class EntityRenderer {
     }
   }
 
-  private hiddenByShell(player: Standing, left: number, top: number, viewW: number, viewH: number): boolean {
+  private hiddenByShell(
+    player: Standing,
+    left: number,
+    top: number,
+    viewW: number,
+    viewH: number
+  ): boolean {
     return this.buildings.placed.some((placed) => {
-      const onScreen = placed.x1 > left && placed.x0 < left + viewW && placed.y1 > top && placed.y0 < top + viewH;
+      const onScreen =
+        placed.x1 > left && placed.x0 < left + viewW && placed.y1 > top && placed.y0 < top + viewH;
       return onScreen && placed.reveal < 0.5 && this.covers(placed, placed.depthY, player);
     });
   }
 
   /** Teammates stay findable behind and inside buildings as a pale outline. */
-  drawOccluded(ctx: CanvasRenderingContext2D, scene: SceneView, left: number, top: number, viewW: number, viewH: number, time = 0): void {
+  drawOccluded(
+    ctx: CanvasRenderingContext2D,
+    scene: SceneView,
+    left: number,
+    top: number,
+    viewW: number,
+    viewH: number,
+    time = 0
+  ): void {
     this.drawGhost(ctx, scene, left, top, viewW, viewH, time);
     ctx.globalAlpha = SILHOUETTE_ALPHA;
     for (const player of scene.players) {
       const sprite = this.visuals.get(player.id).sprite;
-      const showsOutline = sprite !== null && player.status !== 'dead' && this.hiddenByShell(player, left, top, viewW, viewH);
-      if (showsOutline) drawSilhouette(ctx, sprite, Math.round(player.x) - left, Math.round(player.y) - top);
+      const showsOutline =
+        sprite !== null &&
+        player.status !== "dead" &&
+        this.hiddenByShell(player, left, top, viewW, viewH);
+      if (showsOutline)
+        drawSilhouette(ctx, sprite, Math.round(player.x) - left, Math.round(player.y) - top);
     }
     ctx.globalAlpha = 1;
   }
 
   /** The day's counted run, walking it again: lit by nothing, so drawn after the dark, and hidden under closed roofs. */
-  private drawGhost(ctx: CanvasRenderingContext2D, scene: SceneView, left: number, top: number, viewW: number, viewH: number, time: number): void {
+  private drawGhost(
+    ctx: CanvasRenderingContext2D,
+    scene: SceneView,
+    left: number,
+    top: number,
+    viewW: number,
+    viewH: number,
+    time: number
+  ): void {
     const ghost = scene.ghost;
-    const onScreen = ghost != null
-      && ghost.x > left - CULL_MARGIN && ghost.x < left + viewW + CULL_MARGIN
-      && ghost.y > top - CULL_MARGIN && ghost.y < top + viewH + CULL_MARGIN;
+    const onScreen =
+      ghost != null &&
+      ghost.x > left - CULL_MARGIN &&
+      ghost.x < left + viewW + CULL_MARGIN &&
+      ghost.y > top - CULL_MARGIN &&
+      ghost.y < top + viewH + CULL_MARGIN;
     const shown = onScreen && !this.buildings.isHidden(ghost.x, ghost.y);
     if (!shown) return;
     const visual = this.visuals.touch(ghost.id);

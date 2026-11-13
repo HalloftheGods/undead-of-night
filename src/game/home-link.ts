@@ -20,6 +20,7 @@ import type { QuestResult } from './home/quest-sync.ts';
 import { QuestTally } from './home/quest-tally.ts';
 import type { Banner, RunResult, UiState } from './hud-state.ts';
 import { loadCampaignProgress, recordCampaignFinished, recordLevelCleared } from './level-progress.ts';
+import { loadSetupLevel } from './setup-level-pref.ts';
 import { inSightSince } from './stage-cut.ts';
 import { endingResult, recordTrip } from './trip-record.ts';
 
@@ -178,6 +179,7 @@ export class HomeLink {
       onOverrunReceipt: (receipt) => current() && this.onOverrunReceipt(receipt),
       tally: () => this.tally.snapshot(),
       highest: () => this.highest,
+      setTown: () => loadSetupLevel('campaign'),
     });
     this.sync = sync;
     const save = await sync.open();

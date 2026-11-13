@@ -1,5 +1,5 @@
 <template>
-  <TitlePage heading="Level Select" bare @close="emit('close')">
+  <TitlePage :heading="heading" bare @close="emit('close')">
     <ol class="level-cards" aria-label="Levels">
       <li v-for="row in rows" :key="row.number" class="level-stop">
         <component
@@ -31,7 +31,7 @@
       <p class="level-info-name">{{ featured.name }}</p>
       <p class="level-info-line">{{ featured.line }}</p>
       <PickBars :bars="featured.bars" />
-      <p class="px-label level-info-note">{{ LEVELS_PAGE_NOTE }}</p>
+      <p class="px-label level-info-note">{{ note }}</p>
     </div>
   </TitlePage>
 </template>
@@ -46,8 +46,9 @@ import { LEVELS, levelDef, townName } from '../../shared/levels.ts';
 import type { ArtBook } from '../art/types.ts';
 import { spriteDataUrl } from '../engine/sprite-cache.ts';
 import { levelMeters } from '../game/level-meters.ts';
-import { isLevelUnlocked, loadLevelProgress } from '../game/level-progress.ts';
-import { THEME_NAMES } from '../game/level-select.ts';
+import type { GameStyle } from '../../shared/game-style.ts';
+import { isLevelUnlocked, loadCampaignProgress, loadLevelProgress } from '../game/level-progress.ts';
+import { CAMPAIGN_SETTING_NOTE, LEVEL_SETTING_NOTE, THEME_NAMES } from '../game/level-select.ts';
 import { longestWord } from '../game/setup-picks.ts';
 import type { PickBar } from '../game/setup-picks.ts';
 import { LEVELS_PAGE_NOTE } from '../game/title-menu.ts';
@@ -55,10 +56,16 @@ import PickBars from './PickBars.vue';
 import TitlePage from './TitlePage.vue';
 import { useGame } from './use-game.ts';
 
-const { art } = defineProps<{ art: ArtBook | null }>();
+/** Set when opened from Play's Level card: the style whose town a pick sets. Left off, a pick starts Arcade's run. */
+const { art, setting = null } = defineProps<{ art: ArtBook | null; setting?: GameStyle | null }>();
 const emit = defineEmits<{ close: []; start: [level: number] }>();
 const game = useGame();
-const progress = loadLevelProgress();
+/** Campaign's towns unlock by its own banked trips, Arcade's by its own runs. */
+const progress = setting === 'campaign' ? loadCampaignProgress() : loadLevelProgress();
+const SETTING_HEADINGS: Readonly<Record<GameStyle, string>> = { campaign: 'Campaign Town', arcade: 'Arcade Level', daily: 'Level Select' };
+const SETTING_NOTES: Readonly<Record<GameStyle, string>> = { campaign: CAMPAIGN_SETTING_NOTE, arcade: LEVEL_SETTING_NOTE, daily: LEVELS_PAGE_NOTE };
+const heading = setting ? SETTING_HEADINGS[setting] : 'Level Select';
+const note = setting ? SETTING_NOTES[setting] : LEVELS_PAGE_NOTE;
 const previewed = ref<number | null>(null);
 
 function choose(level: number): void {

@@ -12,6 +12,7 @@ import { Heartbeat } from './heartbeat.ts';
 import { PlayerAnchor } from './player-anchor.ts';
 import type { Anchor } from './player-anchor.ts';
 import { tickRunAudio } from './run-audio.ts';
+import { heldInfo } from './held-cursor.ts';
 import { deathFade, healthFraction } from './run-hud.ts';
 import type { RunHost } from './run-session.ts';
 import { touchMarks } from './touch-marks.ts';
@@ -55,7 +56,7 @@ export class RunFrame {
     const menuUp = this.host.menuUp();
     const frozen = menuUp && transport?.kind === 'solo';
     if (frozen) {
-      renderer.render({ ...this.lastScene, showCrosshair: false }, 0);
+      renderer.render({ ...this.lastScene, showCrosshair: false, held: this.heldView(renderer) }, 0);
       runHud.repaintMap(ms);
       runHud.repaintHeld(world);
       return;
@@ -117,6 +118,7 @@ export class RunFrame {
       pointerY: over || touch || padAims ? null : pointerY,
       showCrosshair: this.host.playing() && !menuUp && !ui.value.mapOpen && !this.host.parts.bench.open && !isTransitioning,
       touch,
+      held: this.heldView(renderer),
     };
     this.lastScene = scene;
     const sending = transport !== null && !over;
@@ -171,6 +173,14 @@ export class RunFrame {
   }
 
   /** The flashlight follows a stick, a touch look or the pointer, measured from the survivor's chest. */
+  /** The item in hand, with the pointer, while the inventory is open. Null when nothing is held. */
+  private heldView(renderer: WorldRenderer): SceneView['held'] {
+    const info = heldInfo();
+    if (info === null) return null;
+    const { input } = this.host.parts;
+    return { ...info, x: Math.round(renderer.toBufferX(input.pointerClientX)), y: Math.round(renderer.toBufferY(input.pointerClientY)) };
+  }
+
   private aimAt(renderer: WorldRenderer, world: ClientWorld, pointerX: number, pointerY: number): void {
     const { input, inputs } = this.host.parts;
     const padLook = input.gamepad.look(this.aim);

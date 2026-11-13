@@ -1,4 +1,6 @@
 import { backpackDef } from './backpack.ts';
+import { AMMO_PICKUPS, WEAPONS } from './constants.ts';
+import type { AmmoPickup } from './constants.ts';
 import type { BackpackTier } from './backpack.ts';
 import {
   canPlaceItem,
@@ -10,11 +12,33 @@ import {
 import type { GridItem, InventoryGrid } from './grid-inventory.ts';
 import { SUPPLY_TYPES } from './supply-types.ts';
 import type { Supplies } from './supply-types.ts';
-import type { CandyId } from './protocol.ts';
+import type { CandyId, WeaponId } from './protocol.ts';
 
-/** The things a survivor packs. Guns are worn, and ammo, candy, parts, kits and treasure are not bag items. */
+/** One box of spare rounds per magazine's worth. The counter (ammoBag) is the truth; the boxes are drawn from it. */
+export const AMMO_BOX_TYPES = ['pistol_ammo', 'carbine_ammo', 'shells'] as const satisfies readonly AmmoPickup[];
+export type AmmoBoxType = (typeof AMMO_BOX_TYPES)[number];
+
+export function isAmmoBoxType(value: unknown): value is AmmoBoxType {
+  return typeof value === 'string' && (AMMO_BOX_TYPES as readonly string[]).includes(value);
+}
+
+/** Rounds in one full box: one full magazine of the gun it feeds. */
+export function ammoBoxRounds(type: AmmoBoxType): number {
+  return WEAPONS[AMMO_PICKUPS[type].weapon].magSize;
+}
+
+export function ammoBoxWeapon(type: AmmoBoxType): WeaponId {
+  return AMMO_PICKUPS[type].weapon;
+}
+
+export function ammoBoxOf(weapon: WeaponId): AmmoBoxType {
+  return AMMO_BOX_TYPES.find((type) => AMMO_PICKUPS[type].weapon === weapon)!;
+}
+
+/** The things a survivor packs. Guns are worn; candy, parts, kits and treasure are not bag items. Spare rounds show as boxes. */
 export const BAG_ITEM_TYPES = [
   'medkit', 'bottle', 'knife', 'plank', 'hammer_tool', 'crowbar', 'sheet_curtain', 'firework', 'fountain', 'nails',
+  ...AMMO_BOX_TYPES,
   ...SUPPLY_TYPES,
 ] as const;
 export type BagItemType = (typeof BAG_ITEM_TYPES)[number];
@@ -87,6 +111,8 @@ export interface BagSource {
     readonly hasCrowbar: boolean;
   };
   readonly supplies?: Readonly<Supplies>;
+  /** Spare rounds per gun. Each full magazine's worth shows as a box in the bag. */
+  readonly ammoBag?: Readonly<Record<WeaponId, number>>;
 }
 
 export function isBagItemType(value: unknown): value is BagItemType {
@@ -104,6 +130,11 @@ export function createBag(tier: BackpackTier | undefined): PlayerBag {
 
 function whole(value: number | undefined): number {
   return value !== undefined && Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+}
+
+/** Boxes it takes to hold the spare rounds: full ones, and one part box for the rest. */
+function boxesFor(type: AmmoBoxType, ammoBag: BagSource['ammoBag']): number {
+  return Math.ceil(whole(ammoBag?.[ammoBoxWeapon(type)]) / ammoBoxRounds(type));
 }
 
 /** The multiset the counters imply. Stacked types hold their unit count; everything else holds one item per unit. */
@@ -126,6 +157,9 @@ export function bagWanted(p: BagSource): BagWanted {
     firework: whole(p.fireworks),
     fountain: whole(p.fountains),
     nails: whole(m?.nails),
+    pistol_ammo: boxesFor('pistol_ammo', p.ammoBag),
+    carbine_ammo: boxesFor('carbine_ammo', p.ammoBag),
+    shells: boxesFor('shells', p.ammoBag),
   };
 }
 
@@ -197,6 +231,47 @@ function syncStack(bag: PlayerBag, type: BagItemType, want: number, have: { grid
   for (const extra of have.filter((entry) => entry !== keep)) removeItem(extra.grid, extra.item.id);
   if (keep) keep.item.count = want;
   else if (want > 0 && !pack(bag, type, want)) overflow[type] = want;
+}
+
+/**
+ * Writes the rounds on each ammo box: every box full but the newest, which holds what is left. Items of a type are
+ * interchangeable and rounds are not in the layout, so this changes no hash and both sides stamp the same way.
+ */
+export function stampAmmoBoxes(bag: PlayerBag, ammoBag: BagSource['ammoBag']): void {
+  for (const type of AMMO_BOX_TYPES) {
+    const boxes = itemsOf(bag, type).map((entry) => entry.item).sort((a, b) => serialOf(a) - serialOf(b));
+    let left = whole(ammoBag?.[ammoBoxWeapon(type)]);
+    const size = ammoBoxRounds(type);
+    for (const item of boxes) {
+      item.ammo = Math.min(size, left);
+      left = Math.max(0, left - size);
+    }
+  }
+}
+
+/** How many more `type` items would find a slot, up to `want`, without touching the bag. */
+function slotsFor(bag: PlayerBag, type: BagItemType, want: number): number {
+  const grids = [bag.pack, bag.pockets].map((grid) => ({ ...grid, items: [...grid.items] }));
+  let placed = 0;
+  while (placed < want) {
+    const grid = grids.find((candidate) => findAvailableSlot(candidate, type, true) !== null);
+    const slot = grid ? findAvailableSlot(grid, type, true) : null;
+    if (!grid || !slot || !placeItem(grid, { id: `room:${placed}`, type, x: slot.x, y: slot.y, rotated: slot.rotated })) break;
+    placed += 1;
+  }
+  return placed;
+}
+
+/**
+ * How many more rounds of `weapon` the bag can show: the room left in its part box, plus a full box for each free
+ * slot. The caller has just brought the bag to the counters. A pickup takes no more than this.
+ */
+export function ammoRoomRounds(bag: PlayerBag, weapon: WeaponId, held: number): number {
+  const type = ammoBoxOf(weapon);
+  const size = ammoBoxRounds(type);
+  const shown = itemsOf(bag, type).length * size;
+  const partBox = Math.max(0, shown - held);
+  return partBox + slotsFor(bag, type, 32) * size;
 }
 
 /**

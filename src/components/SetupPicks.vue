@@ -13,7 +13,27 @@
           </span>
         </div>
       </li>
-      <li v-for="pick in picks" :key="pick.key" class="picks-stop">
+      <template v-for="pick in picks" :key="pick.key">
+      <li v-if="levelLink && levelLink.before === pick.key" class="picks-stop">
+        <button
+          class="pick px-frame"
+          type="button"
+          :aria-label="`${levelLink.label}: ${levelLink.name}. Change level`"
+          @mouseenter="game.playUi('hover')"
+          @click="openLevels()"
+        >
+          <span class="pick-head">
+            <span class="pick-number" aria-hidden="true">{{ levelLink.number }}</span>
+            <span class="pick-label">{{ levelLink.label }}</span>
+            <span class="pick-caret" aria-hidden="true">▸</span>
+          </span>
+          <span class="pick-art">
+            <img v-if="levelLink.sprite" :src="spriteDataUrl(levelLink.sprite)" alt="" draggable="false" />
+            <span class="pick-title" :style="{ '--chars': longestWord(levelLink.name) }">{{ levelLink.name }}</span>
+          </span>
+        </button>
+      </li>
+      <li class="picks-stop">
         <button
           :ref="(el) => setTile(pick.key, el)"
           class="pick px-frame"
@@ -46,6 +66,7 @@
           </span>
         </button>
       </li>
+      </template>
     </ol>
 
     <div v-if="openPick" class="picks-overlay" @click.self="close()">
@@ -109,15 +130,23 @@ import type { ArtBook, PixelSprite } from '../art/types.ts';
 import { spriteDataUrl } from '../engine/sprite-cache.ts';
 import type { PlayMode } from '../game/play-flow.ts';
 import { chosenOption, longestWord, stepFocus } from '../game/setup-picks.ts';
-import type { FixedCard, PickKey, PickOption, SetupPick } from '../game/setup-picks.ts';
+import type { FixedCard, LevelLinkCard, PickKey, PickOption, SetupPick } from '../game/setup-picks.ts';
 import { motion } from '../game/motion.ts';
 import { createSpinner, FRONT_FACING } from '../game/survivor-spin.ts';
 import PickBars from './PickBars.vue';
 import './setup-picks-overlay.css';
 import { useGame } from './use-game.ts';
 
-const { picks, art, fixed = [] } = defineProps<{ picks: readonly SetupPick[]; art: ArtBook | null; fixed?: readonly FixedCard[] }>();
-const emit = defineEmits<{ choose: [key: PickKey, id: string] }>();
+interface SetupPicksProps {
+  readonly picks: readonly SetupPick[];
+  readonly art: ArtBook | null;
+  readonly fixed?: readonly FixedCard[];
+  /** Arcade's Level card: a button after the picks that opens the Levels page, not a list. */
+  readonly levelLink?: LevelLinkCard | null;
+}
+
+const { picks, art, fixed = [], levelLink = null } = defineProps<SetupPicksProps>();
+const emit = defineEmits<{ choose: [key: PickKey, id: string]; levels: [] }>();
 const game = useGame();
 const root = useTemplateRef<HTMLElement>('root');
 
@@ -233,6 +262,12 @@ function close(refocus = true): void {
   if (shouldRefocus) tiles.get(was)?.focus();
 }
 
+/** The Level card: the Levels page takes over, and its pick comes back to this page as the level set. */
+function openLevels(): void {
+  game.playUi('click');
+  emit('levels');
+}
+
 function choose(key: PickKey, id: string): void {
   game.playUi('click');
   emit('choose', key, id);
@@ -278,9 +313,11 @@ defineExpose({ focus: () => tiles.get(picks[0]?.key ?? 'mode')?.focus(), isOpen:
   position: relative;
 }
 
+/* One line: every pick sits in a single row. */
 .picks-row {
   --join: calc(var(--u) * 8);
   display: flex;
+  flex-wrap: nowrap;
   justify-content: center;
   align-items: stretch;
   gap: var(--join);
@@ -436,7 +473,7 @@ defineExpose({ focus: () => tiles.get(picks[0]?.key ?? 'mode')?.focus(), isOpen:
   color: var(--bone-dim);
 }
 
-/* A phone keeps the three portraits in a row. */
+/* A phone keeps the same single row, with tighter gaps. */
 @media (max-width: 600px) {
   .picks-row {
     --join: calc(var(--u) * 3);

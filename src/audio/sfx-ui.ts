@@ -57,3 +57,27 @@ export const vanDoor: Recipe = (v) => {
   noise(v, { at: 0.2, filter: 'lowpass', freq: 400, decay: 0.12, gain: 0.5 });
   tone(v, { at: 0.2, type: 'square', f0: 220, f1: 140, decay: 0.05, gain: 0.12, lp: 900 });
 };
+
+/** Lifting an item out of a grid: a soft cloth slide with a small rising tick. */
+export const uiPickup: Recipe = (v) => {
+  tone(v, { type: 'triangle', f0: 520, f1: 760, decay: 0.05, gain: 0.18 });
+  noise(v, { filter: 'bandpass', freq: 1800, q: 1.2, decay: 0.03, gain: 0.12 });
+};
+
+/** Setting an item down on the ground: a low thud with a rustle. */
+export const uiDrop: Recipe = (v) => {
+  tone(v, { type: 'sine', f0: 160, f1: 70, decay: 0.1, gain: 0.35 });
+  noise(v, { filter: 'lowpass', freq: 900, decay: 0.08, gain: 0.2 });
+};
+
+/** Fitting an item into a grid cell: a short clack. */
+export const uiPlace: Recipe = (v) => {
+  tone(v, { type: 'square', f0: 900, f1: 600, decay: 0.025, gain: 0.14, lp: 3000 });
+  noise(v, { filter: 'bandpass', freq: 2200, q: 2, decay: 0.02, gain: 0.14 });
+};
+
+/** Turning an item in the hand: a quick swish that rises. */
+export const uiRotate: Recipe = (v) => {
+  noise(v, { filter: 'bandpass', freq: 900, freq1: 2200, q: 1.2, attack: 0.01, decay: 0.07, gain: 0.14 });
+  tone(v, { type: 'triangle', f0: 400, f1: 600, decay: 0.06, gain: 0.08 });
+};

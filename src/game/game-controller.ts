@@ -1,44 +1,45 @@
-import { shallowRef, watch } from 'vue';
-import type { ShallowRef } from 'vue';
-import { capCallsign } from '../../shared/callsign.ts';
-import type { EmoteId } from '../../shared/emotes.ts';
-import type { GameStyle } from '../../shared/game-style.ts';
-import { levelDef, levelSeed } from '../../shared/levels.ts';
-import type { BagCommit } from '../../shared/bag.ts';
-import type { CandyId, WorldMap } from '../../shared/protocol.ts';
-import { TILE_SIZE } from '../../shared/protocol.ts';
-import { generateWorldMap } from '../../shared/world-map.ts';
-import { buildArtBook } from '../art/index.ts';
-import { AudioEngine, type SfxName } from '../audio/audio-engine.ts';
-import { EMPTY_SCENE } from '../engine/scene.ts';
-import { WorldRenderer } from '../engine/world-renderer.ts';
-import { LocalSession } from '../network/local-session.ts';
-import { BenchLink } from './bench-link.ts';
-import { CandyBagPanel } from './candy-bag-panel.ts';
-import { todaysNight } from './daily-night.ts';
-import { HomeLink } from './home-link.ts';
-import type { HomeLinkHost } from './home-link.ts';
-import type { HomeActions } from './home-hud.ts';
-import { overrunOn } from './home-mode.ts';
-import { createBrowserHomeStore } from './home/browser-home-store.ts';
-import type { HomeStore } from './home/home-store.ts';
-import { standingInTown } from './hud-state.ts';
-import type { UiState } from './hud-state.ts';
-import { InputManager } from './input-manager.ts';
-import { InputSender } from './input-sender.ts';
-import { loadFurthestProgress } from './level-progress.ts';
-import { RunFrame } from './run-frame.ts';
-import { NO_RUN_UI, RunHud } from './run-hud.ts';
-import { newRunState, RunSession } from './run-session.ts';
-import type { CoopEntry, RunHost, RunState } from './run-session.ts';
-import { RunStage } from './run-stage.ts';
-import { SnapshotHandler } from './snapshot-handler.ts';
-import { browserStore, DEFAULT_PREFS, loadLeaderboard, loadPrefs, savePrefs } from './storage.ts';
-import { motion } from './motion.ts';
-import { loadStyle, saveStyle } from './style-pref.ts';
-import { loadBests } from './trip-record.ts';
-import { isTouchDevice } from './touch-input.ts';
-import { fitWindow, watchDpr } from './view-fit.ts';
+import { shallowRef, watch } from "vue";
+import type { ShallowRef } from "vue";
+import { capCallsign } from "../../shared/callsign.ts";
+import { containerGap, SEARCH_WALK_AWAY } from "../../shared/containers.ts";
+import type { EmoteId } from "../../shared/emotes.ts";
+import type { GameStyle } from "../../shared/game-style.ts";
+import { levelDef, levelSeed } from "../../shared/levels.ts";
+import type { BagCommit } from "../../shared/bag.ts";
+import type { CandyId, WorldMap } from "../../shared/protocol.ts";
+import { TILE_SIZE } from "../../shared/protocol.ts";
+import { generateWorldMap } from "../../shared/world-map.ts";
+import { buildArtBook } from "../art/index.ts";
+import { AudioEngine, type SfxName } from "../audio/audio-engine.ts";
+import { EMPTY_SCENE } from "../engine/scene.ts";
+import { WorldRenderer } from "../engine/world-renderer.ts";
+import { LocalSession } from "../network/local-session.ts";
+import { BenchLink } from "./bench-link.ts";
+import { CandyBagPanel } from "./candy-bag-panel.ts";
+import { todaysNight } from "./daily-night.ts";
+import { HomeLink } from "./home-link.ts";
+import type { HomeLinkHost } from "./home-link.ts";
+import type { HomeActions } from "./home-hud.ts";
+import { overrunOn } from "./home-mode.ts";
+import { createBrowserHomeStore } from "./home/browser-home-store.ts";
+import type { HomeStore } from "./home/home-store.ts";
+import { standingInTown } from "./hud-state.ts";
+import type { UiState } from "./hud-state.ts";
+import { InputManager } from "./input-manager.ts";
+import { InputSender } from "./input-sender.ts";
+import { loadFurthestProgress } from "./level-progress.ts";
+import { RunFrame } from "./run-frame.ts";
+import { NO_RUN_UI, RunHud } from "./run-hud.ts";
+import { newRunState, RunSession } from "./run-session.ts";
+import type { CoopEntry, RunHost, RunState } from "./run-session.ts";
+import { RunStage } from "./run-stage.ts";
+import { SnapshotHandler } from "./snapshot-handler.ts";
+import { browserStore, DEFAULT_PREFS, loadLeaderboard, loadPrefs, savePrefs } from "./storage.ts";
+import { motion } from "./motion.ts";
+import { loadStyle, saveStyle } from "./style-pref.ts";
+import { loadBests } from "./trip-record.ts";
+import { isTouchDevice } from "./touch-input.ts";
+import { fitWindow, watchDpr } from "./view-fit.ts";
 import {
   applyPalette,
   brightness,
@@ -48,15 +49,14 @@ import {
   UI_SCALES,
   type PaletteId,
   type SpeedUnit,
-  type UiScale,
-} from './display-prefs.ts';
-
+  type UiScale
+} from "./display-prefs.ts";
 
 const MAX_FRAME_DT = 0.05;
 const TITLE_MAP_SEED = 20417;
 const ART_DELAY_MS = 40;
 
-type UiSound = 'click' | 'hover' | 'start' | 'pause' | 'resume';
+type UiSound = "click" | "hover" | "start" | "pause" | "resume";
 
 export interface GameControllerOptions {
   /** Where the home save lives. */
@@ -99,15 +99,15 @@ export class GameController {
     applyPalette(display.palette);
     this.ui = shallowRef<UiState>({
       touch: isTouchDevice(),
-      screen: 'title',
+      screen: "title",
       art: null,
-      mode: 'solo',
+      mode: "solo",
       connecting: false,
       error: null,
       style: loadStyle(),
       runStyle: null,
       ...NO_RUN_UI,
-      lostReason: '',
+      lostReason: "",
       signalWeak: false,
       ...loadBests(),
       leaderboard: loadLeaderboard(),
@@ -119,11 +119,18 @@ export class GameController {
       musicVolume: this.audio.musicVolume,
       sfxVolume: this.audio.sfxVolume,
       muted: this.audio.muted,
-      ...display,
+      ...display
     });
-    this.homeLink = new HomeLink({ store: options.homeStore ?? createBrowserHomeStore, host: this.homeHost() });
+    this.homeLink = new HomeLink({
+      store: options.homeStore ?? createBrowserHomeStore,
+      host: this.homeHost()
+    });
     this.home = this.homeLink.actions;
-    this.runHud = new RunHud(() => this.ui.value, (patch) => this.publish(patch), () => this.homeLink.facts());
+    this.runHud = new RunHud(
+      () => this.ui.value,
+      (patch) => this.publish(patch),
+      () => this.homeLink.facts()
+    );
     this.stage = new RunStage(this.runHud, () => this.renderer);
     this.input = new InputManager({
       onGesture: () => this.audio.unlock(),
@@ -135,7 +142,10 @@ export class GameController {
       onBackpack: () => this.toggleBackpack(),
       mapUsable: () => this.canUseMap(),
       onLog: () => this.toggleLog(),
-      onTouchSeen: () => { this.publish({ touch: true }); this.onResize(); },
+      onTouchSeen: () => {
+        this.publish({ touch: true });
+        this.onResize();
+      }
     });
     this.inputs = new InputSender(this.input);
     this.bag = new CandyBagPanel({
@@ -146,13 +156,13 @@ export class GameController {
       closeBackpack: () => this.closeBackpack(),
       input: this.input,
       sendNow: () => this.sendNeutralInput(),
-      transport: () => this.run.transport,
+      transport: () => this.run.transport
     });
     this.bench = new BenchLink({
       transport: () => this.run.transport,
       menuUp: () => this.isMenuUp(),
       setInputEnabled: (enabled) => this.input.setEnabled(enabled && !this.homeLink.holdsControls),
-      settle: () => this.sendNeutralInput(),
+      settle: () => this.sendNeutralInput()
     });
     const host = this.runHost();
     this.snapshots = new SnapshotHandler(host, () => this.session.beginRun());
@@ -161,15 +171,14 @@ export class GameController {
       parts: host,
       menuUp: () => this.isMenuUp(),
       playing: () => this.isPlaying(),
-      overrunOn: overrunOn(globalThis.location?.search ?? '', import.meta.env.DEV),
+      overrunOn: overrunOn(globalThis.location?.search ?? "", import.meta.env.DEV)
     });
   }
-
 
   /** The studio splash's chime, on the gesture that skips it. */
   greet(): void {
     void this.audio.unlock();
-    this.audio.playUi('start');
+    this.audio.playUi("start");
   }
 
   /** Exposed for the dev handle: the running simulation, in solo. */
@@ -182,31 +191,44 @@ export class GameController {
     return this.run.world?.worldMap ?? this.sim?.map ?? null;
   }
 
+  /** True once the survivor has walked clear of the container they are searching. */
+  walkedAwayFrom(containerId: number): boolean {
+    const map = this.currentMap;
+    const local = this.run.world?.localPlayer;
+    if (!map || !local) return false;
+    const gap = containerGap(map, containerId, local.x, local.y);
+    return gap !== null && gap > SEARCH_WALK_AWAY;
+  }
+
   mount(canvas: HTMLCanvasElement): void {
     this.canvas = canvas;
     this.onResize();
-    window.addEventListener('resize', this.onResize);
+    window.addEventListener("resize", this.onResize);
     this.stopDprWatch = watchDpr(this.onResize);
-    window.addEventListener('blur', this.onAway);
-    document.addEventListener('visibilitychange', this.onVisibility);
+    window.addEventListener("blur", this.onAway);
+    document.addEventListener("visibilitychange", this.onVisibility);
     this.raf = requestAnimationFrame(this.frame);
     // Baking the art blocks for a moment: let the title paint first.
     this.artTimer = setTimeout(() => this.loadArt(), ART_DELAY_MS);
-    this.stopMotionWatch = watch([motion.reduced, motion.shake], ([reduced, shake]) => this.renderer?.setMotion(reduced, shake));
+    this.stopMotionWatch = watch([motion.reduced, motion.shake], ([reduced, shake]) =>
+      this.renderer?.setMotion(reduced, shake)
+    );
     // The Brightness slider moves the picture as it moves, from the pause card as much as from Options.
-    this.stopBrightnessWatch = watch(brightness, () => this.renderer?.setBrightness(brightnessLift()));
-    this.audio.setScene('menu');
+    this.stopBrightnessWatch = watch(brightness, () =>
+      this.renderer?.setBrightness(brightnessLift())
+    );
+    this.audio.setScene("menu");
   }
 
   dispose(): void {
     cancelAnimationFrame(this.raf);
     if (this.artTimer) clearTimeout(this.artTimer);
-    window.removeEventListener('resize', this.onResize);
+    window.removeEventListener("resize", this.onResize);
     this.stopDprWatch();
     this.stopMotionWatch();
     this.stopBrightnessWatch();
-    window.removeEventListener('blur', this.onAway);
-    document.removeEventListener('visibilitychange', this.onVisibility);
+    window.removeEventListener("blur", this.onAway);
+    document.removeEventListener("visibilitychange", this.onVisibility);
     this.input.dispose();
     this.runFrame.clear();
     this.homeLink.close();
@@ -262,7 +284,12 @@ export class GameController {
   private stopBrightnessWatch: () => void = () => {};
 
   private readonly onResize = (): void => {
-    fitWindow(this.renderer, this.run.transport?.kind === 'coop', this.ui.value.touch, UI_SCALES[this.ui.value.uiScale]);
+    fitWindow(
+      this.renderer,
+      this.run.transport?.kind === "coop",
+      this.ui.value.touch,
+      UI_SCALES[this.ui.value.uiScale]
+    );
   };
 
   /** A hidden tab gets no frames, so solo would otherwise be eaten alive unseen. */
@@ -273,13 +300,17 @@ export class GameController {
   /** The player has gone: to another tab, or to a window beside this one that leaves the game in view. */
   private readonly onAway = (): void => {
     this.input.clearHeld();
-    const shouldPause = this.run.transport?.kind === 'solo' && this.isPlaying() && !this.isMenuUp() && !this.ui.value.mapOpen;
+    const shouldPause =
+      this.run.transport?.kind === "solo" &&
+      this.isPlaying() &&
+      !this.isMenuUp() &&
+      !this.ui.value.mapOpen;
     if (shouldPause) this.flipPause();
     else this.sendNeutralInput();
   };
 
   private isPlaying(): boolean {
-    return this.ui.value.screen === 'game' && this.run.runResult === null;
+    return this.ui.value.screen === "game" && this.run.runResult === null;
   }
 
   private isMenuUp(): boolean {
@@ -382,12 +413,12 @@ export class GameController {
     this.session.continueSolo(chosen);
   }
 
-  /** Today's Daily Night: solo, Arcade rules, the day's seed, level and difficulty. */
+  /** Today's Nightly Run: solo, Arcade rules, the day's seed, level and difficulty. */
   startDaily(): void {
     this.session.startDaily(todaysNight());
   }
 
-  /** Today's Daily Night in MP lobby mode: up to 5 players. */
+  /** Today's Nightly Run in MP lobby mode: up to 5 players. */
   startDailyMp(): void {
     this.session.startDailyMp(todaysNight());
   }
@@ -422,7 +453,7 @@ export class GameController {
   private holdRun(held: boolean): void {
     this.run.transport?.setPaused(held);
     this.input.setEnabled(this.controlsFree(held));
-    this.audio.playUi(held ? 'pause' : 'resume');
+    this.audio.playUi(held ? "pause" : "resume");
     if (held) this.sendNeutralInput();
   }
 
@@ -494,7 +525,7 @@ export class GameController {
     if (fromBag) this.holdRun(false);
     if (mapOpen) this.input.letGoButtons();
     this.closeBackpack();
-    this.audio.playUi(mapOpen ? 'pause' : 'resume');
+    this.audio.playUi(mapOpen ? "pause" : "resume");
     this.publish({ mapOpen, bagOpen: false });
     return true;
   }
@@ -559,7 +590,7 @@ export class GameController {
   }
 
   /** The ending screens pick their own track once the tally is read. */
-  endingMusic(scene: 'victory' | 'credits'): void {
+  endingMusic(scene: "victory" | "credits"): void {
     this.audio.setScene(scene);
   }
 
@@ -574,8 +605,8 @@ export class GameController {
     const answered = this.homeLink.confirm();
     if (answered) return;
     const { screen } = this.ui.value;
-    if (screen === 'gameover') this.playAgain();
-    else if (screen === 'lost') this.toMenu();
+    if (screen === "gameover") this.playAgain();
+    else if (screen === "lost") this.toMenu();
     else if (this.isMenuUp()) this.togglePause();
   }
 
@@ -594,12 +625,16 @@ export class GameController {
       stage: this.stage,
       bench: this.bench,
       home: this.homeLink,
-      get renderer() { return controller.renderer; },
-      get titleMap() { return controller.titleMap; },
+      get renderer() {
+        return controller.renderer;
+      },
+      get titleMap() {
+        return controller.titleMap;
+      },
       syncTitleMap: () => this.syncTitleMap(),
       publish: (patch) => this.publish(patch),
       onResize: () => this.onResize(),
-      hitStop: (ms) => this.hitStop(ms),
+      hitStop: (ms) => this.hitStop(ms)
     };
   }
 
@@ -613,20 +648,20 @@ export class GameController {
       syncControls: () => this.syncControls(),
       say: (banner, nowMs) => this.runHud.say(banner, nowMs),
       showEnding: (result) => {
-        this.audio.setScene('victory');
-        this.publish({ screen: 'gameover', result, banner: null, place: null });
+        this.audio.setScene("victory");
+        this.publish({ screen: "gameover", result, banner: null, place: null });
       },
       hideEnding: () => {
-        this.audio.setScene('bunker');
-        this.publish({ screen: 'game', result: null });
-      },
+        this.audio.setScene("bunker");
+        this.publish({ screen: "game", result: null });
+      }
     };
   }
 
   /** Solo only: the sim and the picture stop together, so nothing drifts. In co-op the town carries on, so the picture does too. */
   private hitStop(ms: number): void {
     const transport = this.run.transport;
-    const skipsHitStop = transport?.kind !== 'solo' || this.isMenuUp();
+    const skipsHitStop = transport?.kind !== "solo" || this.isMenuUp();
     if (skipsHitStop) return;
     transport.hold?.(ms);
     this.runFrame.holdFor(ms);

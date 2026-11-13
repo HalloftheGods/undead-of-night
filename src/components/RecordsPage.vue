@@ -16,7 +16,7 @@
 </template>
 
 <script setup lang="ts">
-/** Records as a printed record book: personal bests, the ledger, the Daily Night, the last seven nights and the stamps. */
+/** Records as a printed record book: personal bests, the ledger, the Nightly Run, the last seven nights and the stamps. */
 import { computed, onMounted } from 'vue';
 import { trackTitlePage } from '../game/analytics/index.ts';
 import { loadDailyLog } from '../game/daily-night.ts';

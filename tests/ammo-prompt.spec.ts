@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { WeaponId } from '../shared/protocol.ts';
-import { ammoPrompt } from '../src/engine/ammo-prompt.ts';
+import type { WeaponId } from '@shared/protocol.ts';
+import { ammoPrompt } from '@engine/ammo-prompt.ts';
 
 type Rounds = Partial<Record<WeaponId, number>>;
 

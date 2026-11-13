@@ -25,9 +25,9 @@
     </footer>
   </section>
 
-  <PlaySetup v-else-if="nav.page === 'play'" :ui :join="nav.invited" :level="nav.startLevel" @close="nav = closePlay(nav)" />
+  <PlaySetup v-else-if="nav.page === 'play'" :ui :join="nav.invited" :level="nav.startLevel" @close="nav = closePlay(nav)" @levels="(style) => (nav = openLevelSetter(nav, style))" />
   <DailyPage v-else-if="nav.page === 'daily'" :ui @close="close" />
-  <LevelsPage v-else-if="nav.page === 'levels'" :art="ui.art" @start="nav = pickLevel(nav, $event)" @close="close" />
+  <LevelsPage v-else-if="nav.page === 'levels'" :art="ui.art" :setting="nav.settingLevel ?? null" @start="levelPicked" @close="close" />
   <BooksPage v-else-if="nav.page === 'books'" :art="ui.art" @open="openBookPage" @close="close" />
   <HowToPlay v-else-if="nav.page === 'howto'" @close="close" />
   <CandyMagazinePage v-else-if="nav.page === 'candy'" @close="close" />
@@ -38,7 +38,9 @@
   <RadioPage v-else-if="nav.page === 'radio'" :ui @close="close" />
   <ControlsPage v-else-if="nav.page === 'controls'" @close="close" />
   <DevInventoryPage v-else-if="nav.page === 'dev_inventory'" :art="ui.art" @close="close" />
-  <OptionsPage v-else :ui @close="close" />
+  <AudioPage v-else-if="nav.page === 'audio'" :ui @close="close" />
+  <DisplayPage v-else-if="nav.page === 'display'" :ui @close="close" />
+  <GameplayPage v-else-if="nav.page === 'gameplay'" @close="close" />
 </template>
 
 <script setup lang="ts">
@@ -53,11 +55,11 @@ import { onlineRoomsLive } from '../network/play-api.ts';
 import { BRAND_MARK, STUDIO_LINE } from '../game/studio-splash.ts';
 import { TITLE_MENU } from '../game/title-menu.ts';
 import type { MenuGroup, TitleMenuItem, TitlePage } from '../game/title-menu.ts';
-import { closeBook, closePage, closePlay, INVITE_LANDING, openBook, openPage, pickLevel, TITLE_HOME } from '../game/title-nav.ts';
+import { closeBook, closeLevelSetter, closePage, closePlay, INVITE_LANDING, openBook, openLevelSetter, openPage, pickLevel, TITLE_HOME } from '../game/title-nav.ts';
+import { saveSetupLevel } from '../game/setup-level-pref.ts';
 import InstallCartridge from './InstallCartridge.vue';
-import { BooksPage, CandyMagazinePage, ChangelogPage, ControlsPage, DailyPage, DevInventoryPage, HowToPlay, LevelsPage, RadioPage, RecordsPage, SoundTestPage, TownGuidePage } from './lazy-pages.ts';
+import { AudioPage, BooksPage, CandyMagazinePage, ChangelogPage, ControlsPage, DailyPage, DevInventoryPage, DisplayPage, GameplayPage, HowToPlay, LevelsPage, RadioPage, RecordsPage, SoundTestPage, TownGuidePage } from './lazy-pages.ts';
 import MenuLink from './MenuLink.vue';
-import OptionsPage from './OptionsPage.vue';
 import PlaySetup from './PlaySetup.vue';
 import PressAnyKey from './PressAnyKey.vue';
 import SpriteImg from './SpriteImg.vue';
@@ -133,7 +135,24 @@ function answer(): void {
   arrived.value = true;
 }
 
+/** A level picked on the Levels page: the Level card keeps it and goes back to Play, any other pick starts Play there. */
+function levelPicked(level: number): void {
+  const style = nav.value.settingLevel;
+  const isStylePicked = style !== undefined;
+  if (isStylePicked) {
+    saveSetupLevel(style, level);
+    nav.value = closeLevelSetter(nav.value);
+    return;
+  }
+  nav.value = pickLevel(nav.value, level);
+}
+
 function close(): void {
+  const isSetting = nav.value.settingLevel !== undefined;
+  if (isSetting) {
+    nav.value = closeLevelSetter(nav.value);
+    return;
+  }
   const isBookOpen = nav.value.fromBooks === true;
   if (isBookOpen) {
     nav.value = closeBook(nav.value);

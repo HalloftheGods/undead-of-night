@@ -1,5 +1,5 @@
 <template>
-  <TitlePage heading="Daily Night" bare boxed @close="emit('close')">
+  <TitlePage heading="Nightly Run" bare boxed @close="emit('close')">
     <template #lead>
       <SetupPicks ref="picker" :picks :fixed :art="ui.art" :style="{ '--under': 'calc(var(--u) * 215)' }" @choose="choose" />
     </template>

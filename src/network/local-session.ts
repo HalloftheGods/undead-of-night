@@ -1,21 +1,26 @@
-import type { BagCommit } from '../../shared/bag.ts';
-import { TICK_DT, TICK_RATE } from '../../shared/constants.ts';
-import type { EmoteId } from '../../shared/emotes.ts';
-import { playsFromHome } from '../../shared/game-style.ts';
-import type { GameStyle } from '../../shared/game-style.ts';
-import type { HomeAction } from '../../shared/home-protocol.ts';
-import type { CandyId, ClientInputPacket, SnapshotPacket, WelcomePacket } from '../../shared/protocol.ts';
-import { GameSimulation } from '../../shared/simulation.ts';
-import { overrunOn } from '../game/home-mode.ts';
-import type { BenchAction } from '../../shared/workbench.ts';
-import { TickClock } from './tick-clock.ts';
-import type { ConnectOptions, GameTransport } from './transport.ts';
+import type { BagCommit } from "../../shared/bag.ts";
+import { TICK_DT, TICK_RATE } from "../../shared/constants.ts";
+import type { EmoteId } from "../../shared/emotes.ts";
+import { playsFromHome } from "../../shared/game-style.ts";
+import type { GameStyle } from "../../shared/game-style.ts";
+import type { HomeAction } from "../../shared/home-protocol.ts";
+import type {
+  CandyId,
+  ClientInputPacket,
+  SnapshotPacket,
+  WelcomePacket
+} from "../../shared/protocol.ts";
+import { GameSimulation } from "../../shared/simulation.ts";
+import { overrunOn } from "../game/home-mode.ts";
+import type { BenchAction } from "../../shared/workbench.ts";
+import { TickClock } from "./tick-clock.ts";
+import type { ConnectOptions, GameTransport } from "./transport.ts";
 
-export const LOCAL_PLAYER_ID = 'local';
+export const LOCAL_PLAYER_ID = "local";
 
 /** Solo play: the same simulation the server runs, stepped in the browser. */
 export class LocalSession implements GameTransport {
-  readonly kind = 'solo';
+  readonly kind = "solo";
   /** Snapshots here arrive without jitter, so two ticks of buffer is enough. */
   readonly interpolationDelayMs = 2 * TICK_DT * 1000;
 
@@ -26,7 +31,7 @@ export class LocalSession implements GameTransport {
   /** Exposed for the dev handle. */
   sim: GameSimulation | null = null;
 
-  private options: ConnectOptions = { name: '' };
+  private options: ConnectOptions = { name: "" };
   private paused = false;
   private holdTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly clock = new TickClock(1000 / TICK_RATE, () => this.tick());
@@ -66,9 +71,12 @@ export class LocalSession implements GameTransport {
    */
   requestRestart(fromLevel?: number): void {
     if (this.playsHome) return;
-    // A Daily Night plays again from its own level; anything else from where it is told, or level 1.
+    // A Nightly Run plays again from its own level; anything else from where it is told, or level 1.
     const daily = this.options.seed !== undefined;
-    this.options = { ...this.options, startLevel: fromLevel ?? (daily ? this.options.startLevel : undefined) };
+    this.options = {
+      ...this.options,
+      startLevel: fromLevel ?? (daily ? this.options.startLevel : undefined)
+    };
     this.clock.stop();
     this.beginRun();
   }
@@ -107,22 +115,38 @@ export class LocalSession implements GameTransport {
   }
 
   private get playsHome(): boolean {
-    const style: GameStyle = this.options.style ?? 'arcade';
+    const style: GameStyle = this.options.style ?? "arcade";
     return playsFromHome(style);
   }
 
   private beginRun(): void {
     const { name, difficulty, character, startLevel, home, streakNight, testDrive } = this.options;
     const seed = this.options.seed ?? Math.floor(Math.random() * 0x7fffffff);
-    const overrun = overrunOn(globalThis.location?.search ?? '', import.meta.env.DEV);
-    const sim = new GameSimulation({ seed, difficulty, workbench: 'hold', startLevel, home: this.playsHome, overrun, testDrive });
+    const overrun = overrunOn(globalThis.location?.search ?? "", import.meta.env.DEV);
+    const sim = new GameSimulation({
+      seed,
+      difficulty,
+      workbench: "hold",
+      startLevel,
+      home: this.playsHome,
+      overrun,
+      testDrive
+    });
     sim.addPlayer(LOCAL_PLAYER_ID, name, null, character, home);
     // Campaign brings its own gear from the locker, so the streak kit is for town runs.
     const getsStreakKit = !this.playsHome && streakNight !== undefined;
     if (getsStreakKit) sim.giveStreakKit(LOCAL_PLAYER_ID, streakNight);
     this.sim = sim;
     this.paused = false;
-    this.onWelcome({ type: 'welcome', yourId: LOCAL_PLAYER_ID, tickRate: TICK_RATE, mapSeed: sim.map.seed, level: sim.level, difficulty: sim.difficulty, ...(testDrive ? { testDrive } : {}) });
+    this.onWelcome({
+      type: "welcome",
+      yourId: LOCAL_PLAYER_ID,
+      tickRate: TICK_RATE,
+      mapSeed: sim.map.seed,
+      level: sim.level,
+      difficulty: sim.difficulty,
+      ...(testDrive ? { testDrive } : {})
+    });
     this.onSnapshot(sim.snapshot());
     this.clock.start();
   }

@@ -1,33 +1,39 @@
-import { displayName } from '../../shared/callsign.ts';
-import { BUILDING_DEFS } from '../../shared/protocol.ts';
-import type { GameEvent, GameOverStats, PlayerEntity, PlayerStatus, WorldMap } from '../../shared/protocol.ts';
-import type { SceneView } from '../engine/scene.ts';
-import type { WorldRenderer } from '../engine/world-renderer.ts';
-import type { ClientWorld } from './client-world.ts';
-import { homeUi } from './home-hud.ts';
-import { motion } from './motion.ts';
-import type { HomeFacts } from './home-hud.ts';
-import { buildHud, standingInTown } from './hud-state.ts';
-import type { Banner, RunResult, UiState } from './hud-state.ts';
-import type { CalloutWords } from './kill-juice.ts';
-import { bannerLine, calloutLine, eventLine, EventLog, levelLines } from './event-log.ts';
-import type { LogContext, LogLine } from './event-log.ts';
-import { hordeBanner, isLandmark, overrunBanner, radioBanner, RunNotices } from './run-notices.ts';
-import { tapGameEvent, tapLocalPlayer } from './analytics/event-tap.ts';
-import { lockedTracksOf } from '../audio/playlists.ts';
-import { trackName } from './sound-test.ts';
-import { foundTracks, isRadioFound, recordRadioFound } from './sound-unlock.ts';
-import { recordRun } from './storage.ts';
-import { dailyShare, dayLabel, recordDaily } from './daily-night.ts';
-import type { DailyPartySize } from './daily-night.ts';
-import { TownMapView } from './town-map.ts';
-import { containerInReach } from '../../shared/containers.ts';
-import { BUNKER_LEVEL } from '../../shared/home-protocol.ts';
-import { levelDef } from '../../shared/levels.ts';
-import { BITE_MS, BiteTracker } from './bite-marker.ts';
-import { deathWitness } from './death-cause.ts';
-import { HintTracker } from './first-run-hints.ts';
-import type { HintFacts } from './first-run-hints.ts';
+import { displayName } from "../../shared/callsign.ts";
+import { BUILDING_DEFS } from "../../shared/protocol.ts";
+import type {
+  GameEvent,
+  GameOverStats,
+  PlayerEntity,
+  PlayerStatus,
+  WorldMap
+} from "../../shared/protocol.ts";
+import type { SceneView } from "../engine/scene.ts";
+import type { WorldRenderer } from "../engine/world-renderer.ts";
+import type { ClientWorld } from "./client-world.ts";
+import { homeUi } from "./home-hud.ts";
+import { motion } from "./motion.ts";
+import type { HomeFacts } from "./home-hud.ts";
+import { buildHud, standingInTown } from "./hud-state.ts";
+import type { Banner, RunResult, UiState } from "./hud-state.ts";
+import type { CalloutWords } from "./kill-juice.ts";
+import { bannerLine, calloutLine, eventLine, EventLog, levelLines } from "./event-log.ts";
+import type { LogContext, LogLine } from "./event-log.ts";
+import { hordeBanner, isLandmark, overrunBanner, radioBanner, RunNotices } from "./run-notices.ts";
+import { tapGameEvent, tapLocalPlayer } from "./analytics/event-tap.ts";
+import { lockedTracksOf } from "../audio/playlists.ts";
+import { trackName } from "./sound-test.ts";
+import { foundTracks, isRadioFound, recordRadioFound } from "./sound-unlock.ts";
+import { recordRun } from "./storage.ts";
+import { dailyShare, dayLabel, recordDaily } from "./daily-night.ts";
+import type { DailyPartySize } from "./daily-night.ts";
+import { TownMapView } from "./town-map.ts";
+import { containerInReach } from "../../shared/containers.ts";
+import { BUNKER_LEVEL } from "../../shared/home-protocol.ts";
+import { levelDef } from "../../shared/levels.ts";
+import { BITE_MS, BiteTracker } from "./bite-marker.ts";
+import { deathWitness } from "./death-cause.ts";
+import { HintTracker } from "./first-run-hints.ts";
+import type { HintFacts } from "./first-run-hints.ts";
 
 const HUD_INTERVAL_MS = 100;
 /** How often a held map repaints: fast enough for a 1.5 Hz blink, and rarely when nothing blinks. */
@@ -54,20 +60,20 @@ export const NO_RUN_UI = {
   logOpen: false,
   hint: null,
   bite: null,
-  lobby: null,
+  lobby: null
 } as const satisfies Partial<UiState>;
 
 /** 0..1 for the low-health effects. Anyone not on their feet has no use for them. */
 export function healthFraction(local: PlayerEntity | null): number {
-  return local && local.status === 'alive' ? local.health / local.maxHealth : 1;
+  return local && local.status === "alive" ? local.health / local.maxHealth : 1;
 }
 
 /** Colour drains as the local player does. */
 export function deathFade(status: PlayerStatus | undefined, gameOver: boolean): number {
-  const isDead = status === 'dead';
+  const isDead = status === "dead";
   if (gameOver) return 0.88;
   if (isDead) return 0.7;
-  return status === 'downed' ? 0.4 : 0;
+  return status === "downed" ? 0.4 : 0;
 }
 
 /**
@@ -75,7 +81,11 @@ export function deathFade(status: PlayerStatus | undefined, gameOver: boolean): 
  * the next run before this player ever sees the results.
  * Someone who joined a finished room has no run of their own.
  */
-export function finishRun(stats: GameOverStats, localId: string, dailyKey: string | null = null): RunResult {
+export function finishRun(
+  stats: GameOverStats,
+  localId: string,
+  dailyKey: string | null = null
+): RunResult {
   const local = stats.players.find((player) => player.id === localId);
   const score = local?.score ?? 0;
   const kills = local?.kills ?? 0;
@@ -83,15 +93,20 @@ export function finishRun(stats: GameOverStats, localId: string, dailyKey: strin
   if (isDaily) {
     const playerCount = stats.players.length;
     const isMp = playerCount > 1;
-    const partySize = isMp && playerCount >= 2 && playerCount <= 5 ? (playerCount as DailyPartySize) : undefined;
-    const teamScore = isMp ? stats.players.reduce((sum, player) => sum + player.score, 0) : undefined;
-    const teamKills = isMp ? stats.players.reduce((sum, player) => sum + player.kills, 0) : undefined;
+    const partySize =
+      isMp && playerCount >= 2 && playerCount <= 5 ? (playerCount as DailyPartySize) : undefined;
+    const teamScore = isMp
+      ? stats.players.reduce((sum, player) => sum + player.score, 0)
+      : undefined;
+    const teamKills = isMp
+      ? stats.players.reduce((sum, player) => sum + player.kills, 0)
+      : undefined;
     const roster = isMp
       ? stats.players.map((player) => ({
           name: player.name,
           character: player.skin,
           score: player.score,
-          kills: player.kills,
+          kills: player.kills
         }))
       : undefined;
 
@@ -103,13 +118,13 @@ export function finishRun(stats: GameOverStats, localId: string, dailyKey: strin
           partySize,
           teamScore,
           teamKills,
-          roster,
+          roster
         })
       : false;
 
     const label = isMp
-      ? `Daily Night (${partySize ?? playerCount}P), ${dayLabel(dailyKey)}`
-      : `Daily Night, ${dayLabel(dailyKey)}`;
+      ? `Nightly Run (${partySize ?? playerCount}P), ${dayLabel(dailyKey)}`
+      : `Nightly Run, ${dayLabel(dailyKey)}`;
 
     return {
       stats,
@@ -120,11 +135,17 @@ export function finishRun(stats: GameOverStats, localId: string, dailyKey: strin
       daily: {
         label,
         counted,
-        share: dailyShare(dailyKey, undefined, partySize),
-      },
+        share: dailyShare(dailyKey, undefined, partySize)
+      }
     };
   }
-  const isNewBest = local ? recordRun({ score, kills, wave: stats.wave, durationSec: stats.durationSec }, undefined, local.name) : false;
+  const isNewBest = local
+    ? recordRun(
+        { score, kills, wave: stats.wave, durationSec: stats.durationSec },
+        undefined,
+        local.name
+      )
+    : false;
   return { stats, localId, score, kills, isNewBest };
 }
 
@@ -165,7 +186,11 @@ export class RunHud {
   private map: WorldMap | null = null;
   private biteUntilMs = 0;
 
-  constructor(ui: () => UiState, publish: (patch: Partial<UiState>) => void, homeFacts: () => HomeFacts) {
+  constructor(
+    ui: () => UiState,
+    publish: (patch: Partial<UiState>) => void,
+    homeFacts: () => HomeFacts
+  ) {
     this.ui = ui;
     this.publish = publish;
     this.homeFacts = homeFacts;
@@ -225,20 +250,33 @@ export class RunHud {
 
   private paintTown(ms: number = this.lastHudMs): void {
     this.lastMapPaintMs = ms;
-    const ctx = this.townCanvas?.getContext('2d') ?? null;
+    const ctx = this.townCanvas?.getContext("2d") ?? null;
     const scene = this.lastScene;
     const canPaint = ctx !== null && scene !== null;
     if (!canPaint) return;
     this.mapOpenedMs ??= ms;
     const clock = { nowMs: ms, openedMs: this.mapOpenedMs, reducedMotion: motion.reduced.value };
-    this.town?.paint(ctx, scene.players, scene.localId, scene.exit, scene.openedContainers, scene.drop, clock, scene.leftovers, scene.zombies);
+    this.town?.paint(
+      ctx,
+      scene.players,
+      scene.localId,
+      scene.exit,
+      scene.openedContainers,
+      scene.drop,
+      clock,
+      scene.leftovers,
+      scene.zombies
+    );
   }
 
   onEvent(event: GameEvent, now: number, ctx?: LogContext): void {
     tapGameEvent(event);
     deathWitness.see(event, ctx?.localId ?? null, now);
     const track = isRadioFound(event) ? this.giveUpTrack() : null;
-    const banner = hordeBanner(event) ?? overrunBanner(event) ?? radioBanner(event, track === null ? null : trackName(track));
+    const banner =
+      hordeBanner(event) ??
+      overrunBanner(event) ??
+      radioBanner(event, track === null ? null : trackName(track));
     if (banner) this.say(banner, now);
     const line = ctx ? eventLine(event, ctx) : null;
     if (line) this.note(line, now);
@@ -247,11 +285,14 @@ export class RunHud {
 
   /** A bite from outside the player's facing: a short red mark on that edge of the screen. */
   private noticeBite(event: GameEvent, now: number, localId: string | null): void {
-    const isAttack = event.type === 'zombie_attack';
-    const isLocalHurt = event.type === 'player_hurt' && localId !== null && event.playerId === localId;
+    const isAttack = event.type === "zombie_attack";
+    const isLocalHurt =
+      event.type === "player_hurt" && localId !== null && event.playerId === localId;
     if (!isAttack && !isLocalHurt) return;
     const facing = this.lastScene?.players.find((player) => player.id === localId)?.angle ?? null;
-    const mark = isAttack ? this.bites.attacked(event.x, event.y, now, facing) : this.bites.hurtLocal(event.x, event.y, now, facing);
+    const mark = isAttack
+      ? this.bites.attacked(event.x, event.y, now, facing)
+      : this.bites.hurtLocal(event.x, event.y, now, facing);
     if (!mark) return;
     this.biteUntilMs = now + BITE_MS;
     this.publish({ bite: mark });
@@ -265,7 +306,10 @@ export class RunHud {
     if (!snapshot || !local || !hud) return;
     const ui = this.ui();
     const free = standingInTown({ ...ui, hud }) && ui.levelCard === null && ui.banner === null;
-    const reach = this.map && free ? containerInReach(this.map, local.x, local.y, (id) => scene.openedContainers.includes(id)) : null;
+    const reach =
+      this.map && free
+        ? containerInReach(this.map, local.x, local.y, (id) => scene.openedContainers.includes(id))
+        : null;
     const facts: HintFacts = {
       level: hud.level,
       phase: hud.phase,
@@ -274,11 +318,11 @@ export class RunHud {
       hordes: hud.level === BUNKER_LEVEL ? 0 : levelDef(hud.level).hordes,
       exitOpen: hud.exitOpen,
       free,
-      near: reach === null ? null : reach.kind === 'bowl' ? 'bowl' : 'container',
+      near: reach === null ? null : reach.kind === "bowl" ? "bowl" : "container"
     };
     const next = this.hints.step(facts, ms, (ui.hint ?? null) !== null);
     if (next === null) return;
-    this.publish({ hint: next === 'clear' ? null : next });
+    this.publish({ hint: next === "clear" ? null : next });
   }
 
   /** Writes a line in the run's log, which outlasts every toast. */
@@ -288,7 +332,7 @@ export class RunHud {
 
   /** The full log opens over the run, which keeps going underneath. */
   toggleLog(): boolean {
-    const onRun = this.ui().screen === 'game' && this.ui().hud !== null;
+    const onRun = this.ui().screen === "game" && this.ui().hud !== null;
     if (!onRun) return false;
     this.publish({ logOpen: !this.ui().logOpen });
     return true;
@@ -296,7 +340,11 @@ export class RunHud {
 
   /** Notes the Radio, and hands out the next track of this level that has not been found, if any is left. */
   private giveUpTrack(): string | null {
-    const [next = null] = lockedTracksOf(this.level, foundTracks(), this.ui().runStyle ?? undefined);
+    const [next = null] = lockedTracksOf(
+      this.level,
+      foundTracks(),
+      this.ui().runStyle ?? undefined
+    );
     recordRadioFound(undefined, next);
     return next;
   }
@@ -308,7 +356,10 @@ export class RunHud {
 
   /** A kill worth a word over the action. */
   callout(words: CalloutWords, now: number): void {
-    this.publish({ callout: this.notices.callout(words, now), log: this.log.add(calloutLine(words), now) });
+    this.publish({
+      callout: this.notices.callout(words, now),
+      log: this.log.add(calloutLine(words), now)
+    });
   }
 
   calloutShowing(now: number): boolean {
@@ -316,8 +367,11 @@ export class RunHud {
   }
 
   /** A banner of the game's own, outside any event: a hint, or a question put to the player. */
-  say(banner: Omit<Banner, 'key'>, now: number): void {
-    this.publish({ banner: this.notices.banner(banner, now), log: this.log.add(bannerLine(banner), now) });
+  say(banner: Omit<Banner, "key">, now: number): void {
+    this.publish({
+      banner: this.notices.banner(banner, now),
+      log: this.log.add(bannerLine(banner), now)
+    });
   }
 
   /** The home screens read the save, which moves between the hud's beats. */
@@ -349,12 +403,15 @@ export class RunHud {
     const local = world.localPlayer;
     if (!local) return;
     const enteredId = this.notices.entered(local.indoors);
-    const building = enteredId === null ? null : this.town?.building(enteredId) ?? null;
+    const building = enteredId === null ? null : (this.town?.building(enteredId) ?? null);
     if (building) {
       this.town?.markVisited(building.id);
       if (isLandmark(building.kind)) {
         const label = BUILDING_DEFS[building.kind].label;
-        this.publish({ place: this.notices.place(label, ms), log: this.log.add({ text: label.toUpperCase(), tone: 'plain', kind: 'night' }, ms) });
+        this.publish({
+          place: this.notices.place(label, ms),
+          log: this.log.add({ text: label.toUpperCase(), tone: "plain", kind: "night" }, ms)
+        });
       }
     }
     const refused = this.notices.refusal(local, world.latest?.pickups ?? [], ms);
@@ -376,13 +433,16 @@ export class RunHud {
     if (!hasRun) return;
     tapLocalPlayer(local.id);
     this.heldTick = snapshot.tick;
-    const viewer = scene.viewerId === local.id ? null : scene.players.find((player) => player.id === scene.viewerId);
+    const viewer =
+      scene.viewerId === local.id
+        ? null
+        : scene.players.find((player) => player.id === scene.viewerId);
     this.publish({
       hud: buildHud(snapshot, local, viewer ? displayName(viewer.name, viewer.skin) : null),
       home: homeUi(snapshot, local, this.homeFacts()),
       signalWeak: frame.networked && ms - frame.lastSnapshotMs > SIGNAL_WEAK_MS,
       ...this.notices.expired(this.ui(), ms),
-      ...(this.ui().bite && ms > this.biteUntilMs ? { bite: null } : {}),
+      ...(this.ui().bite && ms > this.biteUntilMs ? { bite: null } : {})
     });
     this.stepHints(world, scene, ms);
   }

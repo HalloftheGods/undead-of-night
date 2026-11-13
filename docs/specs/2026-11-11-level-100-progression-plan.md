@@ -104,7 +104,7 @@ Two reviewers checked the drafts against the spec and against the code at 5960b8
   expect(savedProgression(store)!.allocations[0].spentAp.reload).toBe(5);
   ```
 - **B7.** `characterLevel` returns `1 + TOTAL_PIPS_TO_FILL` when `current.level >= MAX_CHARACTER_LEVEL`; add `expect(characterLevel(3, kept)).toBe(21);`. Otherwise the setup screen shows "OP" next to survivor level 1.
-- **B8.** Also cover `src/components/DailyPage.vue:84`, which loads progression for the Daily Night survivor pick. Move the body of `PlaySetup.vue`'s `initialSetupProgression` into `src/game/setup-picks.ts` as `setupProgression(skin, store?, now?)`, which calls `checkApUpkeep(store, now).state` before spending banked AP; test that 2 idle weeks with 1 banked AP and 1 pip end with `owedAp: 2` and the pip gone. Add to `tests/client-flow.spec.ts`:
+- **B8.** Also cover `src/components/DailyPage.vue:84`, which loads progression for the Nightly Run survivor pick. Move the body of `PlaySetup.vue`'s `initialSetupProgression` into `src/game/setup-picks.ts` as `setupProgression(skin, store?, now?)`, which calls `checkApUpkeep(store, now).state` before spending banked AP; test that 2 idle weeks with 1 banked AP and 1 pip end with `owedAp: 2` and the pip gone. Add to `tests/client-flow.spec.ts`:
   ```ts
   const store = memoryStorage();
   store.setItem(PROGRESSION_STORAGE_KEY, JSON.stringify({ ...createInitialProgression(Date.now()), level: 3, ap: 1 }));
@@ -922,7 +922,7 @@ describe('a best trip from before level 100', () => {
 - Consumes: none.
 - Produces: `loadGhost`, `saveGhost` and `DailyGhost` keep their signatures and use `'outbreak.daily-ghost.v2'` and `'outbreak.daily-ghost-best.v2'`.
 
-1. Write the failing test in `tests/daily-ghost.spec.ts` inside `describe('Daily Night ghost')`, using its `memoryStore` and `DAY`:
+1. Write the failing test in `tests/daily-ghost.spec.ts` inside `describe('Nightly Run ghost')`, using its `memoryStore` and `DAY`:
 ```ts
 it('neither plays nor keeps a ghost saved before level 100', () => {
   const store = memoryStore();
@@ -960,7 +960,7 @@ it('neither plays nor keeps a ghost saved before level 100', () => {
   - The helper `function readLog(store: Store | null, todayKey: string): DailyLog` is not exported. When the v2 value is not null, it parses as `loadDailyLog` does today. When it is null, it parses `OLD_DAILY_KEY` with the same day-key regex and `isResult` filter, skips `todayKey`, and maps each other day to `{ score: 0, kills, level, attempts, practiceBest: 0, carried: true }`.
   - `loadDailyLog` returns `readLog(store, dateKeyOf(now))`. `recordDaily` uses `readLog(store, key)`.
 
-1. Write the failing tests in `tests/daily-night.spec.ts` inside `describe('Daily Night')`, using its `memoryStore` and `run`:
+1. Write the failing tests in `tests/daily-night.spec.ts` inside `describe('Nightly Run')`, using its `memoryStore` and `run`:
 ```ts
 const NOW = new Date(2026, 10, 7, 20, 0);
 const oldLog = JSON.stringify({
@@ -1035,7 +1035,7 @@ it('stamps a night from before level 100 as counted, without its points', () => 
 
 ### Task C6: Docs for the new record books
 **Files:**
-- Modify: `docs/README.md:27` (Daily Night bullet), `docs/README.md:77` (Records bullet)
+- Modify: `docs/README.md:27` (Nightly Run bullet), `docs/README.md:77` (Records bullet)
 - Modify: `docs/CHANGELOG.md` (a new entry above `:5`)
 
 **Interfaces:** Consumes: the key names from C1 to C4. Produces: none.

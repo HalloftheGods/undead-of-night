@@ -207,6 +207,15 @@ function gapTo({ x0, y0, x1, y1 }: Box, x: number, y: number): number {
   return Math.hypot(x - Math.max(x0, Math.min(x, x1)), y - Math.max(y0, Math.min(y, y1)));
 }
 
+/** How far a survivor may stray from a container they are searching before its grid closes on its own. */
+export const SEARCH_WALK_AWAY = SEARCH_REACH * 2;
+
+/** The gap from a spot to a container's box, or null for an id the town does not have. */
+export function containerGap(map: WorldMap, id: number, x: number, y: number): number | null {
+  const container = surveyed(map).all[id];
+  return container ? gapTo(container.box, x, y) : null;
+}
+
 /**
  * The nearest container still shut within reach of a spot, or null. Only the room the spot is in
  * counts, so nobody searches through a wall. When outdoors, only outdoor containers count.

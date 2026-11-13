@@ -10,7 +10,7 @@ Open items the Commander must supply (marked TODO below): the Discord invite URL
 
 ### Purpose
 
-The launch plan calls Discord the cheapest place to learn what players want, and the community that later turns into Steam wishlists. So the server is built around two jobs: collect feedback and bugs, and give people a reason to come back (Daily Night results, clips, co-op partners).
+The launch plan calls Discord the cheapest place to learn what players want, and the community that later turns into Steam wishlists. So the server is built around two jobs: collect feedback and bugs, and give people a reason to come back (Nightly Run results, clips, co-op partners).
 
 Co-op is invite-only with no matchmaking, so a "find a partner" channel is a real need, not decoration.
 
@@ -50,7 +50,7 @@ Co-op is invite-only with no matchmaking, so a "find a partner" channel is a rea
 
 | Channel | Type | What it is for |
 | --- | --- | --- |
-| #daily-night | Text | Paste the Copy result line from the Daily Night page or results screen. Everyone gets the same town on the same day, so compare scores and routes. Spoilers about the day's town go in threads. |
+| #daily-night | Text | Paste the Copy result line from the Nightly Run page or results screen. Everyone gets the same town on the same day, so compare scores and routes. Spoilers about the day's town go in threads. |
 | #find-a-partner | Text | Players trade co-op codes ("play with a friend by code"). Post time zone and difficulty. See safety notes. |
 | #strategy | Text | Boss tricks, keepsake picks, candy combos, night events. |
 | #clips-and-screens | Media | Highlights, burn chains, close calls. Feeds the GIF library for socials (ask permission before reuse). |
@@ -113,7 +113,7 @@ The version line works because the version number on the title screen opens the 
 | When | Action |
 | --- | --- |
 | Launch | Pin #welcome. Post the play link and the first release notes (section 3) in #announcements. |
-| Daily | One mod checks #bugs and tags new threads. The Daily Night thread is made by hand until a bot does it. |
+| Daily | One mod checks #bugs and tags new threads. The Nightly Run thread is made by hand until a bot does it. |
 | Weekly | Commander posts what changed and answers the top three feedback threads. Saturday: #screenshotsaturday clips reposted from #clips-and-screens (with permission). |
 | After two weeks | Review which channels have traffic; merge the dead ones. |
 
@@ -134,7 +134,7 @@ One obvious, low-friction way for a player to tell us something while the game i
 Two places, per the launch plan ("title screen and the results screen"):
 
 1. **Title screen.** A text link labelled **Feedback** in the secondary row near the version number in the screen's corner (the version number is what opens What's New, so players already look there). It must not compete with the main menu items or the Install Game cartridge in the second column. Component: `src/components/TitleScreen.vue`. (TODO: confirm exact placement against the current layout before building; the title layout changed on 2026-11-07.)
-2. **Results screen** (after a run, including a Daily Night run). A secondary link **Tell us how it went**, below the primary actions, beside the Copy result button when that is shown. It must not displace Play again or Main menu.
+2. **Results screen** (after a run, including a Nightly Run run). A secondary link **Tell us how it went**, below the primary actions, beside the Copy result button when that is shown. It must not displace Play again or Main menu.
 
 Not on the HUD. The run log sits bottom-right and the gun bar bottom centre, and nothing should invite a player to leave mid-fight.
 
@@ -160,7 +160,7 @@ Optional later: a line at the end of the What's New book ("Got a thought? Tell u
 ### Acceptance checks
 
 1. Title screen shows Feedback; clicking it opens the invite in a new tab and the game stays on the title screen.
-2. Results screens after a Campaign run, an Arcade run and a Daily Night run each show the link; Play again and Main menu still work and remain the primary actions.
+2. Results screens after a Campaign run, an Arcade run and a Nightly Run run each show the link; Play again and Main menu still work and remain the primary actions.
 3. With analytics consent declined, no `feedback_click` is sent; with consent, one event with the right `source`.
 4. Reachable by keyboard; on a phone-sized screen it is tappable and does not overlap the Install Game cartridge.
 5. With the portal build flag on, the link is absent.
@@ -198,9 +198,9 @@ About three towns in ten, from level 2, have something going on.
 - **Blood moon:** hordes twice the size, and every kill is worth double.
 - **Power cut:** most lamps die. Zombies see less far but hear further.
 
-The level card tells you which one you've got, and the Daily Night page shows it too.
+The level card tells you which one you've got, and the Nightly Run page shows it too.
 
-**New: Daily Night**
+**New: Nightly Run**
 A new item on the title menu. Every player gets the same town on the same day. Your first run of the day counts; later runs are practice. Track your streak and your best night. When you finish, use **Copy result** to paste your day, level, points, kills and streak anywhere. Days are kept on your device.
 
 **New: Stamps**
@@ -233,7 +233,7 @@ Choose your style each run. **Campaign** is the bunker, trips, treasure, the for
 - New biomes by level (pine, cactus, snow, ash, sludge, water), with ground that slows you and six different footsteps.
 - A **run log** in the bottom-right corner. Press **L** or tap it to open the full log over the run.
 - A **What's New** book, opened from the version number on the title screen.
-- The Record Book is now a printed book with personal bests, a top-five ledger and your last seven Daily Nights.
+- The Record Book is now a printed book with personal bests, a top-five ledger and your last seven Nightly Runs.
 - The Install Game button moved beside the main menu under the title.
 - The gun bar moved to the bottom centre.
 

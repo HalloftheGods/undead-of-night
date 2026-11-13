@@ -1,5 +1,6 @@
 // Where the title screen is: the open page, whether an invite link brought the player here, and the level picked on the Levels page. Every move is decided here.
 
+import type { GameStyle } from '../../shared/game-style.ts';
 import type { TitlePage } from './title-menu.ts';
 
 export interface TitleNav {
@@ -10,6 +11,8 @@ export interface TitleNav {
   readonly startLevel: number | null;
   /** Set when a book was opened from the Books library overlay, so Back returns to Books. */
   readonly fromBooks?: boolean;
+  /** Set when the Levels page was opened from Play's Level card: a pick sets that style's town and goes back to Play, it does not start. */
+  readonly settingLevel?: GameStyle;
 }
 
 export const TITLE_HOME: TitleNav = { page: null, invited: false, startLevel: null, fromBooks: false };
@@ -27,6 +30,16 @@ export function openBook(nav: TitleNav, page: TitlePage): TitleNav {
 
 export function pickLevel(nav: TitleNav, level: number): TitleNav {
   return { ...nav, page: 'play', startLevel: level, fromBooks: false };
+}
+
+/** Play's Level card: the Levels page, where a pick sets the level instead of starting it. */
+export function openLevelSetter(nav: TitleNav, style: GameStyle): TitleNav {
+  return { ...nav, page: 'levels', settingLevel: style, fromBooks: false };
+}
+
+/** Back from the setting Levels page, or a pick on it: to the Play page the card was on. */
+export function closeLevelSetter(nav: TitleNav): TitleNav {
+  return { ...nav, page: 'play', settingLevel: undefined, fromBooks: false };
 }
 
 /** Back from Play: to the Levels page if a level sent the player there, else the title. Either way the invite is spent. */

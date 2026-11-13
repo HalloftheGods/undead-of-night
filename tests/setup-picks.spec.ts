@@ -35,12 +35,12 @@ describe('setup progression', () => {
 });
 
 describe('setup picks', () => {
-  it('lays out mode, difficulty and survivor, numbered in that order', () => {
+  it('lays out mode, difficulty and survivor, numbered in that order; the Level card takes number 3 between difficulty and survivor', () => {
     const picks = setupPicks({ mode: 'solo', difficulty: 'stay_close', survivor: 0 });
     expect(picks.map((pick) => [pick.number, pick.key, pick.label])).toEqual([
       [1, 'mode', 'Mode'],
       [2, 'difficulty', 'Difficulty'],
-      [3, 'who', 'Survivor'],
+      [4, 'who', 'Survivor'],
     ]);
   });
 

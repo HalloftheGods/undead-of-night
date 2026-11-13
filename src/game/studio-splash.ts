@@ -18,33 +18,33 @@ export interface SplashCard {
 }
 
 /** Served from public/, relative so the build works from any folder. */
-export const BRAND_MARK = 'brand/hall-of-the-gods.webp';
+export const BRAND_MARK = "brand/hall-of-the-gods.webp";
 
 /** The sequence of studio and platform cards shown on game boot. */
 export const SPLASH_CARDS: readonly SplashCard[] = [
   {
-    id: 'hall-of-the-gods',
+    id: "hall-of-the-gods",
     image: BRAND_MARK,
-    kicker: 'Presented by',
-    title: 'Hall of the Gods, Inc.',
-    ariaLabel: 'Presented by Hall of the Gods, Inc.',
-    bg: '#000000',
-    hold: 400,
+    kicker: "Presented by",
+    title: "Hall of the Gods, Inc.",
+    ariaLabel: "Presented by Hall of the Gods, Inc.",
+    bg: "#000000",
+    hold: 400
   },
   {
-    id: 'for-the-xp',
-    image: 'brand/forthexp-powered.webp',
-    ariaLabel: 'Powered by For The XP!',
-    bg: '#000000',
-    hold: 1400,
+    id: "for-the-xp",
+    image: "brand/forthexp-powered.gif",
+    ariaLabel: "Powered by For The XP!",
+    bg: "#03060a",
+    hold: 1400
   },
   {
-    id: 'majora-d',
-    image: 'brand/majora-d-music.webp',
-    ariaLabel: 'Music by Majora D.',
-    bg: '#110a25',
-    hold: 1600,
-  },
+    id: "majora-d",
+    image: "brand/majora-d-music-optimize.gif",
+    ariaLabel: "Music by Majora D.",
+    bg: "#110a25",
+    hold: 1600
+  }
 ];
 
 /** Year of the build, injected by Vite (`define`), so the line never follows the visitor's clock. */
@@ -61,11 +61,13 @@ export function studioLine(buildYear: number): string {
 export const STUDIO_LINE = studioLine(__BUILD_YEAR__);
 
 /** Add this to the address to go straight to the title. */
-const SKIP_QUERY = 'nosplash';
+const SKIP_QUERY = "nosplash";
 
 /** With reduced motion there is no fade, only a short hold. */
 export function splashTimings(reducedMotion: boolean): SplashTimings {
-  return reducedMotion ? { fadeIn: 0, hold: 1000, fadeOut: 0 } : { fadeIn: 400, hold: 1600, fadeOut: 500 };
+  return reducedMotion
+    ? { fadeIn: 0, hold: 1000, fadeOut: 0 }
+    : { fadeIn: 400, hold: 1600, fadeOut: 500 };
 }
 
 export function shouldShowSplash(search: string): boolean {

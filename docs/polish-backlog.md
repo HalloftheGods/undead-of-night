@@ -81,7 +81,7 @@ Effort: S ≤ 1 day, M = 2 to 4 days, L = 1 week or more. Rank = player-visible 
 | Huge input (a 3+ hour run, 999+ kills) | The game-over stats must not overflow at UI scale 1.5x. Add to the RC check, no new work unless it breaks. |
 | Offline | The home site has the PWA. Portal builds: out of scope. A first load that fails shows `PageLoadFailed.vue` (#15). |
 | Co-op | Items 2, 3 and 6 do not change co-op behaviour. `first_kill` and the cause-of-death line count the local player only. |
-| Daily Night | No item changes the Daily seed or the sim. #9 and #10 draw only from existing events. Level 1 pacing changes are excluded until PLAYTESTER reports. |
+| Nightly Run | No item changes the Daily seed or the sim. #9 and #10 draw only from existing events. Level 1 pacing changes are excluded until PLAYTESTER reports. |
 | Gamepad | Every new button or toggle must be reachable by gamepad focus; #3's primary button is the default focus. Coordinate with the gamepad layer. |
 
 ---

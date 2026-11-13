@@ -77,10 +77,9 @@
             </div>
           </div>
         </section>
-        <HeldItemPanel :art :item="modalState.heldItem?.item ?? null" @use="onUseHeld" @drop="onDropHeld" />
       </div>
 
-      <!-- Center Spacer: Open view of player character in game world -->
+      <!-- Middle: the survivor stands in the open view. What is held, with its buttons, is drawn on the game canvas (engine/held-ui.ts). -->
       <div class="center-stage-spacer" />
 
       <!-- Right Dock: Survivor Inventory -->
@@ -286,12 +285,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
-import HeldItemPanel from './HeldItemPanel.vue';
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
 import LootItemArt from './LootItemArt.vue';
+import { useGame } from './use-game.ts';
 import { backpackDef } from '../../shared/backpack.ts';
 import { getItemFootprint, isCellBlocked, type GridItem } from '../../shared/grid-inventory.ts';
 import { spriteDataUrl } from '../engine/sprite-cache.ts';
+import { heldButtonAt, heldOnSurvivor, setHeld } from '../game/held-cursor.ts';
+import { itemBlurb } from '../game/inventory/item-blurb.ts';
+import { heldActions, isLoadable } from '../game/inventory/held-actions.ts';
+import { useSoundOf } from '../game/inventory/use-sound.ts';
+import { lootSprite } from '../game/loot-item-art.ts';
 import {
   buildGridCells,
   computeTileHighlight,
@@ -325,6 +329,8 @@ const props = withDefaults(defineProps<DualLootModalProps>(), {
 });
 
 const emit = defineEmits<DualLootModalEmits>();
+/** Every lift, set-down, rotate and move in the grids has its own sound. */
+const game = useGame();
 
 const modalState = reactive(
   createDualLootState({
@@ -533,7 +539,15 @@ function syncGearEmits(slotId: GearSlotId): void {
 }
 
 function onRotateClick(): void {
-  rotateActiveItem(modalState);
+  // A box of rounds has nothing to turn: R reloads with it.
+  const held = modalState.heldItem;
+  if (held && isLoadable(held.item)) {
+    game.playSfx(useSoundOf(held.item.type));
+    onUseHeld();
+    return;
+  }
+  const rotated = rotateActiveItem(modalState);
+  if (rotated) game.playSfx('ui_rotate');
 }
 
 function onEscape(): void {
@@ -556,7 +570,10 @@ function onCellClick(gridId: GridIdentifier, col: number, row: number): boolean 
   if (held === null) return false;
   const from = sourceName(held.source);
   const placed = placeHeldItemInGrid(modalState, gridId, col, row);
-  if (placed) emit('transfer', { itemId: modalState.selectedItemId ?? '', source: from, target: gridId });
+  if (placed) {
+    emit('transfer', { itemId: modalState.selectedItemId ?? '', source: from, target: gridId });
+    game.playSfx('ui_place');
+  }
   return placed;
 }
 
@@ -565,6 +582,7 @@ const lastItemClick = ref<{ id: string; gridId: GridIdentifier; time: number } |
 function triggerQuickTransfer(gridId: GridIdentifier, itemId: string): void {
   const didTransfer = quickTransferBetweenInventories(modalState, gridId, itemId);
   if (didTransfer) {
+    game.playSfx('ui_place');
     const isContainer = gridId === 'container';
     const targetName = isContainer ? 'backpack' : 'container';
     emit('transfer', { itemId, source: gridId, target: targetName });
@@ -578,14 +596,18 @@ function onItemClick(gridId: GridIdentifier, item: GridItem): void {
     return;
   }
   lastItemClick.value = { id: item.id, gridId, time: Date.now() };
-  pickUpItemFromGrid(modalState, gridId, item.id);
+  const picked = pickUpItemFromGrid(modalState, gridId, item.id);
+  if (picked) game.playSfx('ui_pickup');
 }
 
 function onUseHeld(): void {
   const held = modalState.heldItem;
   if (!held) return;
-  emit('use', held.item);
-  modalState.heldItem = null;
+  const item = { ...held.item };
+  // A box of rounds is loaded, not spent: it goes back where it was, and leaves the bag when the gun has used the rounds.
+  if (isLoadable(item)) returnHeldItemToSource(modalState);
+  else modalState.heldItem = null;
+  emit('use', item);
 }
 
 function onDropHeld(): void {
@@ -648,7 +670,7 @@ function onGearSlotClick(slotId: GearSlotId): boolean {
 function onItemDragStart(event: DragEvent, gridId: GridIdentifier, item: GridItem): void {
   const isHolding = modalState.heldItem !== null;
   const isNotHolding = !isHolding;
-  if (isNotHolding) pickUpItemFromGrid(modalState, gridId, item.id);
+  if (isNotHolding && pickUpItemFromGrid(modalState, gridId, item.id)) game.playSfx('ui_pickup');
   const hasDataTransfer = event.dataTransfer !== null;
   if (hasDataTransfer) {
     event.dataTransfer!.setData('text/plain', item.id);
@@ -696,9 +718,51 @@ function handleGlobalKey(event: KeyboardEvent): void {
   }
 }
 
+/** The item in hand is drawn on the game canvas, with its buttons; this hands it over and answers a click on them. */
+watch(
+  () => {
+    const held = modalState.heldItem;
+    return held ? `${held.item.id}:${held.item.type}:${held.item.rotated}` : '';
+  },
+  () => {
+    const held = modalState.heldItem;
+    if (!held) return setHeld(null);
+    const { item } = held;
+    setHeld({
+      sprite: props.art ? lootSprite(props.art, item.type) : null,
+      name: formatItemName(item.type),
+      hint: itemBlurb(item.type),
+      actions: heldActions(item),
+    });
+  },
+  { immediate: true },
+);
+
+/** A click on a button does what it says. A click on the game itself drops the item, or uses it if it lands on the survivor. */
+function onHeldButtonClick(event: MouseEvent): void {
+  const held = modalState.heldItem;
+  if (!held) return;
+  const actions = heldActions(held.item);
+  const canUse = actions.some((a) => a.kind === 'use');
+  const canDrop = actions.some((a) => a.kind === 'drop');
+  const onButton = heldButtonAt(event.clientX, event.clientY);
+  const onGame = event.target instanceof HTMLCanvasElement;
+  const kind = onButton ?? (onGame ? (heldOnSurvivor(event.clientX, event.clientY) ? 'use' : 'drop') : null);
+  if (kind === 'use' && canUse) {
+    game.playSfx(useSoundOf(held.item.type));
+    onUseHeld();
+  } else if (kind === 'drop' && canDrop) {
+    game.playSfx('ui_drop');
+    onDropHeld();
+  }
+}
+
 onMounted(() => {
   const isWindowDefined = typeof window !== 'undefined';
-  if (isWindowDefined) window.addEventListener('keydown', handleGlobalKey);
+  if (isWindowDefined) {
+    window.addEventListener('keydown', handleGlobalKey);
+    window.addEventListener('click', onHeldButtonClick);
+  }
 });
 
 /** Esc from outside: put a held item back first, and close on the next press. */
@@ -711,7 +775,10 @@ defineExpose({ escape: onEscape, rotate: onRotateClick, settle });
 
 onUnmounted(() => {
   const isWindowDefined = typeof window !== 'undefined';
-  if (isWindowDefined) window.removeEventListener('keydown', handleGlobalKey);
+  if (isWindowDefined) {
+    window.removeEventListener('keydown', handleGlobalKey);
+    window.removeEventListener('click', onHeldButtonClick);
+  }
 });
 </script>
 

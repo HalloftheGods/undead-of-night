@@ -18,7 +18,13 @@
     "allowJs": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@shared/*": ["./shared/*"],
+      "@game/*": ["./src/game/*"],
+      "@components/*": ["./src/components/*"],
+      "@engine/*": ["./src/engine/*"],
+      "@art/*": ["./src/art/*"],
+      "@audio/*": ["./src/audio/*"]
     }
   },
   "include": [

@@ -2,6 +2,30 @@
 
 All notable changes to the Undead of Night: Last Round game are documented in this file.
 
+## [2026-11-13] - Held items on the canvas, ammo boxes
+
+### Added
+- Spare rounds show in the bag as ammo boxes, one per magazine's worth (pistol 12, carbine 30, shotgun 6), with the last box holding the remainder. The spare-ammo counter stays the truth; reloading or firing shrinks and removes boxes on its own.
+- A held ammo box has a LOAD button. LOAD, dropping the box on the survivor, or R while holding it starts the reload for the gun in hand. The box leaves the bag when the rounds are used.
+- An ammo pickup is refused when the bag has no slot for another box (it still tops up a part box). Container finds follow the same rule.
+- The item in hand is drawn on the game canvas at the pointer, in place of the crosshair, with its name, a one-line description and its buttons under the survivor. Clicking the game drops it; clicking the survivor uses it.
+
+### Changed
+- The Campaign and Arcade pick rows and the News Stand cards keep their single-row layouts.
+- The inventory's three parts sit apart: the container at the left edge, the survivor inventory at the right, the middle clear.
+
+## [2026-11-13] - Arcade Level card
+
+### Added
+- The Play page's picks now run Mode, Difficulty, Level, Survivor. The Level card names the town (not the episode title) and opens the Levels page to set it. Arcade's set town is where a run starts. Campaign's set town is where a solo van drives by default, and the garage map can still change it.
+
+## [2026-11-13] - Live use and drop, inventory sounds
+
+### Changed
+- Using or dropping an item from the grid takes effect at once: the item leaves the grid, and a medkit, drink or drop shows without waiting for the grid to close.
+- Each supply plays its own sound when used (candy crunches, drinks glug, a medkit heals). A drop has its own sound.
+- Lifting, placing, rotating and moving items in the grid each have a sound of their own.
+
 ## [2026-11-12] - Level 100 follow-ups
 
 ### Changed
@@ -29,7 +53,7 @@ All notable changes to the Undead of Night: Last Round game are documented in th
 - A lost pip becomes owed AP, and each level-up repays one on top of its own AP.
 - Level 100 never decays and shows every survivor OP.
 - Saves carry a version. Old saves keep their level, AP and pips, restart XP at 0, and get a week's grace.
-- Upkeep is checked on the title, setup and Daily Night screens and at run start, never on a kill, so pips do not vanish mid-run.
+- Upkeep is checked on the title, setup and Nightly Run screens and at run start, never on a kill, so pips do not vanish mid-run.
 - The Character Sheet XP bar shows MAX LEVEL and fills at level 100.
 
 ## [2026-11-12] - Level 100 curve
@@ -281,7 +305,7 @@ Builds pieces 1 and 2 of `docs/superpowers/specs/2026-11-08-hud-mobile-design.md
 ## [2026-11-07] - Halloween candy
 
 ### Added
-- Candy (`shared/candy.ts`): twelve short boosts hidden in containers, most of them in houses and apartments. A survivor carries two and eats the next with X. Each lasts 75 seconds, and a candy already working is skipped for the next one in the bag, so boosts never stack. Where candy is hidden comes off the town's seed on a generator of its own, so the sim's other rolls stay put and a Daily Night hides the same candy for everyone.
+- Candy (`shared/candy.ts`): twelve short boosts hidden in containers, most of them in houses and apartments. A survivor carries two and eats the next with X. Each lasts 75 seconds, and a candy already working is skipped for the next one in the bag, so boosts never stack. Where candy is hidden comes off the town's seed on a generator of its own, so the sim's other rolls stay put and a Nightly Run hides the same candy for everyone.
   - Sour Skulls (reload ×2), Fang Taffy (shove and knife ×2), Ghost Gum (silent sprint), Pumpkin Fizz (+25% speed, matched by the client's prediction), Witch's Brittle (+2 health a kill), Bat Bites (bullets pierce one zombie), Candy Corn Rush (chain window ×5), Jawbreaker (half damage), Black Licorice Lash (+3px head margin), Caramel Apple (one instant revive), Popping Eyeballs (molotovs without fuel), and the rare Full-Size Bar (everything at half strength for 20 seconds).
   - Going down ends whatever is working, and a fresh start empties the bag. Candy rides along to the next town.
 - `candy_eaten` event, `PlayerEntity.candy` and `.sugar`, the `eat` input, and `container_opened.candy`. The HUD shows the bag and what is working, with a banner saying what the candy does.
@@ -294,7 +318,7 @@ Builds pieces 1 and 2 of `docs/superpowers/specs/2026-11-08-hud-mobile-design.md
 ## [2026-11-07] - Stamps
 
 ### Added
-- Achievements as rubber stamps (`src/game/stamps.ts`): 17 of them, from First Blood and Headhunter (50 headshots across runs) to the three boss stamps, Blood Moon, Into the Fog, Last Stop (all ten towns) and Three Nights (a Daily Night streak of three). They are read off the events every client already gets, so play is the same with them or without them, and kept on the device under `outbreak.stamps` with the day each was earned.
+- Achievements as rubber stamps (`src/game/stamps.ts`): 17 of them, from First Blood and Headhunter (50 headshots across runs) to the three boss stamps, Blood Moon, Into the Fog, Last Stop (all ten towns) and Three Nights (a Nightly Run streak of three). They are read off the events every client already gets, so play is the same with them or without them, and kept on the device under `outbreak.stamps` with the day each was earned.
 - A stamp earned in play shows as a "STAMP:" callout once no kill callout has the screen.
 - Two new leaves at the back of the Record Book: each stamp is a ring, inked and dated once earned, and dashed with how to earn it while empty.
 
@@ -323,13 +347,13 @@ Builds pieces 1 and 2 of `docs/superpowers/specs/2026-11-08-hud-mobile-design.md
   - **Fog**: zombies spot you from 55% of the usual range, and the town is washed grey.
   - **Blood moon**: hordes twice the size, every kill worth double, and a red sky that pulses.
   - **Power cut**: zombies see 70% as far and hear 30% further, and most lamps are dead. A blackout town gets fog instead.
-- The level card names the event ("Tonight: Fog. ..."), and the Daily Night page shows it next to the difficulty. The client works it out from the snapshot's map seed, so nothing new goes over the wire.
+- The level card names the event ("Tonight: Fog. ..."), and the Nightly Run page shows it next to the difficulty. The client works it out from the snapshot's map seed, so nothing new goes over the wire.
 
 ## [2026-11-07] - Chains that pay, and a Daily result to share
 
 ### Added
 - Kill chains pay: each kill by the same survivor within 1.4 seconds of the last is worth a quarter more, up to double from the fifth (`shared/kill-chain.ts`). The floating score says so ("+18 x1.5"), and `zombie_die` carries the kill's place in the chain.
-- A Copy result button on the Daily Night page (once played) and on the results screen after a Daily run. It copies the day, level, points, kills and streak with the game's link, ready to paste anywhere.
+- A Copy result button on the Nightly Run page (once played) and on the results screen after a Daily run. It copies the day, level, points, kills and streak with the game's link, ready to paste anywhere.
 
 ## [2026-11-07] - The record book
 
@@ -337,15 +361,15 @@ Builds pieces 1 and 2 of `docs/superpowers/specs/2026-11-08-hud-mobile-design.md
 - Records is now a printed record book on the How to Play magazine's paper: four ruled pages read as two spreads (one page at a time on a tall screen), turned with Prev and Next, the arrow keys or a swipe.
 - Personal bests: a card each for Campaign and Arcade, the numbers written in by hand, stamped "No run yet" until there is one.
 - The ledger: the top five with hordes, kills, time and date as well as the score, the empty lines left ruled and waiting.
-- Daily Night: tonight's town on a ticket stub, your streak, best night and nights logged.
+- Nightly Run: tonight's town on a ticket stub, your streak, best night and nights logged.
 - The last seven nights, each stamped Counted, Missed or Tonight (`src/game/record-book.ts`, tests in `tests/record-book.spec.ts`).
 
-## [2026-11-07] - Daily Night
+## [2026-11-07] - Nightly Run
 
 ### Added
-- A Daily Night item on the title menu, after Play. Its page shows today's town (level, rule and difficulty, all picked from the date), your run today, your streak and the time to the next town, then the survivor select and Start tonight.
+- A Nightly Run item on the title menu, after Play. Its page shows today's town (level, rule and difficulty, all picked from the date), your run today, your streak and the time to the next town, then the survivor select and Start tonight.
 - The day's run is solo with Arcade rules on a seed from the date (`src/game/daily-night.ts`), so every player gets the same town on the same day. The first run of the day counts; later ones count as practice and keep a practice best. Days are kept on this device (60 at most), under `outbreak.daily`.
-- The results screen says "Daily Night, 7 Nov" and whether that run counted. Daily runs leave level progress and Arcade bests alone.
+- The results screen says "Nightly Run, 7 Nov" and whether that run counted. Daily runs leave level progress and Arcade bests alone.
 - `ConnectOptions.seed`, so a local session can be started on a fixed seed. Tests in `tests/daily-night.spec.ts`.
 
 ## [2026-11-07] - Supply drops

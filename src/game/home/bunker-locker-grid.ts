@@ -276,7 +276,8 @@ export function loadoutToHandsBag(
   gear: GearEquipState;
 } {
   const bag = createBag(tier);
-  syncBag(bag, bagWanted({ ...hands, materials: undefined, fireworks: 0, fountains: 0 }));
+  // The hands' rounds are laid out as their own boxes below, so the bag's own ammo boxes are left out here.
+  syncBag(bag, bagWanted({ ...hands, materials: undefined, fireworks: 0, fountains: 0, ammoBag: undefined }));
 
   let primary: GridItem | null = null;
   let secondary: GridItem | null = null;

@@ -1,10 +1,27 @@
-import type { Container } from '../../shared/containers.ts';
-import type { DoorChoice, PlacedDoor } from '../../shared/door-view.ts';
-import type { LeftoverView } from '../../shared/leftovers.ts';
-import type { BulletEntity, DropView, EntityId, ExitEntity, GamePhase, PickupEntity, PlayerEntity, TrackEntity, VehicleView, ZombieEntity } from '../../shared/protocol.ts';
-import type { MerchantEntity, MerchantId, OverrunView, StationId } from '../../shared/home-protocol.ts';
+import type { HeldView } from "./held-ui.ts";
+import type { Container } from "../../shared/containers.ts";
+import type { DoorChoice, PlacedDoor } from "../../shared/door-view.ts";
+import type { LeftoverView } from "../../shared/leftovers.ts";
+import type {
+  BulletEntity,
+  DropView,
+  EntityId,
+  ExitEntity,
+  GamePhase,
+  PickupEntity,
+  PlayerEntity,
+  TrackEntity,
+  VehicleView,
+  ZombieEntity
+} from "../../shared/protocol.ts";
+import type {
+  MerchantEntity,
+  MerchantId,
+  OverrunView,
+  StationId
+} from "../../shared/home-protocol.ts";
 
-export { CHEST_HEIGHT } from '../../shared/constants.ts';
+export { CHEST_HEIGHT } from "../../shared/constants.ts";
 
 /** What fingers leave on screen, all in buffer pixels. */
 export interface TouchMarks {
@@ -35,14 +52,14 @@ export interface QuestMark {
 
 /** What the search key would do at a car: get in or get out, and whether a boot there could be searched too. */
 export interface VehicleHint {
-  readonly kind: 'enter' | 'exit';
+  readonly kind: "enter" | "exit";
   readonly boot: boolean;
 }
 
 /** Everything the renderer draws this frame. Plain values; nothing here is reactive. */
 export interface SceneView {
   readonly players: readonly PlayerEntity[];
-  /** The Daily Night's ghost: the day's counted run, replayed. Drawn pale and apart; it touches nothing. */
+  /** The Nightly Run's ghost: the day's counted run, replayed. Drawn pale and apart; it touches nothing. */
   readonly ghost?: PlayerEntity | null;
   readonly zombies: readonly ZombieEntity[];
   readonly bullets: readonly BulletEntity[];
@@ -93,6 +110,8 @@ export interface SceneView {
   readonly pointerX: number | null;
   readonly pointerY: number | null;
   readonly showCrosshair: boolean;
+  /** The item in hand while the inventory is open: picture at the pointer, words and buttons under the survivor. Absent when nothing is held. */
+  readonly held?: HeldView | null;
   /** Set while fingers are playing, when the crosshair follows them and the pointer steers nothing. */
   readonly touch?: TouchMarks | null;
   readonly phase: GamePhase;
@@ -115,6 +134,6 @@ export const EMPTY_SCENE: SceneView = {
   pointerX: null,
   pointerY: null,
   showCrosshair: false,
-  phase: 'intermission',
-  hostiles: 0,
+  phase: "intermission",
+  hostiles: 0
 };

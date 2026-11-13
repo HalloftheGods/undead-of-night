@@ -85,7 +85,7 @@ export const ITEM_FOOTPRINTS: Record<string, GridFootprint> = {
   sheet_curtain: { width: 2, height: 1 },
   shells: { width: 1, height: 1 },
   shock_tarts: { width: 1, height: 1 },
-  shotgun: { width: 4, height: 1 },
+  shotgun: { width: 4, height: 2 },
   skull_pops: { width: 1, height: 1 },
   soda: { width: 1, height: 2 },
   sour_skulls: { width: 1, height: 1 },

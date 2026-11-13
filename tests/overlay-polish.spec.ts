@@ -10,10 +10,10 @@ describe('overlay polish', () => {
     expect(pause).toContain('id="pause"');
   });
 
-  it('keeps Brightness in the Display card on Options, while sound settings live in Sound Test', () => {
-    const options = source('../src/components/OptionsPage.vue');
-    expect(options.indexOf('<DisplayOptions')).toBeGreaterThan(-1);
-    expect(options).not.toContain('<SoundOptions');
+  it('gives Audio, Display and Gameplay & Comfort each their own page, with sound levels also in Sound Test', () => {
+    expect(source('../src/components/DisplayPage.vue')).toContain('<DisplayOptions');
+    expect(source('../src/components/AudioPage.vue')).toContain('<SoundOptions');
+    expect(source('../src/components/GameplayPage.vue')).toContain('<MotionOptions');
     const soundTest = source('../src/components/SoundTestPage.vue');
     expect(soundTest).toContain('<SoundOptions');
     const display = source('../src/components/DisplayOptions.vue');

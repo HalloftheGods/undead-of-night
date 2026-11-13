@@ -5,8 +5,13 @@
 }
 
 @keyframes rb-settle {
-  from { opacity: 0.4; }
-  to { opacity: 1; }
+  from {
+    opacity: 0.4;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 /* Ledger paper: faint blue rules and a red margin down the left of every leaf. */
@@ -214,7 +219,7 @@
   color: var(--print-soft);
 }
 
-/* Daily Night: tonight's ticket stub, then the three numbers that matter. */
+/* Nightly Run: tonight's ticket stub, then the three numbers that matter. */
 .rb-daily {
   display: flex;
   flex-direction: column;

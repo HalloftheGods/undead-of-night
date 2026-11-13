@@ -1,4 +1,4 @@
-import { bagWanted, isBagItemType, isDroppableBagItem, retierBag, syncBag, validateLayout, adoptLayout } from './bag.ts';
+import { ammoBoxWeapon, bagWanted, isAmmoBoxType, isBagItemType, isDroppableBagItem, retierBag, stampAmmoBoxes, syncBag, validateLayout, adoptLayout } from './bag.ts';
 import type { BagCommit, BagItemType, BagWanted, DroppableBagItem } from './bag.ts';
 import { MAX_COMMIT_DROPS, MAX_COMMIT_LAYOUT } from './bag-commit.ts';
 import { FORTIFICATION_ITEMS } from './fortifications.ts';
@@ -62,10 +62,13 @@ export function reconcileBag(sim: SimState, p: PlayerState): void {
   const overflow: Partial<BagWanted> = syncBag(p.inventory, bagWanted(p));
   for (const item of evicted) overflow[item.type as BagItemType] = (overflow[item.type as BagItemType] ?? 0) + (item.count ?? 1);
   for (const [type, count] of Object.entries(overflow) as [BagItemType, number][]) {
+    // Rounds with no slot to show stay counted: the bag only limits what a pickup may add (takeAmmo).
+    if (isAmmoBoxType(type)) continue;
     if (isDroppableBagItem(type)) leaveOnGround(sim, p, type, count);
     else take(p, type, count);
   }
   if (Object.keys(overflow).length > 0) syncBag(p.inventory, bagWanted(p));
+  stampAmmoBoxes(p.inventory, p.ammoBag);
 }
 
 /**
@@ -117,6 +120,11 @@ export function applyBagCommit(sim: SimState, p: PlayerState, commit: BagCommit)
       }
       continue;
     }
+    // Loading a box: the gun it feeds, if it is the one in hand, starts its reload. The rounds leave the counter when it ends, and the box with them.
+    if (isAmmoBoxType(row.type)) {
+      if (ammoBoxWeapon(row.type) === p.weapon) p.reloadQueued = true;
+      continue;
+    }
     const isUsable = isSupplyType(row.type) && Number.isInteger(row.count) && row.count >= 1;
     if (!isUsable) continue;
     for (let used = 0; used < row.count && useSupply(p, row.type); used += 1);
@@ -134,5 +142,6 @@ export function applyBagCommit(sim: SimState, p: PlayerState, commit: BagCommit)
   const placements = validateLayout(p.inventory, layout);
   if (!placements) return false;
   adoptLayout(p.inventory, placements);
+  stampAmmoBoxes(p.inventory, p.ammoBag);
   return true;
 }

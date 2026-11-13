@@ -17,13 +17,15 @@ export type TitlePage =
   | "records"
   | "sound"
   | "radio"
-  | "options"
+  | "audio"
+  | "display"
+  | "gameplay"
   | "controls"
   | "changelog"
   | "dev_inventory";
 
-/** The menu's three parents. */
-export type MenuGroup = "books" | "play" | "extras";
+/** The menu's top-level groups. */
+export type MenuGroup = "play" | "books" | "settings" | "radio";
 
 export interface TitleMenuItem {
   readonly page: TitlePage;
@@ -40,19 +42,44 @@ export interface TitleMenuItem {
 }
 
 /** What an item reads as: its name, or ??? while what it needs has not been found. */
-export function menuLabel(item: TitleMenuItem, unlock: SoundUnlock): string {
-  const hidden = item.needs === "radio" && !unlock.radio;
+export function menuLabel(item: TitleMenuItem, unlock?: SoundUnlock): string {
+  const hidden = item.needs === "radio" && !unlock?.radio;
   return hidden ? "???" : item.label;
 }
 
 /** The line under an item: hidden along with the name while what it needs has not been found. */
-export function menuLine(item: TitleMenuItem, unlock: SoundUnlock): string {
-  const hidden = item.needs === "radio" && !unlock.radio;
+export function menuLine(item: TitleMenuItem, unlock?: SoundUnlock): string {
+  const hidden = item.needs === "radio" && !unlock?.radio;
   return hidden ? "" : item.line;
 }
 
-/** Every link, section by section. The title shows only the three parents (MENU_SECTIONS); a link shows once its parent is opened. */
+/** Every link, section by section. */
 export const TITLE_MENU: readonly TitleMenuItem[] = [
+  // 1-5 Player (Campaign and Arcade)
+  {
+    group: "play",
+    page: "play",
+    label: "Campaign",
+    style: "campaign",
+    line: "Live in a bunker. Run trips, haul treasure home."
+  },
+  {
+    group: "play",
+    page: "play",
+    label: "Arcade",
+    style: "arcade",
+    line: "Ten levels in a row. Die and the run ends."
+  },
+
+  // Nightly Run (Top-level direct launcher with undead star indicator)
+  {
+    group: "play" as any,
+    page: "daily",
+    label: "Nightly Run",
+    line: "A fresh solo or co-op night every day. One chance."
+  },
+
+  // News Stand (Guides, Statistics, Level Select, and Radio)
   {
     group: "books",
     page: "howto",
@@ -65,54 +92,64 @@ export const TITLE_MENU: readonly TitleMenuItem[] = [
     label: "Candy Magazine",
     line: "Nutrition, brands and special effects."
   },
-  { group: "books", page: "guide", label: "Town Guide", line: "What each kind of building holds." },
-  { group: "books", page: "records", label: "Records", line: "Your best runs, trips and scores." },
   {
-    group: "play",
-    page: "daily",
-    label: "Daily Night",
-    line: "A fresh night every day.",
-    primary: true
+    group: "books",
+    page: "guide",
+    label: "Town Guide",
+    line: "What each kind of building holds."
   },
   {
-    group: "play",
-    page: "play",
-    label: "Arcade",
-    style: "arcade",
-    line: "Ten levels in a row. Die and the run ends."
+    group: "books",
+    page: "records",
+    label: "Statistics",
+    line: "Your best runs, trips and scores."
   },
   {
-    group: "play",
-    page: "play",
-    label: "Campaign",
-    style: "campaign",
-    line: "Live in a bunker. Run trips, haul treasure home."
-  },
-  {
-    group: "play",
+    group: "books",
     page: "levels",
     label: "Level Select",
     line: "Jump to an Arcade level you have reached."
   },
+
+  // Radio (Top-level unlockable item)
   {
-    group: "extras",
+    group: "radio",
     page: "radio",
     label: "Radio",
     line: "Tapes, tunes and radio finds.",
     needs: "radio"
   },
-  { group: "extras", page: "sound", label: "Sound Test", line: "Hear the music and effects." },
+
+  // Settings (Sorted A - Z: Audio, Controls, Display, Gameplay & Comfort, Sound Test)
   {
-    group: "extras",
-    page: "options",
-    label: "Options",
-    line: "Sound, display, motion and comfort."
+    group: "settings",
+    page: "audio",
+    label: "Audio",
+    line: "Music, sound effects and volume levels."
   },
   {
-    group: "extras",
+    group: "settings",
     page: "controls",
     label: "Controls",
     line: "Remap keyboard keys and controller buttons."
+  },
+  {
+    group: "settings",
+    page: "display",
+    label: "Display",
+    line: "Fullscreen, resolution and visual effects."
+  },
+  {
+    group: "settings",
+    page: "gameplay",
+    label: "Gameplay & Comfort",
+    line: "Camera motion, screen shake and accessibility."
+  },
+  {
+    group: "settings",
+    page: "sound",
+    label: "Sound Test",
+    line: "Hear the music and effects."
   }
 ];
 
@@ -121,18 +158,43 @@ export interface MenuSection {
   readonly group: MenuGroup;
   readonly label: string;
   readonly line: string;
+  readonly needs?: "radio";
+  /** Optional icon badge type for special title entries. */
+  readonly badgeType?: "star" | "undead_star";
 }
 
-/** The three parents the title shows, Play on top. Each opens its children; Back returns here. */
+/** Static menu sections exported for TitleMenu.vue compatibility. */
 export const MENU_SECTIONS: readonly MenuSection[] = [
-  { group: "play", label: "Play", line: "Daily Night, Arcade, Campaign and Level Select." },
+  {
+    group: "play",
+    label: "1-5 Player",
+    line: "Campaign and Arcade."
+  },
   {
     group: "books",
     label: "News Stand",
-    line: "How to Play, the Candy Magazine, Town Guide and Records."
+    line: "How to Play, Candy Magazine, Town Guide, Statistics and Level Select."
   },
-  { group: "extras", label: "Extras", line: "Sound Test, Options and Controls." }
+  {
+    group: "settings",
+    label: "Settings",
+    line: "Audio, Controls, Display, Gameplay and Sound Test."
+  },
+  {
+    group: "radio",
+    label: "Radio",
+    line: "Tapes, tunes and radio finds.",
+    needs: "radio"
+  }
 ];
+
+/** Returns menu sections, hiding locked radio if unlock is provided and false. */
+export function menuSections(unlock?: SoundUnlock): readonly MenuSection[] {
+  return MENU_SECTIONS.filter((sec) => {
+    if (sec.needs === "radio" && !unlock?.radio) return false;
+    return true;
+  });
+}
 
 /** One line of the menu as drawn: a parent, one of its links, or the Back that leaves a list. */
 export interface MenuRow {
@@ -144,40 +206,69 @@ export interface MenuRow {
   readonly group?: MenuGroup;
   /** Set on a link: the entry it opens. */
   readonly item?: TitleMenuItem;
+  /** Optional badge type passed from the section or direct item. */
+  readonly badgeType?: "star" | "undead_star";
 }
 
 /** The rows for the title (section null) or for one opened section, which ends in Back. */
 export function menuRows(
   section: MenuGroup | null,
   entries: readonly TitleMenuItem[] = TITLE_MENU,
-  unlock?: SoundUnlock
+  unlock?: SoundUnlock,
+  dailyCompleted: boolean = false
 ): readonly MenuRow[] {
+  const sections = menuSections(unlock);
   if (section === null) {
-    return MENU_SECTIONS.map((each, index) => ({
+    const parentRows: MenuRow[] = sections.map((each) => ({
       kind: "section",
       label: each.label,
       line: each.line,
-      primary: index === 0,
+      primary: false,
       group: each.group
     }));
+
+    // Find the direct Nightly Run item and add it as a top-level item row with its undead star badge
+    const nightlyRunItem = entries.find(
+      (item) => item.page === "daily" && item.group === ("play" as any)
+    );
+    const nightlyRunRow: MenuRow | null = nightlyRunItem
+      ? {
+          kind: "item",
+          label: menuLabel(nightlyRunItem, unlock),
+          line: menuLine(nightlyRunItem, unlock),
+          primary: false,
+          item: nightlyRunItem,
+          badgeType: dailyCompleted ? "star" : "undead_star"
+        }
+      : null;
+
+    // Insert Nightly Run right after 1-5 Player for optimal placement on the title screen
+    const rows = [...parentRows];
+    if (nightlyRunRow) {
+      rows.splice(1, 0, nightlyRunRow);
+    }
+    return rows;
   }
+
   const links = entries.filter((item) => {
-    const isSection = item.group === section;
-    if (!isSection) return false;
-    const isLockedRadio = item.needs === "radio" && !unlock?.radio;
-    return !isLockedRadio;
+    if (item.group !== section) return false;
+    if (item.needs === "radio" && !unlock?.radio) return false;
+    // Exclude the top-level nightly run item when rendering standard submenus
+    if (item.page === "daily" && item.group === ("play" as any)) return false;
+    return true;
   });
+
   const rows: MenuRow[] = links.map((item) => ({
     kind: "item",
-    label: item.label,
-    line: item.line,
-    primary: item.primary === true,
+    label: menuLabel(item, unlock),
+    line: menuLine(item, unlock),
+    primary: false,
     item
   }));
   return [...rows, { kind: "back", label: "Back", line: "", primary: false }];
 }
 
-/** Where a list opens: its primary row, or the top. */
+/** Where a list opens: its primary row, or the top (0 when all rows have primary: false). */
 export function openingRow(rows: readonly MenuRow[]): number {
   return Math.max(
     0,
@@ -270,7 +361,7 @@ export interface RecordStat {
 const RECORD_TAGS: Readonly<Record<GameStyle, readonly [string, string, string, string]>> = {
   arcade: ["Best score", "Hordes", "Kills", "Best time"],
   campaign: ["Best trip score", "Trip hordes", "Trip kills", "Best trip time"],
-  daily: ["Best score", "Hordes", "Kills", "Best time"]
+  daily: ["Best score", "Hordes", "Kils", "Best time"]
 };
 
 /** A style's own best: Arcade's whole run, or Campaign's single trip. The two are never compared. */
@@ -312,7 +403,7 @@ export function recordSections(
 const ROW_LABELS: Readonly<Record<GameStyle, string>> = {
   campaign: "Campaign trip",
   arcade: "Arcade run",
-  daily: "Daily Night run"
+  daily: "Nightly Run run"
 };
 
 const SHOWN_RUNS = 5;

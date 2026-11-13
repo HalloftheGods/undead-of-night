@@ -3,6 +3,8 @@ import type { NightEventId } from '../../shared/night-events.ts';
 import { TILE_SIZE } from '../../shared/protocol.ts';
 import type { EntityId, GameEvent, WorldMap, ZombieType } from '../../shared/protocol.ts';
 import type { ArtBook, PixelSprite } from '../art/types.ts';
+import { drawHeldUi } from './held-ui.ts';
+import { setHeldButtons, setHeldSurvivor } from '../game/held-cursor.ts';
 import { Atmosphere } from './atmosphere.ts';
 import { BuildingLayer, roomRect } from './building-layer.ts';
 import { Camera } from './camera.ts';
@@ -439,9 +441,36 @@ export class WorldRenderer {
     this.emotes.draw(ctx, scene, left, top, viewW, viewH, time, (id) => this.overlay.headroomOf(id));
     this.fx.particles.keepTextsClear(this.overlay.sugarKeepOuts());
     this.fx.particles.drawTexts(ctx, left, top);
-    if (scene.showCrosshair) this.overlay.drawCrosshair(ctx, scene, left, top, lightAt, isKilled);
+    if (scene.showCrosshair && !scene.held) this.overlay.drawCrosshair(ctx, scene, left, top, lightAt, isKilled);
+    this.drawHeld(ctx, scene, left, top, viewW, viewH);
 
     this.visuals.endFrame();
     this.frameMs += (performance.now() - started - this.frameMs) * 0.05;
+  }
+
+  /** The item in hand takes the crosshair's place; its words and buttons hang under the survivor. Reports where the buttons are, in client pixels. */
+  private drawHeld(ctx: CanvasRenderingContext2D, scene: SceneView, left: number, top: number, viewW: number, viewH: number): void {
+    if (!scene.held) {
+      setHeldButtons([]);
+      setHeldSurvivor(null);
+      return;
+    }
+    const me = scene.players.find((player) => player.id === scene.localId);
+    const anchor = me ? { x: Math.round(me.x - left), y: Math.round(me.y - top) } : null;
+    if (anchor) {
+      const x0 = this.toClientX(anchor.x - 14);
+      const y0 = this.toClientY(anchor.y - 30);
+      setHeldSurvivor({ x: x0, y: y0, w: this.toClientX(anchor.x + 14) - x0, h: this.toClientY(anchor.y + 6) - y0 });
+    } else setHeldSurvivor(null);
+    const rects = drawHeldUi(ctx, scene.held, anchor, viewW, viewH);
+    setHeldButtons(
+      rects.map((r) => ({
+        kind: r.kind,
+        x: this.toClientX(r.x),
+        y: this.toClientY(r.y),
+        w: this.toClientX(r.x + r.w) - this.toClientX(r.x),
+        h: this.toClientY(r.y + r.h) - this.toClientY(r.y),
+      })),
+    );
   }
 }

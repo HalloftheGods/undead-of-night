@@ -1,4 +1,4 @@
-import { isBagItemType } from './bag.ts';
+import { isAmmoBoxType, isBagItemType } from './bag.ts';
 import type { BagCommit, BagDrop, BagLayoutRow } from './bag.ts';
 import { isSupplyType } from './supply-types.ts';
 
@@ -39,7 +39,7 @@ export function parseBagCommit(value: unknown): BagCommit | null {
   const layout = value.layout.map(parseRow);
   const drop = value.drop.map(parseDrop);
   const use = hasUse ? (value.use as unknown[]).map(parseDrop) : [];
-  const isSupplyRow = (row: BagDrop | null): boolean => row !== null && isSupplyType(row.type);
+  const isSupplyRow = (row: BagDrop | null): boolean => row !== null && (isSupplyType(row.type) || isAmmoBoxType(row.type));
   if (layout.includes(null) || drop.includes(null) || !use.every(isSupplyRow)) return null;
   return { layout: layout as BagLayoutRow[], drop: drop as BagDrop[], ...(use.length > 0 ? { use: use as BagDrop[] } : {}) };
 }

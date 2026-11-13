@@ -1,26 +1,26 @@
-import type { BackpackTier } from '../../shared/backpack.ts';
-import type { FortificationInventory } from '../../shared/fortifications.ts';
-import type { Supplies } from '../../shared/supply-types.ts';
-import { streetAt } from '../../shared/street-names.ts';
-import type { StreetSpot } from '../../shared/street-names.ts';
-import type { ContainerKind } from '../../shared/containers.ts';
-import type { GridItem } from '../../shared/grid-inventory.ts';
-import type { PaletteId, SpeedUnit, UiScale } from './display-prefs.ts';
-import { KEEPSAKES } from '../../shared/keepsakes.ts';
-import type { KeepsakeId } from '../../shared/protocol.ts';
-import { CANDIES } from '../../shared/candy.ts';
-import type { CandyId } from '../../shared/candy.ts';
-import { candyBag } from './candy-bag.ts';
-import type { CandyStack } from './candy-bag.ts';
-import { BOSSES } from '../../shared/bosses.ts';
-import type { CalloutTone } from './kill-juice.ts';
-import { displayName } from '../../shared/callsign.ts';
-import { characterOf } from '../../shared/characters.ts';
-import type { GameStyle } from '../../shared/game-style.ts';
-import type { SurvivalNeeds } from '../../shared/survival-needs.ts';
-import type { PlayerGear } from '../../shared/gun-upgrades.ts';
-import { BUNKER_LEVEL } from '../../shared/home-protocol.ts';
-import { WEAPON_ORDER } from '../../shared/protocol.ts';
+import type { BackpackTier } from "../../shared/backpack.ts";
+import type { FortificationInventory } from "../../shared/fortifications.ts";
+import type { Supplies } from "../../shared/supply-types.ts";
+import { streetAt } from "../../shared/street-names.ts";
+import type { StreetSpot } from "../../shared/street-names.ts";
+import type { ContainerKind } from "../../shared/containers.ts";
+import type { GridItem } from "../../shared/grid-inventory.ts";
+import type { PaletteId, SpeedUnit, UiScale } from "./display-prefs.ts";
+import { KEEPSAKES } from "../../shared/keepsakes.ts";
+import type { KeepsakeId } from "../../shared/protocol.ts";
+import { CANDIES } from "../../shared/candy.ts";
+import type { CandyId } from "../../shared/candy.ts";
+import { candyBag } from "./candy-bag.ts";
+import type { CandyStack } from "./candy-bag.ts";
+import { BOSSES } from "../../shared/bosses.ts";
+import type { CalloutTone } from "./kill-juice.ts";
+import { displayName } from "../../shared/callsign.ts";
+import { characterOf } from "../../shared/characters.ts";
+import type { GameStyle } from "../../shared/game-style.ts";
+import type { SurvivalNeeds } from "../../shared/survival-needs.ts";
+import type { PlayerGear } from "../../shared/gun-upgrades.ts";
+import { BUNKER_LEVEL } from "../../shared/home-protocol.ts";
+import { WEAPON_ORDER } from "../../shared/protocol.ts";
 import type {
   EntityId,
   GameOverStats,
@@ -29,26 +29,26 @@ import type {
   PlayerEntity,
   PlayerStatus,
   SnapshotPacket,
-  WeaponId,
-} from '../../shared/protocol.ts';
-import type { ArtBook } from '../art/types.ts';
-import type { TransportKind } from '../network/transport.ts';
-import { benchHud } from './bench-view.ts';
-import type { BenchHud } from './bench-view.ts';
-import type { LogEntry } from './event-log.ts';
-import { teamColor } from './team-colors.ts';
-import type { HomeUi } from './home-hud.ts';
-import type { BestRun, LeaderboardEntry } from './storage.ts';
-import type { HintLine } from './first-run-hints.ts';
-import type { BiteMark } from './bite-marker.ts';
+  WeaponId
+} from "../../shared/protocol.ts";
+import type { ArtBook } from "../art/types.ts";
+import type { TransportKind } from "../network/transport.ts";
+import { benchHud } from "./bench-view.ts";
+import type { BenchHud } from "./bench-view.ts";
+import type { LogEntry } from "./event-log.ts";
+import { teamColor } from "./team-colors.ts";
+import type { HomeUi } from "./home-hud.ts";
+import type { BestRun, LeaderboardEntry } from "./storage.ts";
+import type { HintLine } from "./first-run-hints.ts";
+import type { BiteMark } from "./bite-marker.ts";
 
-export type Screen = 'title' | 'game' | 'gameover' | 'lost';
+export type Screen = "title" | "game" | "gameover" | "lost";
 
 /** At or under this many rounds across every gun, the HUD starts to warn. */
 const LOW_AMMO_ROUNDS = 10;
 
 /** The co-op setup page's address box. */
-export const SERVER_FIELD_ID = 'server';
+export const SERVER_FIELD_ID = "server";
 
 export interface TeammateHud {
   readonly id: EntityId;
@@ -132,13 +132,13 @@ export interface HudState {
 }
 
 export interface MoodleView {
-  readonly id: 'hunger' | 'thirst' | 'bleeding' | 'infection' | 'fatigue';
+  readonly id: "hunger" | "thirst" | "bleeding" | "infection" | "fatigue";
   readonly label: string;
-  readonly severity: 'low' | 'medium' | 'high' | 'critical';
+  readonly severity: "low" | "medium" | "high" | "critical";
   readonly value: number;
   readonly remedy: string;
   /** The key that applies the remedy; the HUD shows it only where there is a keyboard. */
-  readonly key?: 'KeyH';
+  readonly key?: "KeyH";
 }
 
 export interface Banner {
@@ -147,7 +147,7 @@ export interface Banner {
   readonly title: string;
   readonly subtitle: string;
   /** 'quiet' is for a horde moving on: nothing here is ever safe, so it gets no green. 'hope' is the van. */
-  readonly tone: 'danger' | 'quiet' | 'hope';
+  readonly tone: "danger" | "quiet" | "hope";
 }
 
 /** A word or two over the action for a kill worth noticing: a chain, a close call, a horde wiped out. */
@@ -186,9 +186,13 @@ export interface RunResult {
   readonly score: number;
   readonly kills: number;
   readonly isNewBest: boolean;
-  /** Set for a Daily Night: which day, and whether this was the run that counts or practice. */
-  /** A Daily Night run: its day, whether it counted, and the day's counted run in words to share. */
-  readonly daily?: { readonly label: string; readonly counted: boolean; readonly share: string | null };
+  /** Set for a Nightly Run: which day, and whether this was the run that counts or practice. */
+  /** A Nightly Run run: its day, whether it counted, and the day's counted run in words to share. */
+  readonly daily?: {
+    readonly label: string;
+    readonly counted: boolean;
+    readonly share: string | null;
+  };
 }
 
 /** Small, plain and replaced whole; the only game state Vue ever sees. */
@@ -260,7 +264,11 @@ export interface UiState {
   } | null;
 }
 
-export function buildHud(snapshot: SnapshotPacket, local: PlayerEntity, spectating: string | null): HudState {
+export function buildHud(
+  snapshot: SnapshotPacket,
+  local: PlayerEntity,
+  spectating: string | null
+): HudState {
   return {
     seated: local.vehicle !== undefined,
     health: local.health,
@@ -279,9 +287,19 @@ export function buildHud(snapshot: SnapshotPacket, local: PlayerEntity, spectati
     fountains: local.fountains ?? 0,
     bag: candyBag(local.bag, local.sugar),
     candyCount: Object.values(local.bag ?? {}).reduce((sum, count) => sum + count, 0),
-    sugar: (local.sugar ?? []).map((sugar) => ({ id: sugar.id, name: CANDIES[sugar.id].name, left: Math.ceil(sugar.left) })),
+    sugar: (local.sugar ?? []).map((sugar) => ({
+      id: sugar.id,
+      name: CANDIES[sugar.id].name,
+      left: Math.ceil(sugar.left)
+    })),
     keepsakes: (local.keepsakes ?? []).map((id) => KEEPSAKES[id].name),
-    keepsakeOffer: local.keepsakeOffer ? local.keepsakeOffer.map((id) => ({ id, name: KEEPSAKES[id].name, blurb: KEEPSAKES[id].blurb })) : null,
+    keepsakeOffer: local.keepsakeOffer
+      ? local.keepsakeOffer.map((id) => ({
+          id,
+          name: KEEPSAKES[id].name,
+          blurb: KEEPSAKES[id].blurb
+        }))
+      : null,
     knife: local.knife,
     reload: local.reload,
     score: local.score,
@@ -296,17 +314,30 @@ export function buildHud(snapshot: SnapshotPacket, local: PlayerEntity, spectati
     hostiles: snapshot.hostiles,
     teammates: snapshot.players
       .filter((player) => player.id !== local.id)
-      .map(({ id, name, skin, health, maxHealth, status }) => ({ id, name: displayName(name, skin), character: characterOf(skin).name, color: teamColor(skin), health, maxHealth, status })),
+      .map(({ id, name, skin, health, maxHealth, status }) => ({
+        id,
+        name: displayName(name, skin),
+        character: characterOf(skin).name,
+        color: teamColor(skin),
+        health,
+        maxHealth,
+        status
+      })),
     spectating,
     gear: local.gear ?? null,
     bench: benchHud(snapshot, local),
     street: local.indoors === null ? streetAt(local.x, local.y) : null,
-    boss: snapshot.boss ? { name: BOSSES[snapshot.boss.id].name, share: snapshot.boss.health / Math.max(1, snapshot.boss.maxHealth) } : null,
+    boss: snapshot.boss
+      ? {
+          name: BOSSES[snapshot.boss.id].name,
+          share: snapshot.boss.health / Math.max(1, snapshot.boss.maxHealth)
+        }
+      : null,
     moodles: buildMoodles(local.needs),
     ...(local.backpackTier ? { backpackTier: local.backpackTier } : {}),
     ...(local.materials ? { materials: { ...local.materials } } : {}),
     ...(local.supplies ? { supplies: { ...local.supplies } } : {}),
-    ...(local.bagHash !== undefined ? { bagHash: local.bagHash } : {}),
+    ...(local.bagHash !== undefined ? { bagHash: local.bagHash } : {})
   };
 }
 
@@ -320,94 +351,146 @@ export function buildMoodles(needs?: SurvivalNeeds): readonly MoodleView[] {
   const isHungry = needs.hunger >= 50 && !isStarving;
   const isPeckish = needs.hunger >= 25 && !isHungry && !isStarving;
   if (isStarving) {
-    list.push({ id: 'hunger', label: 'STARVING', severity: 'critical', value: needs.hunger, remedy: 'Eat food urgently' });
+    list.push({
+      id: "hunger",
+      label: "STARVING",
+      severity: "critical",
+      value: needs.hunger,
+      remedy: "Eat food urgently"
+    });
   } else if (isHungry) {
-    list.push({ id: 'hunger', label: 'HUNGRY', severity: 'medium', value: needs.hunger, remedy: 'Eat canned food' });
+    list.push({
+      id: "hunger",
+      label: "HUNGRY",
+      severity: "medium",
+      value: needs.hunger,
+      remedy: "Eat canned food"
+    });
   } else if (isPeckish) {
-    list.push({ id: 'hunger', label: 'PECKISH', severity: 'low', value: needs.hunger, remedy: 'Find & eat food' });
+    list.push({
+      id: "hunger",
+      label: "PECKISH",
+      severity: "low",
+      value: needs.hunger,
+      remedy: "Find & eat food"
+    });
   }
 
   const isDehydrated = needs.thirst >= 80;
   const isThirsty = needs.thirst >= 50 && !isDehydrated;
   const isParched = needs.thirst >= 25 && !isThirsty && !isDehydrated;
   if (isDehydrated) {
-    list.push({ id: 'thirst', label: 'DEHYDRATED', severity: 'critical', value: needs.thirst, remedy: 'Drink water urgently' });
+    list.push({
+      id: "thirst",
+      label: "DEHYDRATED",
+      severity: "critical",
+      value: needs.thirst,
+      remedy: "Drink water urgently"
+    });
   } else if (isThirsty) {
-    list.push({ id: 'thirst', label: 'THIRSTY', severity: 'medium', value: needs.thirst, remedy: 'Drink bottled water' });
+    list.push({
+      id: "thirst",
+      label: "THIRSTY",
+      severity: "medium",
+      value: needs.thirst,
+      remedy: "Drink bottled water"
+    });
   } else if (isParched) {
-    list.push({ id: 'thirst', label: 'PARCHED', severity: 'low', value: needs.thirst, remedy: 'Drink clean water' });
+    list.push({
+      id: "thirst",
+      label: "PARCHED",
+      severity: "low",
+      value: needs.thirst,
+      remedy: "Drink clean water"
+    });
   }
 
   const isBleeding = needs.bleeding;
   if (isBleeding) {
-    const isHeavy = needs.wound === 'laceration' || needs.wound === 'bite';
+    const isHeavy = needs.wound === "laceration" || needs.wound === "bite";
     list.push({
-      id: 'bleeding',
-      label: isHeavy ? 'HEAVY BLEEDING' : 'BLEEDING',
-      severity: isHeavy ? 'critical' : 'high',
+      id: "bleeding",
+      label: isHeavy ? "HEAVY BLEEDING" : "BLEEDING",
+      severity: isHeavy ? "critical" : "high",
       value: 100,
-      remedy: isHeavy ? 'Bandage wound urgently' : 'Use bandage',
-      key: 'KeyH',
+      remedy: isHeavy ? "Bandage wound urgently" : "Use bandage",
+      key: "KeyH"
     });
   }
 
   const isInfected = needs.isInfected;
   if (isInfected) {
-    let label = 'INFECTED';
-    let severity: 'medium' | 'high' | 'critical' = 'medium';
-    let remedy = 'Clean with disinfectant';
+    let label = "INFECTED";
+    let severity: "medium" | "high" | "critical" = "medium";
+    let remedy = "Clean with disinfectant";
     const isCritical = needs.infection >= 75;
     const isHigh = needs.infection >= 40 && !isCritical;
     if (isCritical) {
-      label = 'TERMINAL ZOONOSIS';
-      severity = 'critical';
-      remedy = 'Antibiotics urgently';
+      label = "TERMINAL ZOONOSIS";
+      severity = "critical";
+      remedy = "Antibiotics urgently";
     } else if (isHigh) {
-      label = 'FEVERED';
-      severity = 'high';
-      remedy = 'Take antibiotics';
+      label = "FEVERED";
+      severity = "high";
+      remedy = "Take antibiotics";
     }
     list.push({
-      id: 'infection',
+      id: "infection",
       label,
       severity,
       value: needs.infection,
-      remedy,
+      remedy
     });
   }
 
   const isExhausted = needs.fatigue >= 80;
   const isTired = needs.fatigue >= 50 && !isExhausted;
   if (isExhausted) {
-    list.push({ id: 'fatigue', label: 'EXHAUSTED', severity: 'critical', value: needs.fatigue, remedy: 'Halt & rest stamina' });
+    list.push({
+      id: "fatigue",
+      label: "EXHAUSTED",
+      severity: "critical",
+      value: needs.fatigue,
+      remedy: "Halt & rest stamina"
+    });
   } else if (isTired) {
-    list.push({ id: 'fatigue', label: 'TIRED', severity: 'medium', value: needs.fatigue, remedy: 'Rest (stop sprinting)' });
+    list.push({
+      id: "fatigue",
+      label: "TIRED",
+      severity: "medium",
+      value: needs.fatigue,
+      remedy: "Rest (stop sprinting)"
+    });
   }
 
   return list;
 }
 
-
 /**
  * On their feet in a town with nothing up over the game: the moment a survivor can reach into
  * their own backpack. Not paused, not behind the map, not at the workbench, not down, not off a run.
  */
-export function standingInTown(ui: Pick<UiState, 'screen' | 'paused' | 'mapOpen' | 'hud' | 'home'> & Partial<Pick<UiState, 'bagOpen'>>): boolean {
-  const onRun = ui.screen === 'game' && ui.hud !== null;
+export function standingInTown(
+  ui: Pick<UiState, "screen" | "paused" | "mapOpen" | "hud" | "home"> &
+    Partial<Pick<UiState, "bagOpen">>
+): boolean {
+  const onRun = ui.screen === "game" && ui.hud !== null;
   if (!onRun) return false;
   // A station, the death summary or an opened chest has the screen and the keys (game/home-link.ts).
   const { home } = ui;
-  const homeScreenUp = home !== null && (home.station !== null || home.death !== null || home.chest !== null);
-  const nothingUp = !ui.paused && !ui.mapOpen && ui.bagOpen !== true && !homeScreenUp && ui.hud.bench === null;
-  return nothingUp && ui.hud.status === 'alive' && ui.hud.phase !== 'gameover';
+  const homeScreenUp =
+    home !== null && (home.station !== null || home.death !== null || home.chest !== null);
+  const nothingUp =
+    !ui.paused && !ui.mapOpen && ui.bagOpen !== true && !homeScreenUp && ui.hud.bench === null;
+  return nothingUp && ui.hud.status === "alive" && ui.hud.phase !== "gameover";
 }
 
-export type AmmoState = 'ok' | 'low' | 'empty';
+export type AmmoState = "ok" | "low" | "empty";
 
-type Loadout = Pick<HudState, 'owned' | 'ammoBag' | 'mags'>;
+type Loadout = Pick<HudState, "owned" | "ammoBag" | "mags">;
 
 /** All a gun can still fire: what is loaded plus what is spare. */
-export function gunRounds(hud: Pick<HudState, 'ammoBag' | 'mags'>, weapon: WeaponId): number {
+export function gunRounds(hud: Pick<HudState, "ammoBag" | "mags">, weapon: WeaponId): number {
   return hud.mags[weapon] + hud.ammoBag[weapon];
 }
 
@@ -415,28 +498,32 @@ export function gunRounds(hud: Pick<HudState, 'ammoBag' | 'mags'>, weapon: Weapo
 export function ammoState(hud: Loadout): AmmoState {
   const rounds = hud.owned.reduce((sum, weapon) => sum + gunRounds(hud, weapon), 0);
   const allDry = rounds === 0;
-  if (allDry) return 'empty';
-  return rounds <= LOW_AMMO_ROUNDS ? 'low' : 'ok';
+  if (allDry) return "empty";
+  return rounds <= LOW_AMMO_ROUNDS ? "low" : "ok";
 }
 
 /**
  * What the ammo readout warns of. The bunker has no horde and nothing to shoot, so an empty gun
  * there is not news: no red.
  */
-export function ammoWarning(hud: Loadout & Partial<Pick<HudState, 'level'>>): AmmoState {
-  return hud.level === BUNKER_LEVEL ? 'ok' : ammoState(hud);
+export function ammoWarning(hud: Loadout & Partial<Pick<HudState, "level">>): AmmoState {
+  return hud.level === BUNKER_LEVEL ? "ok" : ammoState(hud);
 }
 
 /** Whether to tell the player to reload: the gun in hand is dry, and there is something at home to shoot at. */
-export function reloadPrompt(hud: Pick<HudState, 'ammo'> & Partial<Pick<HudState, 'level'>>): boolean {
+export function reloadPrompt(
+  hud: Pick<HudState, "ammo"> & Partial<Pick<HudState, "level">>
+): boolean {
   return hud.ammo === 0 && hud.level !== BUNKER_LEVEL;
 }
 
 /** The number key of a gun with rounds, when the one in hand has none, or null. */
-export function switchKey(hud: Loadout & Pick<HudState, 'weapon'>): number | null {
+export function switchKey(hud: Loadout & Pick<HudState, "weapon">): number | null {
   const inHandFires = gunRounds(hud, hud.weapon) > 0;
   if (inHandFires) return null;
-  const loaded = WEAPON_ORDER.findIndex((weapon) => hud.owned.includes(weapon) && gunRounds(hud, weapon) > 0);
+  const loaded = WEAPON_ORDER.findIndex(
+    (weapon) => hud.owned.includes(weapon) && gunRounds(hud, weapon) > 0
+  );
   return loaded < 0 ? null : loaded + 1;
 }
 
@@ -447,20 +534,31 @@ export interface HordeStatus {
   readonly loud: boolean;
 }
 
-export function hordeStatus(hud: Pick<HudState, 'phase' | 'wave' | 'intermission' | 'hostiles'> & Partial<Pick<HudState, 'level'>>): HordeStatus {
+export function hordeStatus(
+  hud: Pick<HudState, "phase" | "wave" | "intermission" | "hostiles"> &
+    Partial<Pick<HudState, "level">>
+): HordeStatus {
   const home = hud.level === BUNKER_LEVEL;
-  if (home) return { title: 'Bunker', detail: '', loud: false };
-  const runOver = hud.phase === 'gameover';
-  if (runOver) return { title: 'Game over', detail: '', loud: true };
-  const hunted = hud.phase === 'wave';
+  if (home) return { title: "Bunker", detail: "", loud: false };
+  const runOver = hud.phase === "gameover";
+  if (runOver) return { title: "Game over", detail: "", loud: true };
+  const hunted = hud.phase === "wave";
   if (hunted) {
-    return { title: `Horde ${hud.wave}`, detail: `${hud.hostiles} hostile${hud.hostiles === 1 ? '' : 's'} left`, loud: true };
+    return {
+      title: `Horde ${hud.wave}`,
+      detail: `${hud.hostiles} hostile${hud.hostiles === 1 ? "" : "s"} left`,
+      loud: true
+    };
   }
-  return { title: `Horde in ${formatDuration(Math.ceil(hud.intermission))}`, detail: '', loud: false };
+  return {
+    title: `Horde in ${formatDuration(Math.ceil(hud.intermission))}`,
+    detail: "",
+    loud: false
+  };
 }
 
 export function formatDuration(seconds: number): string {
   const whole = Math.max(0, Math.floor(seconds));
   const minutes = Math.floor(whole / 60);
-  return `${minutes}:${String(whole % 60).padStart(2, '0')}`;
+  return `${minutes}:${String(whole % 60).padStart(2, "0")}`;
 }

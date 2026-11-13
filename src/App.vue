@@ -142,7 +142,14 @@ const splashing = ref(shouldShowSplash(window.location.search));
 const canvasRef = useTemplateRef<HTMLCanvasElement>('canvasRef');
 const pausedBook = ref<TitlePage | null>(null);
 const inventoryPanel = useTemplateRef<InventoryPanel>('inventoryPanel');
-const inventory = useInventoryModal(ui, game.input, inventoryPanel, (commit) => game.sendBag(commit));
+const inventory = useInventoryModal(
+  ui,
+  game.input,
+  inventoryPanel,
+  (commit) => game.sendBag(commit),
+  (containerId) => game.walkedAwayFrom(containerId),
+  () => onInventoryClose()
+);
 
 function onInventoryClose(): void {
   inventory.hide();

@@ -1,25 +1,25 @@
-// Daily Night ghosts: the day's counted run (its first) is recorded, and every later run of that day has it walking
+// Nightly Run ghosts: the day's counted run (its first) is recorded, and every later run of that day has it walking
 // alongside, like a time-trial ghost. Each town keeps its own track, timed from the first tick the run spent in it,
 // so the ghost reaches each town when you do and replays what you did there. Kept in the browser, one day at a time.
 
-import type { PlayerEntity, SnapshotPacket } from '../../shared/protocol.ts';
-import { browserStore, readJson, writeJson } from './storage.ts';
-import type { Store } from './storage.ts';
+import type { PlayerEntity, SnapshotPacket } from "../../shared/protocol.ts";
+import { browserStore, readJson, writeJson } from "./storage.ts";
+import type { Store } from "./storage.ts";
 
-const GHOST_KEY = 'outbreak.daily-ghost.v2';
+const GHOST_KEY = "outbreak.daily-ghost.v2";
 /** One sample every this many sim ticks: 10 a second at 30 ticks, smoothed back out by interpolation. */
 export const SAMPLE_TICKS = 3;
-/** A ceiling on the save: about 50 minutes at 10 samples a second, far past any real Daily Night. */
+/** A ceiling on the save: about 50 minutes at 10 samples a second, far past any real Nightly Run. */
 const MAX_SAMPLES = 30000;
 /** Angles are kept in hundredths of a radian, positions in whole pixels. */
 const ANGLE_SCALE = 100;
 /** Moved less than this between samples, and the ghost is drawn standing. */
 const STILL_PX = 0.5;
-export const GHOST_ID = 'daily-ghost';
+export const GHOST_ID = "daily-ghost";
 
 /** One recorded run: per town, flat [x, y, angle] triples, one per SAMPLE_TICKS from the town's first tick. */
 export interface GhostTrack {
-  /** The Daily Night it belongs to, YYYY-MM-DD. */
+  /** The Nightly Run it belongs to, YYYY-MM-DD. */
   readonly day: string;
   /** The survivor it was played as. */
   readonly skin: number;
@@ -37,27 +37,36 @@ export interface GhostPose {
 }
 
 function isTrack(v: unknown): v is GhostTrack {
-  const isNotObject = typeof v !== 'object' || v === null;
+  const isNotObject = typeof v !== "object" || v === null;
   if (isNotObject) return false;
   const t = v as Record<string, unknown>;
-  const fieldsOk = typeof t.day === 'string' && Number.isFinite(t.skin) && Number.isFinite(t.score);
+  const fieldsOk = typeof t.day === "string" && Number.isFinite(t.skin) && Number.isFinite(t.score);
   const towns = t.towns;
-  const townsOk = typeof towns === 'object' && towns !== null
-    && Object.values(towns).every((samples) => Array.isArray(samples) && samples.length % 3 === 0 && samples.every(Number.isFinite));
+  const townsOk =
+    typeof towns === "object" &&
+    towns !== null &&
+    Object.values(towns).every(
+      (samples) =>
+        Array.isArray(samples) && samples.length % 3 === 0 && samples.every(Number.isFinite)
+    );
   return fieldsOk && townsOk;
 }
 
-const GHOST_BEST_KEY = 'outbreak.daily-ghost-best.v2';
+const GHOST_BEST_KEY = "outbreak.daily-ghost-best.v2";
 
-export type GhostKind = 'official' | 'best';
+export type GhostKind = "official" | "best";
 
 /** The saved ghost for `day`, or null: an older day's ghost is never shown. */
-export function loadGhost(day: string, store: Store | null = browserStore(), kind: GhostKind = 'official'): GhostTrack | null {
-  const key = kind === 'best' ? GHOST_BEST_KEY : GHOST_KEY;
+export function loadGhost(
+  day: string,
+  store: Store | null = browserStore(),
+  kind: GhostKind = "official"
+): GhostTrack | null {
+  const key = kind === "best" ? GHOST_BEST_KEY : GHOST_KEY;
   const raw = readJson(store, key);
   const track = isTrack(raw) && raw.day === day ? raw : null;
   if (track) return track;
-  if (kind === 'best') {
+  if (kind === "best") {
     const official = readJson(store, GHOST_KEY);
     return isTrack(official) && official.day === day ? official : null;
   }
@@ -65,18 +74,22 @@ export function loadGhost(day: string, store: Store | null = browserStore(), kin
 }
 
 /** Saves a ghost track: official 1st run is kept once; best run is updated whenever beaten. */
-export function saveGhost(track: GhostTrack, store: Store | null = browserStore(), kind: GhostKind = 'official'): boolean {
-  if (kind === 'official') {
-    const already = loadGhost(track.day, store, 'official') !== null;
+export function saveGhost(
+  track: GhostTrack,
+  store: Store | null = browserStore(),
+  kind: GhostKind = "official"
+): boolean {
+  if (kind === "official") {
+    const already = loadGhost(track.day, store, "official") !== null;
     if (already) return false;
     writeJson(store, GHOST_KEY, track);
-    const best = loadGhost(track.day, store, 'best');
+    const best = loadGhost(track.day, store, "best");
     if (!best || track.score >= best.score) {
       writeJson(store, GHOST_BEST_KEY, track);
     }
     return true;
   }
-  const currentBest = loadGhost(track.day, store, 'best');
+  const currentBest = loadGhost(track.day, store, "best");
   const isBetter = !currentBest || track.score > currentBest.score;
   if (!isBetter) return false;
   writeJson(store, GHOST_BEST_KEY, track);
@@ -125,7 +138,7 @@ export class GhostRecorder {
   observe(level: number, tick: number, player: PlayerEntity | null): void {
     const notRecording = this.stopped || player === null;
     if (notRecording) return;
-    const standing = player.status === 'alive';
+    const standing = player.status === "alive";
     if (!standing) {
       this.stopped = true;
       return;
@@ -156,7 +169,7 @@ export class GhostRecorder {
   }
 }
 
-/** One Daily Night's ghost: the day's counted run playing back, and, while none is saved yet, this run recording. */
+/** One Nightly Run's ghost: the day's counted run playing back, and, while none is saved yet, this run recording. */
 export class DailyGhost {
   private replay: GhostTrack | null = null;
   private recorder: GhostRecorder | null = null;
@@ -165,14 +178,14 @@ export class DailyGhost {
 
   constructor(
     readonly day: string,
-    private readonly store: Store | null = browserStore(),
+    private readonly store: Store | null = browserStore()
   ) {
     this.begin();
   }
 
   /** A run of the day starts: play the best ghost if there is one, and record this run. */
   begin(): void {
-    this.replay = loadGhost(this.day, this.store, 'best');
+    this.replay = loadGhost(this.day, this.store, "best");
     this.recorder = new GhostRecorder(this.day);
     this.townStart.clear();
   }
@@ -196,9 +209,9 @@ export class DailyGhost {
     this.recorder = null;
     if (recorder === null) return false;
     const track = recorder.track(score);
-    saveGhost(track, this.store, 'best');
+    saveGhost(track, this.store, "best");
     const keep = counted;
-    return keep ? saveGhost(track, this.store, 'official') : false;
+    return keep ? saveGhost(track, this.store, "official") : false;
   }
 
   /** The ghost as a survivor to draw, `tick` being the sim's tick now (fractions welcome), or null where it is not. */
@@ -212,17 +225,17 @@ export class DailyGhost {
     return {
       ...like,
       id: GHOST_ID,
-      name: 'Ghost',
+      name: "Ghost",
       skin: track.skin,
       x: pose.x,
       y: pose.y,
       angle: pose.angle,
       moving: pose.moving,
-      status: 'alive',
+      status: "alive",
       health: like.maxHealth,
       search: 0,
       reload: 0,
-      indoors: null,
+      indoors: null
     };
   }
 }

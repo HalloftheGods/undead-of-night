@@ -91,7 +91,7 @@
 
 <script setup lang="ts">
 /**
- * Daily Night multiplayer pre-match lobby.
+ * Nightly Run multiplayer pre-match lobby.
  * Displays character seat assignments, ready status, countdown banner,
  * host start controls, and guest ready toggles.
  */

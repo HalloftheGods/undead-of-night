@@ -1,7 +1,7 @@
 <template>
   <TitlePage :heading bare boxed @close="back">
     <template #lead>
-      <SetupPicks ref="picker" :picks :art="ui.art" @choose="choose" />
+      <SetupPicks ref="picker" :picks :art="ui.art" :level-link="levelLink" @choose="choose" @levels="emit('levels', runStyle)" />
     </template>
 
     <!-- The co-op fields show only for Multiplayer, under the callsign. -->
@@ -87,7 +87,8 @@
 import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue';
 import { DEFAULT_SERVER_PORT } from '../../shared/constants.ts';
 import type { DifficultyId } from '../../shared/difficulty.ts';
-import { townName } from '../../shared/levels.ts';
+import { FIRST_LEVEL, levelDef, townName } from '../../shared/levels.ts';
+import type { GameStyle } from '../../shared/game-style.ts';
 import { trackTitlePage } from '../game/analytics/index.ts';
 import { loadCharacter, saveCharacter } from '../game/character-pref.ts';
 import { loadDifficulty, saveDifficulty } from '../game/difficulty-pref.ts';
@@ -97,10 +98,12 @@ import type { UiState } from '../game/hud-state.ts';
 import { buildInviteLink } from '../game/invite-link.ts';
 import { onlineRoomsLive } from '../network/play-api.ts';
 import type { CoopEntry } from '../game/run-session.ts';
-import { chosenStartLevel, continueLevel, isLevelUnlocked, loadLevelProgress } from '../game/level-progress.ts';
+import { chosenStartLevel, continueLevel, isLevelUnlocked, loadCampaignProgress, loadLevelProgress } from '../game/level-progress.ts';
 import { chooseMode, claimedStyle, setupFailure, setupHeading, setupStyle, showsServer, startFlow } from '../game/play-flow.ts';
 import type { PlayMode } from '../game/play-flow.ts';
+import { loadSetupLevel, setupLevelRequest } from '../game/setup-level-pref.ts';
 import { setupPicks, setupProgression } from '../game/setup-picks.ts';
+import type { LevelLinkCard } from '../game/setup-picks.ts';
 import type { PickKey } from '../game/setup-picks.ts';
 import { COOP_ACTIONS, setupActionLabel, type CoopAction } from '../game/title-menu.ts';
 import PixelButton from './PixelButton.vue';
@@ -109,7 +112,7 @@ import TitlePage from './TitlePage.vue';
 import { useGame } from './use-game.ts';
 
 const { ui, join = false, level = null } = defineProps<{ ui: UiState; join?: boolean; level?: number | null }>();
-const emit = defineEmits<{ close: [] }>();
+const emit = defineEmits<{ close: []; levels: [style: GameStyle] }>();
 const game = useGame();
 const picker = useTemplateRef<InstanceType<typeof SetupPicks>>('picker');
 const flow = ref(startFlow(join, level));
@@ -121,19 +124,35 @@ const INVITE_LABELS = { idle: 'Copy invite link', done: 'Link copied', failed: '
 
 /** Read when the page opens: a run cannot be under way while the setup is showing. */
 const resumeAt = continueLevel(loadLevelProgress());
-/** The level picked on the Levels page, kept only while it is still unlocked and past the first. */
-const chosen = level === null ? null : chosenStartLevel(level, loadLevelProgress());
-const isChosenUnlocked = level !== null && isLevelUnlocked(level, loadLevelProgress());
 const runStyle = computed(() => setupStyle(level, ui.style));
+/** The town the Level card set for this style, read when the page opens. */
+const savedLevel = loadSetupLevel(runStyle.value);
+/** The level this page starts from: a Levels pick if one sent the player here, else the one the Level card set. */
+const requested = level ?? setupLevelRequest(savedLevel, runStyle.value);
+/** Kept only while it is still unlocked and past the first. */
+const progress = loadLevelProgress();
+const chosen = requested === null ? null : chosenStartLevel(requested, progress);
+const isChosenUnlocked = requested !== null && isLevelUnlocked(requested, progress);
 /** What this page may say about the style: nothing on an invite link, since the room decides. The run still offers the remembered one to an empty room. */
 const shownStyle = computed(() => claimedStyle(join, runStyle.value));
-const levelLines = computed(() => setupLevelLines({ style: shownStyle.value, multi: multi.value, level, unlocked: isChosenUnlocked, chosen }));
+const levelLines = computed(() => setupLevelLines({ style: shownStyle.value, multi: multi.value, level: requested, unlocked: isChosenUnlocked, chosen }));
 const startLine = computed(() => levelLines.value.startLine);
 const coopNote = computed(() => levelLines.value.coopNote);
 const heading = computed(() => setupHeading(join, flow.value.mode, runStyle.value));
 
 const progression = ref(setupProgression(survivor.value));
 const picks = computed(() => setupPicks({ mode: flow.value.mode, difficulty: difficulty.value, survivor: survivor.value }, progression.value));
+/** The town the card shows: the one set; else the first for Arcade, and for Campaign the furthest reached, where its van starts by default. */
+const cardLevel = computed(() => {
+  const isCampaign = runStyle.value === 'campaign';
+  const furthest = isCampaign ? loadCampaignProgress().highest : FIRST_LEVEL;
+  return requested ?? savedLevel ?? furthest;
+});
+/** The Level card, in the row before Survivor (number 3). It names the town and opens the Levels page to set it. */
+const levelLink = computed<LevelLinkCard>(() => {
+  const number = cardLevel.value;
+  return { number: 3, label: 'Level', name: levelDef(number).town, sprite: ui.art?.ui.levelScenes[number - 1] ?? null, before: 'who' };
+});
 /** The mode decides how the run starts, and whether the co-op fields show. */
 const multi = computed(() => flow.value.mode === 'multi');
 const serverShown = computed(() => showsServer(flow.value));

@@ -110,6 +110,7 @@ describe('healing', () => {
     const { sim, state } = quietSim();
     const [p] = state.players;
     p.bottles = 0;
+    p.ammoBag = { pistol: 0, carbine: 0, shotgun: 0 };
     const totalSlots = p.inventory.pack.rows * p.inventory.pack.cols + p.inventory.pockets.rows * p.inventory.pockets.cols;
     p.supplies = { ...emptySupplies(), bandage: totalSlots };
     syncBag(p.inventory, bagWanted(p));

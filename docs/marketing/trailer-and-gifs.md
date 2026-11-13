@@ -6,7 +6,7 @@ Built from docs/launch-plan.md (2026-11-07) plus a read of the live build, v26.1
 ## Facts used, and what is still unconfirmed
 
 Confirmed on the live build:
-- Menu: PLAY, DAILY NIGHT, LEVELS, HOW TO PLAY, RECORDS, SOUND TEST, OPTIONS.
+- Menu: PLAY, Nightly Run, LEVELS, HOW TO PLAY, RECORDS, SOUND TEST, OPTIONS.
 - 10 levels, unlocked in order. Level 01 is SILENT RUINS (Night): "Survive 2 hordes to open the exit." Tags for 02-10: Night, Dusk, Flooded, Toxic, Blackout, Emergency, Blizzard, Infested, Inferno. Only Level 01 is playable on a fresh save.
 - The level screen lists Hordes, Difficulty, Brutes and Runners.
 
@@ -89,7 +89,7 @@ All GIFs run 3 to 6 seconds, per launch-plan.md. Reddit and short-form: GIF firs
 - Moment: chain counter climbs while the player clears a pack. Counter in frame throughout.
 - Duration: 6 s. 640 px.
 - Caption: "Don't stop shooting. The chain doesn't wait."
-- Platform: X and Bluesky; r/WebGames (pair with the Daily Night result line, per launch-plan.md).
+- Platform: X and Bluesky; r/WebGames (pair with the Nightly Run result line, per launch-plan.md).
 
 ### GIF 6 — Last-second van escape
 - Level: L01 exit sequence (or the first level where the van appears; confirm).

@@ -1,4 +1,4 @@
-import { bagTypeOf, bagWanted, roomFor, syncBag } from './bag.ts';
+import { ammoRoomRounds, bagTypeOf, bagWanted, roomFor, stampAmmoBoxes, syncBag } from './bag.ts';
 import { ammoCapOf } from './keepsakes.ts';
 import { characterOf } from './characters.ts';
 import {
@@ -56,7 +56,9 @@ export function maybeDropOnKill(sim: SimState, x: number, y: number, killer?: Pl
 /** Banks as much as fits, gun or no gun, and leaves the rest of the box lying there. */
 function takeAmmo(p: PlayerState, item: PickupState, type: AmmoPickup): boolean {
   const { weapon } = AMMO_PICKUPS[type];
-  const room = ammoCapOf(p, weapon) - p.ammoBag[weapon];
+  // Spare rounds show as boxes, so a full bag takes no more than its last part box can hold.
+  syncBag(p.inventory, bagWanted(p));
+  const room = Math.min(ammoCapOf(p, weapon) - p.ammoBag[weapon], ammoRoomRounds(p.inventory, weapon, p.ammoBag[weapon]));
   const taken = Math.min(room, item.rounds);
   const hasNoRoom = taken <= 0;
   if (hasNoRoom) return false;
@@ -71,7 +73,8 @@ function takeGun(p: PlayerState, item: PickupState, weapon: WeaponId): boolean {
   // Zero means nobody has been at it yet: it still holds what it was found with.
   const loaded = item.rounds > 0 ? item.rounds : stats.foundAmmo;
   if (p.guns[weapon]) {
-    const taken = Math.min(ammoCapOf(p, weapon) - p.ammoBag[weapon], loaded);
+    syncBag(p.inventory, bagWanted(p));
+    const taken = Math.min(ammoCapOf(p, weapon) - p.ammoBag[weapon], ammoRoomRounds(p.inventory, weapon, p.ammoBag[weapon]), loaded);
     const hasNoRoom = taken <= 0;
     if (hasNoRoom) return false;
     p.ammoBag[weapon] += taken;
@@ -90,7 +93,8 @@ function takeGun(p: PlayerState, item: PickupState, weapon: WeaponId): boolean {
 /** False leaves the item on the ground: it would have done nothing for this player. */
 export function applyPickup(p: PlayerState, item: PickupState): boolean {
   const { type } = item;
-  const bagType = bagTypeOf(type);
+  // Ammo has its own room rule (takeAmmo): a part box takes rounds with no free slot.
+  const bagType = isAmmoPickup(type) ? null : bagTypeOf(type);
   // A thing for the bag stays on the ground when the bag has no slot for it, as when a count is at its cap.
   if (bagType && !roomFor(p, bagType)) return false;
   const taken = takeItem(p, item);
@@ -138,7 +142,11 @@ export function takeItem(p: PlayerState, item: PickupState): boolean {
   // Only a gun or a box of rounds is left here. Anything else, a bag counter such as a firework included, is not ours to take.
   const isGun = Object.hasOwn(WEAPONS, type);
   const used = isAmmoPickup(type) ? takeAmmo(p, item, type) : isGun && takeGun(p, item, type as WeaponId);
-  if (used) syncGun(p);
+  if (used) {
+    syncGun(p);
+    syncBag(p.inventory, bagWanted(p));
+    stampAmmoBoxes(p.inventory, p.ammoBag);
+  }
   return used;
 }
 

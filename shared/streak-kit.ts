@@ -1,16 +1,16 @@
 // The streak kit: come back night after night and every run starts a little better armed.
 // Tiers stack, each one adding to the last, and stop growing at the top night.
 
-import { MEDKIT_MAX, WEAPONS } from './constants.ts';
-import type { CandyId, WeaponId } from './protocol.ts';
-import type { PlayerState } from './sim-state.ts';
-import { syncGun } from './weapons.ts';
+import { MEDKIT_MAX, WEAPONS } from "./constants.ts";
+import type { CandyId, WeaponId } from "./protocol.ts";
+import type { PlayerState } from "./sim-state.ts";
+import { syncGun } from "./weapons.ts";
 
 /** One night's step up: what it adds on top of every night before it. */
 export interface StreakTier {
   /** The night of the streak this tier starts on; night 1 is a fresh start and adds nothing. */
   readonly night: number;
-  /** What it adds, in the words the level card and the Daily Night page use. */
+  /** What it adds, in the words the level card and the Nightly Run page use. */
   readonly words: string;
   readonly medkits?: number;
   readonly pistolRounds?: number;
@@ -21,11 +21,16 @@ export interface StreakTier {
 }
 
 export const STREAK_TIERS: readonly StreakTier[] = [
-  { night: 2, words: 'A medkit and 12 pistol rounds', medkits: 1, pistolRounds: 12 },
-  { night: 3, words: 'A knife', knife: true },
-  { night: 4, words: 'A loaded shotgun and 6 shells', gun: { weapon: 'shotgun', spare: 6 } },
-  { night: 5, words: 'A Jawbreaker to eat', candy: 'jawbreaker' },
-  { night: 7, words: 'A loaded carbine, 30 rounds and another medkit', medkits: 1, gun: { weapon: 'carbine', spare: 30 } },
+  { night: 2, words: "A medkit and 12 pistol rounds", medkits: 1, pistolRounds: 12 },
+  { night: 3, words: "A knife", knife: true },
+  { night: 4, words: "A loaded shotgun and 6 shells", gun: { weapon: "shotgun", spare: 6 } },
+  { night: 5, words: "A Jawbreaker to eat", candy: "jawbreaker" },
+  {
+    night: 7,
+    words: "A loaded carbine, 30 rounds and another medkit",
+    medkits: 1,
+    gun: { weapon: "carbine", spare: 30 }
+  }
 ];
 
 /** The night the kit stops growing. */
@@ -52,7 +57,10 @@ function giveGun(p: PlayerState, weapon: WeaponId, spare: number): void {
 
 function giveTier(p: PlayerState, tier: StreakTier): void {
   p.medkits = Math.min(MEDKIT_MAX, p.medkits + (tier.medkits ?? 0));
-  p.ammoBag.pistol = Math.min(WEAPONS.pistol.reserveCap, p.ammoBag.pistol + (tier.pistolRounds ?? 0));
+  p.ammoBag.pistol = Math.min(
+    WEAPONS.pistol.reserveCap,
+    p.ammoBag.pistol + (tier.pistolRounds ?? 0)
+  );
   if (tier.knife) p.knife = true;
   if (tier.gun) giveGun(p, tier.gun.weapon, tier.gun.spare);
   if (tier.candy) p.candy = [...p.candy, tier.candy];

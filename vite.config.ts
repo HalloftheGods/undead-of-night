@@ -19,9 +19,15 @@ export default defineConfig({
     devInventorySync(__dirname),
   ],
   resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-    },
+    alias: [
+      { find: '@shared', replacement: path.resolve(__dirname, './shared') },
+      { find: '@game', replacement: path.resolve(__dirname, './src/game') },
+      { find: '@components', replacement: path.resolve(__dirname, './src/components') },
+      { find: '@engine', replacement: path.resolve(__dirname, './src/engine') },
+      { find: '@art', replacement: path.resolve(__dirname, './src/art') },
+      { find: '@audio', replacement: path.resolve(__dirname, './src/audio') },
+      { find: '@', replacement: path.resolve(__dirname, './src') },
+    ],
   },
   server: {
     port: 8094,

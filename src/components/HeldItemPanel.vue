@@ -1,14 +1,15 @@
 <template>
   <section class="held-panel" :class="{ 'is-holding': item !== null }" aria-live="polite">
     <template v-if="item">
-      <span class="held-icon"><LootItemArt :art :type="item.type" :name /></span>
-      <span class="held-text">
-        <span class="held-label">HOLDING: <strong>{{ name }}</strong> ({{ width }}x{{ height }})</span>
-        <span class="held-hint">[R] rotate. Click a cell to drop. [ESC] returns it.</span>
+      <span class="held-body">
+        <span class="held-text">
+          <span class="held-label">{{ name }}</span>
+          <span class="held-hint">{{ width }}x{{ height }} / [R] rotate / click a cell to place / [ESC] returns it</span>
+        </span>
       </span>
       <div class="held-actions">
-        <button v-if="canUse" type="button" class="action-btn use-btn" @click.stop="$emit('use')">{{ actionVerb }}</button>
-        <button v-if="canDrop" type="button" class="action-btn drop-btn" @click.stop="$emit('drop')">DROP</button>
+        <button v-if="canUse" type="button" class="action-btn use-btn" @click.stop="useHeld">{{ actionVerb }}</button>
+        <button v-if="canDrop" type="button" class="action-btn drop-btn" @click.stop="dropHeld">DROP</button>
       </div>
     </template>
     <span v-else class="held-empty">HANDS EMPTY. Click an item to pick it up.</span>
@@ -17,27 +18,27 @@
 
 <script setup lang="ts">
 /**
- * What the survivor is carrying between slots. It always takes its space, empty or not, so picking an
- * item up or putting it down never moves anything else in the modal.
+ * What the survivor is carrying between slots: its name, hint and the buttons. The item's picture follows
+ * the pointer on the game canvas (held-cursor.ts), so it is not drawn here.
  */
 import { computed } from 'vue';
-import type { ArtBook } from '../art/types.ts';
 import { isDroppableBagItem } from '../../shared/bag.ts';
 import { isCandyId } from '../../shared/candy.ts';
 import { getItemFootprint, type GridItem } from '../../shared/grid-inventory.ts';
 import { isSupplyType } from '../../shared/supply-types.ts';
 import { formatItemName } from '../game/dual-loot-modal.ts';
-import LootItemArt from './LootItemArt.vue';
+import { useGame } from './use-game.ts';
+import { useSoundOf } from '../game/inventory/use-sound.ts';
 
-const { art = null, item = null } = defineProps<{
-  art?: ArtBook | null;
+const { item = null } = defineProps<{
   item?: GridItem | null;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   (e: 'use'): void;
   (e: 'drop'): void;
 }>();
+const game = useGame();
 
 const name = computed(() => (item ? formatItemName(item.type) : ''));
 const footprint = computed(() => (item ? getItemFootprint(item.type, item.rotated) : { width: 1, height: 1 }));
@@ -74,6 +75,18 @@ const canDrop = computed(() => {
   const isCandy = isCandyId(item.type);
   return isDroppable || isCandy;
 });
+
+/** The item's own sound for USE, then the use happens at once. */
+function useHeld(): void {
+  if (item) game.playSfx(useSoundOf(item.type));
+  emit('use');
+}
+
+/** A drop has the same sound whatever the item is; the drop itself happens at once. */
+function dropHeld(): void {
+  game.playSfx('ui_drop');
+  emit('drop');
+}
 </script>
 
 <style scoped>
@@ -83,34 +96,41 @@ const canDrop = computed(() => {
   min-width: 100%;
   display: flex;
   align-items: center;
-  gap: max(calc(var(--u) * 2), calc(var(--ap) * 2));
-  min-height: max(calc(var(--u) * 16), calc(var(--ap) * 20));
+  gap: max(calc(var(--u) * 3), calc(var(--ap) * 3));
+  min-height: max(calc(var(--u) * 26), calc(var(--ap) * 30));
   height: auto;
   flex: 0 0 auto;
   background: rgba(11, 12, 16, 0.9);
   box-shadow: 0 0 0 var(--ap) var(--ink-line);
   padding: max(calc(var(--u) * 1.5), var(--ap)) max(calc(var(--u) * 2.5), calc(var(--ap) * 2));
+  font-family: 'Silkscreen', monospace;
   font-size: max(calc(var(--u) * 5.5), calc(var(--m) * 2.8));
   color: var(--bone-dim);
   box-sizing: border-box;
   overflow: hidden;
 }
-.held-panel.is-holding { box-shadow: 0 0 0 var(--ap) var(--amber); background: var(--ink-raised); color: var(--bone); }
-.held-icon { width: calc(var(--ap) * 14); height: calc(var(--ap) * 14); flex: 0 0 auto; }
-.held-text { display: flex; flex-direction: column; gap: var(--ap); min-width: 0; flex: 1; }
-.held-hint { font-size: max(calc(var(--u) * 5), calc(var(--m) * 2.5)); color: var(--bone-dim); }
+/* Holding: the item is the hero. No box around it, just the thing, its name and two big buttons. */
+.held-panel.is-holding { background: transparent; box-shadow: none; color: var(--bone); }
+/* The item stands above its name and hint. LootItemArt sizes its picture by the scale prop, so this stays pixel-sharp at 3x. */
+/* The picture and its words stack in a column that keeps a readable width; the buttons drop below when the panel is narrow. */
+.held-panel { flex-wrap: wrap; row-gap: calc(var(--ap) * 6); }
+.held-body { display: flex; flex-direction: column; align-items: flex-start; gap: calc(var(--ap) * 4); flex: 1 1 calc(var(--ap) * 150); min-width: 0; }
+.held-text { display: flex; flex-direction: column; gap: calc(var(--ap) * 2); width: 100%; min-width: 0; }
+.held-label { font-size: max(calc(var(--u) * 10), calc(var(--m) * 5)); color: var(--amber); text-transform: uppercase; letter-spacing: var(--ap); line-height: 1.1; overflow-wrap: break-word; }
+.held-hint { font-size: max(calc(var(--u) * 4), calc(var(--m) * 2)); color: var(--bone-dim); }
 .held-empty { font-size: max(calc(var(--u) * 5.5), calc(var(--m) * 2.8)); }
-.held-actions { display: flex; align-items: center; gap: calc(var(--ap) * 2); margin-left: auto; }
+.held-actions { display: flex; align-items: stretch; gap: calc(var(--ap) * 3); margin-left: auto; }
 .action-btn {
   --edge: var(--bone-dim);
   background: var(--ink-raised);
   border: 0;
   color: var(--bone);
   box-shadow: 0 0 0 var(--ap) var(--edge), 0 calc(var(--ap) * 2) 0 var(--ap) var(--ink-line);
-  padding: max(calc(var(--u) * 1.5), var(--ap)) max(calc(var(--u) * 2.5), calc(var(--ap) * 2));
+  padding: max(calc(var(--u) * 4), calc(var(--ap) * 4)) max(calc(var(--u) * 7), calc(var(--ap) * 7));
+  min-width: calc(var(--ap) * 36);
   cursor: pointer;
   font-family: inherit;
-  font-size: max(calc(var(--u) * 5), calc(var(--m) * 2.5));
+  font-size: max(calc(var(--u) * 8), calc(var(--m) * 4));
   font-weight: 700;
   white-space: nowrap;
 }

@@ -53,6 +53,8 @@ export interface HomeSyncOptions {
   readonly tally?: () => TripTally;
   /** The player's own highest level, which the jobs rolled for a banked trip are gated by. Left off for none. */
   readonly highest?: () => number;
+  /** The town the Campaign Level card set. A solo van starts there; a room, or no set town, starts at the furthest reached. Left off for none. */
+  readonly setTown?: () => number | null;
 }
 
 /** A trip or a breach still on file has the gear in hand at stake: the room's body has it, or nobody does. */
@@ -396,10 +398,17 @@ export class HomeSync {
 
   /** Nobody stands at the van with nowhere to go. The map can still pick another level. */
   private pickFurthest(snapshot: SnapshotPacket, nothingPicked: boolean): void {
-    const level = snapshot.home?.roomHighest;
-    const shouldAsk = nothingPicked && !this.pickAsked && level !== undefined;
+    const roomHighest = snapshot.home?.roomHighest;
+    const shouldAsk = nothingPicked && !this.pickAsked && roomHighest !== undefined;
     this.pickAsked = nothingPicked;
-    if (shouldAsk) this.options.sendHome({ kind: 'pick_level', level });
+    if (shouldAsk) this.options.sendHome({ kind: 'pick_level', level: this.vanDefault(roomHighest) });
+  }
+
+  /** The town the van starts on. The sim clamps it to the room's reach, so a set town above that still lands on the furthest. */
+  private vanDefault(roomHighest: number): number {
+    const isSolo = this.options.mode === 'solo';
+    const setTown = isSolo ? this.options.setTown?.() : undefined;
+    return setTown ?? roomHighest;
   }
 
   /** Empty hands take the gun from the locker first: once a trip is on file, hands stop settling against the locker. */

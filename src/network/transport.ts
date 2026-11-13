@@ -1,12 +1,18 @@
-import type { BagCommit } from '../../shared/bag.ts';
-import type { DifficultyId } from '../../shared/difficulty.ts';
-import type { EmoteId } from '../../shared/emotes.ts';
-import type { GameStyle } from '../../shared/game-style.ts';
-import type { HomeAction, JoinHome } from '../../shared/home-protocol.ts';
-import type { ClientInputPacket, LobbyStatePacket, SnapshotPacket, WelcomePacket, CandyId } from '../../shared/protocol.ts';
-import type { BenchAction } from '../../shared/workbench.ts';
+import type { BagCommit } from "../../shared/bag.ts";
+import type { DifficultyId } from "../../shared/difficulty.ts";
+import type { EmoteId } from "../../shared/emotes.ts";
+import type { GameStyle } from "../../shared/game-style.ts";
+import type { HomeAction, JoinHome } from "../../shared/home-protocol.ts";
+import type {
+  ClientInputPacket,
+  LobbyStatePacket,
+  SnapshotPacket,
+  WelcomePacket,
+  CandyId
+} from "../../shared/protocol.ts";
+import type { BenchAction } from "../../shared/workbench.ts";
 
-export type TransportKind = 'solo' | 'coop';
+export type TransportKind = "solo" | "coop";
 
 export interface ConnectOptions {
   readonly name: string;
@@ -18,9 +24,9 @@ export interface ConnectOptions {
   readonly home?: JoinHome;
   /** Solo plays in this style, and left off that is Arcade. In co-op the room decides, so `RemoteSession.join` is told instead. */
   readonly style?: GameStyle;
-  /** Solo only: the run's seed, so a Daily Night is the same town for everyone. Left off, a random one. */
+  /** Solo only: the run's seed, so a Nightly Run is the same town for everyone. Left off, a random one. */
   readonly seed?: number;
-  /** Solo Arcade and Daily Night only: the night of the player's streak, which picks the streak kit (`shared/streak-kit.ts`). */
+  /** Solo Arcade and Nightly Run only: the night of the player's streak, which picks the streak kit (`shared/streak-kit.ts`). */
   readonly streakNight?: number;
   /** Solo only: a Test Drive run, where every car drives and the exit van never comes. */
   readonly testDrive?: boolean;

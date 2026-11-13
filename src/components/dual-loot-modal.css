@@ -45,25 +45,35 @@
   }
 }
 
-/* Two halves either side of a clear middle. Each side sits in the centre of its half, across and down, so neither touches an edge of the screen. */
+/* Container left, held item centre, inventory right: spaced between, each centred down the screen. */
 .dual-loot-overlay {
   width: 100%;
   height: 100%;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) calc(var(--ap) * var(--gap-w)) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   justify-items: center;
+  column-gap: calc(var(--ap) * 6);
+  padding-inline: calc(var(--ap) * 6);
   pointer-events: none;
   box-sizing: border-box;
 }
 
 /* The clear middle, where the survivor stands. */
 .center-stage-spacer {
+  align-self: stretch;
+  justify-self: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   pointer-events: none;
+  min-width: 0;
 }
 
-/* The container (when there is one) and the held-item panel under it. The panel keeps its place when empty. */
+
+/* The container, when there is one. */
 .left-column {
+  justify-self: start;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -101,6 +111,7 @@
 }
 
 .survivor-dock {
+  justify-self: end;
   background: rgba(11, 12, 16, 0.9);
   box-shadow:
     0 0 0 var(--ap) var(--ink-line),
@@ -417,7 +428,7 @@
     pointer-events: auto;
   }
   .center-stage-spacer {
-    display: none;
+    align-self: stretch;
   }
   /* Portrait: one column, the container and the held-item slot on top, the bag below; scroll if it is long. */
   .left-column {

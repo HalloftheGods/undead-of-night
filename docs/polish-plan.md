@@ -4,7 +4,7 @@ Written 2026-11-09 against build v26.11.9-115 (main at `15758d3`). This is a rev
 
 ## How this was checked
 
-Played the real build on the dev server with Playwright: the Press Any Key title, the main menu, Play > Daily Night, Play > Arcade setup, Level 1 (Silent Ruins) on Stay Close, the town map (Tab), the run log (L), pause, the candy bag, Horde 1 through to Game Over, and the Campaign bunker. Desktop at 1366x768 and an iPhone 13 held sideways. No console errors in any of it.
+Played the real build on the dev server with Playwright: the Press Any Key title, the main menu, Play > Nightly Run, Play > Arcade setup, Level 1 (Silent Ruins) on Stay Close, the town map (Tab), the run log (L), pause, the candy bag, Horde 1 through to Game Over, and the Campaign bunker. Desktop at 1366x768 and an iPhone 13 held sideways. No console errors in any of it.
 
 Not checked: real co-op (needs two clients), audio by ear (headless has no speakers), a real phone's touch feel, Safari, and anything past Horde 1. The bot aims badly, so treat difficulty notes as "worth a human look", not proof.
 
@@ -15,8 +15,8 @@ Older plans this builds on, so it does not repeat them: `docs/polish-backlog.md`
 ## 1. What already feels great
 
 - **The look.** The pixel art is the strongest thing in the game. The dripping logo with the moon, the burning barrels, the flashlight cone, the street lamps throwing warm pools: it reads as one confident style, not a pile of asset packs. The town map (Tab) is lovely, with coloured building types, names and a clear legend.
-- **The new card screens.** Daily Night, Arcade setup and Level Select with the tall portrait cards look like a real console game's front end. The survivor busts (Night especially) have real personality.
-- **Daily Night as the front door.** One fresh town for everyone, a streak, a "new town in 21h 47m" countdown and a tomorrow's-kit teaser. That is a proper reason to come back every day.
+- **The new card screens.** Nightly Run, Arcade setup and Level Select with the tall portrait cards look like a real console game's front end. The survivor busts (Night especially) have real personality.
+- **Nightly Run as the front door.** One fresh town for everyone, a streak, a "new town in 21h 47m" countdown and a tomorrow's-kit teaser. That is a proper reason to come back every day.
 - **Depth under the hood.** Upstairs and cellars, schools and hospitals, leftovers marked on the map, candy with timers, fireworks, merchants, a bunker with quests and a forge. There is far more game here than a first screen suggests.
 - **Juice that exists already.** Hit-stop, kill callouts, trauma shake, the damage vignette, a heartbeat, motion options. The combat-feel epic shipped.
 - **Clean shell.** Press Any Key, a short three-item main menu, a What's New book, a version stamp, privacy link, no errors.
@@ -53,7 +53,7 @@ Older plans this builds on, so it does not repeat them: `docs/polish-backlog.md`
 ### Consistency with the new menu style
 - The card style (Daily, Arcade, Levels) is now the house look, but **Pause, Game Over, the candy bag and Options are still plain centred text** in the older style.
 - The candy bag opened **on top of the level title card**, which showed through behind it ("ONE TOWN" ghosted over "CANDY BAG"). Overlays should clear banners first.
-- Daily Night's cards are noticeably smaller than Arcade's, and the info under them is three dense lines of orange capitals.
+- Nightly Run's cards are noticeably smaller than Arcade's, and the info under them is three dense lines of orange capitals.
 
 ### Phone
 - The touch buttons are four **icon-only squares** (magnifier, backpack, sparkle, fast-forward). Without labels a new player has to guess. Xopher has asked for an **iOS-style pixel bottom nav bar with icon and label**, and that is now being built in its own thread.
@@ -74,7 +74,7 @@ Effort: **S** about a day or less, **M** 2 to 4 days, **L** a week or more. Rank
 
 | # | Change | Why | Effort |
 |---|---|---|---|
-| 1 | **A first fight within 20 seconds.** On Level 1 only: two or three slow shamblers placed near spawn, the first lull cut to about 60 s, and Horde 1 on Level 1 softened (fewer, staggered arrivals instead of seven at once). Daily Night and later levels unchanged. | Fixes the empty first minute and the Horde 1 cliff together. This is the biggest fun lever. Needs `OFF_PATH_DRAWS` re-recorded if town-gen rolls move. | M |
+| 1 | **A first fight within 20 seconds.** On Level 1 only: two or three slow shamblers placed near spawn, the first lull cut to about 60 s, and Horde 1 on Level 1 softened (fewer, staggered arrivals instead of seven at once). Nightly Run and later levels unchanged. | Fixes the empty first minute and the Horde 1 cliff together. This is the biggest fun lever. Needs `OFF_PATH_DRAWS` re-recorded if town-gen rolls move. | M |
 | 2 | **Contextual first-run hints**, shown once each: move/aim/fire at spawn, "Hold E" at the first container, candy bowls at the first front door, "the van comes after 2 hordes", and a 10 s horde warning. Touch wording on phones, pad glyphs on a pad, a "Reset hints" switch in Options. | The game teaches nothing in context today. Already specced as Nov 7 item 6. | M |
 | 3 | **Zombies you can see.** A one-pixel dark-red or bone rim on zombies outside the light, plus the Brightness slider from Nov 7 item 5. | Dying to things you can't see feels unfair, not scary. | S–M |
 | 4 | **Game Over that makes you press retry.** Bigger card-style panel; one line on what got you ("A runner from behind. 6 shots in the last 10 s."); "Try again from this town" as the big focused button on Enter; a "New best!" stamp; one rotating tip. | The moment after death decides whether there is a second run. Nov 7 items 3 and 4. | S–M |

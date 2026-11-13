@@ -23,6 +23,9 @@ const none: BagWanted = {
   water_bottle: 0,
   disinfectant: 0,
   antibiotics: 0,
+  pistol_ammo: 0,
+  carbine_ammo: 0,
+  shells: 0,
 };
 const want = (more: Partial<BagWanted>): BagWanted => ({ ...none, ...more });
 
@@ -141,6 +144,7 @@ describe('in a run', () => {
 
   it('re-packs on a tier change', () => {
     const { sim, p } = carrier();
+    p.ammoBag = { pistol: 0, carbine: 0, shotgun: 0 };
     p.materials!.planks = 2;
     steps(sim, 1);
     p.backpackTier = 'alice';
@@ -280,6 +284,7 @@ describe('ids do not matter across the wire', () => {
     const client = createBag('satchel');
     const seen = [want({ medkit: 2, plank: 2 }), want({ medkit: 1, plank: 2, bottle: 1 }), want({ medkit: 2, plank: 2, bottle: 1, nails: 6 })];
     for (const w of seen) syncBag(p.inventory, w);
+    p.ammoBag = { pistol: 0, carbine: 0, shotgun: 0 };
     p.medkits = 2;
     p.bottles = 1;
     p.knife = false;

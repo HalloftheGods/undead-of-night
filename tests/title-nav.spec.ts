@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { startFlow } from '../src/game/play-flow.ts';
-import { closePage, closePlay, INVITE_LANDING, openPage, pickLevel, TITLE_HOME } from '../src/game/title-nav.ts';
+import { closeLevelSetter, closePage, closePlay, INVITE_LANDING, openLevelSetter, openPage, pickLevel, TITLE_HOME } from '../src/game/title-nav.ts';
 import type { TitleNav } from '../src/game/title-nav.ts';
 
 /** What the Play page is told to start from, as the title screen passes it. */
@@ -35,5 +35,16 @@ describe('title navigation', () => {
   it('backing out of Play after picking a level returns to the Levels page and forgets the level', () => {
     const picked = pickLevel(openPage(TITLE_HOME, 'levels'), 3);
     expect(closePlay(picked)).toEqual({ page: 'levels', invited: false, startLevel: null });
+  });
+
+  it('the Level card opens the Levels page in setting mode for its style, and backing out returns to Play, not the title', () => {
+    const setting = openLevelSetter(openPage(TITLE_HOME, 'play'), 'campaign');
+    expect(setting).toMatchObject({ page: 'levels', settingLevel: 'campaign' });
+    expect(closeLevelSetter(setting)).toMatchObject({ page: 'play', settingLevel: undefined, startLevel: null });
+  });
+
+  it('backing out of Play opened from the Level card goes to the title, since no level was picked to start from', () => {
+    const back = closePlay(closeLevelSetter(openLevelSetter(openPage(TITLE_HOME, 'play'), 'arcade')));
+    expect(back).toMatchObject({ page: null, startLevel: null });
   });
 });
