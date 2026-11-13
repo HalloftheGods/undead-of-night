@@ -88,3 +88,18 @@ describe('the stash', () => {
     expect(state.rescuees[0].stash).toBeNull();
   });
 });
+
+describe('the guaranteed radio', () => {
+  const radioIn = (seed: number, radio: boolean): boolean => {
+    const sim = new GameSimulation({ seed, home: true });
+    sim.addPlayer('a', 'a', null, undefined, { loadout: emptyLoadout(), highest: 2, rescued: [], ...(radio ? { radio: true } : {}) });
+    sim.snapshot();
+    const state = stateOf(sim);
+    driveToTown(sim, state, 2);
+    return state.containers.some((c) => c.loot?.type === 'radio');
+  };
+
+  it('lies in town 2 for a player with none, in every town', () => {
+    for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) expect(radioIn(seed, false)).toBe(true);
+  });
+});

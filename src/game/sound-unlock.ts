@@ -61,3 +61,8 @@ export function recordRadioFound(store: Store | null = browserStore(), track: st
 export function isRadioFound(event: GameEvent): boolean {
   return event.type === 'pickup' && event.pickup === 'radio';
 }
+
+/** The tracks the campaign save holds go where the Sound Test and the Radio screens read them, so every screen sees the save's finds. */
+export function mirrorFoundTracks(tracks: readonly string[], store: Store | null = browserStore()): void {
+  for (const track of tracks) recordRadioFound(store, track);
+}

@@ -33,6 +33,11 @@ function placeCarRadios(sim: SimState): void {
   }
 }
 
+/** The town a home run is owed a radio in: town 2, until everyone in the room has one. Arcade keeps the odds above. */
+export const RADIO_TOWN = 2;
+
+const radioOwed = (sim: SimState): boolean => sim.homeRun !== null && sim.level === RADIO_TOWN && sim.players.some((p) => p.home !== null && p.home.radio !== true);
+
 /**
  * Leaves Radios in some cars and at most one in a building. All of it is picked from the town's seed alone,
  * on generators of its own, so it never moves the simulation's rolls, and a Radio is never loose on the floor.
@@ -40,7 +45,7 @@ function placeCarRadios(sim: SimState): void {
 export function placeRadio(sim: SimState): void {
   placeCarRadios(sim);
   const rng = createRng(sim.map.seed ^ RADIO_SALT);
-  const townHasRadio = rng() < RADIO_ODDS;
+  const townHasRadio = rng() < RADIO_ODDS || radioOwed(sim);
   if (!townHasRadio) return;
   const places = townContainers(sim.map).filter((container) => RADIO_PLACES.has(container.buildingKind));
   const chosen = shuffle(rng, places).find(({ id }) => canTakeRadio(sim, id));

@@ -18,6 +18,7 @@ import { emptyTally } from './quest-tally.ts';
 import type { TripTally } from './quest-tally.ts';
 import { abandon } from './quests.ts';
 import type { QuestContext } from './quests.ts';
+import { mirrorFoundTracks } from '../sound-unlock.ts';
 import { acceptAt, applyReceiptWithQuests, resolveOpenTripWithQuests, smeltWithQuests, turnInAt, visited } from './quest-sync.ts';
 import type { QuestResult } from './quest-sync.ts';
 import { SaveQueue } from './save-queue.ts';
@@ -326,15 +327,20 @@ export class HomeSync {
     if (nothingToDo) return;
     this.receiptInFlight = key;
     let credited = false;
+    let found: readonly string[] = [];
     const tally = this.options.tally?.() ?? emptyTally();
     void this.saves.write((save) => {
       const next = applyReceiptWithQuests(save, receipt, tally, this.options.highest?.() ?? 0);
       credited = next !== save;
+      found = next.camp?.tracks ?? [];
       return next;
     }).then((result) => {
       this.receiptInFlight = null;
       const landed = credited && result.kind === 'saved';
-      if (landed) this.options.onReceipt?.(receipt);
+      if (landed) {
+        mirrorFoundTracks(found);
+        this.options.onReceipt?.(receipt);
+      }
     });
   }
 
