@@ -49,6 +49,7 @@
       </div>
       <p v-if="ui.error" class="px-error" role="alert">{{ ui.error }}</p>
       <p v-else-if="warning" class="px-error" role="alert">{{ warning }}</p>
+      <MenuLink class="pause-menu-link" @press="emit('openControls')">Controls</MenuLink>
       <MenuLink class="pause-menu-link" @press="emit('openBook')">News Stand</MenuLink>
       <MenuLink class="pause-menu-link" @press="game.toMenu()">Main menu</MenuLink>
     </div>
@@ -76,7 +77,7 @@ import { useRoomLink } from './use-room-link.ts';
 import { useGame } from './use-game.ts';
 
 const { ui, mode } = defineProps<{ ui: UiState; mode: TransportKind }>();
-const emit = defineEmits<{ openBook: [] }>();
+const emit = defineEmits<{ openBook: []; openControls: [] }>();
 const game = useGame();
 const resumeBox = useTemplateRef<HTMLElement>('resumeBox');
 /** While the Brightness thumb is held the backdrop and the rest of the card fade, so the town shows what it does. */

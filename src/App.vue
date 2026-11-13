@@ -69,7 +69,8 @@
         <CandyMagazinePage v-else-if="pausedBook === 'candy'" @close="onClosePausedBook" />
         <TownGuidePage v-else-if="pausedBook === 'guide'" @close="onClosePausedBook" />
         <RecordsPage v-else-if="pausedBook === 'records'" :ui @close="onClosePausedBook" />
-        <PauseMenu v-else :ui :mode="ui.mode" @open-book="pausedBook = 'books'" />
+        <ControlsPageCanvas v-else-if="pausedBook === 'controls'" @close="pausedBook = null" />
+        <PauseMenu v-else :ui :mode="ui.mode" @open-book="pausedBook = 'books'" @open-controls="pausedBook = 'controls'" />
       </template>
       <VanTransition :in-bunker="ui.home?.inBunker ?? null" :art="ui.art" />
       </template>
@@ -114,6 +115,7 @@ import MerchantScreen from './components/MerchantScreen.vue';
 import OverrunChest from './components/OverrunChest.vue';
 import OverrunClock from './components/OverrunClock.vue';
 import PauseMenu from './components/PauseMenu.vue';
+import ControlsPageCanvas from './components/ControlsPageCanvas.vue';
 import PrivacyPage from './components/PrivacyPage.vue';
 import StudioSplash from './components/StudioSplash.vue';
 import TitleScreen from './components/TitleScreen.vue';
@@ -128,6 +130,7 @@ import KillCallout from './components/KillCallout.vue';
 import WorkbenchScreen from './components/WorkbenchScreen.vue';
 import { privacyOpen, startAnalytics } from './game/analytics/index.ts';
 import { containerLook } from './art/containers.ts';
+import { feedSearch, searchArtFor, searchFlipped, searchTitle, startReveal } from './game/inventory/search-overlay.ts';
 import { paintedContainer } from './engine/car-looks.ts';
 import { CONTAINER_LABEL } from '../shared/containers.ts';
 import { isVerticalLook } from '../shared/container-flip.ts';
@@ -167,6 +170,21 @@ function onInventoryClose(): void {
   }
 }
 
+/**
+ * A search opens the loot window at once, with an empty grid the sweep runs over for as long as the search takes.
+ * What it finds arrives with the search's end and rebuilds the window with the open drawing and the items in it.
+ */
+watch(() => ui.value.searching, (now, was) => {
+  feedSearch(now?.progress ?? null);
+  if (now && !was && !inventory.isOpen.value) {
+    const prop = now.propIndex !== undefined ? game.currentMap?.props[now.propIndex] : undefined;
+    const art = ui.value.art ? searchArtFor(ui.value.art, now.kind, prop) : null;
+    inventory.showContainer(now.id, searchTitle(now.kind), [], now.kind, art, searchFlipped(prop), true);
+  }
+  const over = !now && was && inventory.searchingOpen.value;
+  if (over) inventory.hide();
+});
+
 watch(() => ui.value.openedContainer, (loot) => {
   if (loot && loot.items.length > 0) {
     const title = loot.title ?? (loot.kind ? CONTAINER_LABEL[loot.kind] : 'Container');
@@ -175,6 +193,7 @@ watch(() => ui.value.openedContainer, (loot) => {
     const specificArt = prop && ui.value.art ? (paintedContainer(ui.value.art, prop) ?? ui.value.art.containers[containerLook({ kind: loot.kind ?? 'car', prop: prop.kind })]) : null;
     // A car parked nose up is drawn standing on end, so its grid stands on end too.
     const flipped = isVerticalLook(prop?.kind);
+    startReveal(loot.items);
     inventory.showContainer(loot.id, title, loot.items, loot.kind, specificArt, flipped);
   }
 });
