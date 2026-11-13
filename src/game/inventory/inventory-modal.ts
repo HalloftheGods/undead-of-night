@@ -3,6 +3,7 @@ import type { BagCommit } from "@shared/bag.ts";
 import type { ContainerArt } from "@art/containers.ts";
 import type { ContainerKind } from "@shared/containers.ts";
 import type { GridItem } from "@shared/grid-inventory.ts";
+import { flipItem } from "@shared/container-flip.ts";
 import { loadKeyBindings } from "@game/controls-prefs.ts";
 import { aimsCursor } from "@game/home-screens.ts";
 import type { UiState } from "@game/hud-state.ts";
@@ -33,6 +34,8 @@ interface OpenedGrid {
   items: readonly GridItem[];
   kind?: ContainerKind;
   art?: ContainerArt | null;
+  /** Shown on its side: a car parked nose up. */
+  flipped?: boolean;
 }
 
 /** How often an open container checks whether the survivor has walked off from it. */
@@ -111,14 +114,15 @@ export function useInventoryModal(
     containerTitle: string,
     items: readonly GridItem[] = [],
     containerKind?: ContainerKind,
-    containerArt?: ContainerArt | null
+    containerArt?: ContainerArt | null,
+    flipped = false
   ): boolean {
     const hud = ui.value.hud;
     const canShow = inventoryReachable(ui.value) && hud !== null;
     if (!canShow) return false;
     bag.sync(hud);
-    lastOpen = { containerId, title: containerTitle, items, kind: containerKind, art: containerArt };
-    working.value = bag.open(hud, containerId, containerTitle, items, containerKind, containerArt);
+    lastOpen = { containerId, title: containerTitle, items, kind: containerKind, art: containerArt, flipped };
+    working.value = bag.open(hud, containerId, containerTitle, items, containerKind, containerArt, flipped);
     openings.value += 1;
     input.letGoButtons();
     input.setWalkOnly();
@@ -150,8 +154,10 @@ export function useInventoryModal(
     if (!canRebuild) return;
     bag.close(before);
     const isFurniture = opened.containerId !== null;
-    const containerItems = isFurniture ? before.container.items : [];
-    const rebuilt = bag.open(hud, opened.containerId, opened.title, containerItems, opened.kind, opened.art);
+    // The copy on screen may be flipped; the bag takes the host's layout and flips it again itself.
+    const onScreen = before.container.items;
+    const containerItems = isFurniture ? (before.flipped ? onScreen.map(flipItem) : onScreen) : [];
+    const rebuilt = bag.open(hud, opened.containerId, opened.title, containerItems, opened.kind, opened.art, opened.flipped === true);
     // The host's candy count can lag one snapshot behind, so a candy used or dropped here is taken out of the rebuilt candy bag too.
     const gone = new Set([...before.used, ...before.dropped].map((item) => item.id));
     rebuilt.candyBag.items = rebuilt.candyBag.items.filter((item) => !gone.has(item.id));

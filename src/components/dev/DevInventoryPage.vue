@@ -238,12 +238,12 @@
               :key="entry.id"
               :art="art"
               :entry="entry"
-              :cols="containerSizes[entry.kind]?.cols ?? entry.defaultDimensions.cols"
-              :rows="containerSizes[entry.kind]?.rows ?? entry.defaultDimensions.rows"
-              :blocked="containerSizes[entry.kind]?.blocked ?? entry.defaultDimensions.blocked ?? []"
-              @update:cols="updateContainerCols(entry.kind, $event)"
-              @update:rows="updateContainerRows(entry.kind, $event)"
-              @update:blocked="updateContainerBlocked(entry.kind, $event)"
+              :cols="shownSize(entry).cols"
+              :rows="shownSize(entry).rows"
+              :blocked="shownSize(entry).blocked ?? []"
+              @update:cols="onCardSize(entry, 'cols', $event)"
+              @update:rows="onCardSize(entry, 'rows', $event)"
+              @update:blocked="onCardBlocked(entry, $event)"
               @preview="openPreviewModal(entry)"
             />
           </div>
@@ -312,8 +312,8 @@
       :grid="previewModal.grid"
       :container-art="previewModal.containerArt"
       @close="closePreviewModal"
-      @size="onCanvasSize(previewModal.containerKind, $event)"
-      @blocked="updateContainerBlocked(previewModal.containerKind, $event)"
+      @size="onCanvasSize(previewModal, $event)"
+      @blocked="onCanvasBlocked(previewModal, $event)"
       @footprint="onCanvasFootprint"
       @save="saveFromCanvas"
     />
@@ -363,6 +363,7 @@ import {
 } from '../../../shared/containers.ts';
 import PixelButton from '../PixelButton.vue';
 import TitlePage from '../TitlePage.vue';
+import { flipDimensions, flipPoint, isVerticalLook } from '../../../shared/container-flip.ts';
 import DualLootModal from '../DualLootModal.vue';
 import CanvasLootPreview from './CanvasLootPreview.vue';
 import ItemSizingCard from './ItemSizingCard.vue';
@@ -757,6 +758,8 @@ interface PreviewModalState {
   containerKind: ContainerKind;
   grid: InventoryGrid;
   containerArt?: ContainerArt | null;
+  /** A car standing on end: the grid is shown flipped, and edits are flipped back. */
+  flipped?: boolean;
 }
 
 const previewModal = ref<PreviewModalState | null>(null);
@@ -766,7 +769,7 @@ const previewCanvas = ref(true);
 const SAMPLE_LOOT_ITEMS = ['bandage', 'water_bottle', 'pistol_ammo', 'knife', 'medkit', 'full_size_bar'];
 
 const openPreviewModal = (entry: DevContainerEntry): void => {
-  const currentDimensions = containerSizes[entry.kind] ?? entry.defaultDimensions;
+  const currentDimensions = shownSize(entry);
   const grid = createInventoryGrid(currentDimensions.cols, currentDimensions.rows, currentDimensions.blocked);
 
   // Seed sample loot items into the container grid to test in-game packing and dragging
@@ -792,13 +795,37 @@ const openPreviewModal = (entry: DevContainerEntry): void => {
     containerKind: entry.kind,
     containerArt,
     grid,
+    flipped: isVerticalLook(entry.look),
   };
 };
 
+/** What a card or the preview shows: the kind's saved size, on its side for a car drawn standing on end. */
+const shownSize = (entry: DevContainerEntry): ContainerGridDimensions => {
+  const saved = containerSizes[entry.kind] ?? entry.defaultDimensions;
+  return isVerticalLook(entry.look) ? flipDimensions(saved) : saved;
+};
+
+/** A card edit, turned back into the kind's own columns and rows when the card shows it flipped. */
+const onCardSize = (entry: DevContainerEntry, side: 'cols' | 'rows', value: number): void => {
+  const flipped = isVerticalLook(entry.look);
+  const isCols = flipped ? side === 'rows' : side === 'cols';
+  if (isCols) updateContainerCols(entry.kind, value);
+  else updateContainerRows(entry.kind, value);
+};
+
+const onCardBlocked = (entry: DevContainerEntry, blocked: GridPoint[]): void => {
+  updateContainerBlocked(entry.kind, isVerticalLook(entry.look) ? blocked.map(flipPoint) : blocked);
+};
+
 /** The canvas editor changed a container's size: the bench keeps it, so its own Save button writes it. */
-const onCanvasSize = (kind: ContainerKind, size: { cols: number; rows: number }): void => {
-  updateContainerCols(kind, size.cols);
-  updateContainerRows(kind, size.rows);
+const onCanvasSize = (modal: PreviewModalState, size: { cols: number; rows: number }): void => {
+  const own = modal.flipped ? { cols: size.rows, rows: size.cols } : size;
+  updateContainerCols(modal.containerKind, own.cols);
+  updateContainerRows(modal.containerKind, own.rows);
+};
+
+const onCanvasBlocked = (modal: PreviewModalState, cells: GridPoint[]): void => {
+  updateContainerBlocked(modal.containerKind, modal.flipped ? cells.map(flipPoint) : cells);
 };
 
 const onCanvasFootprint = (change: { type: string; width: number; height: number }): void => {

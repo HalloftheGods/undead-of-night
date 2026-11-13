@@ -5,6 +5,7 @@ import type { BackpackTier } from '@shared/backpack.ts';
 import { autoPackItem, canPlaceItem, createInventoryGrid, findAvailableSlot, placeItem } from '@shared/grid-inventory.ts';
 import type { GridItem, InventoryGrid } from '@shared/grid-inventory.ts';
 import { containerGridDimensions } from '@shared/containers.ts';
+import { flipDimensions, flipItem } from '@shared/container-flip.ts';
 import type { ContainerKind } from '@shared/containers.ts';
 import type { WeaponId } from '@shared/protocol.ts';
 import { isCandyId, type CandyId } from '@shared/candy.ts';
@@ -49,6 +50,8 @@ export interface BagWorking {
   readonly containerKind?: ContainerKind;
   readonly containerId?: number | null;
   readonly containerArt?: ContainerArt | null;
+  /** The grid is shown on its side (a car parked nose up). Its items go back the right way round when the bag closes. */
+  readonly flipped?: boolean;
 }
 
 function gunItem(weapon: WeaponId, hud: Carried): GridItem {
@@ -135,13 +138,16 @@ export class LocalBag {
     containerItems: readonly GridItem[] = [],
     containerKind?: ContainerKind,
     containerArt?: ContainerArt | null,
+    flipped = false,
   ): BagWorking {
     this.openIds = new Set([...this.bag.pack.items, ...this.bag.pockets.items].map((item) => item.id));
     this.containerOriginalIds = new Set(containerItems.map((item) => item.id));
     const tier = hud.backpackTier ?? 'satchel';
-    const { cols, rows, blocked } = containerGridDimensions(containerKind);
+    const shape = containerGridDimensions(containerKind);
+    const { cols, rows, blocked } = flipped ? flipDimensions(shape) : shape;
     const container = createInventoryGrid(cols, rows, blocked);
-    for (const item of containerItems) {
+    for (const original of containerItems) {
+      const item = flipped ? flipItem(original) : original;
       if (!placeItem(container, { ...item })) {
         autoPackItem(container, { ...item });
       }
@@ -170,6 +176,7 @@ export class LocalBag {
       containerKind,
       containerId,
       containerArt,
+      flipped,
     };
   }
 
@@ -249,11 +256,12 @@ export class LocalBag {
     const use: BagDrop[] = [...usedCounts].map(toRow);
     const containerDeposited: GridItem[] = [];
     for (const item of working.container.items) {
-      if (!containerOriginalIds.has(item.id)) containerDeposited.push(item);
+      if (!containerOriginalIds.has(item.id)) containerDeposited.push(working.flipped ? flipItem(item) : item);
     }
+    // The host keeps the grid the long way round: a flipped window turns its layout back before it is sent.
     const container = isFurniture ? {
       id: working.containerId!,
-      items: [...working.container.items],
+      items: working.flipped ? working.container.items.map(flipItem) : [...working.container.items],
       taken: containerTaken,
       deposited: containerDeposited,
     } : undefined;

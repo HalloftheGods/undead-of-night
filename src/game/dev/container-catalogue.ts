@@ -49,6 +49,8 @@ const VARIANT_CONTAINERS: ReadonlyArray<{
   { kind: 'cabinet', look: 'bench', name: 'Workbench (Cabinet)', description: 'Cellars, garages, warehouses and workshops.' },
   { kind: 'car', look: 'police', name: 'Police Cruiser Trunk', description: 'Streets near police station, armory loot.' },
   { kind: 'car', look: 'ambulance', name: 'Ambulance Medical Bay', description: 'Hospital lots and emergency zones.' },
+  { kind: 'car', look: 'car_v', name: 'Parked Sedan, Nose Up (N to S)', description: 'Parked lots and street kerbs, drawn standing on end. The grid stands on end with it.' },
+  { kind: 'car', look: 'police_v', name: 'Police Cruiser, Nose Up (N to S)', description: 'Police lots, drawn standing on end. The grid stands on end with it.' },
   { kind: 'car', look: 'van', name: 'Delivery Work Van', description: 'Streets, warehouse loading docks.' },
 ];
 
