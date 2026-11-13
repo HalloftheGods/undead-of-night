@@ -6,6 +6,7 @@ import { takeFromContainer } from './container-take.ts';
 import { autoPackItem, createInventoryGrid, placeItem } from './grid-inventory.ts';
 import { spawnPickup } from './pickups.ts';
 import { eatCandyDirect, isCandyId, type CandyId } from './candy.ts';
+import { emit } from './sim-state.ts';
 import type { PlayerState, SimState } from './sim-state.ts';
 import { useSupply } from './supplies.ts';
 import { isSupplyType } from './supply-types.ts';
@@ -96,6 +97,9 @@ export function applyBagCommit(sim: SimState, p: PlayerState, commit: BagCommit)
         if (!real || real.type !== claimed.type) continue;
         held.delete(claimed.id);
         const left = takeFromContainer(p, real);
+        // A Radio is found the moment it leaves the grid: the event unlocks it for the party and gives up its track, as one on the floor does.
+        const foundRadio = real.type === 'radio' && left === null;
+        if (foundRadio) emit(sim, { type: 'pickup', playerId: p.id, pickup: 'radio', x: p.x, y: p.y });
         if (left && !placeItem(contents, { ...left })) autoPackItem(contents, left);
       }
       containerState.items = contents.items;

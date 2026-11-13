@@ -29,6 +29,25 @@ function openedWith(items: GridItem[]): { state: SimState; p: PlayerState } {
   return { state, p };
 }
 
+describe('taking a Radio from a container through the modal commit', () => {
+  it('reports the find once, as a Radio on the floor does, so it unlocks the menu and gives up its track', () => {
+    const { state, p } = openedWith([cell('r1', 'radio')]);
+    const commit = takeCommit(state, [cell('r1', 'radio')]);
+    const before = state.events.length;
+    applyBagCommit(state, p, commit);
+    const found = state.events.slice(before).filter((event) => event.type === 'pickup' && event.pickup === 'radio');
+    expect(found).toHaveLength(1);
+    expect(state.containers[commit.container.id].items).toEqual([]);
+  });
+
+  it('says nothing for a Radio that was not taken', () => {
+    const { state, p } = openedWith([cell('r1', 'radio')]);
+    const commit = { ...takeCommit(state, []), layout: [] };
+    applyBagCommit(state, p, commit);
+    expect(state.events.some((event) => event.type === 'pickup')).toBe(false);
+  });
+});
+
 describe('taking a counter-only item from a container through the modal commit', () => {
   it.each([
     ['firework', (p: PlayerState) => p.fireworks],

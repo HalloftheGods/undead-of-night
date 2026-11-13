@@ -203,6 +203,8 @@ export interface UiArt {
   readonly emotes: Record<EmoteId, PixelSprite>;
   /** Title lockup for the menu and game over screens. */
   readonly logo: PixelSprite;
+  /** The logo's blood loop; logoFrames[0] is `logo`. The title screen cycles them slowly. */
+  readonly logoFrames: readonly PixelSprite[];
   /** The difficulty page's card picture for each difficulty (difficulty-card.ts). */
   readonly difficulty: Record<DifficultyId, PixelSprite>;
   /** The Play page's card picture for Solo and Multiplayer (mode-cards.ts). */

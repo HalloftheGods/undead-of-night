@@ -392,15 +392,29 @@ function bottomOf(mask: PixelCanvas, x: number, word: Word): number {
   return -1;
 }
 
-function paintDrips(target: PixelCanvas, mask: PixelCanvas): void {
+/**
+ * The blood at a point in the loop, 0 up to 1 and back to 0 with no seam. Each run's neck swells and
+ * draws back on this curve, so the blood creeps down the letters and retreats.
+ */
+function swell(phase: number): number {
+  return (1 - Math.cos(2 * Math.PI * phase)) / 2;
+}
+
+/** A drop lets go and falls a few rows, then the loop puts it back at its run. */
+const LOOSE_FALL = 4;
+
+function paintDrips(target: PixelCanvas, mask: PixelCanvas, phase: number): void {
+  const extra = swell(phase);
   for (const [x, row, shape, neck] of DRIPS) {
     const { head, neck: neckRow, bead } = RUNS[shape];
     const top = bottomOf(mask, x + 1, WORDS[row]);
     const hasNoLetterBelow = top < 0;
     if (hasNoLetterBelow) continue;
-    target.grid(x, top, [...head, ...Array.from({ length: neck }, () => neckRow), ...bead], BLOOD);
+    const length = neck + Math.round(neck * 0.4 * extra);
+    target.grid(x, top, [...head, ...Array.from({ length }, () => neckRow), ...bead], BLOOD);
   }
-  for (const [x, y] of LOOSE) target.grid(x, y, DROP, BLOOD);
+  const fall = Math.floor(phase * (LOOSE_FALL + 1));
+  for (const [x, y] of LOOSE) target.grid(x, y + fall, DROP, BLOOD);
 }
 
 function subtitleColor(row: number): Color {
@@ -453,10 +467,10 @@ function paintSubtitle(target: PixelCanvas): void {
   target.blit(layer);
 }
 
-export function buildLogo(): PixelSprite {
-  const mask = wordMask();
+/** One frame of the lockup with the blood at `phase` (0 to 1 around the loop). Phase 0 is the still logo. */
+function buildLogoFrame(mask: PixelCanvas, phase: number): PixelSprite {
   const letters = new PixelCanvas(W, H).blit(extrusion(mask)).blit(paintFace(mask));
-  paintDrips(letters, mask);
+  paintDrips(letters, mask, phase);
   letters.outline({ color: ink[0] });
   const art = new PixelCanvas(W, H);
   paintGlow(art, letters);
@@ -464,4 +478,14 @@ export function buildLogo(): PixelSprite {
   art.blit(letters);
   paintSubtitle(art);
   return art.toSprite(W, H, W / 2, H / 2);
+}
+
+/** The lockup looping: `count` frames, the first being the still logo. */
+export function buildLogoFrames(count: number): PixelSprite[] {
+  const mask = wordMask();
+  return Array.from({ length: count }, (_, i) => buildLogoFrame(mask, i / count));
+}
+
+export function buildLogo(): PixelSprite {
+  return buildLogoFrame(wordMask(), 0);
 }

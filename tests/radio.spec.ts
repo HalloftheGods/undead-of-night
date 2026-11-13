@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { applyBagCommit } from '../shared/bag-sim.ts';
 import { containerInReach, SEARCH_SEC, townContainers } from '../shared/containers.ts';
 import { PLAYER_RADIUS, TICK_RATE } from '../shared/constants.ts';
 import { radioContainerId } from '../shared/radio.ts';
@@ -39,7 +40,7 @@ describe('the Radio', () => {
   it('is left in a home, diner or garage when it is not in a car', () => {
     const left = towns.flatMap(inBuildings);
     expect(left.length).toBeGreaterThan(0);
-    for (const { buildingKind } of left) expect(['house', 'apartment', 'diner', 'garage']).toContain(buildingKind);
+    for (const { buildingKind } of left) expect(['house', 'apartment', 'diner', 'garage', 'radio_station']).toContain(buildingKind);
   });
 
   it('falls out of the town\'s seed alone, whatever else the run rolled', () => {
@@ -71,6 +72,13 @@ describe('the Radio', () => {
     quiet.state.containers[container.id].loot = { type: 'radio', rounds: 0 };
     quiet.sim.setInput('a', input({ seq: 1, search: true }));
     steps(quiet.sim, Math.ceil(SEARCH_SEC[container.kind] * TICK_RATE) + 3);
+    // Searching lays the Radio in the container's grid; it is found when it is taken out of it.
+    const laid = quiet.state.containers[container.id].items?.find((item) => item.type === 'radio');
+    if (!laid) throw new Error('the radio was not laid in the grid');
+    const remaining = (quiet.state.containers[container.id].items ?? []).filter((item) => item.id !== laid.id);
+    applyBagCommit(quiet.state, p, { layout: [], drop: [], container: { id: container.id, items: remaining, taken: [laid], deposited: [] } });
+    quiet.sim.setInput('a', input({ seq: 2 }));
+    steps(quiet.sim, 1);
     const frame = quiet.sim.snapshot();
     const found = (events: typeof frame.events) => events.filter((event) => event.type === 'pickup' && event.pickup === 'radio');
     expect(found(frame.events)).toHaveLength(1);

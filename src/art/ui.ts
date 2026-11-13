@@ -9,13 +9,17 @@ import { buildLevelCards } from './level-cards.ts';
 import { buildModeCards } from './mode-cards.ts';
 import { buildStationCards } from './station-cards.ts';
 import { buildStyleCards } from './style-cards.ts';
-import { buildLogo } from './fx/logo.ts';
+import { buildLogoFrames } from './fx/logo.ts';
 import { buildLongIcons } from './fx/long-icons.ts';
 import { buildMoodleIcons } from './fx/moodles.ts';
 import { buildVanSide } from './fx/van-side.ts';
 import { buildBookCovers } from './book-covers.ts';
 
+/** Frames in the title logo's loop. Frame 0 is the still logo. */
+export const LOGO_FRAME_COUNT = 8;
+
 export function buildUi(): UiArt {
+  const logoFrames = buildLogoFrames(LOGO_FRAME_COUNT);
   return {
     crosshair: buildCrosshair(),
     crosshairHead: buildCrosshairHead(),
@@ -33,7 +37,8 @@ export function buildUi(): UiArt {
     skull: buildSkull(),
     zombieHead: buildZombieHead(),
     emotes: buildEmoteIcons(),
-    logo: buildLogo(),
+    logo: logoFrames[0],
+    logoFrames,
     difficulty: buildDifficultyCards(),
     mode: buildModeCards(),
     style: buildStyleCards(),
