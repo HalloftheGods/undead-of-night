@@ -2,6 +2,17 @@
 
 All notable changes to the Undead of Night: Last Round game are documented in this file.
 
+## [2026-11-13] - Home is an outdoor camp the horde breaks into
+
+### Changed
+- Campaign's home is no longer an indoor bunker: it is a camp in the woods, inside a scrap fence of tin, pallets and chain-link, under a clear night sky lit by a campfire and lanterns, with the night woods and a little wind on the sound.
+- Three big tents you walk into like any building: the striped Market (candy shop, the merchants), the Workshop (bench) and the Quarters (locker, jukebox, bedrolls). Their walls stop shots and sight; the fence does not.
+- The camp grows: one size for each town the room has reached, up to the fifth. The fence goes further out each time and the new ground gets a pup tent, crates and a fire barrel. Nothing you use ever moves.
+- The overrun breaks the fence instead of a blast door. At the last warning the sections that will give rattle, are heard rocking on their posts, and the banner counts them; at zero they fall and the horde comes in through every gap from the woods outside. One place at first, up to four the further the room has got and the harder the run.
+- The Tab map is the Camp map: the tents, the fence ring, and every gap the horde has made.
+- The reload call shows in camp once the guns are free.
+- Co-op: version 6. A player on an older build is turned away from a newer room, since it would draw the old bunker.
+
 ## [2026-11-13] - Held items on the canvas, ammo boxes
 
 ### Added
