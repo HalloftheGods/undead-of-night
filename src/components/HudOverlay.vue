@@ -157,7 +157,7 @@
             <strong class="hud-empty">Empty</strong>
             <span class="hud-sub"><span v-if="glyph('KeyF')">{{ glyph('KeyF') }}: </span>{{ hud.knife ? 'Shove & Stab' : 'Shove' }}</span>
           </template>
-          <span v-else-if="swapKey !== null" class="hud-sub is-threat keys-only">Press {{ swapKey }}</span>
+          <span v-else-if="swapKey !== null" class="hud-sub is-threat" :class="{ 'keys-only': device !== 'pad' }">Press {{ device === 'pad' ? glyph('KeyQ') : swapKey }}</span>
           <span v-else-if="reloadPrompt(hud) && glyph('KeyR')" class="hud-sub is-threat">Press {{ glyph('KeyR') }}</span>
         </div>
       </div>

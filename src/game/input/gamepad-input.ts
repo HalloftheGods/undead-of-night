@@ -60,7 +60,7 @@ export function getActivePadBindings(): ReadonlyMap<number, string> {
 
 /**
  * In play, each button stands for the key it presses. L3 toggles running (handled in playPress, not here).
- * LB holds sneak. Y reloads, X toggles the map, Select toggles the run log, R3 toggles the candy bag.
+ * LB holds sneak. Y reloads, X toggles the map, Select opens the inventory, R3 toggles the candy bag.
  */
 export const PLAY_BINDINGS: ReadonlyMap<number, string> = new Map<number, string>([
   [PAD.a, 'KeyE'],
@@ -71,7 +71,7 @@ export const PLAY_BINDINGS: ReadonlyMap<number, string> = new Map<number, string
   [PAD.rb, 'KeyG'],
   [PAD.lt, 'KeyF'],
   [PAD.rt, PAD_FIRE],
-  [PAD.view, 'KeyL'],
+  [PAD.view, 'KeyI'],
   [PAD.start, 'Escape'],
   [PAD.r3, 'KeyX'],
   [PAD.up, 'KeyT'],
@@ -375,7 +375,7 @@ export class GamepadInput {
   private menuPress(index: number): void {
     this.spent.add(index);
     if (index === PAD.start) this.start();
-    else if (index === PAD.view) this.host.press('KeyL');
+    else if (index === PAD.view) this.host.press('KeyI');
     else if (index === PAD.a && this.host.take?.('a')) return;
     else if (index === PAD.x && this.host.take?.('x')) return;
     else if (index === PAD.x) this.host.press('KeyN');

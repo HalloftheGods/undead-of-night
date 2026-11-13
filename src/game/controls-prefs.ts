@@ -132,7 +132,7 @@ export const DEFAULT_PAD_BINDINGS: PadBindings = {
   weapon2: null,
   weapon3: null,
   map: PAD_BUTTONS.x,
-  log: PAD_BUTTONS.view,
+  log: null,
 };
 
 const KEYS_STORAGE_KEY = 'outbreak.controls.keys';
