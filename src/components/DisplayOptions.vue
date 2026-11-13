@@ -7,29 +7,18 @@
     <OptionChoice label="UI size" :options="SCALE_OPTIONS" :value="ui.uiScale" @change="(v) => game.setUiScale(v)" />
     <OptionChoice label="Speed unit" :options="SPEED_OPTIONS" :value="ui.speedUnit" @change="(v) => game.setSpeedUnit(v)" />
     <p class="display-options-note">Unit for vehicle speedometer readouts.</p>
-    <PixelSwitch label="Menu details" :on="menuInfo" @change="setMenuInfo" />
-    <p class="display-options-note">A line under each main menu item saying what it opens.</p>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
 import type { PaletteId, SpeedUnit, UiScale } from '../game/display-prefs.ts';
 import type { UiState } from '../game/hud-state.ts';
-import { loadMenuInfo, saveMenuInfo } from '../game/menu-info-pref.ts';
 import BrightnessSlider from './BrightnessSlider.vue';
 import OptionChoice from './OptionChoice.vue';
-import PixelSwitch from './PixelSwitch.vue';
 import { useGame } from './use-game.ts';
 
 defineProps<{ ui: UiState }>();
 const game = useGame();
-const menuInfo = ref(loadMenuInfo());
-
-function setMenuInfo(on: boolean): void {
-  menuInfo.value = on;
-  saveMenuInfo(on);
-}
 
 const PALETTE_OPTIONS: readonly { id: PaletteId; label: string }[] = [
   { id: 'classic', label: 'Classic' },

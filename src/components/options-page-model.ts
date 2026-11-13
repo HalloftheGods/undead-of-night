@@ -52,8 +52,6 @@ export function useOptionsPanels(getUi: () => UiState, kind: OptionsKind) {
       { kind: 'choice', id: 'scale', label: 'UI size', options: SCALES, value: ui().uiScale },
       { kind: 'choice', id: 'speed', label: 'Speed unit', options: SPEEDS, value: ui().speedUnit },
       { kind: 'text', text: 'Unit for vehicle speedometer readouts.', tone: 'dim' },
-      { kind: 'switch', id: 'menuinfo', label: 'Menu details', on: menuInfo.value, enabled: true },
-      { kind: 'text', text: 'A line under each main menu item saying what it opens.', tone: 'dim' },
     ],
   }));
 
@@ -62,6 +60,8 @@ export function useOptionsPanels(getUi: () => UiState, kind: OptionsKind) {
     items: [
       { kind: 'choice', id: 'motion', label: 'Motion', options: MOTIONS, value: motion.pref.value },
       { kind: 'slider', id: 'shake', label: 'Screen shake', value: motion.shake.value, readout: percent(motion.shake.value) },
+      { kind: 'switch', id: 'menuinfo', label: 'Menu details', on: menuInfo.value, enabled: true },
+      { kind: 'text', text: 'A line under each main menu item saying what it opens.', tone: 'dim' },
     ],
   }));
 
