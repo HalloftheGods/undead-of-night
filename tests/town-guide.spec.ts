@@ -13,7 +13,8 @@ const placeOf = (id: GuidePlace['id']): GuidePlace => {
 /** Floors that read on another kind's page. */
 const PAGE_OF: Partial<Record<BuildingKind, GuidePlace['id']>> = { apartment_upstairs: 'upstairs', hospital_upstairs: 'hospital', school_upstairs: 'school' };
 /** The sewers hold nothing to find, so the guide gives them no page. */
-const inGuide = (kind: BuildingKind): boolean => !kind.startsWith('sewer_');
+/** The Town Guide covers the towns: the sewers have their own page, and the camp's tents are home, not a town. */
+const inGuide = (kind: BuildingKind): boolean => !kind.startsWith('sewer_') && !kind.startsWith('camp_');
 const tierOf = (id: GuidePlace['id'], find: string) => placeOf(id).finds.find((each) => each.id === find)?.tier;
 
 describe('the Town Guide', () => {

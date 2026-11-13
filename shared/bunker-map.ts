@@ -1,9 +1,10 @@
-// Home: an open-air camp inside a scrap fence, with wilderness round it. One map of one size; the fence ring sits further out as the camp grows.
+// Home: an open-air camp inside a scrap fence, with wilderness round it, and three big tents you walk into like any building.
+// One map of one size; the fence ring sits further out as the camp grows. Walls come from the tents, so `walls` is left unset.
 // The fence's sections come first in `props`, in ring order, so section `i` is `props[i]` and a fallen one is lifted by that index.
 
 import { CAMP_COLS, CAMP_EAST_COL, CAMP_ROWS, GATE_ROWS, fenceSections, ringRect } from './camp/camp-ring.ts';
 import type { CampSize } from './camp/camp-ring.ts';
-import { CAMPFIRE_PLACE, CUSTOMER_GAP, DISTRICT_PLACES, MERCHANT_STANDS, SPAWN_PLACE, STATION_PLACES, STATION_RADIUS, VAN_PLACE, merchantRoam } from './camp/camp-layout.ts';
+import { CAMP_BUILDINGS, CAMPFIRE_PLACE, CUSTOMER_GAP, DISTRICT_PLACES, MERCHANT_STANDS, SPAWN_PLACE, STATION_PLACES, STATION_RADIUS, VAN_PLACE, merchantRoam } from './camp/camp-layout.ts';
 import { campScenery, wilderness } from './camp/camp-scenery.ts';
 import { BUNKER_SEED, STATION_IDS, isMerchantId } from './home-protocol.ts';
 import type { MerchantId, Station, StationId } from './home-protocol.ts';
@@ -31,8 +32,8 @@ const STATION_PROPS: Record<StandingId, PropKind> = {
   press: 'press',
 };
 
-/** Where the horde comes in until the breach picks fence sections (#7547): open ground inside the smallest ring's west fence. */
-export const BLAST_DOOR_SPOT = { x: 530, y: 412 } as const;
+/** Where the horde comes in until the breach picks fence sections (#7547): open ground inside the smallest ring's west fence, between the tents. */
+export const BLAST_DOOR_SPOT = { x: 520, y: 384 } as const;
 /** Where a held overrun's chest stands, on the south row, clear of every station's circle. */
 export const CHEST_SPOT = STATION_PLACES.chest;
 
@@ -93,11 +94,10 @@ export function generateBunkerMap(size: CampSize = 1): WorldMap {
     rows: CAMP_ROWS,
     tiles: groundOf(size),
     props: [...fence, ...stations, ...scenery, ...wilderness()],
-    buildings: [],
+    buildings: CAMP_BUILDINGS,
     districts: DISTRICT_PLACES.map((place) => ({ ...place })),
     lights: lightsOf(scenery),
     spawn: { ...SPAWN_PLACE },
-    walls: [],
     exit: { ...VAN_PLACE },
     stations: STANDING_IDS.map(stationOf),
     camp: { size, sections },

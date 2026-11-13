@@ -47,7 +47,8 @@ import { buildEscapeVanLights, buildVan, VAN_LIVERIES } from './environment/van.
 import { buildSedanH, buildSedanV, buildWreckH } from './environment/vehicles.ts';
 import { buildBrickWarehouse, buildSteelWarehouse } from './environment/warehouse.ts';
 import { buildCampFenceDownH, buildCampFenceDownV, buildCampFenceH, buildCampFenceV, buildCampGate, buildCampPost } from './environment/camp-fence.ts';
-import { buildBedroll, buildCampAwning, buildCampLeanto, buildCampTent, buildCampfire, buildCampfireFlames, buildLantern } from './environment/camp-props.ts';
+import { buildBedroll, buildCampTent, buildCampfire, buildCampfireFlames, buildLantern } from './environment/camp-props.ts';
+import { buildCampMarket, buildCampQuarters, buildCampWorkshop } from './environment/camp-tents.ts';
 import { buildFenceH, buildFenceV, buildGasPump } from './environment/yard.ts';
 
 /** The sewers have no roof or walls to draw: the dark around them is the wall, so each piece is one clear pixel. */
@@ -93,8 +94,6 @@ export function buildEnvironment(): EnvironmentArt {
       camp_post: buildCampPost(),
       camp_fence_down_h: buildCampFenceDownH(),
       camp_fence_down_v: buildCampFenceDownV(),
-      camp_awning: buildCampAwning(),
-      camp_leanto: buildCampLeanto(),
       camp_tent: buildCampTent(),
       campfire: buildCampfire(),
       bedroll: buildBedroll(),
@@ -146,6 +145,9 @@ export function buildEnvironment(): EnvironmentArt {
       warehouse: [buildSteelWarehouse(), buildBrickWarehouse()],
       radio_station: [buildRadioStation()],
       house: [buildHipHouse(), buildGableHouse(), buildBungalow()],
+      camp_market: [buildCampMarket()],
+      camp_workshop: [buildCampWorkshop()],
+      camp_quarters: [buildCampQuarters()],
       apartment: [buildBrickApartment(), buildSlabApartment()],
       // Floors above and below are only ever seen from inside, so they borrow a house's shell.
       upstairs: [buildGableHouse()],

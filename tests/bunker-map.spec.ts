@@ -9,7 +9,8 @@ import { TILE_KINDS, TILE_SIZE } from '../shared/protocol.ts';
 import type { WorldMap } from '../shared/protocol.ts';
 import { townPrint } from '../shared/town-print.ts';
 import { groundSpeedScale } from '../shared/town-rules.ts';
-import { blockedTiles, circleHitsSolid, liftProp } from '../shared/world-query.ts';
+import { BUILDING_DEFS } from '../shared/protocol.ts';
+import { blockedTiles, buildingAt, circleHitsSolid, liftProp, propBox, segmentHitsCover } from '../shared/world-query.ts';
 
 const first = generateBunkerMap();
 
@@ -40,11 +41,12 @@ function insideFirstRing(x: number, y: number): boolean {
 }
 
 describe('the camp map', () => {
-  it('is one size of map at every camp size, outdoors, with no walls', () => {
+  it('is one size of map at every camp size, outdoors, its only walls the tents\'', () => {
     for (const size of CAMP_SIZES) {
       const map = generateBunkerMap(size);
       expect([map.cols, map.rows]).toEqual([72, 48]);
-      expect(map.walls).toEqual([]);
+      expect(map.walls).toBeUndefined();
+      expect(map.buildings.map((b) => b.kind)).toEqual(['camp_market', 'camp_workshop', 'camp_quarters']);
       expect(map.camp?.size).toBe(size);
       expect([...new Set([...map.tiles].map((t) => TILE_KINDS[t]))].sort()).toEqual(['dirt', 'grass']);
     }
@@ -146,6 +148,44 @@ describe('the camp map', () => {
         expect(box.x0).toBeGreaterThanOrEqual(rect.col0 * TILE_SIZE);
         expect(box.y0).toBeGreaterThanOrEqual(rect.row0 * TILE_SIZE);
         expect(box.y1).toBeLessThanOrEqual((rect.row1 + 1) * TILE_SIZE);
+      }
+    }
+  });
+
+  it('puts the stations in the tents: walked into by the door, walled against bodies and shots', () => {
+    const inside: Record<string, string> = { candy_shop: 'camp-market', bench: 'camp-workshop', locker: 'camp-quarters', jukebox: 'camp-quarters' };
+    for (const station of first.stations ?? []) {
+      const expected = inside[station.id];
+      if (expected) expect(buildingAt(first, station.x, station.y)?.id, station.id).toBe(expected);
+    }
+    expect(buildingAt(first, first.spawn.x, first.spawn.y)).toBeNull();
+    for (const tent of first.buildings) {
+      const def = BUILDING_DEFS[tent.kind];
+      const door = { x: tent.x + def.doorX, y: tent.y + def.h };
+      const midWall = { x: tent.x + def.w / 4, y: tent.y + def.h };
+      expect(circleHitsSolid(first, door.x, door.y - 3, PLAYER_RADIUS), `${tent.id} door`).toBe(false);
+      expect(circleHitsSolid(first, midWall.x, midWall.y - 3, 1), `${tent.id} wall`).toBe(true);
+      expect(segmentHitsCover(first, midWall.x, midWall.y + 20, midWall.x, midWall.y - 20), `${tent.id} wall stops a shot`).not.toBeNull();
+      expect(segmentHitsCover(first, door.x, door.y + 20, door.x, door.y - 20), `${tent.id} door lets a shot through`).toBeNull();
+    }
+  });
+
+  it('keeps every tent clear of the fence and of every other prop it does not hold', () => {
+    for (const size of CAMP_SIZES) {
+      const map = generateBunkerMap(size);
+      const rect = ringRect(1);
+      for (const tent of map.buildings) {
+        const def = BUILDING_DEFS[tent.kind];
+        expect(tent.x).toBeGreaterThanOrEqual(rect.col0 * TILE_SIZE + TILE_SIZE);
+        expect(tent.y).toBeGreaterThanOrEqual(rect.row0 * TILE_SIZE + TILE_SIZE);
+        expect(tent.x + def.w).toBeLessThanOrEqual((rect.col1 + 1) * TILE_SIZE);
+        expect(tent.y + def.h).toBeLessThanOrEqual((rect.row1 + 1) * TILE_SIZE - TILE_SIZE);
+        for (const prop of map.props) {
+          const box = propBox(prop);
+          const overlapsWall = box.x1 > tent.x && box.x0 < tent.x + def.w && box.y1 > tent.y && box.y0 < tent.y + def.h
+            && !(box.x0 >= tent.x + 6 && box.x1 <= tent.x + def.w - 6 && box.y0 >= tent.y + 6 && box.y1 <= tent.y + def.h - 6);
+          expect(overlapsWall, `${prop.kind} at ${prop.x},${prop.y} on ${tent.id}'s wall`).toBe(false);
+        }
       }
     }
   });

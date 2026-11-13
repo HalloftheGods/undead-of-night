@@ -71,12 +71,12 @@ describe('generateWorldMap', () => {
   it('reserves the bunker seed for a map of its own', () => {
     const map = generateWorldMap(BUNKER_SEED);
     expect(map.seed).toBe(BUNKER_SEED);
-    expect(map.buildings).toEqual([]);
+    expect(map.buildings.map((building) => building.kind)).toEqual(['camp_market', 'camp_workshop', 'camp_quarters']);
     expect(map.districts.length).toBeGreaterThan(0);
     expect(map.stations?.length).toBeGreaterThan(0);
     expect(map.exit).toBeDefined();
-    expect(wallBoxes(map)).toBe(map.walls);
-    expect(map.walls?.length).toBeGreaterThan(0);
+    expect(map.walls).toBeUndefined();
+    expect(wallBoxes(map).length).toBeGreaterThan(0);
     expect(circleHitsSolid(map, map.spawn.x, map.spawn.y, 8)).toBe(false);
   });
 

@@ -143,8 +143,9 @@ describe('leaving in the middle of the horde', () => {
   it('shrinks the share as the horde dies', () => {
     const { sim, state } = breachedRoom(['a']);
     const overrun = state.overrun as NonNullable<SimState['overrun']>;
-    stepUntil(sim, () => overrun.queue.length === 0, OVERRUN_HORDE_MAX * TICK_RATE);
+    // In the open camp the horde reaches an idle body before the last of it is in, so nobody may fall while it comes.
     for (const p of state.players) p.health = p.maxHealth = 1e9;
+    stepUntil(sim, () => overrun.queue.length === 0, OVERRUN_HORDE_MAX * TICK_RATE);
     const horde = state.zombies.filter((z) => z.horde);
     for (const z of horde.slice(0, horde.length / 2)) z.health = 0;
     sim.step();

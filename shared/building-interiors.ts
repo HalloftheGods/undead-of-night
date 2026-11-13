@@ -163,6 +163,9 @@ const LAYOUTS: Record<BuildingKind, readonly Slot[]> = {
   ],
   // The sewers are bare: their fittings are the ladder and the trench.
   sewer_maze: [],
+  camp_market: [],
+  camp_workshop: [],
+  camp_quarters: [],
 };
 
 /** A gap narrower than this looks like a way round but is not one. */

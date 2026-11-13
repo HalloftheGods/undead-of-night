@@ -95,9 +95,7 @@ export const PROP_DEFS = {
   /** A fence section the horde brought down: flat on the ground, walked over. */
   camp_fence_down_h: { w: 32, h: 0 },
   camp_fence_down_v: { w: 6, h: 0 },
-  /** The market's tarp on poles, and the workshop's lean-to: drawn behind whoever stands under them, never in the way. */
-  camp_awning: { w: 80, h: 0 },
-  camp_leanto: { w: 44, h: 0 },
+  /** A pup tent pitched on ground a bigger camp opens: scenery, not a building. */
   camp_tent: { w: 26, h: 12 },
   campfire: { w: 12, h: 8 },
   bedroll: { w: 16, h: 0 },
@@ -173,6 +171,10 @@ export const BUILDING_DEFS = {
   school_upstairs: { label: 'Upstairs', w: 288, h: 176, doorX: 144, floor: 'floor_wood' },
   // The sewers under the town: one footprint for the whole maze, as wide as the town and as deep, directly below the surface rows. Its tunnels are floor tiles; the rock between them is 'void', which is solid. It has no walls of its own.
   sewer_maze: { label: 'Sewers', w: 3200, h: 3200, doorX: 1600, floor: 'floor_sewer' },
+  // The camp's tents, home only: walked into like any building, nothing in them to loot. The stations stand inside.
+  camp_market: { label: 'Market', w: 160, h: 80, doorX: 80, floor: 'floor_wood' },
+  camp_workshop: { label: 'Workshop', w: 128, h: 80, doorX: 64, floor: 'floor_concrete' },
+  camp_quarters: { label: 'Quarters', w: 128, h: 80, doorX: 64, floor: 'floor_wood' },
 } as const;
 export type BuildingKind = keyof typeof BUILDING_DEFS;
 export const BUILDING_KINDS = Object.keys(BUILDING_DEFS) as BuildingKind[];

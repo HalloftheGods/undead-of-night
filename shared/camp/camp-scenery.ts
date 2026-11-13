@@ -8,17 +8,16 @@ import type { CampSize } from './camp-ring.ts';
 import { CAMP_COLS, CAMP_EAST_COL, CAMP_ROWS, CAMP_SIZES, GATE_ROWS, ringRect } from './camp-ring.ts';
 import { CAMPFIRE_PLACE } from './camp-layout.ts';
 
-/** What the smallest camp has. */
+/** What the smallest camp has: the fire, a lantern hung in each tent and two outside, and bedrolls in the quarters. */
 const FIRST_CAMP: readonly PropInstance[] = [
-  { kind: 'camp_awning', x: 648, y: 290 },
-  { kind: 'lantern', x: 592, y: 286 },
-  { kind: 'lantern', x: 712, y: 286 },
-  { kind: 'camp_leanto', x: 572, y: 344 },
-  { kind: 'lantern', x: 524, y: 352 },
   { kind: 'campfire', ...CAMPFIRE_PLACE },
-  { kind: 'bedroll', x: 672, y: 372 },
-  { kind: 'bedroll', x: 740, y: 374 },
-  { kind: 'camp_tent', x: 864, y: 476 },
+  { kind: 'lantern', x: 676, y: 356 },
+  { kind: 'lantern', x: 644, y: 470 },
+  { kind: 'lantern', x: 788, y: 470 },
+  { kind: 'lantern', x: 700, y: 296 },
+  { kind: 'lantern', x: 820, y: 456 },
+  { kind: 'bedroll', x: 704, y: 468 },
+  { kind: 'bedroll', x: 744, y: 468 },
 ];
 
 /** What a size adds, on the ground that size opens: a tent in its new north-west corner, crates in the south-west, a fire barrel on the west side. */

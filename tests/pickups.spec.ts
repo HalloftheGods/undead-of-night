@@ -370,7 +370,7 @@ describe('town loot', () => {
   it('offers spots beside the furniture in every kind of building', () => {
     const { state } = stocked(1);
     // The sewers hold no loot, so they are left out.
-    for (const kind of BUILDING_KINDS.filter((each) => !each.startsWith('sewer_'))) {
+    for (const kind of BUILDING_KINDS.filter((each) => !each.startsWith('sewer_') && !each.startsWith('camp_'))) {
       const building = state.map.buildings.find((each) => each.kind === kind) as BuildingInstance;
       expect(lootSpots(state.map, building).length).toBeGreaterThan(3);
     }

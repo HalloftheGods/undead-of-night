@@ -72,6 +72,9 @@ export const LOOT_RULES: Record<BuildingKind, LootRule> = {
   hospital_upstairs: { items: [1, 3], table: { bandage: 3, medkit: 2, antibiotics: 2, disinfectant: 1 } },
   school_upstairs: { items: [0, 2], table: { bandage: 3, water_bottle: 2, knife: 0.5 } },
   sewer_maze: NOTHING_UNDERGROUND,
+  camp_market: NOTHING_UNDERGROUND,
+  camp_workshop: NOTHING_UNDERGROUND,
+  camp_quarters: NOTHING_UNDERGROUND,
 };
 
 const STOREY_LOOT_SALT = 0x55504457;

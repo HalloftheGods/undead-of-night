@@ -128,6 +128,9 @@ export const ROOM_CONTAINERS: Record<BuildingKind, Partial<Record<PropKind, Cont
   radio_station: { locker: 'locker', counter: 'cabinet', shelf: 'shelf', fridge: 'fridge' },
   // Nothing down there is furniture.
   sewer_maze: {},
+  camp_market: {},
+  camp_workshop: {},
+  camp_quarters: {},
 };
 
 /** Vehicles that carry what their service keeps indoors. */

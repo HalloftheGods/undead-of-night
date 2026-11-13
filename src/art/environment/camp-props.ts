@@ -1,5 +1,5 @@
-// What the camp is made of besides its fence: a tarp over the market, a lean-to for the workshop, tents, bedrolls, lanterns and the fire.
-// Salvage and rope, lit warm by the fire. The awning and lean-to have no footprint: they are drawn behind whoever stands under them.
+// The camp's small things: pup tents, bedrolls, lanterns and the fire. The big tents are buildings (camp-tents.ts).
+// Salvage and rope, lit warm by the fire.
 
 import { PROP_DEFS } from '../../../shared/protocol.ts';
 import type { Clip, PixelSprite } from '../types.ts';
@@ -7,48 +7,7 @@ import { makeClip, PixelCanvas } from '../kit.ts';
 import { RAMPS } from '../palette.ts';
 import { bake, groundShadow } from './common.ts';
 
-const { ash, bone, denim, fire, ink, metal, teal, wood } = RAMPS;
-
-const POLE_RISE = 26;
-const TARP_DROP = 9;
-
-/** A sagging tarp between poles: the back edge high, the front edge scalloped between each pair. */
-function tarp(c: PixelCanvas, x: number, top: number, w: number, poles: number, cloth: readonly number[]): void {
-  const bay = Math.floor((w - 2) / (poles - 1));
-  c.rect(x, top, w, TARP_DROP - 2, cloth[1]).rect(x, top, w, 1, cloth[2]);
-  for (let col = 0; col < w; col++) {
-    const inBay = (col % bay) / bay;
-    const sag = Math.round(Math.sin(inBay * Math.PI) * 2);
-    c.rect(x + col, top + TARP_DROP - 2, 1, 1 + sag, cloth[0]);
-  }
-  for (let i = 0; i < poles; i++) {
-    const px = Math.min(x + w - 2, x + i * bay);
-    c.rect(px, top + 1, 2, POLE_RISE, wood[1]).rect(px, top + 1, 1, POLE_RISE, wood[2]);
-  }
-}
-
-export function buildCampAwning(): PixelSprite {
-  const { w } = PROP_DEFS.camp_awning;
-  const ground = POLE_RISE + 2;
-  const c = new PixelCanvas(w, ground + 1);
-  tarp(c, 0, 0, w, 4, teal);
-  // A plank table under it, with a crate at one end.
-  c.rect(8, ground - 9, w - 30, 2, wood[2]).rect(8, ground - 7, w - 30, 1, wood[0]);
-  c.rect(w - 20, ground - 12, 10, 10, wood[1]).rect(w - 20, ground - 12, 10, 1, wood[3]).rect(w - 16, ground - 12, 1, 10, wood[0]);
-  return bake(c, 0, w, ground);
-}
-
-export function buildCampLeanto(): PixelSprite {
-  const { w } = PROP_DEFS.camp_leanto;
-  const ground = POLE_RISE + 2;
-  const c = new PixelCanvas(w, ground + 1);
-  // Corrugated tin on two posts, sloping to the back.
-  for (let col = 0; col < w; col++) c.rect(col, col % 3 === 0 ? 0 : 1, 1, 7, col % 3 === 0 ? metal[2] : metal[1]);
-  c.rect(0, 7, w, 1, ink[1]);
-  for (const px of [1, w - 3]) c.rect(px, 8, 2, POLE_RISE - 6, ash[1]).rect(px, 8, 1, POLE_RISE - 6, ash[2]);
-  c.rect(6, ground - 6, 12, 5, metal[0]).rect(6, ground - 6, 12, 1, metal[2]);
-  return bake(c, 0, w, ground);
-}
+const { ash, bone, denim, fire, ink, metal, wood } = RAMPS;
 
 /** A ridge tent, door flap to the south. */
 export function buildCampTent(): PixelSprite {

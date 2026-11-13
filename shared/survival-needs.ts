@@ -140,6 +140,9 @@ export const SURVIVAL_LOOT_TABLES: Record<BuildingKind | 'outdoors', SurvivalLoo
   radio_station: { odds: 0.20, table: { water_bottle: 2, canned_food: 1 } },
   cellar: { odds: 0.25, table: { canned_food: 2, water_bottle: 1 } },
   sewer_maze: { odds: 0, table: {} },
+  camp_market: { odds: 0, table: {} },
+  camp_workshop: { odds: 0, table: {} },
+  camp_quarters: { odds: 0, table: {} },
   outdoors: { odds: 0.08, table: { water_bottle: 1 } },
 };
 
