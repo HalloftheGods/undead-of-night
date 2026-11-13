@@ -55,7 +55,7 @@ export const CHANGE_NOTES: readonly ChangeNote[] = [
     deck: "Plow through wandering hordes, honk the horn, and listen for the engine.",
     points: [
       "Rolling cars crush walking corpses on impact and shove stragglers out of the lane.",
-      "Press Space to sound the horn. It carries farther than any gun and pulls every zombie in earshot straight toward your bumper.",
+      "Press Z to sound the horn. It carries farther than any gun and pulls every zombie in earshot straight toward your bumper.",
       "Rumbling engines, squealing tires, slam doors and violent crash crunches bring the street alive."
     ]
   },

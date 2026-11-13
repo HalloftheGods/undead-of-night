@@ -37,7 +37,7 @@ export const HOW_TO_SECTIONS: readonly HowToSection[] = [
     tab: 'Controls',
     title: 'Controls',
     points: [
-      'WASD: move. Shift: sprint. C: sneak.',
+      'WASD: move. Shift: sprint. Space: sneak.',
       'Sprinting drains the Sprint bar. Run it dry and you walk until it refills a little. Faster survivors last longer.',
       'Mouse: aim. Hold to fire.',
       'R: reload. 1 2 3 or Q: switch weapon.',
@@ -131,7 +131,7 @@ export const HOW_TO_SECTIONS: readonly HowToSection[] = [
     points: [
       'Stand at a door and press E to close it. Tap E to open a closed one.',
       'Hold E at a closed door to board it with planks and nails and a hammer. Each board makes it harder to break.',
-      'Sneak (C) and hold E to pry a board back off. A crowbar or the hammer does it, and you get the plank and a nail back.',
+      'Sneak (Space) and hold E to pry a board back off. A crowbar or the hammer does it, and you get the plank and a nail back.',
       'Zombies bash closed doors, and a broken door is a noisy one. A closed door stops you, your bullets and their eyes.',
       'Planks, nails and a hammer turn up in cellars, garages and warehouses, crowbars in garages and warehouses, curtain sheets and a few nails in homes.',
     ],

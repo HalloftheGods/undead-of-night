@@ -68,9 +68,9 @@ describe('controls preferences', () => {
     expect(formatKeyCode('MouseLeft')).toBe('Left Click');
   });
 
-  it('lists the horn as a rebindable action, on Space by default, and round-trips a rebind', () => {
+  it('lists the horn as a rebindable action, on Z by default, and round-trips a rebind', () => {
     expect(ACTION_METADATA.some((a) => a.id === 'horn' && a.rebindableKeys && a.rebindablePad)).toBe(true);
-    expect(loadKeyBindings().horn).toEqual(['Space']);
+    expect(loadKeyBindings().horn).toEqual(['KeyZ']);
     saveKeyBindings({ ...DEFAULT_KEY_BINDINGS, horn: ['KeyB'] });
     savePadBindings({ ...DEFAULT_PAD_BINDINGS, horn: 4 });
     expect(loadKeyBindings().horn).toEqual(['KeyB']);

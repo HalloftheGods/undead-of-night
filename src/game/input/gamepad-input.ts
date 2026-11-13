@@ -32,7 +32,7 @@ export const PAD_FIRE = 'PadFire';
 export const PAD_PREV_WEAPON = 'PadPrevWeapon';
 /** The pad's horn button, held as this pseudo-key so a rebound keyboard horn does not matter. */
 export const PAD_HORN = 'PadHorn';
-const SNEAK_CODE = 'KeyC';
+const SNEAK_CODE = 'Space';
 
 import { loadPadBindings } from '@game/controls-prefs.ts';
 

@@ -283,7 +283,7 @@ export const LEVELS_PAGE_NOTE =
 export const CONTROLS: readonly (readonly [keys: string, action: string])[] = [
   ["WASD", "Move"],
   ["Shift", "Hold to sprint, loud and it tires you out"],
-  ["C", "Hold to sneak, slow and quiet"],
+  ["Space", "Hold to sneak, slow and quiet"],
   ["Mouse", "Aim, hold to fire"],
   ["F / Right", "Shove & Stab, makes no noise"],
   ["E", "Hold to search"],

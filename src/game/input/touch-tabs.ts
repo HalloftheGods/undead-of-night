@@ -26,7 +26,7 @@ export const TOUCH_TABS: readonly TouchTab[] = [
 ];
 
 /** Held to honk: the keyboard's default horn key (game/controls-prefs.ts). */
-export const HORN_CODE = 'Space';
+export const HORN_CODE = 'KeyZ';
 
 /** The bar's tabs; the horn joins it, ahead of Sprint, only while the player sits in a car. */
 export function touchTabsFor(seated: boolean): readonly TouchTab[] {
