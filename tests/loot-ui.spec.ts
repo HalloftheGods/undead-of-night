@@ -62,6 +62,11 @@ describe('canvas loot window layout', () => {
     const up = withEditor.editor!.buttons.find((b) => b.id === 'colsUp')!;
     expect(lootHitAt(withEditor, up.x + 1, up.y + 1)).toEqual({ kind: 'edit', id: 'colsUp' });
     expect(withEditor.editor!.buttons.some((b) => b.id === 'wUp')).toBe(true);
+    const ids = withEditor.editor!.buttons.map((b) => b.id);
+    expect(ids.slice(0, 2)).toEqual(['prev', 'next']);
+    const steps = layoutLootUi(state, 480, 270, { ...edit, position: '3 OF 17' }).editor!;
+    expect(steps.lines.some((l) => l.text === '3 OF 17')).toBe(true);
+    expect(steps.buttons.every((b) => b.x + b.w <= 480)).toBe(true);
     const noItem = layoutLootUi(state, 480, 270, { ...edit, item: null }).editor!;
     expect(noItem.buttons.some((b) => b.id === 'wUp')).toBe(false);
   });

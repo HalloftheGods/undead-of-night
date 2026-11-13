@@ -383,8 +383,8 @@
   background-color: rgba(0, 0, 0, 0.4) !important;
   background-image: repeating-linear-gradient(
     -45deg,
-    rgba(147, 141, 122, 0.7) 0,
-    rgba(147, 141, 122, 0.7) var(--ap),
+    rgba(147, 141, 122, 0.32) 0,
+    rgba(147, 141, 122, 0.32) var(--ap),
     transparent var(--ap),
     transparent calc(var(--ap) * 3)
   ) !important;

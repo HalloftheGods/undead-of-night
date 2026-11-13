@@ -306,6 +306,8 @@
     <!-- In-Game Dual Loot Modal Preview -->
     <CanvasLootPreview
       v-if="previewModal && previewCanvas"
+      :key="previewModal.entryId"
+      :position="previewPosition"
       :art="art"
       :title="previewModal.title"
       :kind="previewModal.containerKind"
@@ -316,6 +318,7 @@
       @blocked="onCanvasBlocked(previewModal, $event)"
       @footprint="onCanvasFootprint"
       @save="saveFromCanvas"
+      @step="stepPreview"
     />
     <DualLootModal
       v-else-if="previewModal"
@@ -754,6 +757,8 @@ const copyContainerCode = async (): Promise<void> => {
 // 3. IN-GAME DUAL LOOT MODAL PREVIEW
 // ==========================================
 interface PreviewModalState {
+  /** The catalogue entry shown, so Prev and Next know where they are. */
+  entryId: string;
   title: string;
   containerKind: ContainerKind;
   grid: InventoryGrid;
@@ -791,6 +796,7 @@ const openPreviewModal = (entry: DevContainerEntry): void => {
   const containerArt = props.art ? props.art.containers[entry.look] : null;
 
   previewModal.value = {
+    entryId: entry.id,
     title: entry.name,
     containerKind: entry.kind,
     containerArt,
@@ -841,6 +847,22 @@ const onCanvasFootprint = (change: { type: string; width: number; height: number
 const saveFromCanvas = async (): Promise<void> => {
   if (modifiedContainersCount.value > 0) await saveContainersToCodebase();
   if (modifiedItemsCount.value > 0) await saveItemsToCodebase();
+};
+
+/** Where the open preview is in the list the page shows, such as "3 OF 17". */
+const previewPosition = computed(() => {
+  const list = filteredContainers.value;
+  const at = previewModal.value ? list.findIndex((entry) => entry.id === previewModal.value!.entryId) : -1;
+  return at < 0 ? '' : `${at + 1} OF ${list.length}`;
+});
+
+/** Prev and Next in the editor: the object before or after this one in the list the page shows, wrapping round. */
+const stepPreview = (direction: -1 | 1): void => {
+  const list = filteredContainers.value;
+  if (list.length === 0 || !previewModal.value) return;
+  const at = list.findIndex((entry) => entry.id === previewModal.value!.entryId);
+  const next = list[(Math.max(at, 0) + direction + list.length) % list.length];
+  openPreviewModal(next);
 };
 
 const closePreviewModal = (): void => {

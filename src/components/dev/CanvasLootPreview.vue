@@ -42,6 +42,8 @@ interface Props {
   kind: ContainerKind;
   grid: InventoryGrid;
   containerArt?: ContainerArt | null;
+  /** Where this object is in the list the bench steps through. */
+  position?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), { containerArt: null });
@@ -53,6 +55,8 @@ const emit = defineEmits<{
   /** An item's footprint changed. */
   footprint: [payload: { type: string; width: number; height: number }];
   save: [];
+  /** Go to the previous (-1) or next (1) object. */
+  step: [direction: -1 | 1];
 }>();
 
 const MIN_SIDE = 1;
@@ -65,7 +69,7 @@ const canvas = document.querySelector<HTMLCanvasElement>('canvas.game-canvas');
 const editOn = ref(true);
 const selectedType = ref<string | null>(null);
 const HINTS = {
-  edit: 'EDIT: CLICK A CELL TO BLOCK IT. CLICK AN ITEM TO SELECT IT. ESC EXITS.',
+  edit: 'EDIT: CLICK A CELL TO BLOCK IT. CLICK AN ITEM TO SELECT IT. ARROWS STEP. ESC EXITS.',
   play: 'PLAY: CLICK TO PICK UP AND PLACE. R ROTATES. ESC EXITS.',
 };
 
@@ -93,6 +97,7 @@ function editView(): LootEditView {
   return {
     on: editOn.value,
     hint: editOn.value ? HINTS.edit : HINTS.play,
+    ...(props.position ? { position: props.position } : {}),
     cols: state.containerGrid.cols,
     rows: state.containerGrid.rows,
     item: type && fp ? { type, width: fp.width, height: fp.height } : null,
@@ -182,7 +187,9 @@ function onEdit(id: EditId): void {
   const grid = state.containerGrid;
   const type = selectedType.value;
   const fp = type ? footprintOf(type) : null;
-  if (id === 'mode') {
+  if (id === 'prev') emit('step', -1);
+  else if (id === 'next') emit('step', 1);
+  else if (id === 'mode') {
     if (state.heldItem) returnHeldItemToSource(state);
     editOn.value = !editOn.value;
   } else if (id === 'colsDown') resize(grid.cols - 1, grid.rows);
@@ -269,6 +276,11 @@ function close(): void {
 
 /** Capture phase, so Escape closes only this editor and not the bench page behind it. */
 function onKey(event: KeyboardEvent): void {
+  if (event.code === 'ArrowLeft' || event.code === 'ArrowRight') {
+    event.stopPropagation();
+    emit('step', event.code === 'ArrowLeft' ? -1 : 1);
+    return;
+  }
   if (event.code === 'KeyR' && !editOn.value) rotateActiveItem(state);
   else if (event.code === 'Escape') {
     event.stopPropagation();

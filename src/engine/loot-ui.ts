@@ -67,7 +67,7 @@ export interface LootLayout {
 }
 
 /** The dev bench's edit panel buttons. */
-export type EditId = 'mode' | 'colsDown' | 'colsUp' | 'rowsDown' | 'rowsUp' | 'wDown' | 'wUp' | 'hDown' | 'hUp' | 'clear' | 'save';
+export type EditId = 'prev' | 'next' | 'mode' | 'colsDown' | 'colsUp' | 'rowsDown' | 'rowsUp' | 'wDown' | 'wUp' | 'hDown' | 'hUp' | 'clear' | 'save';
 
 /** What the dev bench shows in its edit panel: the container's size and the selected item's footprint. */
 export interface LootEditView {
@@ -77,6 +77,8 @@ export interface LootEditView {
   readonly item: { readonly type: string; readonly width: number; readonly height: number } | null;
   /** A line of help along the bottom of the screen. */
   readonly hint?: string;
+  /** Where this object is in the list the bench steps through, such as "3 OF 17". */
+  readonly position?: string;
 }
 
 export interface EditorLayout {
@@ -182,9 +184,9 @@ function layoutEditor(edit: LootEditView, viewW: number): EditorLayout {
   const h = ROW_H + PAD * 2;
   const by = y + PAD;
   let x = EDGE + PAD;
-  const SEP = 8;
+  const SEP = 5;
   const wide = (id: EditId, label: string): void => {
-    const w = textWidth(label) + 10;
+    const w = textWidth(label) + 6;
     buttons.push({ id, label, x, y: by, w, h: ROW_H - 2 });
     x += w + SEP;
   };
@@ -196,17 +198,23 @@ function layoutEditor(edit: LootEditView, viewW: number): EditorLayout {
     buttons.push({ id: up, label: '+', x: x + 12, y: by, w: 11, h: ROW_H - 2 });
     x += 23 + SEP;
   };
+  wide('prev', 'PREV');
+  wide('next', 'NEXT');
+  if (edit.position) {
+    lines.push({ x: x - 3, y: by + 2, text: edit.position });
+    x += textWidth(edit.position) + SEP;
+  }
   wide('mode', edit.on ? 'MODE EDIT' : 'MODE PLAY');
   stepper('COLS', edit.cols, 'colsDown', 'colsUp');
   stepper('ROWS', edit.rows, 'rowsDown', 'rowsUp');
   if (edit.item) {
-    const name = upper(formatItemName(edit.item.type)).slice(0, 12);
+    const name = upper(formatItemName(edit.item.type)).slice(0, 10);
     lines.push({ x, y: by + 2, text: name });
     x += textWidth(name) + SEP;
     stepper('W', edit.item.width, 'wDown', 'wUp');
     stepper('H', edit.item.height, 'hDown', 'hUp');
   }
-  wide('clear', 'CLEAR BLOCKED');
+  wide('clear', 'CLEAR');
   wide('save', 'SAVE');
   return { box: { x: EDGE, y, w: viewW - EDGE * 2, h }, lines, buttons };
 }
@@ -329,7 +337,7 @@ function cellBox(board: GridBox, col: number, row: number, w = 1, h = 1): Box {
 /** A cell that is not part of this container: a light darkening with dashed diagonals over it, so the object's art still shows through and the cell reads as switched off. */
 function drawDisabledCell(ctx: CanvasRenderingContext2D, box: Box): void {
   fill(ctx, 'rgba(0,0,0,0.3)', box.x + 1, box.y + 1, TILE - 2, TILE - 2);
-  ctx.fillStyle = 'rgba(147,141,122,0.7)';
+  ctx.fillStyle = 'rgba(147,141,122,0.32)';
   for (let j = 0; j < TILE - 4; j += 1) {
     for (let i = 0; i < TILE - 4; i += 1) {
       const onDiagonal = (i + j) % 4 === 0;
