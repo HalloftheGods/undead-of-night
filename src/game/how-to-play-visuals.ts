@@ -69,7 +69,7 @@ const styles: CardList = (art) => [
 ];
 
 const bunker: CardList = (art) => [
-  { id: 'locker', title: 'Locker', sprite: art.ui.stations.locker, scale: 1.4, tag: 'Bunks', caption: 'Your things, laid out neatly.' },
+  { id: 'locker', title: 'Locker', sprite: art.ui.stations.locker, scale: 1.4, tag: 'Quarters', caption: 'Your things, laid out neatly.' },
   { id: 'forge', title: 'Forge', sprite: art.ui.stations.forge, scale: 1.4, tag: 'Workshop', caption: 'Hot. Please do not lean.' },
   { id: 'bench', title: 'Bench', sprite: art.ui.stations.bench, scale: 1.4, tag: 'Workshop', caption: 'Some assembly required.' },
   { id: 'jukebox', title: 'Jukebox', sprite: art.ui.stations.jukebox, scale: 1.4, tag: 'Quarters', caption: 'Plays whatever you have heard.' },
@@ -156,7 +156,7 @@ const SECTION_CARDS: Readonly<Record<string, CardList>> = {
   merchants,
   dying: (art) => [{ id: 'skull', title: 'Skull', sprite: art.ui.skull, scale: 3 }],
   overrun: (art) => [
-    { id: 'blast_door', title: 'Blast door', sprite: art.environment.overrun.doorBuckling, scale: 1.4, caption: 'Rated for a while.' },
+    { id: 'fence', title: 'Scrap fence', sprite: art.environment.props.camp_fence_h, scale: 1.4, caption: 'Rated for a while.' },
     { id: 'chest', title: 'Reward chest', sprite: art.environment.props.chest, scale: 2, caption: 'For those who stayed.' },
   ],
   controls: (art) => [{ id: 'crosshair', title: 'Crosshair', sprite: art.ui.crosshair, scale: 2 }],

@@ -1,4 +1,4 @@
-// The words over a bunker station you can open, in the bitmap font's capitals.
+// The words over a camp station you can open, in the bitmap font's capitals.
 
 import type { StationId } from '../../shared/home-protocol.ts';
 

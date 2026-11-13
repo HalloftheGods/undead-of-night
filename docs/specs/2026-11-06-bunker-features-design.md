@@ -1,5 +1,7 @@
 # Bunker features: quests, workshop and reloading press, perks, extras
 
+> **Superseded in part (2026-11-13):** home is now an outdoor camp, not an indoor bunker, and the overrun breaks fence sections instead of a blast door. For the map, the stations' places and the breach, read [Outdoor camp (design)](../superpowers/specs/2026-11-13-outdoor-camp-design.md); the rest of this document stands.
+
 Epic: chemx task #7226, under the Home Loop epic #7115. This follows [Home Loop (design)](2026-11-05-home-loop-design.md), whose "Later specs" section names the workshop scene, quests and perks. The Overrun is specified in that file (epic #7212) and is not repeated here. Everything below stays behind `HOME_LOOP_LIVE`, which is still `false`.
 
 ## What the bunker has today

@@ -1,5 +1,7 @@
 # Home Loop: design spec
 
+> **Superseded in part (2026-11-13):** home is now an outdoor camp, not an indoor bunker, and the overrun breaks fence sections instead of a blast door. For the map, the stations' places and the breach, read [Outdoor camp (design)](../superpowers/specs/2026-11-13-outdoor-camp-design.md); the rest of this document stands.
+
 Epic: chemx task #7115. An idea from Khronus, shaped with Xopher on 2026-11-05.
 
 The Home Loop turns Undead of Night from one all-or-nothing run into a campaign played from a saved home. You live in an underground bunker, go out to loot a town, and bank what you bring back. This is the first of several specs. It covers treasure, the saved home, the bunker, the van, the forge and the merchants. The forge and merchants are here so that money works from the first trip: jewels become money at the forge, and money buys gear from the merchants. The workshop scene, the overrun, quests, perks and forthexp each get their own spec, and this one only leaves room for them.

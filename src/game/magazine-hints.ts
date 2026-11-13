@@ -364,13 +364,13 @@ const bunker: HintMaker = ({ art, photos }) => ({
   layout: 'classifieds',
   color: 'mustard',
   kicker: 'Accommodation',
-  deck: 'Underground, windowless and entirely yours.',
+  deck: 'Open sky, a scrap fence, and entirely yours.',
   left: [
     head,
     article('bullets'),
     aside(photo(photos.workshop, 'The workshop, tidied for the inspection.', 1.6, 'small', [{ kind: 'circle', x: 52, y: 32, r: 26 }])),
   ],
-  right: [gallery('classifieds', getSectionVisuals('bunker', art), 'Amenities'), tip('Nothing in the bunker bites. The Bureau checked twice.')],
+  right: [gallery('classifieds', getSectionVisuals('bunker', art), 'Amenities'), tip('Nothing inside the fence bites. The Bureau checked twice.')],
 });
 
 const trips: HintMaker = ({ photos }) => ({
@@ -432,13 +432,13 @@ const overrun: HintMaker = ({ art, photos }) => ({
   layout: 'forecast',
   color: 'violet',
   kicker: 'Notice to residents',
-  deck: 'The door holds. For a while.',
+  deck: 'The fence holds. For a while.',
   coverline: 'How long can you stay home?',
   left: [
     head,
     photo(photos.crowd, 'Fig. 14: Visitors, arriving without an appointment.', -1.5, 'hero', [{ kind: 'note', x: 96, y: 18, text: 'shop faster' }]),
   ],
-  right: [article('numbered'), gallery('spotter', getSectionVisuals('overrun', art), 'Fixtures'), tip('Hold the bunker and the chest pays. Run and the stalls pay instead.'), stamp('Do not open', 6)],
+  right: [article('numbered'), gallery('spotter', getSectionVisuals('overrun', art), 'Fixtures'), tip('Hold the camp and the chest pays. Run and the stalls pay instead.'), stamp('Do not open', 6)],
 });
 
 const HINTS: Readonly<Record<string, HintMaker>> = {
