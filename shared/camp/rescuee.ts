@@ -8,7 +8,10 @@ import type { MerchantEntity, MerchantId } from '../home-protocol.ts';
 import { lootSpots } from '../loot.ts';
 import { freeSpot } from '../part-loot.ts';
 import { spawnPickup } from '../pickups.ts';
-import type { BuildingKind, PickupType } from '../protocol.ts';
+import type { BuildingInstance, BuildingKind, PickupType } from '../protocol.ts';
+import { groundBuildingId } from '../leftovers.ts';
+import { isSewerBuilding } from '../map-protocol.ts';
+import type { Rng } from '../rng.ts';
 import { TILE_SIZE } from '../protocol.ts';
 import { createRng, shuffle } from '../rng.ts';
 import type { PlayerState, SimState } from '../sim-state.ts';
@@ -31,6 +34,13 @@ const FINDS: Readonly<Record<MerchantId, readonly PickupType[]>> = {
   gunsmith: ['shotgun'],
   medic: ['medkit', 'medkit'],
   powder: ['shells', 'shells'],
+};
+/** Doc and Cinder know of a stash: a gun part and a stack or kit of rounds. */
+const STASH_BY: Readonly<Record<MerchantId, readonly PickupType[]>> = {
+  quartermaster: [],
+  gunsmith: [],
+  medic: ['magazine', 'pistol_ammo'],
+  powder: ['piercing_kit', 'shells'],
 };
 /** Seconds of holding E beside them to take them with you. */
 export const FREE_SEC = 1.2;
@@ -58,6 +68,8 @@ export interface RescueeState {
   readonly field: FlowField;
   fieldTick: number;
   stuckLeft: number;
+  /** The building their stash is in, and what lies there to be marked: told when they are freed. Null for those with none. */
+  stash: { readonly building: string; readonly mark: PickupType } | null;
 }
 
 /** Who this town has waiting: the person of its level, if anyone on the trip has not rescued them. */
@@ -80,11 +92,26 @@ export function placeRescuees(sim: SimState, level: number): void {
   const home = ranked[0];
   if (!home) return;
   const [spot, ...rest] = shuffle(rng, [...lootSpots(sim.map, home)]);
-  sim.rescuees.push({ id, x: spot.x, y: spot.y, angle: Math.PI / 2, moving: false, status: 'waiting', hold: 0, leaderId: null, field: new FlowField(sim.map), fieldTick: -1, stuckLeft: 0 });
+  sim.rescuees.push({ id, x: spot.x, y: spot.y, angle: Math.PI / 2, moving: false, status: 'waiting', hold: 0, leaderId: null, field: new FlowField(sim.map), fieldTick: -1, stuckLeft: 0, stash: null });
   for (const type of FINDS[id]) {
     const at = freeSpot(sim, rest);
     if (at) spawnPickup(sim, type, at.x, at.y);
   }
+  if (STASH_BY[id]) sim.rescuees[0].stash = layStash(sim, rng, home, STASH_BY[id]);
+}
+
+/** Better-than-usual finds on the floor of another building, which the person names when freed. Null if the town has no other room for it. */
+function layStash(sim: SimState, rng: Rng, not: BuildingInstance, finds: readonly PickupType[]): RescueeState['stash'] {
+  const rooms = shuffle(rng, sim.map.buildings.filter((b) => b !== not && !isSewerBuilding(b) && lootSpots(sim.map, b).length >= finds.length));
+  const room = rooms[0];
+  if (!room) return null;
+  const spots = shuffle(rng, [...lootSpots(sim.map, room)]);
+  const laid = finds.filter((type, i) => {
+    const at = freeSpot(sim, spots.slice(i));
+    if (at) spawnPickup(sim, type, at.x, at.y);
+    return at !== null;
+  });
+  return laid.length > 0 ? { building: groundBuildingId(room), mark: laid[0] } : null;
 }
 
 /** A player on their feet who is standing at them, not walking, with the use key held. */
@@ -140,6 +167,10 @@ export function updateRescuees(sim: SimState): void {
     if (by && r.hold >= 1) {
       r.status = 'following';
       r.leaderId = by.id;
+      if (r.stash) {
+        sim.entered.add(r.stash.building);
+        sim.clues.set(r.stash.building, r.stash.mark);
+      }
     }
   }
 }

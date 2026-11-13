@@ -61,3 +61,30 @@ describe('the people to find', () => {
     expect(state.merchants.map((m) => m.id)).toEqual(['quartermaster']);
   });
 });
+
+describe('the stash', () => {
+  it('Doc names a stash when freed, marked on the map, with its finds on the floor', () => {
+    const { sim, state } = roomWith(['quartermaster', 'gunsmith', 'powder']);
+    driveToTown(sim, state, 3);
+    quietTown(state);
+    const [person] = state.rescuees;
+    expect(person.id).toBe('medic');
+    expect(person.stash).not.toBeNull();
+    expect(state.clues.size).toBe(0);
+    const p = state.players[0];
+    p.x = person.x + 10;
+    p.y = person.y;
+    for (let i = 0; i < 100 && person.status === 'waiting'; i++) {
+      p.searchHeld = true;
+      p.moving = false;
+      steps(sim, 1);
+    }
+    expect(state.clues.get(person.stash!.building)).toBe(person.stash!.mark);
+  });
+
+  it('Sarge has none', () => {
+    const { sim, state } = roomWith([]);
+    driveToTown(sim, state, 1);
+    expect(state.rescuees[0].stash).toBeNull();
+  });
+});
