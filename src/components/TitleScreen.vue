@@ -1,7 +1,7 @@
 <template>
   <section v-if="nav.page === null" class="px-screen px-title-scale title" :class="{ 'is-revealed': !splashing }">
     <div class="title-hero">
-      <SpriteImg v-if="ui.art" class="title-logo" :sprite="ui.art.ui.logo" />
+      <SpriteImg v-if="ui.art" class="title-logo" :sprite="ui.art.ui.logoFrames[logoFrame]" />
       <h1 v-else class="px-heading">UNDEAD OF NIGHT: LAST ROUND</h1>
     </div>
 
@@ -44,6 +44,7 @@
   <RecordsPageCanvas v-else-if="nav.page === 'records' && pagesOnCanvas.records" :ui @close="close" />
   <RecordsPage v-else-if="nav.page === 'records'" :ui @close="close" />
   <ChangelogPage v-else-if="nav.page === 'changelog'" :art="ui.art" :version="APP_VERSION" @close="close" />
+  <SoundTestPageCanvas v-else-if="nav.page === 'sound' && pagesOnCanvas.sound" :ui @close="close" />
   <SoundTestPage v-else-if="nav.page === 'sound'" :ui @close="close" />
   <RadioPageCanvas v-else-if="nav.page === 'radio' && pagesOnCanvas.radio" @close="close" />
   <RadioPage v-else-if="nav.page === 'radio'" :ui @close="close" />
@@ -79,6 +80,7 @@ import DailyPageCanvas from './DailyPageCanvas.vue';
 import ControlsPageCanvas from './ControlsPageCanvas.vue';
 import OptionsPageCanvas from './OptionsPageCanvas.vue';
 import PlaySetupCanvas from './PlaySetupCanvas.vue';
+import SoundTestPageCanvas from './SoundTestPageCanvas.vue';
 import RadioPageCanvas from './RadioPageCanvas.vue';
 import RecordsPageCanvas from './RecordsPageCanvas.vue';
 import PressAnyKey from './PressAnyKey.vue';
@@ -86,6 +88,10 @@ import SpriteImg from './SpriteImg.vue';
 import TitleMenu from './TitleMenu.vue';
 import { checkApUpkeep } from '../../shared/progression-save.ts';
 import { useGame } from './use-game.ts';
+import { useLogoLoop } from './use-logo-loop.ts';
+import { LOGO_FRAME_COUNT } from '../art/ui.ts';
+
+const { frame: logoFrame } = useLogoLoop(LOGO_FRAME_COUNT);
 
 declare const __APP_VERSION__: string;
 const APP_VERSION = __APP_VERSION__;
@@ -152,7 +158,7 @@ const setupHome = ref<'canvas' | 'page' | 'multi'>('page');
 /** Nightly Run follows the same switch, decided the same way each time it opens. */
 const dailyOnCanvas = ref(false);
 /** The page-kit pages follow it too: whether each is on the canvas, decided as its page opens. */
-const pagesOnCanvas = ref({ records: false, controls: false, radio: false, gameplay: false, display: false, audio: false });
+const pagesOnCanvas = ref({ records: false, controls: false, radio: false, sound: false, gameplay: false, display: false, audio: false });
 const OPTIONS_PAGES = ['gameplay', 'display', 'audio'] as const;
 const optionsKind = computed(() => OPTIONS_PAGES.find((each) => each === nav.value.page) ?? null);
 function opensOnCanvas(): boolean {
@@ -169,7 +175,7 @@ watch(
   (page) => {
     if (page === 'play') setupHome.value = opensOnCanvas() ? 'canvas' : 'page';
     if (page === 'daily') dailyOnCanvas.value = opensOnCanvas();
-    const isKitPage = page === 'records' || page === 'controls' || page === 'radio' || OPTIONS_PAGES.some((each) => each === page);
+    const isKitPage = page === 'records' || page === 'controls' || page === 'radio' || page === 'sound' || OPTIONS_PAGES.some((each) => each === page);
     if (isKitPage) pagesOnCanvas.value = { ...pagesOnCanvas.value, [page as string]: opensOnCanvas() };
   },
   { flush: 'sync', immediate: true }
