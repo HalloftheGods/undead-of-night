@@ -148,6 +148,8 @@ export interface Banner {
   readonly subtitle: string;
   /** 'quiet' is for a horde moving on: nothing here is ever safe, so it gets no green. 'hope' is the van. */
   readonly tone: "danger" | "quiet" | "hope";
+  /** How long it stays, when its words need longer than the usual beat to read. */
+  readonly holdMs?: number;
 }
 
 /** A word or two over the action for a kill worth noticing: a chain, a close call, a horde wiped out. */
@@ -156,6 +158,8 @@ export interface Callout {
   readonly key: number;
   readonly text: string;
   readonly tone: CalloutTone;
+  /** How long it stays, when it is not a quick kill word. */
+  readonly holdMs?: number;
 }
 
 /** Names a level as it starts. */

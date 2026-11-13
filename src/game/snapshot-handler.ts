@@ -13,7 +13,7 @@ import { recordGameFinished, recordLevelReached } from "./level-progress.ts";
 import type { CalloutWords } from "./kill-juice.ts";
 import { KillJuice } from "./kill-juice.ts";
 import { noteDriveSnapshot } from "./drive-readout.ts";
-import { candyBanner, HORDE_WIPED_BANNER, pickupNote } from "./run-notices.ts";
+import { candyBanner, HORDE_WIPED_BANNER, pickupNote, readMs } from "./run-notices.ts";
 import { finishRun, healthFraction } from "./run-hud.ts";
 import type { RunHost } from "./run-session.ts";
 import { dateKeyOf, loadDailyLog, streakOf } from "./daily-night.ts";
@@ -250,45 +250,41 @@ export class SnapshotHandler {
         const playerX = after ? after.x : world.predictor.x;
         const playerY = after ? after.y : world.predictor.y;
 
+        // A level up is a run of beats, each given time to be read before the next arrives: the shout, the points, then the boon.
+        const stat = winningStat.toUpperCase();
+        const shout = `LEVEL UP: +${apLanded} ${stat}`;
+        const shoutMs = readMs(shout);
         renderer?.triggerLevelUpFx(playerX, playerY);
         renderer?.addFloatingText("LEVEL UP!!!", playerX, playerY - 36, "#ffe066");
-        renderer?.addFloatingText(
-          `+${apLanded} AP: ${winningStat.toUpperCase()}`,
-          playerX,
-          playerY - 26,
-          "#ffc03c"
-        );
         audio.playSfx("level_up");
+        runHud.callout({ text: shout, tone: "chain", holdMs: shoutMs }, now);
 
+        const pointsAt = now + 900;
+        runHud.later(pointsAt, () => {
+          renderer?.addFloatingText(`+${apLanded} AP: ${stat}`, playerX, playerY - 26, "#ffc03c");
+        });
+
+        const boonAt = now + shoutMs + 300;
         const boonIndex = Math.floor(Math.random() * LEVEL_UP_BOONS.length);
         const boonId = LEVEL_UP_BOONS[boonIndex];
         const boonDef = CANDIES[boonId];
+        let boonDoneAt = boonAt;
         if (boonDef) {
-          renderer?.addFloatingText(
-            `BOON: ${boonDef.name.toUpperCase()}`,
-            playerX,
-            playerY - 16,
-            "#38ef7d"
-          );
-          runHud.say(
-            {
-              title: "LEVEL UP BOON!",
-              subtitle: `${boonDef.name}: ${boonDef.blurb}`,
-              tone: "hope"
-            },
-            now
-          );
+          const subtitle = `${boonDef.name}: ${boonDef.blurb}`;
+          const holdMs = readMs("LEVEL UP BOON!", subtitle);
+          boonDoneAt = boonAt + holdMs + 300;
+          runHud.later(boonAt, () => {
+            renderer?.addFloatingText(`BOON: ${boonDef.name.toUpperCase()}`, playerX, playerY - 16, "#38ef7d");
+            runHud.say({ title: "LEVEL UP BOON!", subtitle, tone: "hope", holdMs }, performance.now());
+          });
           this.host.state.transport?.giveBoon?.(boonId);
         }
 
-        runHud.callout(
-          { text: `LEVEL UP: +${apLanded} ${winningStat.toUpperCase()}`, tone: "chain" },
-          now
-        );
-
         const newlyMaxed = isCharacterMaxed(playerSkin, updatedState);
         if (newlyMaxed) {
-          runHud.callout({ text: "OP SURVIVOR!", tone: "chain" }, now + 800);
+          runHud.later(boonDoneAt, () => {
+            runHud.callout({ text: "OP SURVIVOR!", tone: "chain", holdMs: readMs("OP SURVIVOR!") }, performance.now());
+          });
         }
       } else {
         saveProgression(gain.state);

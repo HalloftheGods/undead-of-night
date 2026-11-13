@@ -26,6 +26,12 @@ import { isRadioFound } from './sound-unlock.ts';
 const BANNER_MS = 2600;
 const PLACE_BANNER_MS = 2200;
 const CALLOUT_MS = 1200;
+
+/** Time to read a line: a beat to notice it, then about eighteen letters a second. */
+export function readMs(...lines: readonly string[]): number {
+  const letters = lines.reduce((sum, line) => sum + line.length, 0);
+  return 1800 + Math.round(letters * 55);
+}
 const LEVEL_CARD_MS = 4200;
 /** A refused item on the floor says so once, and again only if the player lingers. */
 const REFUSAL_REPEAT_MS = 2500;
@@ -177,13 +183,13 @@ export class RunNotices {
 
   banner(banner: Omit<Banner, 'key'>, now: number): Banner {
     this.bannerKey += 1;
-    this.bannerUntilMs = now + BANNER_MS;
+    this.bannerUntilMs = now + (banner.holdMs ?? BANNER_MS);
     return { ...banner, key: this.bannerKey };
   }
 
   callout(words: CalloutWords, now: number): Callout {
     this.calloutKey += 1;
-    this.calloutUntilMs = now + CALLOUT_MS;
+    this.calloutUntilMs = now + (words.holdMs ?? CALLOUT_MS);
     return { ...words, key: this.calloutKey };
   }
 

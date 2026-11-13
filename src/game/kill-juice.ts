@@ -27,6 +27,8 @@ export type CalloutTone = 'chain' | 'close' | 'stamp';
 export interface CalloutWords {
   readonly text: string;
   readonly tone: CalloutTone;
+  /** How long it stays, when it is not a quick kill word. */
+  readonly holdMs?: number;
 }
 
 /** What one snapshot's events add up to on screen: a held frame, a flash and a word or two. */

@@ -1,5 +1,5 @@
 <template>
-  <div class="banner" :class="`is-${banner.tone}`" role="status">
+  <div class="banner" :class="`is-${banner.tone}`" :style="banner.holdMs ? { animationDuration: `${banner.holdMs}ms` } : undefined" role="status">
     <strong class="banner-title">{{ banner.title }}</strong>
     <span class="banner-sub">{{ banner.subtitle }}</span>
   </div>

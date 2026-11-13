@@ -1,5 +1,5 @@
 <template>
-  <div class="callout" :class="`is-${callout.tone}`" role="status" aria-live="polite">
+  <div class="callout" :class="`is-${callout.tone}`" :style="callout.holdMs ? { animationDuration: `${callout.holdMs}ms` } : undefined" role="status" aria-live="polite">
     <strong class="callout-text">{{ callout.text }}</strong>
   </div>
 </template>

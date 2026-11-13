@@ -162,6 +162,7 @@ export interface HudFrame {
 /** Keeps the Vue-facing state and the town map in step with the run, a few times a second. */
 export class RunHud {
   private readonly notices = new RunNotices();
+  private scheduled: { at: number; run: () => void }[] = [];
   private readonly log = new EventLog();
   private readonly ui: () => UiState;
   private readonly publish: (patch: Partial<UiState>) => void;
@@ -351,6 +352,7 @@ export class RunHud {
 
   /** Home has no title card, and nothing said in the last town is worth keeping up in it. */
   clearNotices(): void {
+    this.scheduled = [];
     this.publish({ levelCard: null, banner: null, place: null });
   }
 
@@ -418,8 +420,22 @@ export class RunHud {
     if (refused) renderer.note(refused, world.predictor.x, world.predictor.y);
   }
 
+  /** Runs `run` once the frame clock reaches `at`: how a run of popups is spaced out so each can be read. */
+  later(at: number, run: () => void): void {
+    this.scheduled.push({ at, run });
+  }
+
+  private runDue(ms: number): void {
+    if (this.scheduled.length === 0) return;
+    const due = this.scheduled.filter((item) => item.at <= ms);
+    if (due.length === 0) return;
+    this.scheduled = this.scheduled.filter((item) => item.at > ms);
+    for (const item of due.sort((a, b) => a.at - b.at)) item.run();
+  }
+
   tick(frame: HudFrame): void {
     const { world, scene, renderer, ms } = frame;
+    this.runDue(ms);
     this.lastScene = scene;
     this.town?.revealPlayers(scene.players);
     const notDue = ms - this.lastHudMs < HUD_INTERVAL_MS;
