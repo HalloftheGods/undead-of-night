@@ -3,9 +3,18 @@ import { WEAPON_ORDER } from '@shared/protocol.ts';
 import type { ClientInputPacket, Stance, WeaponId } from '@shared/protocol.ts';
 import { GamepadInput, PAD_FIRE, PAD_HORN, PAD_PREV_WEAPON } from './gamepad-input.ts';
 import type { NavDirection, PadConnection } from './gamepad-input.ts';
+import { isPadKey, lootPadMove, lootPadPress, setLootPadDevice } from '../inventory/loot-pad.ts';
 import type { SwipeDirection } from './swipe-gesture.ts';
 import { TouchInput } from './touch-input.ts';
 import { loadKeyBindings } from '@game/controls-prefs.ts';
+
+/** A keydown the pad made: marked so the input manager does not take it for the keyboard. */
+function dispatchPadKeyDown(code: string): void {
+  if (typeof document === 'undefined') return;
+  const event = new KeyboardEvent('keydown', { code, key: code, bubbles: true, cancelable: true });
+  Object.defineProperty(event, 'fromPad', { value: true });
+  (document.body ?? document).dispatchEvent(event);
+}
 
 /** One notch of the wheel per this long, so a trackpad's flurry of events is one step. */
 export const WHEEL_COOLDOWN_MS = 110;
@@ -155,10 +164,12 @@ export class InputManager {
       press: (code) => this.gamepadPress(code),
       confirm: () => this.gamepadConfirm(),
       back: () => this.callbacks.onPause(),
-      navigate: (direction) => this.callbacks.onNavigate?.(direction),
+      navigate: (direction) => lootPadMove(direction) || this.callbacks.onNavigate?.(direction),
+      take: (button) => lootPadPress(button),
       onActive: () => this.use('gamepad'),
       onConnection: (change) => this.callbacks.onGamepadConnection?.(change),
     });
+    setLootPadDevice(() => this.lastDevice === 'gamepad');
     window.addEventListener('keydown', this.onKeyDown);
     window.addEventListener('keyup', this.onKeyUp);
     window.addEventListener('mousemove', this.onMouseMove);
@@ -369,6 +380,11 @@ export class InputManager {
 
   /** A pad button in play, as the key it stands for. Start, View and R3 reach the panels whatever is up. */
   private gamepadPress(code: string): void {
+    // The inventory opens on a keydown the modal listens for, so a pad press is sent as one.
+    if (loadKeyBindings().inventory.includes(code)) {
+      dispatchPadKeyDown(code);
+      return;
+    }
     const tookPanel = this.pressPanel(code, true);
     const isLive = !tookPanel && this.enabled;
     if (isLive) this.latch(code);
@@ -382,6 +398,8 @@ export class InputManager {
   }
 
   private readonly onKeyDown = (event: KeyboardEvent): void => {
+    // The pad pressing arrows for a canvas screen: no screen took it, so nobody did.
+    if (isPadKey(event)) return;
     this.use('keyboard');
     const isHandled = isShortcut(event) || this.menuKey(event);
     if (isHandled) return;

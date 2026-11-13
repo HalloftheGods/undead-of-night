@@ -1,14 +1,25 @@
-import type { PlayerEntity } from '../../shared/protocol.ts';
-import { TICK_DT } from '../../shared/constants.ts';
+import type { EntityId, PlayerEntity } from '../../shared/protocol.ts';
+import { TICK_DT, WEAPONS } from '../../shared/constants.ts';
+import { headSpot } from '../../shared/headshots.ts';
 import { isBunkerMap } from '../../shared/home-protocol.ts';
 import type { MerchantEntity, MerchantId } from '../../shared/home-protocol.ts';
 import { aimAngle } from '../engine/camera.ts';
 import { CHEST_HEIGHT, EMPTY_SCENE } from '../engine/scene.ts';
-import type { QuestMark, SceneView } from '../engine/scene.ts';
+import type { PadRing, QuestMark, SceneView } from '../engine/scene.ts';
+import type { NavDirection } from './input/gamepad-input.ts';
+import { buildingAt } from '../../shared/world-query.ts';
+import type { LockCandidate } from './input/pad-lock.ts';
+import { crowdSpeed, currentStreak, headshotCount, pickLock, ringAt } from './input/pad-lock.ts';
 import type { WorldRenderer } from '../engine/world-renderer.ts';
 import type { ClientWorld } from './client-world.ts';
 import { questMarks } from './home/quest-marks.ts';
 import { closedStalls } from './home/shop.ts';
+import { keyGlyph } from './hud-keys.ts';
+
+/** The word for the search key on the device in charge, for prompts drawn on the canvas. */
+function holdKeyFor(onPad: boolean): string {
+  return keyGlyph('KeyE', onPad ? 'pad' : 'keys') ?? 'E';
+}
 import { Heartbeat } from './heartbeat.ts';
 import { PlayerAnchor } from './player-anchor.ts';
 import type { Anchor } from './player-anchor.ts';
@@ -32,13 +43,25 @@ export interface RunFrameHost {
 }
 
 /** One frame of a run: aim, predict, send input, draw, and the HUD after. Keeps the last picture for a held or frozen frame. */
-/** Buffer pixels from the chest to the crosshair with the right stick pushed all the way. */
-const PAD_REACH = 150;
+/** How far past the gun's range a zombie can still be locked. */
+const LOCK_SLACK = 40;
+
+/** A right-stick push past half, as the direction it leans: the lock steps that way. */
+function stickPush(stick: { x: number; y: number } | null): NavDirection | null {
+  if (!stick || Math.hypot(stick.x, stick.y) < 0.5) return null;
+  if (Math.abs(stick.x) > Math.abs(stick.y)) return stick.x > 0 ? 'right' : 'left';
+  return stick.y > 0 ? 'down' : 'up';
+}
 
 export class RunFrame {
   private aim = 0;
-  /** Where the pad's crosshair sits, in pixels from the survivor's chest on the picture. Null with no crosshair out. */
-  private padOffset: { x: number; y: number } | null = null;
+  /** The zombie the right stick has locked, the stick's last push, and when the ring last started over. */
+  private lockId: EntityId | null = null;
+  private lastPush: NavDirection | null = null;
+  private ringClock = 0;
+  private lastPadMs = 0;
+  private seenHeadshots = 0;
+  private padRing: PadRing | null = null;
   /** The same spot in buffer pixels, for the scene to draw. */
   private padSpot: { x: number; y: number } | null = null;
   private lastScene: SceneView = EMPTY_SCENE;
@@ -77,6 +100,7 @@ export class RunFrame {
     const transition = state.stairsTransition;
     const isTransitioning = transition !== null && ms - transition.startedAtMs < STAIRS_TRANSITION_MS;
     const elapsed = transition ? ms - transition.startedAtMs : 0;
+    input.gamepad.driving = world.localVehicleId !== null;
     const dirX = isTransitioning ? 0 : input.dirX;
     const dirY = isTransitioning ? 0 : input.dirY;
     const pointerX = renderer.toBufferX(input.pointerClientX);
@@ -87,7 +111,7 @@ export class RunFrame {
       if (padLook !== null) this.aim = padLook;
       else if (isMoving) this.aim = Math.atan2(dirY, dirX);
     } else if (!menuUp) {
-      this.aimAt(renderer, world, pointerX, pointerY);
+      this.aimAt(renderer, world, pointerX, pointerY, ms);
     }
     const aim = this.aim;
     const delay = transport?.interpolationDelayMs ?? 0;
@@ -124,6 +148,8 @@ export class RunFrame {
       closedStalls: this.closedStalls(),
       questMarks: this.questMarks(entities.merchants ?? []),
       overrunOn: this.host.overrunOn,
+      padRing: padAims && !over ? this.padRing : null,
+      holdKey: holdKeyFor(padAims),
       pointerX: over || touch ? null : padAims ? padSpot?.x ?? null : pointerX,
       pointerY: over || touch ? null : padAims ? padSpot?.y ?? null : pointerY,
       showCrosshair: this.host.playing() && !menuUp && !ui.value.mapOpen && !this.host.parts.bench.open && !isTransitioning,
@@ -192,41 +218,68 @@ export class RunFrame {
   }
 
   /**
-   * The right stick moves a crosshair about the survivor: its direction picks the bearing, how far it leans
-   * picks the distance, so a lean up or down lands the point on a head. Let go, it stays put while the survivor
-   * stands; walking with the stick at rest drops it, and the light follows the walk as before.
+   * The right stick locks a zombie (a push cycles to the next one that way) and a ring closes on its head. A shot fired
+   * in the last moment of the close goes to the head; any other goes to the chest. See pad-lock.ts.
    */
-  private aimPad(renderer: WorldRenderer, world: ClientWorld, padLook: number): void {
+  private aimPad(renderer: WorldRenderer, world: ClientWorld, padLook: number, ms: number): void {
     const { input, inputs } = this.host.parts;
-    const stick = input.gamepad.reticle();
-    if (stick) this.padOffset = { x: stick.x * PAD_REACH, y: stick.y * PAD_REACH };
-    else if (input.dirX !== 0 || input.dirY !== 0) this.padOffset = null;
-    const offset = this.padOffset;
-    if (!offset) {
+    const player = world.localPlayer;
+    const weapon = player ? WEAPONS[player.weapon] : null;
+    const push = stickPush(input.gamepad.reticle());
+    const edge = push !== null && push !== this.lastPush;
+    this.lastPush = push;
+    const zombies = this.lastScene.zombies;
+    const me = { x: world.predictor.x, y: world.predictor.y };
+    // Walls stop shots, so a zombie in a different building (or indoors against outdoors) cannot be locked.
+    const mine = buildingAt(world.worldMap, me.x, me.y)?.id ?? null;
+    const sameSpace = (zombie: LockCandidate) => (buildingAt(world.worldMap, zombie.x, zombie.y)?.id ?? null) === mine;
+    const next = weapon ? pickLock(me, zombies, this.lockId, edge ? push : null, weapon.range + LOCK_SLACK, sameSpace) : null;
+    const kills = headshotCount();
+    // The ring's clock runs faster the more zombies are in reach, so a horde can be picked off quickly.
+    const crowd = weapon ? zombies.filter((zombie) => zombie.health > 0 && Math.hypot(zombie.x - me.x, zombie.y - me.y) <= weapon.range + LOCK_SLACK && sameSpace(zombie)).length : 0;
+    const step = Math.min(0.1, Math.max(0, (ms - this.lastPadMs) / 1000));
+    this.lastPadMs = ms;
+    this.ringClock += step * crowdSpeed(crowd);
+    if (next !== this.lockId || kills !== this.seenHeadshots) this.ringClock = 0;
+    this.lockId = next;
+    this.seenHeadshots = kills;
+    const target = zombies.find((zombie) => zombie.id === next);
+    if (!target || !weapon) {
       this.aim = padLook;
       this.padSpot = null;
+      this.padRing = null;
       inputs.aimPoint = null;
       return;
     }
     const camera = renderer.camera;
-    const spot = {
-      x: camera.screenX(world.predictor.x) + offset.x,
-      y: camera.screenY(world.predictor.y) - CHEST_HEIGHT + offset.y,
-    };
-    this.aim = Math.atan2(offset.y, offset.x);
-    this.padSpot = spot;
-    inputs.aimPoint = renderer.toWorld(spot.x, spot.y);
+    const headable = weapon.pellets === 1 && target.boss === undefined;
+    const ring = ringAt(this.ringClock, currentStreak(ms));
+    const perfect = headable && ring.perfect;
+    const head = headSpot(target);
+    const at = (x: number, y: number) => ({ x: camera.screenX(target.x) + (x - target.x), y: camera.screenY(target.y) + (y - target.y) });
+    // The crosshair starts on the chest and finds its way to the middle of the head as the ring closes, easing in so it
+    // settles late; in the last moment it is dead on.
+    const chestY = target.y - CHEST_HEIGHT;
+    const pull = ring.progress * ring.progress;
+    const aimed = at(target.x + (head.x - target.x) * pull, perfect || !headable ? (headable ? head.y : chestY) : chestY + (head.y - chestY) * pull);
+    const headBuffer = at(head.x, head.y);
+    const chest = { x: camera.screenX(me.x), y: camera.screenY(me.y) - CHEST_HEIGHT };
+    this.aim = Math.atan2(aimed.y - chest.y, aimed.x - chest.x);
+    this.padSpot = aimed;
+    this.padRing = { x: headBuffer.x, y: headBuffer.y, radius: ring.radius, perfect, ring: headable };
+    inputs.aimPoint = renderer.toWorld(this.padSpot.x, this.padSpot.y);
   }
 
-  private aimAt(renderer: WorldRenderer, world: ClientWorld, pointerX: number, pointerY: number): void {
+  private aimAt(renderer: WorldRenderer, world: ClientWorld, pointerX: number, pointerY: number, ms: number): void {
     const { input, inputs } = this.host.parts;
     const padLook = input.gamepad.look(this.aim);
     if (padLook !== null) {
-      this.aimPad(renderer, world, padLook);
+      this.aimPad(renderer, world, padLook, ms);
       return;
     }
-    this.padOffset = null;
     this.padSpot = null;
+    this.padRing = null;
+    this.lockId = null;
     const camera = renderer.camera;
     this.aim = input.touch.look(this.aim) ?? aimAngle(
       pointerX,

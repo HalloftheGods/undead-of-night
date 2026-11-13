@@ -110,14 +110,28 @@ export interface SceneView {
   readonly focusY: number;
   /** Buffer pixels, or null when the pointer is not steering the camera. */
   readonly pointerX: number | null;
+  /** The label for the search key on the device in charge: 'E' on keys, the pad's own button on a pad. */
+  readonly holdKey: string;
   readonly pointerY: number | null;
   readonly showCrosshair: boolean;
+  /** The pad's closing ring on the locked zombie's head, in buffer pixels. Absent off a pad. */
+  readonly padRing?: PadRing | null;
   /** The item in hand while the inventory is open: picture at the pointer, words and buttons under the survivor. Absent when nothing is held. */
   readonly held?: HeldView | null;
   /** Set while fingers are playing, when the crosshair follows them and the pointer steers nothing. */
   readonly touch?: TouchMarks | null;
   readonly phase: GamePhase;
   readonly hostiles: number;
+}
+
+/** A pad player's lock: the ring closing on a head, and whether this instant sends the shot there. */
+export interface PadRing {
+  readonly x: number;
+  readonly y: number;
+  readonly radius: number;
+  readonly perfect: boolean;
+  /** False for a boss, which takes no headshots: the lock mark shows and no ring closes. */
+  readonly ring: boolean;
 }
 
 export const EMPTY_SCENE: SceneView = {
@@ -134,6 +148,7 @@ export const EMPTY_SCENE: SceneView = {
   focusX: 0,
   focusY: 0,
   pointerX: null,
+  holdKey: 'E',
   pointerY: null,
   showCrosshair: false,
   phase: "intermission",

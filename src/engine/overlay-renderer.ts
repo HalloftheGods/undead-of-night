@@ -388,13 +388,13 @@ export class OverlayRenderer {
       else if (atVehicle) drawOutlinedText(ctx, vehiclePrompt(scene.vehicle!, Boolean(scene.touch)), x, y, AMBER);
       else if (prompted) {
         const isOpened = scene.openedContainers.includes(scene.searchable!.id);
-        const action = isOpened ? (scene.touch ? 'OPEN' : 'PRESS E') : (scene.touch ? 'SEARCH' : 'HOLD E');
+        const action = isOpened ? (scene.touch ? 'OPEN' : 'PRESS ' + scene.holdKey) : (scene.touch ? 'SEARCH' : 'HOLD ' + scene.holdKey);
         drawOutlinedText(ctx, `${action}: ${CONTAINER_LABEL[scene.searchable!.kind]}`, x, y, AMBER);
       }
-      else if (atStation) drawOutlinedText(ctx, stationPrompt(scene.station, Boolean(scene.touch), this.payFrom(scene), scene.station === 'jukebox' && player.home?.radio !== true), x, y, AMBER);
+      else if (atStation) drawOutlinedText(ctx, stationPrompt(scene.station, Boolean(scene.touch), this.payFrom(scene), scene.station === 'jukebox' && player.home?.radio !== true, scene.holdKey), x, y, AMBER);
       else if (person) {
         if (person.hold !== undefined && person.hold > 0) drawBar(ctx, x - SEARCH_BAR_WIDTH / 2, y, SEARCH_BAR_WIDTH, person.hold, AMBER);
-        else drawOutlinedText(ctx, person.rescue === 'waiting' ? `${scene.touch ? 'TAKE' : 'HOLD E: TAKE'} ${RESCUE_NAME[person.id]}` : `${scene.touch ? 'GIVE' : 'HOLD E: GIVE'} ${WEAPONS[player.weapon].label.toUpperCase()}`, x, y, AMBER);
+        else drawOutlinedText(ctx, person.rescue === 'waiting' ? `${scene.touch ? 'TAKE' : 'HOLD ' + scene.holdKey + ': TAKE'} ${RESCUE_NAME[person.id]}` : `${scene.touch ? 'GIVE' : 'HOLD ' + scene.holdKey + ': GIVE'} ${WEAPONS[player.weapon].label.toUpperCase()}`, x, y, AMBER);
       }
       else if (atClimb) drawOutlinedText(ctx, climbPrompt(scene.climb, Boolean(scene.touch)), x, y, AMBER);
       else if (atDoor) drawOutlinedText(ctx, doorPrompt(scene.door!, Boolean(scene.touch)), x, y, AMBER);
