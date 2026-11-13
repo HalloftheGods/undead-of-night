@@ -7,7 +7,9 @@ import { drawHeldUi } from './held-ui.ts';
 import { setHeldButtons, setHeldSurvivor } from '../game/held-cursor.ts';
 import { lootWindow } from '../game/loot-view.ts';
 import { drawLootUi, layoutLootUi } from './loot-ui.ts';
+import { pageWindow } from '../game/page-view.ts';
 import { setupWindow } from '../game/setup-view.ts';
+import { drawPageUi } from './page-ui-draw.ts';
 import { drawSetupUi } from './setup-ui-draw.ts';
 import { layoutSetupUi } from './setup-ui.ts';
 import { Atmosphere } from './atmosphere.ts';
@@ -449,6 +451,7 @@ export class WorldRenderer {
     if (scene.showCrosshair && !scene.held) this.overlay.drawCrosshair(ctx, scene, left, top, lightAt, isKilled);
     this.drawLoot(ctx, viewW, viewH);
     this.drawSetup(ctx, viewW, viewH);
+    this.drawPage(ctx, viewW, viewH);
     this.drawHeld(ctx, scene, left, top, viewW, viewH);
 
     this.visuals.endFrame();
@@ -469,6 +472,13 @@ export class WorldRenderer {
     const win = setupWindow();
     if (!win) return;
     drawSetupUi(ctx, win, layoutSetupUi(win.model, viewW, viewH), viewW, viewH);
+  }
+
+  /** A title page drawn with the page kit (Options, Privacy, Records), when one is open. */
+  private drawPage(ctx: CanvasRenderingContext2D, viewW: number, viewH: number): void {
+    const win = pageWindow();
+    if (!win) return;
+    drawPageUi(ctx, win, viewW, viewH);
   }
 
   /** The item in hand takes the crosshair's place; its words and buttons hang under the survivor. Reports where the buttons are, in client pixels. */
