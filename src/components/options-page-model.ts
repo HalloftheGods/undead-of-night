@@ -30,8 +30,10 @@ const MOTIONS: readonly ChoiceOption[] = MOTION_PREFS.map((id) => ({ id, label: 
 const percent = (value: number): string => `${Math.round(value * 100)}%`;
 
 /** The Options screens as page-kit panels, and what a switch, a choice, a slider or a link in them does. */
-export function useOptionsPanels(ui: UiState, kind: OptionsKind) {
+export function useOptionsPanels(getUi: () => UiState, kind: OptionsKind) {
   const game = useGame();
+  /** Read afresh each time: the game publishes a new state object on every change, so one held from the start goes stale. */
+  const ui = (): UiState => getUi();
   const autoCloseLoot = ref(loadAutoCloseEmptyLoot());
   const menuInfo = ref(loadMenuInfo());
   const analyticsOn = computed(() => consent.allowed());
@@ -45,12 +47,12 @@ export function useOptionsPanels(ui: UiState, kind: OptionsKind) {
     heading: 'Display',
     items: [
       { kind: 'slider', id: 'brightness', label: 'Brightness', value: brightness.value, readout: brightnessLift() === 0 ? 'Normal' : `+${Math.round(brightnessLift() * 100)}%` },
-      { kind: 'choice', id: 'palette', label: 'Hit colors', options: PALETTES, value: ui.palette },
-      { kind: 'text', text: PALETTE_NOTES[ui.palette], tone: 'dim' },
-      { kind: 'choice', id: 'scale', label: 'UI size', options: SCALES, value: ui.uiScale },
-      { kind: 'choice', id: 'speed', label: 'Speed unit', options: SPEEDS, value: ui.speedUnit },
+      { kind: 'choice', id: 'palette', label: 'Hit colors', options: PALETTES, value: ui().palette },
+      { kind: 'text', text: PALETTE_NOTES[ui().palette], tone: 'dim' },
+      { kind: 'choice', id: 'scale', label: 'UI size', options: SCALES, value: ui().uiScale },
+      { kind: 'choice', id: 'speed', label: 'Speed unit', options: SPEEDS, value: ui().speedUnit },
       { kind: 'text', text: 'Unit for vehicle speedometer readouts.', tone: 'dim' },
-      { kind: 'switch', id: 'xp', label: 'Auto-fade XP bar', on: ui.autoFadeXp, enabled: true },
+      { kind: 'switch', id: 'xp', label: 'Auto-fade XP bar', on: ui().autoFadeXp, enabled: true },
       { kind: 'text', text: 'Fades the survivor XP bar when inactive, or keeps it always visible.', tone: 'dim' },
       { kind: 'switch', id: 'menuinfo', label: 'Menu details', on: menuInfo.value, enabled: true },
       { kind: 'text', text: 'A line under each main menu item saying what it opens.', tone: 'dim' },
@@ -89,10 +91,10 @@ export function useOptionsPanels(ui: UiState, kind: OptionsKind) {
   const volume = computed<PagePanel>(() => ({
     heading: 'Volume',
     items: [
-      { kind: 'slider', id: 'volume', label: 'Master volume', value: ui.volume, readout: ui.muted ? 'Muted' : percent(ui.volume) },
-      { kind: 'link', id: 'mute', label: ui.muted ? 'Unmute' : 'Mute' },
-      { kind: 'slider', id: 'music', label: 'Music volume', value: ui.musicVolume, readout: percent(ui.musicVolume) },
-      { kind: 'slider', id: 'sfx', label: 'Effects volume', value: ui.sfxVolume, readout: percent(ui.sfxVolume) },
+      { kind: 'slider', id: 'volume', label: 'Master volume', value: ui().volume, readout: ui().muted ? 'Muted' : percent(ui().volume) },
+      { kind: 'link', id: 'mute', label: ui().muted ? 'Unmute' : 'Mute' },
+      { kind: 'slider', id: 'music', label: 'Music volume', value: ui().musicVolume, readout: percent(ui().musicVolume) },
+      { kind: 'slider', id: 'sfx', label: 'Effects volume', value: ui().sfxVolume, readout: percent(ui().sfxVolume) },
     ],
   }));
 
@@ -124,7 +126,7 @@ export function useOptionsPanels(ui: UiState, kind: OptionsKind) {
     canvasloot: () => canvasLoot.value,
     canvasmenus: () => canvasMenus.value,
     analytics: () => analyticsOn.value,
-    xp: () => ui.autoFadeXp,
+    xp: () => ui().autoFadeXp,
     menuinfo: () => menuInfo.value,
   };
   const choices: Readonly<Record<string, (option: string) => void>> = {

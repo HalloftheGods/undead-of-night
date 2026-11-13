@@ -15,7 +15,7 @@ import { useCanvasPage } from './use-canvas-page.ts';
 
 const { ui, kind } = defineProps<{ ui: UiState; kind: OptionsKind }>();
 const emit = defineEmits<{ close: [] }>();
-const options = useOptionsPanels(ui, kind);
+const options = useOptionsPanels(() => ui, kind);
 
 const model = computed<PageModel>(() => ({
   heading: options.heading,
