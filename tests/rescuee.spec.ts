@@ -122,3 +122,48 @@ describe('what bringing someone home does to the save and the breach', () => {
     expect(after.camp?.rescued).toEqual(['quartermaster']);
   });
 });
+
+describe('a lent gun', () => {
+  function freed(): { sim: GameSimulation; state: ReturnType<typeof stateOf>; person: ReturnType<typeof stateOf>['rescuees'][number] } {
+    const { sim, state } = roomWith([]);
+    driveToTown(sim, state, 1);
+    quietTown(state);
+    const [person] = state.rescuees;
+    const p = state.players[0];
+    p.x = person.x + 10;
+    p.y = person.y;
+    for (let i = 0; i < 100 && person.status === 'waiting'; i++) {
+      p.searchHeld = true;
+      p.moving = false;
+      steps(sim, 1);
+    }
+    return { sim, state, person };
+  }
+
+  it('is refused when it is the only gun, given when there is a spare, and comes back at the van', async () => {
+    const { sim, state, person } = freed();
+    const p = state.players[0];
+    p.searchHeld = true;
+    p.moving = false;
+    steps(sim, 90);
+    expect(person.lent).toBeNull();
+    const { applyLoadout, loadoutOf } = await import('../shared/loadout.ts');
+    applyLoadout(p, { ...loadoutOf(p), guns: { pistol: {}, shotgun: {} }, ammoBag: { ...loadoutOf(p).ammoBag, pistol: 24, shotgun: 12 } });
+    p.weapon = 'shotgun';
+    for (let i = 0; i < 100 && !person.lent; i++) {
+      p.searchHeld = true;
+      p.moving = false;
+      p.x = person.x + 10;
+      p.y = person.y;
+      steps(sim, 1);
+    }
+    expect(person.lent?.weapon).toBe('shotgun');
+    expect(p.guns.shotgun).toBeUndefined();
+    p.searchHeld = false;
+    openLevelExit(state);
+    person.x = state.exit!.x + 20;
+    person.y = state.exit!.y;
+    bankTrip(sim, state);
+    expect(p.home?.receipt?.gear?.guns.shotgun).toBeDefined();
+  });
+});

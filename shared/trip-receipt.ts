@@ -5,6 +5,7 @@ import { TICK_DT } from './constants.ts';
 import { SALVAGE_TYPES } from './events.ts';
 import type { TripReceipt } from './home-protocol.ts';
 import { boardedAtVan } from './camp/rescuee.ts';
+import { withLentBack } from './camp/rescuee-gun.ts';
 import { FINAL_LEVEL } from './levels.ts';
 import { loadoutOf } from './loadout.ts';
 import { noSalvage } from './salvage-data.ts';
@@ -63,7 +64,7 @@ export function bankTrip(sim: SimState, run: HomeRun, p: PlayerState, home: Play
     candy: candyWorth,
     candyBag: bagOf(p.candy),
     ending,
-    gear: loadoutOf(p),
+    gear: withLentBack(loadoutOf(p), sim.rescuees, p.id),
     ...(aboard.length > 0 ? { rescued: aboard } : {}),
   };
   for (const id of aboard) if (!home.rescued.includes(id)) home.rescued.push(id);

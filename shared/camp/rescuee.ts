@@ -12,6 +12,8 @@ import type { BuildingInstance, BuildingKind, PickupType } from '../protocol.ts'
 import { groundBuildingId } from '../leftovers.ts';
 import { isSewerBuilding } from '../map-protocol.ts';
 import type { Rng } from '../rng.ts';
+import { canSpareGun, lendGun, shootIfArmed } from './rescuee-gun.ts';
+import type { LentGun } from './rescuee-gun.ts';
 import { TILE_SIZE } from '../protocol.ts';
 import { createRng, shuffle } from '../rng.ts';
 import type { PlayerState, SimState } from '../sim-state.ts';
@@ -69,6 +71,10 @@ export interface RescueeState {
   fieldTick: number;
   stuckLeft: number;
   /** The building their stash is in, and what lies there to be marked: told when they are freed. Null for those with none. */
+  /** A gun a player has lent them, or null. */
+  lent: LentGun | null;
+  /** Their own rolls (aim, spread), apart from every other stream. */
+  readonly rng: Rng;
   stash: { readonly building: string; readonly mark: PickupType } | null;
 }
 
@@ -92,7 +98,7 @@ export function placeRescuees(sim: SimState, level: number): void {
   const home = ranked[0];
   if (!home) return;
   const [spot, ...rest] = shuffle(rng, [...lootSpots(sim.map, home)]);
-  sim.rescuees.push({ id, x: spot.x, y: spot.y, angle: Math.PI / 2, moving: false, status: 'waiting', hold: 0, leaderId: null, field: new FlowField(sim.map), fieldTick: -1, stuckLeft: 0, stash: null });
+  sim.rescuees.push({ id, x: spot.x, y: spot.y, angle: Math.PI / 2, moving: false, status: 'waiting', hold: 0, leaderId: null, field: new FlowField(sim.map), fieldTick: -1, stuckLeft: 0, lent: null, rng: createRng(rng() * 0x7fffffff), stash: null });
   for (const type of FINDS[id]) {
     const at = freeSpot(sim, rest);
     if (at) spawnPickup(sim, type, at.x, at.y);
@@ -155,11 +161,25 @@ function follow(sim: SimState, r: RescueeState): void {
   r.stuckLeft = moved ? 0 : r.stuckLeft + TICK_DT;
 }
 
+/** Holding E beside a following person with no gun hands them the one in your hands, if you can spare it. */
+function offerGun(sim: SimState, r: RescueeState): void {
+  if (r.lent) return;
+  const by = holder(sim, r);
+  const giver = by && canSpareGun(by) ? by : null;
+  r.hold = giver ? Math.min(1, r.hold + TICK_DT / FREE_SEC) : Math.max(0, r.hold - TICK_DT);
+  if (giver && r.hold >= 1) {
+    lendGun(r, giver);
+    r.hold = 0;
+  }
+}
+
 /** One tick for everyone in town: waiting ones are freed by a held key, freed ones follow. */
 export function updateRescuees(sim: SimState): void {
   for (const r of sim.rescuees) {
     if (r.status === 'following') {
       follow(sim, r);
+      shootIfArmed(sim, r);
+      offerGun(sim, r);
       continue;
     }
     const by = holder(sim, r);
@@ -184,5 +204,5 @@ export function boardedAtVan(sim: SimState): MerchantId[] {
 
 /** As the snapshot carries them: a merchant's body, told apart by `rescue`. */
 export function rescueeView(r: RescueeState): MerchantEntity {
-  return { id: r.id, x: round2(r.x), y: round2(r.y), angle: round2(r.angle), moving: r.moving, status: 'alive', health: 100, maxHealth: 100, weapon: 'pistol', reload: 0, rescue: r.status === 'waiting' ? 'waiting' : 'following', ...(r.hold > 0 ? { hold: round2(r.hold) } : {}) };
+  return { id: r.id, x: round2(r.x), y: round2(r.y), angle: round2(r.angle), moving: r.moving, status: 'alive', health: 100, maxHealth: 100, weapon: r.lent?.weapon ?? 'pistol', reload: 0, rescue: r.status === 'waiting' ? 'waiting' : 'following', ...(r.lent ? { armed: true as const } : {}), ...(r.hold > 0 ? { hold: round2(r.hold) } : {}) };
 }

@@ -1,6 +1,6 @@
 import type { MerchantId } from '../../shared/home-protocol.ts';
 import { tagLabel } from '../../shared/callsign.ts';
-import { EXIT_RADIUS, ZOMBIES } from '../../shared/constants.ts';
+import { EXIT_RADIUS, WEAPONS, ZOMBIES } from '../../shared/constants.ts';
 import { CONTAINER_LABEL } from '../../shared/containers.ts';
 import { HEAD_MARGIN, isOnHead, TOUCH_HEAD_MARGIN } from '../../shared/headshots.ts';
 import type { DropView, EntityId, ExitEntity, PlayerEntity, ZombieEntity } from '../../shared/protocol.ts';
@@ -379,7 +379,7 @@ export class OverlayRenderer {
       const isLocal = player.id === scene.localId;
       const prompted = isLocal && scene.searchable !== null;
       const atStation = isLocal && scene.station !== undefined;
-      const person = isLocal ? scene.merchants?.find((m) => m.rescue === 'waiting' && Math.hypot(m.x - player.x, m.y - player.y) <= 34) : undefined;
+      const person = isLocal ? scene.merchants?.find((m) => Math.hypot(m.x - player.x, m.y - player.y) <= 34 && (m.rescue === 'waiting' || (m.rescue === 'following' && m.armed !== true && player.owned.length > 1))) : undefined;
       const atClimb = isLocal && scene.climb !== undefined;
       const atRadioTower = isLocal && scene.radioTower !== undefined;
       const atDoor = isLocal && scene.door !== undefined;
@@ -394,7 +394,7 @@ export class OverlayRenderer {
       else if (atStation) drawOutlinedText(ctx, stationPrompt(scene.station, Boolean(scene.touch), this.payFrom(scene), scene.station === 'jukebox' && player.home?.radio !== true), x, y, AMBER);
       else if (person) {
         if (person.hold !== undefined && person.hold > 0) drawBar(ctx, x - SEARCH_BAR_WIDTH / 2, y, SEARCH_BAR_WIDTH, person.hold, AMBER);
-        else drawOutlinedText(ctx, `${scene.touch ? 'TAKE' : 'HOLD E: TAKE'} ${RESCUE_NAME[person.id]}`, x, y, AMBER);
+        else drawOutlinedText(ctx, person.rescue === 'waiting' ? `${scene.touch ? 'TAKE' : 'HOLD E: TAKE'} ${RESCUE_NAME[person.id]}` : `${scene.touch ? 'GIVE' : 'HOLD E: GIVE'} ${WEAPONS[player.weapon].label.toUpperCase()}`, x, y, AMBER);
       }
       else if (atClimb) drawOutlinedText(ctx, climbPrompt(scene.climb, Boolean(scene.touch)), x, y, AMBER);
       else if (atDoor) drawOutlinedText(ctx, doorPrompt(scene.door!, Boolean(scene.touch)), x, y, AMBER);
@@ -580,6 +580,7 @@ export class OverlayRenderer {
   ): void {
     const { touch } = scene;
     if (touch?.stick) drawStick(ctx, touch.stick);
+    if (scene.padRing) drawPadRing(ctx, scene.padRing);
     const x = touch ? touch.aim?.x ?? null : scene.pointerX;
     const y = touch ? touch.aim?.y ?? null : scene.pointerY;
     const noPointer = x === null || y === null;
@@ -589,4 +590,26 @@ export class OverlayRenderer {
     drawSprite(ctx, onHead ? crosshairHead : crosshair, Math.round(x), Math.round(y));
     if (touch) drawFingertipBox(ctx, x, y, touch.fingertip, onHead);
   }
+}
+
+/** The lock mark and the closing ring round a head: pale while it closes, gold in the moment a shot goes to the head. */
+function drawPadRing(ctx: CanvasRenderingContext2D, ring: NonNullable<SceneView['padRing']>): void {
+  const x = Math.round(ring.x);
+  const y = Math.round(ring.y);
+  ctx.save();
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = ring.perfect ? '#ffd24a' : 'rgba(228, 220, 195, 0.85)';
+  if (ring.ring) {
+    ctx.beginPath();
+    ctx.arc(x + 0.5, y + 0.5, Math.max(2, ring.radius), 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  // Four ticks round the head mark it as the target even when the ring is wide.
+  const reach = 5;
+  ctx.fillStyle = ring.perfect ? '#ffd24a' : 'rgba(228, 220, 195, 0.85)';
+  ctx.fillRect(x - reach - 3, y, 3, 1);
+  ctx.fillRect(x + reach + 1, y, 3, 1);
+  ctx.fillRect(x, y - reach - 3, 1, 3);
+  ctx.fillRect(x, y + reach + 1, 1, 3);
+  ctx.restore();
 }

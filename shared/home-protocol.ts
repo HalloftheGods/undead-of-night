@@ -49,6 +49,8 @@ export interface MerchantEntity {
   readonly rescue?: 'waiting' | 'following';
   /** 0..1 through the hold that frees them. */
   readonly hold?: number;
+  /** A following person who has a gun lent to them. Left off otherwise. */
+  readonly armed?: true;
 }
 
 export interface Jewels {

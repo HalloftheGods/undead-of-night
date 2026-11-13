@@ -10,12 +10,12 @@ import { alivePlayers, emit, entityId } from './sim-state.ts';
 import { segmentHitsCover } from './world-query.ts';
 
 /** How far a merchant picks out a zombie to shoot. */
-const SIGHT_RANGE = 220;
+export const SIGHT_RANGE = 220;
 /** Their rounds hit softer than a survivor's, so the fight is still the survivors' to win. */
-const DAMAGE_SCALE = 0.6;
+export const DAMAGE_SCALE = 0.6;
 /** And they shoot slower, with a shakier hand. */
-const FIRE_INTERVAL_SCALE = 1.8;
-const EXTRA_SPREAD_RAD = 0.05;
+export const FIRE_INTERVAL_SCALE = 1.8;
+export const EXTRA_SPREAD_RAD = 0.05;
 /** Anything closer than this, they back away from as they shoot. */
 const BACK_OFF_GAP = 22;
 const BACK_OFF_SPEED = 58;
