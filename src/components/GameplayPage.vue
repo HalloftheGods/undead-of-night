@@ -9,6 +9,8 @@
       <div class="gameplay-switch">
         <PixelSwitch label="Auto-close empty loot" :on="autoCloseLoot" @change="setAutoCloseLoot" />
         <p class="gameplay-note">Automatically closes the loot screen when the last item is taken from a container.</p>
+        <PixelSwitch label="In-game loot window" :on="canvasLoot" @change="saveCanvasLoot" />
+        <p class="gameplay-note">Draws the loot grids on the game itself, over a dimmed world. Mouse only for now: phones and gamepads keep the page version.</p>
       </div>
     </OptionsCard>
 
@@ -25,7 +27,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { consent, openPrivacy } from '../game/analytics/index.ts';
-import { loadAutoCloseEmptyLoot, saveAutoCloseEmptyLoot } from '../game/loot-prefs.ts';
+import { canvasLoot, loadAutoCloseEmptyLoot, saveAutoCloseEmptyLoot, saveCanvasLoot } from '../game/loot-prefs.ts';
 import MenuLink from './MenuLink.vue';
 import MotionOptions from './MotionOptions.vue';
 import OptionsCard from './OptionsCard.vue';

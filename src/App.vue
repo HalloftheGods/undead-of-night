@@ -1,5 +1,5 @@
 <template>
-  <main class="game-root" :class="{ 'is-aiming': aiming, 'is-touch': ui.touch, 'is-looting': inventory.isOpen.value }">
+  <main class="game-root" :class="{ 'is-aiming': aiming, 'is-touch': ui.touch, 'is-looting': inventory.isOpen.value, 'is-canvas-loot': canvasLoot.active.value }">
     <canvas ref="canvasRef" class="game-canvas" />
 
     <TitleScreen v-if="ui.screen === 'title'" :ui :splashing />
@@ -22,9 +22,9 @@
         />
         <!-- The grid inventory: I on a desktop, the Grid button on the backpack ring on a phone. Edits a copy; closing sends one commit. -->
         <DualLootModal
-          v-if="inventory.isOpen.value && inventory.working.value"
+          v-if="inventory.isOpen.value && inventory.working.value && !canvasLoot.active.value"
           :key="inventory.openings.value"
-          ref="inventoryPanel"
+          ref="vuePanel"
           :art="ui.art"
           :container-title="inventory.working.value.containerTitle || 'Nearby'"
           :container-kind="inventory.working.value.containerKind"
@@ -93,7 +93,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, provide, ref, useTemplateRef, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, provide, ref, shallowRef, useTemplateRef, watch } from 'vue';
 import BackpackWheel from './components/BackpackWheel.vue';
 import DualLootModal from './components/DualLootModal.vue';
 import ConnectionLost from './components/ConnectionLost.vue';
@@ -133,6 +133,8 @@ import { CONTAINER_LABEL } from '../shared/containers.ts';
 import { GameController } from './game/game-controller.ts';
 import { aimsCursor } from './game/home-screens.ts';
 import { useInventoryModal, type InventoryPanel } from './game/inventory-modal.ts';
+import type { CanvasLoot } from './game/inventory/canvas-loot.ts';
+import { useCanvasLoot } from './game/inventory/use-canvas-loot.ts';
 import { LOCAL_PLAYER_ID } from './network/local-session.ts';
 import { shouldShowSplash } from './game/studio-splash.ts';
 
@@ -141,7 +143,10 @@ const ui = game.ui;
 const splashing = ref(shouldShowSplash(window.location.search));
 const canvasRef = useTemplateRef<HTMLCanvasElement>('canvasRef');
 const pausedBook = ref<TitlePage | null>(null);
-const inventoryPanel = useTemplateRef<InventoryPanel>('inventoryPanel');
+const vuePanel = useTemplateRef<InventoryPanel>('vuePanel');
+/** The window drawn on the game canvas, when the in-game switch is on; the page version otherwise. */
+const canvasPanel = shallowRef<CanvasLoot | null>(null);
+const inventoryPanel = computed<InventoryPanel | null>(() => canvasPanel.value ?? vuePanel.value);
 const inventory = useInventoryModal(
   ui,
   game.input,
@@ -150,6 +155,8 @@ const inventory = useInventoryModal(
   (containerId) => game.walkedAwayFrom(containerId),
   () => onInventoryClose()
 );
+
+const canvasLoot = useCanvasLoot(ui, inventory, canvasRef, (name) => game.playSfx(name), () => onInventoryClose(), canvasPanel);
 
 function onInventoryClose(): void {
   inventory.hide();
@@ -243,6 +250,11 @@ onBeforeUnmount(() => {
 
 .is-looting .game-canvas {
   filter: brightness(0.7);
+}
+
+/* The canvas window dims the world itself, under its own panels, so the page does not dim the canvas on top of it. */
+.is-looting.is-canvas-loot .game-canvas {
+  filter: none;
 }
 
 .is-looting :deep(.hud) {

@@ -5,6 +5,8 @@ import type { EntityId, GameEvent, WorldMap, ZombieType } from '../../shared/pro
 import type { ArtBook, PixelSprite } from '../art/types.ts';
 import { drawHeldUi } from './held-ui.ts';
 import { setHeldButtons, setHeldSurvivor } from '../game/held-cursor.ts';
+import { lootWindow } from '../game/loot-view.ts';
+import { drawLootUi, layoutLootUi } from './loot-ui.ts';
 import { Atmosphere } from './atmosphere.ts';
 import { BuildingLayer, roomRect } from './building-layer.ts';
 import { Camera } from './camera.ts';
@@ -442,10 +444,20 @@ export class WorldRenderer {
     this.fx.particles.keepTextsClear(this.overlay.sugarKeepOuts());
     this.fx.particles.drawTexts(ctx, left, top);
     if (scene.showCrosshair && !scene.held) this.overlay.drawCrosshair(ctx, scene, left, top, lightAt, isKilled);
+    this.drawLoot(ctx, viewW, viewH);
     this.drawHeld(ctx, scene, left, top, viewW, viewH);
 
     this.visuals.endFrame();
     this.frameMs += (performance.now() - started - this.frameMs) * 0.05;
+  }
+
+  /** The loot window, when it is drawn on the game: the world dims a step, and the docks go over it, under the item in hand. */
+  private drawLoot(ctx: CanvasRenderingContext2D, viewW: number, viewH: number): void {
+    const win = lootWindow();
+    if (!win) return;
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+    ctx.fillRect(0, 0, viewW, viewH);
+    drawLootUi(ctx, win, layoutLootUi(win.state, viewW, viewH));
   }
 
   /** The item in hand takes the crosshair's place; its words and buttons hang under the survivor. Reports where the buttons are, in client pixels. */

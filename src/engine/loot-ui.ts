@@ -150,6 +150,20 @@ function tierName(state: DualLootState): string {
   return upper(label.includes(': ') ? label.split(': ')[1] : label);
 }
 
+/** The item in hand, at the size the grid shows it, hung from the pointer. */
+export function heldBox(item: GridItem, pointer: { readonly x: number; readonly y: number }): Box {
+  const dims = getItemFootprint(item.type, item.rotated);
+  const w = dims.width * TILE - 2;
+  const h = dims.height * TILE - 2;
+  return { x: Math.round(pointer.x - w / 2), y: Math.round(pointer.y - h / 2), w, h };
+}
+
+/** Where the held item's first cell is, as a point: the spot that decides which cell it would land on. */
+export function heldAnchor(item: GridItem, pointer: { readonly x: number; readonly y: number }): { x: number; y: number } {
+  const box = heldBox(item, pointer);
+  return { x: box.x + Math.floor(TILE / 2), y: box.y + Math.floor(TILE / 2) };
+}
+
 function inside(box: Box, x: number, y: number): boolean {
   return x >= box.x && x < box.x + box.w && y >= box.y && y < box.y + box.h;
 }
@@ -220,6 +234,19 @@ function cellBox(board: GridBox, col: number, row: number, w = 1, h = 1): Box {
   return { x: board.x + col * TILE, y: board.y + row * TILE, w: w * TILE, h: h * TILE };
 }
 
+/** A cell that is not part of this container: sunken ink with dashed diagonals, no colour, so it reads as switched off. */
+function drawDisabledCell(ctx: CanvasRenderingContext2D, box: Box): void {
+  fill(ctx, INK, box.x + 1, box.y + 1, TILE - 2, TILE - 2);
+  ctx.fillStyle = LINE;
+  for (let j = 0; j < TILE - 4; j += 1) {
+    for (let i = 0; i < TILE - 4; i += 1) {
+      const onDiagonal = (i + j) % 4 === 0;
+      const inDash = j % 6 < 4;
+      if (onDiagonal && inDash) ctx.fillRect(box.x + 2 + i, box.y + 2 + j, 1, 1);
+    }
+  }
+}
+
 function drawBoard(ctx: CanvasRenderingContext2D, view: LootView, board: GridBox, translucent: boolean): void {
   const { state } = view;
   const grid = board.grid;
@@ -233,7 +260,11 @@ function drawBoard(ctx: CanvasRenderingContext2D, view: LootView, board: GridBox
       const box = cellBox(board, col, row);
       const shut = blocked.has(`${col},${row}`);
       const light = hover && hover.col === col && hover.row === row && held === null ? LINE : translucent ? 'rgba(11,12,16,0.35)' : RAISED;
-      fill(ctx, shut ? '#5a1414' : light, box.x + 1, box.y + 1, TILE - 2, TILE - 2);
+      if (shut) {
+        drawDisabledCell(ctx, box);
+        continue;
+      }
+      fill(ctx, light, box.x + 1, box.y + 1, TILE - 2, TILE - 2);
       fill(ctx, INK, box.x + 1, box.y + 1, TILE - 2, 1);
       fill(ctx, INK, box.x + 1, box.y + 1, 1, TILE - 2);
       fill(ctx, LINE, box.x + 1, box.y + TILE - 2, TILE - 2, 1);
@@ -330,9 +361,6 @@ export function drawLootUi(ctx: CanvasRenderingContext2D, view: LootView, layout
   }
 
   const held = state.heldItem;
-  if (held && view.pointer && view.art) {
-    const sprite = lootSprite(view.art, held.item.type, false);
-    if (sprite) drawSpriteScaled(ctx, sprite, view.pointer.x, view.pointer.y, 1);
-  }
+  if (held && view.pointer) drawItem(ctx, view.art, held.item, heldBox(held.item, view.pointer), true, false);
   ctx.imageSmoothingEnabled = smoothing;
 }

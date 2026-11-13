@@ -18,6 +18,8 @@
           <div class="options-analytics">
             <PixelSwitch label="Auto-close empty loot" :on="autoCloseLoot" @change="setAutoCloseLoot" />
             <p class="options-note">Automatically closes the loot screen when the last item is taken from a container.</p>
+            <PixelSwitch label="In-game loot window" :on="canvasLoot" @change="saveCanvasLoot" />
+            <p class="options-note">Draws the loot grids on the game itself, over a dimmed world. Mouse only for now: phones and gamepads keep the page version.</p>
           </div>
         </section>
 
@@ -38,7 +40,7 @@
 import { computed, ref } from 'vue';
 import { consent, openPrivacy } from '../game/analytics/index.ts';
 import type { UiState } from '../game/hud-state.ts';
-import { loadAutoCloseEmptyLoot, saveAutoCloseEmptyLoot } from '../game/loot-prefs.ts';
+import { canvasLoot, loadAutoCloseEmptyLoot, saveAutoCloseEmptyLoot, saveCanvasLoot } from '../game/loot-prefs.ts';
 import DisplayOptions from './DisplayOptions.vue';
 import MenuLink from './MenuLink.vue';
 import MotionOptions from './MotionOptions.vue';

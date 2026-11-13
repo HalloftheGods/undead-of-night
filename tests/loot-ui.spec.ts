@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { layoutLootUi, lootHitAt } from '../src/engine/loot-ui.ts';
+import { heldAnchor, heldBox, layoutLootUi, lootHitAt } from '../src/engine/loot-ui.ts';
 import { createDualLootState } from '../src/game/inventory/dual-loot-modal.ts';
 
 describe('canvas loot window layout', () => {
@@ -32,5 +32,17 @@ describe('canvas loot window layout', () => {
     expect(lootHitAt(layout, slot.x + 2, slot.y + 2)).toEqual({ kind: 'gear', slot: 'secondary' });
     const close = layout.buttons.find((b) => b.id === 'close')!;
     expect(lootHitAt(layout, close.x + 1, close.y + 1)).toEqual({ kind: 'button', id: 'close' });
+  });
+
+  it('hangs the item in hand at the size its grid footprint shows, and lands it by its first cell', () => {
+    const pointer = { x: 200, y: 100 };
+    const pistol = { id: 'g', type: 'pistol', x: 0, y: 0, rotated: false };
+    const box = heldBox(pistol, pointer);
+    expect(box.w + 2).toBeGreaterThanOrEqual(17);
+    expect((box.w + 2) % 17).toBe(0);
+    expect((box.h + 2) % 17).toBe(0);
+    const anchor = heldAnchor(pistol, pointer);
+    expect(anchor.x).toBe(box.x + 8);
+    expect(anchor.y).toBe(box.y + 8);
   });
 });
