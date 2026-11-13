@@ -128,9 +128,12 @@ await page.evaluate(async ({ scene, zombies }: { scene: string; zombies: number 
     let n = 0;
     while (t.zombies.length < cap && n++ < 20) {
       const angle = Math.random() * Math.PI * 2;
-      // In the bunker the rest of the horde keeps coming through the blast door, on hall floor.
-      const x = breach ? 36 + Math.random() * 24 : me.x + Math.cos(angle) * 300;
-      const y = breach ? 76 + Math.random() * 24 : me.y + Math.sin(angle) * 300;
+      // In the camp the rest of the horde keeps coming from the open ground outside the fence's gaps, 5.5 tiles out.
+      const gaps = t.overrun?.gaps ?? [];
+      const gap = breach && gaps.length > 0 ? t.map.camp?.sections?.[gaps[n % gaps.length]] : undefined;
+      const spread = (Math.random() - 0.5) * 24;
+      const x = gap ? gap.x + gap.out.x * 88 + spread : me.x + Math.cos(angle) * 300;
+      const y = gap ? gap.y - 8 + gap.out.y * 88 + spread : me.y + Math.sin(angle) * 300;
       const offMap = x < 20 || y < 20 || x > t.map.width - 20 || y > t.map.height - 20;
       if (offMap) continue;
       waves.spawnZombie(t, types[n % types.length], x, y);

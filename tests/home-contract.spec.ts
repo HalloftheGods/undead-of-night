@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { BLAST_DOOR_SPOT, CHEST_SPOT, CHEST_STATION } from '../shared/bunker-map.ts';
+import { CHEST_SPOT, CHEST_STATION } from '../shared/bunker-map.ts';
 import { PLAYER_RADIUS } from '../shared/constants.ts';
 import { GAME_EVENT_TYPES } from '../shared/events.ts';
 import { BUNKER_LEVEL, BUNKER_SEED, isBunkerMap, isBunkerSeed, MERCHANT_IDS, OVERRUN_LIVE, STATION_IDS } from '../shared/home-protocol.ts';
@@ -7,7 +7,6 @@ import type { HomeView, OverrunReceipt } from '../shared/home-protocol.ts';
 import { FINAL_LEVEL, FIRST_LEVEL, levelSeed } from '../shared/levels.ts';
 import { emptyLoadout, loadoutOfEntity, mergeHome } from '../shared/loadout.ts';
 import { OVERRUN_CLOCK_BY_DIFFICULTY } from '../shared/overrun.ts';
-import { PROP_DEFS, TILE_KINDS, TILE_SIZE } from '../shared/protocol.ts';
 import type { PlayerEntity, SnapshotPacket } from '../shared/protocol.ts';
 import { GameSimulation } from '../shared/simulation.ts';
 import { viewFor } from '../shared/snapshot-view.ts';
@@ -214,13 +213,10 @@ describe('the bunker map', () => {
     expect(circleHitsSolid(sim.map, CHEST_STATION.x, CHEST_STATION.y, PLAYER_RADIUS)).toBe(false);
   });
 
-  it('has no blast door: home is a fenced camp, and until the breach picks sections (#7547) the horde comes in on open dirt', () => {
+  it('has no blast door: home is a fenced camp whose sections the horde breaks', () => {
     const { map } = homeSim().sim;
-    const tileAt = (x: number, y: number): string => TILE_KINDS[map.tiles[Math.floor(y / TILE_SIZE) * map.cols + Math.floor(x / TILE_SIZE)]];
     expect(map.props.some((prop) => prop.kind === 'blast_door')).toBe(false);
-    expect(map.camp?.sections.length).toBeGreaterThan(30);
-    expect(tileAt(BLAST_DOOR_SPOT.x, BLAST_DOOR_SPOT.y)).toBe('dirt');
-    expect(circleHitsSolid(map, BLAST_DOOR_SPOT.x, BLAST_DOOR_SPOT.y, PLAYER_RADIUS)).toBe(false);
+    expect(map.camp?.sections.filter((s) => s.breachable).length).toBeGreaterThan(20);
   });
 });
 
@@ -268,7 +264,7 @@ describe('the overrun on the wire', () => {
 
   it('shows the room\'s clock while there is one, in a shape the guards take', () => {
     const { sim, state } = homeSim();
-    state.overrun = { phase: 'counting', spanSec: 240, left: 212.44, slowed: true, warned: 0, queue: [], spawnTimer: 0, total: 0, kills: 0, startTick: 0 };
+    state.overrun = { phase: 'counting', spanSec: 240, left: 212.44, slowed: true, warned: 0, queue: [], gaps: [], gapTurn: 0, spawnTimer: 0, total: 0, kills: 0, startTick: 0 };
     const clock = sim.snapshot().home?.overrun;
     expect(clock).toEqual({ phase: 'counting', spanSec: 240, left: 212.4, slowed: true, hostiles: 0, total: 0 });
     expect(isRoomHomeView(sim.snapshot().home)).toBe(true);

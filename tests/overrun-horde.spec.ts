@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { CHEST_STATION } from '../shared/bunker-map.ts';
+import { gapCount, gapSpawnCentre } from '../shared/camp/breach-pick.ts';
+import { gapGround, ringRect } from '../shared/camp/camp-ring.ts';
+import { circleHitsSolid, isLifted } from '../shared/world-query.ts';
 import { damageZombie } from '../shared/combat.ts';
 import { TICK_RATE, ZOMBIE_CAP } from '../shared/constants.ts';
 import type { DifficultyId } from '../shared/difficulty.ts';
@@ -66,29 +69,16 @@ function clearHorde(sim: GameSimulation, state: SimState): void {
   sim.step();
 }
 
-/** Inclusive tile bounds, as the bunker map draws its rooms. */
-interface TileArea {
-  readonly col0: number;
-  readonly row0: number;
-  readonly col1: number;
-  readonly row1: number;
-}
-
-const inTiles = (x: number, y: number, area: TileArea): boolean => {
-  const col = Math.floor(x / TILE_SIZE);
-  const row = Math.floor(y / TILE_SIZE);
-  return col >= area.col0 && col <= area.col1 && row >= area.row0 && row <= area.row1;
-};
-const HALL: TileArea = { col0: 1, row0: 1, col1: 24, row1: 10 };
-const QUARTERS: TileArea = { col0: 13, row0: 12, col1: 24, row1: 22 };
-
 describe('the breach', () => {
   const difficulties: readonly DifficultyId[] = ['lights_out', 'undead_tired'];
   for (const difficulty of difficulties) {
     for (const highest of [1, 5, 10]) {
       it(`sends the hardest horde of level ${highest} on ${difficulty}, cut to the bunker's floor`, () => {
         const { sim, state } = overrunRoom({ difficulty });
-        (state.homeRun as NonNullable<SimState['homeRun']>).roomHighest = highest;
+        const run = state.homeRun as NonNullable<SimState['homeRun']>;
+        run.roomHighest = highest;
+        // The breach goes by the level latched at arrival, not the room's reach mid-visit.
+        run.campLevel = highest;
         unkillable(state);
         state.merchants = [];
         const level = levelDef(highest);
@@ -105,32 +95,64 @@ describe('the breach', () => {
     }
   }
 
-  // #7547 rewrites this for fence gaps: the hall and quarters it walks through are gone.
-  it.skip('brings every zombie in through the hall, and the flow field leads them all to the quarters', () => {
-    const { sim, state } = overrunRoom();
-    const me = playerNamed(state, 'a');
-    expect(inTiles(state.map.spawn.x, state.map.spawn.y, QUARTERS)).toBe(true);
-    me.x = state.map.spawn.x;
-    me.y = state.map.spawn.y;
+  it('picks the gaps as the clock arms, brings them down at the breach, and sends the horde in from outside them in turn', () => {
+    const { sim, state } = overrunRoom({ difficulty: 'lights_out', highest: 4 });
     unkillable(state);
-    // The merchants would hold the hall: this is about the way through it.
     state.merchants = [];
+    const overrun = overrunOf(state);
+    expect(sim.snapshot().home?.overrun?.gaps).toBeUndefined();
+    overrun.left = overrun.spanSec * OVERRUN_ARM_FRACTION + 0.05;
+    expect(stepUntil(sim, () => overrun.phase === 'armed', SECONDS(2))).toBeGreaterThanOrEqual(0);
+    const gaps = [...overrun.gaps];
+    expect(gaps).toHaveLength(gapCount(4, 'lights_out'));
+    expect(sim.snapshot().home?.overrun?.gaps).toEqual(gaps);
+    for (const i of gaps) expect(isLifted(state.map, i)).toBe(false);
     breachNow(sim, state);
-    expect(overrunOf(state).total).toBeGreaterThan(0);
-    const cameIn = new Map<string, boolean>();
-    const reached = new Set<string>();
-    for (let t = 0; t < SECONDS(90) && (cameIn.size < overrunOf(state).total || reached.size < cameIn.size); t++) {
+    for (const i of gaps) expect(isLifted(state.map, i)).toBe(true);
+    const sections = state.map.camp?.sections ?? [];
+    const rect = ringRect(state.homeRun?.campSize ?? 1);
+    const inside = (x: number, y: number): boolean =>
+      x >= rect.col0 * TILE_SIZE && x < (rect.col1 + 1) * TILE_SIZE && y >= rect.row0 * TILE_SIZE && y < (rect.row1 + 1) * TILE_SIZE;
+    const nearestGap = (x: number, y: number): number =>
+      gaps.reduce((best, i) => (Math.hypot(gapSpawnCentre(sections[i]).x - x, gapSpawnCentre(sections[i]).y - y) < Math.hypot(gapSpawnCentre(sections[best]).x - x, gapSpawnCentre(sections[best]).y - y) ? i : best), gaps[0]);
+    const cameFrom: number[] = [];
+    const seen = new Set<string>();
+    const cameIn = new Set<string>();
+    for (let t = 0; t < SECONDS(60) && (seen.size < overrun.total || cameIn.size < seen.size); t++) {
       for (const z of hordeOf(state)) {
-        const justIn = !cameIn.has(z.id);
-        if (justIn) cameIn.set(z.id, inTiles(z.x, z.y, HALL));
-        const inQuarters = inTiles(z.x, z.y, QUARTERS);
-        if (inQuarters) reached.add(z.id);
+        const fresh = !seen.has(z.id);
+        if (fresh) {
+          seen.add(z.id);
+          expect(inside(z.x, z.y), `${z.id} put down inside the fence`).toBe(false);
+          cameFrom.push(nearestGap(z.x, z.y));
+        }
+        if (inside(z.x, z.y)) cameIn.add(z.id);
       }
       sim.step();
     }
-    expect(cameIn.size).toBe(overrunOf(state).total);
-    expect([...cameIn.values()].every(Boolean)).toBe(true);
-    expect(reached.size).toBe(cameIn.size);
+    expect(seen.size).toBe(overrun.total);
+    expect(cameFrom.slice(0, gaps.length * 2)).toEqual([...gaps, ...gaps]);
+    expect(cameIn.size).toBe(seen.size);
+  });
+
+  it('stands the fence back up on the next arrival', () => {
+    const { sim, state } = overrunRoom({ highest: 10 });
+    unkillable(state);
+    state.merchants = [];
+    breachNow(sim, state);
+    const gaps = [...overrunOf(state).gaps];
+    expect(gaps.length).toBeGreaterThan(0);
+    clearHorde(sim, state);
+    driveToTown(sim, state);
+    quietTown(state);
+    bankTrip(sim, state);
+    const sections = state.map.camp?.sections ?? [];
+    for (const i of gaps) {
+      expect(isLifted(state.map, i)).toBe(false);
+      const box = gapGround(sections[i]);
+      expect(circleHitsSolid(state.map, (box.x0 + box.x1) / 2, (box.y0 + box.y1) / 2, 2)).toBe(true);
+    }
+    expect(sim.snapshot().home?.overrun?.gaps).toBeUndefined();
   });
 
   it('closes every open station once, and keeps the merchants shuttered while the horde is in', () => {

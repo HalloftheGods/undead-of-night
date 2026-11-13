@@ -32,8 +32,6 @@ const STATION_PROPS: Record<StandingId, PropKind> = {
   press: 'press',
 };
 
-/** Where the horde comes in until the breach picks fence sections (#7547): open ground inside the smallest ring's west fence, between the tents. */
-export const BLAST_DOOR_SPOT = { x: 520, y: 384 } as const;
 /** Where a held overrun's chest stands, on the south row, clear of every station's circle. */
 export const CHEST_SPOT = STATION_PLACES.chest;
 

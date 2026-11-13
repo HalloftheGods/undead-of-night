@@ -299,8 +299,12 @@ export interface OverrunState {
   slowed: boolean;
   /** Warnings given so far, an index into `OVERRUN_WARNINGS`. */
   warned: number;
-  /** The horde still to come through the door, kept apart from a town's `spawnQueue`. */
+  /** The horde still to come through the fence, kept apart from a town's `spawnQueue`. */
   queue: ZombieType[];
+  /** The fence sections that give, by their place in the ring: picked as the clock arms, empty before. */
+  gaps: number[];
+  /** Which gap the next zombie comes through, round-robin. */
+  gapTurn: number;
   spawnTimer: number;
   /** The breach's roster size, 0 before it. */
   total: number;

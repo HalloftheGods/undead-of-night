@@ -1,13 +1,15 @@
-// The overrun: a clock that starts each time the room comes home, a blast door that bursts when it runs out,
-// and a horde through it. Sim state, advanced by `step()` in the bunker, so solo and co-op run the same code.
+// The overrun: a clock that starts each time the room comes home, fence sections that give when it runs out,
+// and a horde through the gaps. Sim state, advanced by `step()` in the camp, so solo and co-op run the same code.
 // The numbers are starting points for the soak (#7223). Nothing here runs while `sim.overrun` is null.
 
-import { BLAST_DOOR_SPOT } from './bunker-map.ts';
+import { GAP_SPAWN_SCATTER_TILES, gapCount, gapSpawnCentre, pickGaps } from './camp/breach-pick.ts';
+import { settleFence } from './camp/fence-fall.ts';
 import { HORDE_SPEED_SCALE, TICK_DT, ZOMBIES, ZOMBIE_CAP } from './constants.ts';
 import { BASELINE_DIFFICULTY } from './difficulty.ts';
 import type { DifficultyId } from './difficulty.ts';
 import type { OverrunView } from './home-protocol.ts';
 import { goneQuiet } from './level-exit.ts';
+import { TILE_SIZE } from './map-protocol.ts';
 import { FIRST_LEVEL, levelDef } from './levels.ts';
 import { countKills, diedHere, overrunHolds, standingHorde, writeDied } from './overrun-fight.ts';
 import type { OverrunState, PlayerState, SimState } from './sim-state.ts';
@@ -54,8 +56,6 @@ export const OVERRUN_CHEST_STACKS = 6;
 
 /** Seconds of slack for the sum of many small ticks, as the van's wait allows. */
 const CLOCK_EPSILON = 1e-9;
-/** How far from `BLAST_DOOR_SPOT` a zombie comes through, so a crowd does not stack on one point. Inside the hall either way. */
-const DOOR_SCATTER = 16;
 
 /** A fresh clock, as long as the run's difficulty says, for an arrival in the bunker, or none: the switch is off, or the room has not yet reached `OVERRUN_FIRST_HIGHEST`. The arrival clears the last overrun's receipts. */
 export function startOverrunClock(sim: SimState): void {
@@ -70,11 +70,20 @@ export function startOverrunClock(sim: SimState): void {
     slowed: false,
     warned: 0,
     queue: [],
+    gaps: [],
+    gapTurn: 0,
     spawnTimer: 0,
     total: 0,
     kills: 0,
     startTick: sim.tick,
   };
+}
+
+/** The camp's fence sections that give in this breach, as many as the latched level and the difficulty ask for. */
+function pickFenceGaps(sim: SimState): number[] {
+  const sections = sim.map.camp?.sections ?? [];
+  const level = sim.homeRun?.campLevel ?? FIRST_LEVEL;
+  return pickGaps(sections, gapCount(level, sim.difficulty), sim.rng);
 }
 
 /** The players the van would wait for. */
@@ -115,7 +124,10 @@ function tickClock(sim: SimState, overrun: OverrunState): void {
     overrun.warned += 1;
   }
   const shouldArm = overrun.phase === 'counting' && share <= OVERRUN_ARM_FRACTION + CLOCK_EPSILON;
-  if (shouldArm) overrun.phase = 'armed';
+  if (!shouldArm) return;
+  overrun.phase = 'armed';
+  // The sections that will give are known from here, so the room sees them rattle before they fall.
+  overrun.gaps = pickFenceGaps(sim);
 }
 
 /**
@@ -123,7 +135,12 @@ function tickClock(sim: SimState, overrun: OverrunState): void {
  * `sim.wave` is set to match so `spawnZombie` scales health and speed as that town does, and `emptyWorld` puts it back when the van leaves.
  */
 function breach(sim: SimState, overrun: OverrunState): void {
-  const level = levelDef(sim.homeRun?.roomHighest ?? FIRST_LEVEL);
+  const level = levelDef(sim.homeRun?.campLevel ?? FIRST_LEVEL);
+  const unpicked = overrun.gaps.length === 0;
+  if (unpicked) overrun.gaps = pickFenceGaps(sim);
+  settleFence(sim.map, overrun.gaps);
+  sim.flow.invalidate();
+  sim.noiseFlow.invalidate();
   const room = Math.max(0, Math.min(ZOMBIE_CAP - sim.zombies.length, OVERRUN_HORDE_MAX));
   const roster = waveRoster(level.hordes, sim.rng, level, sim.difficulty, OVERRUN_HORDE_SCALE).slice(0, room);
   sim.wave = level.hordes;
@@ -135,12 +152,21 @@ function breach(sim: SimState, overrun: OverrunState): void {
   emit(sim, { type: 'overrun_breach', hostiles: overrun.total });
 }
 
-/** One a gap through the door, hunting from the moment it is in, with no give-up timer. */
+/** Where the next zombie is put down: outside its gap, the gaps taking turns. With no fence to break, at the camp's spawn. */
+function nextEntry(sim: SimState, overrun: OverrunState): { x: number; y: number } {
+  const sections = sim.map.camp?.sections ?? [];
+  const gap = overrun.gaps.length > 0 ? sections[overrun.gaps[overrun.gapTurn % overrun.gaps.length]] : undefined;
+  overrun.gapTurn += 1;
+  return gap ? gapSpawnCentre(gap) : sim.map.spawn;
+}
+
+/** One at a time from outside the gaps, hunting from the moment it is there, with no give-up timer. */
 function trickle(sim: SimState, overrun: OverrunState): void {
   overrun.spawnTimer -= TICK_DT;
   while (overrun.spawnTimer <= 0 && overrun.queue.length > 0 && sim.zombies.length < ZOMBIE_CAP) {
     const type = overrun.queue.pop() as OverrunState['queue'][number];
-    const spot = openGroundNear(sim, BLAST_DOOR_SPOT.x, BLAST_DOOR_SPOT.y, 0, DOOR_SCATTER, ZOMBIES[type].radius + 1);
+    const entry = nextEntry(sim, overrun);
+    const spot = openGroundNear(sim, entry.x, entry.y, 0, GAP_SPAWN_SCATTER_TILES * TILE_SIZE, ZOMBIES[type].radius + 1);
     spawnZombie(sim, type, spot.x, spot.y);
     const zombie = sim.zombies[sim.zombies.length - 1];
     zombie.horde = true;
@@ -173,5 +199,6 @@ export function overrunView(sim: SimState): OverrunView | null {
     slowed: overrun.slowed,
     hostiles: breached ? overrun.queue.length + standingHorde(sim) : 0,
     total: overrun.total,
+    ...(overrun.gaps.length > 0 ? { gaps: [...overrun.gaps] } : {}),
   };
 }

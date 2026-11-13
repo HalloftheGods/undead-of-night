@@ -3,6 +3,7 @@ import { levelDef } from '../../shared/levels.ts';
 import { nightEventFor } from '../../shared/night-events.ts';
 import type { SnapshotPacket, WorldMap } from '../../shared/protocol.ts';
 import { readCampSize } from '../../shared/camp/camp-ring.ts';
+import { fallenOf, settleFence } from '../../shared/camp/fence-fall.ts';
 import type { CampSize } from '../../shared/camp/camp-ring.ts';
 import { generateWorldMap } from '../../shared/world-map.ts';
 import type { WorldRenderer } from '../engine/world-renderer.ts';
@@ -47,6 +48,8 @@ export class RunStage {
     // A camp that grew on this arrival is a new map too, raised behind the van like a town.
     const newTown = snapshot.mapSeed !== this.mapSeed || campSize !== this.campSize;
     if (newTown) world.enterTown(this.open(snapshot.mapSeed, snapshot.level, campSize));
+    // The fence's fallen sections, lifted out of this copy's collision as the room's sim lifts them out of its own.
+    settleFence(world.worldMap, fallenOf(snapshot.home?.overrun));
     const sameLevel = snapshot.level === this.level;
     if (sameLevel) return;
     this.level = snapshot.level;

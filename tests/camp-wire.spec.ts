@@ -64,7 +64,7 @@ describe('the camp on the wire', () => {
     const hud = { setMap: () => undefined, clearNotices: () => undefined, showLevel: () => undefined } as unknown as RunHud;
     const stage = new RunStage(hud, () => null);
     let entered = 0;
-    const world = { enterTown: () => void (entered += 1) } as unknown as ClientWorld;
+    const world = { enterTown: () => void (entered += 1), worldMap: generateWorldMap(BUNKER_SEED, 0, 2) } as unknown as ClientWorld;
     const camp = (campSize?: number): SnapshotPacket => ({ mapSeed: BUNKER_SEED, level: 0, ...(campSize ? { campSize } : {}) }) as unknown as SnapshotPacket;
     maps.push(stage.open(BUNKER_SEED, 0, 2).camp?.size ?? 0);
     stage.follow(world, camp(2), 0);

@@ -2,6 +2,7 @@ import { placeMerchants } from './bunker-merchants.ts';
 import { offerKeepsakes } from './keepsakes.ts';
 import { LEVEL_CLEAR_HEAL, PLAYER_RADIUS, SPAWN_SCATTER } from './constants.ts';
 import { campSizeOf } from './camp/camp-latch.ts';
+import { settleFence } from './camp/fence-fall.ts';
 import type { CampSize } from './camp/camp-ring.ts';
 import { stopSearch } from './container-search.ts';
 import { FlowField } from './flow-field.ts';
@@ -74,6 +75,8 @@ export function enterTown(sim: SimState, level: number): void {
 /** Empties the world and goes home: no loot, no containers, no zombies, and the van parked. */
 export function enterBunker(sim: SimState): void {
   raiseMap(sim, BUNKER_SEED, BUNKER_LEVEL, campSizeOf(sim));
+  // A camp of the same size is the same map, so the last breach's gaps are stood back up.
+  settleFence(sim.map, []);
   emptyWorld(sim, BUNKER_LEVEL);
   sim.containers = [];
   parkBunkerVan(sim);

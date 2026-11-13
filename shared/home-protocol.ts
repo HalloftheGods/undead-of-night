@@ -139,6 +139,8 @@ export interface OverrunView {
   hostiles: number;
   /** The breach's roster size. 0 before the breach. */
   total: number;
+  /** The fence sections that give, by their place in the camp's ring: rattling while armed, down from the breach on. Left off before the clock arms. */
+  gaps?: number[];
 }
 
 /** How an overrun ended for one player. State, not an event, as a trip receipt is. */
