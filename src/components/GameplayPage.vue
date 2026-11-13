@@ -11,6 +11,8 @@
         <p class="gameplay-note">Automatically closes the loot screen when the last item is taken from a container.</p>
         <PixelSwitch label="In-game loot window" :on="canvasLoot" @change="saveCanvasLoot" />
         <p class="gameplay-note">Draws the loot grids on the game itself, over a dimmed world. Mouse only for now: phones and gamepads keep the page version.</p>
+        <PixelSwitch label="In-game menus" :on="canvasMenus" @change="saveCanvasMenus" />
+        <p class="gameplay-note">Draws the Campaign and Arcade setup screen on the game itself instead of a page. Mouse and keyboard only for now: multiplayer, phones and gamepads keep the page version.</p>
       </div>
     </OptionsCard>
 
@@ -27,6 +29,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { consent, openPrivacy } from '../game/analytics/index.ts';
+import { canvasMenus, saveCanvasMenus } from '../game/canvas-menu-prefs.ts';
 import { canvasLoot, loadAutoCloseEmptyLoot, saveAutoCloseEmptyLoot, saveCanvasLoot } from '../game/loot-prefs.ts';
 import MenuLink from './MenuLink.vue';
 import MotionOptions from './MotionOptions.vue';

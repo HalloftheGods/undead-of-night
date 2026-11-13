@@ -25,7 +25,15 @@
     </footer>
   </section>
 
-  <PlaySetup v-else-if="nav.page === 'play'" :ui :join="nav.invited" :level="nav.startLevel" @close="nav = closePlay(nav)" @levels="(style) => (nav = openLevelSetter(nav, style))" />
+  <PlaySetupCanvas
+    v-else-if="nav.page === 'play' && setupHome === 'canvas'"
+    :ui
+    :level="nav.startLevel"
+    @close="nav = closePlay(nav)"
+    @levels="(style) => (nav = openLevelSetter(nav, style))"
+    @page="setupToPage"
+  />
+  <PlaySetup v-else-if="nav.page === 'play'" :ui :join="nav.invited" :level="nav.startLevel" :multi="setupHome === 'multi'" @close="nav = closePlay(nav)" @levels="(style) => (nav = openLevelSetter(nav, style))" />
   <DailyPage v-else-if="nav.page === 'daily'" :ui @close="close" />
   <LevelsPage v-else-if="nav.page === 'levels'" :art="ui.art" :setting="nav.settingLevel ?? null" @start="levelPicked" @close="close" />
   <BooksPage v-else-if="nav.page === 'books'" :art="ui.art" @open="openBookPage" @close="close" />
@@ -44,7 +52,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
+import { canvasMenus, usesCanvasSetup } from '../game/canvas-menu-prefs.ts';
 import { isLocalHost } from '../game/analytics/analytics-config.ts';
 import { openPrivacy, privacyOpen } from '../game/analytics/index.ts';
 import type { UiState } from '../game/hud-state.ts';
@@ -61,6 +70,7 @@ import InstallCartridge from './InstallCartridge.vue';
 import { AudioPage, BooksPage, CandyMagazinePage, ChangelogPage, ControlsPage, DailyPage, DevInventoryPage, DisplayPage, GameplayPage, HowToPlay, LevelsPage, RadioPage, RecordsPage, SoundTestPage, TownGuidePage } from './lazy-pages.ts';
 import MenuLink from './MenuLink.vue';
 import PlaySetup from './PlaySetup.vue';
+import PlaySetupCanvas from './PlaySetupCanvas.vue';
 import PressAnyKey from './PressAnyKey.vue';
 import SpriteImg from './SpriteImg.vue';
 import TitleMenu from './TitleMenu.vue';
@@ -124,6 +134,31 @@ if (invite) {
   nav.value = INVITE_LANDING;
   window.history.replaceState(null, '', withoutJoinParam(window.location.href));
 }
+/**
+ * Where the Play setup shows, decided each time it opens (the "In-game menus" switch): on the game canvas, on the page,
+ * or on the page already set to Multiplayer after the canvas screen handed over. Sync, so it is settled before the first draw.
+ */
+const setupHome = ref<'canvas' | 'page' | 'multi'>('page');
+watch(
+  () => nav.value.page,
+  (page) => {
+    if (page !== 'play') return;
+    const onCanvas = usesCanvasSetup({
+      pref: canvasMenus.value,
+      touch: ui.touch,
+      invited: nav.value.invited,
+      artReady: ui.art !== null,
+      hasCanvas: document.querySelector('.game-canvas') !== null,
+    });
+    setupHome.value = onCanvas ? 'canvas' : 'page';
+  },
+  { flush: 'sync', immediate: true }
+);
+
+function setupToPage(multi: boolean): void {
+  setupHome.value = multi ? 'multi' : 'page';
+}
+
 /** Lives here, so Back returns to the item the player left from. */
 const selected = ref(0);
 /** Null on the title's three parents; the opened parent once the player is inside one. */
