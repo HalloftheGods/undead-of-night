@@ -7,6 +7,7 @@ import { mergeGridLocker } from './bunker-locker-grid.ts';
 import { lockedTracksOf } from '../../audio/playlists.ts';
 import { emptyCamp } from './home-store.ts';
 import type { HomeSave, OpenTrip, TripRecord } from './home-store.ts';
+import { acceptStarter } from './quest-state.ts';
 import { rollStock } from './shop.ts';
 
 const NO_JEWELS: Jewels = { small: 0, large: 0 };
@@ -45,7 +46,8 @@ function withRescued(save: HomeSave, receipt: TripReceipt): HomeSave {
   if (brought.length === 0) return save;
   const camp = save.camp ?? emptyCamp();
   const rescued = MERCHANT_IDS.filter((id) => camp.rescued.includes(id) || brought.includes(id));
-  return { ...save, camp: { ...camp, rescued } };
+  const quests = brought.filter((id) => !camp.rescued.includes(id)).reduce((held, id) => acceptStarter(held, id, Date.now()), save.quests);
+  return { ...save, quests, camp: { ...camp, rescued } };
 }
 
 /** Each radio found sets the flag and gives up the next locked track of the level it was found on, in the existing order. */

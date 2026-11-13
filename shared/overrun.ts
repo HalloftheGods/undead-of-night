@@ -5,6 +5,7 @@
 import { GAP_SPAWN_SCATTER_TILES, gapCount, gapSpawnCentre, pickGaps } from './camp/breach-pick.ts';
 import { gapGround } from './camp/camp-ring.ts';
 import { settleFence } from './camp/fence-fall.ts';
+import { campRescued } from './camp/camp-latch.ts';
 import { HORDE_SPEED_SCALE, TICK_DT, TICK_RATE, ZOMBIES, ZOMBIE_CAP } from './constants.ts';
 import { BASELINE_DIFFICULTY } from './difficulty.ts';
 import type { DifficultyId } from './difficulty.ts';
@@ -42,6 +43,12 @@ export const OVERRUN_ARM_FRACTION = 0.1;
 export const OVERRUN_FIRST_HIGHEST = 2;
 /** A break-in is this many times the size of the furthest town's hardest horde: the whole street comes for the bunker. */
 export const OVERRUN_HORDE_SCALE = 3.5;
+/** The horde is half at an empty camp and full at four people, a starting number for the soak. */
+export const HORDE_BASE_SHARE = 0.5;
+export const HORDE_SHARE_PER_PERSON = 0.125;
+
+/** What the camp's people do to the horde: smaller while the camp is small, since the furthest town can run ahead of it. */
+export const hordeShare = (people: number): number => HORDE_BASE_SHARE + HORDE_SHARE_PER_PERSON * people;
 /** Most zombies one breach sends, for the bunker's floor space and the frame rate. */
 export const OVERRUN_HORDE_MAX = 140;
 /** Gap between zombies coming through the door: quick, so a horde this size is all in within half a minute or so. */
@@ -164,7 +171,7 @@ function breach(sim: SimState, overrun: OverrunState): void {
   sim.flow.invalidate();
   sim.noiseFlow.invalidate();
   const room = Math.max(0, Math.min(ZOMBIE_CAP - sim.zombies.length, OVERRUN_HORDE_MAX));
-  const roster = waveRoster(level.hordes, sim.rng, level, sim.difficulty, OVERRUN_HORDE_SCALE).slice(0, room);
+  const roster = waveRoster(level.hordes, sim.rng, level, sim.difficulty, OVERRUN_HORDE_SCALE * hordeShare(campRescued(sim).length)).slice(0, room);
   sim.wave = level.hordes;
   overrun.phase = 'breached';
   overrun.queue = roster.reverse();

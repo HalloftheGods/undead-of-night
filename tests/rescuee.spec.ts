@@ -103,3 +103,22 @@ describe('the guaranteed radio', () => {
     for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) expect(radioIn(seed, false)).toBe(true);
   });
 });
+
+describe('what bringing someone home does to the save and the breach', () => {
+  it('scales the horde from half at no people to full at four', async () => {
+    const { hordeShare } = await import('../shared/overrun.ts');
+    expect([0, 2, 4].map(hordeShare)).toEqual([0.5, 0.75, 1]);
+  });
+
+  it('takes up the starter quest of whoever comes home, and no other', async () => {
+    const { applyReceipt } = await import('../src/game/home/trip-ledger.ts');
+    const { migrateCamp } = await import('../src/game/home/camp-migrate.ts');
+    const { emptySave } = await import('../src/game/home/home-store.ts');
+    const fresh = migrateCamp(emptySave(1), { radio: false, tracks: [] });
+    expect(fresh.quests.active).toEqual({});
+    const receipt = { simId: 's', serial: 1, outcome: 'banked', level: 1, difficulty: 'stay_close', silver: 0, jewels: { small: 0, large: 0 }, replay: false, score: 0, kills: 0, hordes: 0, seconds: 1, ending: false, gear: null, rescued: ['quartermaster'] } as const;
+    const after = applyReceipt(fresh, { ...receipt, rescued: [...receipt.rescued] });
+    expect(Object.keys(after.quests.active)).toEqual(['quartermaster']);
+    expect(after.camp?.rescued).toEqual(['quartermaster']);
+  });
+});

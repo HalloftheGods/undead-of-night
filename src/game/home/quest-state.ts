@@ -42,6 +42,14 @@ export function starterQuests(seed: number, now = 0): QuestState {
   return rollJobs({ ...blankQuests(seed), active }, 1);
 }
 
+/** A person brought home takes up their starter, unless it is done or they already hold a quest. */
+export function acceptStarter(quests: QuestState, giver: MerchantId, now: number): QuestState {
+  const def = startersOf().find((d) => d.giver === giver);
+  const nothingToTake = !def || quests.active[giver] || quests.done.includes(def.id);
+  if (nothingToTake) return quests;
+  return { ...quests, active: { ...quests.active, [giver]: { id: def.id, progress: 0, acceptedAt: now } } };
+}
+
 const jobsFor = (giver: MerchantId, highest: number): QuestDef[] => QUESTS.filter((def) => def.repeat === 'job' && def.giver === giver && (def.gate ?? 0) <= highest);
 
 /** Puts a fresh job on every stall that has none accepted. An accepted job is left alone. Called for a banked trip, never a death. */

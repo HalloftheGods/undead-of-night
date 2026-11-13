@@ -50,7 +50,8 @@ function thinned(stock: MerchantStock): MerchantStock {
 export function fleeCasualties(save: HomeSave, share: number, key?: string): { save: HomeSave; killed: MerchantId[] } {
   const nothingLost = !(share > 0);
   if (nothingLost) return { save, killed: [] };
-  const pool = MERCHANT_IDS.filter((id) => (save.shop.merchants[id].closedTrips ?? 0) === 0);
+  const inCamp = (id: (typeof MERCHANT_IDS)[number]): boolean => save.camp === undefined || save.camp.rescued.includes(id);
+  const pool = MERCHANT_IDS.filter((id) => inCamp(id) && (save.shop.merchants[id].closedTrips ?? 0) === 0);
   const count = toKill(share, pool.length);
   const rng = casualtyRng(save, key);
   const killed: MerchantId[] = [];
