@@ -19,7 +19,8 @@ defineProps<{ card: LevelCard }>();
 <style scoped>
 .level-card {
   position: absolute;
-  top: 30%;
+  /* Low on the screen, above the weapon bar, so the world stays clear while it plays. */
+  bottom: 18%;
   left: 0;
   right: 0;
   display: flex;

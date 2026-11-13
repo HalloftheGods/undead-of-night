@@ -14,7 +14,8 @@ defineProps<{ banner: Banner }>();
 <style scoped>
 .banner {
   position: absolute;
-  top: 22%;
+  /* Low on the screen, above the weapon bar, so the world stays clear while it plays. */
+  bottom: 18%;
   left: 0;
   right: 0;
   display: flex;
