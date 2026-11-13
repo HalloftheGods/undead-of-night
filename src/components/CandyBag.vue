@@ -17,7 +17,7 @@
           @focus="pointed = stack.id"
         >
           <span class="bag-head">
-            <span class="bag-number" aria-hidden="true">{{ index < PICK_KEYS.length ? PICK_KEYS[index] : '' }}</span>
+            <span v-if="!keys.readPadInCharge()" class="bag-number" aria-hidden="true">{{ index < PICK_KEYS.length ? PICK_KEYS[index] : '' }}</span>
             <span class="bag-stat">{{ stack.stat }}</span>
             <span class="bag-count">x{{ stack.count }}</span>
           </span>
@@ -53,7 +53,7 @@
         <p class="bag-info-line">Search homes, and the candy bowls by every front door.</p>
       </template>
       <p class="px-label bag-info-note">
-        {{ waitNote }} <span class="keys-only">Click a candy or press its number to eat it. X to close.</span><span class="pad-line">Stick or D-pad to pick a candy, A to eat it, B to close.</span><span class="touch-only">Tap a candy to eat it.</span>
+        {{ waitNote }} <span v-if="!keys.readPadInCharge()" class="keys-only">Click a candy or press its number to eat it. {{ keys.readKeyLabel('KeyX') }} to close.</span><span v-else class="pad-line">Stick or D-pad to pick a candy, {{ keys.readButtonName(padButtons.a) }} to eat it, {{ keys.readButtonName(padButtons.b) }} to close.</span><span class="touch-only">Tap a candy to eat it.</span>
       </p>
     </div>
     <MenuLink ref="closeLink" class="bag-close" @press="game.toggleBag()">Close</MenuLink>
@@ -78,6 +78,8 @@ import { longestWord } from '../game/setup-picks.ts';
 import type { TransportKind } from '../network/transport.ts';
 import MenuLink from './MenuLink.vue';
 import { useGame } from './use-game.ts';
+import { useKeyLabels } from './use-key-labels.ts';
+import { PAD } from '../game/input/gamepad-input.ts';
 
 const PICK_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
 /** Most cards to a row: every kind fits two rows of seven on a wide screen, rows of three on a tall one. */
@@ -87,6 +89,8 @@ const TALL_COLUMNS = 3;
 const { hud, art, mode } = defineProps<{ hud: HudState; art: ArtBook; mode: TransportKind }>();
 
 const game = useGame();
+const keys = useKeyLabels();
+const padButtons = { a: PAD.a, b: PAD.b };
 const cards = useTemplateRef<HTMLButtonElement[]>('cards');
 const closeLink = useTemplateRef<InstanceType<typeof MenuLink>>('closeLink');
 const closeButton = computed(() => closeLink.value?.$el as HTMLElement | undefined);

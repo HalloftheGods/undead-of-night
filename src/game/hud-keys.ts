@@ -51,6 +51,13 @@ export function keyGlyph(code: string, device: ControlDevice, padId: string | nu
   return button === undefined ? null : padLabel(padFamily(padId), button);
 }
 
+/** The label of a weapon's slot key ("1" to "3") from the controls page; null on a pad, where the slots are not bound. */
+export function weaponSlotLabel(slot: string, device: ControlDevice): string | null {
+  if (device !== 'keys') return null;
+  const codes = loadKeyBindings()[`weapon${slot}` as 'weapon1'];
+  return codes[0] ? formatKeyCode(codes[0]) : null;
+}
+
 /** The pad button that fires, for prompts. */
 export function fireGlyph(padId: string | null): string {
   const button = padButtonOf(PAD_FIRE);

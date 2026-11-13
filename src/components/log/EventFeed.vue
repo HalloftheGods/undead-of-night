@@ -3,7 +3,7 @@
     <ol class="feed-lines" aria-live="polite">
       <LogLine v-for="(entry, index) in recent" :key="entry.key" :entry :class="`is-age-${age(index)}`" />
     </ol>
-    <span class="feed-hint"><span class="keys-only">L: </span>Log</span>
+    <span class="feed-hint"><span v-if="keys.readKeyLabel('KeyL')" class="keys-only">{{ keys.readKeyLabel('KeyL') }}: </span>Log</span>
   </button>
 </template>
 
@@ -12,6 +12,9 @@ import { computed } from 'vue';
 import type { LogEntry } from '../../game/event-log.ts';
 import { useGame } from '../use-game.ts';
 import LogLine from './LogLine.vue';
+import { useKeyLabels } from '../use-key-labels.ts';
+
+const keys = useKeyLabels();
 
 /** The corner keeps the newest few; the rest wait in the full log. Touch shows only the last two (see CSS). */
 const FEED_LINES = 5;

@@ -45,6 +45,7 @@ export type GameAction =
   | 'map'
   | 'log'
   | 'inventory'
+  | 'keepsake'
   | 'fire';
 
 export interface ActionMetadata {
@@ -80,6 +81,7 @@ export const ACTION_METADATA: readonly ActionMetadata[] = [
   { id: 'map', label: 'Map', category: 'interface', rebindableKeys: true, rebindablePad: true },
   { id: 'log', label: 'Log', category: 'interface', rebindableKeys: true, rebindablePad: true },
   { id: 'inventory', label: 'Inventory', category: 'interface', rebindableKeys: true, rebindablePad: true },
+  { id: 'keepsake', label: 'Keepsake (first, second, third card)', category: 'interface', rebindableKeys: true, rebindablePad: false },
 ];
 
 export type KeyBindings = Record<GameAction, readonly string[]>;
@@ -110,6 +112,7 @@ export const DEFAULT_KEY_BINDINGS: KeyBindings = {
   map: ['Tab', 'KeyN'],
   log: ['KeyL'],
   inventory: ['KeyI', 'KeyB'],
+  keepsake: ['KeyJ', 'KeyK', 'KeyL'],
 };
 
 export const DEFAULT_PAD_BINDINGS: PadBindings = {

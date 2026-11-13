@@ -5,7 +5,7 @@
     <ul class="keepsake-offer-cards">
       <li v-for="(card, index) in offer" :key="card.id">
         <button type="button" class="keepsake-card" @click="pick(card.id)">
-          <span class="keepsake-card-key keys-only">{{ PICK_KEYS[index] }}</span>
+          <span v-if="!keys.readPadInCharge()" class="keepsake-card-key keys-only">{{ formatKeyCode(keepsakeCodes[index] ?? '') }}</span>
           <strong class="keepsake-card-name">{{ card.name }}</strong>
           <span class="keepsake-card-blurb">{{ card.blurb }}</span>
         </button>
@@ -20,6 +20,8 @@ import { onBeforeUnmount, onMounted } from 'vue';
 import type { KeepsakeId } from '../../shared/protocol.ts';
 import type { KeepsakeCard } from '../game/hud-state.ts';
 import { useGame } from './use-game.ts';
+import { useKeyLabels } from './use-key-labels.ts';
+import { formatKeyCode, loadKeyBindings } from '../game/controls-prefs.ts';
 
 interface OfferProps {
   offer: readonly KeepsakeCard[];
@@ -28,15 +30,16 @@ interface OfferProps {
 const { offer } = defineProps<OfferProps>();
 const game = useGame();
 
-const PICK_KEYS = ['J', 'K', 'L'];
-const PICK_CODES = ['KeyJ', 'KeyK', 'KeyL'];
+const keys = useKeyLabels();
+/** The three keys that take the first, second and third card, from the controls page. */
+const keepsakeCodes = loadKeyBindings().keepsake;
 
 function pick(id: KeepsakeId): void {
   game.input.pickKeepsake(id);
 }
 
 function onKey(event: KeyboardEvent): void {
-  const card = offer[PICK_CODES.indexOf(event.code)];
+  const card = offer[keepsakeCodes.indexOf(event.code)];
   if (!card) return;
   event.preventDefault();
   pick(card.id);

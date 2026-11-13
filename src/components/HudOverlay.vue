@@ -140,7 +140,7 @@
                 @touchstart.stop
                 @click="hold(slot)"
               >
-                <span class="hud-slot-key keys-only">{{ slot.key }}</span>
+                <span v-if="weaponSlotLabel(slot.key, device)" class="hud-slot-key keys-only">{{ weaponSlotLabel(slot.key, device) }}</span>
                 <SpriteImg :sprite="art.ui.weaponIcons[slot.weapon]" />
                 <span v-if="slot.rounds !== null" class="hud-slot-rounds">{{ slot.rounds }}</span>
                 <GunFitPips :fit="hud.gear?.fits[slot.weapon]" />
@@ -185,7 +185,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { hintText as wordHint } from '../game/first-run-hints.ts';
-import { controlDevice, keyGlyph } from '../game/hud-keys.ts';
+import { controlDevice, keyGlyph, weaponSlotLabel } from '../game/hud-keys.ts';
 import type { ArtBook } from '../art/types.ts';
 import type { HomeUi } from '../game/home-hud.ts';
 import { ammoWarning, hordeStatus, reloadPrompt, switchKey } from '../game/hud-state.ts';

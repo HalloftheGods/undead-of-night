@@ -16,7 +16,7 @@
           <span class="town-swatch" />{{ mate.name }}<span v-if="mate.status !== 'alive'" class="town-down">{{ mate.status }}</span>
         </li>
       </ul>
-      <p class="px-note">{{ key.waitNote(mode) }} <span class="keys-only">Tab to close</span></p>
+      <p class="px-note">{{ key.waitNote(mode) }} <span v-if="keys.readKeyLabel('KeyN')" class="keys-only">{{ keys.readKeyLabel('KeyN') }} to close</span></p>
       <MenuLink class="touch-only town-close" @press="game.toggleMap()">Close</MenuLink>
     </aside>
   </section>
@@ -28,6 +28,9 @@ import { mapKey } from '../game/map-key.ts';
 import type { TeammateHud } from '../game/hud-state.ts';
 import type { TransportKind } from '../network/transport.ts';
 import MapKeyIcon from './MapKeyIcon.vue';
+import { useKeyLabels } from './use-key-labels.ts';
+
+const keys = useKeyLabels();
 import MenuLink from './MenuLink.vue';
 import { useGame } from './use-game.ts';
 

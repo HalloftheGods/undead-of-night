@@ -3,7 +3,7 @@
     <header class="log-head">
       <strong>Run log</strong>
       <button type="button" class="px-button log-close" @click="game.toggleLog()">
-        <span class="keys-only">L </span>Close
+        <span v-if="keys.readKeyLabel('KeyL')" class="keys-only">{{ keys.readKeyLabel('KeyL') }} </span>Close
       </button>
     </header>
     <nav class="log-tabs">
@@ -31,6 +31,9 @@ import { filterLog, LOG_FILTERS } from '../../game/event-log.ts';
 import type { LogEntry, LogFilter } from '../../game/event-log.ts';
 import { useGame } from '../use-game.ts';
 import LogLine from './LogLine.vue';
+import { useKeyLabels } from '../use-key-labels.ts';
+
+const keys = useKeyLabels();
 
 const { log } = defineProps<{ log: readonly LogEntry[] }>();
 const game = useGame();
