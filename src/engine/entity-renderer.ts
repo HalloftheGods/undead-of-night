@@ -36,7 +36,8 @@ import type { ArtBook, PixelSprite } from "../art/types.ts";
 import { buildBackpackSprite } from "../art/fx/backpack-art.ts";
 import { buildArmorSprite } from "../art/fx/armor-art.ts";
 import type { BuildingLayer, PlacedBuilding } from "./building-layer.ts";
-import { chestPending, doorState, hiddenProp } from "./overrun-look.ts";
+import { fenceSprite } from "./camp-fence-look.ts";
+import { chestPending, doorState, fenceState, hiddenProp } from "./overrun-look.ts";
 import { CHEST_HEIGHT } from "./scene.ts";
 import type { SceneView } from "./scene.ts";
 import {
@@ -95,6 +96,8 @@ interface PlacedProp {
   readonly tall: boolean;
   /** The room this prop furnishes, drawn only while that room is open. */
   readonly room: PlacedBuilding | null;
+  /** Its place in the map's props, which for the camp's fence is its place in the ring. */
+  readonly index: number;
   alpha: number;
 }
 
@@ -265,6 +268,7 @@ export class EntityRenderer {
         y1: Math.max(...states.map((state) => y - state.ay + state.h)),
         tall: sprite.ay > PROP_DEFS[prop.kind].h + 8,
         room: this.buildings.placedAt(prop.x, prop.y - PROP_DEFS[prop.kind].h / 2),
+        index,
         alpha: 1
       };
     });
@@ -392,8 +396,10 @@ export class EntityRenderer {
     return (scene.closedStalls ?? []).includes(merchant.id);
   }
 
-  /** The blast door's frame for how far the overrun has come; every other prop keeps its own sprite. */
-  private spriteOf(placed: PlacedProp, scene: SceneView): PixelSprite {
+  /** A fence section's state, or the blast door's frame, for how far the overrun has come; every other prop keeps its own sprite. */
+  private spriteOf(placed: PlacedProp, scene: SceneView, time: number): PixelSprite {
+    const fence = fenceSprite(this.art.environment, placed.prop.kind, fenceState(scene.overrun, placed.index), time + placed.index * 0.13);
+    if (fence) return fence;
     const isDoor = placed.prop.kind === "blast_door";
     if (!isDoor) return placed.sprite;
     const { doorBuckling, doorBurst } = this.art.environment.overrun;
@@ -421,7 +427,7 @@ export class EntityRenderer {
     // Every shadow goes down before any figure, so a firm shadow never darkens a neighbour's boots.
     for (const item of items) this.drawShadowOf(ctx, item, left, top, time);
     for (const item of items) {
-      if (item.kind === "prop") this.drawProp(ctx, item.prop, scene, viewer, left, top, blend);
+      if (item.kind === "prop") this.drawProp(ctx, item.prop, scene, viewer, left, top, blend, time);
       else if (item.kind === "building") this.buildings.drawShell(ctx, item.building, left, top);
       else if (item.kind === "player") this.drawPlayer(ctx, item.player, left, top, time);
       else if (item.kind === "zombie") this.drawZombie(ctx, item.zombie, left, top, time);
@@ -456,14 +462,15 @@ export class EntityRenderer {
     viewer: PlayerEntity | null,
     left: number,
     top: number,
-    blend: number
+    blend: number,
+    time: number
   ): void {
     const hidesViewer =
       viewer !== null && placed.tall && this.covers(placed, placed.prop.y, viewer);
     placed.alpha += ((hidesViewer ? FADED_ALPHA : 1) - placed.alpha) * blend;
     const { container } = placed;
     const searched = container !== null && scene.openedContainers.includes(container.id);
-    const sprite = searched ? container.art.opened : this.spriteOf(placed, scene);
+    const sprite = searched ? container.art.opened : this.spriteOf(placed, scene, time);
     ctx.globalAlpha = placed.alpha;
     ctx.drawImage(
       spriteCanvas(sprite),

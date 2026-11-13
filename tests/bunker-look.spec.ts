@@ -32,15 +32,15 @@ describe('the bunker look', () => {
   beforeEach(() => void installFakeBrowser());
   afterEach(() => void vi.unstubAllGlobals());
 
-  it('has no weather and its own light', () => {
+  it('is a clear night in the camp: no weather, every light its own colour, and moonlight cooler than the fire', () => {
     const look = LEVEL_LOOKS.bunker;
     expect(look.weather).toBeNull();
     expect(look.wash).toBeNull();
-    expect(look.lampColor).toMatch(/^#/);
+    expect(look.lampColor).toBeNull();
     expect(look.lampEvery).toBe(1);
     expect(lampWorks(look, 3)).toBe(true);
     const [red, , blue] = look.ambient;
-    expect(red).toBeGreaterThan(blue);
+    expect(blue).toBeGreaterThan(red);
     expect(look.ambient).not.toEqual(LEVEL_LOOKS.night.ambient);
   });
 

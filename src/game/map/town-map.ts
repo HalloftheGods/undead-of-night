@@ -7,6 +7,7 @@ import type { LeftoverView } from '@shared/leftovers.ts';
 import type { BuildingInstance, DropView, EntityId, ExitEntity, PlayerEntity, TileKind, WorldMap, ZombieEntity } from '@shared/protocol.ts';
 import { drawOutlinedText, FONT_HEIGHT, textWidth } from '@engine/bitmap-font.ts';
 import { paintBuilding } from './map-buildings.ts';
+import { paintCamp, paintCampGaps } from './camp-map.ts';
 import { drawCursor } from './map-cursor.ts';
 import { drawZombieBlips, MapFog } from './map-fog.ts';
 import { paintGround, paintScenery } from './map-ground.ts';
@@ -206,7 +207,8 @@ export class TownMapView {
     const size = { width: this.width, height: this.height, tilePx: this.pixelsPerTile, textured: town };
     paintGround(ctx, this.map, size, (kind) => tileColor(this.map, kind));
     if (town) paintScenery(ctx, this.map.props, this.pixelsPerTile);
-    paintBuildings(ctx, this.map);
+    if (town) paintBuildings(ctx, this.map);
+    else paintCamp(ctx, this.map, this.worldPerPx);
     this.paintStations(ctx);
     const placed: LabelBox[] = [];
     if (town) this.paintFireworksBus(ctx, placed);
@@ -434,6 +436,7 @@ export class TownMapView {
       ctx.globalAlpha = 1;
     } else {
       ctx.drawImage(this.base, 0, 0);
+      if (isBunkerMap(this.map)) paintCampGaps(ctx, this.map, this.worldPerPx);
       this.fog.drawFog(ctx, false);
     }
     for (const id of this.visited) {

@@ -21,9 +21,9 @@ describe('the map key', () => {
     ]);
   });
 
-  it('calls the bunker a bunker map, with no town places and no town marks', () => {
+  it('calls the camp a camp map, with no town places and no town marks', () => {
     const key = mapKey(true);
-    expect(key.title).toBe('Bunker map');
+    expect(key.title).toBe('Camp map');
     expect(labels(true)).toEqual(['You are here', 'Stations']);
     expect(labels(true).join(' ')).not.toMatch(/town|van|medical|police|inside/i);
   });
@@ -60,7 +60,7 @@ describe('the map key', () => {
   it('says the run goes on for both solo and co-op', () => {
     expect(mapKey(false).waitNote('solo')).toBe('The town does not wait.');
     expect(mapKey(false).waitNote('coop')).toBe('The town does not wait.');
-    expect(mapKey(true).waitNote('solo')).toBe('The bunker does not wait.');
-    expect(mapKey(true).waitNote('coop')).toBe('The bunker does not wait.');
+    expect(mapKey(true).waitNote('solo')).toBe('The camp does not wait.');
+    expect(mapKey(true).waitNote('coop')).toBe('The camp does not wait.');
   });
 });

@@ -45,8 +45,8 @@ const NIGHT: LevelLook = {
 
 export const LEVEL_LOOKS: Record<LevelTheme, LevelLook> = {
   night: NIGHT,
-  // Lamps on a generator: warm and steady, with no sky over them and nothing falling.
-  bunker: { ...NIGHT, ambient: [96, 78, 62], lampColor: '#ffb066', weather: null },
+  // The camp under a clear night sky: cool moonlight on everything the fire and the lanterns do not reach, each keeping its own colour.
+  bunker: { ...NIGHT, ambient: [64, 72, 100], ground: { color: '#26365a', alpha: 0.1 }, lampColor: null, weather: null },
   'industrial-dusk': {
     ...NIGHT,
     ambient: [92, 62, 58],

@@ -6,7 +6,8 @@ import type { PlayerEntity } from '../shared/protocol.ts';
 import { buildEnvironment } from '../src/art/environment.ts';
 import { spriteToCanvas } from '../src/art/kit.ts';
 import { generateBunkerMap } from '../shared/bunker-map.ts';
-import { chestPending, doorState, hiddenProp } from '../src/engine/overrun-look.ts';
+import { chestPending, doorState, fenceState, hiddenProp } from '../src/engine/overrun-look.ts';
+import { fenceSprite } from '../src/engine/camp-fence-look.ts';
 import { emptySave } from '../src/game/home/home-store.ts';
 import { closedStalls } from '../src/game/home/shop.ts';
 import type { PixelSprite } from '../src/art/types.ts';
@@ -51,6 +52,33 @@ describe('the blast door by overrun phase', () => {
 
   it('is burst from the breach on, whether the room held or fell', () => {
     for (const phase of ['breached', 'held', 'lost'] as const) expect(doorState(view(phase, 0)), phase).toBe('burst');
+  });
+});
+
+describe('the camp fence through an overrun', () => {
+  const at = (phase: OverrunPhase, gaps?: number[]): OverrunView => ({ phase, left: 10, slowed: false, hostiles: 0, total: 0, ...(gaps ? { gaps } : {}) });
+
+  it('stands whole until the clock arms, rattles where it will give, and lies down from the breach on', () => {
+    expect(fenceState(undefined, 5)).toBe('whole');
+    expect(fenceState(at('counting'), 5)).toBe('whole');
+    expect(fenceState(at('armed', [5, 12]), 5)).toBe('rattling');
+    expect(fenceState(at('armed', [5, 12]), 6)).toBe('whole');
+    for (const phase of ['breached', 'held', 'lost'] as const) {
+      expect(fenceState(at(phase, [5, 12]), 12), phase).toBe('down');
+      expect(fenceState(at(phase, [5, 12]), 11), phase).toBe('whole');
+    }
+  });
+
+  it('draws each state of a section with its own art, and leaves every other prop to its own', () => {
+    const art = buildEnvironment();
+    expect(fenceSprite(art, 'camp_fence_h', 'whole', 0)).toBe(art.props.camp_fence_h);
+    expect(fenceSprite(art, 'camp_fence_v', 'down', 0)).toBe(art.props.camp_fence_down_v);
+    expect(fenceSprite(art, 'camp_fence_h', 'down', 0)).toBe(art.props.camp_fence_down_h);
+    const frames = new Set([0, 0.1, 0.2, 0.3].map((t) => fenceSprite(art, 'camp_fence_h', 'rattling', t)));
+    expect(frames.size).toBeGreaterThan(1);
+    for (const frame of frames) expect(art.overrun.fenceRattleH.frames).toContain(frame);
+    expect(fenceSprite(art, 'workbench', 'down', 0)).toBeNull();
+    expect(fenceSprite(art, 'camp_gate', 'down', 0)).toBeNull();
   });
 });
 

@@ -59,9 +59,9 @@ const waitNoteOf = (place: string) => (_mode: TransportKind) => `The ${place} do
 
 const TOWN_KEY: MapKey = { title: 'Town map', groups: [TOWN_MARKS, PLACES, COMING, LEFT_BEHIND], waitNote: waitNoteOf('town') };
 const BUNKER_KEY: MapKey = {
-  title: 'Bunker map',
+  title: 'Camp map',
   groups: [{ title: 'Your marks', entries: [YOU_ARE_HERE] }, { title: 'Places', entries: [{ icon: STATION_ICON, label: 'Stations' }] }],
-  waitNote: waitNoteOf('bunker'),
+  waitNote: waitNoteOf('camp'),
 };
 
 export function mapKey(inBunker: boolean): MapKey {

@@ -27,7 +27,7 @@ function addedAt(size: CampSize): PropInstance[] {
   return [
     { kind: 'camp_tent', x: west + 28, y: rect.row0 * TILE_SIZE + 26 },
     { kind: 'bedroll', x: west + 60, y: rect.row0 * TILE_SIZE + 22 },
-    { kind: 'crate_stack', x: west + 24, y: (rect.row1 + 1) * TILE_SIZE - 10 },
+    { kind: 'crate_stack', x: west + 24, y: (rect.row1 + 1) * TILE_SIZE - 24 },
     { kind: 'fire_barrel', x: west + 14, y: 392 },
   ];
 }

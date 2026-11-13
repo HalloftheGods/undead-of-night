@@ -46,7 +46,7 @@ import { buildAmbulance, buildAmbulanceLights, buildPoliceH, buildPoliceHLights,
 import { buildEscapeVanLights, buildVan, VAN_LIVERIES } from './environment/van.ts';
 import { buildSedanH, buildSedanV, buildWreckH } from './environment/vehicles.ts';
 import { buildBrickWarehouse, buildSteelWarehouse } from './environment/warehouse.ts';
-import { buildCampFenceDownH, buildCampFenceDownV, buildCampFenceH, buildCampFenceV, buildCampGate, buildCampPost } from './environment/camp-fence.ts';
+import { buildCampFenceDownH, buildCampFenceDownV, buildCampFenceH, buildCampFenceV, buildCampGate, buildCampPost, buildFenceRattle } from './environment/camp-fence.ts';
 import { buildBedroll, buildCampTent, buildCampfire, buildCampfireFlames, buildLantern } from './environment/camp-props.ts';
 import { buildCampMarket, buildCampQuarters, buildCampWorkshop } from './environment/camp-tents.ts';
 import { buildFenceH, buildFenceV, buildGasPump } from './environment/yard.ts';
@@ -130,7 +130,13 @@ export function buildEnvironment(): EnvironmentArt {
       van_h: VAN_LIVERIES.map(buildVan),
     },
     beacons: { police_h: buildPoliceHLights(), police_v: buildPoliceVLights(), ambulance_h: buildAmbulanceLights() },
-    overrun: { doorBuckling: buildBlastDoorBuckling(), doorBurst: buildBlastDoorBurst(), chestOpen: buildChestOpen() },
+    overrun: {
+      doorBuckling: buildBlastDoorBuckling(),
+      doorBurst: buildBlastDoorBurst(),
+      chestOpen: buildChestOpen(),
+      fenceRattleH: buildFenceRattle(buildCampFenceH(), 0x7a11),
+      fenceRattleV: buildFenceRattle(buildCampFenceV(), 0x7a12),
+    },
     buildings: {
       pharmacy: [buildPharmacy()],
       clinic: [buildClinic()],

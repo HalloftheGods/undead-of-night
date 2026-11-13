@@ -98,6 +98,9 @@ export interface EnvironmentArt {
     readonly doorBuckling: PixelSprite;
     readonly doorBurst: PixelSprite;
     readonly chestOpen: PixelSprite;
+    /** A camp fence section about to give, rocking on its posts, for each way a section runs. */
+    readonly fenceRattleH: Clip;
+    readonly fenceRattleV: Clip;
   };
   /**
    * Exterior shell per building: roof plus south front wall with the door at doorX, anchored
