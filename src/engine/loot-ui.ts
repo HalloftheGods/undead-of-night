@@ -125,7 +125,11 @@ export function layoutLootUi(state: DualLootState, viewW: number, viewH: number,
   const gridsH = Math.max(packH + GAP + pocketsH, state.candyBagGrid.rows * TILE + 8);
   const sh = HEAD + GAP + GEAR_H + GAP + gridsH + GAP + BUTTON_H + PAD * 2;
   const sx = viewW - EDGE - sw;
-  const sy = Math.max(EDGE, Math.round((viewH - sh) / 2));
+  // With the editor's toolbar up, the docks centre in the space under it and above the help line.
+  const top = edit ? EDITOR_TOP : 0;
+  const room = viewH - top - (edit ? EDITOR_BOTTOM : 0);
+  const margin = edit ? 2 : EDGE;
+  const sy = top + Math.max(margin, Math.round((room - sh) / 2));
 
   const gx = sx + PAD;
   let gy = sy + PAD + HEAD + GAP;
@@ -154,51 +158,57 @@ export function layoutLootUi(state: DualLootState, viewW: number, viewH: number,
     const w = Math.max(90, boardW + PAD * 2, headW + PAD * 2);
     const h = HEAD + GAP + boardH + PAD * 2;
     const x = EDGE;
-    const y = Math.max(EDGE, Math.round((viewH - h) / 2));
+    const y = top + Math.max(margin, Math.round((room - h) / 2));
     const board = gridBox('container', grid, upper(state.containerTitle), x + Math.round((w - boardW) / 2), y + PAD + HEAD + GAP);
     container = { x, y, w, h, board };
   }
 
   const survivor: Box = { x: sx, y: sy, w: sw, h: sh };
-  return { container, survivor, pack: packBox, pockets: pocketsBox, candy: candyBox, gear, buttons, editor: edit ? layoutEditor(edit, viewW, viewH) : null };
+  return { container, survivor, pack: packBox, pockets: pocketsBox, candy: candyBox, gear, buttons, editor: edit ? layoutEditor(edit, viewW) : null };
 }
 
 const GEAR_SLOT_COUNT = GEAR_SLOT_DEFS.length;
 
 const ROW_H = 11;
-const EDITOR_W = 92;
+/** Space the editor's toolbar takes at the top, and its help line at the bottom. */
+const EDITOR_TOP = EDGE + ROW_H + PAD * 2 + 3;
+const EDITOR_BOTTOM = 14;
 
-/** A column of controls in the gap between the docks: mode, the container's size, the selected item's footprint, clear and save. */
-function layoutEditor(edit: LootEditView, viewW: number, viewH: number): EditorLayout {
+/** A toolbar along the top: mode, the container's size, the selected item's footprint, clear and save. The docks sit below it. */
+function layoutEditor(edit: LootEditView, viewW: number): EditorLayout {
   const lines: { x: number; y: number; text: string }[] = [];
   const buttons: (Box & { id: EditId; label: string })[] = [];
-  const rows = edit.item ? 8 : 5;
-  const h = rows * ROW_H + PAD * 2;
-  const x = Math.round((viewW - EDITOR_W) / 2);
-  const y = Math.max(EDGE, Math.round((viewH - h) / 2));
-  let cy = y + PAD;
+  const y = EDGE;
+  const h = ROW_H + PAD * 2;
+  const by = y + PAD;
+  let x = EDGE + PAD;
+  const SEP = 8;
   const wide = (id: EditId, label: string): void => {
-    buttons.push({ id, label, x: x + PAD, y: cy, w: EDITOR_W - PAD * 2, h: ROW_H - 2 });
-    cy += ROW_H;
+    const w = textWidth(label) + 10;
+    buttons.push({ id, label, x, y: by, w, h: ROW_H - 2 });
+    x += w + SEP;
   };
   const stepper = (name: string, value: number, down: EditId, up: EditId): void => {
-    lines.push({ x: x + PAD + 1, y: cy + 2, text: `${name} ${value}` });
-    buttons.push({ id: down, label: '-', x: x + EDITOR_W - PAD - 24, y: cy, w: 11, h: ROW_H - 2 });
-    buttons.push({ id: up, label: '+', x: x + EDITOR_W - PAD - 11, y: cy, w: 11, h: ROW_H - 2 });
-    cy += ROW_H;
+    const text = `${name} ${value}`;
+    lines.push({ x, y: by + 2, text });
+    x += textWidth(text) + 4;
+    buttons.push({ id: down, label: '-', x, y: by, w: 11, h: ROW_H - 2 });
+    buttons.push({ id: up, label: '+', x: x + 12, y: by, w: 11, h: ROW_H - 2 });
+    x += 23 + SEP;
   };
   wide('mode', edit.on ? 'MODE EDIT' : 'MODE PLAY');
   stepper('COLS', edit.cols, 'colsDown', 'colsUp');
   stepper('ROWS', edit.rows, 'rowsDown', 'rowsUp');
   if (edit.item) {
-    lines.push({ x: x + PAD + 1, y: cy + 2, text: upper(formatItemName(edit.item.type)).slice(0, 18) });
-    cy += ROW_H;
+    const name = upper(formatItemName(edit.item.type)).slice(0, 12);
+    lines.push({ x, y: by + 2, text: name });
+    x += textWidth(name) + SEP;
     stepper('W', edit.item.width, 'wDown', 'wUp');
     stepper('H', edit.item.height, 'hDown', 'hUp');
   }
   wide('clear', 'CLEAR BLOCKED');
   wide('save', 'SAVE');
-  return { box: { x, y, w: EDITOR_W, h }, lines, buttons };
+  return { box: { x: EDGE, y, w: viewW - EDGE * 2, h }, lines, buttons };
 }
 
 /** Short enough for a 32 pixel slot. */

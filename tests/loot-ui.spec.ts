@@ -48,16 +48,20 @@ describe('canvas loot window layout', () => {
     expect(anchor.y).toBe(box.y + 8);
   });
 
-  it('lays out the dev edit panel in the gap and finds its buttons, only when asked for', () => {
+  it('lays the dev editor out as a toolbar above the docks, overlaying nothing, only when asked for', () => {
     expect(layout.editor).toBeNull();
     const edit = { on: true, cols: 4, rows: 2, item: { type: 'bandage', width: 1, height: 1 } };
     const withEditor = layoutLootUi(state, 480, 270, edit);
-    const panel = withEditor.editor!;
-    expect(panel.box.x).toBeGreaterThan(withEditor.container!.x + withEditor.container!.w);
-    expect(panel.box.x + panel.box.w).toBeLessThan(withEditor.survivor.x);
-    const up = panel.buttons.find((b) => b.id === 'colsUp')!;
+    const bar = withEditor.editor!.box;
+    expect(bar.y + bar.h).toBeLessThanOrEqual(Math.min(withEditor.container!.y, withEditor.survivor.y));
+    expect(bar.x + bar.w).toBeLessThanOrEqual(480);
+    for (const button of withEditor.editor!.buttons) {
+      expect(button.x + button.w).toBeLessThanOrEqual(480);
+      expect(button.y).toBeGreaterThanOrEqual(bar.y);
+    }
+    const up = withEditor.editor!.buttons.find((b) => b.id === 'colsUp')!;
     expect(lootHitAt(withEditor, up.x + 1, up.y + 1)).toEqual({ kind: 'edit', id: 'colsUp' });
-    expect(panel.buttons.some((b) => b.id === 'wUp')).toBe(true);
+    expect(withEditor.editor!.buttons.some((b) => b.id === 'wUp')).toBe(true);
     const noItem = layoutLootUi(state, 480, 270, { ...edit, item: null }).editor!;
     expect(noItem.buttons.some((b) => b.id === 'wUp')).toBe(false);
   });
