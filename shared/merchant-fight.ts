@@ -7,7 +7,7 @@ import { MUZZLE_OFFSET, PLAYER_RADIUS, TICK_DT, WEAPONS } from './constants.ts';
 import { isBunkerMap } from './home-protocol.ts';
 import type { SimState, ZombieState } from './sim-state.ts';
 import { alivePlayers, emit, entityId } from './sim-state.ts';
-import { segmentHitsSolid } from './world-query.ts';
+import { segmentHitsCover } from './world-query.ts';
 
 /** How far a merchant picks out a zombie to shoot. */
 const SIGHT_RANGE = 220;
@@ -40,7 +40,7 @@ function targetOf(sim: SimState, m: MerchantState): ZombieState | null {
       bestGap = gap;
     }
   }
-  const inSight = best !== null && segmentHitsSolid(sim.map, m.x, m.y, best.x, best.y) === null;
+  const inSight = best !== null && segmentHitsCover(sim.map, m.x, m.y, best.x, best.y) === null;
   return inSight ? best : null;
 }
 

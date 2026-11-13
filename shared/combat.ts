@@ -28,7 +28,7 @@ import { PIERCE_DAMAGE_SCALE } from './round-effect-data.ts';
 import type { BulletState, SimState, ZombieState } from './sim-state.ts';
 import { emit } from './sim-state.ts';
 import { doorBlocksSegment } from './doors.ts';
-import { segmentHitsSolid } from './world-query.ts';
+import { segmentHitsCover, segmentHitsSolid } from './world-query.ts';
 import { startHunting } from './zombie-senses.ts';
 import { announcePierce, applyRoundEffect, corrosionScale } from './zombie-status.ts';
 
@@ -234,7 +234,7 @@ function sweepBullet(sim: SimState, b: BulletState, length: number): boolean {
   const dy = (b.vy / speed) * length;
   const angle = Math.atan2(b.vy, b.vx);
 
-  const hitWall = segmentHitsSolid(sim.map, b.x, b.y, b.x + dx, b.y + dy);
+  const hitWall = segmentHitsCover(sim.map, b.x, b.y, b.x + dx, b.y + dy);
   const hitDoor = doorBlocksSegment(sim, b.x, b.y, b.x + dx, b.y + dy);
   const doorIsNearer = hitDoor !== null && (hitWall === null || Math.hypot(hitDoor.x - b.x, hitDoor.y - b.y) < Math.hypot(hitWall.x - b.x, hitWall.y - b.y));
   const wall = doorIsNearer ? hitDoor : hitWall;

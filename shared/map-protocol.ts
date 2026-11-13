@@ -84,6 +84,16 @@ export const PROP_DEFS = {
   rubble: { w: 0, h: 0 },
   fence_h: { w: 32, h: 6 },
   fence_v: { w: 6, h: 32 },
+  /** The camp's scrap fence: sections the size of a town fence's, which stop bodies but not shots or sight. */
+  camp_fence_h: { w: 32, h: 6 },
+  camp_fence_v: { w: 6, h: 32 },
+  /** The camp's gate, in the east fence beside the van. It never falls. */
+  camp_gate: { w: 6, h: 64 },
+  /** A one-tile stub of the camp fence, where a side's length leaves a tile over beside the corner. */
+  camp_post: { w: 6, h: 16 },
+  /** A fence section the horde brought down: flat on the ground, walked over. */
+  camp_fence_down_h: { w: 32, h: 0 },
+  camp_fence_down_v: { w: 6, h: 0 },
   gas_pump: { w: 12, h: 8 },
   shelf: { w: 32, h: 10 },
   counter: { w: 48, h: 12 },
@@ -119,6 +129,8 @@ export const PROP_DEFS = {
 } as const;
 export type PropKind = keyof typeof PROP_DEFS;
 export const PROP_KINDS = Object.keys(PROP_DEFS) as PropKind[];
+/** Props that stop a body and nothing else: a bullet, a look and a light all pass through them. */
+export const MOVEMENT_ONLY_PROPS: ReadonlySet<PropKind> = new Set<PropKind>(['camp_fence_h', 'camp_fence_v', 'camp_gate', 'camp_post']);
 
 /**
  * Enterable buildings. w,h is the footprint in world pixels (multiples of TILE_SIZE),

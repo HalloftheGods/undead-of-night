@@ -4,7 +4,7 @@ import { SCREAM_COOLDOWN_SEC, SCREAM_RADIUS, SNEAK_SIGHT_SCALE, TICK_DT, ZOMBIE_
 import type { PlayerState, SimState, ZombieMode, ZombieState } from './sim-state.ts';
 import { emit } from './sim-state.ts';
 import { doorBlocksSegment } from './doors.ts';
-import { buildingAt, groundOf, segmentHitsSolid } from './world-query.ts';
+import { buildingAt, groundOf, segmentHitsCover } from './world-query.ts';
 import { printUnder } from './snow-tracks.ts';
 import { eventOf } from './night-events.ts';
 import { hearingScale, sightScale, TRACK_REST_SEC, TRACK_SEARCH_SEC } from './town-rules.ts';
@@ -85,7 +85,7 @@ function seesAnyone(sim: SimState, z: ZombieState, prey: readonly PlayerState[])
   const dark = sightScale(sim.level) * (eventOf(sim)?.sight ?? 1);
   return prey.some((p) => {
     const inRange = (p.x - z.x) ** 2 + (p.y - z.y) ** 2 <= (spottedFrom(p) * dark) ** 2;
-    return inRange && !segmentHitsSolid(sim.map, z.x, z.y, p.x, p.y) && doorBlocksSegment(sim, z.x, z.y, p.x, p.y) === null;
+    return inRange && !segmentHitsCover(sim.map, z.x, z.y, p.x, p.y) && doorBlocksSegment(sim, z.x, z.y, p.x, p.y) === null;
   });
 }
 

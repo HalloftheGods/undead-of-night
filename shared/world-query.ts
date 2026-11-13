@@ -4,7 +4,7 @@ import type { Point } from './flow-field.ts';
 import { buildingsWithStairs, isStorey, voidBoxes } from './storeys.ts';
 import { BUILDING_DEFS, DOOR_WIDTH, PROP_DEFS, TILE_KINDS, TILE_SIZE, WALL_THICKNESS } from './protocol.ts';
 import type { BuildingInstance, PropInstance, WorldMap } from './protocol.ts';
-import { isSewerBuilding } from './map-protocol.ts';
+import { MOVEMENT_ONLY_PROPS, isSewerBuilding } from './map-protocol.ts';
 
 export interface Box {
   readonly x0: number;
@@ -20,6 +20,8 @@ interface SolidIndex {
   readonly blocked: Uint8Array;
   /** The box each solid prop put in the buckets, by its index in the map's props; null for a prop that is not solid. */
   readonly propBoxes: readonly (Box | null)[];
+  /** The boxes of movement-only props (`MOVEMENT_ONLY_PROPS`), which a shot or a look passes through. */
+  readonly soft: ReadonlySet<Box>;
   /** Props taken out of the index: a parked car someone got into. */
   readonly lifted: Set<number>;
   /** Solids that come and go, by key: a car at rest. */
@@ -40,6 +42,11 @@ export function isSolidProp(prop: PropInstance): boolean {
   // A manhole cover is flat and a sewer ladder is bolted to a wall: each is walked up to, and used by anyone with a key to press.
   const isFitting = prop.kind === 'manhole' || prop.kind === 'sewer_ladder';
   return !isFitting && PROP_DEFS[prop.kind].h > 0;
+}
+
+/** A solid prop that also stops a bullet and a line of sight: every solid but the camp's fence. */
+export function stopsShots(prop: PropInstance): boolean {
+  return isSolidProp(prop) && !MOVEMENT_ONLY_PROPS.has(prop.kind);
 }
 
 /** The whole footprint, walls included. */
@@ -217,13 +224,16 @@ function solidIndex(map: WorldMap): SolidIndex {
   const blocked = new Uint8Array(map.cols * map.rows);
   const grid = { buckets, blocked };
   const propBoxes = map.props.map((prop) => (isSolidProp(prop) ? propBox(prop) : null));
-  for (const box of propBoxes) {
-    if (box) addBox(map, grid, box);
-  }
+  const soft = new Set<Box>();
+  propBoxes.forEach((box, i) => {
+    if (!box) return;
+    addBox(map, grid, box);
+    if (MOVEMENT_ONLY_PROPS.has(map.props[i].kind)) soft.add(box);
+  });
   for (const wall of wallBoxes(map)) addBox(map, grid, wall);
   for (const dark of voidBoxes(map, buildingBox)) addBox(map, grid, dark);
   for (const rock of rockBoxes(map)) addBox(map, grid, rock);
-  const index: SolidIndex = { buckets, blocked, propBoxes, lifted: new Set(), dynamic: new Map() };
+  const index: SolidIndex = { buckets, blocked, propBoxes, soft, lifted: new Set(), dynamic: new Map() };
   // Settling the van's spot reads these solids, so they are cached first and the van joins them after.
   indexes.set(map, index);
   const van = settleVan(map);
@@ -354,13 +364,24 @@ export function segmentEntersBox(box: Box, x0: number, y0: number, dx: number, d
   return tMin <= tMax ? tMin : Infinity;
 }
 
-/** First point where the segment enters a solid, walking the tile grid so length costs nothing extra. */
-export function segmentHitsSolid(
+/** First point where the segment enters anything that stops a body, the camp's fence included: for a path, a blow or a reach. */
+export function segmentHitsSolid(map: WorldMap, x0: number, y0: number, x1: number, y1: number): { x: number; y: number } | null {
+  return segmentHits(map, x0, y0, x1, y1, null);
+}
+
+/** First point where the segment enters something that stops a shot or a look. The camp's fence does not. */
+export function segmentHitsCover(map: WorldMap, x0: number, y0: number, x1: number, y1: number): { x: number; y: number } | null {
+  return segmentHits(map, x0, y0, x1, y1, solidIndex(map).soft);
+}
+
+/** Walks the tile grid so length costs nothing extra, passing over any box in `through`. */
+function segmentHits(
   map: WorldMap,
   x0: number,
   y0: number,
   x1: number,
   y1: number,
+  through: ReadonlySet<Box> | null,
 ): { x: number; y: number } | null {
   const { buckets } = solidIndex(map);
   const dx = x1 - x0;
@@ -379,6 +400,7 @@ export function segmentHitsSolid(
     const isOnGrid = col >= 0 && row >= 0 && col < map.cols && row < map.rows;
     if (isOnGrid) {
       for (const box of buckets[row * map.cols + col]) {
+        if (through?.has(box)) continue;
         const t = segmentEntersBox(box, x0, y0, dx, dy);
         const isNearerHit = t < best;
         if (isNearerHit) best = t;
