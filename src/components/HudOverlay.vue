@@ -155,10 +155,10 @@
           <div v-if="hud.reload > 0" class="px-meter hud-reload" :style="fill(hud.reload, 1)"><span /></div>
           <template v-else-if="ammo === 'empty'">
             <strong class="hud-empty">Empty</strong>
-            <span class="hud-sub"><span class="keys-only">F: </span>{{ hud.knife ? 'Shove & Stab' : 'Shove' }}</span>
+            <span class="hud-sub"><span v-if="glyph('KeyF')">{{ glyph('KeyF') }}: </span>{{ hud.knife ? 'Shove & Stab' : 'Shove' }}</span>
           </template>
           <span v-else-if="swapKey !== null" class="hud-sub is-threat keys-only">Press {{ swapKey }}</span>
-          <span v-else-if="reloadPrompt(hud)" class="hud-sub is-threat keys-only">Press R</span>
+          <span v-else-if="reloadPrompt(hud) && glyph('KeyR')" class="hud-sub is-threat">Press {{ glyph('KeyR') }}</span>
         </div>
       </div>
 
