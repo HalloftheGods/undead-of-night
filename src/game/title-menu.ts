@@ -120,7 +120,7 @@ export const TITLE_MENU: readonly TitleMenuItem[] = [
     needs: "radio"
   },
 
-  // Settings (Sorted A - Z: Audio, Controls, Display, Gameplay & Comfort, Sound Test)
+  // Settings (Sorted A - Z: Audio, Controls, Display, Gameplay, Sound Test)
   {
     group: "settings",
     page: "audio",
@@ -142,7 +142,7 @@ export const TITLE_MENU: readonly TitleMenuItem[] = [
   {
     group: "settings",
     page: "gameplay",
-    label: "Gameplay & Comfort",
+    label: "Gameplay",
     line: "Camera motion, screen shake and accessibility."
   },
   {
@@ -171,6 +171,12 @@ export const MENU_SECTIONS: readonly MenuSection[] = [
     line: "Campaign and Arcade."
   },
   {
+    group: "radio",
+    label: "Radio",
+    line: "Tapes, tunes and radio finds.",
+    needs: "radio"
+  },
+  {
     group: "books",
     label: "News Stand",
     line: "How to Play, Candy Magazine, Town Guide, Statistics and Level Select."
@@ -179,20 +185,14 @@ export const MENU_SECTIONS: readonly MenuSection[] = [
     group: "settings",
     label: "Settings",
     line: "Audio, Controls, Display, Gameplay and Sound Test."
-  },
-  {
-    group: "radio",
-    label: "Radio",
-    line: "Tapes, tunes and radio finds.",
-    needs: "radio"
   }
 ];
 
-/** Returns menu sections, hiding locked radio if unlock is provided and false. */
+/** The menu's sections. A locked Radio stays in the list as ??? with no line, so the top menu holds its place until the radio is found. */
 export function menuSections(unlock?: SoundUnlock): readonly MenuSection[] {
-  return MENU_SECTIONS.filter((sec) => {
-    if (sec.needs === "radio" && !unlock?.radio) return false;
-    return true;
+  return MENU_SECTIONS.map((sec) => {
+    const isLocked = sec.needs === "radio" && !unlock?.radio;
+    return isLocked ? { ...sec, label: "???", line: "" } : sec;
   });
 }
 
@@ -252,7 +252,6 @@ export function menuRows(
 
   const links = entries.filter((item) => {
     if (item.group !== section) return false;
-    if (item.needs === "radio" && !unlock?.radio) return false;
     // Exclude the top-level nightly run item when rendering standard submenus
     if (item.page === "daily" && item.group === ("play" as any)) return false;
     return true;

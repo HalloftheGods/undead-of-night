@@ -45,6 +45,7 @@
   <RecordsPage v-else-if="nav.page === 'records'" :ui @close="close" />
   <ChangelogPage v-else-if="nav.page === 'changelog'" :art="ui.art" :version="APP_VERSION" @close="close" />
   <SoundTestPage v-else-if="nav.page === 'sound'" :ui @close="close" />
+  <RadioPageCanvas v-else-if="nav.page === 'radio' && pagesOnCanvas.radio" @close="close" />
   <RadioPage v-else-if="nav.page === 'radio'" :ui @close="close" />
   <ControlsPageCanvas v-else-if="nav.page === 'controls' && pagesOnCanvas.controls" @close="close" />
   <ControlsPage v-else-if="nav.page === 'controls'" @close="close" />
@@ -52,7 +53,7 @@
   <OptionsPageCanvas v-else-if="optionsKind !== null && pagesOnCanvas[optionsKind]" :ui :kind="optionsKind" @close="close" />
   <AudioPage v-else-if="nav.page === 'audio'" :ui @close="close" />
   <DisplayPage v-else-if="nav.page === 'display'" :ui @close="close" />
-  <GameplayPage v-else-if="nav.page === 'gameplay'" @close="close" />
+  <GameplayPage v-else-if="nav.page === 'gameplay'" :ui @close="close" />
 </template>
 
 <script setup lang="ts">
@@ -78,6 +79,7 @@ import DailyPageCanvas from './DailyPageCanvas.vue';
 import ControlsPageCanvas from './ControlsPageCanvas.vue';
 import OptionsPageCanvas from './OptionsPageCanvas.vue';
 import PlaySetupCanvas from './PlaySetupCanvas.vue';
+import RadioPageCanvas from './RadioPageCanvas.vue';
 import RecordsPageCanvas from './RecordsPageCanvas.vue';
 import PressAnyKey from './PressAnyKey.vue';
 import SpriteImg from './SpriteImg.vue';
@@ -150,7 +152,7 @@ const setupHome = ref<'canvas' | 'page' | 'multi'>('page');
 /** Nightly Run follows the same switch, decided the same way each time it opens. */
 const dailyOnCanvas = ref(false);
 /** The page-kit pages follow it too: whether each is on the canvas, decided as its page opens. */
-const pagesOnCanvas = ref({ records: false, controls: false, gameplay: false, display: false, audio: false });
+const pagesOnCanvas = ref({ records: false, controls: false, radio: false, gameplay: false, display: false, audio: false });
 const OPTIONS_PAGES = ['gameplay', 'display', 'audio'] as const;
 const optionsKind = computed(() => OPTIONS_PAGES.find((each) => each === nav.value.page) ?? null);
 function opensOnCanvas(): boolean {
@@ -167,7 +169,7 @@ watch(
   (page) => {
     if (page === 'play') setupHome.value = opensOnCanvas() ? 'canvas' : 'page';
     if (page === 'daily') dailyOnCanvas.value = opensOnCanvas();
-    const isKitPage = page === 'records' || page === 'controls' || OPTIONS_PAGES.some((each) => each === page);
+    const isKitPage = page === 'records' || page === 'controls' || page === 'radio' || OPTIONS_PAGES.some((each) => each === page);
     if (isKitPage) pagesOnCanvas.value = { ...pagesOnCanvas.value, [page as string]: opensOnCanvas() };
   },
   { flush: 'sync', immediate: true }

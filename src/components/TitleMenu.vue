@@ -23,7 +23,7 @@
 import { computed, onBeforeUnmount, onMounted, useTemplateRef } from 'vue';
 import { loadMenuInfo } from '../game/menu-info-pref.ts';
 import { loadSoundUnlock } from '../game/sound-unlock.ts';
-import { isBackKey, isConfirmKey, MENU_SECTIONS, menuOwnsKey, menuRows, menuStep, openingRow, steppedRow, TITLE_MENU } from '../game/title-menu.ts';
+import { isBackKey, isConfirmKey, MENU_SECTIONS, menuOwnsKey, menuSections, menuRows, menuStep, openingRow, steppedRow, TITLE_MENU } from '../game/title-menu.ts';
 import type { KeyFocus, MenuGroup, MenuRow, TitleMenuItem } from '../game/title-menu.ts';
 import type { SoundUnlock } from '../game/sound-unlock.ts';
 import { menuLabel, menuLine } from '../game/title-menu.ts';
@@ -38,7 +38,7 @@ const emit = defineEmits<{ open: [item: TitleMenuItem] }>();
 const game = useGame();
 const unlock = loadSoundUnlock();
 const rows = computed(() => menuRows(section.value, entries, unlock));
-const heading = computed(() => MENU_SECTIONS.find((each) => each.group === section.value)?.label ?? '');
+const heading = computed(() => menuSections(unlock).find((each) => each.group === section.value)?.label ?? '');
 /** The lines under the items, switched on in Options. Read on mount, so coming back from Options shows the change. */
 const showInfo = loadMenuInfo();
 const buttons: HTMLButtonElement[] = [];
@@ -98,7 +98,12 @@ function open(index: number): void {
   }
   if (row.kind === 'section' && row.group) enter(row.group);
   else if (row.kind === 'back') leave();
-  else if (row.item) emit('open', row.item);
+  else if (row.item && !isLockedItem(row.item)) emit('open', row.item);
+}
+
+/** A row still shown as ???: it holds its place and opens nothing. */
+function isLockedItem(item: TitleMenuItem): boolean {
+  return item.needs === 'radio' && !unlock.radio;
 }
 
 function focusOf(eventTarget: EventTarget | null): KeyFocus {
