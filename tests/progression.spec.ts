@@ -1,12 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { GameSimulation } from '../shared/simulation.ts';
 import { applyBagCommit } from '../shared/bag-sim.ts';
-import { MAX_CHARACTER_LEVEL, addExperience, allocateEarnedAp, allocateStatPoint, applyApDecay, AP_DECAY_INTERVAL_MS, baseStatSlotFor, canAllocateStat, canRespecCharacter, characterBadgeName, characterLevel, createInitialProgression, effectiveStatSlots, isCharacterMaxed, isCharacterRusty, loseOnePip, pickWinningStat, respecCharacter, totalXpForLevel, xpBarFraction, xpRequiredForLevel } from '../shared/progression.ts';
-import { checkApUpkeep, loadProgression, PROGRESSION_STORAGE_KEY, saveProgression } from '../shared/progression-save.ts';
+import { MAX_CHARACTER_LEVEL, addExperience, allocateEarnedAp, allocateStatPoint, applyApDecay, AP_DECAY_INTERVAL_MS, baseStatSlotFor, canAllocateStat, canRespecCharacter, characterBadgeName, characterLevel, createInitialBook, createInitialProgression, effectiveStatSlots, isCharacterMaxed, isCharacterRusty, loseOnePip, pickWinningStat, respecCharacter, totalXpForLevel, xpBarFraction, xpRequiredForLevel } from '../shared/progression.ts';
+import { checkApUpkeep, loadProgression, loadProgressionBook, PROGRESSION_STORAGE_KEY, saveProgression } from '../shared/progression-save.ts';
 import type { ProgressionState } from '../shared/progression.ts';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const NOW = 1_700_000_000_000;
+
+/** A book with `own` as survivor 0 and everyone else fresh. */
+function bookWith(own: Record<string, unknown>, others: Record<number, unknown> = {}) {
+  return { version: 3, survivors: { 0: own, ...others } };
+}
 
 function storeWith(saved?: unknown) {
   const memory = new Map<string, string>();
@@ -95,7 +100,7 @@ describe('Progression Core Logic', () => {
   it('recognizes maxed out survivor and crowns them with OP badge', () => {
     let state = createInitialProgression();
     expect(isCharacterMaxed(0, state)).toBe(false);
-    expect(characterLevel(0, state)).toBe(1);
+    expect(characterLevel(state)).toBe(1);
     expect(characterBadgeName(0, 'Night', state)).toBe('Night');
 
     // Night needs 20 AP to max out the 4 non-specialty stats (reload, speed, strength, search)
@@ -109,10 +114,8 @@ describe('Progression Core Logic', () => {
 
     expect(state.ap).toBe(0);
     expect(isCharacterMaxed(0, state)).toBe(true);
-    expect(characterLevel(0, state)).toBe(21);
     expect(characterBadgeName(0, 'Night', state)).toBe('OP Night');
     expect(characterBadgeName(4, 'Rich', state)).toBe('Rich');
-    expect(characterLevel(4, state)).toBe(1);
   });
 
   it('handles respec with GP cost refunding AP', () => {
@@ -143,7 +146,7 @@ describe('Progression Core Logic', () => {
     };
 
     // Defaults when empty
-    const initial = loadProgression(mockStore);
+    const initial = loadProgression(1, mockStore);
     expect(initial.level).toBe(1);
     expect(initial.xp).toBe(0);
 
@@ -151,9 +154,9 @@ describe('Progression Core Logic', () => {
     let state = addExperience(initial, 300).state;
     state = allocateStatPoint(1, 'speed', state);
     state = { ...state, gp: 120 };
-    saveProgression(state, mockStore);
+    saveProgression(1, state, mockStore);
 
-    const reloaded = loadProgression(mockStore);
+    const reloaded = loadProgression(1, mockStore);
     expect(reloaded.level).toBe(state.level);
     expect(reloaded.xp).toBe(state.xp);
     expect(reloaded.ap).toBe(state.ap);
@@ -192,10 +195,11 @@ describe('Progression Core Logic', () => {
     expect(totalXpForLevel(100)).toBe(1_620_015);
   });
 
-  it('caps a survivor level at 21 even when a save fills the specialty stat', () => {
+  it('reads a survivor level from their own XP, not from their pips', () => {
     const start = createInitialProgression();
-    const overfull = { ...start, allocations: { ...start.allocations, 0: { spentAp: { stealth: 5, reload: 5, speed: 5, strength: 5, search: 5 } } } };
-    expect(characterLevel(0, overfull)).toBe(21);
+    expect(characterLevel(undefined)).toBe(1);
+    expect(characterLevel({ ...start, level: 6 })).toBe(6);
+    expect(characterLevel({ ...start, level: 100 })).toBe(100);
   });
 
   it('fills the XP bar toward the next level and shows it full at the cap', () => {
@@ -217,51 +221,82 @@ describe('Progression Core Logic', () => {
 });
 
 describe('Saves', () => {
-  it('migrates a version-less level-21 save: keeps level, AP and pips, zeroes xp and owed AP, starts a fresh timer', () => {
-    const pips = { stealth: 0, reload: 5, speed: 5, strength: 5, search: 3 };
-    const store = storeWith({ level: 21, xp: 3000, ap: 2, gp: 40, allocations: { 0: { spentAp: pips } }, lastApEarnedAt: NOW - 30 * DAY_MS, rustySkins: [] });
-    const loaded = loadProgression(store, NOW);
-    expect(loaded).toMatchObject({ version: 2, level: 21, xp: 0, ap: 2, gp: 40, owedAp: 0, lastApEarnedAt: NOW });
-    expect(loaded.allocations[0].spentAp).toEqual(pips);
+  it('keeps a level, XP and AP for each survivor, so one survivor levelling leaves the others alone', () => {
+    const store = storeWith();
+    saveProgression(2, { ...createInitialProgression(NOW), level: 6, xp: 40, ap: 3 }, store);
+    expect(loadProgression(2, store, NOW)).toMatchObject({ level: 6, xp: 40, ap: 3 });
+    expect(loadProgression(0, store, NOW)).toMatchObject({ level: 1, xp: 0, ap: 0 });
+    expect(loadProgression(4, store, NOW)).toMatchObject({ level: 1, xp: 0, ap: 0 });
+  });
+
+  it('saving one survivor does not overwrite another saved earlier', () => {
+    const store = storeWith();
+    saveProgression(1, { ...createInitialProgression(NOW), level: 9 }, store);
+    saveProgression(3, { ...createInitialProgression(NOW), level: 4 }, store);
+    expect(loadProgression(1, store, NOW).level).toBe(9);
+    expect(loadProgression(3, store, NOW).level).toBe(4);
+  });
+
+  it('gives XP to one survivor only', () => {
+    const store = storeWith();
+    const rex = addExperience(loadProgression(3, store, NOW), xpRequiredForLevel(2), NOW);
+    saveProgression(3, rex.state, store);
+    expect(loadProgression(3, store, NOW).level).toBe(2);
+    expect(loadProgression(0, store, NOW).level).toBe(1);
+  });
+
+  it('starts everyone over: a save from before per-survivor levels is not read', () => {
+    const store = storeWith();
+    store.setItem('outbreak.progression.v2', JSON.stringify({ ...createInitialProgression(NOW), version: 2, level: 6, xp: 50 }));
+    store.setItem('outbreak.progression', JSON.stringify({ level: 9, xp: 1, ap: 0, gp: 0, allocations: {}, lastApEarnedAt: NOW, rustySkins: [] }));
+    const book = loadProgressionBook(store, NOW);
+    for (let skin = 0; skin < 5; skin++) expect(book.survivors[skin]).toMatchObject({ level: 1, xp: 0, ap: 0 });
   });
 
   it('clamps a lastApEarnedAt later than now to now', () => {
-    const store = storeWith({ ...createInitialProgression(NOW), lastApEarnedAt: NOW + 5 * DAY_MS });
-    expect(loadProgression(store, NOW).lastApEarnedAt).toBe(NOW);
+    const store = storeWith(bookWith({ ...createInitialProgression(NOW), lastApEarnedAt: NOW + 5 * DAY_MS }));
+    expect(loadProgression(0, store, NOW).lastApEarnedAt).toBe(NOW);
   });
 
   it('round-trips owedAp, xp and the version', () => {
-    const store = storeWith({ ...createInitialProgression(NOW), xp: 70, owedAp: 3 });
-    expect(loadProgression(store, NOW)).toMatchObject({ version: 2, xp: 70, owedAp: 3 });
+    const store = storeWith(bookWith({ ...createInitialProgression(NOW), xp: 70, owedAp: 3 }));
+    expect(loadProgression(0, store, NOW)).toMatchObject({ version: 3, xp: 70, owedAp: 3 });
   });
 
-  it('reads a save from a later version as it stands, without wiping its XP', () => {
-    const store = storeWith({ ...createInitialProgression(NOW), version: 3, xp: 70 });
-    expect(loadProgression(store, NOW)).toMatchObject({ version: 2, xp: 70 });
+  it('keeps only the survivor own pips and rusty mark', () => {
+    const pips = { stealth: 0, reload: 5, speed: 2, strength: 0, search: 0 };
+    const store = storeWith(bookWith({ ...createInitialProgression(NOW), allocations: { 0: { spentAp: pips } }, rustySkins: [0] }));
+    const loaded = loadProgression(0, store, NOW);
+    expect(loaded.allocations[0].spentAp).toEqual(pips);
+    expect(loaded.rustySkins).toEqual([0]);
   });
 
-  it('starts version 2 with nothing owed', () => {
-    expect(createInitialProgression(NOW)).toMatchObject({ version: 2, owedAp: 0 });
+  it('starts version 3 with nothing owed', () => {
+    expect(createInitialProgression(NOW)).toMatchObject({ version: 3, owedAp: 0 });
+    expect(createInitialBook(NOW).version).toBe(3);
   });
 });
 
 describe('The upkeep check', () => {
   it('loads an idle save without decaying or writing it', () => {
-    const store = storeWith({ ...createInitialProgression(NOW - 21 * DAY_MS), level: 5, ap: 1 });
-    expect(loadProgression(store, NOW)).toMatchObject({ ap: 1, owedAp: 0 });
+    const store = storeWith(bookWith({ ...createInitialProgression(NOW - 21 * DAY_MS), level: 5, ap: 1 }));
+    expect(loadProgression(0, store, NOW)).toMatchObject({ ap: 1, owedAp: 0 });
     expect(store.writes()).toBe(0);
   });
 
   it('checkApUpkeep decays the save and writes it back', () => {
-    const store = storeWith({ ...createInitialProgression(NOW - 21 * DAY_MS), level: 5, ap: 1 });
+    const store = storeWith(bookWith({ ...createInitialProgression(NOW - 21 * DAY_MS), level: 5, ap: 1 }));
     expect(checkApUpkeep(store, NOW).decayedAp).toBe(1);
-    expect(loadProgression(store, NOW)).toMatchObject({ level: 5, ap: 0, owedAp: 1, lastApEarnedAt: NOW });
+    expect(loadProgression(0, store, NOW)).toMatchObject({ level: 5, ap: 0, owedAp: 1, lastApEarnedAt: NOW });
   });
 
-  it('checkApUpkeep writes a migrated save once, so its grace week starts at the first check', () => {
-    const store = storeWith({ level: 21, xp: 3000, ap: 2, gp: 0, allocations: {}, lastApEarnedAt: NOW - 30 * DAY_MS, rustySkins: [] });
+  it('charges each survivor on their own clock: a recently levelled survivor loses nothing', () => {
+    const idle = { ...createInitialProgression(NOW - 8 * DAY_MS), level: 3, ap: 1 };
+    const fresh = { ...createInitialProgression(NOW), level: 3, ap: 1 };
+    const store = storeWith(bookWith(idle, { 1: fresh }));
     checkApUpkeep(store, NOW);
-    expect(loadProgression(store, NOW + 3 * DAY_MS)).toMatchObject({ version: 2, level: 21, xp: 0, ap: 2, lastApEarnedAt: NOW });
+    expect(loadProgression(0, store, NOW)).toMatchObject({ ap: 0, owedAp: 1 });
+    expect(loadProgression(1, store, NOW)).toMatchObject({ ap: 1, owedAp: 0 });
   });
 });
 
@@ -358,7 +393,7 @@ describe('Rolling Timestamp AP Decay & Rusty Survivors', () => {
     }
     expect(isCharacterRusty(0, kept)).toBe(false);
     expect(characterBadgeName(0, 'Night', kept)).toBe('OP Night');
-    expect(characterLevel(3, kept)).toBe(21);
+    expect(characterLevel(kept)).toBe(100);
     expect(effectiveStatSlots(0, undefined, 99)).toEqual({ stealth: 5, reload: 0, speed: 0, strength: 0, search: 0 });
   });
 
@@ -412,11 +447,11 @@ describe('Rolling Timestamp AP Decay & Rusty Survivors', () => {
       expect(['reload', 'speed', 'strength', 'search']).toContain(winning);
     });
 
-    it('allocates earned AP directly to the winning stat and increases character level', () => {
+    it('allocates earned AP directly to the winning stat without changing the level', () => {
       const base = createInitialProgression();
       const allocated = allocateEarnedAp(base, 0, 'search', 1);
       expect(allocated.allocations[0].spentAp.search).toBe(1);
-      expect(characterLevel(0, allocated)).toBe(2);
+      expect(characterLevel(allocated)).toBe(1);
     });
 
     it('allocates banked AP using allocateEarnedAp so previously earned levels reflect on character level', () => {
@@ -429,7 +464,7 @@ describe('Rolling Timestamp AP Decay & Rusty Survivors', () => {
       expect(state.ap).toBe(0);
       const totalPips = Object.values(state.allocations[0].spentAp).reduce((a, b) => a + b, 0);
       expect(totalPips).toBe(2);
-      expect(characterLevel(0, state)).toBe(3);
+      expect(characterLevel(state)).toBe(3);
     });
   });
 
@@ -457,27 +492,7 @@ describe('Rolling Timestamp AP Decay & Rusty Survivors', () => {
 });
 
 describe('the save key', () => {
-  const OLD_KEY = 'outbreak.progression';
-  const NEW_KEY = 'outbreak.progression.v2';
-
-  it('is the v2 key', () => {
-    expect(PROGRESSION_STORAGE_KEY).toBe(NEW_KEY);
-  });
-
-  it('takes a save from before the v2 key and writes it under the new key only', () => {
-    const store = storeWith();
-    const old = JSON.stringify({ level: 7, xp: 300, ap: 2, gp: 0, allocations: {}, lastApEarnedAt: NOW - 30 * DAY_MS, rustySkins: [] });
-    store.setItem(OLD_KEY, old);
-    checkApUpkeep(store, NOW);
-    expect(JSON.parse(store.getItem(NEW_KEY)!)).toMatchObject({ version: 2, level: 7, xp: 0, ap: 2, owedAp: 0, lastApEarnedAt: NOW });
-    expect(store.getItem(OLD_KEY)).toBe(old);
-  });
-
-  it('ignores what an old build still open writes once the new save exists', () => {
-    const store = storeWith();
-    saveProgression({ ...createInitialProgression(NOW), level: 7, xp: 120, owedAp: 1 }, store);
-    store.setItem(OLD_KEY, JSON.stringify({ level: 9, xp: 999, ap: 0, gp: 0, allocations: {}, lastApEarnedAt: NOW, rustySkins: [] }));
-    expect(loadProgression(store, NOW)).toMatchObject({ level: 7, xp: 120, owedAp: 1 });
-    expect(checkApUpkeep(store, NOW).state).toMatchObject({ level: 7, xp: 120, owedAp: 1 });
+  it('is the v3 key', () => {
+    expect(PROGRESSION_STORAGE_KEY).toBe('outbreak.progression.v3');
   });
 });

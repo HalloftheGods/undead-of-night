@@ -15,22 +15,31 @@ describe('setup progression', () => {
     return { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, val: string) => void memory.set(key, val) };
   }
 
+  const book = (survivors: Record<number, unknown>) => ({ version: 3, survivors });
+
   it('takes the missed week out of banked AP before any is spent on the survivor', () => {
     const start = createInitialProgression(NOW - 8 * DAY_MS);
-    const store = storeWith({ ...start, level: 3, ap: 1, allocations: { ...start.allocations, 0: { spentAp: { stealth: 0, reload: 1, speed: 0, strength: 0, search: 0 } } } });
-    const after = setupProgression(1, store, NOW);
-    // Spending first would put the AP on survivor 1 and take survivor 0's pip instead.
+    const store = storeWith(book({ 0: { ...start, level: 3, ap: 1, allocations: { ...start.allocations, 0: { spentAp: { stealth: 0, reload: 1, speed: 0, strength: 0, search: 0 } } } } }));
+    const after = setupProgression(store, NOW).survivors[0];
+    // Spending first would put the AP on the survivor and take the pip from them instead.
     expect(after).toMatchObject({ ap: 0, owedAp: 1, rustySkins: [] });
     expect(after.allocations[0].spentAp.reload).toBe(1);
-    expect(Object.values(after.allocations[1].spentAp)).toEqual([0, 0, 0, 0, 0]);
   });
 
-  it('spends banked AP on the picked survivor and saves it', () => {
-    const store = storeWith({ ...createInitialProgression(NOW), level: 3, ap: 2 });
-    const after = setupProgression(1, store, NOW);
-    expect(after.ap).toBe(0);
-    expect(Object.values(after.allocations[1].spentAp).reduce((sum, n) => sum + n, 0)).toBe(2);
-    expect(JSON.parse(store.getItem(PROGRESSION_STORAGE_KEY)!).ap).toBe(0);
+  it('spends each survivor banked AP on that survivor and saves it', () => {
+    const store = storeWith(book({ 1: { ...createInitialProgression(NOW), level: 3, ap: 2 }, 2: { ...createInitialProgression(NOW), level: 2, ap: 1 } }));
+    const after = setupProgression(store, NOW);
+    expect(after.survivors[1].ap).toBe(0);
+    expect(Object.values(after.survivors[1].allocations[1].spentAp).reduce((sum, n) => sum + n, 0)).toBe(2);
+    expect(Object.values(after.survivors[2].allocations[2].spentAp).reduce((sum, n) => sum + n, 0)).toBe(1);
+    expect(after.survivors[0].level).toBe(1);
+    expect(JSON.parse(store.getItem(PROGRESSION_STORAGE_KEY)!).survivors[1].ap).toBe(0);
+  });
+
+  it('shows each survivor their own level in the picks', () => {
+    const store = storeWith(book({ 1: { ...createInitialProgression(NOW), level: 6 }, 3: { ...createInitialProgression(NOW), level: 12 } }));
+    const picks = setupPicks({ mode: 'solo', difficulty: 'stay_close', survivor: 0 }, setupProgression(store, NOW));
+    expect(picks[2].options.map((each) => each.level)).toEqual([1, 6, 1, 12, 1]);
   });
 });
 
@@ -68,7 +77,7 @@ describe('setup picks', () => {
         3: { spentAp: { stealth: 5, reload: 5, speed: 5, strength: 0, search: 5 } },
       },
     };
-    const who = setupPicks({ mode: 'solo', difficulty: 'stay_close', survivor: 3 }, maxedProgression as any)[2];
+    const who = setupPicks({ mode: 'solo', difficulty: 'stay_close', survivor: 3 }, { version: 3, survivors: { 3: maxedProgression } } as any)[2];
     const rex = chosenOption(who);
     expect(rex.name).toBe('OP Rex');
     expect(rex.level).toBe(21);
@@ -90,7 +99,7 @@ describe('setup picks', () => {
         3: { spentAp: { stealth: 0, reload: 0, speed: 0, strength: 0, search: 0 } },
       },
     };
-    const who = setupPicks({ mode: 'solo', difficulty: 'stay_close', survivor: 3 }, rustyProgression as any)[2];
+    const who = setupPicks({ mode: 'solo', difficulty: 'stay_close', survivor: 3 }, { version: 3, survivors: { 3: rustyProgression } } as any)[2];
     const rex = chosenOption(who);
     expect(rex.name).toBe('Rusty Rex');
     expect(rex.isRusty).toBe(true);

@@ -4,10 +4,11 @@ export const BASE_STAT_SLOT = 0;
 export const MAX_STAT_SLOT = STAT_SLOTS;
 export const MAX_CHARACTER_LEVEL = 100;
 export const AP_PER_LEVEL = 1;
-export const TOTAL_PIPS_TO_FILL = 20;
 export const RESPEC_COST_GP = 50;
-/** Saves without a version were written on the 21-level curve and are migrated once on load. */
-export const PROGRESSION_VERSION = 2;
+/** v3 keeps a level, XP and AP per survivor. Earlier saves were one account-wide level and are not read. */
+export const PROGRESSION_VERSION = 3;
+/** The survivors a save holds progress for. */
+export const SURVIVOR_COUNT = 5;
 export const AP_DECAY_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
 
 export const SPECIALTY_STAT_BY_SKIN: Readonly<Record<number, StatKey>> = {
@@ -22,6 +23,10 @@ export interface CharacterAllocation {
   readonly spentAp: Record<StatKey, number>;
 }
 
+/**
+ * One survivor's progress: their own level, XP, AP, upkeep clock and pips. `allocations` is keyed by skin
+ * like the account-wide save once was, but only the survivor's own entry is ever filled in.
+ */
 export interface ProgressionState {
   readonly version: typeof PROGRESSION_VERSION;
   readonly level: number;
@@ -65,6 +70,18 @@ export function createInitialProgression(now = Date.now()): ProgressionState {
     lastApEarnedAt: now,
     rustySkins: [],
   };
+}
+
+/** Every survivor's progress, keyed by skin. Each is levelled, spent and charged upkeep on its own. */
+export interface ProgressionBook {
+  readonly version: typeof PROGRESSION_VERSION;
+  readonly survivors: Record<number, ProgressionState>;
+}
+
+export function createInitialBook(now = Date.now()): ProgressionBook {
+  const survivors: Record<number, ProgressionState> = {};
+  for (let skin = 0; skin < SURVIVOR_COUNT; skin++) survivors[skin] = createInitialProgression(now);
+  return { version: PROGRESSION_VERSION, survivors };
 }
 
 export interface ApDecayResult {
@@ -409,12 +426,7 @@ export function characterBadgeName(skin: number, baseName: string, current?: Pro
   return isMaxed ? `OP ${baseName}` : baseName;
 }
 
-export function characterLevel(skin: number, current?: ProgressionState): number {
-  if (!current) return 1;
-  const isAtCap = current.level >= MAX_CHARACTER_LEVEL;
-  if (isAtCap) return 1 + TOTAL_PIPS_TO_FILL;
-  const spent = current.allocations[skin]?.spentAp;
-  if (!spent) return 1;
-  const invested = Object.values(spent).reduce((sum, count) => sum + count, 0);
-  return Math.min(1 + TOTAL_PIPS_TO_FILL, 1 + invested);
+/** The survivor's own level, from their own XP. */
+export function characterLevel(current?: ProgressionState): number {
+  return current?.level ?? 1;
 }

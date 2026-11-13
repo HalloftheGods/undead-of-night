@@ -226,20 +226,21 @@ export class SnapshotHandler {
     const banksXp = !this.host.state.testDrive;
     const isLocalScoreGain = banksXp && (isLocalZombieKill || isLocalHeadshot);
     if (isLocalScoreGain) {
-      const currentProg = loadProgression();
+      // XP belongs to the survivor being played, so each one levels on their own.
+      const playerSkin = after?.skin ?? before?.skin ?? 0;
+      const currentProg = loadProgression(playerSkin);
       const gain = addExperience(currentProg, event.points);
 
       renderer?.flashXp(xpBarFraction(gain.state), now / 1000, gain.newLevel);
 
       if (gain.didLevelUp) {
-        const playerSkin = after?.skin ?? before?.skin ?? 0;
         const winningStat =
           pickWinningStat(this.actionScores, playerSkin, gain.state.allocations[playerSkin]) ??
           "search";
         const updatedState = allocateEarnedAp(gain.state, playerSkin, winningStat, gain.apEarned);
         // What did not fit the stat stays banked, so the text names only what landed.
         const apLanded = gain.state.ap - updatedState.ap;
-        saveProgression(updatedState);
+        saveProgression(playerSkin, updatedState);
 
         this.actionScores.search = 0;
         this.actionScores.strength = 0;
@@ -287,7 +288,7 @@ export class SnapshotHandler {
           });
         }
       } else {
-        saveProgression(gain.state);
+        saveProgression(playerSkin, gain.state);
       }
     }
     const music = EVENT_MUSIC[event.type];

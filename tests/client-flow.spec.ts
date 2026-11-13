@@ -78,9 +78,14 @@ function memoryStorage() {
   };
 }
 
+/** A save holding `own` for survivor 0, the one these runs play. The others start fresh. */
+function asBook(own: unknown): object {
+  return { version: 3, survivors: { 0: own } };
+}
+
 function savedProgression(store: ReturnType<typeof memoryStorage>): ProgressionState | null {
   const raw = store.getItem(PROGRESSION_STORAGE_KEY);
-  return raw ? (JSON.parse(raw) as ProgressionState) : null;
+  return raw ? (JSON.parse(raw) as { survivors: Record<number, ProgressionState> }).survivors[0] : null;
 }
 
 function textField(id: string): object {
@@ -448,7 +453,7 @@ describe('game flow', () => {
 
   it('pays an owed AP with the level-up a kill brings', () => {
     const store = memoryStorage();
-    store.setItem(PROGRESSION_STORAGE_KEY, JSON.stringify({ ...createInitialProgression(Date.now()), owedAp: 1 }));
+    store.setItem(PROGRESSION_STORAGE_KEY, JSON.stringify(asBook({ ...createInitialProgression(Date.now()), owedAp: 1 })));
     vi.stubGlobal('localStorage', store);
     const socket = joinRoom();
     socket.receive(frame(50, { events: [kill(113)] }));
@@ -460,7 +465,7 @@ describe('game flow', () => {
   it('keeps banked the repaid AP that does not fit the stat it went to', () => {
     const store = memoryStorage();
     const start = createInitialProgression(Date.now());
-    store.setItem(PROGRESSION_STORAGE_KEY, JSON.stringify({ ...start, owedAp: 1, allocations: { ...start.allocations, 0: { spentAp: { stealth: 0, reload: 4, speed: 5, strength: 5, search: 5 } } } }));
+    store.setItem(PROGRESSION_STORAGE_KEY, JSON.stringify(asBook({ ...start, owedAp: 1, allocations: { ...start.allocations, 0: { spentAp: { stealth: 0, reload: 4, speed: 5, strength: 5, search: 5 } } } })));
     vi.stubGlobal('localStorage', store);
     const socket = joinRoom();
     socket.receive(frame(50, { events: [kill(113)] }));
@@ -470,7 +475,7 @@ describe('game flow', () => {
 
   it('checks AP upkeep when a run starts', () => {
     const store = memoryStorage();
-    store.setItem(PROGRESSION_STORAGE_KEY, JSON.stringify({ ...createInitialProgression(Date.now() - 8 * 24 * 60 * 60 * 1000), level: 3, ap: 1 }));
+    store.setItem(PROGRESSION_STORAGE_KEY, JSON.stringify(asBook({ ...createInitialProgression(Date.now() - 8 * 24 * 60 * 60 * 1000), level: 3, ap: 1 })));
     vi.stubGlobal('localStorage', store);
     joinRoom();
     expect(savedProgression(store)).toMatchObject({ level: 3, ap: 0, owedAp: 1 });
@@ -478,7 +483,7 @@ describe('game flow', () => {
 
   it('takes no pip for a week that runs out in the middle of a run', () => {
     const store = memoryStorage();
-    store.setItem(PROGRESSION_STORAGE_KEY, JSON.stringify({ ...createInitialProgression(Date.now()), level: 3, ap: 1 }));
+    store.setItem(PROGRESSION_STORAGE_KEY, JSON.stringify(asBook({ ...createInitialProgression(Date.now()), level: 3, ap: 1 })));
     vi.stubGlobal('localStorage', store);
     const socket = joinRoom();
     vi.setSystemTime(Date.now() + 8 * 24 * 60 * 60 * 1000);
@@ -488,7 +493,7 @@ describe('game flow', () => {
 
   it('charges no upkeep when a solo run under way becomes a hosted one', async () => {
     const store = memoryStorage();
-    store.setItem(PROGRESSION_STORAGE_KEY, JSON.stringify({ ...createInitialProgression(Date.now()), level: 3, ap: 1 }));
+    store.setItem(PROGRESSION_STORAGE_KEY, JSON.stringify(asBook({ ...createInitialProgression(Date.now()), level: 3, ap: 1 })));
     vi.stubGlobal('localStorage', store);
     const nothing = (): void => {};
     const room = {
@@ -509,7 +514,7 @@ describe('game flow', () => {
 
   it('names the AP a level-up landed, on the survivor and in the callout', () => {
     const store = memoryStorage();
-    store.setItem(PROGRESSION_STORAGE_KEY, JSON.stringify({ ...createInitialProgression(Date.now()), owedAp: 1 }));
+    store.setItem(PROGRESSION_STORAGE_KEY, JSON.stringify(asBook({ ...createInitialProgression(Date.now()), owedAp: 1 })));
     vi.stubGlobal('localStorage', store);
     const floaters = vi.spyOn(WorldRenderer.prototype, 'addFloatingText');
     const socket = joinRoom();
@@ -523,7 +528,7 @@ describe('game flow', () => {
   it('names only the AP that fitted the stat, not all a level-up earned', () => {
     const store = memoryStorage();
     const start = createInitialProgression(Date.now());
-    store.setItem(PROGRESSION_STORAGE_KEY, JSON.stringify({ ...start, owedAp: 1, allocations: { ...start.allocations, 0: { spentAp: { stealth: 0, reload: 4, speed: 5, strength: 5, search: 5 } } } }));
+    store.setItem(PROGRESSION_STORAGE_KEY, JSON.stringify(asBook({ ...start, owedAp: 1, allocations: { ...start.allocations, 0: { spentAp: { stealth: 0, reload: 4, speed: 5, strength: 5, search: 5 } } } })));
     vi.stubGlobal('localStorage', store);
     const floaters = vi.spyOn(WorldRenderer.prototype, 'addFloatingText');
     const socket = joinRoom();

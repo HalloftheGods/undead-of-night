@@ -15,11 +15,11 @@ import {
   isCharacterMaxed,
   isCharacterRusty,
   pickWinningStat,
-  type ProgressionState
+  type ProgressionBook
 } from "../../shared/progression.ts";
 import {
   checkApUpkeep,
-  saveProgression,
+  saveProgressionBook,
   type ProgressStorage
 } from "../../shared/progression-save.ts";
 import type { PixelSprite } from "../art/types.ts";
@@ -109,39 +109,44 @@ const DIFFICULTY_OPTIONS: readonly PickOption[] = DIFFICULTIES.map((each) => ({
   bars: difficultyBars(each)
 }));
 /**
- * The progression the setup screen opens with: upkeep is charged first, then any AP still banked
- * goes onto the picked survivor. Upkeep takes banked AP before pips, so the order matters.
+ * The progression the setup screen opens with: upkeep is charged first, then each survivor's banked AP
+ * goes onto their own stats. Upkeep takes banked AP before pips, so the order matters.
  */
-export function setupProgression(
-  skin: number,
-  store?: ProgressStorage | null,
-  now?: number
-): ProgressionState {
-  const loaded = checkApUpkeep(store, now).state;
-  let updated = loaded;
-  while (updated.ap > 0) {
-    const winning = pickWinningStat({}, skin, updated.allocations[skin]);
-    const hasNoCandidate = winning === null;
-    if (hasNoCandidate) break;
-    const next = allocateEarnedAp(updated, skin, winning, 1);
-    const landedNothing = next === updated;
-    if (landedNothing) break;
-    updated = next;
+export function setupProgression(store?: ProgressStorage | null, now?: number): ProgressionBook {
+  const loaded = checkApUpkeep(store, now).book;
+  const survivors = { ...loaded.survivors };
+  for (const key of Object.keys(survivors)) {
+    const skin = Number(key);
+    let updated = survivors[skin];
+    while (updated.ap > 0) {
+      const winning = pickWinningStat({}, skin, updated.allocations[skin]);
+      const hasNoCandidate = winning === null;
+      if (hasNoCandidate) break;
+      const next = allocateEarnedAp(updated, skin, winning, 1);
+      const landedNothing = next === updated;
+      if (landedNothing) break;
+      updated = next;
+    }
+    survivors[skin] = updated;
   }
-  const didAllocate = updated !== loaded;
-  if (didAllocate) saveProgression(updated, store);
-  return updated;
+  const book: ProgressionBook = { ...loaded, survivors };
+  const didAllocate = Object.keys(survivors).some((key) => survivors[Number(key)] !== loaded.survivors[Number(key)]);
+  if (didAllocate) saveProgressionBook(book, store);
+  return book;
 }
 
-export function survivorOptions(progression?: ProgressionState): readonly PickOption[] {
-  return CHARACTERS.map((each, index) => ({
-    id: String(index),
-    name: characterBadgeName(index, each.name, progression),
-    bars: statBarsOf(index, progression),
-    level: characterLevel(index, progression),
-    isMaxed: isCharacterMaxed(index, progression),
-    isRusty: isCharacterRusty(index, progression)
-  }));
+export function survivorOptions(book?: ProgressionBook): readonly PickOption[] {
+  return CHARACTERS.map((each, index) => {
+    const own = book?.survivors[index];
+    return {
+      id: String(index),
+      name: characterBadgeName(index, each.name, own),
+      bars: statBarsOf(index, own),
+      level: characterLevel(own),
+      isMaxed: isCharacterMaxed(index, own),
+      isRusty: isCharacterRusty(index, own)
+    };
+  });
 }
 
 const SURVIVOR_OPTIONS: readonly PickOption[] = survivorOptions();
@@ -157,7 +162,7 @@ function indexOf(options: readonly PickOption[], id: string): number {
 /** The picks in the order the page shows them, each marked with what is chosen now. The Level card (a link, not a pick) sits before Survivor. */
 export function setupPicks(
   choices: SetupChoices,
-  progression?: ProgressionState
+  progression?: ProgressionBook
 ): readonly SetupPick[] {
   return [
     {
@@ -182,7 +187,7 @@ export function setupPicks(
 export function survivorPick(
   survivor: number,
   number: number = 3,
-  progression?: ProgressionState
+  progression?: ProgressionBook
 ): SetupPick {
   const options = progression ? survivorOptions(progression) : SURVIVOR_OPTIONS;
   return {

@@ -23,6 +23,7 @@ import { formatItemName } from '../game/dual-loot-modal.ts';
 import { CLUE_COLOR } from '../game/map-leftovers.ts';
 import { xpBarFraction } from '../../shared/progression.ts';
 import { loadProgression } from '../../shared/progression-save.ts';
+import { loadCharacter } from '../game/character-pref.ts';
 
 const POINTER_INSET = 8;
 /** Clear of the HUD in every corner, and of the screen's edge, where the van must not be missed. */
@@ -209,7 +210,7 @@ export class OverlayRenderer {
     this.art = art;
     this.visuals = visuals;
     try {
-      const prog = loadProgression();
+      const prog = loadProgression(loadCharacter());
       this.xpLevel = prog.level;
       this.xpFraction = xpBarFraction(prog);
     } catch {

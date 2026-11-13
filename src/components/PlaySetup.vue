@@ -111,11 +111,12 @@ import SetupPicks from './SetupPicks.vue';
 import TitlePage from './TitlePage.vue';
 import { useGame } from './use-game.ts';
 
-const { ui, join = false, level = null } = defineProps<{ ui: UiState; join?: boolean; level?: number | null }>();
+/** `multi`: the in-game setup handed over because Multiplayer was picked, so the page opens on it. */
+const { ui, join = false, level = null, multi: startsMulti = false } = defineProps<{ ui: UiState; join?: boolean; level?: number | null; multi?: boolean }>();
 const emit = defineEmits<{ close: []; levels: [style: GameStyle] }>();
 const game = useGame();
 const picker = useTemplateRef<InstanceType<typeof SetupPicks>>('picker');
-const flow = ref(startFlow(join, level));
+const flow = ref(startsMulti ? chooseMode(startFlow(join, level), 'multi') : startFlow(join, level));
 /** Saved prefs, so the next visit opens on the same difficulty and survivor. */
 const difficulty = ref<DifficultyId>(loadDifficulty());
 const survivor = ref(loadCharacter());
@@ -140,7 +141,7 @@ const startLine = computed(() => levelLines.value.startLine);
 const coopNote = computed(() => levelLines.value.coopNote);
 const heading = computed(() => setupHeading(join, flow.value.mode, runStyle.value));
 
-const progression = ref(setupProgression(survivor.value));
+const progression = ref(setupProgression());
 const picks = computed(() => setupPicks({ mode: flow.value.mode, difficulty: difficulty.value, survivor: survivor.value }, progression.value));
 /** The town the card shows: the one set; else the first for Arcade, and for Campaign the furthest reached, where its van starts by default. */
 const cardLevel = computed(() => {

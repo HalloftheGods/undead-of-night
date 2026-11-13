@@ -81,7 +81,7 @@ const nextLabel = computed(() => {
 });
 
 const survivor = ref(loadCharacter());
-const progression = checkApUpkeep().state;
+const progression = checkApUpkeep().book;
 const picks = computed(() => [survivorPick(survivor.value, 3, progression)]);
 const fixed = computed<readonly FixedCard[]>(() => [
   { key: 'town', number: 1, label: 'Tonight', name: facts.title, sprite: ui.art?.ui.levelScenes[night.level - 1] ?? null },

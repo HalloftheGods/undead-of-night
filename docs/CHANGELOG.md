@@ -45,6 +45,10 @@ All notable changes to the Undead of Night: Last Round game are documented in th
 - The daily log moves to `outbreak.daily.v2`. Days played before the change are carried over, so streaks and the streak kit survive; they keep their Counted stamp, kills and town, show no points, and are never the best night.
 - The day of the change is not carried over, so its first run on the new scale is the one that counts.
 
+## [2026-11-12] - Each survivor has their own level (#7539)
+- Level, XP, AP and the weekly upkeep are now kept per survivor. Before, one account-wide level was shown for every survivor, so switching survivors changed nothing. XP from a run goes to the survivor played, and the setup list shows each survivor's own level.
+- Saves move to `outbreak.progression.v3`. Older saves are not read: everyone starts over at level 1.
+
 ## [2026-11-12] - AP upkeep: one level a week
 
 ### Changed
