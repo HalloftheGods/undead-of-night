@@ -83,4 +83,16 @@ describe('page kit layout', () => {
     expect(stepSlider(1, 1)).toBe(1);
     expect(stepSlider(0, -1)).toBe(0);
   });
+
+  it('answers a binding row and focuses it like any control', () => {
+    const binds: PageModel = {
+      heading: 'Controls',
+      panels: [{ heading: 'Movement', items: [{ kind: 'bind', id: 'sneak', label: 'Sneak', value: 'Space', listening: false }] }],
+      buttons: [{ id: 'back', label: 'Back', enabled: true, primary: false }],
+    };
+    const placed = layoutPageUi(binds, W, H, 0);
+    const row = placed.controls[0];
+    expect(pageHitAt(placed, row.box.x + row.box.w - 4, row.box.y + 3)).toEqual({ kind: 'control', id: 'sneak', part: null, along: null });
+    expect(pageFocusTargets(placed).map((target) => target.id)).toEqual(['control:sneak', 'button:back']);
+  });
 });

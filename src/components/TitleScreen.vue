@@ -46,6 +46,7 @@
   <ChangelogPage v-else-if="nav.page === 'changelog'" :art="ui.art" :version="APP_VERSION" @close="close" />
   <SoundTestPage v-else-if="nav.page === 'sound'" :ui @close="close" />
   <RadioPage v-else-if="nav.page === 'radio'" :ui @close="close" />
+  <ControlsPageCanvas v-else-if="nav.page === 'controls' && pagesOnCanvas.controls" @close="close" />
   <ControlsPage v-else-if="nav.page === 'controls'" @close="close" />
   <DevInventoryPage v-else-if="nav.page === 'dev_inventory'" :art="ui.art" @close="close" />
   <OptionsPageCanvas v-else-if="optionsKind !== null && pagesOnCanvas[optionsKind]" :ui :kind="optionsKind" @close="close" />
@@ -74,6 +75,7 @@ import { AudioPage, BooksPage, CandyMagazinePage, ChangelogPage, ControlsPage, D
 import MenuLink from './MenuLink.vue';
 import PlaySetup from './PlaySetup.vue';
 import DailyPageCanvas from './DailyPageCanvas.vue';
+import ControlsPageCanvas from './ControlsPageCanvas.vue';
 import OptionsPageCanvas from './OptionsPageCanvas.vue';
 import PlaySetupCanvas from './PlaySetupCanvas.vue';
 import RecordsPageCanvas from './RecordsPageCanvas.vue';
@@ -148,7 +150,7 @@ const setupHome = ref<'canvas' | 'page' | 'multi'>('page');
 /** Nightly Run follows the same switch, decided the same way each time it opens. */
 const dailyOnCanvas = ref(false);
 /** The page-kit pages follow it too: whether each is on the canvas, decided as its page opens. */
-const pagesOnCanvas = ref({ records: false, gameplay: false, display: false, audio: false });
+const pagesOnCanvas = ref({ records: false, controls: false, gameplay: false, display: false, audio: false });
 const OPTIONS_PAGES = ['gameplay', 'display', 'audio'] as const;
 const optionsKind = computed(() => OPTIONS_PAGES.find((each) => each === nav.value.page) ?? null);
 function opensOnCanvas(): boolean {
@@ -165,7 +167,7 @@ watch(
   (page) => {
     if (page === 'play') setupHome.value = opensOnCanvas() ? 'canvas' : 'page';
     if (page === 'daily') dailyOnCanvas.value = opensOnCanvas();
-    const isKitPage = page === 'records' || OPTIONS_PAGES.some((each) => each === page);
+    const isKitPage = page === 'records' || page === 'controls' || OPTIONS_PAGES.some((each) => each === page);
     if (isKitPage) pagesOnCanvas.value = { ...pagesOnCanvas.value, [page as string]: opensOnCanvas() };
   },
   { flush: 'sync', immediate: true }

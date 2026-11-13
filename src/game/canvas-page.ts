@@ -77,7 +77,7 @@ export function createCanvasPage(canvas: HTMLCanvasElement, host: CanvasPageHost
       if (control.item.kind === 'switch' && !control.item.enabled) return;
       host.playUi('click');
       host.toggle(hit.id);
-    } else if (kind === 'link') {
+    } else if (kind === 'link' || kind === 'bind') {
       host.playUi('click');
       host.press(hit.id);
     }
@@ -162,7 +162,7 @@ export function createCanvasPage(canvas: HTMLCanvasElement, host: CanvasPageHost
     if (item?.kind === 'switch' && item.enabled) {
       host.playUi('click');
       host.toggle(id);
-    } else if (item?.kind === 'link') {
+    } else if (item?.kind === 'link' || item?.kind === 'bind') {
       host.playUi('click');
       host.press(id);
     }

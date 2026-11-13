@@ -47,13 +47,21 @@ function isLit(win: PageWindow, id: string): boolean {
 function drawControl(ctx: CanvasRenderingContext2D, win: PageWindow, control: PlacedControl): void {
   const { item, box } = control;
   const lit = isLit(win, control.id);
-  const labelY = box.y + (item.kind === 'switch' || item.kind === 'link' ? Math.floor((box.h - FONT_HEIGHT) / 2) : 0);
+  const isRow = item.kind === 'switch' || item.kind === 'link' || item.kind === 'bind';
+  const labelY = box.y + (isRow ? Math.floor((box.h - FONT_HEIGHT) / 2) : 0);
   if (item.kind === 'link') {
     if (lit) frame(ctx, box, AMBER, RAISED);
     drawText(ctx, item.label.toUpperCase(), box.x + 4, labelY, lit ? BONE : AMBER);
     return;
   }
-  drawText(ctx, item.label.toUpperCase(), box.x + (item.kind === 'switch' ? 0 : 0), labelY, lit ? AMBER : DIM);
+  drawText(ctx, item.label.toUpperCase(), box.x, labelY, lit ? AMBER : DIM);
+  if (item.kind === 'bind') {
+    const w = Math.min(box.w - 4, Math.max(60, textWidth(item.value.toUpperCase()) + 10));
+    const key = { x: box.x + box.w - w, y: box.y, w, h: box.h };
+    frame(ctx, key, item.listening || lit ? AMBER : LINE, item.listening ? AMBER : RAISED);
+    centred(ctx, item.listening ? 'PRESS...' : item.value, key, item.listening ? INK : BONE);
+    return;
+  }
   if (item.kind === 'switch') {
     const w = 24;
     const toggle = { x: box.x + box.w - w, y: box.y, w, h: box.h };

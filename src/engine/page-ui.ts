@@ -23,7 +23,9 @@ export type PageItem =
   | { readonly kind: 'switch'; readonly id: string; readonly label: string; readonly on: boolean; readonly enabled: boolean }
   | { readonly kind: 'choice'; readonly id: string; readonly label: string; readonly options: readonly ChoiceOption[]; readonly value: string }
   | { readonly kind: 'slider'; readonly id: string; readonly label: string; readonly value: number; readonly readout: string }
-  | { readonly kind: 'link'; readonly id: string; readonly label: string };
+  | { readonly kind: 'link'; readonly id: string; readonly label: string }
+  /** An action and the key or button it is bound to; pressing it starts listening for a new one. */
+  | { readonly kind: 'bind'; readonly id: string; readonly label: string; readonly value: string; readonly listening: boolean };
 
 export interface PagePanel {
   readonly heading: string;
@@ -116,6 +118,7 @@ const BUTTON_MIN_W = 40;
 const BUTTON_GAP = 6;
 const HEADING_SCALE = 2;
 export const SCROLL_STEP = 24;
+const ROW_KINDS: readonly PageItem['kind'][] = ['switch', 'link', 'bind'];
 
 function inside(box: Box, x: number, y: number): boolean {
   return x >= box.x && x < box.x + box.w && y >= box.y && y < box.y + box.h;
@@ -213,7 +216,7 @@ export function pageHitAt(layout: PageLayout, x: number, y: number): PageHit | n
     if (track && y >= track.y - 2 && y < track.y + track.h + 2 && x >= track.x && x < track.x + track.w) {
       return { kind: 'control', id: control.id, part: null, along: (x - track.x) / (track.w - 1) };
     }
-    const isRow = control.item.kind === 'switch' || control.item.kind === 'link';
+    const isRow = ROW_KINDS.includes(control.item.kind);
     if (isRow && inside(control.box, x, y)) return { kind: 'control', id: control.id, part: null, along: null };
   }
   return null;

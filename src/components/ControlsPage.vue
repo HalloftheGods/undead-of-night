@@ -87,175 +87,41 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
-import {
-  ACTION_METADATA,
-  formatKeyCode,
-  loadKeyBindings,
-  loadPadBindings,
-  resetKeyBindings,
-  resetPadBindings,
-  saveKeyBindings,
-  savePadBindings,
-} from '../game/controls-prefs.ts';
+import { computed, onBeforeUnmount, onMounted } from 'vue';
+import { ACTION_METADATA, formatKeyCode } from '../game/controls-prefs.ts';
 import type { GameAction } from '../game/controls-prefs.ts';
-import { padFamily, padLabel } from '../game/pad-glyphs.ts';
-import { readPads } from '../game/gamepad-input.ts';
 import PixelButton from './PixelButton.vue';
 import TitlePage from './TitlePage.vue';
+import { padBindingLabel, useRemapping } from './use-remapping.ts';
 
 const emit = defineEmits<{ close: [] }>();
+const remap = useRemapping();
+const { listening, keyBinds, padBinds } = remap;
+const activeTab = remap.tab;
+const listeningPrompt = remap.prompt;
+const switchTab = remap.switchTab;
+const cancelRemap = remap.cancel;
+const resetCurrent = remap.reset;
+const startRemap = remap.start;
 
-type DeviceTab = 'keys' | 'pad';
-const activeTab = ref<DeviceTab>('keys');
-
-const keyBinds = ref(loadKeyBindings());
-const padBinds = ref(loadPadBindings());
-
-interface ActiveListening {
-  action: GameAction;
-  tab: DeviceTab;
-}
-const listening = ref<ActiveListening | null>(null);
-
-let padPollHandle: number | null = null;
-const lastPadButtonStates = new Map<number, boolean>();
-
-const categories = computed(() => {
-  const groups: { name: string; label: string; actions: typeof ACTION_METADATA }[] = [
-    { name: 'movement', label: 'Movement', actions: ACTION_METADATA.filter((a) => a.category === 'movement') },
-    { name: 'combat', label: 'Combat & Weapons', actions: ACTION_METADATA.filter((a) => a.category === 'combat') },
-    { name: 'items', label: 'Items & Interactions', actions: ACTION_METADATA.filter((a) => a.category === 'items') },
-    { name: 'interface', label: 'Panels & Interface', actions: ACTION_METADATA.filter((a) => a.category === 'interface') },
-  ];
-  return groups;
-});
-
-const listeningPrompt = computed(() => {
-  if (!listening.value) return '';
-  const actionMeta = ACTION_METADATA.find((a) => a.id === listening.value?.action);
-  const name = actionMeta ? actionMeta.label : '';
-  return listening.value.tab === 'keys'
-    ? `Press a new key for "${name}" (or Escape to cancel)...`
-    : `Press a controller button for "${name}" (or click Cancel)...`;
-});
-
-function switchTab(tab: DeviceTab): void {
-  cancelRemap();
-  activeTab.value = tab;
-}
+const categories = computed(() => [
+  { name: 'movement', label: 'Movement', actions: ACTION_METADATA.filter((a) => a.category === 'movement') },
+  { name: 'combat', label: 'Combat & Weapons', actions: ACTION_METADATA.filter((a) => a.category === 'combat') },
+  { name: 'items', label: 'Items & Interactions', actions: ACTION_METADATA.filter((a) => a.category === 'items') },
+  { name: 'interface', label: 'Panels & Interface', actions: ACTION_METADATA.filter((a) => a.category === 'interface') },
+]);
 
 function keyDisplay(actionId: GameAction): string {
   const codes = keyBinds.value[actionId];
-  if (!codes || codes.length === 0) return 'Unbound';
-  return codes.map(formatKeyCode).join(' / ');
+  return codes.length === 0 ? 'Unbound' : codes.map(formatKeyCode).join(' / ');
 }
 
 function padDisplay(actionId: GameAction): string {
-  const btn = padBinds.value[actionId];
-  if (btn === null || btn === undefined) {
-    if (actionId === 'moveUp' || actionId === 'moveDown' || actionId === 'moveLeft' || actionId === 'moveRight') {
-      return 'Left Stick';
-    }
-    return 'None';
-  }
-  const pads = readPads();
-  const family = padFamily(pads[0]?.id ?? null);
-  return padLabel(family, btn);
+  return padBindingLabel(actionId, padBinds.value[actionId]);
 }
 
-function startRemap(actionId: GameAction): void {
-  listening.value = { action: actionId, tab: activeTab.value };
-}
-
-function cancelRemap(): void {
-  listening.value = null;
-}
-
-function resetCurrent(): void {
-  cancelRemap();
-  if (activeTab.value === 'keys') {
-    keyBinds.value = resetKeyBindings();
-  } else {
-    padBinds.value = resetPadBindings();
-  }
-}
-
-function onWindowKeyDown(event: KeyboardEvent): void {
-  if (!listening.value || listening.value.tab !== 'keys') return;
-  event.preventDefault();
-  event.stopPropagation();
-
-  if (event.code === 'Escape') {
-    cancelRemap();
-    return;
-  }
-
-  const { action } = listening.value;
-  const newCode = event.code;
-  const current = { ...keyBinds.value };
-
-  // If another action has this single code, remove or swap
-  for (const [otherAction, codes] of Object.entries(current)) {
-    if (otherAction !== action && codes.includes(newCode)) {
-      current[otherAction as GameAction] = codes.filter((c) => c !== newCode);
-    }
-  }
-
-  current[action] = [newCode];
-  keyBinds.value = current;
-  saveKeyBindings(current);
-  cancelRemap();
-}
-
-function pollPadForRemap(): void {
-  if (listening.value && listening.value.tab === 'pad') {
-    const pads = readPads();
-    const pad = pads[0];
-    if (pad) {
-      for (let i = 0; i < pad.buttons.length; i++) {
-        const isPressed = pad.buttons[i]?.pressed ?? false;
-        const wasPressed = lastPadButtonStates.get(i) ?? false;
-        lastPadButtonStates.set(i, isPressed);
-
-        if (isPressed && !wasPressed) {
-          // Button pressed
-          const { action } = listening.value;
-          const current = { ...padBinds.value };
-
-          // Unbind duplicate if bound to another action
-          for (const [otherAction, boundBtn] of Object.entries(current)) {
-            if (otherAction !== action && boundBtn === i) {
-              current[otherAction as GameAction] = null;
-            }
-          }
-
-          current[action] = i;
-          padBinds.value = current;
-          savePadBindings(current);
-          cancelRemap();
-          break;
-        }
-      }
-    }
-  } else {
-    lastPadButtonStates.clear();
-  }
-
-  padPollHandle = requestAnimationFrame(pollPadForRemap);
-}
-
-onMounted(() => {
-  window.addEventListener('keydown', onWindowKeyDown, true);
-  padPollHandle = requestAnimationFrame(pollPadForRemap);
-});
-
-onBeforeUnmount(() => {
-  window.removeEventListener('keydown', onWindowKeyDown, true);
-  if (padPollHandle !== null) {
-    cancelAnimationFrame(padPollHandle);
-  }
-});
+onMounted(remap.attach);
+onBeforeUnmount(remap.detach);
 </script>
 
 <style scoped>
