@@ -237,7 +237,7 @@
               v-for="entry in filteredContainers"
               :key="entry.id"
               :art="art"
-              :entry="entry"
+              :entry="shownEntry(entry)"
               :cols="shownSize(entry).cols"
               :rows="shownSize(entry).rows"
               :blocked="shownSize(entry).blocked ?? []"
@@ -804,6 +804,10 @@ const shownSize = (entry: DevContainerEntry): ContainerGridDimensions => {
   const saved = containerSizes[entry.kind] ?? entry.defaultDimensions;
   return isVerticalLook(entry.look) ? flipDimensions(saved) : saved;
 };
+
+/** The entry a card shows: a car standing on end has its defaults on their side too, so Reset Default and the modified check agree with what the card shows. */
+const shownEntry = (entry: DevContainerEntry): DevContainerEntry =>
+  isVerticalLook(entry.look) ? { ...entry, defaultDimensions: flipDimensions(entry.defaultDimensions) } : entry;
 
 /** A card edit, turned back into the kind's own columns and rows when the card shows it flipped. */
 const onCardSize = (entry: DevContainerEntry, side: 'cols' | 'rows', value: number): void => {
