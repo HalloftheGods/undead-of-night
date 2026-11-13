@@ -62,7 +62,7 @@ const handsAtStake = (save: HomeSave): boolean => save.openTrip !== null || save
 
 /** What to bring to the room. With a trip or a breach still open the gear is forfeit, and a body the room still holds keeps what it has. */
 export function joinHomeFor(save: HomeSave, { highest, finished }: LevelProgress): JoinHome {
-  return { loadout: handsAtStake(save) ? emptyLoadout() : save.hands, highest, ...(finished ? { finished } : {}), ...(save.camp?.radio ? { radio: true } : {}) };
+  return { loadout: handsAtStake(save) ? emptyLoadout() : save.hands, highest, ...(finished ? { finished } : {}), ...(save.camp?.radio ? { radio: true } : {}), ...(save.camp ? { rescued: save.camp.rescued } : {}) };
 }
 
 const firstStock: SaveChange = (save) => (save.shop.rolls === 0 ? rollStock(save) : save);

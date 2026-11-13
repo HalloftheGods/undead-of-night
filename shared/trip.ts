@@ -1,5 +1,6 @@
 // Out to a town and back: the room's side of a trip, and everything a player can ask of the bunker.
 
+import { MERCHANT_IDS } from './home-protocol.ts';
 import type { HomeAction, JoinHome } from './home-protocol.ts';
 import { latchCamp } from './camp/camp-latch.ts';
 import { enterBunker, enterTown, placeAtEntry } from './level-change.ts';
@@ -32,7 +33,7 @@ const cleanTrack = (track: string | null): string | null =>
   typeof track === 'string' && track.length > 0 && track.length <= TRACK_NAME_MAX ? track : null;
 
 export function newHomeRun(seed: number): HomeRun {
-  return { simId: newSimId(seed), tripLevel: null, tripReplay: false, pickedLevel: null, attempt: 0, roomHighest: FIRST_LEVEL, campLevel: FIRST_LEVEL, campSize: 1, nextTreasure: 0, nextReceipt: 1, unclaimed: new Map() };
+  return { simId: newSimId(seed), tripLevel: null, tripReplay: false, pickedLevel: null, attempt: 0, roomHighest: FIRST_LEVEL, campLevel: FIRST_LEVEL, campSize: 1, campRescued: [], nextTreasure: 0, nextReceipt: 1, unclaimed: new Map() };
 }
 
 /** A newcomer to a home room, with the gear and highest level they brought. Anyone joining a trip lands in it armed. Does nothing with home off. */
@@ -51,6 +52,7 @@ export function enterHome(sim: SimState, p: PlayerState, join?: JoinHome): void 
     finished: join?.finished === true,
     radio: join?.radio === true,
     radioLevels: [],
+    rescued: join?.rescued ? [...join.rescued] : [...MERCHANT_IDS],
     salvage: noSalvage(),
     lost: { silver: 0, jewels: { small: 0, large: 0 }, salvage: noSalvage() },
     chest: false,

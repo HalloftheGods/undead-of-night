@@ -1,3 +1,4 @@
+import type { MerchantId } from '../../shared/home-protocol.ts';
 import { tagLabel } from '../../shared/callsign.ts';
 import { EXIT_RADIUS, ZOMBIES } from '../../shared/constants.ts';
 import { CONTAINER_LABEL } from '../../shared/containers.ts';
@@ -177,6 +178,9 @@ const EXIT_RING: readonly Pixel[] = Array.from({ length: EXIT_RING_DOTS }, (_, d
 });
 
 /** Everything drawn on top of the world: bars, names, edge arrows and the crosshair. */
+/** What the prompt calls each person to find. */
+const RESCUE_NAME: Record<MerchantId, string> = { quartermaster: 'SARGE', gunsmith: 'MAGS', medic: 'DOC', powder: 'CINDER' };
+
 export class OverlayRenderer {
   private readonly art: ArtBook;
   private readonly visuals: VisualStore;
@@ -375,6 +379,7 @@ export class OverlayRenderer {
       const isLocal = player.id === scene.localId;
       const prompted = isLocal && scene.searchable !== null;
       const atStation = isLocal && scene.station !== undefined;
+      const person = isLocal ? scene.merchants?.find((m) => m.rescue === 'waiting' && Math.hypot(m.x - player.x, m.y - player.y) <= 34) : undefined;
       const atClimb = isLocal && scene.climb !== undefined;
       const atRadioTower = isLocal && scene.radioTower !== undefined;
       const atDoor = isLocal && scene.door !== undefined;
@@ -387,6 +392,10 @@ export class OverlayRenderer {
         drawOutlinedText(ctx, `${action}: ${CONTAINER_LABEL[scene.searchable!.kind]}`, x, y, AMBER);
       }
       else if (atStation) drawOutlinedText(ctx, stationPrompt(scene.station, Boolean(scene.touch), this.payFrom(scene), scene.station === 'jukebox' && player.home?.radio !== true), x, y, AMBER);
+      else if (person) {
+        if (person.hold !== undefined && person.hold > 0) drawBar(ctx, x - SEARCH_BAR_WIDTH / 2, y, SEARCH_BAR_WIDTH, person.hold, AMBER);
+        else drawOutlinedText(ctx, `${scene.touch ? 'TAKE' : 'HOLD E: TAKE'} ${RESCUE_NAME[person.id]}`, x, y, AMBER);
+      }
       else if (atClimb) drawOutlinedText(ctx, climbPrompt(scene.climb, Boolean(scene.touch)), x, y, AMBER);
       else if (atDoor) drawOutlinedText(ctx, doorPrompt(scene.door!, Boolean(scene.touch)), x, y, AMBER);
       else if (atRadioTower) {

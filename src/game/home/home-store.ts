@@ -96,7 +96,7 @@ export interface OpenOverrun {
   difficulty?: DifficultyId;
 }
 
-/** A first save with nothing in it, before `rollStock` has filled the shops. */
+/** A first save with nothing in it, before `rollStock` has filled the shops. It has no `camp` yet: the browser store gives it one on load (`migrateCamp`), and a save without one has met everybody. */
 export function emptySave(shopSeed: number): HomeSave {
   return {
     version: 0,
@@ -112,6 +112,5 @@ export function emptySave(shopSeed: number): HomeSave {
     quests: starterQuests(shopSeed ^ QUEST_SALT),
     overruns: [],
     openOverrun: null,
-    camp: emptyCamp(),
   };
 }

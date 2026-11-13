@@ -1,3 +1,4 @@
+import { updateRescuees } from "./camp/rescuee.ts";
 import { updateMerchants } from "./merchant-fight.ts";
 import { freeCharacter } from "./characters.ts";
 import { updateBullets } from "./combat.ts";
@@ -271,6 +272,7 @@ export class GameSimulation {
     ageFootprints(sim);
     updateSpinners(sim);
     updateMerchants(sim);
+    updateRescuees(sim);
     updateBullets(sim);
     updateZombieStatuses(sim);
     updateZombies(sim);

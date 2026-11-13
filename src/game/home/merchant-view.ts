@@ -25,7 +25,7 @@ export interface MerchantLine {
 }
 
 /** Whether anyone keeps the stall, after a flight from the overrun. `trips` are banked trips until it recovers. */
-export type Stall = { kind: 'open' } | { kind: 'closed'; trips: number } | { kind: 'thin'; trips: number };
+export type Stall = { kind: 'open' } | { kind: 'unmet' } | { kind: 'closed'; trips: number } | { kind: 'thin'; trips: number };
 
 export interface MerchantView {
   name: string;
@@ -38,9 +38,13 @@ export interface MerchantView {
   notice: string | null;
 }
 
+/** In co-op a teammate's rescue puts the person in the room; their stall opens only for a save that rescued them. */
+const hasNotMet = (save: HomeSave | null, merchant: MerchantId): boolean => save?.camp !== undefined && !save.camp.rescued.includes(merchant);
+
 const OPEN_STALL: Stall = { kind: 'open' };
 
 function stallOf(save: HomeSave | null, merchant: MerchantId): Stall {
+  if (hasNotMet(save, merchant)) return { kind: 'unmet' };
   const stock = save?.shop.merchants[merchant];
   const closed = stock?.closedTrips ?? 0;
   const thin = stock?.thinTrips ?? 0;
@@ -52,6 +56,7 @@ function stallOf(save: HomeSave | null, merchant: MerchantId): Stall {
 }
 
 export function stallNotice(stall: Stall): string | null {
+  if (stall.kind === 'unmet') return "WE HAVEN'T MET";
   const isClosedStall = stall.kind === 'closed';
   if (isClosedStall) return `No one at this stall. A new keeper in ${plural(stall.trips, 'trip')}.`;
   const isThinStall = stall.kind === 'thin';

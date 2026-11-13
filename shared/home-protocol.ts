@@ -45,6 +45,10 @@ export interface MerchantEntity {
   readonly weapon: WeaponId;
   /** 0 when not reloading, else 0..1 through the reload, as a player's. */
   readonly reload: number;
+  /** Only a person out in a town: waiting to be freed, or following. Left off for a merchant in camp. */
+  readonly rescue?: 'waiting' | 'following';
+  /** 0..1 through the hold that frees them. */
+  readonly hold?: number;
 }
 
 export interface Jewels {
@@ -77,6 +81,8 @@ export interface JoinHome {
   finished?: boolean;
   /** Has found a radio, so The Radio works for them. Left off for no. */
   radio?: boolean;
+  /** The people they have brought home. Left off by an older client, which has met them all. */
+  rescued?: MerchantId[];
 }
 
 export type HomeAction =
@@ -121,6 +127,8 @@ export interface TripReceipt {
   salvage?: SalvageCounts;
   /** The level each radio was found on, for any receipt of a player who was in the room. Left off for none. */
   radioLevels?: number[];
+  /** Banked: everyone brought home on this trip. Left off for none. */
+  rescued?: MerchantId[];
 }
 
 /** Counting down to the breach, guns free near the end, the horde in, then the room held or fallen. */

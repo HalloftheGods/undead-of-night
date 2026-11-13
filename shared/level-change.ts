@@ -1,3 +1,4 @@
+import { placeRescuees } from './camp/rescuee.ts';
 import { placeMerchants } from './bunker-merchants.ts';
 import { offerKeepsakes } from './keepsakes.ts';
 import { LEVEL_CLEAR_HEAL, PLAYER_RADIUS, SPAWN_SCATTER } from './constants.ts';
@@ -52,6 +53,7 @@ function emptyWorld(sim: SimState, level: number): void {
   sim.dropDone = false;
   sim.zombies = [];
   sim.merchants = [];
+  sim.rescuees = [];
   sim.bullets = [];
   sim.pickups = [];
   sim.entered = new Set();
@@ -70,6 +72,7 @@ export function enterTown(sim: SimState, level: number): void {
   seedPopulation(sim);
   placeTownTreasure(sim);
   placeTownSalvage(sim);
+  placeRescuees(sim, level);
 }
 
 /** Empties the world and goes home: no loot, no containers, no zombies, and the van parked. */
@@ -89,7 +92,9 @@ export function enterBunker(sim: SimState): void {
  */
 export function raiseCamp(sim: SimState): void {
   const inCamp = sim.map.seed === BUNKER_SEED;
-  if (inCamp) raiseMap(sim, BUNKER_SEED, BUNKER_LEVEL, campSizeOf(sim));
+  if (!inCamp) return;
+  raiseMap(sim, BUNKER_SEED, BUNKER_LEVEL, campSizeOf(sim));
+  placeMerchants(sim);
 }
 
 /** Puts someone down beside the town's entry. */

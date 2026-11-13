@@ -66,7 +66,7 @@ const shelf = useTemplateRef<InstanceType<typeof ShopShelf>>('shelf');
 const open = computed(() => (home.shop ? { merchant: home.shop, view: merchantView(home, home.shop) } : null));
 const lines = computed(() => open.value?.view.lines ?? []);
 /** Someone keeps the stall, so there is a shelf to read. A closed one shows its notice instead. */
-const stalled = computed(() => open.value?.view.stall.kind !== 'closed');
+const stalled = computed(() => open.value?.view.stall.kind !== 'closed' && open.value?.view.stall.kind !== 'unmet');
 const thin = computed(() => open.value?.view.stall.kind === 'thin');
 
 const TAB_LABELS: Record<StallTab, string> = { shelf: 'Shelf', work: 'Work' };

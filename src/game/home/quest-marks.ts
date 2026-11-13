@@ -14,7 +14,7 @@ export function questMarks(save: HomeSave | null, highest: number, merchants: re
   const closed = closedStalls(save.shop);
   const marks: QuestMark[] = [];
   for (const merchant of MERCHANT_IDS) {
-    const stall = merchants.find((m) => m.id === merchant && m.status === 'alive');
+    const stall = merchants.find((m) => m.id === merchant && m.status === 'alive' && !('rescue' in m));
     const isStallShut = !stall || closed.includes(merchant);
     if (isStallShut) continue;
     const rows = questRows(save, merchant, highest);

@@ -50,6 +50,7 @@ function nextOnce(save: HomeSave, merchant: MerchantId, highest: number): QuestD
 
 /** What the merchant's work list shows: the open quest, then the next one-time quest and the job on offer. */
 export function questRows(save: HomeSave, merchant: MerchantId, highest: number): QuestRow[] {
+  if (save.camp && !save.camp.rescued.includes(merchant)) return [];
   const open = save.quests.active[merchant];
   const openDef = open && questOf(open.id);
   const rows: QuestRow[] = [];

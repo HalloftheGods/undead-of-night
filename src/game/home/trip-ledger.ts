@@ -1,5 +1,6 @@
 // How a trip's end reaches the save: a receipt from the sim, or a trip that never came home.
 
+import { MERCHANT_IDS } from '../../../shared/home-protocol.ts';
 import type { Jewels, TripReceipt } from '../../../shared/home-protocol.ts';
 import { emptyLoadout, mergeHome } from '../../../shared/loadout.ts';
 import { mergeGridLocker } from './bunker-locker-grid.ts';
@@ -38,6 +39,15 @@ function banked(save: HomeSave, receipt: TripReceipt): HomeSave {
   });
 }
 
+/** Everyone brought home on a banked trip joins the camp for good, and their starter quests are taken up. */
+function withRescued(save: HomeSave, receipt: TripReceipt): HomeSave {
+  const brought = receipt.outcome === 'banked' ? receipt.rescued ?? [] : [];
+  if (brought.length === 0) return save;
+  const camp = save.camp ?? emptyCamp();
+  const rescued = MERCHANT_IDS.filter((id) => camp.rescued.includes(id) || brought.includes(id));
+  return { ...save, camp: { ...camp, rescued } };
+}
+
 /** Each radio found sets the flag and gives up the next locked track of the level it was found on, in the existing order. */
 function withRadios(save: HomeSave, levels: readonly number[]): HomeSave {
   if (levels.length === 0) return save;
@@ -59,7 +69,7 @@ export function applyReceipt(save: HomeSave, receipt: TripReceipt): HomeSave {
   const alreadyApplied = save.appliedReceipts.includes(key);
   if (alreadyApplied) return save;
   const credited = receipt.outcome === 'banked' ? banked(save, receipt) : save;
-  const found = withRadios(credited, receipt.radioLevels ?? []);
+  const found = withRescued(withRadios(credited, receipt.radioLevels ?? []), receipt);
   return { ...closed(found, recordOf(receipt)), appliedReceipts: [...save.appliedReceipts, key] };
 }
 

@@ -1,5 +1,6 @@
 import { bagHash } from './bag.ts';
 import { merchantView } from './bunker-merchants.ts';
+import { rescueeView } from './camp/rescuee.ts';
 import { campSizeField } from './camp/camp-ring.ts';
 import { openedContainers } from './container-search.ts';
 import { bagOf } from './candy.ts';
@@ -222,7 +223,7 @@ export function buildSnapshot(sim: SimState): SnapshotPacket {
     ...tracksField(sim, inRange),
     ...doorsField(sim, inRange),
     ...vehiclesField(sim),
-    ...(sim.merchants.length > 0 ? { merchants: sim.merchants.map(merchantView) } : {}),
+    ...(sim.merchants.length + sim.rescuees.length > 0 ? { merchants: [...sim.merchants.map(merchantView), ...sim.rescuees.map(rescueeView)] } : {}),
     events,
     gameOver: sim.gameOver ? { ...sim.gameOver, players: sim.gameOver.players.map((p) => ({ ...p })) } : null,
     ...benchField(sim),

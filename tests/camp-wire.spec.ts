@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readCampSize } from '../shared/camp/camp-ring.ts';
-import { BUNKER_SEED } from '../shared/home-protocol.ts';
+import { BUNKER_SEED, MERCHANT_IDS } from '../shared/home-protocol.ts';
 import { emptyLoadout } from '../shared/loadout.ts';
 import { PROTOCOL_VERSION } from '../shared/protocol.ts';
 import type { SnapshotPacket, WelcomePacket } from '../shared/protocol.ts';
@@ -15,16 +15,16 @@ import { RunStage } from '../src/game/run-stage.ts';
 import type { ClientWorld } from '../src/game/client-world.ts';
 import type { RunHud } from '../src/game/run-hud.ts';
 import { driveToTown, homeSim } from './helpers/home-harness.ts';
-import { SEED } from './helpers/sim-harness.ts';
+import { SEED, stateOf } from './helpers/sim-harness.ts';
 
 /** A room with one seat taken by a player who has reached `highest`, and the packets that player was sent. */
-function joinedRoom(highest: number): { sim: GameSimulation; sent: unknown[] } {
+function joinedRoom(people: number): { sim: GameSimulation; sent: unknown[] } {
   const sim = new GameSimulation({ seed: SEED, home: true });
   const room = createGameRoom({ sim, clock: { now: () => 0, after: () => null, cancel: () => undefined }, newId: () => 'p1', restartVoteMs: 1000, style: 'campaign' });
   const sent: unknown[] = [];
   const peer: PeerSocket = { open: true, send: (text: string) => void sent.push(JSON.parse(text)), close: () => undefined, drop: () => undefined, canTakeFrame: () => true, probe: () => undefined };
   const client: RoomClient = { peer, address: 'test', playerId: null, alive: true, wantsRestart: false, packetAllowance: 1e9, allowanceAt: 0, joinDeadline: null };
-  room.receive(client, { type: 'join', name: 'A', token: 'tok-a', style: 'campaign', protocol: PROTOCOL_VERSION, home: { loadout: emptyLoadout(), highest, finished: false } });
+  room.receive(client, { type: 'join', name: 'A', token: 'tok-a', style: 'campaign', protocol: PROTOCOL_VERSION, home: { loadout: emptyLoadout(), highest: 5, finished: false, rescued: MERCHANT_IDS.slice(0, people) } });
   room.shutdown();
   return { sim, sent };
 }
@@ -37,14 +37,16 @@ describe('the camp on the wire', () => {
   });
 
   it('says nothing about the camp in a town or in the smallest camp, so those snapshots are as they were', () => {
-    const { sim, state } = homeSim();
+    const sim = new GameSimulation({ seed: SEED, home: true });
+    sim.addPlayer('a', 'a', null, undefined, { loadout: emptyLoadout(), highest: 1, rescued: [] });
+    const state = stateOf(sim);
     expect('campSize' in sim.snapshot()).toBe(false);
     driveToTown(sim, state);
     expect('campSize' in sim.snapshot()).toBe(false);
   });
 
   it('welcomes a guest into a grown camp with its size, and the guest builds the very camp the room plays', () => {
-    const { sim, sent } = joinedRoom(4);
+    const { sim, sent } = joinedRoom(3);
     const welcome = welcomeOf(sent);
     expect(isWelcomePacket(welcome)).toBe(true);
     expect(welcome.campSize).toBe(4);
@@ -56,7 +58,7 @@ describe('the camp on the wire', () => {
   });
 
   it('turns away a guest on the build before the camp', () => {
-    expect(PROTOCOL_VERSION).toBe(6);
+    expect(PROTOCOL_VERSION).toBe(7);
   });
 
   it('rebuilds the camp when its size changes, as it would for a new town', () => {

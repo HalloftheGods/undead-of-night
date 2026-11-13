@@ -24,7 +24,7 @@ describe('reviving the camp and the locker grid', () => {
   it('leaves the camp off an older save, and starts a new one empty', () => {
     const { camp: _camp, ...old } = blank;
     expect(reviveSave(old, blank)).not.toHaveProperty('camp');
-    expect(blank.camp).toEqual(emptyCamp());
+    expect(emptyCamp().rescued).toEqual([]);
   });
 });
 
@@ -43,7 +43,7 @@ describe('migrating a save from before the camp', () => {
     const { migrateCamp } = await import('../src/game/home/camp-migrate.ts');
     const { camp: _c, ...old } = emptySave(1);
     expect(migrateCamp(old, { radio: false, tracks: [] }).camp?.rescued).toEqual([]);
-    const withCamp = emptySave(1);
+    const withCamp = { ...emptySave(1), camp: emptyCamp() };
     expect(migrateCamp(withCamp, legacy)).toBe(withCamp);
   });
 });

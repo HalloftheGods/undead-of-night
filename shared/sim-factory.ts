@@ -84,6 +84,7 @@ export function createSimState(options: SimulationOptions): SimState {
     departed: new Map(),
     zombies: [],
     merchants: [],
+    rescuees: [],
     bullets: [],
     pickups: [],
     entered: new Set(),

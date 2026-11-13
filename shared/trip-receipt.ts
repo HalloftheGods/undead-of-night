@@ -4,6 +4,7 @@ import { bagOf, candyBagWorth } from './candy.ts';
 import { TICK_DT } from './constants.ts';
 import { SALVAGE_TYPES } from './events.ts';
 import type { TripReceipt } from './home-protocol.ts';
+import { boardedAtVan } from './camp/rescuee.ts';
 import { FINAL_LEVEL } from './levels.ts';
 import { loadoutOf } from './loadout.ts';
 import { noSalvage } from './salvage-data.ts';
@@ -52,6 +53,7 @@ function tripFacts(sim: SimState, run: HomeRun, p: PlayerState, level: number): 
 export function bankTrip(sim: SimState, run: HomeRun, p: PlayerState, home: PlayerHome, level: number): void {
   const ending = level === FINAL_LEVEL && !home.finished;
   const candyWorth = candyBagWorth(p.candy);
+  const aboard = boardedAtVan(sim);
   home.receipt = {
     ...tripFacts(sim, run, p, level),
     outcome: 'banked',
@@ -62,7 +64,9 @@ export function bankTrip(sim: SimState, run: HomeRun, p: PlayerState, home: Play
     candyBag: bagOf(p.candy),
     ending,
     gear: loadoutOf(p),
+    ...(aboard.length > 0 ? { rescued: aboard } : {}),
   };
+  for (const id of aboard) if (!home.rescued.includes(id)) home.rescued.push(id);
   home.highest = Math.max(home.highest, Math.min(FINAL_LEVEL, level + 1));
   home.finished ||= ending;
 }

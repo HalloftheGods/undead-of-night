@@ -1,5 +1,6 @@
 // What a client may say about home, checked before it reaches the sim.
 
+import { MERCHANT_IDS } from '../home-protocol.ts';
 import type { HomeAction, JoinHome } from '../home-protocol.ts';
 import { FINAL_LEVEL, FIRST_LEVEL } from '../levels.ts';
 import { emptyLoadout, validateLoadout } from '../loadout.ts';
@@ -40,5 +41,6 @@ export function parseJoinHome(value: unknown): JoinHome | undefined {
   if (!isRecord(value)) return undefined;
   const finished = value.finished === true ? { finished: true } : {};
   const radio = value.radio === true ? { radio: true } : {};
-  return { loadout: validateLoadout(value.loadout) ?? emptyLoadout(), highest: isLevel(value.highest) ? value.highest : FIRST_LEVEL, ...finished, ...radio };
+  const rescued = Array.isArray(value.rescued) ? { rescued: MERCHANT_IDS.filter((id) => (value.rescued as unknown[]).includes(id)) } : {};
+  return { loadout: validateLoadout(value.loadout) ?? emptyLoadout(), highest: isLevel(value.highest) ? value.highest : FIRST_LEVEL, ...finished, ...radio, ...rescued };
 }

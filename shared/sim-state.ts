@@ -29,11 +29,12 @@ import type {
 import type { ContainerState } from './containers.ts';
 import type { Supplies } from './supply-types.ts';
 import type { FlowField, Point } from './flow-field.ts';
-import type { HomeView, Jewels, OverrunPhase, OverrunReceipt, SalvageCounts, TripReceipt } from './home-protocol.ts';
+import type { HomeView, Jewels, MerchantId, OverrunPhase, OverrunReceipt, SalvageCounts, TripReceipt } from './home-protocol.ts';
 import { randRange } from './rng.ts';
 import type { Rng } from './rng.ts';
 import type { SpatialHashGrid } from './spatial-grid.ts';
 import type { MerchantState } from './bunker-merchants.ts';
+import type { RescueeState } from './camp/rescuee.ts';
 import { buildingAt, circleHitsSolid, isBlockedAt } from './world-query.ts';
 import type { GunQuirk, PartCounts } from './gun-upgrade-data.ts';
 import type { GunFit } from './gun-upgrades.ts';
@@ -62,6 +63,8 @@ export interface PlayerHome extends Omit<HomeView, 'overrun' | 'chest' | 'salvag
   finished: boolean;
   /** Has a radio, as they said when they joined, so The Radio opens for them. */
   radio: boolean;
+  /** Who they have rescued, as they said when they joined and since; the camp and their shops open from it. */
+  rescued: MerchantId[];
   /** The level of each radio found while they were in the room, for their receipt. */
   radioLevels: number[];
   /** What `dropCarried` took off them on this trip, for a died receipt, since their carried treasure is gone by then. */
@@ -282,6 +285,8 @@ export interface HomeRun {
   campLevel: number;
   /** The camp's size for this visit, from `campLevel`. */
   campSize: CampSize;
+  /** Who stands in this visit's camp, latched with its size. */
+  campRescued: MerchantId[];
   /** Treasure's own id counter, kept off `entityId()`. */
   nextTreasure: number;
   /** The serial the next receipt takes, from 1, for the whole room. No reset or restart puts it back, so `${simId}:${serial}` never repeats. */
@@ -373,6 +378,8 @@ export interface SimState {
   zombies: ZombieState[];
   /** The bunker's merchants, walking it; none anywhere else (`shared/bunker-merchants.ts`). */
   merchants: MerchantState[];
+  /** The people waiting in, or following through, this town. Empty anywhere but a home trip. */
+  rescuees: RescueeState[];
   bullets: BulletState[];
   pickups: PickupState[];
   /** Town buildings, by ground floor, that any player has been inside: where the map marks supplies left behind. */

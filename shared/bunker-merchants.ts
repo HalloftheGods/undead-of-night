@@ -2,6 +2,7 @@
 // stand. Sim state, so every client sees them in the same place. The fight with the horde is in merchant-fight.ts.
 
 import { MERCHANT_REACH, MERCHANT_STARTS, merchantRoam } from './bunker-map.ts';
+import { campRescued } from './camp/camp-latch.ts';
 import { clampCampSize } from './camp/camp-ring.ts';
 import { PLAYER_RADIUS, TICK_DT, WEAPONS } from './constants.ts';
 import { FlowField } from './flow-field.ts';
@@ -100,7 +101,8 @@ function newMerchant(sim: SimState, id: MerchantId, index: number): MerchantStat
 
 /** The merchants in their first places, for a bunker just raised. Anywhere else there are none. */
 export function placeMerchants(sim: SimState): void {
-  sim.merchants = isBunkerMap(sim.map) ? MERCHANT_IDS.map((id, index) => newMerchant(sim, id, index)) : [];
+  const inCamp = (id: MerchantId): boolean => campRescued(sim).includes(id);
+  sim.merchants = isBunkerMap(sim.map) ? MERCHANT_IDS.flatMap((id, index) => (inCamp(id) ? [newMerchant(sim, id, index)] : [])) : [];
 }
 
 /** On their feet: the ones a customer can open, and the horde can go for. */
@@ -111,14 +113,17 @@ export function merchantStations(merchants: readonly Pick<MerchantEntity, 'id' |
   return merchants.filter((m) => m.status === 'alive').map((m) => ({ id: m.id, x: m.x, y: m.y, radius: MERCHANT_REACH }));
 }
 
+/** What walking needs of a body: a merchant, or a person being escorted. */
+export type Walker = Pick<MerchantState, 'x' | 'y' | 'angle' | 'moving' | 'field' | 'fieldTick'>;
+
 /** Lays the field toward a point. */
-export function layField(sim: SimState, m: MerchantState, to: readonly { x: number; y: number }[]): void {
+export function layField(sim: SimState, m: Walker, to: readonly { x: number; y: number }[]): void {
   m.field.recompute(to);
   m.fieldTick = sim.tick;
 }
 
 /** One tick toward `to`: straight there with a clear line, else round the walls along the field. True if they got anywhere. */
-export function walkTo(sim: SimState, m: MerchantState, to: { x: number; y: number }, speed: number): boolean {
+export function walkTo(sim: SimState, m: Walker, to: { x: number; y: number }, speed: number): boolean {
   const clear = segmentHitsSolid(sim.map, m.x, m.y, to.x, to.y) === null;
   const waypoint = clear ? to : m.field.nextWaypoint(m.x, m.y, PLAYER_RADIUS) ?? to;
   const dirX = waypoint.x - m.x;
