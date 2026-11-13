@@ -19,13 +19,22 @@
           </header>
 
           <div class="container-grid-stage">
-            <img
-              v-if="containerArtUrl"
-              :src="containerArtUrl"
+            <!-- Both drawings sit by their anchors in one box, so searching the container never shifts the art. -->
+            <svg
+              v-if="containerArtStage"
               class="container-stage-bg-art"
-              alt=""
-              draggable="false"
-            />
+              :viewBox="containerArtStage.viewBox"
+              preserveAspectRatio="xMidYMid meet"
+              aria-hidden="true"
+            >
+              <image
+                :href="containerArtStage.url"
+                :x="containerArtStage.x"
+                :y="containerArtStage.y"
+                :width="containerArtStage.w"
+                :height="containerArtStage.h"
+              />
+            </svg>
 
             <div
               class="grid-board container-grid"
@@ -291,6 +300,7 @@ import { useGame } from './use-game.ts';
 import { backpackDef } from '../../shared/backpack.ts';
 import { getItemFootprint, isCellBlocked, type GridItem } from '../../shared/grid-inventory.ts';
 import { spriteDataUrl } from '../engine/sprite-cache.ts';
+import { stageBox, stageOffset, stageSprite } from '../game/inventory/container-stage.ts';
 import { heldButtonAt, heldOnSurvivor, setHeld } from '../game/held-cursor.ts';
 import { itemBlurb } from '../game/inventory/item-blurb.ts';
 import { heldActions, isLoadable } from '../game/inventory/held-actions.ts';
@@ -365,14 +375,15 @@ const isHoldingItem = computed(() => modalState.heldItem !== null);
 
 const hasContainer = computed(() => modalState.containerGrid.items.length > 0 || Boolean(props.containerKind));
 
-const containerArtUrl = computed(() => {
+/** The container's picture, placed by its anchor in a box that holds both drawings. */
+const containerArtStage = computed(() => {
   const containerArt = props.containerArt ?? (props.art && props.containerKind ? props.art.containers[props.containerKind] : null);
-  if (!containerArt) return '';
-  const hasItems = modalState.containerGrid.items.length > 0;
-  const sprite = hasItems
-    ? (containerArt.closed ?? containerArt.opened)
-    : (containerArt.opened ?? containerArt.closed);
-  return sprite ? spriteDataUrl(sprite) : '';
+  if (!containerArt) return null;
+  const box = stageBox(containerArt);
+  const sprite = stageSprite(containerArt, modalState.containerGrid.items.length > 0);
+  if (!box || !sprite) return null;
+  const at = stageOffset(box, sprite);
+  return { url: spriteDataUrl(sprite), viewBox: `0 0 ${box.width} ${box.height}`, x: at.x, y: at.y, w: sprite.w, h: sprite.h };
 });
 
 const currentOrientationLabel = computed(() => {

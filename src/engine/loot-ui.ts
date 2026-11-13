@@ -4,6 +4,7 @@ import { backpackDef } from '../../shared/backpack.ts';
 import { getItemFootprint, type GridItem, type InventoryGrid } from '../../shared/grid-inventory.ts';
 import { drawOutlinedText, drawText, FONT_HEIGHT, textWidth } from './bitmap-font.ts';
 import { drawSpriteScaled, spriteCanvas } from './sprite-cache.ts';
+import { stageBox, stageOffset, stageSprite } from '../game/inventory/container-stage.ts';
 import {
   computeTileHighlight,
   formatItemName,
@@ -364,11 +365,25 @@ function drawBoard(ctx: CanvasRenderingContext2D, view: LootView, board: GridBox
   }
 }
 
-function containerSprite(view: LootView): PixelSprite | null {
-  const art = view.containerArt ?? (view.art && view.state.containerKind ? view.art.containers[view.state.containerKind] : null);
-  if (!art) return null;
-  const hasItems = view.state.containerGrid.items.length > 0;
-  return hasItems ? (art.closed ?? art.opened ?? null) : (art.opened ?? art.closed ?? null);
+function containerArtOf(view: LootView): ContainerArt | null {
+  return view.containerArt ?? (view.art && view.state.containerKind ? view.art.containers[view.state.containerKind] : null);
+}
+
+/** The container's picture, placed by its anchor inside one box that holds both drawings, so emptying it never shifts the art. */
+function drawContainerArt(ctx: CanvasRenderingContext2D, view: LootView, board: Box): void {
+  const art = containerArtOf(view);
+  if (!art) return;
+  const box = stageBox(art);
+  const sprite = stageSprite(art, view.state.containerGrid.items.length > 0);
+  if (!box || !sprite) return;
+  const scale = Math.max(1, Math.floor(Math.min(board.w / box.width, board.h / box.height)));
+  const left = board.x + Math.round((board.w - box.width * scale) / 2);
+  const top = board.y + Math.round((board.h - box.height * scale) / 2);
+  const at = stageOffset(box, sprite);
+  ctx.globalAlpha = 0.85;
+  // drawSpriteScaled places a sprite by its anchor, so the anchor goes at its offset in the box.
+  drawSpriteScaled(ctx, sprite, left + (at.x + sprite.ax) * scale, top + (at.y + sprite.ay) * scale, scale);
+  ctx.globalAlpha = 1;
 }
 
 function gearMark(view: LootView, slot: GearSlotId): 'valid' | 'invalid' | 'none' {
@@ -395,13 +410,7 @@ export function drawLootUi(ctx: CanvasRenderingContext2D, view: LootView, layout
     const dock = layout.container;
     plate(ctx, dock, 0.85);
     drawTitle(ctx, upper(state.containerTitle), dock, `${state.containerGrid.items.length} ITEMS`);
-    const sprite = containerSprite(view);
-    if (sprite) {
-      ctx.globalAlpha = 0.85;
-      const fit = Math.max(1, Math.floor(Math.min(dock.board.w / sprite.w, dock.board.h / sprite.h)));
-      drawCentred(ctx, sprite, dock.board, fit);
-      ctx.globalAlpha = 1;
-    }
+    drawContainerArt(ctx, view, dock.board);
     drawBoard(ctx, view, dock.board, true);
   }
 

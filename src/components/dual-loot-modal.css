@@ -222,7 +222,6 @@
   inset: calc(var(--ap) * 1.5);
   width: calc(100% - calc(var(--ap) * 3));
   height: calc(100% - calc(var(--ap) * 3));
-  object-fit: contain;
   image-rendering: pixelated;
   pointer-events: none;
   z-index: 0;
