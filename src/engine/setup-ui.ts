@@ -260,6 +260,14 @@ export function focusTargets(layout: SetupLayout): readonly FocusTarget[] {
 
 export type Direction = 'left' | 'right' | 'up' | 'down';
 
+/** How far a centre lies in each direction, given its offset from where the step starts. */
+const ALONG: Readonly<Record<Direction, (dx: number, dy: number) => number>> = {
+  right: (dx) => dx,
+  left: (dx) => -dx,
+  down: (_dx, dy) => dy,
+  up: (_dx, dy) => -dy,
+};
+
 /**
  * The control a step in `dir` from `from` lands on: the nearest centre that lies that way, an off-axis miss counting half
  * as much, so the move favours the next row or column over a far one. Null when nothing lies that way, so the focus stays put.
@@ -275,7 +283,7 @@ export function neighbour(targets: readonly FocusTarget[], from: FocusId, dir: D
     if (target.id === from) continue;
     const dx = target.box.x + target.box.w / 2 - cx;
     const dy = target.box.y + target.box.h / 2 - cy;
-    const along = dir === 'right' ? dx : dir === 'left' ? -dx : dir === 'down' ? dy : -dy;
+    const along = ALONG[dir](dx, dy);
     const across = dir === 'left' || dir === 'right' ? dy : dx;
     if (along <= 0) continue;
     const score = along + Math.abs(across) * 0.5;
