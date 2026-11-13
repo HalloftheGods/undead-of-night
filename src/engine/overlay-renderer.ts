@@ -298,10 +298,27 @@ export class OverlayRenderer {
     drawBar(ctx, x, y, STAMINA_BAR_WIDTH, bar.fraction, bar.color);
   }
 
+  /** Whose XP the bar shows. The renderer outlives runs, so it reads the played survivor's own save when the skin changes, not once at load. */
+  private xpSkin: number | null = null;
+
+  private followSurvivorXp(skin: number): void {
+    const isSameSurvivor = skin === this.xpSkin;
+    if (isSameSurvivor) return;
+    this.xpSkin = skin;
+    try {
+      const prog = loadProgression(skin);
+      this.xpLevel = prog.level;
+      this.xpFraction = xpBarFraction(prog);
+    } catch {
+      // chemx-allow: best-effort an unreadable save leaves the bar as it was
+    }
+  }
+
   /** The local survivor's retro green XP bar, vertical on the left of their sprite. */
   private drawXp(ctx: CanvasRenderingContext2D, player: PlayerEntity, isLocal: boolean, left: number, top: number, time: number): void {
     const isVisiblePlayer = isLocal && player.status === 'alive';
     if (!isVisiblePlayer) return;
+    this.followSurvivorXp(player.skin);
 
     let alpha = 1;
     if (this.autoFadeXp) {
