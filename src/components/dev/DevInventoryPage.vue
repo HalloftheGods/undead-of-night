@@ -172,6 +172,9 @@
         <section class="dev-toolbar px-frame">
           <div class="toolbar-top-row">
             <div class="toolbar-stats">
+              <PixelButton class="stat-pill" @press="previewCanvas = !previewCanvas">
+                Preview: {{ previewCanvas ? 'Canvas' : 'Vue overlay' }}
+              </PixelButton>
               <span class="stat-pill">Total: {{ containerCatalogue.length }}</span>
               <span class="stat-pill" :class="{ 'is-highlight': modifiedContainersCount > 0 }">
                 Modified: {{ modifiedContainersCount }}
@@ -301,8 +304,17 @@
     </div>
 
     <!-- In-Game Dual Loot Modal Preview -->
+    <CanvasLootPreview
+      v-if="previewModal && previewCanvas"
+      :art="art"
+      :title="previewModal.title"
+      :kind="previewModal.containerKind"
+      :grid="previewModal.grid"
+      :container-art="previewModal.containerArt"
+      @close="closePreviewModal"
+    />
     <DualLootModal
-      v-if="previewModal"
+      v-else-if="previewModal"
       :art="art"
       :container-title="previewModal.title"
       :container-kind="previewModal.containerKind"
@@ -348,6 +360,7 @@ import {
 import PixelButton from '../PixelButton.vue';
 import TitlePage from '../TitlePage.vue';
 import DualLootModal from '../DualLootModal.vue';
+import CanvasLootPreview from './CanvasLootPreview.vue';
 import ItemSizingCard from './ItemSizingCard.vue';
 import ContainerSizingCard from './ContainerSizingCard.vue';
 
@@ -743,6 +756,8 @@ interface PreviewModalState {
 }
 
 const previewModal = ref<PreviewModalState | null>(null);
+/** Preview draws the loot window on a canvas, as the game would, instead of the Vue overlay. */
+const previewCanvas = ref(true);
 
 const SAMPLE_LOOT_ITEMS = ['bandage', 'water_bottle', 'pistol_ammo', 'knife', 'medkit', 'full_size_bar'];
 
