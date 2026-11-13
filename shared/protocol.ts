@@ -374,8 +374,10 @@ export interface SnapshotPacket {
   readonly phase: GamePhase;
   /** Level of the run, 1 up to the last. */
   readonly level: number;
-  /** The town being played: generateWorldMap(mapSeed, level). A change means the map changed, whatever the events said. */
+  /** The town being played: generateWorldMap(mapSeed, level, campSize). A change means the map changed, whatever the events said. */
   readonly mapSeed: number;
+  /** Home only: the camp's size past the smallest. Left off in a town and in the smallest camp. A change rebuilds the camp. */
+  readonly campSize?: number;
   /** Horde number in this town. Phase 'intermission' is the scavenging lull, phase 'wave' is a horde hunting the players. */
   readonly wave: number;
   /** Seconds to the next horde during intermission, otherwise 0. */
@@ -441,6 +443,8 @@ export interface WelcomePacket {
   readonly mapSeed: number;
   /** The level of that town, which picks its biome. Left off, level 1. */
   readonly level?: number;
+  /** Home only: the camp's size past the smallest, so a guest builds the camp the room plays. Left off, the smallest. */
+  readonly campSize?: number;
   /** What the room is played on: a guest plays the first player's choice, not their own. */
   readonly difficulty?: DifficultyId;
   /** This join took back a body the room was still holding. Left off for a new one. */
@@ -465,8 +469,9 @@ export interface RoomPacket {
  * 3: the welcome carries the town's print, and towns laid out on 2026-11-08 no longer match version 2's.
  * 4: the fireworks bus parks in the downtown car park, and container_opened can say how many fireworks were taken.
  * 5: the bunker's merchants walk it (snapshot `merchants`, events `merchant_hurt` and `merchant_downed`), and its stalls have no counters.
+ * 6: home is an outdoor camp in a fence, with tents, of five sizes (welcome and snapshot `campSize`); version 5 would build the indoor bunker.
  */
-export const PROTOCOL_VERSION = 5;
+export const PROTOCOL_VERSION = 6;
 
 /**
  * Sent just before a link is closed on purpose, because a data channel has no close code.

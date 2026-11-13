@@ -1,4 +1,5 @@
 import type { BagCommit } from "../../shared/bag.ts";
+import { campSizeField } from "../../shared/camp/camp-ring.ts";
 import { TICK_DT, TICK_RATE } from "../../shared/constants.ts";
 import type { EmoteId } from "../../shared/emotes.ts";
 import { playsFromHome } from "../../shared/game-style.ts";
@@ -144,6 +145,7 @@ export class LocalSession implements GameTransport {
       tickRate: TICK_RATE,
       mapSeed: sim.map.seed,
       level: sim.level,
+      ...campSizeField(sim.map),
       difficulty: sim.difficulty,
       ...(testDrive ? { testDrive } : {})
     });

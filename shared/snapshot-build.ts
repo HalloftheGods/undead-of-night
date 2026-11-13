@@ -1,5 +1,6 @@
 import { bagHash } from './bag.ts';
 import { merchantView } from './bunker-merchants.ts';
+import { campSizeField } from './camp/camp-ring.ts';
 import { openedContainers } from './container-search.ts';
 import { bagOf } from './candy.ts';
 import { doorViews } from './doors.ts';
@@ -180,6 +181,7 @@ export function buildSnapshot(sim: SimState): SnapshotPacket {
     phase: sim.phase,
     level: sim.level,
     mapSeed: sim.map.seed,
+    ...campSizeField(sim.map),
     wave: sim.wave,
     intermission: sim.phase === 'intermission' ? round2(Math.max(0, sim.intermissionLeft)) : 0,
     hostiles: hordeHostiles(sim),

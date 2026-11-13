@@ -31,6 +31,17 @@ export function clampCampSize(n: number): CampSize {
   return Math.max(1, Math.min(5, Math.floor(n))) as CampSize;
 }
 
+/** A size off the wire: anything that is not a number is the smallest camp. */
+export function readCampSize(value: unknown): CampSize {
+  return typeof value === 'number' ? clampCampSize(value) : 1;
+}
+
+/** What a welcome or snapshot says about the camp: its size past the smallest, and nothing at all in a town or the smallest camp. */
+export function campSizeField(map: { readonly camp?: { readonly size: number } }): { campSize?: number } {
+  const size = map.camp?.size ?? 1;
+  return size > 1 ? { campSize: size } : {};
+}
+
 /** Inclusive tile bounds. */
 export interface TileRect {
   readonly col0: number;

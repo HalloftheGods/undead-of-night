@@ -138,6 +138,7 @@ export function isWelcomePacket(v: unknown): v is WelcomePacket {
     && v.type === 'welcome'
     && isString(v.yourId)
     && hasNumbers(v, ['tickRate', 'mapSeed'])
+    && (v.campSize === undefined || isNumber(v.campSize))
     && (v.difficulty === undefined || isDifficultyId(v.difficulty))
     && (v.town === undefined || isNumber(v.town))
     && isFlag(v.resumed);
@@ -161,6 +162,7 @@ export function isSnapshotPacket(v: unknown): v is SnapshotPacket {
     && v.type === 'snapshot'
     && PHASES.includes(v.phase)
     && hasNumbers(v, ['tick', 'level', 'mapSeed', 'wave', 'intermission', 'hostiles'])
+    && (v.campSize === undefined || isNumber(v.campSize))
     && Array.isArray(v.players) && v.players.every(isPlayerEntity)
     && Array.isArray(v.zombies) && v.zombies.every(isZombieEntity)
     && Array.isArray(v.bullets) && v.bullets.every(isBulletEntity)

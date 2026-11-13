@@ -35,6 +35,7 @@ import type { RunStage } from "./run-stage.ts";
 import { loadLeaderboard } from "./storage.ts";
 import { DIFFERENT_TOWN_TEXT } from "../../shared/close-codes.ts";
 import { townPrint } from "../../shared/town-print.ts";
+import { readCampSize } from "../../shared/camp/camp-ring.ts";
 import { checkApUpkeep } from "../../shared/progression-save.ts";
 import { markTestDrive } from "../../shared/vehicle-choice.ts";
 import { seatRefusal } from "./seat-check.ts";
@@ -409,7 +410,7 @@ export class RunSession {
     state.welcomed = true;
     state.testDrive = packet.testDrive === true;
     this.host.home.welcomed(packet);
-    const map = stage.open(packet.mapSeed, packet.level);
+    const map = stage.open(packet.mapSeed, packet.level, readCampSize(packet.campSize));
     if (packet.testDrive) markTestDrive(map);
     // Walls and cars that only this copy of the town has would be walked straight through.
     const builtAnotherTown = packet.town !== undefined && packet.town !== townPrint(map);
