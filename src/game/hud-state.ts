@@ -543,7 +543,7 @@ export function hordeStatus(
     Partial<Pick<HudState, "level">>
 ): HordeStatus {
   const home = hud.level === BUNKER_LEVEL;
-  if (home) return { title: "Bunker", detail: "", loud: false };
+  if (home) return { title: "Camp", detail: "", loud: false };
   const runOver = hud.phase === "gameover";
   if (runOver) return { title: "Game over", detail: "", loud: true };
   const hunted = hud.phase === "wave";
