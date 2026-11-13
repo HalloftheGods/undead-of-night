@@ -303,11 +303,13 @@ export type GameEvent =
   | { readonly type: 'level_start'; readonly level: number }
   /** The van left the bunker for a town. `attempt` is the room's trip serial. */
   | { readonly type: 'trip_start'; readonly level: number; readonly attempt: number }
-  /** Something at the blast door: `step` counts the warnings from 0, `left` is the clock's seconds then. */
-  | { readonly type: 'overrun_warning'; readonly step: number; readonly left: number }
+  /** The horde nears the camp: `step` counts the warnings from 0, `left` is the clock's seconds then, `gaps` how many sections will give once picked. */
+  | { readonly type: 'overrun_warning'; readonly step: number; readonly left: number; readonly gaps?: number }
+  /** A camp fence section about to give rocks on its posts, or gives, at x,y: the middle of the ground it stands on. */
+  | { readonly type: 'fence_rattle' | 'fence_fall'; readonly x: number; readonly y: number }
   /** A door at x,y was closed, opened, boarded, pried, hit by zombies or broken. */
   | { readonly type: 'door_closed' | 'door_opened' | 'plank_added' | 'plank_removed' | 'door_hit' | 'door_broken'; readonly x: number; readonly y: number }
-  | { readonly type: 'overrun_breach'; readonly hostiles: number }
+  | { readonly type: 'overrun_breach'; readonly hostiles: number; readonly gaps?: number }
   | { readonly type: 'merchant_hurt'; readonly merchant: MerchantId; readonly x: number; readonly y: number }
   | { readonly type: 'merchant_downed'; readonly merchant: MerchantId; readonly x: number; readonly y: number }
   | { readonly type: 'overrun_end'; readonly outcome: OverrunEnd }

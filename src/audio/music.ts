@@ -26,7 +26,8 @@ const LEVELS: Record<Scene, Levels> = {
   gameover: { drone: 0, pad: 0, wind: 0.025 },
   victory: { drone: 0, pad: 0, wind: 0 },
   credits: { drone: 0, pad: 0, wind: 0 },
-  bunker: { drone: 0, pad: 0.06, wind: 0 },
+  // Out under the sky now: a little wind through the camp, under the pad.
+  bunker: { drone: 0, pad: 0.06, wind: 0.025 },
 };
 
 /**

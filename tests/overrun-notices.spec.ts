@@ -7,21 +7,26 @@ import { overrunBanner } from '../src/game/run-notices.ts';
 const view = (patch: Partial<OverrunView> = {}): OverrunView => ({ phase: 'counting', left: 300, slowed: false, hostiles: 0, total: 0, ...patch });
 
 describe('overrun banners', () => {
-  it('words each warning step as the design table does, the last one saying guns are free', () => {
+  it('words each warning step, the last one naming how many places the fence gives and that guns are free', () => {
     const steps = [150, 75, 30].map((left, step) => overrunBanner({ type: 'overrun_warning', step, left }));
     expect(steps).toEqual([
-      { title: 'SOMETHING AT THE BLAST DOOR', subtitle: '2:30', tone: 'quiet' },
-      { title: 'THE DOOR IS BUCKLING', subtitle: '1:15', tone: 'danger' },
-      { title: "IT WON'T HOLD", subtitle: 'GUNS FREE', tone: 'danger' },
+      { title: 'SOMETHING IN THE TREES', subtitle: '2:30', tone: 'quiet' },
+      { title: "THEY'RE AT THE FENCE", subtitle: '1:15', tone: 'danger' },
+      { title: 'THE FENCE IS GIVING', subtitle: 'GUNS FREE', tone: 'danger' },
     ]);
+    expect(overrunBanner({ type: 'overrun_warning', step: 2, left: 30, gaps: 1 })?.title).toBe('THE FENCE IS GIVING: 1 PLACE');
+    expect(overrunBanner({ type: 'overrun_warning', step: 2, left: 30, gaps: 3 })?.title).toBe('THE FENCE IS GIVING: 3 PLACES');
+    expect(overrunBanner({ type: 'overrun_warning', step: 0, left: 150, gaps: 3 })?.title).toBe('SOMETHING IN THE TREES');
   });
 
-  it('counts the hostiles at the breach', () => {
-    expect(overrunBanner({ type: 'overrun_breach', hostiles: 12 })).toEqual({ title: 'THE BLAST DOOR IS DOWN', subtitle: '12 HOSTILES', tone: 'danger' });
+  it('counts the gaps and the hostiles at the breach', () => {
+    expect(overrunBanner({ type: 'overrun_breach', hostiles: 12 })).toEqual({ title: 'THE FENCE IS DOWN', subtitle: '12 HOSTILES', tone: 'danger' });
+    expect(overrunBanner({ type: 'overrun_breach', hostiles: 12, gaps: 1 })?.title).toBe('THE FENCE IS DOWN');
+    expect(overrunBanner({ type: 'overrun_breach', hostiles: 12, gaps: 2 })?.title).toBe('THE FENCE IS DOWN IN 2 PLACES');
   });
 
-  it('points a held bunker at its chest, and leaves a fallen one to the death summary', () => {
-    expect(overrunBanner({ type: 'overrun_end', outcome: 'held' })).toEqual({ title: 'THE BUNKER HOLDS', subtitle: 'A CHEST BY THE DOOR', tone: 'hope' });
+  it('points a held camp at its chest, and leaves a fallen one to the death summary', () => {
+    expect(overrunBanner({ type: 'overrun_end', outcome: 'held' })).toEqual({ title: 'THE CAMP HOLDS', subtitle: 'A CHEST BY THE VAN', tone: 'hope' });
     expect(overrunBanner({ type: 'overrun_end', outcome: 'lost' })).toBeNull();
   });
 
@@ -35,8 +40,8 @@ describe('overrun clock line', () => {
     expect(overrunClockLine(null)).toBeNull();
   });
 
-  it('shows the time to the door and the slowed tag', () => {
-    expect(overrunClockLine(view({ left: 299.2 }))).toMatchObject({ label: 'BLAST DOOR', value: '5:00', slowed: false, urgent: false });
+  it('shows the time to the fence giving and the slowed tag', () => {
+    expect(overrunClockLine(view({ left: 299.2 }))).toMatchObject({ label: 'FENCE', value: '5:00', slowed: false, urgent: false });
     expect(overrunClockLine(view({ left: 120, slowed: true }))?.slowed).toBe(true);
   });
 

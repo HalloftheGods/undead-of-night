@@ -3,8 +3,9 @@
 // The numbers are starting points for the soak (#7223). Nothing here runs while `sim.overrun` is null.
 
 import { GAP_SPAWN_SCATTER_TILES, gapCount, gapSpawnCentre, pickGaps } from './camp/breach-pick.ts';
+import { gapGround } from './camp/camp-ring.ts';
 import { settleFence } from './camp/fence-fall.ts';
-import { HORDE_SPEED_SCALE, TICK_DT, ZOMBIES, ZOMBIE_CAP } from './constants.ts';
+import { HORDE_SPEED_SCALE, TICK_DT, TICK_RATE, ZOMBIES, ZOMBIE_CAP } from './constants.ts';
 import { BASELINE_DIFFICULTY } from './difficulty.ts';
 import type { DifficultyId } from './difficulty.ts';
 import type { OverrunView } from './home-protocol.ts';
@@ -54,6 +55,9 @@ export const OVERRUN_CHEST_FINDS = 3;
 /** Silver stacks in a reward chest. */
 export const OVERRUN_CHEST_STACKS = 6;
 
+/** While armed, each section that will give is heard rocking on its posts this often. */
+const FENCE_RATTLE_TICKS = Math.round(1.5 * TICK_RATE);
+
 /** Seconds of slack for the sum of many small ticks, as the van's wait allows. */
 const CLOCK_EPSILON = 1e-9;
 
@@ -72,11 +76,23 @@ export function startOverrunClock(sim: SimState): void {
     queue: [],
     gaps: [],
     gapTurn: 0,
+    armTick: 0,
     spawnTimer: 0,
     total: 0,
     kills: 0,
     startTick: sim.tick,
   };
+}
+
+/** An event at the middle of each picked section's ground, for the sound of it rocking or giving. */
+function emitAtGaps(sim: SimState, overrun: OverrunState, type: 'fence_rattle' | 'fence_fall'): void {
+  const sections = sim.map.camp?.sections ?? [];
+  for (const i of overrun.gaps) {
+    const section = sections[i];
+    if (!section) continue;
+    const box = gapGround(section);
+    emit(sim, { type, x: (box.x0 + box.x1) / 2, y: (box.y0 + box.y1) / 2 });
+  }
 }
 
 /** The camp's fence sections that give in this breach, as many as the latched level and the difficulty ask for. */
@@ -119,15 +135,20 @@ function tickClock(sim: SimState, overrun: OverrunState): void {
   const isClockOut = overrun.left < CLOCK_EPSILON;
   if (isClockOut) overrun.left = 0;
   const share = overrun.left / overrun.spanSec;
+  const shouldArm = overrun.phase === 'counting' && share <= OVERRUN_ARM_FRACTION + CLOCK_EPSILON;
+  if (shouldArm) {
+    overrun.phase = 'armed';
+    // The sections that will give are known from here, so the room sees them rattle before they fall, and the last warning can count them.
+    overrun.gaps = pickFenceGaps(sim);
+    overrun.armTick = sim.tick;
+  }
+  const rattlesNow = overrun.phase === 'armed' && (sim.tick - overrun.armTick) % FENCE_RATTLE_TICKS === 0;
+  if (rattlesNow) emitAtGaps(sim, overrun, 'fence_rattle');
   while (overrun.warned < OVERRUN_WARNINGS.length && share <= OVERRUN_WARNINGS[overrun.warned] + CLOCK_EPSILON) {
-    emit(sim, { type: 'overrun_warning', step: overrun.warned, left: Math.round(overrun.left) });
+    const counted = overrun.gaps.length > 0 ? { gaps: overrun.gaps.length } : {};
+    emit(sim, { type: 'overrun_warning', step: overrun.warned, left: Math.round(overrun.left), ...counted });
     overrun.warned += 1;
   }
-  const shouldArm = overrun.phase === 'counting' && share <= OVERRUN_ARM_FRACTION + CLOCK_EPSILON;
-  if (!shouldArm) return;
-  overrun.phase = 'armed';
-  // The sections that will give are known from here, so the room sees them rattle before they fall.
-  overrun.gaps = pickFenceGaps(sim);
 }
 
 /**
@@ -139,6 +160,7 @@ function breach(sim: SimState, overrun: OverrunState): void {
   const unpicked = overrun.gaps.length === 0;
   if (unpicked) overrun.gaps = pickFenceGaps(sim);
   settleFence(sim.map, overrun.gaps);
+  emitAtGaps(sim, overrun, 'fence_fall');
   sim.flow.invalidate();
   sim.noiseFlow.invalidate();
   const room = Math.max(0, Math.min(ZOMBIE_CAP - sim.zombies.length, OVERRUN_HORDE_MAX));
@@ -149,7 +171,7 @@ function breach(sim: SimState, overrun: OverrunState): void {
   overrun.total = roster.length;
   overrun.spawnTimer = 0;
   closeEveryStation(sim);
-  emit(sim, { type: 'overrun_breach', hostiles: overrun.total });
+  emit(sim, { type: 'overrun_breach', hostiles: overrun.total, gaps: overrun.gaps.length });
 }
 
 /** Where the next zombie is put down: outside its gap, the gaps taking turns. With no fence to break, at the camp's spawn. */

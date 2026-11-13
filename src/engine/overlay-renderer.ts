@@ -394,7 +394,8 @@ export class OverlayRenderer {
         else drawOutlinedText(ctx, radioTowerPrompt(Boolean(scene.touch), scene.radioTower!.canTrigger), x, y, AMBER);
       }
       if (!isLocal) continue;
-      const call = ammoPrompt(player, { touch: Boolean(scene.touch), atHome: scene.merchants !== undefined, time });
+      const gunsFree = scene.overrun?.phase === "armed" || scene.overrun?.phase === "breached";
+      const call = ammoPrompt(player, { touch: Boolean(scene.touch), atHome: scene.merchants !== undefined, gunsFree, time });
       if (!call?.lit) continue;
       const lineTaken = player.search > 0 || atVehicle || prompted || atStation || atClimb || atRadioTower || atDoor;
       drawOutlinedText(ctx, call.text, x, lineTaken ? y - FONT_HEIGHT - 3 : y, hitPalette().danger);

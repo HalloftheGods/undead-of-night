@@ -84,7 +84,8 @@ describe('the breach', () => {
         const level = levelDef(highest);
         const size = Math.min(OVERRUN_HORDE_MAX, ZOMBIE_CAP, waveRoster(level.hordes, () => 0.5, level, difficulty, OVERRUN_HORDE_SCALE).length);
         const events = breachNow(sim, state);
-        expect(events).toContainEqual({ type: 'overrun_breach', hostiles: size });
+        expect(events).toContainEqual({ type: 'overrun_breach', hostiles: size, gaps: overrunOf(state).gaps.length });
+        expect(overrunOf(state).gaps.length).toBeGreaterThanOrEqual(1);
         expect(overrunOf(state)).toMatchObject({ phase: 'breached', total: size });
         expect(state.wave).toBe(level.hordes);
         letAllIn(sim, state);
@@ -103,13 +104,22 @@ describe('the breach', () => {
     expect(sim.snapshot().home?.overrun?.gaps).toBeUndefined();
     overrun.left = overrun.spanSec * OVERRUN_ARM_FRACTION + 0.05;
     expect(stepUntil(sim, () => overrun.phase === 'armed', SECONDS(2))).toBeGreaterThanOrEqual(0);
+    // A snapshot hands the tick's events on, so they are read first.
+    const armed = [...state.events];
     const gaps = [...overrun.gaps];
     expect(gaps).toHaveLength(gapCount(4, 'lights_out'));
     expect(sim.snapshot().home?.overrun?.gaps).toEqual(gaps);
     for (const i of gaps) expect(isLifted(state.map, i)).toBe(false);
-    breachNow(sim, state);
-    for (const i of gaps) expect(isLifted(state.map, i)).toBe(true);
     const sections = state.map.camp?.sections ?? [];
+    const groundOf = (i: number): { x: number; y: number } => {
+      const box = gapGround(sections[i]);
+      return { x: (box.x0 + box.x1) / 2, y: (box.y0 + box.y1) / 2 };
+    };
+    expect(armed).toContainEqual(expect.objectContaining({ type: 'overrun_warning', step: 2, gaps: gaps.length }));
+    for (const i of gaps) expect(armed).toContainEqual({ type: 'fence_rattle', ...groundOf(i) });
+    const fell = breachNow(sim, state);
+    for (const i of gaps) expect(isLifted(state.map, i)).toBe(true);
+    for (const i of gaps) expect(fell).toContainEqual({ type: 'fence_fall', ...groundOf(i) });
     const rect = ringRect(state.homeRun?.campSize ?? 1);
     const inside = (x: number, y: number): boolean =>
       x >= rect.col0 * TILE_SIZE && x < (rect.col1 + 1) * TILE_SIZE && y >= rect.row0 * TILE_SIZE && y < (rect.row1 + 1) * TILE_SIZE;

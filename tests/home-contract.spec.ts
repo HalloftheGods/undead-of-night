@@ -264,7 +264,7 @@ describe('the overrun on the wire', () => {
 
   it('shows the room\'s clock while there is one, in a shape the guards take', () => {
     const { sim, state } = homeSim();
-    state.overrun = { phase: 'counting', spanSec: 240, left: 212.44, slowed: true, warned: 0, queue: [], gaps: [], gapTurn: 0, spawnTimer: 0, total: 0, kills: 0, startTick: 0 };
+    state.overrun = { phase: 'counting', spanSec: 240, left: 212.44, slowed: true, warned: 0, queue: [], gaps: [], gapTurn: 0, armTick: 0, spawnTimer: 0, total: 0, kills: 0, startTick: 0 };
     const clock = sim.snapshot().home?.overrun;
     expect(clock).toEqual({ phase: 'counting', spanSec: 240, left: 212.4, slowed: true, hostiles: 0, total: 0 });
     expect(isRoomHomeView(sim.snapshot().home)).toBe(true);

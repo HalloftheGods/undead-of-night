@@ -126,27 +126,38 @@ interface OverrunWarning {
   readonly tone: Banner['tone'];
 }
 
-/** Each warning step, from the first (2:30) to the last (0:30), when guns come free. */
+/** Each warning step, from the first to the last, when guns come free and the sections that will give start to rattle. */
 const OVERRUN_WARNING_STEPS: readonly OverrunWarning[] = [
-  { title: 'SOMETHING AT THE BLAST DOOR', subtitle: null, tone: 'quiet' },
-  { title: 'THE DOOR IS BUCKLING', subtitle: null, tone: 'danger' },
-  { title: "IT WON'T HOLD", subtitle: 'GUNS FREE', tone: 'danger' },
+  { title: 'SOMETHING IN THE TREES', subtitle: null, tone: 'quiet' },
+  { title: "THEY'RE AT THE FENCE", subtitle: null, tone: 'danger' },
+  { title: 'THE FENCE IS GIVING', subtitle: 'GUNS FREE', tone: 'danger' },
 ];
 
-/** A fallen bunker has no banner: the death summary shows. */
+/** A fallen camp has no banner: the death summary shows. */
 const OVERRUN_ENDINGS: Record<OverrunEnd, Omit<Banner, 'key'> | null> = {
-  held: { title: 'THE BUNKER HOLDS', subtitle: 'A CHEST BY THE DOOR', tone: 'hope' },
+  held: { title: 'THE CAMP HOLDS', subtitle: 'A CHEST BY THE VAN', tone: 'hope' },
   lost: null,
 };
+
+const places = (n: number): string => (n === 1 ? '1 PLACE' : `${n} PLACES`);
+
+/** The last warning names how many places will give, when the sim says. */
+function warningTitle(event: Extract<GameEvent, { type: 'overrun_warning' }>, step: OverrunWarning): string {
+  const isLast = event.step >= OVERRUN_WARNING_STEPS.length - 1;
+  return isLast && event.gaps !== undefined ? `${step.title}: ${places(event.gaps)}` : step.title;
+}
 
 /** The banner for a warning step, the breach or a held bunker, or null for any other event. */
 export function overrunBanner(event: GameEvent): Omit<Banner, 'key'> | null {
   switch (event.type) {
     case 'overrun_warning': {
       const step = OVERRUN_WARNING_STEPS[Math.min(event.step, OVERRUN_WARNING_STEPS.length - 1)];
-      return { title: step.title, subtitle: step.subtitle ?? formatDuration(event.left), tone: step.tone };
+      return { title: warningTitle(event, step), subtitle: step.subtitle ?? formatDuration(event.left), tone: step.tone };
     }
-    case 'overrun_breach': return { title: 'THE BLAST DOOR IS DOWN', subtitle: `${event.hostiles} HOSTILES`, tone: 'danger' };
+    case 'overrun_breach': {
+      const several = (event.gaps ?? 1) > 1;
+      return { title: several ? `THE FENCE IS DOWN IN ${places(event.gaps ?? 1)}` : 'THE FENCE IS DOWN', subtitle: `${event.hostiles} HOSTILES`, tone: 'danger' };
+    }
     case 'overrun_end': return OVERRUN_ENDINGS[event.outcome];
     default: return null;
   }

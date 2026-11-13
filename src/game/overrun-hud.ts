@@ -19,7 +19,7 @@ export function overrunClockLine(overrun: OverrunView | null): OverrunClockLine 
   switch (overrun.phase) {
     case 'counting':
     case 'armed':
-      return { label: 'BLAST DOOR', value: formatDuration(Math.ceil(overrun.left)), slowed: overrun.slowed, urgent: overrun.phase === 'armed' };
+      return { label: 'FENCE', value: formatDuration(Math.ceil(overrun.left)), slowed: overrun.slowed, urgent: overrun.phase === 'armed' };
     case 'breached':
       return { label: 'HOSTILES', value: String(overrun.hostiles), slowed: false, urgent: true };
     default:

@@ -90,8 +90,12 @@ export function ambienceFor(level: number): AmbienceName | null {
   return BED_FOR[biomeFor(level).id] ?? null;
 }
 
-/** The bed under a scene: a town's, out in the town between and during hordes; none in the bunker or the menus. */
+/** The night woods round the camp, outside its fence. */
+const CAMP_BED: AmbienceName = 'amb_forest';
+
+/** The bed under a scene: a town's, out in the town between and during hordes; the woods at the camp; none in the menus. */
 export function bedFor(scene: Scene, level: number): AmbienceName | null {
+  if (scene === 'bunker') return CAMP_BED;
   const outInTown = scene === 'intermission' || scene === 'wave';
   return outInTown ? ambienceFor(level) : null;
 }

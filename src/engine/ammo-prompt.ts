@@ -24,8 +24,10 @@ type Shooter = Pick<PlayerEntity, 'status' | 'weapon' | 'ammo' | 'owned' | 'ammo
 
 export interface AmmoPromptContext {
   readonly touch: boolean;
-  /** The bunker, where nothing needs shooting and an empty gun is not news. */
+  /** The camp, where nothing needs shooting and an empty gun is not news, until the overrun frees the guns. */
   readonly atHome: boolean;
+  /** The overrun has freed the guns at home, so an empty gun is news again. */
+  readonly gunsFree?: boolean;
   readonly time: number;
 }
 
@@ -35,7 +37,8 @@ function rounds(player: Shooter, weapon: WeaponId): number {
 
 /** What to press now the magazine is empty, or null while the gun still fires, a reload is under way, or there is no call to make. */
 export function ammoPrompt(player: Shooter, context: AmmoPromptContext): AmmoPrompt | null {
-  const quiet = player.status !== 'alive' || context.atHome || player.ammo > 0 || player.reload > 0;
+  const holdingFire = context.atHome && context.gunsFree !== true;
+  const quiet = player.status !== 'alive' || holdingFire || player.ammo > 0 || player.reload > 0;
   if (quiet) return null;
   const beat = (context.time * BLINKS_PER_SEC) % 1;
   const lit = beat < LIT_SHARE;

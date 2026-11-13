@@ -138,6 +138,9 @@ const EVENT_SOUNDS: EventSounds = {
   wave_start: (_e, { mixer }) => mixer.play('wave_start'),
   overrun_warning: (e, { playAmbient }) => playAmbient(e.step === 0 ? 'distant_groan' : 'distant_crash'),
   overrun_breach: (_e, { mixer }) => mixer.play('wave_start'),
+  // A section that will give rocks on its posts where it stands, and comes down with a crash.
+  fence_rattle: (e, { mixer, at }) => mixer.play('door_bang', at(e.x, e.y)),
+  fence_fall: (e, { mixer, at }) => mixer.play('door_break', at(e.x, e.y)),
   wave_clear: (_e, { mixer }) => mixer.play('wave_clear'),
   door_opened: (e, { mixer }) => mixer.play(DOOR[e.type], { x: e.x, y: e.y }),
   door_closed: (e, { mixer }) => mixer.play(DOOR[e.type], { x: e.x, y: e.y }),

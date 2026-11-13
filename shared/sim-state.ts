@@ -305,6 +305,8 @@ export interface OverrunState {
   gaps: number[];
   /** Which gap the next zombie comes through, round-robin. */
   gapTurn: number;
+  /** `sim.tick` when the clock armed, which times the sections' rattling. */
+  armTick: number;
   spawnTimer: number;
   /** The breach's roster size, 0 before it. */
   total: number;

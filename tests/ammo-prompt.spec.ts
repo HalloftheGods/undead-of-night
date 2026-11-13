@@ -52,9 +52,14 @@ describe('the dry-gun call over the head', () => {
     expect(ammoPrompt(shooter({ bag: { pistol: 5 } }), { ...keys, touch: true })?.text).toBe('PISTOL');
   });
 
-  it('stays quiet at home and when not on their feet', () => {
+  it('stays quiet at home while guns are held, and when not on their feet', () => {
     expect(ammoPrompt(shooter({ bag: { carbine: 5 } }), { ...keys, atHome: true })).toBeNull();
+    expect(ammoPrompt(shooter({ bag: { carbine: 5 } }), { ...keys, atHome: true, gunsFree: false })).toBeNull();
     expect(ammoPrompt(shooter({ bag: { carbine: 5 }, status: 'downed' }), keys)).toBeNull();
+  });
+
+  it('calls the reload at home once guns are free, when the camp is being overrun', () => {
+    expect(ammoPrompt(shooter({ bag: { carbine: 5 } }), { ...keys, atHome: true, gunsFree: true })?.text).toBe('R: RELOAD!');
   });
 
   it('flashes, lit more than dark', () => {

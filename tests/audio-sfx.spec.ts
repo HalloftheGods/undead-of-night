@@ -250,7 +250,10 @@ describe('biome ambience', () => {
   it('lays the town bed out in town, in the lull and under a horde, and none in the bunker or the menus', () => {
     expect(bedFor('intermission', 4)).toBe('amb_marsh');
     expect(bedFor('wave', 4)).toBe('amb_marsh');
-    for (const scene of ['menu', 'bunker', 'gameover', 'victory', 'credits'] as const) expect(bedFor(scene, 4)).toBeNull();
+    for (const scene of ['menu', 'gameover', 'victory', 'credits'] as const) expect(bedFor(scene, 4)).toBeNull();
+    // The camp is outdoors now: the night woods beyond its fence, whatever town the room has reached.
+    expect(bedFor('bunker', 4)).toBe('amb_forest');
+    expect(bedFor('bunker', 1)).toBe('amb_forest');
     expect(bedFor('intermission', 1)).toBeNull();
   });
 
