@@ -1,5 +1,5 @@
 import { BOSSES } from "../../shared/bosses.ts";
-import { PLAYER_RADIUS, ZOMBIES } from "../../shared/constants.ts";
+import { PLAYER_RADIUS, SLEEPER_RISE_SEC, ZOMBIES } from "../../shared/constants.ts";
 import { townContainers } from "../../shared/containers.ts";
 import { CHEST_SPOT } from "../../shared/bunker-map.ts";
 import { isStoreyKind } from "../../shared/storeys.ts";
@@ -44,6 +44,7 @@ import {
   bodyHeight,
   clipFrame,
   drawSilhouette,
+  clipFrameAt,
   drawSprite,
   drawSpriteScaled,
   spriteCanvas,
@@ -856,6 +857,13 @@ export class EntityRenderer {
       const spot = pixels[Math.floor(pixels.length / 2)];
       const light = lightAt(Math.round(x - sprite.ax + spot.x), Math.round(y - sprite.ay + spot.y));
       paintSelfLit(ctx, pixels, sprite, x, y, light, strength, bodies);
+    if (zombie.rising !== undefined) {
+      // Getting up: the fall played backwards over the rise.
+      const risen = 1 - zombie.rising / SLEEPER_RISE_SEC;
+      const frame = clipFrameAt(art.death, 1 - Math.min(0.999, Math.max(0, risen)));
+      drawSprite(ctx, frame, Math.round(zombie.x) - left, Math.round(zombie.y) - top);
+      return;
+    }
     if (zombie.dormant) {
       const lying = art.death.frames[art.death.frames.length - 1];
       drawSprite(ctx, lying, Math.round(zombie.x) - left, Math.round(zombie.y) - top);

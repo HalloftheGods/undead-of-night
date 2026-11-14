@@ -36,6 +36,7 @@ export function placeSleepers(sim: SimState, allowed: (spot: Point) => boolean):
 /** Gets up where it lay, stands a moment, and then goes for the living. */
 export function riseSleeper(sim: SimState, z: ZombieState): void {
   delete z.dormant;
+  z.gettingUp = true;
   z.recoveryLeft = SLEEPER_RISE_SEC;
   z.mode = 'hunt';
   z.interestLeft = ZOMBIE_LOSE_INTEREST_SEC;

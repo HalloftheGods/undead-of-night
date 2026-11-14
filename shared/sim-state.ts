@@ -234,6 +234,8 @@ export interface ZombieState extends ZombieEntity {
   /** Lying dead on the street until someone comes close or makes a noise (`shared/sleepers.ts`). Absent once it has risen. */
   dormant?: boolean;
   /** What rounds have left on it. Absent until one does. */
+  /** Getting up: its `recoveryLeft` is the rise still to go. Cleared when the rise ends. */
+  gettingUp?: boolean;
   status?: ZombieStatus;
   /** A screamer's seconds until it can call again. Absent until it first has. */
   screamLeft?: number;

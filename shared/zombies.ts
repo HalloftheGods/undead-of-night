@@ -406,6 +406,7 @@ function updateZombie(sim: SimState, z: ZombieState, quarry: Quarry): void {
     }
     return;
   }
+      delete z.gettingUp;
 
   updateAwareness(sim, z, quarry.seen);
   if (z.mode === 'hunt') hunt(sim, z, prey, fallback);

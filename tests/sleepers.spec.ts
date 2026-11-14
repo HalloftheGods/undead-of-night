@@ -50,4 +50,14 @@ describe('dead people on the streets', () => {
     expect(body.dormant).toBeUndefined();
     expect(body.recoveryLeft).toBe(SLEEPER_RISE_SEC);
   });
+
+  it('shows the rise in the snapshot, then clears it', () => {
+    const { sim, state, body } = lyingBody();
+    makeNoise(state, body.x, body.y, 100);
+    const rising = sim.snapshot().zombies.find((z) => z.id === body.id);
+    expect(rising?.rising).toBeGreaterThan(0);
+    steps(sim, Math.ceil(SLEEPER_RISE_SEC * 30) + 5);
+    const done = sim.snapshot().zombies.find((z) => z.id === body.id);
+    expect(done?.rising).toBeUndefined();
+  });
 });

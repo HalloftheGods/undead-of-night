@@ -205,6 +205,7 @@ export function buildSnapshot(sim: SimState): SnapshotPacket {
       ...(z.boss ? { boss: z.boss } : {}),
       ...(z.stuck ? { stuck: true } : {}),
       ...(z.dormant ? { dormant: true } : {}),
+      ...(z.gettingUp ? { rising: round2(z.recoveryLeft) } : {}),
     })),
     bullets: sim.bullets.map((b) => ({
       id: b.id,

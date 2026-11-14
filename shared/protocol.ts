@@ -190,6 +190,8 @@ export interface ZombieEntity {
   stuck?: boolean;
   /** Lying dead, drawn as a corpse until it rises. Left off unless true. */
   dormant?: boolean;
+  /** Seconds of getting up left, while it rises from the ground. Left off otherwise. */
+  rising?: number;
 }
 
 /** A footprint in the snow, for drawing: where, which way it points, and seconds before it fills in. */
