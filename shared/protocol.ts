@@ -139,6 +139,8 @@ export interface PlayerEntity {
   towerHold?: number;
   /** Hold progress (0..1) on opening the municipal sewage drain. Left off when 0. */
   drainHold?: number;
+  /** Hold progress (0..1) on restoring municipal electrical power. Left off when 0. */
+  powerHold?: number;
   /** The car and seat this survivor sits in. Left off on foot. */
   vehicle?: VehicleSeat;
 }
@@ -299,6 +301,8 @@ export type GameEvent =
   | { readonly type: 'radio_tower_alarm'; readonly x: number; readonly y: number; readonly playerId: EntityId }
   /** The municipal sewage drain was opened, draining surface floodwater and unlocking sewers. */
   | { readonly type: 'city_drained'; readonly x: number; readonly y: number; readonly playerId: EntityId }
+  /** Municipal electrical power was restored via the power substation, bringing the grid back online. */
+  | { readonly type: 'power_restored'; readonly x: number; readonly y: number; readonly playerId: EntityId }
   /** A flare went up at x,y: a supply crate comes down on it in `sec`. */
   | { readonly type: 'drop_called'; readonly x: number; readonly y: number; readonly sec: number }
   | { readonly type: 'drop_landed'; readonly x: number; readonly y: number }
@@ -421,6 +425,8 @@ export interface SnapshotPacket {
   readonly gameOver: GameOverStats | null;
   /** Whether the town's floodwater has been drained via the sewage drain. Left off when false. */
   readonly drained?: boolean;
+  /** Whether the town's power grid has been restored via the power substation. Left off when false. */
+  readonly powered?: boolean;
   /** Present while the run is held at the workbench between towns. */
   readonly bench?: BenchView;
   /** The room's level pick and reach. Left off outside home mode. */

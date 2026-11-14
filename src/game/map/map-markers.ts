@@ -159,3 +159,24 @@ const SEWAGE_DRAIN_MARKER = [
 export function drawSewageDrainMarker(ctx: CanvasRenderingContext2D, x: number, y: number): void {
   drawRowsCentred(ctx, x, y, SEWAGE_DRAIN_MARKER, DRAIN_LEGEND);
 }
+
+export const SUBSTATION_COLOR = '#ffdf4a';
+
+const SUBSTATION_LEGEND: SpriteLegend = {
+  Y: '#ffdf4a',
+  M: '#c0c8d8',
+  m: '#6a7888',
+  K: '#1e2430',
+};
+
+const POWER_SUBSTATION_MARKER = [
+  '.Y.Y.Y.',
+  '..MMM..',
+  '.MK.KM.',
+  '.MKKKM.',
+  '..mmm..',
+];
+
+export function drawPowerSubstationMarker(ctx: CanvasRenderingContext2D, x: number, y: number): void {
+  drawRowsCentred(ctx, x, y, POWER_SUBSTATION_MARKER, SUBSTATION_LEGEND);
+}

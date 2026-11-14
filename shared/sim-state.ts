@@ -168,6 +168,7 @@ export interface PlayerState extends Omit<PlayerEntity, 'mags' | 'gear' | 'bottl
   supplies?: Supplies;
   towerHold?: number;
   drainHold?: number;
+  powerHold?: number;
   /** Seconds the search key has been held on a closed door this press (`shared/doors.ts`). */
   doorHold: number;
   /** Seconds the search key has been held this press with a car to get into in reach: a tap gets in, a hold searches. */
@@ -417,6 +418,8 @@ export interface SimState {
   vehicles: Map<number, VehicleState>;
   /** Whether the floodwater in a flooded town has been drained via the sewage drain. */
   drained?: boolean;
+  /** Whether the electrical grid has been restored via the power substation in a blackout town. */
+  powered?: boolean;
 }
 
 export function entityId(sim: SimState, prefix: string): EntityId {

@@ -141,6 +141,8 @@ export const PROP_DEFS = {
   radio_tower: { w: 48, h: 24 },
   /** Municipal storm and sewage drainage station with high-capacity pump and release valve. */
   sewage_drain: { w: 32, h: 20 },
+  /** Municipal electrical power substation and grid distribution transformer. */
+  power_substation: { w: 32, h: 20 },
 } as const;
 export type PropKind = keyof typeof PROP_DEFS;
 export const PROP_KINDS = Object.keys(PROP_DEFS) as PropKind[];

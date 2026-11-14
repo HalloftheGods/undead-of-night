@@ -14,6 +14,7 @@ import { climbPrompt } from '../../shared/take-manhole.ts';
 import { doorPrompt } from '../../shared/door-view.ts';
 import { radioTowerPrompt } from '../../shared/radio-tower.ts';
 import { sewageDrainPrompt } from '../../shared/sewage-drain.ts';
+import { powerSubstationPrompt } from '../../shared/power-substation.ts';
 import { stationPrompt } from './station-labels.ts';
 import { SUGAR_BAR_WIDTH, SUGAR_LINE_GAP, SUGAR_ROW_HEIGHT, sugarTags, sugarTagsWidth } from './sugar-tags.ts';
 import type { KeepOut } from './sugar-tags.ts';
@@ -384,6 +385,7 @@ export class OverlayRenderer {
       const atClimb = isLocal && scene.climb !== undefined;
       const atRadioTower = isLocal && scene.radioTower !== undefined;
       const atSewageDrain = isLocal && scene.sewageDrain !== undefined;
+      const atPowerSubstation = isLocal && scene.powerSubstation !== undefined;
       const atDoor = isLocal && scene.door !== undefined;
       const atVehicle = isLocal && scene.vehicle !== undefined;
       if (player.search > 0) drawBar(ctx, x - SEARCH_BAR_WIDTH / 2, y, SEARCH_BAR_WIDTH, player.search, BONE);
@@ -408,11 +410,15 @@ export class OverlayRenderer {
         if (scene.sewageDrain!.hold > 0) drawBar(ctx, x - SEARCH_BAR_WIDTH / 2, y, SEARCH_BAR_WIDTH, scene.sewageDrain!.hold, AMBER);
         else drawOutlinedText(ctx, sewageDrainPrompt(Boolean(scene.touch), scene.sewageDrain!.canDrain, scene.holdKey), x, y, AMBER);
       }
+      else if (atPowerSubstation) {
+        if (scene.powerSubstation!.hold > 0) drawBar(ctx, x - SEARCH_BAR_WIDTH / 2, y, SEARCH_BAR_WIDTH, scene.powerSubstation!.hold, AMBER);
+        else drawOutlinedText(ctx, powerSubstationPrompt(Boolean(scene.touch), scene.powerSubstation!.canRestore, scene.holdKey), x, y, AMBER);
+      }
       if (!isLocal) continue;
       const gunsFree = scene.overrun?.phase === "armed" || scene.overrun?.phase === "breached";
       const call = ammoPrompt(player, { touch: Boolean(scene.touch), atHome: scene.atHome === true, gunsFree, time, reloadKey: scene.reloadKey, meleeKey: scene.meleeKey, switchKey: scene.switchKey });
       if (!call?.lit) continue;
-      const lineTaken = player.search > 0 || atVehicle || prompted || atStation || atClimb || atRadioTower || atSewageDrain || atDoor;
+      const lineTaken = player.search > 0 || atVehicle || prompted || atStation || atClimb || atRadioTower || atSewageDrain || atPowerSubstation || atDoor;
       drawOutlinedText(ctx, call.text, x, lineTaken ? y - FONT_HEIGHT - 3 : y, hitPalette().danger);
     }
   }

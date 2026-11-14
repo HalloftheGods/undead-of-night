@@ -12,7 +12,7 @@ export interface TownRule {
 
 export const TOWN_RULES: Readonly<Partial<Record<LevelTheme, TownRule>>> = {
   flooded: { name: 'Floodwater', blurb: 'Wading outdoors slows you down. Sewers are flooded until drained.' },
-  blackout: { name: 'Blackout', blurb: 'Zombies see less in the dark, but they hear further.' },
+  blackout: { name: 'Blackout', blurb: 'Zombies see less in the dark, but they hear further until power is restored.' },
   snow: { name: 'Fresh snow', blurb: 'Zombies sniff along your footprints. Sneak, or duck indoors, to lose them.' },
 };
 
@@ -73,10 +73,12 @@ export function groundSpeedScale(level: number, map: WorldMap, x: number, y: num
   return Math.min(town, groundEffect(map, x, y).speed);
 }
 
-export function sightScale(level: number): number {
+export function sightScale(level: number, powered = false): number {
+  if (powered) return 1;
   return themeOf(level) === 'blackout' ? BLACKOUT_SIGHT_SCALE : 1;
 }
 
-export function hearingScale(level: number): number {
+export function hearingScale(level: number, powered = false): number {
+  if (powered) return 1;
   return themeOf(level) === 'blackout' ? BLACKOUT_HEARING_SCALE : 1;
 }

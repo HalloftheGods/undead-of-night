@@ -12,6 +12,7 @@ import { buildDiscount } from './environment/discount.ts';
 import { buildFireworksBus } from './environment/fireworks-bus.ts';
 import { buildRadioTower } from './environment/radio-tower.ts';
 import { buildSewageDrain } from './environment/sewage-drain.ts';
+import { buildPowerSubstation } from './environment/power-substation.ts';
 import { buildRadioStation } from './environment/radio-station.ts';
 import { buildInterior } from './environment/floors.ts';
 import { buildBed, buildCounter, buildShelf, buildSofa, buildTable, buildWorkbench } from './environment/furniture.ts';
@@ -128,6 +129,7 @@ export function buildEnvironment(): EnvironmentArt {
       fireworks_bus: buildFireworksBus(),
       radio_tower: buildRadioTower(),
       sewage_drain: buildSewageDrain(),
+      power_substation: buildPowerSubstation(),
       manhole: buildManhole(),
       sewer_ladder: buildSewerLadder(),
     },

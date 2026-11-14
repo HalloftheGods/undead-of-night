@@ -132,6 +132,8 @@ export interface HudState {
   readonly bagHash?: number;
   /** Whether the town floodwater has been drained. */
   readonly drained?: boolean;
+  /** Whether the town electrical power grid has been restored. */
+  readonly powered?: boolean;
 }
 
 export interface MoodleView {
@@ -350,7 +352,8 @@ export function buildHud(
     ...(local.materials ? { materials: { ...local.materials } } : {}),
     ...(local.supplies ? { supplies: { ...local.supplies } } : {}),
     ...(local.bagHash !== undefined ? { bagHash: local.bagHash } : {}),
-    drained: Boolean(snapshot.drained)
+    drained: Boolean(snapshot.drained),
+    powered: Boolean(snapshot.powered)
   };
 }
 

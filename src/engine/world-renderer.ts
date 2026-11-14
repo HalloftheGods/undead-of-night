@@ -198,8 +198,8 @@ export class WorldRenderer {
   }
 
   /** A night event darkens, reddens or fogs the town's own look. */
-  setTheme(theme: LevelTheme, event: NightEventId | null = null, drained = false): void {
-    this.atmosphere.setTheme(theme, event);
+  setTheme(theme: LevelTheme, event: NightEventId | null = null, drained = false, powered = false): void {
+    this.atmosphere.setTheme(theme, event, powered);
     this.groundMotion.setTheme(theme, drained);
     this.applyLook();
   }

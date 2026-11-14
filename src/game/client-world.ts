@@ -12,6 +12,7 @@ import { effectiveStance } from '../../shared/stamina.ts';
 import { manholeFlightNear } from '../../shared/take-manhole.ts';
 import { radioTowerNear } from '../../shared/radio-tower.ts';
 import { drainTownWater, isTownFlooded, sewageDrainNear } from '../../shared/sewage-drain.ts';
+import { isTownBlackout, powerSubstationNear } from '../../shared/power-substation.ts';
 import { openableStation } from '../../shared/stations.ts';
 import { groundSpeedScale } from '../../shared/town-rules.ts';
 import type { DoorView, EntityId, PlayerEntity, SnapshotPacket, Stance, WorldMap } from '../../shared/protocol.ts';
@@ -30,7 +31,7 @@ const MAX_BULLET_LEAD_SEC = 0.1;
 
 export type WorldEntities = Pick<
   SceneView,
-  'players' | 'zombies' | 'merchants' | 'bullets' | 'pickups' | 'exit' | 'drop' | 'openedContainers' | 'leftovers' | 'tracks' | 'vehicles' | 'vehicle' | 'searchable' | 'station' | 'climb' | 'doors' | 'door' | 'radioTower' | 'sewageDrain' | 'overrun' | 'localId' | 'viewerId' | 'focusX' | 'focusY' | 'phase' | 'hostiles'
+  'players' | 'zombies' | 'merchants' | 'bullets' | 'pickups' | 'exit' | 'drop' | 'openedContainers' | 'leftovers' | 'tracks' | 'vehicles' | 'vehicle' | 'searchable' | 'station' | 'climb' | 'doors' | 'door' | 'radioTower' | 'sewageDrain' | 'powerSubstation' | 'overrun' | 'localId' | 'viewerId' | 'focusX' | 'focusY' | 'phase' | 'hostiles'
 >;
 
 /** The bunker's merchants where they are drawn; left off anywhere without them. */
@@ -59,6 +60,7 @@ export class ClientWorld {
   /** What candy does to the local player's pace, read off the latest snapshot. */
   private sugarSpeed = 1;
   drained = false;
+  powered = false;
 
   constructor(map: WorldMap, localId: EntityId) {
     this.localId = localId;
@@ -120,6 +122,7 @@ export class ClientWorld {
     restoreSolids(this.map);
     this.map = map;
     this.drained = false;
+    this.powered = false;
     this.restart();
   }
 
@@ -131,6 +134,10 @@ export class ClientWorld {
     if (hasDrained && !this.drained) {
       this.drained = true;
       drainTownWater(this.map);
+    }
+    const hasPowered = snapshot.powered === true || snapshot.events.some((e) => e.type === 'power_restored');
+    if (hasPowered && !this.powered) {
+      this.powered = true;
     }
     const local = this.localPlayer;
     if (local) this.skin = local.skin;
@@ -237,6 +244,17 @@ export class ClientWorld {
     return { canDrain, hold: local?.drainHold ?? 0 };
   }
 
+  /** The municipal electrical power substation the local player is standing near, if any. */
+  private powerSubstationBy(player: PlayerEntity | null): WorldEntities['powerSubstation'] {
+    const free = player !== null && player.status === 'alive' && !isBunkerMap(this.map);
+    if (!free) return undefined;
+    const substation = powerSubstationNear({ map: this.map }, player.x, player.y);
+    if (!substation) return undefined;
+    const canRestore = isTownBlackout({ level: this.level, powered: this.powered });
+    const local = this.buffer.latest?.players.get(this.localId);
+    return { canRestore, hold: local?.powerHold ?? 0 };
+  }
+
   /** Advances prediction by dt and returns this frame's entities, or null before any snapshot. */
   advance(nowMs: number, delayMs: number, dirX: number, dirY: number, aim: number, dt: number): WorldEntities | null {
     const newest = this.buffer.latest;
@@ -262,6 +280,7 @@ export class ClientWorld {
     const doors = this.placedDoorsFor(this.doors);
     const radioTower = this.radioTowerBy(shownLocal, newest.snapshot.phase);
     const sewageDrain = this.sewageDrainBy(shownLocal);
+    const powerSubstation = this.powerSubstationBy(shownLocal);
     const vehicle = this.vehicleBy(shownLocal);
     return {
       players,
@@ -283,6 +302,7 @@ export class ClientWorld {
       ...(doors.length > 0 ? { doors } : {}),
       ...(radioTower ? { radioTower } : {}),
       ...(sewageDrain ? { sewageDrain } : {}),
+      ...(powerSubstation ? { powerSubstation } : {}),
       ...(overrun ? { overrun } : {}),
       localId: this.localId,
       viewerId: viewer?.id ?? null,

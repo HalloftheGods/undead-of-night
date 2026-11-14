@@ -27,6 +27,7 @@ function raiseMap(sim: SimState, seed: number, level: number, campSize: CampSize
   const sameMap = seed === sim.map.seed && campSize === (sim.map.camp?.size ?? 1);
   if (sameMap) return;
   sim.drained = false;
+  sim.powered = false;
   sim.map = generateWorldMap(seed, level, campSize);
   const manholes = !isTownFlooded({ level, drained: false });
   sim.flow = new FlowField(sim.map, { manholes });

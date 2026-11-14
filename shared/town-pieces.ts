@@ -175,10 +175,31 @@ function raiseSewageDrain(b: MapBuilder, plan: TownPlan): void {
   b.fixture('sewage_drain', lot.x0 + 64, lot.y1 - 64);
 }
 
+/** Places the municipal electrical power substation on blackout levels. */
+function raisePowerSubstation(b: MapBuilder, plan: TownPlan): void {
+  const isBlackoutBiome = b.biome.id === 'pinewood';
+  if (!isBlackoutBiome) return;
+  const alreadyPlaced = b.props.some((p) => p.kind === 'power_substation');
+  if (alreadyPlaced) return;
+  const lot = rectBox(plan.park);
+  const spots = [
+    { x: lot.x1 - 64, y: lot.y1 - 64 },
+    { x: lot.x0 + 64, y: lot.y1 - 64 },
+    { x: lot.x1 - 64, y: lot.y0 + 64 },
+    { x: lot.x0 + 64, y: lot.y0 + 64 },
+  ];
+  for (const spot of spots) {
+    const placed = b.place('power_substation', spot.x, spot.y, 16);
+    if (placed) return;
+  }
+  b.fixture('power_substation', lot.x1 - 64, lot.y1 - 64);
+}
+
 /** The set pieces of the town itself, as opposed to the park: walls across streets, afflicted buildings, and the radio tower. */
 export function raiseTownPieces(b: MapBuilder, plan: TownPlan): void {
   raiseWalls(b, plan);
   afflictBuildings(b);
   raiseRadioTower(b, plan);
   raiseSewageDrain(b, plan);
+  raisePowerSubstation(b, plan);
 }

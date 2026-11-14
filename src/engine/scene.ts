@@ -96,6 +96,8 @@ export interface SceneView {
   readonly radioTower?: { readonly canTrigger: boolean; readonly hold: number };
   /** Municipal sewage drain the local player can trigger to drain the flooded town. */
   readonly sewageDrain?: { readonly canDrain: boolean; readonly hold: number };
+  /** Municipal electrical power substation the local player can trigger to restore power to the town. */
+  readonly powerSubstation?: { readonly canRestore: boolean; readonly hold: number };
   /** The bunker's horde clock, which the door and the chest are drawn from. Absent when there is none. */
   readonly overrun?: OverrunView;
   /** The overrun is switched on for this build, so the blast door is drawn. Absent or false, the bunker looks as it did before it. */

@@ -145,6 +145,8 @@ export function playerSnapshot(p: PlayerState): PlayerEntity {
     ...(hasSupplies(p.supplies) ? { supplies: { ...p.supplies } } : {}),
     bagHash: bagHash(p.inventory),
     ...(p.towerHold ? { towerHold: round2(p.towerHold) } : {}),
+    ...(p.drainHold ? { drainHold: round2(p.drainHold) } : {}),
+    ...(p.powerHold ? { powerHold: round2(p.powerHold) } : {}),
     ...(p.vehicle ? { vehicle: { ...p.vehicle } } : {}),
   };
 }
@@ -229,6 +231,7 @@ export function buildSnapshot(sim: SimState): SnapshotPacket {
     events,
     gameOver: sim.gameOver ? { ...sim.gameOver, players: sim.gameOver.players.map((p) => ({ ...p })) } : null,
     ...(sim.drained ? { drained: true as const } : {}),
+    ...(sim.powered ? { powered: true as const } : {}),
     ...benchField(sim),
     ...roomHomeField(sim),
   };

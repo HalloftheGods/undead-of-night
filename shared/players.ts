@@ -25,6 +25,7 @@ import type { ClientInputPacket, Stance } from './protocol.ts';
 import type { PlayerState, SimState } from './sim-state.ts';
 import { updateRadioTower } from './radio-tower.ts';
 import { updateSewageDrain } from './sewage-drain.ts';
+import { updatePowerSubstation } from './power-substation.ts';
 import { updateStations } from './stations.ts';
 import { takeManhole } from './take-manhole.ts';
 import { takeStairs } from './take-stairs.ts';
@@ -222,4 +223,5 @@ export function updatePlayer(sim: SimState, p: PlayerState): void {
   updateStations(sim, p);
   updateRadioTower(sim, p);
   updateSewageDrain(sim, p);
+  updatePowerSubstation(sim, p);
 }

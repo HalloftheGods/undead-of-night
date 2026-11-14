@@ -20,6 +20,7 @@ export class RunStage {
   private campSize: CampSize = 1;
   private level: number | null = null;
   private drained = false;
+  private powered = false;
 
   constructor(hud: RunHud, renderer: () => WorldRenderer | null) {
     this.hud = hud;
@@ -33,6 +34,7 @@ export class RunStage {
     this.campSize = campSize;
     this.level = null;
     this.drained = false;
+    this.powered = false;
     this.hud.setMap(map);
     this.renderer()?.setMap(map);
     noteStageCut(isBunkerSeed(mapSeed));
@@ -43,6 +45,7 @@ export class RunStage {
   rewind(): void {
     this.level = null;
     this.drained = false;
+    this.powered = false;
   }
 
   /** Runs ahead of the snapshot's events, which already belong to the town it describes. */
@@ -56,7 +59,12 @@ export class RunStage {
     const hasDrained = snapshot.drained === true || snapshot.events.some((e) => e.type === 'city_drained');
     if (hasDrained && !this.drained) {
       this.drained = true;
-      this.renderer()?.setTheme(levelDef(snapshot.level).theme, nightEventFor(snapshot.mapSeed, snapshot.level)?.id ?? null, true);
+      this.renderer()?.setTheme(levelDef(snapshot.level).theme, nightEventFor(snapshot.mapSeed, snapshot.level)?.id ?? null, this.drained, this.powered);
+    }
+    const hasPowered = snapshot.powered === true || snapshot.events.some((e) => e.type === 'power_restored');
+    if (hasPowered && !this.powered) {
+      this.powered = true;
+      this.renderer()?.setTheme(levelDef(snapshot.level).theme, nightEventFor(snapshot.mapSeed, snapshot.level)?.id ?? null, this.drained, this.powered);
     }
     const sameLevel = snapshot.level === this.level;
     if (sameLevel) return;
@@ -68,7 +76,7 @@ export class RunStage {
       this.hud.clearNotices();
       return;
     }
-    this.renderer()?.setTheme(levelDef(snapshot.level).theme, nightEventFor(snapshot.mapSeed, snapshot.level)?.id ?? null);
+    this.renderer()?.setTheme(levelDef(snapshot.level).theme, nightEventFor(snapshot.mapSeed, snapshot.level)?.id ?? null, this.drained, this.powered);
     this.renderer()?.setBrightness(brightnessLift());
     this.hud.showLevel(snapshot.level, nowMs, snapshot.mapSeed);
   }

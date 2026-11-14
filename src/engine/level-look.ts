@@ -147,6 +147,18 @@ export function withEvent(look: LevelLook, event: NightEventId | null): LevelLoo
   return look;
 }
 
+/**
+ * Restores power to a blackout or power-cut town: turns on all streetlamps and restores ambient lighting.
+ */
+export function withPowerRestored(look: LevelLook): LevelLook {
+  return {
+    ...look,
+    ambient: NIGHT_AMBIENT,
+    lampEvery: 1,
+    lampStrength: 1,
+  };
+}
+
 function mix(a: Rgb, b: Rgb, share: number): Rgb {
   const blend = (i: 0 | 1 | 2) => Math.round(a[i] * (1 - share) + b[i] * share);
   return [blend(0), blend(1), blend(2)];

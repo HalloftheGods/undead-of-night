@@ -15,7 +15,7 @@ import type { Rgb } from './map-ground.ts';
 import { drawClueCache, drawLeftovers, drawLeftoversAt } from './map-leftovers.ts';
 import type { CursorClock } from './map-cursor.ts';
 import {
-  CROSS_COLOR, DRAIN_COLOR, DROP_COLOR, DROP_LABEL_RISE, drawDropSprite, drawFireworksBus, drawRadioTowerMarker, drawSewageDrainMarker, drawStation, drawTickMark, drawVan, EXIT_COLOR, TOWER_COLOR, VAN_LABEL_RISE,
+  CROSS_COLOR, DRAIN_COLOR, DROP_COLOR, DROP_LABEL_RISE, drawDropSprite, drawFireworksBus, drawRadioTowerMarker, drawSewageDrainMarker, drawPowerSubstationMarker, drawStation, drawTickMark, drawVan, EXIT_COLOR, SUBSTATION_COLOR, TOWER_COLOR, VAN_LABEL_RISE,
 } from './map-markers.ts';
 import { MAP_INK } from './map-sprite.ts';
 import { drawTeammateLocator } from './map-teammate.ts';
@@ -214,6 +214,7 @@ export class TownMapView {
     if (town) this.paintFireworksBus(ctx, placed);
     if (town) this.paintRadioTower(ctx, placed);
     if (town) this.paintSewageDrain(ctx, placed);
+    if (town) this.paintPowerSubstation(ctx, placed);
     for (const building of this.map.buildings) {
       const named = isLandmark(building.kind) && !isStorey(building);
       if (!named) continue;
@@ -296,6 +297,19 @@ export class TownMapView {
       const y = Math.round((prop.y - rise) / this.worldPerPx);
       drawSewageDrainMarker(ctx, x, y);
       placeLabel(ctx, 'Sewage Drain', x, y + 6, DRAIN_COLOR, placed);
+    }
+  }
+
+  /** The municipal electrical power substation where it stands on blackout levels, named under it. */
+  private paintPowerSubstation(ctx: CanvasRenderingContext2D, placed: LabelBox[]): void {
+    const rise = PROP_DEFS.power_substation.h / 2;
+    for (const prop of this.map.props) {
+      const isSubstation = prop.kind === 'power_substation';
+      if (!isSubstation) continue;
+      const x = Math.round(prop.x / this.worldPerPx);
+      const y = Math.round((prop.y - rise) / this.worldPerPx);
+      drawPowerSubstationMarker(ctx, x, y);
+      placeLabel(ctx, 'Power Substation', x, y + 6, SUBSTATION_COLOR, placed);
     }
   }
 

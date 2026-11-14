@@ -27,10 +27,15 @@ export function levelGoal(hud: Pick<HudState, 'level' | 'phase' | 'wave' | 'exit
 }
 
 /** A sidequest available in this town, or null if none. */
-export function levelSidequest(hud: Pick<HudState, 'level' | 'drained'>): string | null {
-  const isFlooded = levelDef(hud.level).theme === 'flooded';
-  if (!isFlooded) return null;
-  return hud.drained ? 'City drained: Sewers unlocked' : 'Sidequest: Drain the city';
+export function levelSidequest(hud: Pick<HudState, 'level' | 'drained' | 'powered'>): string | null {
+  const theme = levelDef(hud.level).theme;
+  if (theme === 'flooded') {
+    return hud.drained ? 'City drained: Sewers unlocked' : 'Sidequest: Drain the city';
+  }
+  if (theme === 'blackout') {
+    return hud.powered ? 'Power restored: Grid online' : 'Sidequest: Restore power to the city';
+  }
+  return null;
 }
 
 /** The words for a level's title card. With the town's map seed it also names the night's event, if any. */
@@ -42,12 +47,14 @@ export function levelTitle(level: number, mapSeed: number | null = null): Omit<L
   const bossId = BOSS_LEVELS[level];
   const boss = bossId ? BOSSES[bossId] : null;
   const isFlooded = theme === 'flooded';
+  const isBlackout = theme === 'blackout';
   return {
     heading: isLast ? `The last town: ${title}` : `Town ${number} of ${FINAL_LEVEL}: ${title}`,
     title: town,
     goal: `Survive ${hordes} hordes, then reach the van`,
     ...(rule ? { rule: `${rule.name}: ${rule.blurb}` } : {}),
     ...(isFlooded ? { sidequest: 'Sidequest: Find the sewage drain to drain the city and unlock the sewers' } : {}),
+    ...(isBlackout ? { sidequest: 'Sidequest: Find the power substation to restore power to the city' } : {}),
     ...(event ? { event: `${event.name}. ${event.blurb}` } : {}),
     ...(boss ? { boss: `${boss.name} comes with the last horde. ${boss.blurb}` } : {}),
   };
