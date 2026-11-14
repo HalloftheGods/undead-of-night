@@ -1,4 +1,5 @@
 import { LightField } from './light-field.ts';
+import { LightGl } from './light-gl.ts';
 import type { Rgb, ScreenRect } from './light-field.ts';
 import type { OcclusionGrid } from './occlusion.ts';
 
@@ -65,8 +66,11 @@ function flatLevels(ambient: Rgb): number[] {
 export class Lighting {
   private readonly field = new LightField(flatLevels(NIGHT_AMBIENT));
   private ambient: Rgb = NIGHT_AMBIENT;
-  private readonly canvas = document.createElement('canvas');
-  private readonly ctx: CanvasRenderingContext2D;
+  /** Holds the lightmap: a WebGL2 canvas when there is one, else a 2D canvas the CPU writes pixels into. */
+  private canvas = document.createElement('canvas');
+  private ctx: CanvasRenderingContext2D | null = null;
+  /** The quantise and dither pass on the GPU, or null to write the pixels on the CPU. */
+  private gpu: LightGl | null = null;
   private readonly rays = new Float32Array(BEAM_RAYS + 1);
   private image: ImageData | null = null;
   private pixels = new Int32Array(0);
@@ -80,7 +84,10 @@ export class Lighting {
   private shiftY = 0;
 
   constructor() {
-    this.ctx = this.canvas.getContext('2d', { alpha: false })!;
+    this.gpu = LightGl.create(this.canvas);
+    // A canvas keeps the context it was first given, so a failed WebGL attempt needs a fresh canvas.
+    if (!this.gpu) this.canvas = document.createElement('canvas');
+    if (!this.gpu) this.ctx = this.canvas.getContext('2d', { alpha: false })!;
   }
 
   /** Each level's sky. Once a level, since the field rebuilds its flat brightnesses. */
@@ -96,6 +103,7 @@ export class Lighting {
     this.canvas.width = width;
     this.canvas.height = height;
     this.field.resize(width, height);
+    if (!this.ctx) return;
     this.image = this.ctx.createImageData(width, height);
     this.pixels = new Int32Array(this.image.data.buffer);
   }
@@ -167,7 +175,12 @@ export class Lighting {
   }
 
   finish(): void {
-    if (!this.image) return;
+    if (this.gpu) {
+      this.gpu.draw(this.field, { left: this.litLeft, top: this.litTop, width: this.width, height: this.height });
+      this.composed = true;
+      return;
+    }
+    if (!this.image || !this.ctx) return;
     this.field.write(this.pixels);
     this.ctx.putImageData(this.image, 0, 0);
     this.composed = true;

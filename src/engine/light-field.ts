@@ -345,6 +345,32 @@ export class LightField {
     }
   }
 
+  /** The level tables the quantise step reads, for a shader to read the same ones. */
+  get levels(): LightBands {
+    return this.bands;
+  }
+
+  /** Columns and rows of light cells in the field. */
+  get cellCols(): number {
+    return this.cols;
+  }
+
+  get cellRows(): number {
+    return this.rows;
+  }
+
+  /** Copies each cell's light as RGBA floats into out (cols * rows * 4 long), row by row, for a GPU to quantise. */
+  packCells(out: Float32Array): void {
+    const { red, green, blue } = this;
+    const cells = this.cols * this.rows;
+    for (let i = 0; i < cells; i += 1) {
+      out[i * 4] = red[i];
+      out[i * 4 + 1] = green[i];
+      out[i * 4 + 2] = blue[i];
+      out[i * 4 + 3] = 1;
+    }
+  }
+
   /** Writes width*height RGBA pixels, as little-endian words. */
   write(pixels: Int32Array): void {
     this.quantise();
