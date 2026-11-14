@@ -278,3 +278,29 @@ export function buildBungalow(): PixelSprite {
   dressForHalloween(s, { lightsY: wallTop + 2, pumpkins: [s.doorR + 6, s.doorR + 16], webs: [[left + 73, wallTop + 7]], ghost: [s.doorL + 2, wallTop + 3], spider: [left + 40, 14] });
   return bakeShell(s);
 }
+
+// --- Fog cottage ------------------------------------------------------------------------
+
+/** A grey-boarded cottage with its porch in the fog, a scarecrow by the steps and a pumpkin patch. */
+export function buildFogCottage(): PixelSprite {
+  const s = startShell('house', WALL);
+  const { c, left, right, footW, ground, wallTop, doorL, doorR } = s;
+  hipRoof(s);
+  chimney(c, 62, 8);
+  clapboard(s, { face: ash[1], joint: ash[0], lit: ash[2] });
+  windowUnit(c, left + 14, wallTop + 8, 11, 11, 'dark', WHITE);
+  windowUnit(c, left + 76, wallTop + 8, 11, 11, 'lit', WHITE);
+  gutter(s, 74);
+  // Grime goes on before the porch, so the doorway is cut clean through it.
+  grime(c, left, ground - 4, footW, [2, 3, 1, 4], ash[0]);
+  porch(s, [ash[0], ash[1], ash[2]]);
+  dressForHalloween(s, {
+    lightsY: wallTop + 2,
+    pumpkins: [doorR + 6, doorR + 16],
+    webs: [[left + 76, wallTop + 8]],
+    ghost: [doorL - 8, wallTop + 3],
+    fog: { x0: left, x1: right, y: ground - 3, skip: [doorL - 4, doorR + 4] },
+    scarecrow: left + 1,
+  });
+  return bakeShell(s);
+}

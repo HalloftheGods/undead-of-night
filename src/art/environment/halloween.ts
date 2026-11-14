@@ -11,7 +11,7 @@ import { markGlow } from '../glow.ts';
 import { bake, groundShadow } from './common.ts';
 import type { Shell } from './shell.ts';
 
-const { ink, bone, fire, violet, acid, blood, olive, denim, teal, wood } = RAMPS;
+const { ink, ash, bone, fire, violet, acid, blood, olive, denim, teal, wood } = RAMPS;
 
 /** Bulbs run orange, purple, green and red along the wire. */
 const BULBS: readonly Color[] = [fire[2], violet[2], acid[2], blood[3]];
@@ -75,9 +75,55 @@ export function roofSpider(c: PixelCanvas, x: number, y: number): void {
   ], { k: ink[0], K: ink[1], r: blood[3] });
 }
 
+const SCARECROW = [
+  '..KKK..',
+  'BBBBBBB',
+  '.hhhhh.',
+  '.hEhEh.',
+  '.hEEEh.',
+  '..hhh..',
+  'sscCcss',
+  '..cCc..',
+  '.ccccc.',
+  '..ccc..',
+  '..ccc..',
+  '.cc.cc.',
+  '.cc.cc.',
+];
+const SCARECROW_INK = { K: wood[0], B: wood[1], h: bone[2], E: ink[0], s: wood[2], c: denim[1], C: denim[2] };
+
+/** A scarecrow in a sack-cloth shirt, stood on the ground line, its arms out over the straw. */
+export function scarecrow(c: PixelCanvas, x: number, base: number): void {
+  c.grid(x, base - SCARECROW.length + 1, SCARECROW, SCARECROW_INK);
+}
+
+/** A tied bale of straw, banded where the twine runs round it. */
+export function hayBale(c: PixelCanvas, x: number, base: number): void {
+  const top = base - 4;
+  c.rect(x, top, 8, 5, wood[3]).rect(x, top, 8, 1, bone[1]);
+  c.rect(x, base - 1, 8, 1, wood[2]).rect(x + 1, top + 2, 6, 1, wood[2]);
+  c.rect(x + 3, top, 1, 5, wood[2]);
+}
+
+/** Ground fog lying low over a yard: a broken checker that thins out towards the top. */
+export function fogBank(c: PixelCanvas, x0: number, x1: number, y: number, skip?: readonly [number, number]): void {
+  for (let row = 0; row < 3; row++) {
+    for (let x = x0; x <= x1; x++) {
+      const inSkip = skip !== undefined && x >= skip[0] && x < skip[1];
+      if (inSkip) continue;
+      const isGap = (x + row * 2) % 3 === 0;
+      if (!isGap) c.px(x, y + row, row === 0 ? bone[1] : ash[2]);
+    }
+  }
+}
+
 export interface Dressing {
   /** Row the bulbs hang from, across the whole front. */
   readonly lightsY: number;
+  /** Columns the fog lies across, skipping the door's opening, drawn under everything else. */
+  readonly fog?: { readonly x0: number; readonly x1: number; readonly y: number; readonly skip?: readonly [number, number] };
+  /** Left edge of a scarecrow, with a hay bale just to its right. Both stand on the ground line. */
+  readonly scarecrow?: number;
   /** Left edges of the pumpkins on the step, right of the door where the bowl does not stand. */
   readonly pumpkins: readonly number[];
   /** Top-left corners of window panes that have a web. */
@@ -92,6 +138,13 @@ export interface Dressing {
 export function dressForHalloween(s: Shell, dressing: Dressing): void {
   const { c, left, right, ground } = s;
   stringLights(c, left + 1, right - 1, dressing.lightsY);
+  if (dressing.fog) fogBank(c, dressing.fog.x0, dressing.fog.x1, dressing.fog.y, dressing.fog.skip);
+  const scarecrowX = dressing.scarecrow;
+  const hasScarecrow = scarecrowX !== undefined;
+  if (hasScarecrow) {
+    hayBale(c, scarecrowX + 9, ground - 1);
+    scarecrow(c, scarecrowX, ground - 1);
+  }
   dressing.pumpkins.forEach((x, i) => jackOLantern(c, x, ground - 1, i % 2 === 1));
   for (const [x, y] of dressing.webs ?? []) cobweb(c, x, y);
   if (dressing.ghost) sheetGhost(c, dressing.ghost[0], dressing.ghost[1]);

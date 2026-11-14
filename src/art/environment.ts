@@ -19,7 +19,7 @@ import { buildGrocery } from './environment/grocery.ts';
 import { buildGunShop } from './environment/gun-shop.ts';
 import { buildCandyBowl } from './environment/halloween.ts';
 import { buildHospital } from './environment/hospital.ts';
-import { buildBungalow, buildGableHouse, buildHipHouse } from './environment/house.ts';
+import { buildBungalow, buildFogCottage, buildGableHouse, buildHipHouse } from './environment/house.ts';
 import { buildMerchantProps } from './environment/merchants.ts';
 import { buildCactus, buildDeadTree, buildScrub } from './environment/desert.ts';
 import { buildReeds, buildFungus } from './environment/blight.ts';
@@ -38,6 +38,7 @@ import {
   buildHydrant,
   buildSandbags,
   buildStreetLamp,
+  buildStreetLampMirrored,
 } from './environment/street.ts';
 import { buildTiles } from './environment/tiles.ts';
 import { buildHatchH, buildHatchV, buildPickupH } from './environment/car-bodies.ts';
@@ -77,6 +78,7 @@ export function buildEnvironment(): EnvironmentArt {
       tree: buildTree(),
       fire_barrel: buildFireBarrel(),
       street_lamp: buildStreetLamp(),
+      street_lamp_r: buildStreetLampMirrored(),
       hydrant: buildHydrant(),
       pine: buildPine(),
       cactus: buildCactus(),
@@ -150,7 +152,7 @@ export function buildEnvironment(): EnvironmentArt {
       garage: [buildGarage()],
       warehouse: [buildSteelWarehouse(), buildBrickWarehouse()],
       radio_station: [buildRadioStation()],
-      house: [buildHipHouse(), buildGableHouse(), buildBungalow()],
+      house: [buildHipHouse(), buildGableHouse(), buildBungalow(), buildFogCottage()],
       camp_market: [buildCampMarket()],
       camp_workshop: [buildCampWorkshop()],
       camp_quarters: [buildCampQuarters()],
