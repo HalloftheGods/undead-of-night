@@ -178,7 +178,8 @@ watch(() => ui.value.searching, (now, was) => {
   if (now && !was && !inventory.isOpen.value) {
     const prop = now.propIndex !== undefined ? game.currentMap?.props[now.propIndex] : undefined;
     const art = ui.value.art ? searchArtFor(ui.value.art, now.kind, prop, now.propIndex) : null;
-    inventory.showContainer(now.id, searchTitle(now.kind), [], now.kind, art, searchFlipped(prop), true);
+    const look = prop ? containerLook({ kind: now.kind, prop: prop.kind, propIndex: now.propIndex }) : undefined;
+    inventory.showContainer(now.id, searchTitle(now.kind), [], now.kind, art, searchFlipped(prop), true, look);
   }
   const over = !now && was && inventory.searchingOpen.value;
   if (over) inventory.hide();
@@ -189,11 +190,12 @@ watch(() => ui.value.openedContainer, (loot) => {
     const title = loot.title ?? (loot.kind ? CONTAINER_LABEL[loot.kind] : 'Container');
     const activeMap = game.currentMap;
     const prop = loot.propIndex !== undefined && activeMap ? activeMap.props[loot.propIndex] : undefined;
-    const specificArt = prop && ui.value.art ? (paintedContainer(ui.value.art, prop) ?? ui.value.art.containers[containerLook({ kind: loot.kind ?? 'car', prop: prop.kind, propIndex: loot.propIndex })]) : null;
+    const look = prop ? containerLook({ kind: loot.kind ?? 'car', prop: prop.kind, propIndex: loot.propIndex }) : undefined;
+    const specificArt = prop && ui.value.art && look ? (paintedContainer(ui.value.art, prop) ?? ui.value.art.containers[look]) : null;
     // A car parked nose up is drawn standing on end, so its grid stands on end too.
     const flipped = isVerticalLook(prop?.kind);
     startReveal(loot.items);
-    inventory.showContainer(loot.id, title, loot.items, loot.kind, specificArt, flipped);
+    inventory.showContainer(loot.id, title, loot.items, loot.kind, specificArt, flipped, false, look);
   }
 });
 

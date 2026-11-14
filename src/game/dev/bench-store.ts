@@ -4,6 +4,7 @@ import type { BuildingKind, PropKind } from '../../../shared/map-protocol.ts';
 import { containerGridDimensions, CONTAINER_LABEL, ROOM_CONTAINERS } from '../../../shared/containers.ts';
 import type { ContainerGridDimensions, ContainerKind } from '../../../shared/containers.ts';
 import { CONTAINER_LOOT } from '../../../shared/container-loot.ts';
+import { CONTAINER_LOOK_GRID_SIZE } from '../../../shared/container-look-grids.ts';
 import type { GridFootprint, GridPoint } from '../../../shared/grid-inventory.ts';
 import { buildItemCatalogue, type DevItemEntry } from './item-catalogue.ts';
 import { buildContainerCatalogue, type DevContainerEntry } from './container-catalogue.ts';
@@ -32,6 +33,50 @@ const sizeOf = (kind: ContainerKind): ContainerGridDimensions => {
 export const containerSizes = reactive<Record<string, ContainerGridDimensions>>(
   Object.fromEntries((Object.keys(CONTAINER_LABEL) as ContainerKind[]).map((kind) => [kind, sizeOf(kind)])),
 );
+
+const copyGrid = (grid: ContainerGridDimensions): ContainerGridDimensions => ({
+  cols: grid.cols,
+  rows: grid.rows,
+  blocked: grid.blocked ? grid.blocked.map((p) => ({ x: p.x, y: p.y })) : [],
+});
+
+/** Looks (sprite styles) with a grid of their own, by look id. A look not listed here uses its kind's grid. */
+export const lookSizes = reactive<Record<string, ContainerGridDimensions>>(
+  Object.fromEntries(Object.entries(CONTAINER_LOOK_GRID_SIZE).map(([look, grid]) => [look, copyGrid(grid)])),
+);
+
+/** The original look of a kind shares the kind's grid; only the other looks can have their own. */
+export const isBaseLook = (entry: Pick<DevContainerEntry, 'kind' | 'look'>): boolean => entry.look === entry.kind;
+
+export const hasOwnGrid = (entry: Pick<DevContainerEntry, 'look'>): boolean => lookSizes[entry.look] !== undefined;
+
+/** The grid this entry opens with: its look's own grid when it has one, else its kind's. In the kind's own orientation. */
+export function entryGrid(entry: Pick<DevContainerEntry, 'kind' | 'look'>): ContainerGridDimensions {
+  return lookSizes[entry.look] ?? containerSizes[entry.kind] ?? containerGridDimensions(entry.kind);
+}
+
+/** Gives a look its own grid, starting from the kind's grid, or takes it away so the look follows its kind again. */
+export function setOwnGrid(entry: Pick<DevContainerEntry, 'kind' | 'look'>, own: boolean): void {
+  if (isBaseLook(entry)) return;
+  if (own) lookSizes[entry.look] = copyGrid(containerSizes[entry.kind] ?? containerGridDimensions(entry.kind));
+  else delete lookSizes[entry.look];
+}
+
+const clampBlocked = (blocked: readonly GridPoint[] | undefined, cols: number, rows: number): GridPoint[] =>
+  (blocked ?? []).filter((p) => p.x < cols && p.y < rows);
+
+/** Resizes the grid this entry opens with: its own when it has one, else its kind's (which every look on it shares). */
+export function setEntrySize(entry: Pick<DevContainerEntry, 'kind' | 'look'>, cols: number, rows: number): void {
+  const own = lookSizes[entry.look];
+  if (!own) return setContainerSize(entry.kind, cols, rows);
+  lookSizes[entry.look] = { cols, rows, blocked: clampBlocked(own.blocked, cols, rows) };
+}
+
+export function setEntryBlocked(entry: Pick<DevContainerEntry, 'kind' | 'look'>, blocked: GridPoint[]): void {
+  const own = lookSizes[entry.look];
+  if (!own) return setContainerBlocked(entry.kind, blocked);
+  lookSizes[entry.look] = { ...own, blocked };
+}
 
 /** One building's draft: its prop-to-container map, its loot odds and its loot pool. Copies, so the code's tables are never touched. */
 export interface BuildingDraft {
@@ -73,7 +118,17 @@ export function isItemModified(entry: DevItemEntry): boolean {
   return current.width !== entry.defaultFootprint.width || current.height !== entry.defaultFootprint.height;
 }
 
+const sameGrid = (a: ContainerGridDimensions | undefined, b: ContainerGridDimensions | undefined): boolean => {
+  if (!a || !b) return a === b;
+  return a.cols === b.cols && a.rows === b.rows && sameJson(sortedBlocked(a.blocked), sortedBlocked(b.blocked));
+};
+
+/** The look's own grid differs from the code's: added, removed or changed. */
+export const isLookModified = (look: string): boolean => !sameGrid(lookSizes[look], CONTAINER_LOOK_GRID_SIZE[look]);
+
 export function isContainerModified(entry: DevContainerEntry): boolean {
+  if (isLookModified(entry.look)) return true;
+  if (lookSizes[entry.look]) return false;
   const current = containerSizes[entry.kind];
   if (!current) return false;
   const defaults = entry.defaultDimensions;
@@ -111,12 +166,14 @@ export function resetAllItems(): void {
 
 export function resetAllContainers(): void {
   for (const kind of Object.keys(CONTAINER_LABEL) as ContainerKind[]) containerSizes[kind] = sizeOf(kind);
+  for (const look of Object.keys(lookSizes)) delete lookSizes[look];
+  for (const [look, grid] of Object.entries(CONTAINER_LOOK_GRID_SIZE)) lookSizes[look] = copyGrid(grid);
 }
 
 /** The sync server's save for one target. Resolves true when the code was written. */
 export async function syncToCodebase(target: 'items' | 'containers'): Promise<boolean> {
   try {
-    const body = target === 'items' ? { target, footprints } : { target, containerSizes };
+    const body = target === 'items' ? { target, footprints } : { target, containerSizes, lookSizes };
     const response = await fetch('/api/dev/inventory-sync', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

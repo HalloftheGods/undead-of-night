@@ -24,6 +24,8 @@ export interface CanvasPageHost {
   slide: (id: string, value: number) => void;
   /** True while something stands over the page (the Privacy sheet) and the keys are its. */
   inert?: () => boolean;
+  /** True while something else has the whole canvas (the Dev bench's editor): the page is not drawn and takes no keys, clicks or wheel. */
+  hidden?: () => boolean;
 }
 
 export interface CanvasPage {
@@ -39,7 +41,8 @@ const ACTIVATE = ['Enter', 'NumpadEnter', 'Space'];
  * choice or a slider, Enter and Space press, Esc is Back.
  */
 export function createCanvasPage(canvas: HTMLCanvasElement, host: CanvasPageHost, first: PageModel): CanvasPage {
-  const win: PageWindow = { model: first, hover: null, focus: null, scroll: 0 };
+  const win: PageWindow = { model: first, hover: null, focus: null, scroll: 0, hidden: () => host.hidden?.() ?? false };
+  const away = (): boolean => host.hidden?.() ?? false;
   let sliding: string | null = null;
 
   function layout(): PageLayout {
@@ -85,7 +88,7 @@ export function createCanvasPage(canvas: HTMLCanvasElement, host: CanvasPageHost
   }
 
   function onMouseDown(event: MouseEvent): void {
-    if (event.target !== canvas || event.button !== 0) return;
+    if (event.target !== canvas || event.button !== 0 || away()) return;
     const at = point(event);
     const hit = pageHitAt(layout(), at.x, at.y);
     win.focus = null;
@@ -93,6 +96,10 @@ export function createCanvasPage(canvas: HTMLCanvasElement, host: CanvasPageHost
   }
 
   function onMove(event: MouseEvent): void {
+    if (away()) {
+      win.hover = null;
+      return;
+    }
     if (event.target !== canvas && sliding === null) {
       win.hover = null;
       return;
@@ -116,7 +123,7 @@ export function createCanvasPage(canvas: HTMLCanvasElement, host: CanvasPageHost
   }
 
   function onWheel(event: WheelEvent): void {
-    if (event.target !== canvas) return;
+    if (event.target !== canvas || away()) return;
     event.preventDefault();
     win.scroll = clampScroll(win.scroll + Math.sign(event.deltaY) * SCROLL_STEP);
   }
@@ -171,7 +178,7 @@ export function createCanvasPage(canvas: HTMLCanvasElement, host: CanvasPageHost
 
   /** Capture phase, so the pause and confirm keys the game listens for never see what this page takes. */
   function onKeyDown(event: KeyboardEvent): void {
-    if (event.ctrlKey || event.metaKey || event.altKey || host.inert?.()) return;
+    if (event.ctrlKey || event.metaKey || event.altKey || host.inert?.() || away()) return;
     let handled = true;
     if (event.code === 'Escape') {
       if (!event.repeat) host.press('back');
@@ -198,6 +205,7 @@ export function createCanvasPage(canvas: HTMLCanvasElement, host: CanvasPageHost
   setPageWindow(win);
   setLootPad(
     keyBridgePad(() => {
+      if (away()) return false;
       const main = win.model.buttons.find((button) => button.primary && button.enabled);
       if (!main) return false;
       host.playUi('click');

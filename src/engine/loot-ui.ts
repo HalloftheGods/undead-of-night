@@ -70,7 +70,22 @@ export interface LootLayout {
 }
 
 /** The dev bench's edit panel buttons. */
-export type EditId = 'prev' | 'next' | 'mode' | 'colsDown' | 'colsUp' | 'rowsDown' | 'rowsUp' | 'wDown' | 'wUp' | 'hDown' | 'hUp' | 'clear' | 'save';
+export type EditId =
+  | 'prev' | 'next' | 'mode' | 'colsDown' | 'colsUp' | 'rowsDown' | 'rowsUp' | 'wDown' | 'wUp' | 'hDown' | 'hUp' | 'clear' | 'save'
+  | 'lookPrev' | 'lookNext' | 'grid';
+
+/** The look (sprite style) the bench is editing, among the looks of its kind, and whose grid it edits. */
+export interface LookEditView {
+  /** This look's place among its kind's looks, 1-based. */
+  readonly index: number;
+  readonly count: number;
+  /** The kind's original look: its grid is the base every look without its own uses. */
+  readonly base: boolean;
+  /** This look has a grid of its own instead of the base. */
+  readonly own: boolean;
+  /** How many of the kind's looks follow the base grid. */
+  readonly onBase: number;
+}
 
 /** What the dev bench shows in its edit panel: the container's size and the selected item's footprint. */
 export interface LootEditView {
@@ -88,6 +103,10 @@ export interface LootEditView {
   readonly library?: readonly LibraryEntry[];
   /** The library entry the editor is showing, outlined. */
   readonly libraryCurrent?: string;
+  /** The library's heading, such as "LOOKS". */
+  readonly libraryTitle?: string;
+  /** Set when the container comes in more than one look: draws the toolbar's look row. */
+  readonly look?: LookEditView;
 }
 
 export interface EditorLayout {
@@ -108,6 +127,8 @@ export interface LibraryEntry {
   readonly id: string;
   readonly label: string;
   readonly art: ContainerArt | null;
+  /** A short tag in the cell's corner, such as "OWN" for a look with its own grid. */
+  readonly tag?: string;
 }
 
 export interface LootView {
@@ -145,7 +166,7 @@ export function layoutLootUi(state: DualLootState, viewW: number, viewH: number,
   const sh = HEAD + GAP + gridsH + GAP + BUTTON_H + PAD * 2;
   const sx = viewW - EDGE - sw;
   // With the editor's toolbar up, the docks centre in the space under it and above the help line.
-  const top = edit ? EDITOR_TOP : 0;
+  const top = edit ? editorTop(edit) : 0;
   const room = viewH - top - (edit ? EDITOR_BOTTOM : 0);
   const margin = edit ? 2 : EDGE;
   // The gear row hangs along the bottom centre of the whole canvas; the survivor dock stays above it.
@@ -186,7 +207,7 @@ export function layoutLootUi(state: DualLootState, viewW: number, viewH: number,
 
   const survivor: Box = { x: sx, y: sy, w: sw, h: sh };
   if (edit?.benchOnly) {
-    const library = edit.library ? layoutLibrary(edit.library, viewW, viewH, top, edit ? EDITOR_BOTTOM : 0) : null;
+    const library = edit.library ? layoutLibrary(edit.library, viewW, viewH, top, EDITOR_BOTTOM, edit.libraryCurrent) : null;
     return { container, survivor: null, pack: null, pockets: null, candy: null, gear: [], buttons: [], editor: layoutEditor(edit, viewW), library };
   }
   return { container, survivor, pack: packBox, pockets: pocketsBox, candy: candyBox, gear, buttons, editor: edit ? layoutEditor(edit, viewW) : null, library: null };
@@ -195,7 +216,7 @@ export function layoutLootUi(state: DualLootState, viewW: number, viewH: number,
 const GEAR_SLOT_COUNT = GEAR_SLOT_DEFS.length;
 
 /** The library sits on the right, where the survivor's dock was. Each cell is a container drawn at in-game size. */
-function layoutLibrary(entries: readonly LibraryEntry[], viewW: number, viewH: number, top: number, bottom: number) {
+function layoutLibrary(entries: readonly LibraryEntry[], viewW: number, viewH: number, top: number, bottom: number, current?: string) {
   const sprites = entries.map((entry) => (entry.art ? stageSprite(entry.art, true) : null));
   const cellW = Math.max(40, ...sprites.map((s) => (s ? s.w : 0)), ...entries.map((e) => textWidth(upper(e.label)) / 1)) + 4;
   const cellH = Math.max(0, ...sprites.map((s) => (s ? s.h : 0))) + ROW_H + 4;
@@ -204,7 +225,11 @@ function layoutLibrary(entries: readonly LibraryEntry[], viewW: number, viewH: n
   const w = cols * cellW + PAD * 2;
   const x = viewW - EDGE - w;
   const maxRows = Math.max(1, Math.floor((viewH - top - bottom - HEAD - PAD * 2 - EDGE) / cellH));
-  const shown = entries.slice(0, cols * maxRows);
+  // A window of the entries that always holds the current one, so the one being edited is never cut off.
+  const span = cols * maxRows;
+  const at = Math.max(0, entries.findIndex((entry) => entry.id === current));
+  const start = Math.max(0, Math.min(entries.length - span, at - Math.floor(span / 2)));
+  const shown = entries.slice(start, start + span);
   const rows = Math.ceil(shown.length / cols);
   const y = top + EDGE;
   const h = HEAD + PAD * 2 + rows * cellH;
@@ -214,7 +239,7 @@ function layoutLibrary(entries: readonly LibraryEntry[], viewW: number, viewH: n
 
 const ROW_H = 11;
 /** Space the editor's toolbar takes at the top, and its help line at the bottom. */
-const EDITOR_TOP = EDGE + ROW_H + PAD * 2 + 3;
+const editorTop = (edit: LootEditView): number => EDGE + ROW_H * (edit.look ? 2 : 1) + PAD * 2 + 3;
 const EDITOR_BOTTOM = 14;
 
 /** A toolbar along the top: mode, the container's size, the selected item's footprint, clear and save. The docks sit below it. */
@@ -257,7 +282,27 @@ function layoutEditor(edit: LootEditView, viewW: number): EditorLayout {
   }
   wide('clear', 'CLEAR');
   wide('save', 'SAVE');
-  return { box: { x: EDGE, y, w: viewW - EDGE * 2, h }, lines, buttons };
+  const look = edit.look;
+  if (!look) return { box: { x: EDGE, y, w: viewW - EDGE * 2, h }, lines, buttons };
+  // The look row: step through this kind's looks, and say (or switch) whose grid this look opens with.
+  x = EDGE + PAD;
+  const ly = by + ROW_H;
+  const lookText = `LOOK ${look.index} OF ${look.count}`;
+  buttons.push({ id: 'lookPrev', label: '<', x, y: ly, w: 11, h: ROW_H - 2 });
+  buttons.push({ id: 'lookNext', label: '>', x: x + 12, y: ly, w: 11, h: ROW_H - 2 });
+  x += 23 + SEP;
+  lines.push({ x, y: ly + 2, text: lookText });
+  x += textWidth(lookText) + SEP;
+  if (look.base) {
+    lines.push({ x, y: ly + 2, text: `BASE GRID: ${look.onBase} OF ${look.count} LOOKS USE IT` });
+  } else {
+    const label = look.own ? 'OWN GRID' : 'BASE GRID';
+    const w = textWidth(label) + 6;
+    buttons.push({ id: 'grid', label, x, y: ly, w, h: ROW_H - 2 });
+    x += w + SEP;
+    lines.push({ x, y: ly + 2, text: look.own ? 'EDITS CHANGE THIS LOOK ONLY' : `EDITS CHANGE ALL ${look.onBase} LOOKS ON BASE` });
+  }
+  return { box: { x: EDGE, y, w: viewW - EDGE * 2, h: h + ROW_H }, lines, buttons };
 }
 
 /** Short enough for a 32 pixel slot. */
@@ -498,7 +543,7 @@ function drawButton(ctx: CanvasRenderingContext2D, box: Box, label: string, colo
 
 function drawLibrary(ctx: CanvasRenderingContext2D, view: LootView, library: NonNullable<LootLayout['library']>): void {
   plate(ctx, library.box, 0.92);
-  drawTitle(ctx, 'CONTAINERS', library.box);
+  drawTitle(ctx, view.edit?.libraryTitle ?? 'CONTAINERS', library.box);
   for (const cell of library.cells) {
     const current = view.edit?.libraryCurrent === cell.id;
     const hovered = view.hover !== null && view.hover.kind === 'library' && view.hover.id === cell.id;
@@ -513,6 +558,11 @@ function drawLibrary(ctx: CanvasRenderingContext2D, view: LootView, library: Non
     }
     const label = upper(cell.label);
     drawText(ctx, label, cell.x + Math.round((cell.w - textWidth(label)) / 2), cell.y + cell.h - ROW_H + 2, current ? AMBER : DIM);
+    if (cell.tag) {
+      const tag = upper(cell.tag);
+      fill(ctx, INK, cell.x + 1, cell.y + 1, textWidth(tag) + 4, FONT_HEIGHT + 3);
+      drawText(ctx, tag, cell.x + 3, cell.y + 2, SICK);
+    }
   }
 }
 
@@ -579,7 +629,7 @@ export function drawLootUi(ctx: CanvasRenderingContext2D, view: LootView, given:
     for (const line of editor.lines) drawText(ctx, line.text, line.x, line.y, BONE);
     for (const button of editor.buttons) {
       const hovered = view.hover !== null && view.hover.kind === 'edit' && view.hover.id === button.id;
-      const active = button.id === 'mode' && view.edit?.on === true;
+      const active = (button.id === 'mode' && view.edit?.on === true) || (button.id === 'grid' && view.edit?.look?.own === true);
       drawButton(ctx, button, button.label, button.id === 'save' ? SICK : BONE, hovered, active);
     }
   }

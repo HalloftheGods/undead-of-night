@@ -2,6 +2,7 @@
 // searched, so a room reads as gone through at a glance. Anchored like props, on the footprint.
 
 import type { Container, ContainerKind } from '../../shared/containers.ts';
+import { containerLookId, LOOK_VARIANT_COUNT, SHELF_LOOK_IDS, shelfLookId, VARIED_PROP_LOOKS, variedLookId } from '../../shared/container-look.ts';
 import type { PropKind } from '../../shared/protocol.ts';
 import { buildCrateArt } from './containers/cartons.ts';
 import { buildDumpsterArt } from './containers/dumpster.ts';
@@ -26,50 +27,29 @@ export type { ContainerArt } from './containers/stage.ts';
 
 export type ShelfLook = 'shelf' | 'shelf_wood' | 'shelf_wire' | 'shelf_rack';
 /** The pieces that come in five looks: the original and four more, picked per piece by its place in the map. */
-export const VARIED_PROPS: Partial<Record<PropKind, ContainerLook>> = {
-  bed: 'drawer', locker: 'locker', fridge: 'fridge', counter: 'cabinet', crate_stack: 'box', table: 'desk', dumpster: 'dumpster',
-};
+export const VARIED_PROPS = VARIED_PROP_LOOKS as Partial<Record<PropKind, ContainerLook>>;
 export type VariedLook = 'drawer' | 'locker' | 'fridge' | 'cabinet' | 'box' | 'desk' | 'dumpster';
-export const VARIANTS_PER_LOOK = 4;
+export const VARIANTS_PER_LOOK = LOOK_VARIANT_COUNT;
 export type VariantLook = `${VariedLook}_v${1 | 2 | 3 | 4}`;
 
 export type ContainerLook = ContainerKind | 'bench' | 'desk' | ShelfLook | VariantLook | Exclude<CarLook, 'car'>;
 
 /** Every shelf look, in the order a town hands them out. */
-export const SHELF_LOOKS: readonly ShelfLook[] = ['shelf', 'shelf_wood', 'shelf_wire', 'shelf_rack'];
+export const SHELF_LOOKS: readonly ShelfLook[] = SHELF_LOOK_IDS;
 
 /** A shelf's look is fixed by its place in the map's props, so it never changes between frames or clients. */
 export function shelfLook(propIndex: number): ShelfLook {
-  return SHELF_LOOKS[(Math.imul(propIndex + 1, 2654435761) >>> 16) % SHELF_LOOKS.length];
+  return shelfLookId(propIndex) as ShelfLook;
 }
-
-/** The props that look different from the rest of their kind. */
-const PROP_LOOKS: Partial<Record<PropKind, ContainerLook>> = {
-  workbench: 'bench',
-  table: 'desk',
-  car_sedan_v: 'car_v',
-  car_wreck_h: 'wreck',
-  van_h: 'van',
-  car_hatch_h: 'hatch',
-  car_hatch_v: 'hatch_v',
-  pickup_h: 'pickup',
-  police_h: 'police',
-  police_v: 'police_v',
-  ambulance_h: 'ambulance',
-};
 
 /** Look 0 is the original; 1 to 4 are its variants. The same piece always gets the same one. */
 export function variedLook(look: VariedLook, propIndex: number): ContainerLook {
-  const n = (Math.imul(propIndex + 1, 2654435761) >>> 16) % (VARIANTS_PER_LOOK + 1);
-  return n === 0 ? look : (`${look}_v${n}` as VariantLook);
+  return variedLookId(look, propIndex) as ContainerLook;
 }
 
-export const containerLook = ({ kind, prop, propIndex }: Pick<Container, 'kind' | 'prop'> & Partial<Pick<Container, 'propIndex'>>): ContainerLook => {
-  if (propIndex === undefined) return PROP_LOOKS[prop] ?? kind;
-  if (kind === 'shelf') return shelfLook(propIndex);
-  const varied = VARIED_PROPS[prop];
-  return varied ? variedLook(varied as VariedLook, propIndex) : (PROP_LOOKS[prop] ?? kind);
-};
+/** The look a piece is drawn with. The rule lives in shared/container-look.ts, so its loot grid follows the same look. */
+export const containerLook = (piece: Pick<Container, 'kind' | 'prop'> & Partial<Pick<Container, 'propIndex'>>): ContainerLook =>
+  containerLookId(piece) as ContainerLook;
 
 /** Names a prop's variants in order, so a builder's four arts land on the right looks. */
 const variantEntries = (look: VariedLook, arts: readonly ContainerArt[]): Record<string, ContainerArt> =>

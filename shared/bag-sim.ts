@@ -10,7 +10,7 @@ import { emit } from './sim-state.ts';
 import type { PlayerState, SimState } from './sim-state.ts';
 import { useSupply } from './supplies.ts';
 import { isSupplyType } from './supply-types.ts';
-import { containerGridDimensions, townContainers } from './containers.ts';
+import { containerGridFor, townContainers } from './containers.ts';
 
 /** Takes up to `count` units of a type off the counters and returns how many it took. */
 function take(p: PlayerState, type: BagItemType, count: number): number {
@@ -87,7 +87,7 @@ export function applyBagCommit(sim: SimState, p: PlayerState, commit: BagCommit)
     const containerState = sim.containers[commit.container.id];
     if (containerState) {
       const containerDef = sim.map ? townContainers(sim.map)[commit.container.id] : undefined;
-      const { cols, rows } = containerGridDimensions(containerDef?.kind);
+      const { cols, rows } = containerGridFor(containerDef);
       const held = new Map((containerState.items ?? []).map((item) => [item.id, item]));
       const contents = createInventoryGrid(cols, rows);
       for (const item of commit.container.items) placeItem(contents, { ...item });

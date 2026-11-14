@@ -2,15 +2,17 @@
   <!-- The bench is drawn on the game canvas by the page kit. The editors are drawn there too; this component draws nothing itself. -->
   <CanvasLootPreview
     v-if="containerEditor"
-    :key="containerEditor.entryId"
+    :key="`${containerEditor.entryId}:${containerEditor.rev}`"
     :position="containerPosition"
     :art="art"
     :title="containerEditor.title"
     :kind="containerEditor.kind"
     :grid="containerEditor.grid"
     :container-art="containerEditor.containerArt"
-    :library="libraryEntries"
+    :library="lookEntries"
     :library-current="containerEditor.entryId"
+    library-title="LOOKS"
+    :look="lookView"
     @pick="openContainerById"
     @close="closeEditor"
     @size="onEditorSize"
@@ -18,6 +20,8 @@
     @footprint="onEditorFootprint"
     @save="saveAll"
     @step="stepContainer"
+    @look="stepLook"
+    @grid="toggleOwnGrid"
   />
   <CanvasLootPreview
     v-else-if="itemEditor"
@@ -51,13 +55,16 @@ import type { ContainerKind } from '../../../shared/containers.ts';
 import { flipDimensions, flipPoint, isVerticalLook } from '../../../shared/container-flip.ts';
 import { useCanvasPage } from '../use-canvas-page.ts';
 import CanvasLootPreview from './CanvasLootPreview.vue';
-import type { LibraryEntry } from '../../engine/loot-ui.ts';
+import type { LibraryEntry, LookEditView } from '../../engine/loot-ui.ts';
 import {
   benchContainers,
   benchItems,
   buildingDrafts,
   containerSizes,
+  entryGrid,
   footprints,
+  hasOwnGrid,
+  isBaseLook,
   isContainerModified,
   isItemModified,
   MAX_WEIGHT,
@@ -65,9 +72,10 @@ import {
   resetAllItems,
   resetBuilding,
   isBuildingDirty,
-  setContainerBlocked,
-  setContainerSize,
+  setEntryBlocked,
+  setEntrySize,
   setItemSize,
+  setOwnGrid,
   syncToCodebase,
 } from '../../game/dev/bench-store.ts';
 import { buildBenchModel, type BenchTab, type ItemRow, type ObjectRow } from '../../game/dev/bench-canvas-model.ts';
@@ -85,6 +93,8 @@ let statusTimer: ReturnType<typeof setTimeout> | null = null;
 /** A container open in the in-game editor: its own grid, seeded with sample loot the way the Vue bench seeds it. */
 interface ContainerEditor {
   entryId: string;
+  /** Bumped when the grid is swapped under the editor (own grid on or off), so it opens afresh. */
+  rev: number;
   kind: ContainerKind;
   title: string;
   grid: InventoryGrid;
@@ -105,7 +115,7 @@ const editing = computed(() => containerEditor.value !== null || itemEditor.valu
 const SAMPLE_LOOT_ITEMS = ['bandage', 'water_bottle', 'pistol_ammo', 'knife', 'medkit', 'full_size_bar'];
 
 const shownSize = (entry: DevContainerEntry) => {
-  const saved = containerSizes[entry.kind] ?? entry.defaultDimensions;
+  const saved = entryGrid(entry);
   return isVerticalLook(entry.look) ? flipDimensions(saved) : saved;
 };
 
@@ -150,6 +160,38 @@ const libraryEntries = computed<LibraryEntry[]>(() =>
   benchContainers.map((entry) => ({ id: entry.id, label: entry.name, art: props.art?.containers[entry.look] ?? null })),
 );
 
+const editorEntry = computed(() => benchContainers.find((e) => e.id === containerEditor.value?.entryId) ?? null);
+
+/** The looks (sprite styles) of the open container's kind, base first, in catalogue order. */
+const looksOfKind = computed(() => {
+  const entry = editorEntry.value;
+  if (!entry) return [];
+  const looks = benchContainers.filter((e) => e.kind === entry.kind);
+  return [...looks.filter(isBaseLook), ...looks.filter((e) => !isBaseLook(e))];
+});
+
+const lookEntries = computed<LibraryEntry[]>(() =>
+  looksOfKind.value.map((entry, i) => ({
+    id: entry.id,
+    label: isBaseLook(entry) ? 'BASE' : `LOOK ${i + 1}`,
+    art: props.art?.containers[entry.look] ?? null,
+    ...(hasOwnGrid(entry) ? { tag: 'OWN' } : {}),
+  })),
+);
+
+const lookView = computed<LookEditView | undefined>(() => {
+  const entry = editorEntry.value;
+  const looks = looksOfKind.value;
+  if (!entry || looks.length < 2) return undefined;
+  return {
+    index: looks.findIndex((e) => e.id === entry.id) + 1,
+    count: looks.length,
+    base: isBaseLook(entry),
+    own: hasOwnGrid(entry),
+    onBase: looks.filter((e) => !hasOwnGrid(e)).length,
+  };
+});
+
 const boxArt = computed<ContainerArt | null>(() => props.art?.containers.box ?? null);
 
 const containerPosition = computed(() => {
@@ -192,8 +234,10 @@ function openContainerEditor(entry: DevContainerEntry): void {
     if (!randomPackItem(grid, data, Math.random)) autoPackItem(grid, data);
   });
   itemEditor.value = null;
+  const rev = containerEditor.value?.entryId === entry.id ? containerEditor.value.rev + 1 : 0;
   containerEditor.value = {
     entryId: entry.id,
+    rev,
     kind: entry.kind,
     title: entry.name,
     grid,
@@ -234,6 +278,23 @@ function stepContainer(direction: -1 | 1): void {
   openContainerEditor(next);
 }
 
+/** Steps through the looks of the open container's kind, wrapping round. */
+function stepLook(direction: -1 | 1): void {
+  const looks = looksOfKind.value;
+  const at = looks.findIndex((e) => e.id === containerEditor.value?.entryId);
+  if (looks.length < 2 || at < 0) return;
+  openContainerEditor(looks[(at + direction + looks.length) % looks.length]);
+}
+
+/** Gives the open look its own grid (a copy of the base to start from), or puts it back on the base grid. */
+function toggleOwnGrid(): void {
+  const entry = editorEntry.value;
+  if (!entry || isBaseLook(entry)) return;
+  setOwnGrid(entry, !hasOwnGrid(entry));
+  flashStatus(hasOwnGrid(entry) ? 'OWN GRID' : 'BASE GRID');
+  openContainerEditor(entry);
+}
+
 function stepItemContainer(direction: -1 | 1): void {
   const at = Math.max(0, benchContainers.findIndex((e) => e.kind === 'box'));
   openContainerEditor(benchContainers[(at + direction + benchContainers.length) % benchContainers.length]);
@@ -241,15 +302,17 @@ function stepItemContainer(direction: -1 | 1): void {
 
 function onEditorSize(size: { cols: number; rows: number }): void {
   const editor = containerEditor.value;
-  if (!editor) return;
+  const entry = editorEntry.value;
+  if (!editor || !entry) return;
   const own = editor.flipped ? { cols: size.rows, rows: size.cols } : size;
-  setContainerSize(editor.kind, own.cols, own.rows);
+  setEntrySize(entry, own.cols, own.rows);
 }
 
 function onEditorBlocked(cells: GridPoint[]): void {
   const editor = containerEditor.value;
-  if (!editor) return;
-  setContainerBlocked(editor.kind, editor.flipped ? cells.map(flipPoint) : cells);
+  const entry = editorEntry.value;
+  if (!editor || !entry) return;
+  setEntryBlocked(entry, editor.flipped ? cells.map(flipPoint) : cells);
 }
 
 function onEditorFootprint(change: { type: string; width: number; height: number }): void {
@@ -315,6 +378,7 @@ useCanvasPage(
     choose,
     slide,
     inert: () => editing.value,
+    hidden: () => editing.value,
   },
   () => emit('close'),
 );

@@ -2,6 +2,17 @@
 
 All notable changes to the Undead of Night: Take One game are documented in this file.
 
+## [2026-11-14] - Dev bench: the editor has the screen, and each look can have its own grid
+
+### Added
+- The container editor has a look row: step through every look of a container's kind with < > or [ ], and the right-hand LOOKS panel shows each look's opened sprite, tagged OWN when it has its own grid.
+- OWN GRID / BASE GRID (or G) gives a look a grid of its own, starting from a copy of the base, so a grid can be fitted to where items would really sit in that sprite. A look without one uses its kind's grid, and the game opens each piece in the grid of the look it is drawn with. Save writes own grids to `shared/container-look-grids.ts`.
+
+### Fixed
+- The bench's menu no longer draws over the container editor or takes its clicks.
+- The pixel font has ( ) * % < > = [ ], so counts, modified marks and odds no longer show as ?.
+- A save that could not write the code now reports SAVE FAILED instead of SAVED TO CODE!.
+
 ## [2026-11-14] - The game is now Undead of Night: Take One
 
 ### Changed

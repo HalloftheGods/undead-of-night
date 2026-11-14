@@ -138,11 +138,12 @@ export class LocalBag {
     containerKind?: ContainerKind,
     containerArt?: ContainerArt | null,
     flipped = false,
+    look?: string,
   ): BagWorking {
     this.openIds = new Set([...this.bag.pack.items, ...this.bag.pockets.items].map((item) => item.id));
     this.containerOriginalIds = new Set(containerItems.map((item) => item.id));
     const tier = hud.backpackTier ?? 'satchel';
-    const shape = containerGridDimensions(containerKind);
+    const shape = containerGridDimensions(containerKind, look);
     const { cols, rows, blocked } = flipped ? flipDimensions(shape) : shape;
     const container = createInventoryGrid(cols, rows, blocked);
     for (const original of containerItems) {

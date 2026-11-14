@@ -18,6 +18,8 @@ interface DevInventorySavePayload {
   readonly target: 'items' | 'containers';
   readonly footprints?: Record<string, FootprintUpdate>;
   readonly containerSizes?: Record<string, ContainerDimensionsUpdate>;
+  /** Looks with a grid of their own. Sent with every containers save; an empty map clears them all. */
+  readonly lookSizes?: Record<string, ContainerDimensionsUpdate>;
 }
 
 function parseJsonBody<T>(req: IncomingMessage): Promise<T> {
@@ -66,6 +68,32 @@ function updateItemFootprintsFile(projectRoot: string, footprints: Record<string
   const updatedSource = source.slice(0, startIndex + startMarker.length) + replacementBlock + source.slice(endIndex);
 
   writeFileSync(filePath, updatedSource, 'utf8');
+  return true;
+}
+
+/** One grid as a line of the table: `  key: { cols, rows, blocked: [...] },`. Keys that are not plain names are quoted. */
+function gridLine(key: string, { cols, rows, blocked }: ContainerDimensionsUpdate): string {
+  const name = /^[A-Za-z_$][\w$]*$/.test(key) ? key : JSON.stringify(key);
+  const hasBlocked = blocked && blocked.length > 0;
+  const blockedStr = hasBlocked
+    ? `, blocked: [${[...blocked].sort((a, b) => a.y - b.y || a.x - b.x).map((p) => `{ x: ${p.x}, y: ${p.y} }`).join(', ')}]`
+    : '';
+  return `  ${name}: { cols: ${cols}, rows: ${rows}${blockedStr} },`;
+}
+
+/** Rewrites the table in shared/container-look-grids.ts: the body between its opening line and the closing `};`. */
+export function updateLookGridFile(projectRoot: string, sizes: Record<string, ContainerDimensionsUpdate>): boolean {
+  const filePath = path.resolve(projectRoot, 'shared/container-look-grids.ts');
+  const source = readFileSync(filePath, 'utf8');
+  const startMarker = 'export const CONTAINER_LOOK_GRID_SIZE: Readonly<Record<string, ContainerGridDimensions>> = {';
+  const startIndex = source.indexOf(startMarker);
+  if (startIndex === -1) return false;
+  const bodyStart = startIndex + startMarker.length;
+  const relativeEnd = source.slice(bodyStart).indexOf('};');
+  if (relativeEnd === -1) return false;
+  const lines = Object.keys(sizes).sort().map((key) => gridLine(key, sizes[key]));
+  const body = ['', ...lines].join('\n') + '\n';
+  writeFileSync(filePath, source.slice(0, bodyStart) + body + source.slice(bodyStart + relativeEnd), 'utf8');
   return true;
 }
 
@@ -125,13 +153,17 @@ export function devInventorySync(projectRoot: string): Plugin {
 
           if (payload.target === 'items' && payload.footprints) {
             const success = updateItemFootprintsFile(projectRoot, payload.footprints);
+            if (!success) res.statusCode = 500;
             res.setHeader('Content-Type', 'application/json');
             res.end(JSON.stringify({ success, target: 'items' }));
             return;
           }
 
           if (payload.target === 'containers' && payload.containerSizes) {
-            const success = updateContainerGridSizeFile(projectRoot, payload.containerSizes);
+            const kindsSaved = updateContainerGridSizeFile(projectRoot, payload.containerSizes);
+            const looksSaved = payload.lookSizes ? updateLookGridFile(projectRoot, payload.lookSizes) : true;
+            const success = kindsSaved && looksSaved;
+            if (!success) res.statusCode = 500;
             res.setHeader('Content-Type', 'application/json');
             res.end(JSON.stringify({ success, target: 'containers' }));
             return;

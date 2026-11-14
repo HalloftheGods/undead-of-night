@@ -20,7 +20,7 @@ import {
   type InventoryGrid,
 } from '../../../shared/grid-inventory.ts';
 import type { ContainerKind } from '../../../shared/containers.ts';
-import { layoutLootUi, lootHitAt, type EditId, type LibraryEntry, type LootEditView, type LootHit } from '../../engine/loot-ui.ts';
+import { layoutLootUi, lootHitAt, type EditId, type LibraryEntry, type LookEditView, type LootEditView, type LootHit } from '../../engine/loot-ui.ts';
 import { canvasEditing } from '../../game/dev/canvas-edit.ts';
 import { setLootWindow, type LootWindow } from '../../game/loot-view.ts';
 import {
@@ -49,6 +49,9 @@ interface Props {
   /** The library of containers shown in the editor's right-hand column. */
   library?: readonly LibraryEntry[];
   libraryCurrent?: string;
+  libraryTitle?: string;
+  /** The look being edited among its kind's looks, when the kind has more than one. */
+  look?: LookEditView;
 }
 
 const props = withDefaults(defineProps<Props>(), { containerArt: null, focusItem: undefined });
@@ -64,6 +67,10 @@ const emit = defineEmits<{
   step: [direction: -1 | 1];
   /** A container in the library was clicked: load it into the editor. */
   pick: [id: string];
+  /** Go to the previous (-1) or next (1) look of this kind. */
+  look: [direction: -1 | 1];
+  /** Switch this look between its own grid and the base grid. */
+  grid: [];
 }>();
 
 const MIN_SIDE = 1;
@@ -77,6 +84,7 @@ const editOn = ref(true);
 const selectedType = ref<string | null>(null);
 const HINTS = {
   edit: 'EDIT: CLICK A CELL TO BLOCK IT. CLICK AN ITEM TO SELECT IT. ARROWS STEP. ESC EXITS.',
+  looks: 'EDIT: CLICK A CELL TO BLOCK IT. ARROWS STEP OBJECTS, [ ] STEP LOOKS, G OWN GRID. ESC EXITS.',
   play: 'PLAY: CLICK TO PICK UP AND PLACE. R ROTATES. ESC EXITS.',
 };
 
@@ -103,16 +111,23 @@ function footprintOf(type: string): GridFootprint {
   return ITEM_FOOTPRINTS[type] ?? { width: 1, height: 1 };
 }
 
+function hintText(): string {
+  if (!editOn.value) return HINTS.play;
+  return props.look ? HINTS.looks : HINTS.edit;
+}
+
 function editView(): LootEditView {
   const type = selectedType.value;
   const fp = type ? footprintOf(type) : null;
   return {
     on: editOn.value,
-    hint: editOn.value ? HINTS.edit : HINTS.play,
+    hint: hintText(),
     ...(props.position ? { position: props.position } : {}),
     benchOnly: true,
     library: props.library ?? [],
     libraryCurrent: props.libraryCurrent,
+    ...(props.libraryTitle ? { libraryTitle: props.libraryTitle } : {}),
+    ...(props.look ? { look: props.look } : {}),
     cols: state.containerGrid.cols,
     rows: state.containerGrid.rows,
     item: type && fp ? { type, width: fp.width, height: fp.height } : null,
@@ -204,6 +219,9 @@ function onEdit(id: EditId): void {
   const fp = type ? footprintOf(type) : null;
   if (id === 'prev') emit('step', -1);
   else if (id === 'next') emit('step', 1);
+  else if (id === 'lookPrev') emit('look', -1);
+  else if (id === 'lookNext') emit('look', 1);
+  else if (id === 'grid') emit('grid');
   else if (id === 'mode') {
     if (state.heldItem) returnHeldItemToSource(state);
     editOn.value = !editOn.value;
@@ -298,6 +316,16 @@ function onKey(event: KeyboardEvent): void {
   if (event.code === 'ArrowLeft' || event.code === 'ArrowRight') {
     event.stopPropagation();
     emit('step', event.code === 'ArrowLeft' ? -1 : 1);
+    return;
+  }
+  if (props.look && (event.code === 'BracketLeft' || event.code === 'BracketRight')) {
+    event.stopPropagation();
+    emit('look', event.code === 'BracketLeft' ? -1 : 1);
+    return;
+  }
+  if (props.look && event.code === 'KeyG' && !props.look.base) {
+    event.stopPropagation();
+    emit('grid');
     return;
   }
   if (event.code === 'KeyR' && !editOn.value) rotateActiveItem(state);

@@ -36,6 +36,8 @@ interface OpenedGrid {
   art?: ContainerArt | null;
   /** Shown on its side: a car parked nose up. */
   flipped?: boolean;
+  /** The look it is drawn with, which may have its own grid. */
+  look?: string;
 }
 
 /** How often an open container checks whether the survivor has walked off from it. */
@@ -120,14 +122,16 @@ export function useInventoryModal(
     containerArt?: ContainerArt | null,
     flipped = false,
     /** Opened at the start of a search: the hands stay on the game, so the search key keeps counting. */
-    searching = false
+    searching = false,
+    /** The look it is drawn with: a look with its own grid opens in that grid. */
+    look?: string
   ): boolean {
     const hud = ui.value.hud;
     const canShow = inventoryReachable(ui.value) && hud !== null;
     if (!canShow) return false;
     bag.sync(hud);
-    lastOpen = { containerId, title: containerTitle, items, kind: containerKind, art: containerArt, flipped };
-    working.value = bag.open(hud, containerId, containerTitle, items, containerKind, containerArt, flipped);
+    lastOpen = { containerId, title: containerTitle, items, kind: containerKind, art: containerArt, flipped, look };
+    working.value = bag.open(hud, containerId, containerTitle, items, containerKind, containerArt, flipped, look);
     openings.value += 1;
     searchingOpen.value = searching;
     if (!searching) {
@@ -165,7 +169,7 @@ export function useInventoryModal(
     // The copy on screen may be flipped; the bag takes the host's layout and flips it again itself.
     const onScreen = before.container.items;
     const containerItems = isFurniture ? (before.flipped ? onScreen.map(flipItem) : onScreen) : [];
-    const rebuilt = bag.open(hud, opened.containerId, opened.title, containerItems, opened.kind, opened.art, opened.flipped === true);
+    const rebuilt = bag.open(hud, opened.containerId, opened.title, containerItems, opened.kind, opened.art, opened.flipped === true, opened.look);
     // The host's candy count can lag one snapshot behind, so a candy used or dropped here is taken out of the rebuilt candy bag too.
     const gone = new Set([...before.used, ...before.dropped].map((item) => item.id));
     rebuilt.candyBag.items = rebuilt.candyBag.items.filter((item) => !gone.has(item.id));

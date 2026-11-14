@@ -5,7 +5,8 @@ import { createCanvasPage } from '../game/canvas-page.ts';
 import type { CanvasPage, CanvasPageHost } from '../game/canvas-page.ts';
 import { useGame } from './use-game.ts';
 
-type PageActions = Omit<CanvasPageHost, 'playUi' | 'toggle' | 'choose' | 'slide' | 'inert'> & Partial<Pick<CanvasPageHost, 'toggle' | 'choose' | 'slide' | 'inert'>>;
+type PageActions = Omit<CanvasPageHost, 'playUi' | 'toggle' | 'choose' | 'slide' | 'inert' | 'hidden'> &
+  Partial<Pick<CanvasPageHost, 'toggle' | 'choose' | 'slide' | 'inert' | 'hidden'>>;
 
 const NOTHING = (): void => undefined;
 

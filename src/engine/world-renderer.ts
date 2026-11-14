@@ -477,7 +477,7 @@ export class WorldRenderer {
   /** A title page drawn with the page kit (Options, Privacy, Records), when one is open. */
   private drawPage(ctx: CanvasRenderingContext2D, viewW: number, viewH: number): void {
     const win = pageWindow();
-    if (!win) return;
+    if (!win || win.hidden?.()) return;
     drawPageUi(ctx, win, viewW, viewH);
   }
 

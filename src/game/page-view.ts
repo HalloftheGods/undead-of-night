@@ -10,6 +10,8 @@ export interface PageWindow {
   /** What the keyboard is on, or null until a key has been used. */
   focus: PageFocusId | null;
   scroll: number;
+  /** True while something else has the canvas (the Dev bench's editor): the page is not drawn and takes no input. */
+  hidden?: () => boolean;
 }
 
 let current: PageWindow | null = null;

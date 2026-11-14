@@ -1,6 +1,6 @@
 import { characterOf } from './characters.ts';
 import { rollFind } from './container-loot.ts';
-import { containerGridDimensions, SEARCH_SEC, townContainers } from './containers.ts';
+import { containerGridFor, SEARCH_SEC, townContainers } from './containers.ts';
 import type { Container, ContainerLoot } from './containers.ts';
 import { autoPackItem, createInventoryGrid, randomPackItem } from './grid-inventory.ts';
 import type { BuildingInstance, PickupType, WorldMap } from './protocol.ts';
@@ -233,7 +233,7 @@ function finishSearch(sim: SimState, p: PlayerState, id: number): void {
   const dumpsterLoot = ordinary === null && serviceLoot === null ? scroungeDumpster(sim, p, container) : null;
   const boxAmmo = ordinary === null && serviceLoot === null ? scroungeBoxAmmo(sim, p, container) : null;
 
-  const { cols, rows, blocked } = containerGridDimensions(container?.kind);
+  const { cols, rows, blocked } = containerGridFor(container);
   const grid = createInventoryGrid(cols, rows, blocked);
   let itemId = 1;
   const pack = (type: string, rounds = 0) => {
