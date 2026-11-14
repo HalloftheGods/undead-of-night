@@ -2,7 +2,7 @@ import { backDoorBox, partitionBoxes } from './building-plans.ts';
 import { settleVan } from './exit-van.ts';
 import type { Point } from './flow-field.ts';
 import { buildingsWithStairs, isStorey, voidBoxes } from './storeys.ts';
-import { BUILDING_DEFS, DOOR_WIDTH, PROP_DEFS, TILE_KINDS, TILE_SIZE, WALL_THICKNESS } from './protocol.ts';
+import { BUILDING_DEFS, DOOR_WIDTH, PROP_DEFS, TILE_KINDS, TILE_SIZE, WALL_THICKNESS, NORTH_WALL_DEPTH } from './protocol.ts';
 import type { BuildingInstance, PropInstance, WorldMap } from './protocol.ts';
 import { MOVEMENT_ONLY_PROPS, isSewerBuilding } from './map-protocol.ts';
 
@@ -65,7 +65,7 @@ export function doorBox(building: BuildingInstance): Box {
 /** The north wall, in one piece or either side of a back door. */
 function northWall(building: BuildingInstance, x0: number, y0: number, x1: number): Box[] {
   const back = backDoorBox(building);
-  const y1 = y0 + WALL_THICKNESS;
+  const y1 = y0 + NORTH_WALL_DEPTH;
   if (!back) return [{ x0, y0, x1, y1 }];
   return [{ x0, y0, x1: back.x0, y1 }, { x0: back.x1, y0, x1, y1 }];
 }
@@ -74,7 +74,7 @@ function northWall(building: BuildingInstance, x0: number, y0: number, x1: numbe
 function closedWalls(building: BuildingInstance, hasStairs: boolean): Box[] {
   const { x0, y0, x1, y1 } = buildingBox(building);
   return [
-    { x0, y0, x1, y1: y0 + WALL_THICKNESS },
+    { x0, y0, x1, y1: y0 + NORTH_WALL_DEPTH },
     { x0, y0, x1: x0 + WALL_THICKNESS, y1 },
     { x0: x1 - WALL_THICKNESS, y0, x1, y1 },
     { x0, y0: y1 - WALL_THICKNESS, x1, y1 },

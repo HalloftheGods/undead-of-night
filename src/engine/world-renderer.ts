@@ -4,6 +4,9 @@ import { TILE_SIZE } from '../../shared/protocol.ts';
 import type { EntityId, GameEvent, WorldMap, ZombieType } from '../../shared/protocol.ts';
 import type { ArtBook, PixelSprite } from '../art/types.ts';
 import { drawHeldUi } from './held-ui.ts';
+import { drawDoorZone, zoneToShow } from './door-zones.ts';
+import { mapDoors, wayToOpening } from '../../shared/doors.ts';
+import { buildingAt, circleHitsSolid } from '../../shared/world-map.ts';
 import { setHeldButtons, setHeldSurvivor } from '../game/held-cursor.ts';
 import { lootWindow } from '../game/loot-view.ts';
 import { drawLootUi, layoutLootUi } from './loot-ui.ts';
@@ -62,6 +65,8 @@ const VAN_GLOW_HEIGHT = 12;
 /** Flashes of light (shots, burns, blasts) one frame lights at full detail; a slow machine gets a share of it. */
 const MAX_PULSES = 24;
 const NO_DOORS: readonly PlacedDoor[] = [];
+/** How wide a patch of ground must be clear of walls and furniture for the door's border to run over it. */
+const DOOR_ZONE_CLEARANCE = 3;
 /** Underground tunnels are near pitch black between lamps and ladder shafts. */
 const SEWER_AMBIENT: Rgb = [2, 3, 4];
 /** From this load-shedding level on, the light is worked out every other frame and moved with the camera between. */
@@ -189,7 +194,7 @@ export class WorldRenderer {
     this.map = map;
     this.ground = new GroundLayer(map, this.art.environment.tiles);
     this.setTheme(theme);
-    this.occlusion = new OcclusionGrid(map);
+    this.occlusion = new OcclusionGrid(map, (building) => this.buildings.frontOf(building));
     this.buildings.setMap(map);
     this.groundMotion.setMap(map);
     this.camera.setWorld(map.width, map.height);
@@ -321,6 +326,8 @@ export class WorldRenderer {
     if (isGameOver && !isStoreyRoom) {
       lighting.addPool(scene.focusX - left, scene.focusY - top, 120, AURA_COLOR, 0.6);
     }
+    // Last of all: no lamp, beam or flash from the ground lands on a roof.
+    if (!isStoreyRoom) lighting.shadeRoofs(this.buildings.roofShades(left, top, this.viewport.bufferW, this.viewport.bufferH), open?.reveal ?? 0);
     lighting.finish();
   }
 
@@ -397,6 +404,7 @@ export class WorldRenderer {
     const viewer = fullScene.players.find((player) => player.id === fullScene.viewerId);
     this.buildings.update(viewer?.indoors ?? null, dt);
     this.buildings.doors.set(fullScene.doors ?? NO_DOORS);
+    this.occlusion?.setDoors(fullScene.doors ?? NO_DOORS);
     const scene = this.withoutHidden(fullScene);
     this.camera.follow(scene.focusX, scene.focusY, scene.pointerX, scene.pointerY, dt);
 
@@ -458,6 +466,7 @@ export class WorldRenderer {
       ctx.restore();
     }
 
+    this.drawDoorZones(ctx, scene, left, top, time);
     this.effects.draw(ctx, viewW, viewH);
     this.overlay.draw(ctx, scene, left, top, viewW, viewH, time, lightAt, isKilled);
     this.emotes.draw(ctx, scene, left, top, viewW, viewH, time, (id) => this.overlay.headroomOf(id));
@@ -496,6 +505,21 @@ export class WorldRenderer {
     drawPageUi(ctx, win, viewW, viewH);
   }
 
+  /** A barely-there dotted border around the ground a door can be worked from, while the viewer is in it and the key would do something. */
+  private drawDoorZones(ctx: CanvasRenderingContext2D, scene: SceneView, left: number, top: number, time: number): void {
+    const viewer = scene.players.find((player) => player.id === scene.viewerId);
+    if (!viewer || !this.map || this.isUnderground(viewer.y)) return;
+    const map = this.map;
+    const door = zoneToShow(mapDoors(map), scene.door, viewer.x, viewer.y, (each) => wayToOpening(map, each, viewer.x, viewer.y));
+    if (!door) return;
+    const sideOf = (x: number, y: number): string | undefined => buildingAt(map, x, y)?.id;
+    const viewerSide = sideOf(viewer.x, viewer.y);
+    // Ground that can be stood on, in the same place (the same building, or the street) as the viewer.
+    const walkable = (x: number, y: number): boolean => sideOf(x, y) === viewerSide && !circleHitsSolid(map, x, y, DOOR_ZONE_CLEARANCE) && wayToOpening(map, door, x, y);
+    drawDoorZone(ctx, door, left, top, time, this.reducedMotion, scene.door?.blocking === true, walkable, scene.door?.action === 'close');
+  }
+
+  /** The item in hand takes the crosshair's place; its words and buttons hang under the survivor. Reports where the buttons are, in client pixels. */
   /** The item in hand takes the crosshair's place; its words and buttons hang under the survivor. Reports where the buttons are, in client pixels. */
   private drawHeld(ctx: CanvasRenderingContext2D, scene: SceneView, left: number, top: number, viewW: number, viewH: number): void {
     if (!scene.held) {

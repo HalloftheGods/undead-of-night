@@ -24,7 +24,7 @@ export { GAME_EVENT_TYPES, GAME_PHASES, PICKUP_TYPES };
 export type { BackpackTier, FortificationInventory, FortificationItemType, GridItem, SurvivalNeeds };
 export type ArmorTier = 'light' | 'medium' | 'heavy';
 // The world map types live in map-protocol.ts; everything still imports them from here.
-export { BUILDING_DEFS, BUILDING_KINDS, DOOR_WIDTH, PROP_DEFS, PROP_KINDS, TILE_KINDS, TILE_SIZE, WALL_THICKNESS } from './map-protocol.ts';
+export { BUILDING_DEFS, BUILDING_KINDS, DOOR_WIDTH, PROP_DEFS, PROP_KINDS, TILE_KINDS, TILE_SIZE, WALL_THICKNESS, NORTH_WALL_DEPTH } from './map-protocol.ts';
 export type { BuildingInstance, BuildingKind, District, MapLight, PropInstance, PropKind, TileKind, WorldMap } from './map-protocol.ts';
 
 export type EntityId = string;

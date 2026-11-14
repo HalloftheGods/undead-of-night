@@ -1,6 +1,6 @@
 import { plankCapForTier } from './backpack.ts';
 import { roomFor } from './bag.ts';
-import { deriveMapOpenings, findNearbyOpening } from './building-openings.ts';
+import { deriveMapOpenings, findNearbyOpening, openingBox } from './building-openings.ts';
 import { PLAYER_RADIUS, TICK_RATE } from './constants.ts';
 import { containerInReachOf } from './vehicle-choice.ts';
 import { carsOf } from './vehicles.ts';
@@ -19,7 +19,7 @@ import type { DoorView, WorldMap } from './protocol.ts';
 import type { PlayerState, SimState } from './sim-state.ts';
 import { emit } from './sim-state.ts';
 import { makeNoise } from './zombie-senses.ts';
-import { segmentEntersBox } from './world-query.ts';
+import { segmentEntersBox, segmentHitsSolid } from './world-query.ts';
 import type { Box } from './world-query.ts';
 
 /** A press shorter than this, on a closed door with no planks, opens it. */
@@ -64,7 +64,12 @@ export function freshDoors(map: WorldMap): BarricadeOpening[] {
     });
 }
 
-export function doorBoxOf(door: Pick<BarricadeOpening, 'x' | 'y' | 'w' | 'h'>): Box {
+/**
+ * Where a door shuts the way. A back door stands on the north wall's line and is as deep as the wall, which
+ * is a whole tile: the box fills its gap, so no foot stands in the opening of a door that is shut.
+ */
+export function doorBoxOf(door: Pick<BarricadeOpening, 'x' | 'y' | 'w' | 'h'> & { readonly facing?: BarricadeOpening['facing'] }): Box {
+  if (door.facing === 'north') return { x0: door.x - door.w / 2, y0: door.y, x1: door.x + door.w / 2, y1: door.y + door.h };
   return { x0: door.x - door.w / 2, y0: door.y - door.h / 2, x1: door.x + door.w / 2, y1: door.y + door.h / 2 };
 }
 
@@ -145,6 +150,17 @@ export function doorViews(sim: SimState, inRange: (item: { x: number; y: number 
   return views;
 }
 
+/** True when nothing solid stands between (x, y) and the middle of the opening's gap: the one test for the sim and for a client's prompt. */
+export function wayToOpening(map: WorldMap, opening: BarricadeOpening, x: number, y: number): boolean {
+  const gap = openingBox(opening);
+  return segmentHitsSolid(map, x, y, (gap.x0 + gap.x1) / 2, (gap.y0 + gap.y1) / 2) === null;
+}
+
+/** True where a body of radius `r` at (x, y) touches the door's box: it cannot be shut on them, and they stand in its way. */
+export function bodyTouchesDoor(door: Parameters<typeof doorBoxOf>[0], x: number, y: number, r: number): boolean {
+  return touchesBox(doorBoxOf(door), x, y, r);
+}
+
 function bodyInTheWay(sim: SimState, door: BarricadeOpening): boolean {
   const box = doorBoxOf(door);
   const person = sim.players.some((p) => p.status !== 'dead' && touchesBox(box, p.x, p.y, PLAYER_RADIUS));
@@ -181,7 +197,7 @@ function canWorkHere(sim: SimState, p: PlayerState): boolean {
 }
 
 function playerAct(sim: SimState, p: PlayerState, doors: BarricadeOpening[]): void {
-  const door = canWorkHere(sim, p) ? findNearbyOpening(doors, p.x, p.y) : null;
+  const door = canWorkHere(sim, p) ? findNearbyOpening(doors, p.x, p.y, undefined, (each) => wayToOpening(sim.map, each, p.x, p.y)) : null;
   const held = p.doorHold;
   if (!door || p.searchSpent) {
     p.doorHold = 0;

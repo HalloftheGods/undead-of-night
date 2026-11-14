@@ -5,6 +5,7 @@ import { buildLightBands, lightLevels } from '../src/engine/light-dither.ts';
 import { LightField } from '../src/engine/light-field.ts';
 import type { Beam, Rgb } from '../src/engine/light-field.ts';
 import { flicker, Lighting, parseColor } from '../src/engine/lighting.ts';
+import { RISE } from '../src/art/environment/shell.ts';
 import { OcclusionGrid } from '../src/engine/occlusion.ts';
 import { fakeCanvas, installFakeBrowser } from './client-fake-dom.ts';
 
@@ -308,6 +309,24 @@ describe('Lighting', () => {
   });
 });
 
+describe('roof shade', () => {
+  it('puts a rectangle back to the level it is given, however it was lit', () => {
+    const lights = field();
+    lights.addPool(32, 32, 40, [255, 200, 120], 1);
+    lights.shade({ x0: 16, y0: 16, x1: 48, y1: 48 }, [24, 28, 52], 1);
+    expect(lights.brightness(32, 32)).toBe(52);
+    expect(lights.brightness(8, 32)).toBeGreaterThan(52);
+  });
+
+  it('settles back only by degrees as the amount falls', () => {
+    const lights = field();
+    lights.addPool(32, 32, 40, [255, 255, 255], 1);
+    const lit = lights.brightness(32, 32);
+    lights.shade({ x0: 16, y0: 16, x1: 48, y1: 48 }, [0, 0, 0], 0.5);
+    expect(lights.brightness(32, 32)).toBeCloseTo(lit / 2, 0);
+  });
+});
+
 describe('occlusion', () => {
   const shop: BuildingInstance = { id: 'b1', kind: 'pharmacy', x: 160, y: 160, variant: 0 };
   const { w, h, doorX } = BUILDING_DEFS.pharmacy;
@@ -360,6 +379,44 @@ describe('occlusion', () => {
 
     const heading = grid.cast(shop.x + 20, shop.y - 30, Math.PI / 2, 200, 0, 40);
     expect(heading).toBe(grid.cast(shop.x + 20, shop.y - 30, Math.PI / 2, 200));
+  });
+
+  it('stops a beam from the north at the roof top, not the footprint, and still lights the street past the back', () => {
+    const dist = grid.cast(shop.x + 40, shop.y - 60, Math.PI / 2, 200);
+    expect(dist).toBeLessThan(60 - RISE + 8);
+    expect(grid.cast(shop.x + 40, shop.y - 60, -Math.PI / 2, 200)).toBe(200);
+  });
+
+  it('is not stopped by the roof over your own head behind the building', () => {
+    const behind = grid.cast(shop.x + 40, shop.y - 10, -Math.PI / 2, 100);
+    expect(behind).toBe(100);
+  });
+
+  it('carries no glow into a building from its side, only up its south face', () => {
+    // Heading east and a little north at the west wall: grazing the side, which is not a face the street sees.
+    const side = grid.cast(shop.x - 40, shop.y + 40, -0.2, 200, 0, 40);
+    expect(side).toBe(grid.cast(shop.x - 40, shop.y + 40, -0.2, 200));
+  });
+
+  it('stops the glow at the front wall\'s own height when it is known', () => {
+    const tall = new OcclusionGrid({ ...map } as WorldMap, () => 20);
+    const straight = tall.cast(shop.x + 20, south + 30, -Math.PI / 2, 200, 0, 44);
+    const plain = tall.cast(shop.x + 20, south + 30, -Math.PI / 2, 200);
+    expect(straight - plain).toBe(20);
+    // A slant climbs less per pixel travelled, so it runs on further to reach the same height.
+    const slant = tall.cast(shop.x + 20, south + 30, -Math.PI / 4, 200, 0, 44);
+    expect(slant - tall.cast(shop.x + 20, south + 30, -Math.PI / 4, 200)).toBeCloseTo(20 / Math.sin(Math.PI / 4), 0);
+  });
+
+  it('stops a beam at a shut door, from inside or out, and lets it through once the door is gone from the list', () => {
+    const { x: middle } = { x: shop.x + doorX };
+    const shut = [{ buildingId: 'b1', x: middle, y: south, facing: 'south' as const, broken: false, planks: 0, worn: false }];
+    const doors = new OcclusionGrid(map);
+    expect(doors.cast(middle, south - 20, Math.PI / 2, 120)).toBe(120);
+    doors.setDoors(shut);
+    expect(doors.cast(middle, south - 20, Math.PI / 2, 120)).toBeLessThanOrEqual(24 + WALL_THICKNESS);
+    doors.setDoors([{ ...shut[0], broken: true }]);
+    expect(doors.cast(middle, south - 20, Math.PI / 2, 120)).toBe(120);
   });
 
   it('never carries light through a wall from inside', () => {

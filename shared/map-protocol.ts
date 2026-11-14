@@ -156,6 +156,13 @@ export const MOVEMENT_ONLY_PROPS: ReadonlySet<PropKind> = new Set<PropKind>(['ca
  */
 export const DOOR_WIDTH = 32;
 export const WALL_THICKNESS = 6;
+/**
+ * How deep the north wall stands, collision and art alike: its top (WALL_THICKNESS) and the face it shows to
+ * the room below that. A back door is a gap this deep, and a walker's feet stop at the wall's foot.
+ * It must be a whole number of tiles: flow fields, spawning and the map's reachability checks all work on the
+ * tile grid, and a wall that ends part way down a tile row left the generator retrying for ever (24 froze it).
+ */
+export const NORTH_WALL_DEPTH = 16;
 export const BUILDING_DEFS = {
   pharmacy: { label: 'Pharmacy', w: 160, h: 112, doorX: 80, floor: 'floor_tile' },
   clinic: { label: 'Clinic', w: 192, h: 128, doorX: 96, floor: 'floor_tile' },

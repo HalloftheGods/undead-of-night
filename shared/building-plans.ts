@@ -2,7 +2,7 @@
 // split a home into rooms. Both are per kind, so every house in every town is built the same way, and both
 // are walls like any other: they block bodies, bullets and sight, and the flow fields route around them.
 
-import { DOOR_WIDTH, WALL_THICKNESS } from './protocol.ts';
+import { DOOR_WIDTH, NORTH_WALL_DEPTH, WALL_THICKNESS } from './protocol.ts';
 import type { BuildingInstance, BuildingKind } from './protocol.ts';
 
 /** Pixels from a footprint's top left corner. */
@@ -107,7 +107,7 @@ export function backDoorBox(building: BuildingInstance): Rect | null {
   const hasNoBackDoor = middle === undefined;
   if (hasNoBackDoor) return null;
   const x0 = building.x + middle - DOOR_WIDTH / 2;
-  return { x0, y0: building.y, x1: x0 + DOOR_WIDTH, y1: building.y + WALL_THICKNESS };
+  return { x0, y0: building.y, x1: x0 + DOOR_WIDTH, y1: building.y + NORTH_WALL_DEPTH };
 }
 
 /** Kinds that are one open room when their stairs lead somewhere, the stairs standing in the wall's corner. */

@@ -14,7 +14,46 @@ import { isStorey } from './storeys.ts';
 import type { Box } from './world-query.ts';
 
 const WINDOW_SIZE = 16;
-const INTERACTION_REACH = 28;
+/** How near a body must be to a window's gap, measured to the nearest point of it, to work it. A door has its zone instead. */
+export const INTERACTION_REACH = 24;
+
+/** The gap a door fills, as a box: the whole of a back door's depth, the wall's line either way for the rest. */
+export function openingBox(opening: Pick<BarricadeOpening, 'x' | 'y' | 'w' | 'h' | 'facing'>): Box {
+  if (opening.facing === 'north') return { x0: opening.x - opening.w / 2, y0: opening.y, x1: opening.x + opening.w / 2, y1: opening.y + opening.h };
+  return { x0: opening.x - opening.w / 2, y0: opening.y - opening.h / 2, x1: opening.x + opening.w / 2, y1: opening.y + opening.h / 2 };
+}
+
+/** One row of the dotted zone around a door. */
+export const DOOR_ZONE_ROW = 8;
+/** A door is worked from four rows out, in front and behind, and no further. */
+export const DOOR_ZONE_ROWS = 4;
+/** And from two columns out to the left and right of the gap, and no further. */
+export const DOOR_ZONE_COLUMNS = 2;
+
+/**
+ * The ground a door is worked from: the door's width and two columns more to its left and right, and four rows
+ * out of the gap on each side of the wall, so the same on the front and the back, inside and out. Nothing past
+ * those is in it. A window keeps its gap. The solid box (openingBox) is unchanged.
+ */
+export function interactionBox(opening: Pick<BarricadeOpening, 'type' | 'x' | 'y' | 'w' | 'h' | 'facing'>): Box {
+  const gap = openingBox(opening);
+  if (opening.type !== 'door') return gap;
+  const depth = DOOR_ZONE_ROWS * DOOR_ZONE_ROW;
+  const side = DOOR_ZONE_COLUMNS * DOOR_ZONE_ROW;
+  return { x0: gap.x0 - side, x1: gap.x1 + side, y0: gap.y0 - depth, y1: gap.y1 + depth };
+}
+
+/** How far outside its interaction box a body may stand and still work an opening: a door's box is the whole zone. */
+export function reachOf(opening: Pick<BarricadeOpening, 'type'>): number {
+  return opening.type === 'door' ? 0 : INTERACTION_REACH;
+}
+
+/** Distance from a point to the nearest point of a box: 0 inside it. */
+export function distanceToBox(box: Box, x: number, y: number): number {
+  const dx = x - Math.max(box.x0, Math.min(x, box.x1));
+  const dy = y - Math.max(box.y0, Math.min(y, box.y1));
+  return Math.hypot(dx, dy);
+}
 
 export function getBuildingOpenings(building: BuildingInstance): BarricadeOpening[] {
   const isUpstairsOrCellar = isStorey(building);
@@ -119,18 +158,19 @@ export function findNearbyOpening(
   openings: readonly BarricadeOpening[],
   x: number,
   y: number,
-  reach: number = INTERACTION_REACH
+  reach?: number,
+  /** Whether there is a clear way from the body to this opening: no wall between them, so not through the side of a house or from another room. */
+  clearTo: (opening: BarricadeOpening) => boolean = () => true,
 ): BarricadeOpening | null {
-  const maxDistSq = reach * reach;
   let closest: BarricadeOpening | null = null;
   let closestDistSq = Infinity;
 
   for (const opening of openings) {
-    const dx = opening.x - x;
-    const dy = opening.y - y;
-    const distSq = dx * dx + dy * dy;
+    const near = distanceToBox(interactionBox(opening), x, y);
+    const distSq = near * near;
+    const limit = reach ?? reachOf(opening);
 
-    const inRange = distSq <= maxDistSq;
+    const inRange = distSq <= limit * limit && clearTo(opening);
     const isCloser = distSq < closestDistSq;
     const isEligible = inRange && isCloser;
 
@@ -150,16 +190,7 @@ export function getOpeningSolidBoxes(opening: BarricadeOpening): Box[] {
 
   if (!isSolid) return [];
 
-  const halfW = opening.w / 2;
-  const halfH = opening.h / 2;
-  return [
-    {
-      x0: opening.x - halfW,
-      y0: opening.y - halfH,
-      x1: opening.x + halfW,
-      y1: opening.y + halfH,
-    },
-  ];
+  return [openingBox(opening)];
 }
 
 export {

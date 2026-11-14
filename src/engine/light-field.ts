@@ -263,6 +263,26 @@ export class LightField {
     }
   }
 
+  /**
+   * Puts a rectangle back to `level`, whatever has lit it: a roof no lamp or beam from the ground can reach.
+   * amount is 0..1 as it settles back.
+   */
+  shade(rect: ScreenRect, level: Rgb, amount: number): void {
+    const firstCol = Math.max(0, this.colOf(rect.x0));
+    const lastCol = Math.min(this.cols - 1, this.colOf(rect.x1 - 1));
+    const firstRow = Math.max(0, this.rowOf(rect.y0));
+    const lastRow = Math.min(this.rows - 1, this.rowOf(rect.y1 - 1));
+    for (let row = firstRow; row <= lastRow; row += 1) {
+      for (let col = firstCol; col <= lastCol; col += 1) {
+        if (!this.isInside(col, row, rect)) continue;
+        const i = row * this.cols + col;
+        this.red[i] += (level[0] - this.red[i]) * amount;
+        this.green[i] += (level[1] - this.green[i]) * amount;
+        this.blue[i] += (level[2] - this.blue[i]) * amount;
+      }
+    }
+  }
+
   /** Brightest channel at a screen point, 0..255 and past it where lights stack. */
   brightness(x: number, y: number): number {
     const col = this.colOf(x);

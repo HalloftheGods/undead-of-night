@@ -8,9 +8,18 @@ import type { Flight } from '../../shared/storeys.ts';
 import type { EnvironmentArt, PixelSprite } from '../art/types.ts';
 import { DoorLayer } from './door-layer.ts';
 import type { ScreenRect } from './light-field.ts';
+import { frontHeightOf } from '../art/environment/shell.ts';
 import { fadedCanvas, FADE_STEPS, spriteCanvas } from './sprite-cache.ts';
 
 const REVEAL_SEC = 0.22;
+/** A front wall of unknown height: tall enough for a shop's glass and sign. */
+const FRONT_FALLBACK = 44;
+
+/** A roof on the screen, and how much of it is still shut over: 1 is whole, 0 is gone. */
+export interface RoofShade {
+  readonly rect: ScreenRect;
+  readonly amount: number;
+}
 /** The night through an open back door. */
 const BACK_DOOR_DARK = '#0b0c10';
 
@@ -117,23 +126,27 @@ function paintStairs(down: boolean): HTMLCanvasElement {
   return canvas;
 }
 
-/** The north wall's top, exactly as thick as it collides, with the back door left open where there is one: dark night beyond, a mat just inside. */
+/** The north wall's top and its face, seen front on from inside, with the back door left open where there is one: dark night beyond, a mat inside. */
 function northWall(ctx: CanvasRenderingContext2D, kind: BuildingKind, art: EnvironmentArt['interior']): void {
   const { w } = BUILDING_DEFS[kind];
   const wall = WALL_THICKNESS;
   const middle = BACK_DOORS[kind];
+  const faceH = art.wallFace.h;
   const hasNoBackDoor = middle === undefined;
   if (hasNoBackDoor) {
+    tileStrip(ctx, art.wallFace, wall, wall, w - wall * 2, faceH);
     tileStrip(ctx, art.wallCap, 0, 0, w, wall);
     return;
   }
   const left = middle - DOOR_WIDTH / 2;
   const right = middle + DOOR_WIDTH / 2;
+  tileStrip(ctx, art.wallFace, wall, wall, left - wall, faceH);
+  tileStrip(ctx, art.wallFace, right, wall, w - wall - right, faceH);
   tileStrip(ctx, art.wallCap, 0, 0, left, wall);
   tileStrip(ctx, art.wallCap, right, 0, w - right, wall);
   ctx.fillStyle = BACK_DOOR_DARK;
-  ctx.fillRect(left, 0, DOOR_WIDTH, wall);
-  ctx.drawImage(spriteCanvas(art.doorMat), middle - Math.round(art.doorMat.w / 2), wall);
+  ctx.fillRect(left, 0, DOOR_WIDTH, wall + faceH);
+  ctx.drawImage(spriteCanvas(art.doorMat), middle - Math.round(art.doorMat.w / 2), wall + faceH);
 }
 
 /** The town's buildings: closed shells from outside, opened rooms from within. */
@@ -152,7 +165,7 @@ export class BuildingLayer {
 
   constructor(art: EnvironmentArt) {
     this.art = art;
-    this.doors = new DoorLayer();
+    this.doors = new DoorLayer(art.interior.wallFace.h);
   }
 
   setMap(map: WorldMap): void {
@@ -200,6 +213,31 @@ export class BuildingLayer {
       const target = placed.building.id === indoorsId ? 1 : 0;
       placed.reveal += Math.max(-step, Math.min(step, target - placed.reveal));
     }
+  }
+
+  /** How tall this building's front wall stands: the light on the street reaches that high and no higher. */
+  frontOf(building: BuildingInstance): number {
+    const variants = this.art.buildings[building.kind];
+    return frontHeightOf(variants[building.variant % variants.length]) ?? FRONT_FALLBACK;
+  }
+
+  /**
+   * The roofs in view, shut or opening: from the shell's top down to where the front wall begins. A light
+   * on the ground cannot reach them, so none may land there, however near its source.
+   */
+  roofShades(left: number, top: number, viewW: number, viewH: number): RoofShade[] {
+    const shades: RoofShade[] = [];
+    for (const placed of this.placed) {
+      const amount = 1 - placed.reveal;
+      if (amount <= 0 || isStoreyKind(placed.building.kind)) continue;
+      const x0 = placed.x0 - left;
+      const x1 = placed.x1 - left;
+      const y0 = placed.y0 - top;
+      const y1 = placed.building.y + placed.height - this.frontOf(placed.building) - top;
+      const inView = x1 > 0 && y1 > 0 && x0 < viewW && y0 < viewH;
+      if (inView && y1 > y0) shades.push({ rect: { x0, y0, x1, y1 }, amount });
+    }
+    return shades;
   }
 
   placedAt(x: number, y: number): PlacedBuilding | null {

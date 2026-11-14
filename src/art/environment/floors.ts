@@ -2,7 +2,7 @@
 // player's light does the work. All wear stays off the outer ring of a tile, so every
 // variant seams with every neighbour.
 
-import { DOOR_WIDTH, TILE_SIZE } from '../../../shared/protocol.ts';
+import { DOOR_WIDTH, NORTH_WALL_DEPTH, TILE_SIZE, WALL_THICKNESS } from '../../../shared/protocol.ts';
 import type { PixelSprite } from '../types.ts';
 import { PixelCanvas } from '../kit.ts';
 import { RAMPS } from '../palette.ts';
@@ -151,19 +151,20 @@ export function buildFloors(): Record<FloorKind, readonly PixelCanvas[]> {
   };
 }
 
-const FACE_H = 20;
+/** What the north wall shows below its top: the wall's depth less its top, so the face ends where a walker's feet stop. */
+const FACE_H = NORTH_WALL_DEPTH - WALL_THICKNESS;
 
-/** The north wall's inner face: plaster, a dado rail, boarding and a skirting in shadow. */
+/** The north wall's inner face: shadow under the cap, plaster with a stain, a dado rail, and boarding over a skirting. */
 function wallFace(): PixelSprite {
   const c = new PixelCanvas(S, FACE_H).fill(concrete[0]);
   c.rect(0, 0, S, 2, ink[1]);
   c.rect(0, 2, S, 1, asphalt[2]);
   // Water stain and a patch of lifted plaster.
-  c.rect(3, 3, 2, 3, asphalt[2]).rect(4, 6, 1, 2, asphalt[2]).rect(10, 6, 3, 2, concrete[1]);
-  c.rect(0, 10, S, 1, olive[0]).rect(0, 11, S, 1, asphalt[1]);
-  c.rect(0, 12, S, 6, asphalt[2]);
-  for (const x of [3, 7, 11, 15]) c.rect(x, 12, 1, 6, asphalt[1]);
-  c.rect(0, 18, S, 1, asphalt[1]).rect(0, FACE_H - 1, S, 1, ink[0]);
+  c.rect(3, 3, 2, 2, asphalt[2]).rect(10, 3, 3, 1, concrete[1]);
+  c.rect(0, 5, S, 1, olive[0]);
+  c.rect(0, 6, S, FACE_H - 7, asphalt[2]);
+  for (const x of [3, 7, 11, 15]) c.rect(x, 6, 1, FACE_H - 7, asphalt[1]);
+  c.rect(0, FACE_H - 1, S, 1, ink[0]);
   return c.toSprite(S, FACE_H, 0, FACE_H);
 }
 

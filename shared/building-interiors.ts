@@ -127,7 +127,7 @@ const LAYOUTS: Record<BuildingKind, readonly Slot[]> = {
   house: [
     ['bed', 6, STAIRS_CLEAR_BED],
     ['locker', 38, 14, 0.5],
-    ['fridge', 90, 40],
+    ['fridge', 92, 50],
     ['sofa', 70, 90],
     ['table', 6, 90],
   ],

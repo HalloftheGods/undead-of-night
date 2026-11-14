@@ -60,7 +60,15 @@ export function bakeShell(s: Shell): PixelSprite {
   const sprite = bake(s.c, s.left, s.footW, s.ground);
   const spec = drawnDoors.get(s.c);
   if (spec) shellDoors.set(sprite, spec);
+  shellFronts.set(sprite, s.ground - s.wallTop);
   return sprite;
+}
+
+const shellFronts = new WeakMap<PixelSprite, number>();
+
+/** How tall a baked shell's front wall stands, in pixels: what a light on the street can reach. Above it is roof. */
+export function frontHeightOf(shell: PixelSprite): number | undefined {
+  return shellFronts.get(shell);
 }
 
 /** glass and timber swing inward; steel is a plain fire door; shutter rolls up out of sight. */

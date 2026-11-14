@@ -4,7 +4,7 @@ import { ZOMBIES } from '../shared/constants.ts';
 import { FlowField } from '../shared/flow-field.ts';
 import { BUNKER_SEED } from '../shared/home-protocol.ts';
 import { isSewerBuilding } from '../shared/map-protocol.ts';
-import { BUILDING_DEFS, BUILDING_KINDS, DOOR_WIDTH, PROP_DEFS, TILE_KINDS, TILE_SIZE, WALL_THICKNESS } from '../shared/protocol.ts';
+import { BUILDING_DEFS, BUILDING_KINDS, DOOR_WIDTH, PROP_DEFS, TILE_KINDS, TILE_SIZE, WALL_THICKNESS, NORTH_WALL_DEPTH } from '../shared/protocol.ts';
 import type { BuildingInstance, BuildingKind, PropKind, WorldMap } from '../shared/protocol.ts';
 import { buildingsWithStairs, flightsOf } from '../shared/storeys.ts';
 import { createRng } from '../shared/rng.ts';
@@ -331,6 +331,8 @@ describe('buildings', () => {
       const northX = x0 + WALL_THICKNESS + 2;
       const midY = (y0 + y1) / 2;
       expect(segmentHitsSolid(map, northX, y0 - 1, northX, y0 + WALL_THICKNESS + 1)).not.toBeNull();
+      // The wall's face is wall too: nobody's feet stand on it, down to where it meets the floor.
+      expect(circleHitsSolid(map, northX + 8, y0 + NORTH_WALL_DEPTH - 1, 1)).toBe(true);
       if (back) {
         const middle = (back.x0 + back.x1) / 2;
         expect(segmentHitsSolid(map, middle, back.y0 - 1, middle, back.y1 + 1)).toBeNull();

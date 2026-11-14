@@ -2,7 +2,8 @@
 // the search key would do at the one the player stands at. The sim's own rules live in doors.ts.
 
 import { findNearbyOpening } from './building-openings.ts';
-import { mapDoors } from './doors.ts';
+import { PLAYER_RADIUS } from './constants.ts';
+import { bodyTouchesDoor, mapDoors, wayToOpening } from './doors.ts';
 import { calculateDoorMaxHealth, canAddPlank, canDismantlePlank, DOOR_MAX_PLANKS } from './fortifications.ts';
 import type { FortificationInventory, OpeningFacing } from './fortifications.ts';
 import type { DoorView, WorldMap } from './protocol.ts';
@@ -44,6 +45,8 @@ export type DoorAction = 'close' | 'open' | 'open_or_board' | 'board' | 'pry' | 
 export interface DoorChoice {
   readonly action: DoorAction;
   readonly planks: number;
+  /** The player stands in the open gap of a shut-able door: the zone turns red and the prompt warns. */
+  readonly blocking?: boolean;
 }
 
 function shutChoice(planks: number, sneaking: boolean, canBoard: boolean, canPry: boolean): DoorAction {
@@ -63,14 +66,15 @@ export function doorChoiceAt(
   materials: FortificationInventory | undefined,
 ): DoorChoice | null {
   const doors = mapDoors(map);
-  const door = findNearbyOpening(doors, x, y);
+  const door = findNearbyOpening(doors, x, y, undefined, (each) => wayToOpening(map, each, x, y));
   if (!door) return null;
   const view = views.find((each) => each.i === doors.indexOf(door));
   const open = view?.open ?? true;
   const planks = view?.planks ?? 0;
   const broken = view !== undefined && view.open && view.health <= 0;
   if (broken) return null;
-  if (open) return { action: 'close', planks };
+  // The sim will not shut a door on anyone touching it, so the key does nothing from here: the same test, not a lookalike.
+  if (open) return { action: 'close', planks, blocking: bodyTouchesDoor(door, x, y, PLAYER_RADIUS) };
   const state = { ...door, planks };
   const canBoard = materials !== undefined && canAddPlank(materials, state);
   const canPry = materials !== undefined && canDismantlePlank(materials, state);
@@ -102,5 +106,6 @@ const TOUCHED: Record<DoorAction, (planks: number) => string> = {
 
 /** The line over the player's head at a door. */
 export function doorPrompt(choice: DoorChoice, touch: boolean, hold = 'E'): string {
+  if (choice.blocking) return 'BLOCKING DOOR!';
   return (touch ? TOUCHED : KEYED(hold))[choice.action](choice.planks);
 }

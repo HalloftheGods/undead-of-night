@@ -141,6 +141,16 @@ export class Lighting {
     this.field.enclose(room, ROOM_AMBIENT, outsideScale, amount);
   }
 
+  /**
+   * Roofs take no light from the ground: each falls back to the night's own dark. `outside` is 0..1 as the
+   * viewer closes in on a room, since everything out of doors sinks with it.
+   */
+  shadeRoofs(roofs: readonly { readonly rect: ScreenRect; readonly amount: number }[], outside = 0): void {
+    const sink = 1 + (OUTSIDE_FROM_ROOM - 1) * outside;
+    const level: Rgb = [this.ambient[0] * sink, this.ambient[1] * sink, this.ambient[2] * sink];
+    for (const roof of roofs) this.field.shade(roof.rect, level, roof.amount);
+  }
+
   /** World coordinates for the rays, left/top to bring the result on screen. */
   addFlashlight(
     grid: OcclusionGrid | null,

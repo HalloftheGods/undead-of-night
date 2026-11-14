@@ -3,10 +3,12 @@ import {
   BUILDING_DEFS,
   BUILDING_KINDS,
   DOOR_WIDTH,
+  NORTH_WALL_DEPTH,
   PROP_DEFS,
   PROP_KINDS,
   TILE_KINDS,
   TILE_SIZE,
+  WALL_THICKNESS,
 } from '../shared/protocol.ts';
 import type { TileKind } from '../shared/protocol.ts';
 import { buildEnvironment } from '../src/art/environment.ts';
@@ -231,8 +233,8 @@ describe('environment interior', () => {
   it('sizes the wall pieces to tile along a wall', () => {
     const { wallFace, wallCap, doorMat } = environment.interior;
     expect(wallFace.w).toBe(TILE_SIZE);
-    expect(wallFace.h).toBeGreaterThanOrEqual(16);
-    expect(wallFace.h).toBeLessThanOrEqual(24);
+    // The wall's top and its face add up to the depth the north wall collides to.
+    expect(wallFace.h + WALL_THICKNESS).toBe(NORTH_WALL_DEPTH);
     expect([wallCap.w, wallCap.h]).toEqual([TILE_SIZE, TILE_SIZE]);
     expect(doorMat.w).toBe(DOOR_WIDTH);
   });
