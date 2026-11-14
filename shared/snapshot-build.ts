@@ -228,6 +228,7 @@ export function buildSnapshot(sim: SimState): SnapshotPacket {
     ...(sim.merchants.length + sim.rescuees.length > 0 ? { merchants: [...sim.merchants.map(merchantView), ...sim.rescuees.map(rescueeView)] } : {}),
     events,
     gameOver: sim.gameOver ? { ...sim.gameOver, players: sim.gameOver.players.map((p) => ({ ...p })) } : null,
+    ...(sim.drained ? { drained: true as const } : {}),
     ...benchField(sim),
     ...roomHomeField(sim),
   };

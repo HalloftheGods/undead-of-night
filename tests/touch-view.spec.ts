@@ -6,7 +6,7 @@ import { COOP_VIEW_REACH } from '../shared/view-reach.ts';
 import { LEAD_MAX } from '../src/engine/camera.ts';
 import { onSeenHead } from '../src/engine/overlay-renderer.ts';
 import { drawFingertipBox, drawStick } from '../src/engine/touch-overlay.ts';
-import { computeViewport, viewReachCap } from '../src/engine/viewport.ts';
+import { RESOLUTION_FACTOR, computeViewport, viewReachCap } from '../src/engine/viewport.ts';
 import { touchMarks } from '../src/game/touch-marks.ts';
 import type { TouchInput } from '../src/game/touch-input.ts';
 import { addRoamer, input, quietSim } from './helpers/sim-harness.ts';
@@ -161,5 +161,32 @@ describe('the touch flag on the wire', () => {
 
   it('refuses anything but a boolean', () => {
     expect(parseClientPacket(packet({ touch: 'yes' }))).toBeNull();
+  });
+
+  describe('resolution', () => {
+    it('auto is the same as no setting', () => {
+      expect(computeViewport(1920, 1080, 1, null, RESOLUTION_FACTOR.auto)).toEqual(computeViewport(1920, 1080, 1));
+    });
+
+    it('finer resolutions draw smaller art pixels and show more world', () => {
+      const auto = computeViewport(1920, 1080, 1);
+      const ultra = computeViewport(1920, 1080, 1, null, RESOLUTION_FACTOR.ultra);
+      expect(ultra.scale).toBeLessThan(auto.scale);
+      expect(ultra.bufferW).toBeGreaterThan(auto.bufferW);
+    });
+
+    it('low draws chunkier pixels and shows less world', () => {
+      const auto = computeViewport(1920, 1080, 1);
+      const low = computeViewport(1920, 1080, 1, null, RESOLUTION_FACTOR.low);
+      expect(low.scale).toBeGreaterThan(auto.scale);
+      expect(low.bufferW).toBeLessThan(auto.bufferW);
+    });
+
+    it('co-op holds a finer-than-auto view to the shared reach, even on a wide desktop', () => {
+      expect(viewReachCap(true, false, 3440, 1440, 'auto')).toBeNull();
+      expect(viewReachCap(true, false, 3440, 1440, 'low')).toBeNull();
+      expect(viewReachCap(true, false, 3440, 1440, 'high')).toBe(COOP_VIEW_REACH);
+      expect(viewReachCap(false, false, 3440, 1440, 'ultra')).toBeNull();
+    });
   });
 });

@@ -7,6 +7,7 @@
 // start a search of a crate beside the cover either.
 
 import { stopSearch } from './container-search.ts';
+import { isTownFlooded } from './sewage-drain.ts';
 import type { ManholeFlight } from './sewers.ts';
 import type { PlayerState, SimState } from './sim-state.ts';
 import { emit } from './sim-state.ts';
@@ -30,7 +31,8 @@ export function manholeFlightNear(sim: Pick<SimState, 'map'>, x: number, y: numb
 }
 
 /** What the prompt says over a head at a manhole or a ladder: the way it goes, as `E: CLIMB DOWN` or `E: CLIMB UP`. */
-export function climbPrompt(flight: Pick<ManholeFlight, 'down'>, touch: boolean, hold = 'E'): string {
+export function climbPrompt(flight: Pick<ManholeFlight, 'down'>, touch: boolean, hold = 'E', flooded = false): string {
+  if (flooded && flight.down) return 'SEWERS FLOODED';
   return `${touch ? '' : `${hold}: `}${flight.down ? 'CLIMB DOWN' : 'CLIMB UP'}`;
 }
 
@@ -40,6 +42,8 @@ export function takeManhole(sim: SimState, p: PlayerState): boolean {
   if (!pressing) return false;
   const flight = manholeFlightNear(sim, p.x, p.y);
   if (!flight) return false;
+  const flooded = isTownFlooded(sim);
+  if (flooded && flight.down) return false;
   stopSearch(p);
   p.searchSpent = true;
   p.x = flight.to.x;

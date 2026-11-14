@@ -23,7 +23,7 @@ export function roadBlocked(sim: SimState): Blocked {
 
 /** One tick of motion, then whoever sits in it comes along; a car that has come to a stop is a solid again. */
 function roll(sim: SimState, car: VehicleState, dirX: number, dirY: number): void {
-  const paceScale = groundSpeedScale(sim.level, sim.map, car.x, car.y);
+  const paceScale = groundSpeedScale(sim.level, sim.map, car.x, car.y, sim.drained);
   const step = stepVehicle(car, car.body, dirX, dirY, TICK_DT, roadBlocked(sim), paceScale);
   car.x = step.x;
   car.y = step.y;

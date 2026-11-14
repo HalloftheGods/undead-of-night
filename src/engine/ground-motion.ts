@@ -90,8 +90,8 @@ export class GroundMotion {
     this.map = map;
   }
 
-  setTheme(theme: LevelTheme): void {
-    this.motion = MOTION[theme] ?? null;
+  setTheme(theme: LevelTheme, drained = false): void {
+    this.motion = drained ? null : (MOTION[theme] ?? null);
   }
 
   /** True on street, grass and sidewalk; false on floors, walls and off the map. */

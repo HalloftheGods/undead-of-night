@@ -13,6 +13,7 @@ import type { SceneView } from './scene.ts';
 import { climbPrompt } from '../../shared/take-manhole.ts';
 import { doorPrompt } from '../../shared/door-view.ts';
 import { radioTowerPrompt } from '../../shared/radio-tower.ts';
+import { sewageDrainPrompt } from '../../shared/sewage-drain.ts';
 import { stationPrompt } from './station-labels.ts';
 import { SUGAR_BAR_WIDTH, SUGAR_LINE_GAP, SUGAR_ROW_HEIGHT, sugarTags, sugarTagsWidth } from './sugar-tags.ts';
 import type { KeepOut } from './sugar-tags.ts';
@@ -382,6 +383,7 @@ export class OverlayRenderer {
       const person = isLocal ? scene.merchants?.find((m) => Math.hypot(m.x - player.x, m.y - player.y) <= 34 && (m.rescue === 'waiting' || (m.rescue === 'following' && m.armed !== true && player.owned.length > 1))) : undefined;
       const atClimb = isLocal && scene.climb !== undefined;
       const atRadioTower = isLocal && scene.radioTower !== undefined;
+      const atSewageDrain = isLocal && scene.sewageDrain !== undefined;
       const atDoor = isLocal && scene.door !== undefined;
       const atVehicle = isLocal && scene.vehicle !== undefined;
       if (player.search > 0) drawBar(ctx, x - SEARCH_BAR_WIDTH / 2, y, SEARCH_BAR_WIDTH, player.search, BONE);
@@ -396,17 +398,21 @@ export class OverlayRenderer {
         if (person.hold !== undefined && person.hold > 0) drawBar(ctx, x - SEARCH_BAR_WIDTH / 2, y, SEARCH_BAR_WIDTH, person.hold, AMBER);
         else drawOutlinedText(ctx, person.rescue === 'waiting' ? `${scene.touch ? 'TAKE' : 'HOLD ' + scene.holdKey + ': TAKE'} ${RESCUE_NAME[person.id]}` : `${scene.touch ? 'GIVE' : 'HOLD ' + scene.holdKey + ': GIVE'} ${WEAPONS[player.weapon].label.toUpperCase()}`, x, y, AMBER);
       }
-      else if (atClimb) drawOutlinedText(ctx, climbPrompt(scene.climb, Boolean(scene.touch), scene.holdKey), x, y, AMBER);
+      else if (atClimb) drawOutlinedText(ctx, climbPrompt(scene.climb, Boolean(scene.touch), scene.holdKey, scene.climb.flooded), x, y, AMBER);
       else if (atDoor) drawOutlinedText(ctx, doorPrompt(scene.door!, Boolean(scene.touch), scene.holdKey), x, y, AMBER);
       else if (atRadioTower) {
         if (scene.radioTower!.hold > 0) drawBar(ctx, x - SEARCH_BAR_WIDTH / 2, y, SEARCH_BAR_WIDTH, scene.radioTower!.hold, AMBER);
         else drawOutlinedText(ctx, radioTowerPrompt(Boolean(scene.touch), scene.radioTower!.canTrigger, scene.holdKey), x, y, AMBER);
       }
+      else if (atSewageDrain) {
+        if (scene.sewageDrain!.hold > 0) drawBar(ctx, x - SEARCH_BAR_WIDTH / 2, y, SEARCH_BAR_WIDTH, scene.sewageDrain!.hold, AMBER);
+        else drawOutlinedText(ctx, sewageDrainPrompt(Boolean(scene.touch), scene.sewageDrain!.canDrain, scene.holdKey), x, y, AMBER);
+      }
       if (!isLocal) continue;
       const gunsFree = scene.overrun?.phase === "armed" || scene.overrun?.phase === "breached";
       const call = ammoPrompt(player, { touch: Boolean(scene.touch), atHome: scene.atHome === true, gunsFree, time, reloadKey: scene.reloadKey, meleeKey: scene.meleeKey, switchKey: scene.switchKey });
       if (!call?.lit) continue;
-      const lineTaken = player.search > 0 || atVehicle || prompted || atStation || atClimb || atRadioTower || atDoor;
+      const lineTaken = player.search > 0 || atVehicle || prompted || atStation || atClimb || atRadioTower || atSewageDrain || atDoor;
       drawOutlinedText(ctx, call.text, x, lineTaken ? y - FONT_HEIGHT - 3 : y, hitPalette().danger);
     }
   }

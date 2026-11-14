@@ -19,6 +19,7 @@ export class RunStage {
   private mapSeed: number | null = null;
   private campSize: CampSize = 1;
   private level: number | null = null;
+  private drained = false;
 
   constructor(hud: RunHud, renderer: () => WorldRenderer | null) {
     this.hud = hud;
@@ -31,6 +32,7 @@ export class RunStage {
     this.mapSeed = mapSeed;
     this.campSize = campSize;
     this.level = null;
+    this.drained = false;
     this.hud.setMap(map);
     this.renderer()?.setMap(map);
     noteStageCut(isBunkerSeed(mapSeed));
@@ -40,6 +42,7 @@ export class RunStage {
   /** A new run can start in the very town the last one ended in, and it still gets its title card. */
   rewind(): void {
     this.level = null;
+    this.drained = false;
   }
 
   /** Runs ahead of the snapshot's events, which already belong to the town it describes. */
@@ -50,6 +53,11 @@ export class RunStage {
     if (newTown) world.enterTown(this.open(snapshot.mapSeed, snapshot.level, campSize));
     // The fence's fallen sections, lifted out of this copy's collision as the room's sim lifts them out of its own.
     settleFence(world.worldMap, fallenOf(snapshot.home?.overrun));
+    const hasDrained = snapshot.drained === true || snapshot.events.some((e) => e.type === 'city_drained');
+    if (hasDrained && !this.drained) {
+      this.drained = true;
+      this.renderer()?.setTheme(levelDef(snapshot.level).theme, nightEventFor(snapshot.mapSeed, snapshot.level)?.id ?? null, true);
+    }
     const sameLevel = snapshot.level === this.level;
     if (sameLevel) return;
     this.level = snapshot.level;

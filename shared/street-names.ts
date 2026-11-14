@@ -1,4 +1,5 @@
 import { TILE_SIZE } from './protocol.ts';
+import type { StreetLabel } from './map-protocol.ts';
 import { GRID_CENTRE_COL, GRID_CENTRE_ROW, GRID_PITCH_COLS, GRID_PITCH_ROWS, MAP_TILES, WALK_TILES, gridSpans } from './town-plan.ts';
 
 /**
@@ -38,6 +39,36 @@ const named = (spans: ReturnType<typeof gridSpans>, nameOf: (step: number) => st
 export const NORTH_SOUTH_STREETS: readonly GridStreet[] = named(gridSpans(GRID_CENTRE_COL, GRID_PITCH_COLS), columnName);
 /** East-west streets, named by how far north or south; they sit at fixed rows. */
 export const EAST_WEST_STREETS: readonly GridStreet[] = named(gridSpans(GRID_CENTRE_ROW, GRID_PITCH_ROWS), rowName);
+
+/**
+ * The actual street names, by the grid name above: set 'Main St': 'Alder Street' and the map and signs show that instead.
+ * Left empty, every street keeps its grid name.
+ */
+export const STREET_RENAMES: Readonly<Record<string, string>> = {};
+
+export const displayStreet = (name: string): string => STREET_RENAMES[name]?.trim() || name;
+
+/** Where each street's name is painted on the town map: at a quarter and three quarters of its run. */
+const LABEL_SHARES = [0.25, 0.75] as const;
+
+/** Every street's name, along its length, for the town map. */
+export function streetLabels(): StreetLabel[] {
+  const labels: StreetLabel[] = [];
+  const townMid = (MAP_TILES / 2) * TILE_SIZE;
+  for (const street of NORTH_SOUTH_STREETS) {
+    for (const share of LABEL_SHARES) {
+      const tile = street.from + share * (street.to - street.from);
+      labels.push({ name: displayStreet(street.name), x: Math.round((tile + 0.5) * TILE_SIZE), y: Math.round(townMid * share * 2) });
+    }
+  }
+  for (const street of EAST_WEST_STREETS) {
+    for (const share of LABEL_SHARES) {
+      const tile = street.from + share * (street.to - street.from);
+      labels.push({ name: displayStreet(street.name), x: Math.round(townMid * share * 2), y: Math.round((tile + 0.5) * TILE_SIZE) });
+    }
+  }
+  return labels;
+}
 
 const within = (street: GridStreet, tile: number): boolean => tile >= street.from - WALK_TILES && tile < street.to + WALK_TILES;
 

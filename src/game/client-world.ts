@@ -11,6 +11,7 @@ import { playerSpeed } from '../../shared/players.ts';
 import { effectiveStance } from '../../shared/stamina.ts';
 import { manholeFlightNear } from '../../shared/take-manhole.ts';
 import { radioTowerNear } from '../../shared/radio-tower.ts';
+import { drainTownWater, isTownFlooded, sewageDrainNear } from '../../shared/sewage-drain.ts';
 import { openableStation } from '../../shared/stations.ts';
 import { groundSpeedScale } from '../../shared/town-rules.ts';
 import type { DoorView, EntityId, PlayerEntity, SnapshotPacket, Stance, WorldMap } from '../../shared/protocol.ts';
@@ -29,7 +30,7 @@ const MAX_BULLET_LEAD_SEC = 0.1;
 
 export type WorldEntities = Pick<
   SceneView,
-  'players' | 'zombies' | 'merchants' | 'bullets' | 'pickups' | 'exit' | 'drop' | 'openedContainers' | 'leftovers' | 'tracks' | 'vehicles' | 'vehicle' | 'searchable' | 'station' | 'climb' | 'doors' | 'door' | 'radioTower' | 'overrun' | 'localId' | 'viewerId' | 'focusX' | 'focusY' | 'phase' | 'hostiles'
+  'players' | 'zombies' | 'merchants' | 'bullets' | 'pickups' | 'exit' | 'drop' | 'openedContainers' | 'leftovers' | 'tracks' | 'vehicles' | 'vehicle' | 'searchable' | 'station' | 'climb' | 'doors' | 'door' | 'radioTower' | 'sewageDrain' | 'overrun' | 'localId' | 'viewerId' | 'focusX' | 'focusY' | 'phase' | 'hostiles'
 >;
 
 /** The bunker's merchants where they are drawn; left off anywhere without them. */
@@ -57,12 +58,13 @@ export class ClientWorld {
   private winded = false;
   /** What candy does to the local player's pace, read off the latest snapshot. */
   private sugarSpeed = 1;
+  drained = false;
 
   constructor(map: WorldMap, localId: EntityId) {
     this.localId = localId;
     this.map = map;
     this.predictor = new LocalPredictor(
-      (x, y, dirX, dirY, dt) => stepMovement(this.map, x, y, dirX, dirY, this.speed * groundSpeedScale(this.level, this.map, x, y), dt, PLAYER_RADIUS, this.doorBlocks),
+      (x, y, dirX, dirY, dt) => stepMovement(this.map, x, y, dirX, dirY, this.speed * groundSpeedScale(this.level, this.map, x, y, this.drained), dt, PLAYER_RADIUS, this.doorBlocks),
       TICK_DT,
       (x, y) => circleHitsSolid(this.map, x, y, PLAYER_RADIUS) || this.doorBlocks(x, y, PLAYER_RADIUS),
     );
@@ -73,7 +75,7 @@ export class ClientWorld {
     return this.latest?.doors ?? [];
   }
 
-  private readonly cars = new ClientVehicles({ map: () => this.map, doors: () => this.doors, level: () => this.level });
+  private readonly cars = new ClientVehicles({ map: () => this.map, doors: () => this.doors, level: () => this.level, drained: () => this.drained });
   /** The cars as drawn this frame, for what the search key can reach. */
   private shownCars: readonly VehicleView[] = [];
 
@@ -117,6 +119,7 @@ export class ClientWorld {
   enterTown(map: WorldMap): void {
     restoreSolids(this.map);
     this.map = map;
+    this.drained = false;
     this.restart();
   }
 
@@ -124,6 +127,11 @@ export class ClientWorld {
     this.buffer.push(snapshot, nowMs);
     this.level = snapshot.level;
     this.latestArrival = nowMs;
+    const hasDrained = snapshot.drained === true || snapshot.events.some((e) => e.type === 'city_drained');
+    if (hasDrained && !this.drained) {
+      this.drained = true;
+      drainTownWater(this.map);
+    }
     const local = this.localPlayer;
     if (local) this.skin = local.skin;
     this.winded = local?.winded === true;
@@ -168,7 +176,8 @@ export class ClientWorld {
   private climbBy(player: PlayerEntity | null): WorldEntities['climb'] {
     const free = player !== null && player.status === 'alive' && player.search === 0;
     const flight = free ? manholeFlightNear({ map: this.map }, player.x, player.y) : null;
-    return flight ? { down: flight.down } : undefined;
+    const flooded = isTownFlooded({ level: this.level, drained: this.drained });
+    return flight ? { down: flight.down, flooded: flooded && flight.down } : undefined;
   }
 
   /** The snapshot's doors placed on the map. The same array until the snapshot's list changes, so the renderer can tell at a glance. */
@@ -217,6 +226,17 @@ export class ClientWorld {
     return { canTrigger, hold: local?.towerHold ?? 0 };
   }
 
+  /** The municipal sewage drain the local player is standing near, if any. */
+  private sewageDrainBy(player: PlayerEntity | null): WorldEntities['sewageDrain'] {
+    const free = player !== null && player.status === 'alive' && !isBunkerMap(this.map);
+    if (!free) return undefined;
+    const drain = sewageDrainNear({ map: this.map }, player.x, player.y);
+    if (!drain) return undefined;
+    const canDrain = isTownFlooded({ level: this.level, drained: this.drained });
+    const local = this.buffer.latest?.players.get(this.localId);
+    return { canDrain, hold: local?.drainHold ?? 0 };
+  }
+
   /** Advances prediction by dt and returns this frame's entities, or null before any snapshot. */
   advance(nowMs: number, delayMs: number, dirX: number, dirY: number, aim: number, dt: number): WorldEntities | null {
     const newest = this.buffer.latest;
@@ -241,6 +261,7 @@ export class ClientWorld {
     const door = this.doorBy(shownLocal);
     const doors = this.placedDoorsFor(this.doors);
     const radioTower = this.radioTowerBy(shownLocal, newest.snapshot.phase);
+    const sewageDrain = this.sewageDrainBy(shownLocal);
     const vehicle = this.vehicleBy(shownLocal);
     return {
       players,
@@ -261,6 +282,7 @@ export class ClientWorld {
       ...(door ? { door } : {}),
       ...(doors.length > 0 ? { doors } : {}),
       ...(radioTower ? { radioTower } : {}),
+      ...(sewageDrain ? { sewageDrain } : {}),
       ...(overrun ? { overrun } : {}),
       localId: this.localId,
       viewerId: viewer?.id ?? null,

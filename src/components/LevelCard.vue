@@ -4,6 +4,7 @@
     <strong class="level-card-title">{{ card.title }}</strong>
     <span class="level-card-goal">{{ card.goal }}</span>
     <span v-if="card.rule" class="level-card-rule">{{ card.rule }}</span>
+    <span v-if="card.sidequest" class="level-card-sidequest">{{ card.sidequest }}</span>
     <span v-if="card.event" class="level-card-event">Tonight: {{ card.event }}</span>
     <span v-if="card.boss" class="level-card-event">Boss night: {{ card.boss }}</span>
     <span v-if="card.streak" class="level-card-streak">{{ card.streak }}</span>
@@ -51,6 +52,10 @@ defineProps<{ card: LevelCard }>();
 
 .level-card-rule {
   color: var(--amber);
+}
+
+.level-card-sidequest {
+  color: var(--cyan, #4af0ff);
 }
 
 .level-card-streak {

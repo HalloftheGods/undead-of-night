@@ -10,6 +10,8 @@ import type { PlayerState } from '../shared/sim-state.ts';
 function world() {
   const { sim: game, state: sim } = quietSim();
   const door = doorsOf(sim).find((d) => containerInReach(sim.map, d.x, d.y + 20) === null && containerInReach(sim.map, d.x, d.y - 20) === null)!;
+  // Each door rolls open or shut at the start; these scenarios begin from an open door.
+  door.isOpen = true;
   return { game, sim, door, p: sim.players[0] as PlayerState };
 }
 
@@ -24,12 +26,12 @@ const hold = (p: PlayerState, down: boolean): void => {
 };
 
 describe('doors in the sim', () => {
-  it('starts every door open at base health', () => {
+  it('rolls each door open or shut at the start, at base health', () => {
     const { sim } = world();
-    for (const door of doorsOf(sim)) {
-      expect(door.isOpen).toBe(true);
-      expect(door.health).toBe(calculateDoorMaxHealth(0));
-    }
+    const doors = doorsOf(sim);
+    expect(doors.some((door) => door.isOpen)).toBe(true);
+    expect(doors.some((door) => !door.isOpen)).toBe(true);
+    for (const door of doors) expect(door.health).toBe(calculateDoorMaxHealth(0));
   });
 
   it('a press closes the door and a short press opens it again', () => {
@@ -119,15 +121,16 @@ describe('doors in the sim', () => {
     expect(DOOR_SPLINTER_NOISE_RADIUS).toBeGreaterThan(0);
   });
 
-  it('the snapshot omits default doors and carries a closed one', () => {
+  it('the snapshot lists the shut doors and omits the open ones, then carries the one just closed', () => {
     const { game, sim, door, p } = world();
     stand(p, door.x, door.y + 20);
     game.step();
-    expect(buildSnapshot(sim).doors).toBeUndefined();
+    // Only doors in range are listed, and an open door is never among them.
+    const listed = buildSnapshot(sim).doors ?? [];
+    expect(listed.every((view) => !view.open)).toBe(true);
     hold(p, true);
     game.step();
     const doors = buildSnapshot(sim).doors;
-    expect(doors?.length).toBe(1);
-    expect(doors?.[0]).toMatchObject({ open: false, planks: 0 });
+    expect(doors?.some((view) => view.open === false && view.planks === 0)).toBe(true);
   });
 });

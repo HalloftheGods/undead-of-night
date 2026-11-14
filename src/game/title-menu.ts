@@ -118,7 +118,7 @@ export const TITLE_MENU: readonly TitleMenuItem[] = [
     needs: "radio"
   },
 
-  // Settings (Sorted A - Z: Audio, Controls, Display, Gameplay)
+  // Settings (Sorted A - Z: Audio, Controls, Gameplay, Video)
   {
     group: "settings",
     page: "audio",
@@ -133,15 +133,15 @@ export const TITLE_MENU: readonly TitleMenuItem[] = [
   },
   {
     group: "settings",
-    page: "display",
-    label: "Display",
-    line: "Fullscreen, resolution and visual effects."
-  },
-  {
-    group: "settings",
     page: "gameplay",
     label: "Gameplay",
     line: "Camera motion, screen shake and accessibility."
+  },
+  {
+    group: "settings",
+    page: "display",
+    label: "Video",
+    line: "Resolution, brightness and visual effects."
   },
   {
     group: "radio",
@@ -182,7 +182,7 @@ export const MENU_SECTIONS: readonly MenuSection[] = [
   {
     group: "settings",
     label: "Settings",
-    line: "Audio, Controls, Display and Gameplay."
+    line: "Audio, Controls, Gameplay and Video."
   }
 ];
 

@@ -82,8 +82,8 @@ function ransack(closed: PixelSprite, front: number, draw: (p: Pen, ground: numb
 // 1. Blue city bin: one flat lid, propped up at the right end by a bag, rows of corrugation.
 
 const BLUE_BAG = ['..aa...', '.aAAa..', 'aAAAaad', '.ddadd.'];
-const ONE = ['.b.', 'bb.', '.b.', '.b.', 'bbb'];
-const TWO = ['bbb', '..b', 'bbb', 'b..', 'bbb'];
+const LETTER_X = ['b.b', 'b.b', '.b.', 'b.b', 'b.b'];
+const LETTER_P = ['bb.', 'b.b', 'bb.', 'b..', 'b..'];
 
 function blueBin(base: PixelSprite): PixelSprite {
   const { c, p, left, ground } = blank(base);
@@ -93,8 +93,8 @@ function blueBin(base: PixelSprite): PixelSprite {
   p.poly([[0, 6], [29, 2], [29, 5], [0, 9]], denim[2]).line(0, 9, 29, 5, denim[0]).line(0, 6, 29, 2, metal[3]);
   p.rect(20, 5, 9, 3, ink[0]);
   p.grid(21, 3, BLUE_BAG, BAG).rect(26, 6, 4, 2, wood[2]).px(29, 6, wood[3]);
-  // The number stencilled on the smooth half, ribs only on the right.
-  p.rect(2, 11, 10, 8, denim[0]).grid(3, 12, ONE, { b: bone[2] }).grid(7, 12, TWO, { b: bone[2] });
+  // The letters "XP" stencilled on the smooth half, ribs only on the right.
+  p.rect(2, 11, 10, 8, denim[0]).grid(3, 12, LETTER_X, { b: bone[2] }).grid(7, 12, LETTER_P, { b: bone[2] });
   p.rect(3, 18, 8, 1, fire[1]);
   [11, 14, 17, 20].forEach((y) => p.rect(14, y, 15, 1, denim[0]).rect(14, y + 1, 15, 1, denim[2]));
   p.rect(18, 22, 5, 2, denim[0]);

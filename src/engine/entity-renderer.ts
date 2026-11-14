@@ -29,6 +29,7 @@ import {
   propSprite
 } from "./car-looks.ts";
 import type { Beacon } from "./car-looks.ts";
+import { drawText, FONT_HEIGHT, textWidth } from "./bitmap-font.ts";
 import { drawVehicle, drawVehicleShadow, vehicleAnchor, vehicleBeacons } from "./vehicle-draw.ts";
 import type { ContainerArt } from "../art/containers.ts";
 import { dirFromAngle } from "../art/types.ts";
@@ -43,8 +44,8 @@ import type { SceneView } from "./scene.ts";
 import {
   bodyHeight,
   clipFrame,
-  drawSilhouette,
   clipFrameAt,
+  drawSilhouette,
   drawSprite,
   drawSpriteScaled,
   spriteCanvas,
@@ -58,6 +59,62 @@ import { paintSelfLit } from "./self-lit.ts";
 import type { Body } from "./self-lit.ts";
 import { blinking, eyeGlow, eyePhase, eyesOf, paintEyes } from "./zombie-eyes.ts";
 import type { EntityVisual, VisualStore } from "./visuals.ts";
+
+const SIGN_GREEN = "#1f6b3a";
+const SIGN_WHITE = "#f4f4e8";
+const SIGN_INK = "#f4f4e8";
+/** Bolted to the top of the pole on the side away from the arm, so it never hangs over the crossing. */
+const SIGN_TOP = 66;
+const SIGN_PAD = 3;
+/** Green rim, then a thin white line, then the green face: the classic street-sign edge. */
+const SIGN_RIM = 2;
+const SIGN_LINE = 1;
+const SIGN_EDGE = SIGN_RIM + SIGN_LINE;
+const SIGN_GAP = 2;
+const SIGN_CORNER = 4;
+
+/** A filled rectangle with its corners rounded by r. */
+function fillRounded(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
+  const radius = Math.max(0, Math.min(r, w / 2, h / 2));
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.arcTo(x + w, y, x + w, y + h, radius);
+  ctx.arcTo(x + w, y + h, x, y + h, radius);
+  ctx.arcTo(x, y + h, x, y, radius);
+  ctx.arcTo(x, y, x + w, y, radius);
+  ctx.closePath();
+  ctx.fill();
+}
+
+/** A green street sign at an intersection signal, naming the two streets that cross there. */
+function drawStreetSign(
+  ctx: CanvasRenderingContext2D,
+  prop: { readonly kind: string; readonly x: number; readonly y: number; readonly sign?: readonly [string, string] },
+  left: number,
+  top: number
+): void {
+  const sign = prop.sign;
+  if (!sign) return;
+  const [first, second] = sign;
+  const inner = Math.max(textWidth(first), textWidth(second)) + SIGN_PAD * 2;
+  const width = inner + SIGN_EDGE * 2;
+  const height = FONT_HEIGHT * 2 + SIGN_PAD * 3 + SIGN_EDGE * 2;
+  // The arm reaches to the right on a plain signal and to the left on a mirrored one, so the sign goes the other way.
+  const isMirrored = prop.kind === "traffic_signal_r";
+  const x0 = isMirrored ? Math.round(prop.x) + SIGN_GAP : Math.round(prop.x) - SIGN_GAP - width;
+  const y0 = Math.round(prop.y) - SIGN_TOP;
+  // Green rim outside, a thin white line inside it, then the green face; all three with rounded corners.
+  ctx.fillStyle = SIGN_GREEN;
+  fillRounded(ctx, x0 - left, y0 - top, width, height, SIGN_CORNER);
+  ctx.fillStyle = SIGN_WHITE;
+  fillRounded(ctx, x0 + SIGN_RIM - left, y0 + SIGN_RIM - top, width - SIGN_RIM * 2, height - SIGN_RIM * 2, SIGN_CORNER - SIGN_RIM);
+  ctx.fillStyle = SIGN_GREEN;
+  fillRounded(ctx, x0 + SIGN_EDGE - left, y0 + SIGN_EDGE - top, inner, height - SIGN_EDGE * 2, SIGN_CORNER - SIGN_EDGE);
+  const textX = x0 + SIGN_EDGE + SIGN_PAD;
+  const textY = y0 + SIGN_EDGE + SIGN_PAD;
+  drawText(ctx, first, textX - left, textY - top, SIGN_INK);
+  drawText(ctx, second, textX - left, textY + FONT_HEIGHT + SIGN_PAD - top, SIGN_INK);
+}
 
 const CULL_MARGIN = 40;
 const DEFAULT_BODY_HEIGHT = 24;
@@ -155,6 +212,82 @@ function shadowSprite(width: number): HTMLCanvasElement {
 function drawShadow(ctx: CanvasRenderingContext2D, x: number, y: number, width: number): void {
   const sprite = shadowSprite(width);
   ctx.drawImage(sprite, x - Math.round(width / 2), y - Math.round(sprite.height / 2));
+}
+
+export interface ShadowLight {
+  readonly x: number;
+  readonly y: number;
+  readonly angle?: number;
+  readonly reach: number;
+  readonly coneHalfAngle?: number;
+}
+
+function drawCastShadow(
+  ctx: CanvasRenderingContext2D,
+  spotX: number,
+  spotY: number,
+  worldX: number,
+  worldY: number,
+  radius: number,
+  height: number,
+  lights: readonly ShadowLight[]
+): void {
+  for (const light of lights) {
+    const dx = worldX - light.x;
+    const dy = worldY - light.y;
+    const distSq = dx * dx + dy * dy;
+    const reach = light.reach;
+    const isNearby = distSq >= 16 && distSq <= reach * reach;
+    if (!isNearby) continue;
+
+    const hasCone = light.coneHalfAngle !== undefined && light.angle !== undefined;
+    if (hasCone) {
+      const angleToActor = Math.atan2(dy, dx);
+      const rawDiff = angleToActor - light.angle!;
+      const angleDiff = Math.abs(Math.atan2(Math.sin(rawDiff), Math.cos(rawDiff)));
+      const isOutsideCone = angleDiff > light.coneHalfAngle!;
+      if (isOutsideCone) continue;
+    }
+
+    const dist = Math.sqrt(distSq);
+    const nx = dx / dist;
+    const ny = dy / dist;
+    const falloff = 1 - dist / reach;
+
+    const shadowLength = Math.min(54, Math.max(12, height * (1 + falloff * 0.8)));
+    const startAlpha = Math.min(0.55, SHADOW_ALPHA * 0.8 * falloff);
+    const hasEnoughAlpha = startAlpha > 0.02;
+    if (!hasEnoughAlpha) continue;
+
+    const LOBE_STEPS = 4;
+    ctx.save();
+    for (let i = 0; i <= LOBE_STEPS; i += 1) {
+      const t = i / LOBE_STEPS;
+      const lobeX = Math.round(spotX + nx * shadowLength * t);
+      const lobeY = Math.round(spotY + ny * shadowLength * t);
+      const lobeR = Math.max(4, Math.round(radius * (1 - t * 0.35)));
+      const lobeAlpha = startAlpha * (1 - t * 0.75);
+
+      if (typeof ctx.createRadialGradient === 'function') {
+        const grad = ctx.createRadialGradient(lobeX, lobeY, 0, lobeX, lobeY, lobeR);
+        if (grad && typeof grad.addColorStop === 'function') {
+          grad.addColorStop(0, `rgba(4, 5, 10, ${lobeAlpha.toFixed(3)})`);
+          grad.addColorStop(0.6, `rgba(4, 5, 10, ${(lobeAlpha * 0.5).toFixed(3)})`);
+          grad.addColorStop(1, 'rgba(4, 5, 10, 0)');
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(lobeX, lobeY, lobeR, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else {
+        ctx.fillStyle = `rgba(4, 5, 10, ${(lobeAlpha * 0.3).toFixed(3)})`;
+        ctx.beginPath();
+        ctx.arc(lobeX, lobeY, lobeR, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
 }
 
 /** Where a point on the ground lands on screen, in whole pixels. */
@@ -425,8 +558,9 @@ export class EntityRenderer {
     const viewer = scene.players.find((player) => player.id === scene.viewerId) ?? null;
     const blend = 1 - Math.exp(-FADE_RATE * dt);
     const items = this.collect(scene, left, top, viewW, viewH);
+    const lights = this.collectLightCasters(scene);
     // Every shadow goes down before any figure, so a firm shadow never darkens a neighbour's boots.
-    for (const item of items) this.drawShadowOf(ctx, item, left, top, time);
+    for (const item of items) this.drawShadowOf(ctx, item, left, top, time, lights);
     for (const item of items) {
       if (item.kind === "prop") this.drawProp(ctx, item.prop, scene, viewer, left, top, blend, time);
       else if (item.kind === "building") this.buildings.drawShell(ctx, item.building, left, top);
@@ -478,6 +612,7 @@ export class EntityRenderer {
       Math.round(placed.prop.x) - sprite.ax - left,
       Math.round(placed.prop.y) - sprite.ay - top
     );
+    if (placed.prop.sign) drawStreetSign(ctx, placed.prop, left, top);
     ctx.globalAlpha = 1;
   }
 
@@ -601,16 +736,41 @@ export class EntityRenderer {
     ];
   }
 
+  private collectLightCasters(scene: SceneView): ShadowLight[] {
+    const casters: ShadowLight[] = [];
+    const players = scene.players ?? [];
+    for (const player of players) {
+      const isAlive = player.status === "alive";
+      const isVisible = !this.buildings.isHidden(player.x, player.y);
+      const isOutsideVehicle = player.vehicle === undefined;
+      const canCast = isAlive && isVisible && isOutsideVehicle;
+      if (!canCast) continue;
+
+      const isViewer = player.id === scene.viewerId;
+      const glowScale = player.sugar?.some((s) => s.id === "glow_worms") ? 2 : 1;
+      const reach = (isViewer ? 215 : 170) * glowScale;
+      casters.push({
+        x: player.x,
+        y: player.y,
+        angle: player.angle,
+        reach,
+        coneHalfAngle: 0.65,
+      });
+    }
+    return casters;
+  }
+
   private drawShadowOf(
     ctx: CanvasRenderingContext2D,
     item: DrawItem,
     left: number,
     top: number,
-    time: number
+    time: number,
+    lights: readonly ShadowLight[] = []
   ): void {
-    if (item.kind === "player") this.drawPlayerShadow(ctx, item.player, left, top, time);
-    else if (item.kind === "zombie") this.drawZombieShadow(ctx, item.zombie, left, top);
-    else if (item.kind === "merchant") this.drawMerchantShadow(ctx, item.merchant, left, top);
+    if (item.kind === "player") this.drawPlayerShadow(ctx, item.player, left, top, time, lights);
+    else if (item.kind === "zombie") this.drawZombieShadow(ctx, item.zombie, left, top, lights);
+    else if (item.kind === "merchant") this.drawMerchantShadow(ctx, item.merchant, left, top, lights);
     else if (item.kind === "vehicle") drawVehicleShadow(ctx, item.vehicle, left, top);
   }
 
@@ -626,11 +786,13 @@ export class EntityRenderer {
     ctx: CanvasRenderingContext2D,
     merchant: MerchantEntity,
     left: number,
-    top: number
+    top: number,
+    lights: readonly ShadowLight[] = []
   ): void {
     const standing = merchant.status === "alive";
     if (!standing) return;
     const spot = onScreen(merchant, left, top);
+    drawCastShadow(ctx, spot.x, spot.y, merchant.x, merchant.y, MERCHANT_SHADOW_WIDTH / 2, 24, lights);
     drawShadow(ctx, spot.x, spot.y, MERCHANT_SHADOW_WIDTH);
   }
 
@@ -639,11 +801,13 @@ export class EntityRenderer {
     player: PlayerEntity,
     left: number,
     top: number,
-    time: number
+    time: number,
+    lights: readonly ShadowLight[] = []
   ): void {
     const standing = player.status === "alive";
     if (!standing) return;
     const [x, y] = this.playerSpot(player, this.visuals.get(player.id), left, top, time);
+    drawCastShadow(ctx, x, y, player.x, player.y, PLAYER_RADIUS, 24, lights);
     drawShadow(ctx, x, y, PLAYER_RADIUS * 2 + 2);
   }
 
@@ -652,15 +816,20 @@ export class EntityRenderer {
     ctx: CanvasRenderingContext2D,
     zombie: ZombieEntity,
     left: number,
-    top: number
+    top: number,
+    lights: readonly ShadowLight[] = []
   ): void {
     const footDrop = this.art.zombies[zombie.type].footDrop ?? 0;
     const scale = zombie.boss ? BOSSES[zombie.boss].scale : 1;
+    const spotX = Math.round(zombie.x) - left;
+    const spotY = Math.round(zombie.y) - top + footDrop * scale;
+    const radius = ZOMBIES[zombie.type].radius * scale;
+    drawCastShadow(ctx, spotX, spotY, zombie.x, zombie.y, radius, 26 * scale, lights);
     drawShadow(
       ctx,
-      Math.round(zombie.x) - left,
-      Math.round(zombie.y) - top + footDrop * scale,
-      ZOMBIES[zombie.type].radius * 2 * scale + 2
+      spotX,
+      spotY,
+      radius * 2 * scale + 2
     );
   }
 
@@ -684,6 +853,18 @@ export class EntityRenderer {
     const art = this.art.zombies[zombie.type];
     const dir = dirFromAngle(zombie.angle);
     const walk = art.walk[dir];
+    if (zombie.rising !== undefined) {
+      // Getting up: the fall played backwards over the rise.
+      const risen = 1 - zombie.rising / SLEEPER_RISE_SEC;
+      const frame = clipFrameAt(art.death, 1 - Math.min(0.999, Math.max(0, risen)));
+      drawSprite(ctx, frame, Math.round(zombie.x) - left, Math.round(zombie.y) - top);
+      return;
+    }
+    if (zombie.dormant) {
+      const lying = art.death.frames[art.death.frames.length - 1];
+      drawSprite(ctx, lying, Math.round(zombie.x) - left, Math.round(zombie.y) - top);
+      return;
+    }
     const sprite = zombie.attacking
       ? clipFrame(art.attack[dir], time - visual.attackAt)
       : strideFrame(walk, visual.walked, ZOMBIES[zombie.type].speed / walk.fps);
@@ -842,7 +1023,8 @@ export class EntityRenderer {
     top: number,
     viewW: number,
     viewH: number,
-    lightAt: (x: number, y: number) => number
+    lightAt: (x: number, y: number) => number,
+    signalsDark = false
   ): void {
     const bodies: Body[] = [];
     for (const player of scene.players)
@@ -857,18 +1039,6 @@ export class EntityRenderer {
       const spot = pixels[Math.floor(pixels.length / 2)];
       const light = lightAt(Math.round(x - sprite.ax + spot.x), Math.round(y - sprite.ay + spot.y));
       paintSelfLit(ctx, pixels, sprite, x, y, light, strength, bodies);
-    if (zombie.rising !== undefined) {
-      // Getting up: the fall played backwards over the rise.
-      const risen = 1 - zombie.rising / SLEEPER_RISE_SEC;
-      const frame = clipFrameAt(art.death, 1 - Math.min(0.999, Math.max(0, risen)));
-      drawSprite(ctx, frame, Math.round(zombie.x) - left, Math.round(zombie.y) - top);
-      return;
-    }
-    if (zombie.dormant) {
-      const lying = art.death.frames[art.death.frames.length - 1];
-      drawSprite(ctx, lying, Math.round(zombie.x) - left, Math.round(zombie.y) - top);
-      return;
-    }
     };
     for (const placed of this.buildings.placed) {
       if (isStoreyKind(placed.building.kind)) continue;
@@ -896,6 +1066,17 @@ export class EntityRenderer {
           Math.round(placed.prop.y) - top,
           1
         );
+    }
+    // Lamp heads and signal bulbs burn on their own, like a pumpkin's face. A signal's bulb goes dark with its blink.
+    for (const placed of this.props) {
+      if (placed.container !== null) continue;
+      const onScreen =
+        placed.x1 > left && placed.x0 < left + viewW && placed.y1 > top && placed.y0 < top + viewH;
+      const roomClosed = placed.room !== null && placed.room.reveal === 0;
+      const isSignal = placed.prop.kind === "traffic_signal" || placed.prop.kind === "traffic_signal_r";
+      const isBlinkedOff = signalsDark && isSignal;
+      if (onScreen && !roomClosed && !isBlinkedOff)
+        shine(placed.sprite, Math.round(placed.prop.x) - left, Math.round(placed.prop.y) - top, 1);
     }
   }
 

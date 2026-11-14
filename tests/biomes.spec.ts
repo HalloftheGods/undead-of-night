@@ -94,8 +94,9 @@ describe('town pieces', () => {
 describe('street lamps', () => {
   it('stand at the same pitch along a street, not at random', () => {
     const map = generateWorldMap(SEED, 1);
-    const lamps = map.props.filter((prop) => prop.kind === 'street_lamp');
-    expect(lamps.length).toBeGreaterThan(150);
+    const lamps = map.props.filter((prop) => prop.kind === 'street_lamp' || prop.kind === 'street_lamp_r' || prop.kind === 'street_lamp_c');
+    // Junction corners now carry traffic signals, so the kerb lamps alone number a little under 150.
+    expect(lamps.length).toBeGreaterThan(100);
     const rows = new Map<number, number[]>();
     for (const lamp of lamps) rows.set(lamp.y, [...(rows.get(lamp.y) ?? []), lamp.x]);
     const longest = Math.max(...[...rows.values()].map((xs) => xs.length));

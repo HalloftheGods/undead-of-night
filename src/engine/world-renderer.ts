@@ -19,11 +19,12 @@ import { EmoteOverlay } from './emote-overlay.ts';
 import { EntityRenderer } from './entity-renderer.ts';
 import { FrameBudget } from './frame-budget.ts';
 import { FxDirector } from './fx-director.ts';
+import { GroundFog } from './ground-fog.ts';
 import { GroundMotion } from './ground-motion.ts';
 import type { FxContext } from './fx-director.ts';
 import type { Rgb, ScreenRect } from './light-field.ts';
 import { lampWorks } from './level-look.ts';
-import { flicker, Lighting } from './lighting.ts';
+import { fireFlicker, flicker, Lighting } from './lighting.ts';
 import { OcclusionGrid } from './occlusion.ts';
 import { addVehicleHeadlights } from './vehicle-lights.ts';
 import { OverlayRenderer } from './overlay-renderer.ts';
@@ -50,6 +51,9 @@ const TEAM_AURA_STRENGTH = 0.45;
 /** Street lamps are weak and failing: they mark corners, they do not light the road. */
 const LAMP_REACH = 0.62;
 const LAMP_STRENGTH = 0.8;
+/** Signals blink about one and a half times a second; off is nearly dark. */
+const SIGNAL_BLINK_RATE = 1.6;
+const SIGNAL_OFF = 0.08;
 /** The van leaves its lights on, so the dark around it gives it away. */
 const VAN_GLOW_COLOR = '#ffc878';
 const VAN_GLOW_RADIUS = 84;
@@ -85,6 +89,7 @@ export class WorldRenderer {
   private readonly lighting = new Lighting();
   private brightness = 0;
   private readonly atmosphere: Atmosphere;
+  private readonly groundFog: GroundFog;
   private readonly groundMotion: GroundMotion;
   private readonly fx: FxDirector;
   private readonly art: ArtBook;
@@ -104,6 +109,7 @@ export class WorldRenderer {
     this.ctx = canvas.getContext('2d', { alpha: false })!;
     this.effects = new ScreenEffects(reducedMotion, shakeLevel);
     this.atmosphere = new Atmosphere(reducedMotion);
+    this.groundFog = new GroundFog(reducedMotion);
     this.groundMotion = new GroundMotion(reducedMotion);
     this.buildings = new BuildingLayer(art.environment);
     this.entities = new EntityRenderer(art, this.visuals, this.buildings, reducedMotion);
@@ -121,6 +127,7 @@ export class WorldRenderer {
     this.reducedMotion = reducedMotion;
     this.effects.setMotion(reducedMotion, shakeLevel);
     this.atmosphere.setReducedMotion(reducedMotion);
+    this.groundFog.setReducedMotion(reducedMotion);
     this.groundMotion.setReducedMotion(reducedMotion);
     this.entities.setReducedMotion(reducedMotion);
   }
@@ -134,10 +141,10 @@ export class WorldRenderer {
   }
 
   /** `reach` holds the view to that far from its middle, when the mode calls for it. */
-  resize(reach: number | null = null): void {
+  resize(reach: number | null = null, detail = 1): void {
     const cssW = window.innerWidth;
     const cssH = window.innerHeight;
-    const viewport = computeViewport(cssW, cssH, window.devicePixelRatio || 1, reach);
+    const viewport = computeViewport(cssW, cssH, window.devicePixelRatio || 1, reach, detail);
     this.viewport = viewport;
     this.canvas.width = viewport.bufferW;
     this.canvas.height = viewport.bufferH;
@@ -191,9 +198,9 @@ export class WorldRenderer {
   }
 
   /** A night event darkens, reddens or fogs the town's own look. */
-  setTheme(theme: LevelTheme, event: NightEventId | null = null): void {
+  setTheme(theme: LevelTheme, event: NightEventId | null = null, drained = false): void {
     this.atmosphere.setTheme(theme, event);
-    this.groundMotion.setTheme(theme);
+    this.groundMotion.setTheme(theme, drained);
     this.applyLook();
   }
 
@@ -274,8 +281,14 @@ export class WorldRenderer {
         const isLampOut = !lampWorks(look, i);
         if (isLampOut) continue;
         const light = lights[i];
-        const strength = (light.flicker ? flicker(this.time, i) : 1) * LAMP_STRENGTH * look.lampStrength;
-        lighting.addPool(light.x - left, light.y - top, light.radius * LAMP_REACH, look.lampColor ?? light.color, strength);
+        // Every signal's red alternates on and off together; reduced motion keeps it lit.
+        const isBlinkedOff = light.blink && !this.reducedMotion && Math.floor(this.time * SIGNAL_BLINK_RATE) % 2 !== 0;
+        const blink = isBlinkedOff ? SIGNAL_OFF : 1;
+        const wobble = light.burns ? fireFlicker(this.time, i) : light.flicker ? flicker(this.time, i) : 1;
+        const strength = wobble * LAMP_STRENGTH * look.lampStrength * blink;
+        // A signal keeps its own red on every level; only the ordinary lamps take the level's colour.
+        const color = light.blink ? light.color : look.lampColor ?? light.color;
+        lighting.addPool(light.x - left, light.y - top, light.radius * LAMP_REACH, color, strength);
       }
       for (const beacon of this.entities.activeBeacons(scene)) {
         const pool = beaconPool(beacon, this.time, this.reducedMotion);
@@ -423,6 +436,7 @@ export class WorldRenderer {
     this.atmosphere.drawWash(ctx, viewW, viewH, time, outdoors);
     const isOutdoors = outdoors > 0;
     if (isOutdoors) this.groundMotion.draw(ctx, left, top, viewW, viewH, time, 'lit');
+    this.groundFog.draw(ctx, this.atmosphere.look, left, top, viewW, viewH, time, outdoors, lightAt);
 
     const shouldClip = isStoreyRoom && room !== null;
     if (shouldClip) {
@@ -433,7 +447,8 @@ export class WorldRenderer {
     }
     this.entities.drawEmissive(ctx, scene, left, top, viewW, viewH, time);
     paintTrackingMarks(ctx, scene.zombies, left, top, viewW, viewH, time, this.reducedMotion);
-    this.entities.drawSelfLit(ctx, scene, left, top, viewW, viewH, lightAt);
+    const signalsDark = !this.reducedMotion && Math.floor(this.time * SIGNAL_BLINK_RATE) % 2 !== 0;
+    this.entities.drawSelfLit(ctx, scene, left, top, viewW, viewH, lightAt, signalsDark);
     this.entities.drawEyes(ctx, scene, left, top, viewW, viewH, time, lightAt);
     this.entities.drawGlints(ctx, scene, left, top, viewW, viewH, time, lightAt);
     this.fx.particles.drawEmissive(ctx, left, top);

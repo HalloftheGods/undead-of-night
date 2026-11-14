@@ -11,7 +11,7 @@ const OUTSIDE_FROM_ROOM = 0.42;
 
 export const HIGHBEAM_COLOR: Rgb = [238, 246, 255];
 const BEAM_COLOR: Rgb = [255, 208, 132];
-const BEAM_RAYS = 40;
+const BEAM_RAYS = 64;
 const BEAM_HALF_ANGLE = 0.6;
 const BEAM_TAN_HALF = Math.tan(BEAM_HALF_ANGLE);
 /** Rays are spaced evenly in tan(angle), which is how LightField looks them up. */
@@ -26,6 +26,12 @@ const HAZE = 0.11;
 const FALLBACK_RGB: Rgb = [255, 255, 255];
 /** Furthest the camera can have moved for last frame's light to be laid down again. */
 const MAX_REUSE_SHIFT = 24;
+
+/** A barrel fire: several quick, uneven swells on top of each other, never settling for long. */
+export function fireFlicker(time: number, seed: number): number {
+  const swell = 0.5 + 0.2 * Math.sin(time * 11.3 + seed * 2.1) + 0.18 * Math.sin(time * 23.7 + seed * 5.3) + 0.12 * Math.sin(time * 5.1 + seed * 0.7);
+  return Math.min(1, Math.max(0.3, swell));
+}
 
 /** Mostly steady with the odd dropout, like a failing ballast. */
 export function flicker(time: number, seed: number): number {

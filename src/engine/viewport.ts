@@ -3,6 +3,13 @@ import { COOP_VIEW_REACH } from '../../shared/view-reach.ts';
 export const TARGET_VIEW_W = 480;
 export const TARGET_VIEW_H = 270;
 
+/**
+ * The Video menu's Resolution: how big a view the game aims for, against the 480x270 target. A bigger factor draws
+ * smaller art pixels and shows more of the world; a smaller one draws chunkier pixels, shows less and is lighter to run.
+ */
+export type Resolution = 'low' | 'auto' | 'high' | 'ultra';
+export const RESOLUTION_FACTOR: Readonly<Record<Resolution, number>> = { low: 0.75, auto: 1, high: 1.5, ultra: 2 };
+
 export interface Viewport {
   /** Device pixels per art pixel. Always a whole number. */
   readonly scale: number;
@@ -23,10 +30,10 @@ export interface Viewport {
  * way round: more height and less width. `reach`, in art pixels from the middle, stops the view
  * growing past it along either axis; the window keeps a bar of night around it.
  */
-export function computeViewport(cssW: number, cssH: number, dpr: number, reach: number | null = null): Viewport {
+export function computeViewport(cssW: number, cssH: number, dpr: number, reach: number | null = null, detail = 1): Viewport {
   const tall = cssH > cssW;
-  const fitW = tall ? TARGET_VIEW_H : TARGET_VIEW_W;
-  const fitH = tall ? TARGET_VIEW_W : TARGET_VIEW_H;
+  const fitW = (tall ? TARGET_VIEW_H : TARGET_VIEW_W) * detail;
+  const fitH = (tall ? TARGET_VIEW_W : TARGET_VIEW_H) * detail;
   const scale = Math.max(1, Math.round(Math.min(cssW / fitW, cssH / fitH) * dpr));
   const most = reach === null ? Infinity : reach * 2;
   const bufferW = Math.max(1, Math.min(most, Math.ceil((cssW * dpr) / scale)));
@@ -39,8 +46,9 @@ export function computeViewport(cssW: number, cssH: number, dpr: number, reach: 
 }
 
 /** Co-op holds a touch screen or a tall window to the same reach. A desktop's wide window keeps its whole view. */
-export function viewReachCap(coop: boolean, touch: boolean, cssW: number, cssH: number): number | null {
-  const held = coop && (touch || cssH > cssW);
+export function viewReachCap(coop: boolean, touch: boolean, cssW: number, cssH: number, resolution: Resolution = 'auto'): number | null {
+  // A finer resolution than Auto would see further than a teammate's, so co-op holds it to the same reach.
+  const held = coop && (touch || cssH > cssW || RESOLUTION_FACTOR[resolution] > 1);
   return held ? COOP_VIEW_REACH : null;
 }
 

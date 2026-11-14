@@ -118,9 +118,13 @@ describe('level looks', () => {
     expect(LEVEL_LOOKS.night.weather).toBeNull();
   });
 
-  it('leaves one street lamp in six burning in the blackout', () => {
-    const lit = Array.from({ length: 60 }, (_, index) => lampWorks(LEVEL_LOOKS.blackout, index)).filter(Boolean);
-    expect(lit).toHaveLength(10);
+  it('leaves about one street lamp in six burning in the blackout, scattered rather than in a run', () => {
+    const lit = Array.from({ length: 600 }, (_, index) => lampWorks(LEVEL_LOOKS.blackout, index));
+    const burning = lit.filter(Boolean).length;
+    expect(burning).toBeGreaterThan(80);
+    expect(burning).toBeLessThan(120);
+    const sameSideRun = lit.slice(0, 60).every((on) => on === lit[0]);
+    expect(sameSideRun).toBe(false);
   });
 
   it('pulses the emergency light, but not for reduced motion', () => {

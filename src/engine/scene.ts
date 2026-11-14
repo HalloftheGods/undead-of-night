@@ -85,7 +85,7 @@ export interface SceneView {
   /** The bunker's merchants, where they are walking. Absent anywhere else. */
   readonly merchants?: readonly MerchantEntity[];
   /** A manhole (topside) or sewer ladder (below) the local player is close enough to climb with the search key: which way it goes. */
-  readonly climb?: { readonly down: boolean };
+  readonly climb?: { readonly down: boolean; readonly flooded?: boolean };
   /** The bunker station the local player could open from where they stand. Absent anywhere else. */
   readonly station?: StationId;
   /** Doors near the local player that are shut, boarded or broken in. Absent when every one stands open. */
@@ -94,6 +94,8 @@ export interface SceneView {
   readonly door?: DoorChoice;
   /** Emergency radio tower the local player can trigger: canTrigger is true if in intermission with remaining hordes. */
   readonly radioTower?: { readonly canTrigger: boolean; readonly hold: number };
+  /** Municipal sewage drain the local player can trigger to drain the flooded town. */
+  readonly sewageDrain?: { readonly canDrain: boolean; readonly hold: number };
   /** The bunker's horde clock, which the door and the chest are drawn from. Absent when there is none. */
   readonly overrun?: OverrunView;
   /** The overrun is switched on for this build, so the blast door is drawn. Absent or false, the bunker looks as it did before it. */

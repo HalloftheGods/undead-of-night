@@ -69,6 +69,13 @@ export const PROP_DEFS = {
   tree: { w: 12, h: 8 },
   fire_barrel: { w: 12, h: 8 },
   street_lamp: { w: 6, h: 4 },
+  /** The same lamp facing the street from the far kerb. */
+  street_lamp_r: { w: 6, h: 4 },
+  /** A lamp on a north-south street's crossing-facing side reaches over the road; this one has its head straight over the pole. */
+  street_lamp_c: { w: 6, h: 4 },
+  /** Intersection signals on a mast arm over the crossing, blinking red; the mirrored one reaches the other way. */
+  traffic_signal: { w: 6, h: 4 },
+  traffic_signal_r: { w: 6, h: 4 },
   hydrant: { w: 6, h: 4 },
   /** Evergreen: a narrow trunk under a dark spire. */
   pine: { w: 10, h: 6 },
@@ -132,6 +139,8 @@ export const PROP_DEFS = {
   sewer_ladder: { w: 16, h: 6 },
   /** An emergency radio tower with antenna lattice and civil defense siren console. */
   radio_tower: { w: 48, h: 24 },
+  /** Municipal storm and sewage drainage station with high-capacity pump and release valve. */
+  sewage_drain: { w: 32, h: 20 },
 } as const;
 export type PropKind = keyof typeof PROP_DEFS;
 export const PROP_KINDS = Object.keys(PROP_DEFS) as PropKind[];
@@ -210,6 +219,8 @@ export interface PropInstance {
   readonly kind: PropKind;
   readonly x: number;
   readonly y: number;
+  /** The two streets an intersection signal's sign names, set only on signals at a crossing. */
+  readonly sign?: readonly [string, string];
 }
 
 export interface MapLight {
@@ -219,6 +230,17 @@ export interface MapLight {
   /** CSS colour. */
   readonly color: string;
   readonly flicker: boolean;
+  /** On and off, like a signal's red. */
+  readonly blink?: boolean;
+  /** A fire's light: dim, and dancing rather than humming. */
+  readonly burns?: boolean;
+}
+
+/** A street's name, painted on the map where the street runs. */
+export interface StreetLabel {
+  readonly name: string;
+  readonly x: number;
+  readonly y: number;
 }
 
 export interface WorldMap {
@@ -233,6 +255,8 @@ export interface WorldMap {
   readonly props: readonly PropInstance[];
   readonly buildings: readonly BuildingInstance[];
   readonly districts: readonly District[];
+  /** Street names from the town's name table; empty where a street has none yet. */
+  readonly streets?: readonly StreetLabel[];
   readonly lights: readonly MapLight[];
   /** Open ground for players to start on. */
   readonly spawn: { readonly x: number; readonly y: number };

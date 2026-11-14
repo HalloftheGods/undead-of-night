@@ -48,6 +48,7 @@ import {
   saveDisplayPrefs,
   UI_SCALES,
   type PaletteId,
+  type Resolution,
   type SpeedUnit,
   type UiScale
 } from "./display-prefs.ts";
@@ -288,7 +289,8 @@ export class GameController {
       this.renderer,
       this.run.transport?.kind === "coop",
       this.ui.value.touch,
-      UI_SCALES[this.ui.value.uiScale]
+      UI_SCALES[this.ui.value.uiScale],
+      this.ui.value.resolution
     );
   };
 
@@ -363,6 +365,13 @@ export class GameController {
     this.onResize();
   }
 
+  /** How big a view to draw: coarser pixels for a weak device, finer for a big screen. Co-op holds the finer ones to its reach cap. */
+  setResolution(resolution: Resolution): void {
+    this.publish({ resolution });
+    this.saveDisplay();
+    this.onResize();
+  }
+
   setAutoFadeXp(autoFadeXp: boolean): void {
     this.publish({ autoFadeXp });
     this.saveDisplay();
@@ -375,8 +384,8 @@ export class GameController {
   }
 
   private saveDisplay(): void {
-    const { palette, uiScale, autoFadeXp, speedUnit } = this.ui.value;
-    saveDisplayPrefs(browserStore(), { palette, uiScale, autoFadeXp, speedUnit });
+    const { palette, uiScale, autoFadeXp, speedUnit, resolution } = this.ui.value;
+    saveDisplayPrefs(browserStore(), { palette, uiScale, autoFadeXp, speedUnit, resolution });
   }
 
   toggleMute(): void {

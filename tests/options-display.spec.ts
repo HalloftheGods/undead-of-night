@@ -11,10 +11,10 @@ function memoryStore(): Store {
 }
 
 describe('display prefs', () => {
-  it('round-trips the palette, UI size, autoFadeXp, and speedUnit', () => {
+  it('round-trips the palette, UI size, autoFadeXp, speedUnit, and resolution', () => {
     const store = memoryStore();
-    saveDisplayPrefs(store, { palette: 'clear', uiScale: 'larger', autoFadeXp: false, speedUnit: 'kmh' });
-    expect(loadDisplayPrefs(store)).toEqual({ palette: 'clear', uiScale: 'larger', autoFadeXp: false, speedUnit: 'kmh' });
+    saveDisplayPrefs(store, { palette: 'clear', uiScale: 'larger', autoFadeXp: false, speedUnit: 'kmh', resolution: 'high' });
+    expect(loadDisplayPrefs(store)).toEqual({ palette: 'clear', uiScale: 'larger', autoFadeXp: false, speedUnit: 'kmh', resolution: 'high' });
   });
 
   it('falls back to defaults for missing or unknown values', () => {

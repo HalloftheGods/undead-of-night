@@ -92,6 +92,7 @@ export function refusalNote(player: PlayerEntity, type: PickupType): string | nu
 
 const SET_BANNERS: Partial<Record<GameEvent['type'], Omit<Banner, 'key'>>> = {
   radio_tower_alarm: { title: 'RADIO TOWER ALARM', subtitle: 'HORDE SUMMONED EARLY', tone: 'danger' },
+  city_drained: { title: 'CITY DRAINED', subtitle: 'SEWERS UNLOCKED', tone: 'hope' },
   wave_clear: { title: 'THE HORDE MOVES ON', subtitle: 'FOR NOW', tone: 'quiet' },
   exit_open: { title: 'THE VAN IS HERE', subtitle: 'GET EVERYONE ON BOARD', tone: 'hope' },
   drop_called: { title: 'SUPPLY DROP', subtitle: 'FOLLOW THE RED FLARE', tone: 'hope' },

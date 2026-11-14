@@ -119,6 +119,7 @@
             <span class="hud-wave" :class="horde.loud ? 'is-threat' : 'is-quiet'">{{ horde.title }}</span>
             <span v-if="horde.detail" class="hud-sub is-threat">{{ horde.detail }}</span>
             <span class="hud-sub hud-goal" :class="{ 'is-van': hud.exitOpen }">{{ levelGoal(hud) }}</span>
+            <span v-if="levelSidequest(hud)" class="hud-sub hud-sidequest">{{ levelSidequest(hud) }}</span>
           </div>
 
           <div v-if="home && !home.inBunker" class="hud-home">
@@ -193,7 +194,7 @@ import type { HudState, PlaceBanner } from '../game/hud-state.ts';
 import { weaponBar } from '../game/weapon-bar.ts';
 import type { BarSlot } from '../game/weapon-bar.ts';
 import { useGame } from './use-game.ts';
-import { levelGoal, levelLine } from '../game/level-hud.ts';
+import { levelGoal, levelLine, levelSidequest } from '../game/level-hud.ts';
 import type { TransportKind } from '../network/transport.ts';
 import { effectOf } from '../../shared/gun-upgrades.ts';
 import { GUN_EFFECTS } from '../../shared/round-effect-data.ts';
@@ -463,6 +464,10 @@ function hold(slot: BarSlot): void {
 
 .is-touch .hud-night .hud-goal:not(.is-van) {
   display: none;
+}
+
+.hud-sidequest {
+  color: var(--cyan, #4af0ff);
 }
 
 .hud-keycap {

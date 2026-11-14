@@ -138,3 +138,24 @@ export function drawRadioTowerMarker(ctx: CanvasRenderingContext2D, x: number, y
 }
 
 export const RADIO_TOWER_ICON: MapIcon = rowsIcon(RADIO_TOWER, TOWER_LEGEND);
+
+export const DRAIN_COLOR = '#4af0ff';
+
+const DRAIN_LEGEND: SpriteLegend = {
+  W: '#4af0ff',
+  M: '#c0c8d8',
+  m: '#6a7888',
+  G: '#283848',
+};
+
+const SEWAGE_DRAIN_MARKER = [
+  '..MM..',
+  '.MWWM.',
+  'MG..GM',
+  'MG..GM',
+  '.mmmm.',
+];
+
+export function drawSewageDrainMarker(ctx: CanvasRenderingContext2D, x: number, y: number): void {
+  drawRowsCentred(ctx, x, y, SEWAGE_DRAIN_MARKER, DRAIN_LEGEND);
+}

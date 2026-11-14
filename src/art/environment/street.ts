@@ -1,10 +1,11 @@
 // Street furniture, from hand grids where the shape matters and rects where it is a box.
 
 import type { Clip, PixelSprite } from '../types.ts';
-import { makeClip, PixelCanvas } from '../kit.ts';
+import { makeClip, mirrorSprite, PixelCanvas } from '../kit.ts';
 import type { Legend } from '../kit.ts';
 import { RAMPS } from '../palette.ts';
 import { bake, groundShadow } from './common.ts';
+import { carryGlow, carryMirroredGlow, markGlow } from '../glow.ts';
 
 const { ink, metal, wood, bone, fire, brick, blood, olive, concrete, asphalt, ash, grass } = RAMPS;
 
@@ -158,10 +159,69 @@ export function buildStreetLamp(): PixelSprite {
     'mmd.............dddddddMM',
     'mmd..............iiiiii..',
     'mmd..............ffffff..',
-  ], { M: metal[2], m: metal[1], d: metal[0], i: ink[1], f: fire[3] });
+  ], { M: metal[2], m: metal[1], d: metal[0], i: ink[1], f: fire[2] });
+  // The lit head: a glowing lens with a warm halo spilling under it.
   c.rect(pole + 17, 9, 6, 1, fire[2]);
+  c.rect(pole + 16, 10, 8, 1, fire[1]);
+  for (let x = pole + 17; x < pole + 23; x++) {
+    markGlow(c, x, 8, fire[2], fire[1]);
+    markGlow(c, x, 9, fire[2], fire[1]);
+  }
   c.outline({ selective: true });
-  return c.toSprite(c.w, c.h, pole + 1, ground);
+  return carryGlow(c, c.toSprite(c.w, c.h, pole + 1, ground));
+}
+
+/** The same lamp turned to face the other way, its head reaching back over the street. */
+export function buildStreetLampMirrored(): PixelSprite {
+  const lamp = buildStreetLamp();
+  return carryMirroredGlow(lamp, { ...mirrorSprite(lamp), ax: lamp.w - 1 - lamp.ax });
+}
+
+/** A lamp with its head straight over the pole, for the streets that run across the view. */
+export function buildStreetLampCentred(): PixelSprite {
+  const c = new PixelCanvas(34, 74);
+  const ground = 70;
+  const pole = 7;
+  groundShadow(c, pole - 3, ground - 1, 9, 2);
+  c.rect(pole - 2, ground - 7, 7, 7, metal[0]).rect(pole - 2, ground - 7, 2, 7, metal[1]);
+  c.rect(pole - 2, ground - 7, 7, 1, metal[2]);
+  c.rect(pole - 1, ground - 4, 4, 2, ink[1]);
+  c.rect(pole, 8, 3, ground - 14, metal[1]).rect(pole, 8, 1, ground - 14, metal[2]).rect(pole + 2, 8, 1, ground - 14, metal[0]);
+  // The head sits over the pole, its lit glass turned down onto the street.
+  c.rect(pole - 3, 2, 9, 1, metal[2]).rect(pole - 4, 3, 11, 2, metal[1]).rect(pole - 4, 5, 11, 1, metal[0]);
+  c.rect(pole - 2, 6, 7, 1, ink[1]);
+  c.rect(pole - 2, 7, 7, 1, fire[2]);
+  c.rect(pole - 3, 8, 9, 1, fire[2]);
+  c.rect(pole - 4, 9, 11, 1, fire[1]);
+  for (let x = pole - 2; x < pole + 5; x++) markGlow(c, x, 7, fire[2], fire[1]);
+  for (let x = pole - 3; x < pole + 6; x++) markGlow(c, x, 8, fire[2], fire[1]);
+  c.outline({ selective: true });
+  return carryGlow(c, c.toSprite(c.w, c.h, pole + 1, ground));
+}
+
+/** An intersection signal on a mast arm reaching right over the crossing; its red lamp blinks in the lighting. */
+export function buildTrafficSignal(): PixelSprite {
+  const c = new PixelCanvas(34, 74);
+  const ground = 70;
+  const pole = 7;
+  groundShadow(c, pole - 3, ground - 1, 9, 2);
+  c.rect(pole - 2, ground - 7, 7, 7, metal[0]).rect(pole - 2, ground - 7, 2, 7, metal[1]);
+  c.rect(pole - 2, ground - 7, 7, 1, metal[2]);
+  c.rect(pole, 8, 3, ground - 14, metal[1]).rect(pole, 8, 1, ground - 14, metal[2]).rect(pole + 2, 8, 1, ground - 14, metal[0]);
+  // Mast arm over the road, the signal box hanging from its end with the red lamp on top.
+  c.rect(pole + 3, 9, 14, 1, metal[2]).rect(pole + 3, 10, 14, 1, metal[0]);
+  c.rect(pole + 14, 11, 6, 11, ink[1]).rect(pole + 14, 11, 6, 1, metal[1]);
+  c.rect(pole + 15, 12, 4, 3, blood[3]).rect(pole + 16, 11, 2, 1, blood[2]);
+  c.rect(pole + 15, 16, 4, 2, ink[0]).rect(pole + 15, 19, 4, 2, ink[0]);
+  for (let y = 12; y < 15; y++) for (let x = pole + 15; x < pole + 19; x++) markGlow(c, x, y, blood[3], blood[2]);
+  c.outline({ selective: true });
+  return carryGlow(c, c.toSprite(c.w, c.h, pole + 1, ground));
+}
+
+/** The signal turned to reach the other way, over a crossing on its left. */
+export function buildTrafficSignalMirrored(): PixelSprite {
+  const signal = buildTrafficSignal();
+  return carryMirroredGlow(signal, { ...mirrorSprite(signal), ax: signal.w - 1 - signal.ax });
 }
 
 const BARREL = [

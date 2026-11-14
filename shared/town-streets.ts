@@ -129,7 +129,8 @@ function lightCorners(b: MapBuilder, mask: Uint8Array): void {
       const crossways = isRoad(col - 1, row) !== isRoad(col + 1, row);
       const sides = Number(isRoad(col, row - 1)) + Number(isRoad(col, row + 1)) + Number(isRoad(col - 1, row)) + Number(isRoad(col + 1, row));
       const isStraightWalk = sides === 2 && lengthways && crossways;
-      if (isStraightWalk) placeOnWalk(b, mask, 'street_lamp', col * TILE_SIZE + 8, row * TILE_SIZE + 12);
+      // Every corner of a crossing: the signal's mast arm reaches out over the crossing, toward the road that is east of it.
+      if (isStraightWalk) placeOnWalk(b, mask, isRoad(col + 1, row) ? 'traffic_signal' : 'traffic_signal_r', col * TILE_SIZE + 8, row * TILE_SIZE + 12);
     }
   }
 }
@@ -178,7 +179,10 @@ function lightKerb(b: MapBuilder, mask: Uint8Array, road: Road, line: number, op
       const along = Math.round((a + mark * (z - a) + 0.5) * TILE_SIZE);
       const across = line * TILE_SIZE + 12;
       const spot = road.horizontal ? { x: along, y: across } : { x: across, y: along };
-      placeLamp(b, mask, 'street_lamp', spot.x, spot.y, road.horizontal);
+      // A north-south road's east kerb is its right-hand side: those lamps reach back over the street. Lamps on an
+      // east-west road stand over the pavement with the head centred above, so the light falls on the street below.
+      const kind: PropKind = road.horizontal ? 'street_lamp_c' : farSide ? 'street_lamp_r' : 'street_lamp';
+      placeLamp(b, mask, kind, spot.x, spot.y, road.horizontal);
     }
     const getsHydrant = b.rng() < 0.3 && z - a > 4;
     if (getsHydrant) {

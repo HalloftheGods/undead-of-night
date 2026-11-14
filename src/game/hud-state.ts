@@ -5,7 +5,7 @@ import { streetAt } from "../../shared/street-names.ts";
 import type { StreetSpot } from "../../shared/street-names.ts";
 import type { ContainerKind } from "../../shared/containers.ts";
 import type { GridItem } from "../../shared/grid-inventory.ts";
-import type { PaletteId, SpeedUnit, UiScale } from "./display-prefs.ts";
+import type { PaletteId, Resolution, SpeedUnit, UiScale } from "./display-prefs.ts";
 import { KEEPSAKES } from "../../shared/keepsakes.ts";
 import type { KeepsakeId } from "../../shared/protocol.ts";
 import { CANDIES } from "../../shared/candy.ts";
@@ -130,6 +130,8 @@ export interface HudState {
   readonly supplies?: Supplies;
   /** The host's hash of where this survivor's things sit in the bag; the client compares it with its own. */
   readonly bagHash?: number;
+  /** Whether the town floodwater has been drained. */
+  readonly drained?: boolean;
 }
 
 export interface MoodleView {
@@ -171,6 +173,8 @@ export interface LevelCard {
   readonly goal: string;
   /** What this town's weather does to play, for towns where it does something. */
   readonly rule?: string;
+  /** A sidequest available in this town. */
+  readonly sidequest?: string;
   /** A night event, for towns that drew one (`shared/night-events.ts`). */
   readonly event?: string;
   /** A boss night's warning (`shared/bosses.ts`). */
@@ -262,6 +266,7 @@ export interface UiState {
   readonly uiScale: UiScale;
   readonly autoFadeXp: boolean;
   readonly speedUnit: SpeedUnit;
+  readonly resolution: Resolution;
   readonly openedContainer?: {
     readonly id: number;
     readonly kind?: ContainerKind;
@@ -344,7 +349,8 @@ export function buildHud(
     ...(local.backpackTier ? { backpackTier: local.backpackTier } : {}),
     ...(local.materials ? { materials: { ...local.materials } } : {}),
     ...(local.supplies ? { supplies: { ...local.supplies } } : {}),
-    ...(local.bagHash !== undefined ? { bagHash: local.bagHash } : {})
+    ...(local.bagHash !== undefined ? { bagHash: local.bagHash } : {}),
+    drained: Boolean(snapshot.drained)
   };
 }
 

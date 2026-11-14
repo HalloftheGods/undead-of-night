@@ -4,7 +4,7 @@ import type { ChoiceOption, PagePanel } from '../engine/page-ui.ts';
 import { consent, openPrivacy } from '../game/analytics/index.ts';
 import { canvasMenus, saveCanvasMenus } from '../game/canvas-menu-prefs.ts';
 import { brightness, brightnessLift, setBrightness } from '../game/display-prefs.ts';
-import type { PaletteId, SpeedUnit, UiScale } from '../game/display-prefs.ts';
+import type { PaletteId, Resolution, SpeedUnit, UiScale } from '../game/display-prefs.ts';
 import type { UiState } from '../game/hud-state.ts';
 import { canvasLoot, loadAutoCloseEmptyLoot, saveAutoCloseEmptyLoot, saveCanvasLoot } from '../game/loot-prefs.ts';
 import { loadMenuInfo, saveMenuInfo } from '../game/menu-info-pref.ts';
@@ -16,13 +16,20 @@ import { useGame } from './use-game.ts';
 /** Which Options screen. */
 export type OptionsKind = 'gameplay' | 'display' | 'audio';
 
-const HEADINGS: Readonly<Record<OptionsKind, string>> = { gameplay: 'Gameplay', display: 'Display', audio: 'Audio' };
+const HEADINGS: Readonly<Record<OptionsKind, string>> = { gameplay: 'Gameplay', display: 'Video', audio: 'Audio' };
 const PALETTES: readonly ChoiceOption[] = [{ id: 'classic', label: 'Classic' }, { id: 'clear', label: 'Colorblind' }];
 const PALETTE_NOTES: Readonly<Record<PaletteId, string>> = {
   classic: 'Red for danger, green for health.',
   clear: 'Magenta for danger, blue for health. Easier to tell apart with red-green colorblindness.',
 };
 const SCALES: readonly ChoiceOption[] = [{ id: 'normal', label: 'Normal' }, { id: 'large', label: 'Large' }, { id: 'larger', label: 'Larger' }];
+const RESOLUTIONS: readonly ChoiceOption[] = [{ id: 'low', label: 'Low' }, { id: 'auto', label: 'Auto' }, { id: 'high', label: 'High' }, { id: 'ultra', label: 'Ultra' }];
+const RESOLUTION_NOTES: Readonly<Record<Resolution, string>> = {
+  low: 'Chunkier pixels and a closer view. Easiest on a weak device.',
+  auto: 'Fits the window.',
+  high: 'Finer pixels and more of the world in view. In co-op the view stops at the shared reach.',
+  ultra: 'The finest pixels. In co-op the view stops at the shared reach.',
+};
 const SPEEDS: readonly ChoiceOption[] = [{ id: 'mph', label: 'MPH' }, { id: 'kmh', label: 'KM/H' }, { id: 'pxs', label: 'PX/S' }];
 const MOTION_LABELS: Readonly<Record<MotionPref, string>> = { system: 'System', full: 'Full', reduced: 'Reduced' };
 const MOTIONS: readonly ChoiceOption[] = MOTION_PREFS.map((id) => ({ id, label: MOTION_LABELS[id] }));
@@ -44,9 +51,11 @@ export function useOptionsPanels(getUi: () => UiState, kind: OptionsKind) {
   );
 
   const display = computed<PagePanel>(() => ({
-    heading: 'Display',
+    heading: 'Video',
     items: [
       { kind: 'slider', id: 'brightness', label: 'Brightness', value: brightness.value, readout: brightnessLift() === 0 ? 'Normal' : `+${Math.round(brightnessLift() * 100)}%` },
+      { kind: 'choice', id: 'resolution', label: 'Resolution', options: RESOLUTIONS, value: ui().resolution },
+      { kind: 'text', text: RESOLUTION_NOTES[ui().resolution], tone: 'dim' },
       { kind: 'choice', id: 'palette', label: 'Hit colors', options: PALETTES, value: ui().palette },
       { kind: 'text', text: PALETTE_NOTES[ui().palette], tone: 'dim' },
       { kind: 'choice', id: 'scale', label: 'UI size', options: SCALES, value: ui().uiScale },
@@ -132,6 +141,7 @@ export function useOptionsPanels(getUi: () => UiState, kind: OptionsKind) {
   const choices: Readonly<Record<string, (option: string) => void>> = {
     palette: (option) => game.setPalette(option as PaletteId),
     scale: (option) => game.setUiScale(option as UiScale),
+    resolution: (option) => game.setResolution(option as Resolution),
     speed: (option) => game.setSpeedUnit(option as SpeedUnit),
     motion: (option) => setMotionPref(option as MotionPref),
   };

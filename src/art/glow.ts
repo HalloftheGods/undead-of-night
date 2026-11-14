@@ -41,6 +41,13 @@ export function carryGlow(canvas: PixelCanvas, sprite: PixelSprite): PixelSprite
   return sprite;
 }
 
+/** Hands the self-lit pixels of a sprite to its mirror image, the marks flipped with it. */
+export function carryMirroredGlow(source: PixelSprite, mirror: PixelSprite): PixelSprite {
+  const marks = onSprite.get(source);
+  if (marks) onSprite.set(mirror, marks.map((mark) => ({ ...mark, x: source.w - 1 - mark.x })));
+  return mirror;
+}
+
 /** The self-lit pixels of a baked sprite; empty for nearly all of them. */
 export function glowOf(sprite: PixelSprite): readonly GlowPixel[] {
   return onSprite.get(sprite) ?? [];

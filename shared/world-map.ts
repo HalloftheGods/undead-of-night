@@ -11,6 +11,7 @@ import { hasDiscountStore, raiseBuildings } from './town-buildings.ts';
 import { raiseTownPieces } from './town-pieces.ts';
 import { EDGE_TILES, MAP_TILES, planTown, rectBox } from './town-plan.ts';
 import { dressStreets, paintStreets } from './town-streets.ts';
+import { displayStreet, streetAt, streetLabels } from './street-names.ts';
 import { fillPark, fillVerge, raiseFence } from './world-blocks.ts';
 import { furnish } from './building-interiors.ts';
 import { withSewers } from './sewers.ts';
@@ -41,6 +42,8 @@ const STOREY_FURNISH_SALT = 0x464c5253;
 const SODIUM = '#ffb066';
 const COOL = '#9ad0ff';
 const FIRE = '#ff7a2e';
+/** A barrel fire's light: a dimmer, redder orange than the bright fire colour. */
+const BARREL_FIRE = '#c24a1c';
 /** Dim sodium at each ladder; the tunnels' own emergency green lamps come with the sewer plan. */
 const SEWER_SODIUM = '#c8923c';
 
@@ -132,10 +135,25 @@ const JACK_GLOW = '#ff8a2a';
 const JACK_RADIUS = 100;
 const JACK_TO_DOOR = 25;
 const JACK_UP = 10;
+/** How far a street lamp's lit head reaches from its pole, in pixels: the lamp's light falls straight under it. */
+const LAMP_HEAD_REACH = 18;
+/** The signal's mast arm reaches this far over the crossing, and its red pool blinks. */
+const SIGNAL_HEAD_REACH = 16;
+const SIGNAL_RED = '#ff2a2a';
 
 /** The bulbs strung along the fireworks bus: a warm pool over its hatch and a pink one at each end, up on its side. */
 const BUS_GLOWS: readonly (readonly [dx: number, radius: number, color: string])[] = [[0, 130, '#ffb04a'], [-40, 84, '#ff7ad0'], [40, 84, '#ff7ad0']];
 const BUS_GLOW_DOWN = -14;
+
+/** An intersection signal names the two streets that cross at its corner. */
+function withStreetSign(prop: PropInstance): PropInstance {
+  const isSignal = prop.kind === 'traffic_signal' || prop.kind === 'traffic_signal_r';
+  if (!isSignal) return prop;
+  const spot = streetAt(prop.x, prop.y);
+  if (!spot?.junction) return prop;
+  // Always north-south first, then east-west: at a junction streetAt gives the east-west street as road, the north-south as cross.
+  return { ...prop, sign: [displayStreet(spot.cross), displayStreet(spot.road)] };
+}
 
 function lightsFor(props: readonly PropInstance[], rng: Rng, sewerLamps: readonly MapLight[]): MapLight[] {
   const lights: MapLight[] = [];
@@ -151,17 +169,24 @@ function lightsFor(props: readonly PropInstance[], rng: Rng, sewerLamps: readonl
       lights.push({ x: prop.x, y: prop.y - 100, radius: 110, color: '#ff2222', flicker: true });
       lights.push({ x: prop.x, y: prop.y - 50, radius: 60, color: '#ff2222', flicker: true });
     }
+    const isSignal = prop.kind === 'traffic_signal' || prop.kind === 'traffic_signal_r';
+    if (isSignal) {
+      const headX = prop.kind === 'traffic_signal_r' ? -SIGNAL_HEAD_REACH : SIGNAL_HEAD_REACH;
+      lights.push({ x: prop.x + headX, y: prop.y + 2, radius: 84, color: SIGNAL_RED, flicker: false, blink: true });
+    }
     const isFireBarrel = prop.kind === 'fire_barrel';
     if (isFireBarrel) {
-      lights.push({ x: prop.x, y: prop.y - 6, radius: 74, color: FIRE, flicker: true });
+      lights.push({ x: prop.x, y: prop.y - 6, radius: 74, color: BARREL_FIRE, flicker: true, burns: true });
     } else {
-      const isStreetLamp = prop.kind === 'street_lamp';
+      const isStreetLamp = prop.kind === 'street_lamp' || prop.kind === 'street_lamp_r' || prop.kind === 'street_lamp_c';
       if (isStreetLamp) {
         const roll = rng();
         const isDeadLamp = roll < 0.25;
         if (isDeadLamp) continue; // Dead lamp: dark gaps keep the flashlight useful.
         const color = roll < 0.55 ? COOL : SODIUM;
-        lights.push({ x: prop.x, y: prop.y + 2, radius: 104, color, flicker: roll > 0.85 });
+        // The pool sits on the ground directly under the lit head, which reaches out to the mirrored side on right-hand lamps.
+        const headX = prop.kind === 'street_lamp_r' ? -LAMP_HEAD_REACH : prop.kind === 'street_lamp' ? LAMP_HEAD_REACH : 0;
+        lights.push({ x: prop.x + headX, y: prop.y + 2, radius: 104, color, flicker: roll > 0.85 });
       }
     }
   }
@@ -231,11 +256,12 @@ export function generateWorldMap(seed: number, level = 1, campSize: CampSize = 1
     props: builder.props,
     buildings: builder.buildings,
     districts: plan.districts,
+    streets: streetLabels(),
     lights: [],
     spawn: plan.spawn,
   };
   const base = withSewers(withStoreys(town), plan.roads);
-  const props = connectedProps(base);
+  const props = connectedProps(base).map(withStreetSign);
   return { ...base, props, lights: lightsFor(props, rng, base.sewers?.lamps ?? []) };
 }
 

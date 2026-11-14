@@ -66,10 +66,11 @@ function stallLine(base: Rows, gaps: readonly (readonly [number, number])[]): Pi
   return canvas;
 }
 
+/** Every slab is a square with its joints on the top and left edges, so the pavement runs in a classic even grid of cement. */
 function sidewalk(slab: Slab): PixelCanvas {
   const canvas = new PixelCanvas(S, S).fill(concrete[0]);
-  if (slab.top) canvas.rect(0, 0, S, 1, asphalt[2]);
-  if (slab.left) canvas.rect(0, 0, 1, S, asphalt[2]);
+  canvas.rect(0, 0, S, 1, asphalt[2]);
+  canvas.rect(0, 0, 1, S, asphalt[2]);
   return canvas.grid(0, 0, slab.detail, WALK);
 }
 

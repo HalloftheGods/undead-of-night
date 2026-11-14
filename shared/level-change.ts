@@ -7,6 +7,7 @@ import { settleFence } from './camp/fence-fall.ts';
 import type { CampSize } from './camp/camp-ring.ts';
 import { stopSearch } from './container-search.ts';
 import { FlowField } from './flow-field.ts';
+import { isTownFlooded } from './sewage-drain.ts';
 import { BUNKER_LEVEL, BUNKER_SEED } from './home-protocol.ts';
 import { parkBunkerVan } from './level-exit.ts';
 import { leadInSeconds, levelPopulation, levelSeed } from './levels.ts';
@@ -25,9 +26,11 @@ import { generateWorldMap } from './world-map.ts';
 function raiseMap(sim: SimState, seed: number, level: number, campSize: CampSize = 1): void {
   const sameMap = seed === sim.map.seed && campSize === (sim.map.camp?.size ?? 1);
   if (sameMap) return;
+  sim.drained = false;
   sim.map = generateWorldMap(seed, level, campSize);
-  sim.flow = new FlowField(sim.map);
-  sim.noiseFlow = new FlowField(sim.map);
+  const manholes = !isTownFlooded({ level, drained: false });
+  sim.flow = new FlowField(sim.map, { manholes });
+  sim.noiseFlow = new FlowField(sim.map, { manholes });
   if (sim.testDrive) markTestDrive(sim.map);
 }
 

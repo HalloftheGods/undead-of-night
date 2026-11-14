@@ -11,7 +11,7 @@ export interface TownRule {
 }
 
 export const TOWN_RULES: Readonly<Partial<Record<LevelTheme, TownRule>>> = {
-  flooded: { name: 'Floodwater', blurb: 'Wading outdoors slows you down. Buildings are dry.' },
+  flooded: { name: 'Floodwater', blurb: 'Wading outdoors slows you down. Sewers are flooded until drained.' },
   blackout: { name: 'Blackout', blurb: 'Zombies see less in the dark, but they hear further.' },
   snow: { name: 'Fresh snow', blurb: 'Zombies sniff along your footprints. Sneak, or duck indoors, to lose them.' },
 };
@@ -67,8 +67,8 @@ export function townRule(level: number): TownRule | null {
 }
 
 /** Shared with the client, so prediction wades at the sim's pace. */
-export function groundSpeedScale(level: number, map: WorldMap, x: number, y: number): number {
-  const wading = themeOf(level) === 'flooded' && buildingAt(map, x, y) === null;
+export function groundSpeedScale(level: number, map: WorldMap, x: number, y: number, drained = false): number {
+  const wading = !drained && themeOf(level) === 'flooded' && buildingAt(map, x, y) === null;
   const town = wading ? FLOOD_SPEED_SCALE : 1;
   return Math.min(town, groundEffect(map, x, y).speed);
 }

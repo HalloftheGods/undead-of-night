@@ -137,6 +137,8 @@ export interface PlayerEntity {
   bagHash?: number;
   /** Hold progress (0..1) on the radio tower alarm. Left off when 0. */
   towerHold?: number;
+  /** Hold progress (0..1) on opening the municipal sewage drain. Left off when 0. */
+  drainHold?: number;
   /** The car and seat this survivor sits in. Left off on foot. */
   vehicle?: VehicleSeat;
 }
@@ -295,6 +297,8 @@ export type GameEvent =
   | { readonly type: 'car_alarm'; readonly x: number; readonly y: number }
   /** Emergency siren at the radio tower sounded to summon the horde early. */
   | { readonly type: 'radio_tower_alarm'; readonly x: number; readonly y: number; readonly playerId: EntityId }
+  /** The municipal sewage drain was opened, draining surface floodwater and unlocking sewers. */
+  | { readonly type: 'city_drained'; readonly x: number; readonly y: number; readonly playerId: EntityId }
   /** A flare went up at x,y: a supply crate comes down on it in `sec`. */
   | { readonly type: 'drop_called'; readonly x: number; readonly y: number; readonly sec: number }
   | { readonly type: 'drop_landed'; readonly x: number; readonly y: number }
@@ -415,6 +419,8 @@ export interface SnapshotPacket {
   /** Events since the previous snapshot, in order. */
   readonly events: readonly GameEvent[];
   readonly gameOver: GameOverStats | null;
+  /** Whether the town's floodwater has been drained via the sewage drain. Left off when false. */
+  readonly drained?: boolean;
   /** Present while the run is held at the workbench between towns. */
   readonly bench?: BenchView;
   /** The room's level pick and reach. Left off outside home mode. */

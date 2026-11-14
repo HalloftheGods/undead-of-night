@@ -50,6 +50,7 @@ import type { InventoryGrid, GridPoint } from '../../../shared/grid-inventory.ts
 import { autoPackItem, createInventoryGrid, randomPackItem } from '../../../shared/grid-inventory.ts';
 import type { BuildingKind, PropKind } from '../../../shared/map-protocol.ts';
 import { BUILDING_KINDS } from '../../../shared/map-protocol.ts';
+import { nextStep, prevStep, type BuildingStep } from '../../game/dev/building-wizard.ts';
 import { PICKUP_TYPES } from '../../../shared/events.ts';
 import type { ContainerKind } from '../../../shared/containers.ts';
 import { flipDimensions, flipPoint, isVerticalLook } from '../../../shared/container-flip.ts';
@@ -78,7 +79,9 @@ import {
   setOwnGrid,
   syncToCodebase,
 } from '../../game/dev/bench-store.ts';
-import { buildBenchModel, type BenchTab, type ItemRow, type ObjectRow } from '../../game/dev/bench-canvas-model.ts';
+import { buildBenchModel, type BenchIcons, type BenchTab, type ItemRow, type ObjectRow } from '../../game/dev/bench-canvas-model.ts';
+import type { PickupType } from '../../../shared/protocol.ts';
+import { lootSprite } from '../../game/inventory/loot-item-art.ts';
 import type { DevContainerEntry } from '../../game/dev/container-catalogue.ts';
 import type { DevItemEntry } from '../../game/dev/item-catalogue.ts';
 
@@ -87,6 +90,8 @@ const emit = defineEmits<{ close: [] }>();
 
 const tab = ref<BenchTab>('items');
 const building = ref<BuildingKind>(BUILDING_KINDS[0]);
+const buildingStep = ref<BuildingStep>('pick');
+const roomPick = ref<string | null>(null);
 const status = ref('');
 let statusTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -139,11 +144,30 @@ const objectRows = computed<ObjectRow[]>(() =>
 const itemsModified = computed(() => itemRows.value.filter((row) => row.modified).length);
 const objectsModified = computed(() => objectRows.value.filter((row) => row.modified).length);
 
+/** The bench's pictures, straight from the loaded art book. */
+const icons = computed<BenchIcons>(() => {
+  const art = props.art;
+  return {
+    building: (kind) => art?.environment.buildings[kind]?.[0],
+    prop: (prop) => art?.environment.props[prop as PropKind],
+    container: (kind) => art?.containers[kind]?.closed,
+    // The same picture the bag and loot grid draw, then the ground pickup when there is no bag icon.
+    item: (id) => (art ? (lootSprite(art, id) ?? art.pickups[id as PickupType]?.frames[0]) : undefined),
+    object: (id) => {
+      const entry = benchContainers.find((candidate) => candidate.id === id);
+      return entry ? art?.containers[entry.look]?.closed : undefined;
+    },
+  };
+});
+
 const model = computed(() =>
   buildBenchModel(
     {
+      icons: icons.value,
       tab: tab.value,
       building: building.value,
+      buildingStep: buildingStep.value,
+      roomPick: roomPick.value,
       draft: buildingDrafts[building.value],
       buildingDirty: isBuildingDirty,
       items: itemRows.value,
@@ -344,6 +368,33 @@ function press(id: string): void {
   if (id.startsWith('object:')) return openContainerById(id.slice('object:'.length));
   if (id.startsWith('building:')) {
     building.value = id.slice('building:'.length) as BuildingKind;
+    buildingStep.value = nextStep('pick');
+    roomPick.value = null;
+    return;
+  }
+  if (id.startsWith('spot:')) {
+    roomPick.value = id.slice('spot:'.length);
+    return;
+  }
+  if (id.startsWith('box:') && roomPick.value) {
+    buildingDrafts[building.value].rooms[roomPick.value as PropKind] = id.slice('box:'.length) as ContainerKind;
+    roomPick.value = null;
+    return;
+  }
+  if (id === 'box-cancel') {
+    roomPick.value = null;
+    return;
+  }
+  if (id === 'step-next') {
+    buildingStep.value = nextStep(buildingStep.value);
+    return;
+  }
+  if (id === 'step-back') {
+    buildingStep.value = prevStep(buildingStep.value);
+    return;
+  }
+  if (id === 'pick-another') {
+    buildingStep.value = 'pick';
     return;
   }
   if (id.startsWith('size:')) return openContainerByKind(id.slice('size:'.length) as ContainerKind);
@@ -362,9 +413,6 @@ function choose(id: string, option: string): void {
   if (id === 'view') {
     tab.value = option as BenchTab;
     return;
-  }
-  if (id.startsWith('room:')) {
-    buildingDrafts[building.value].rooms[id.slice('room:'.length) as PropKind] = option as ContainerKind;
   }
 }
 

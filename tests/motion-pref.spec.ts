@@ -26,9 +26,9 @@ const brokenStore = {
 };
 
 describe('motion preference', () => {
-  it('follows the system by default', () => {
-    expect(DEFAULT_MOTION_PREF).toBe('system');
-    expect(loadMotionPref(memoryStore())).toBe('system');
+  it('defaults to full motion', () => {
+    expect(DEFAULT_MOTION_PREF).toBe('full');
+    expect(loadMotionPref(memoryStore())).toBe('full');
     expect(resolveMotion('system', true)).toBe('reduced');
     expect(resolveMotion('system', false)).toBe('full');
   });
@@ -49,9 +49,9 @@ describe('motion preference', () => {
   });
 
   it('ignores a saved value it does not know, a missing store and one that throws', () => {
-    expect(loadMotionPref(memoryStore({ 'outbreak.motion': 'wobbly' }))).toBe('system');
-    expect(loadMotionPref(null)).toBe('system');
-    expect(loadMotionPref(brokenStore)).toBe('system');
+    expect(loadMotionPref(memoryStore({ 'outbreak.motion': 'wobbly' }))).toBe('full');
+    expect(loadMotionPref(null)).toBe('full');
+    expect(loadMotionPref(brokenStore)).toBe('full');
     expect(() => saveMotionPref('full', brokenStore)).not.toThrow();
   });
 });

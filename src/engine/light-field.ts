@@ -28,6 +28,14 @@ const BEAM_EDGE = Float32Array.from({ length: TABLE_SIZE }, (_, i) => {
   return (1 - t * t * (3 - 2 * t)) ** 1.35;
 });
 
+function rayVisibility(stop: number, dist: number): number {
+  const penumbraDepth = Math.min(10, Math.max(3, stop * 0.2));
+  if (dist <= stop - penumbraDepth) return 1;
+  if (dist >= stop) return 0;
+  const t = (stop - dist) / penumbraDepth;
+  return t * t * (3 - 2 * t);
+}
+
 /** An opaque pixel as a signed word: Int32Array keeps the hot loop off doubles, which Uint32Array would not. */
 function pack(r: number, g: number, b: number): number {
   return -16777216 | (b << 16) | (g << 8) | r;
@@ -157,8 +165,8 @@ export class LightField {
     const last = beam.rays.length - 1;
     for (let i = 0; i <= last; i += 1) {
       const turn = beam.angle + Math.atan(beam.tanHalf * ((i / last) * 2 - 1));
-      const endX = beam.x + Math.cos(turn) * beam.rays[i];
-      const endY = beam.y + Math.sin(turn) * beam.rays[i];
+      const endX = beam.x + Math.cos(turn) * (beam.rays[i] + 8);
+      const endY = beam.y + Math.sin(turn) * (beam.rays[i] + 8);
       x0 = Math.min(x0, endX);
       x1 = Math.max(x1, endX);
       y0 = Math.min(y0, endY);
@@ -193,10 +201,33 @@ export class LightField {
         const slot = (distSq * distScale) | 0;
         const outOfBeam = edge >= 1 || slot >= TABLE_SIZE;
         if (outOfBeam) continue;
-        const stop = rays[Math.round(((across / tanHalf + 1) / 2) * raySteps)];
-        const blocked = distSq > stop * stop;
-        if (blocked) continue;
-        const light = BEAM_FALLOFF[slot] * BEAM_EDGE[(edge * TABLE_SIZE) | 0] * strength;
+        const dist = Math.sqrt(distSq);
+        const rayPos = ((across / tanHalf + 1) * 0.5) * raySteps;
+        const i0 = Math.floor(rayPos);
+        const frac = rayPos - i0;
+        const idx0 = Math.max(0, Math.min(raySteps, i0));
+        const idx1 = Math.max(0, Math.min(raySteps, i0 + 1));
+        const v0 = rayVisibility(rays[idx0], dist);
+        const v1 = rayVisibility(rays[idx1], dist);
+
+        let visibility: number;
+        if (v0 === v1) {
+          visibility = v0;
+        } else {
+          const idxPrev = Math.max(0, i0 - 1);
+          const idxNext = Math.min(raySteps, i0 + 2);
+          const vPrev = rayVisibility(rays[idxPrev], dist);
+          const vNext = rayVisibility(rays[idxNext], dist);
+          const t = frac;
+          const wPrev = ((1 - t) * (1 - t) * (1 - t)) / 6;
+          const w0 = (3 * t * t * t - 6 * t * t + 4) / 6;
+          const w1 = (-3 * t * t * t + 3 * t * t + 3 * t + 1) / 6;
+          const wNext = (t * t * t) / 6;
+          visibility = vPrev * wPrev + v0 * w0 + v1 * w1 + vNext * wNext;
+        }
+        if (visibility <= 0) continue;
+
+        const light = BEAM_FALLOFF[slot] * BEAM_EDGE[(edge * TABLE_SIZE) | 0] * strength * visibility;
         this.red[base + col] += r * light;
         this.green[base + col] += g * light;
         this.blue[base + col] += b * light;

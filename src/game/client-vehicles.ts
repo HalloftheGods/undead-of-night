@@ -22,6 +22,7 @@ export interface CarHost {
   map(): WorldMap;
   doors(): readonly DoorView[];
   level(): number;
+  drained?(): boolean;
 }
 
 const solidKey = (id: number): string => `vehicle:${id}`;
@@ -72,7 +73,7 @@ export class ClientVehicles {
     carBlockedAt(this.host.map(), x, y, r, (dx, dy, dr) => viewsBlockCircle(this.host.map(), this.host.doors(), dx, dy, dr));
 
   private stepCar(motion: VehicleMotion, dirX: number, dirY: number, dt: number): VehicleMotion {
-    const pace = groundSpeedScale(this.host.level(), this.host.map(), motion.x, motion.y);
+    const pace = groundSpeedScale(this.host.level(), this.host.map(), motion.x, motion.y, this.host.drained?.() ?? false);
     const { x, y, heading, speed, facing } = stepVehicle(motion, this.body, dirX, dirY, dt, this.roadBlocked, pace);
     return { x, y, heading, speed, facing };
   }

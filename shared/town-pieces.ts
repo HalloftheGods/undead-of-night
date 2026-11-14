@@ -155,9 +155,30 @@ function raiseRadioTower(b: MapBuilder, plan: TownPlan): void {
   b.fixture('radio_tower', lot.x1 - 64, lot.y0 + 64);
 }
 
+/** Places the municipal sewage drain station on flooded levels. */
+function raiseSewageDrain(b: MapBuilder, plan: TownPlan): void {
+  const isFloodedBiome = b.biome.id === 'marsh';
+  if (!isFloodedBiome) return;
+  const alreadyPlaced = b.props.some((p) => p.kind === 'sewage_drain');
+  if (alreadyPlaced) return;
+  const lot = rectBox(plan.park);
+  const spots = [
+    { x: lot.x0 + 64, y: lot.y1 - 64 },
+    { x: lot.x1 - 64, y: lot.y1 - 64 },
+    { x: lot.x0 + 64, y: lot.y0 + 64 },
+    { x: lot.x1 - 64, y: lot.y0 + 64 },
+  ];
+  for (const spot of spots) {
+    const placed = b.place('sewage_drain', spot.x, spot.y, 16);
+    if (placed) return;
+  }
+  b.fixture('sewage_drain', lot.x0 + 64, lot.y1 - 64);
+}
+
 /** The set pieces of the town itself, as opposed to the park: walls across streets, afflicted buildings, and the radio tower. */
 export function raiseTownPieces(b: MapBuilder, plan: TownPlan): void {
   raiseWalls(b, plan);
   afflictBuildings(b);
   raiseRadioTower(b, plan);
+  raiseSewageDrain(b, plan);
 }

@@ -40,12 +40,24 @@ interface DoorCache {
 const caches = new WeakMap<BarricadeOpening[], DoorCache>();
 const lastHit = new WeakMap<BarricadeOpening, number>();
 
-/** The map's doors, every one open, unbroken and unplanked at full base health. Same order on every host and client. */
+/** Chance a door starts shut. Rolled per door from the map's seed, so every host and client agrees on it. */
+const DOOR_START_SHUT_CHANCE = 0.5;
+
+/** A deterministic roll in [0, 1) for one door of a map, from its seed and its place in the list. */
+function doorRoll(seed: number, index: number): number {
+  let h = Math.imul(seed ^ 0x27d4eb2d, 0x85ebca6b) ^ Math.imul(index + 1, 0xc2b2ae35);
+  h ^= h >>> 15;
+  h = Math.imul(h, 0x2c1b3c6d);
+  h ^= h >>> 12;
+  return (h >>> 0) / 4294967296;
+}
+
+/** The map's doors, each one shut or open by its roll, unbroken and unplanked at full base health. Same order on every host and client. */
 export function freshDoors(map: WorldMap): BarricadeOpening[] {
   return deriveMapOpenings(map)
     .filter((opening) => opening.type === 'door')
-    .map((door) => {
-      door.isOpen = true;
+    .map((door, index) => {
+      door.isOpen = doorRoll(map.seed, index) >= DOOR_START_SHUT_CHANCE;
       door.maxHealth = calculateDoorMaxHealth(0);
       door.health = door.maxHealth;
       return door;

@@ -97,8 +97,10 @@ export class OcclusionGrid {
    * its face to the south only, so facadeBleed is for rays heading north from outside.
    */
   cast(x: number, y: number, angle: number, maxDist: number, propBleed = 0, facadeBleed = 0): number {
-    const dx = Math.cos(angle) * CELL;
-    const dy = Math.sin(angle) * CELL;
+    const cosAngle = Math.cos(angle);
+    const sinAngle = Math.sin(angle);
+    const dx = cosAngle * CELL;
+    const dy = sinAngle * CELL;
     const startCell = this.cellAt(x, y);
     const fromRoom = startCell === ROOM || startCell === WALL;
     const wallBleed = !fromRoom && dy < 0 ? facadeBleed : 0;
@@ -108,8 +110,21 @@ export class OcclusionGrid {
       const cell = this.cellAt(px, py);
       const hitsProp = cell === PROP;
       const hitsBuilding = cell === WALL || (cell === ROOM && !fromRoom);
-      if (hitsProp) return Math.min(maxDist, dist + propBleed);
-      if (hitsBuilding) return Math.min(maxDist, dist + wallBleed);
+      if (hitsProp || hitsBuilding) {
+        const bleed = hitsProp ? propBleed : wallBleed;
+        let fineDist = Math.max(0, dist - CELL);
+        let fx = x + cosAngle * fineDist;
+        let fy = y + sinAngle * fineDist;
+        while (fineDist < dist) {
+          const fineCell = this.cellAt(fx, fy);
+          const fineHit = hitsProp ? fineCell === PROP : fineCell === WALL || (fineCell === ROOM && !fromRoom);
+          if (fineHit) break;
+          fineDist += 1;
+          fx += cosAngle;
+          fy += sinAngle;
+        }
+        return Math.min(maxDist, fineDist + bleed);
+      }
       px += dx;
       py += dy;
     }

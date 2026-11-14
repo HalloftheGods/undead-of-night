@@ -4,6 +4,8 @@ import type { PageLayout, PlacedButton, PlacedControl, Tone } from './page-ui.ts
 import { drawTextScaled } from './setup-text.ts';
 import type { Box } from './setup-ui.ts';
 import type { PageWindow } from '../game/page-view.ts';
+import type { PixelSprite } from '../art/types.ts';
+import { spriteCanvas } from './sprite-cache.ts';
 
 const INK = '#0b0c10';
 const RAISED = '#17181f';
@@ -20,6 +22,37 @@ function frame(ctx: CanvasRenderingContext2D, box: Box, edge: string, fill: stri
   ctx.fillRect(box.x, box.y, box.w, box.h);
   ctx.fillStyle = fill;
   ctx.fillRect(box.x + 1, box.y + 1, box.w - 2, box.h - 2);
+}
+
+/** The opaque part of a sprite, so a small pickup in a big frame still fills its icon. */
+const opaqueBounds = new WeakMap<PixelSprite, Box>();
+function boundsOf(sprite: PixelSprite): Box {
+  let bounds = opaqueBounds.get(sprite);
+  if (bounds) return bounds;
+  let minX = sprite.w, minY = sprite.h, maxX = -1, maxY = -1;
+  for (let y = 0; y < sprite.h; y++) {
+    for (let x = 0; x < sprite.w; x++) {
+      if (sprite.rgba[(y * sprite.w + x) * 4 + 3] === 0) continue;
+      minX = Math.min(minX, x); maxX = Math.max(maxX, x);
+      minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+    }
+  }
+  bounds = maxX < 0 ? { x: 0, y: 0, w: sprite.w, h: sprite.h } : { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 };
+  opaqueBounds.set(sprite, bounds);
+  return bounds;
+}
+
+/** A sprite's opaque part fitted inside the box, centred: big art shrinks, small art grows by whole steps. */
+function drawIcon(ctx: CanvasRenderingContext2D, sprite: PixelSprite, box: Box): void {
+  const src = boundsOf(sprite);
+  const fit = Math.min(box.w / src.w, box.h / src.h);
+  const scale = fit >= 1 ? Math.floor(fit) : fit;
+  const w = Math.max(1, Math.round(src.w * scale));
+  const h = Math.max(1, Math.round(src.h * scale));
+  const smoothing = ctx.imageSmoothingEnabled;
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(spriteCanvas(sprite), src.x, src.y, src.w, src.h, box.x + Math.floor((box.w - w) / 2), box.y + Math.floor((box.h - h) / 2), w, h);
+  ctx.imageSmoothingEnabled = smoothing;
 }
 
 function centred(ctx: CanvasRenderingContext2D, text: string, box: Box, color: string): void {
@@ -51,7 +84,9 @@ function drawControl(ctx: CanvasRenderingContext2D, win: PageWindow, control: Pl
   const labelY = box.y + (isRow ? Math.floor((box.h - FONT_HEIGHT) / 2) : 0);
   if (item.kind === 'link') {
     if (lit) frame(ctx, box, AMBER, RAISED);
-    drawText(ctx, item.label.toUpperCase(), box.x + 4, labelY, lit ? BONE : AMBER);
+    const textX = item.icon ? box.x + box.h + 4 : box.x + 4;
+    if (item.icon) drawIcon(ctx, item.icon, { x: box.x + 2, y: box.y + 2, w: box.h - 4, h: box.h - 4 });
+    drawText(ctx, item.label.toUpperCase(), textX, labelY, lit ? BONE : AMBER);
     return;
   }
   drawText(ctx, item.label.toUpperCase(), box.x, labelY, lit ? AMBER : DIM);

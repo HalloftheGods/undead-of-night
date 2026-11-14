@@ -1,6 +1,7 @@
 import { FONT_HEIGHT, textWidth } from './bitmap-font.ts';
 import { wrapWords } from './setup-text.ts';
 import type { Box } from './setup-ui.ts';
+import type { PixelSprite } from '../art/types.ts';
 
 /**
  * The page kit for title pages drawn on the game canvas, in art pixels: a heading, stacked panels of rows, and
@@ -23,7 +24,8 @@ export type PageItem =
   | { readonly kind: 'switch'; readonly id: string; readonly label: string; readonly on: boolean; readonly enabled: boolean }
   | { readonly kind: 'choice'; readonly id: string; readonly label: string; readonly options: readonly ChoiceOption[]; readonly value: string }
   | { readonly kind: 'slider'; readonly id: string; readonly label: string; readonly value: number; readonly readout: string }
-  | { readonly kind: 'link'; readonly id: string; readonly label: string }
+  /** A link with `icon` is a taller row with the sprite drawn at its left, so you can see what you are picking. */
+  | { readonly kind: 'link'; readonly id: string; readonly label: string; readonly icon?: PixelSprite }
   /** An action and the key or button it is bound to; pressing it starts listening for a new one. */
   | { readonly kind: 'bind'; readonly id: string; readonly label: string; readonly value: string; readonly listening: boolean };
 
@@ -111,6 +113,8 @@ const HEAD_H = 11;
 const ITEM_GAP = 3;
 const LINE_H = FONT_HEIGHT + 2;
 const ROW_H = 13;
+/** An icon link: room for a 24px picture with a pixel of frame around it. */
+export const ICON_ROW_H = 28;
 const SLIDER_H = 5;
 const BUTTON_H = 13;
 const BUTTON_PAD = 8;
@@ -133,6 +137,7 @@ function itemHeight(item: PageItem, innerW: number): number {
   if (item.kind === 'text') return wrapWords(item.text.toUpperCase(), innerW, textWidth).length * LINE_H - (LINE_H - FONT_HEIGHT);
   if (item.kind === 'choice') return FONT_HEIGHT + 3 + ROW_H;
   if (item.kind === 'slider') return FONT_HEIGHT + 3 + SLIDER_H;
+  if (item.kind === 'link' && item.icon) return ICON_ROW_H;
   return item.kind === 'stat' ? FONT_HEIGHT : ROW_H;
 }
 

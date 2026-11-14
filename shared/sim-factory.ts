@@ -2,6 +2,7 @@ import { placeMerchants } from './bunker-merchants.ts';
 import { BASELINE_DIFFICULTY } from './difficulty.ts';
 import type { DifficultyId } from './difficulty.ts';
 import { FlowField } from './flow-field.ts';
+import { isTownFlooded } from './sewage-drain.ts';
 import { BUNKER_LEVEL, BUNKER_SEED } from './home-protocol.ts';
 import { parkBunkerVan } from './level-exit.ts';
 import { FINAL_LEVEL, FIRST_LEVEL, leadInSeconds, levelPopulation, levelSeed } from './levels.ts';
@@ -51,13 +52,14 @@ export function createSimState(options: SimulationOptions): SimState {
   const home = options.home === true;
   const startLevel = home ? BUNKER_LEVEL : clampLevel(options.startLevel);
   const map = generateWorldMap(home ? BUNKER_SEED : levelSeed(options.seed, startLevel), startLevel);
+  const manholes = !isTownFlooded({ level: startLevel });
   const sim: SimState = {
     runSeed: options.seed,
     difficulty: options.difficulty ?? BASELINE_DIFFICULTY,
     map,
     rng: options.random ?? createRng(options.seed ^ 0x5eed),
-    flow: new FlowField(map),
-    noiseFlow: new FlowField(map),
+    flow: new FlowField(map, { manholes }),
+    noiseFlow: new FlowField(map, { manholes }),
     grid: new SpatialHashGrid(),
     tick: 0,
     runStartTick: 0,

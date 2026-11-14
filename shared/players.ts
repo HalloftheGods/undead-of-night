@@ -24,6 +24,7 @@ import { gunsFree } from './overrun.ts';
 import type { ClientInputPacket, Stance } from './protocol.ts';
 import type { PlayerState, SimState } from './sim-state.ts';
 import { updateRadioTower } from './radio-tower.ts';
+import { updateSewageDrain } from './sewage-drain.ts';
 import { updateStations } from './stations.ts';
 import { takeManhole } from './take-manhole.ts';
 import { takeStairs } from './take-stairs.ts';
@@ -195,7 +196,7 @@ export function updatePlayer(sim: SimState, p: PlayerState): void {
   p.stance = effectiveStance(p.stanceWanted, p.winded);
   if (p.moving) {
     const survivalSpeed = p.needs ? moveSpeedMultiplier(p.needs) : 1;
-    const speed = playerSpeed(p.skin, p.stance) * candySpeed(p) * groundSpeedScale(sim.level, sim.map, p.x, p.y) * survivalSpeed;
+    const speed = playerSpeed(p.skin, p.stance) * candySpeed(p) * groundSpeedScale(sim.level, sim.map, p.x, p.y, sim.drained) * survivalSpeed;
     const moved = stepMovement(sim.map, p.x, p.y, dirX, dirY, speed, TICK_DT, PLAYER_RADIUS, (x, y, r) => doorBlocksCircle(sim, x, y, r));
     p.x = moved.x;
     p.y = moved.y;
@@ -220,4 +221,5 @@ export function updatePlayer(sim: SimState, p: PlayerState): void {
   updateSearch(sim, p);
   updateStations(sim, p);
   updateRadioTower(sim, p);
+  updateSewageDrain(sim, p);
 }

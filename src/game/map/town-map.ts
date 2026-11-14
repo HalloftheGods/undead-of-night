@@ -15,7 +15,7 @@ import type { Rgb } from './map-ground.ts';
 import { drawClueCache, drawLeftovers, drawLeftoversAt } from './map-leftovers.ts';
 import type { CursorClock } from './map-cursor.ts';
 import {
-  CROSS_COLOR, DROP_COLOR, DROP_LABEL_RISE, drawDropSprite, drawFireworksBus, drawRadioTowerMarker, drawStation, drawTickMark, drawVan, EXIT_COLOR, TOWER_COLOR, VAN_LABEL_RISE,
+  CROSS_COLOR, DRAIN_COLOR, DROP_COLOR, DROP_LABEL_RISE, drawDropSprite, drawFireworksBus, drawRadioTowerMarker, drawSewageDrainMarker, drawStation, drawTickMark, drawVan, EXIT_COLOR, TOWER_COLOR, VAN_LABEL_RISE,
 } from './map-markers.ts';
 import { MAP_INK } from './map-sprite.ts';
 import { drawTeammateLocator } from './map-teammate.ts';
@@ -213,6 +213,7 @@ export class TownMapView {
     const placed: LabelBox[] = [];
     if (town) this.paintFireworksBus(ctx, placed);
     if (town) this.paintRadioTower(ctx, placed);
+    if (town) this.paintSewageDrain(ctx, placed);
     for (const building of this.map.buildings) {
       const named = isLandmark(building.kind) && !isStorey(building);
       if (!named) continue;
@@ -224,6 +225,9 @@ export class TownMapView {
       const y = Math.round(district.y / this.worldPerPx);
       const isLabelPlaced = placeLabel(ctx, district.name, x, y, DISTRICT_COLOR, placed);
       if (isLabelPlaced) this.roomLabels.push(district.name);
+    }
+    for (const street of this.map.streets ?? []) {
+      placeLabel(ctx, street.name, Math.round(street.x / this.worldPerPx), Math.round(street.y / this.worldPerPx), LABEL_COLOR, placed);
     }
   }
 
@@ -279,6 +283,19 @@ export class TownMapView {
       const y = Math.round((prop.y - rise) / this.worldPerPx);
       drawRadioTowerMarker(ctx, x, y);
       placeLabel(ctx, 'Radio Tower', x, y + 6, TOWER_COLOR, placed);
+    }
+  }
+
+  /** The municipal sewage drain where it stands on flooded levels, named under it. */
+  private paintSewageDrain(ctx: CanvasRenderingContext2D, placed: LabelBox[]): void {
+    const rise = PROP_DEFS.sewage_drain.h / 2;
+    for (const prop of this.map.props) {
+      const isDrain = prop.kind === 'sewage_drain';
+      if (!isDrain) continue;
+      const x = Math.round(prop.x / this.worldPerPx);
+      const y = Math.round((prop.y - rise) / this.worldPerPx);
+      drawSewageDrainMarker(ctx, x, y);
+      placeLabel(ctx, 'Sewage Drain', x, y + 6, DRAIN_COLOR, placed);
     }
   }
 

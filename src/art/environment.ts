@@ -11,6 +11,7 @@ import { buildDiner } from './environment/diner.ts';
 import { buildDiscount } from './environment/discount.ts';
 import { buildFireworksBus } from './environment/fireworks-bus.ts';
 import { buildRadioTower } from './environment/radio-tower.ts';
+import { buildSewageDrain } from './environment/sewage-drain.ts';
 import { buildRadioStation } from './environment/radio-station.ts';
 import { buildInterior } from './environment/floors.ts';
 import { buildBed, buildCounter, buildShelf, buildSofa, buildTable, buildWorkbench } from './environment/furniture.ts';
@@ -39,6 +40,9 @@ import {
   buildSandbags,
   buildStreetLamp,
   buildStreetLampMirrored,
+  buildStreetLampCentred,
+  buildTrafficSignal,
+  buildTrafficSignalMirrored,
 } from './environment/street.ts';
 import { buildTiles } from './environment/tiles.ts';
 import { buildHatchH, buildHatchV, buildPickupH } from './environment/car-bodies.ts';
@@ -79,6 +83,9 @@ export function buildEnvironment(): EnvironmentArt {
       fire_barrel: buildFireBarrel(),
       street_lamp: buildStreetLamp(),
       street_lamp_r: buildStreetLampMirrored(),
+      street_lamp_c: buildStreetLampCentred(),
+      traffic_signal: buildTrafficSignal(),
+      traffic_signal_r: buildTrafficSignalMirrored(),
       hydrant: buildHydrant(),
       pine: buildPine(),
       cactus: buildCactus(),
@@ -120,6 +127,7 @@ export function buildEnvironment(): EnvironmentArt {
       candy_bowl: buildCandyBowl(),
       fireworks_bus: buildFireworksBus(),
       radio_tower: buildRadioTower(),
+      sewage_drain: buildSewageDrain(),
       manhole: buildManhole(),
       sewer_ladder: buildSewerLadder(),
     },

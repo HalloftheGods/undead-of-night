@@ -1,6 +1,6 @@
 <template>
-  <OptionsShell heading="Display" @close="emit('close')">
-    <OptionsCard heading="Display">
+  <OptionsShell heading="Video" @close="emit('close')">
+    <OptionsCard heading="Video">
       <DisplayOptions :ui />
     </OptionsCard>
     <OptionsCard heading="Comfort">

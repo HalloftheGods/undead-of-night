@@ -6,7 +6,7 @@ export type MotionPref = 'system' | 'full' | 'reduced';
 export type MotionLevel = 'full' | 'reduced';
 
 export const MOTION_PREFS: readonly MotionPref[] = ['system', 'full', 'reduced'];
-export const DEFAULT_MOTION_PREF: MotionPref = 'system';
+export const DEFAULT_MOTION_PREF: MotionPref = 'full';
 /** Screen shake as a share of full strength. */
 export const DEFAULT_SHAKE_LEVEL = 1;
 

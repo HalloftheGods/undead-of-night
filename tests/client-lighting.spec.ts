@@ -178,6 +178,13 @@ describe('LightField', () => {
     expect(lights.brightness(26, 32)).toBe(52);
   });
 
+  it('interpolates smoothly between adjacent rays across obstacle boundaries', () => {
+    const lights = field();
+    const rays = new Float32Array([10, 15, 20, 25, 30, 35, 40, 45, 50]);
+    lights.addBeam(openBeam({ rays }));
+    expect(lights.brightness(20, 32)).toBeGreaterThan(52);
+  });
+
   it('shuts a room off from the lamps and sinks the outdoors', () => {
     const lights = field([52, 19, 22]);
     lights.addPool(32, 32, 30, [255, 180, 100], 1);

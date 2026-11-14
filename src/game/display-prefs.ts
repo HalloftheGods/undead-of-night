@@ -1,11 +1,13 @@
 import { readonly, ref } from 'vue';
 import { setHitPalette, type PaletteId } from '../engine/hit-palette.ts';
+import { RESOLUTION_FACTOR, type Resolution } from '../engine/viewport.ts';
 import { browserStore, readJson, writeJson, type Store } from './storage.ts';
 
 export type { PaletteId } from '../engine/hit-palette.ts';
 
 const DISPLAY_KEY = 'outbreak.display';
 
+export type { Resolution } from '../engine/viewport.ts';
 export type UiScale = 'normal' | 'large' | 'larger';
 export type SpeedUnit = 'mph' | 'kmh' | 'pxs';
 
@@ -17,9 +19,10 @@ export interface DisplayPrefs {
   readonly uiScale: UiScale;
   readonly autoFadeXp: boolean;
   readonly speedUnit: SpeedUnit;
+  readonly resolution: Resolution;
 }
 
-export const DEFAULT_DISPLAY: DisplayPrefs = { palette: 'classic', uiScale: 'normal', autoFadeXp: true, speedUnit: 'mph' };
+export const DEFAULT_DISPLAY: DisplayPrefs = { palette: 'classic', uiScale: 'normal', autoFadeXp: true, speedUnit: 'mph', resolution: 'auto' };
 
 const PALETTES: readonly PaletteId[] = ['classic', 'clear'];
 const SPEED_UNITS: readonly SpeedUnit[] = ['mph', 'kmh', 'pxs'];
@@ -30,6 +33,10 @@ function isPalette(v: unknown): v is PaletteId {
 
 function isUiScale(v: unknown): v is UiScale {
   return typeof v === 'string' && Object.hasOwn(UI_SCALES, v);
+}
+
+function isResolution(v: unknown): v is Resolution {
+  return typeof v === 'string' && Object.hasOwn(RESOLUTION_FACTOR, v);
 }
 
 function isSpeedUnit(v: unknown): v is SpeedUnit {
@@ -44,6 +51,7 @@ export function loadDisplayPrefs(store: Store | null): DisplayPrefs {
     uiScale: isUiScale(raw?.uiScale) ? raw.uiScale : DEFAULT_DISPLAY.uiScale,
     autoFadeXp: typeof raw?.autoFadeXp === 'boolean' ? raw.autoFadeXp : DEFAULT_DISPLAY.autoFadeXp,
     speedUnit: isSpeedUnit(raw?.speedUnit) ? raw.speedUnit : DEFAULT_DISPLAY.speedUnit,
+    resolution: isResolution(raw?.resolution) ? raw.resolution : DEFAULT_DISPLAY.resolution,
   };
 }
 

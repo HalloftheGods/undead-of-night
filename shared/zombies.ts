@@ -26,6 +26,7 @@ import { alivePlayers, emit, standingPlayers } from './sim-state.ts';
 import type { FlowField } from './flow-field.ts';
 import { buildingAt, groundOf, segmentHitsSolid } from './world-query.ts';
 import { backToRoaming, loseTrail, updateAwareness } from './zombie-senses.ts';
+import { isTownFlooded } from './sewage-drain.ts';
 import { stirSleeper } from './sleepers.ts';
 import { nextPrint, trailMakerAlive } from './snow-tracks.ts';
 import { TRACK_ARRIVE_PX, TRACKER_SPEED_SCALE } from './town-rules.ts';
@@ -95,6 +96,8 @@ function takeStairs(sim: SimState, z: ZombieState, field: FlowField): void {
 
   const sewers = sim.map.sewers;
   const isEnteringSewers = sewers !== undefined && out.y >= sewers.top * TILE_SIZE && z.y < sewers.top * TILE_SIZE;
+  const isFlooded = isTownFlooded(sim);
+  if (isEnteringSewers && isFlooded) return;
   const isTooBig = z.radius > MAX_SEWER_ZOMBIE_RADIUS;
   if (isEnteringSewers && isTooBig) {
     const col = Math.floor(z.x / TILE_SIZE);
@@ -403,10 +406,10 @@ function updateZombie(sim: SimState, z: ZombieState, quarry: Quarry): void {
     if (isRecoveryDone) {
       z.recoveryLeft = 0;
       z.attacking = false;
+      delete z.gettingUp;
     }
     return;
   }
-      delete z.gettingUp;
 
   updateAwareness(sim, z, quarry.seen);
   if (z.mode === 'hunt') hunt(sim, z, prey, fallback);

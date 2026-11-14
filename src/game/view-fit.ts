@@ -1,4 +1,4 @@
-import { titleUnit, uiUnit, viewReachCap } from '../engine/viewport.ts';
+import { RESOLUTION_FACTOR, titleUnit, uiUnit, viewReachCap, type Resolution } from '../engine/viewport.ts';
 import type { WorldRenderer } from '../engine/world-renderer.ts';
 
 /** A UI unit grown by the player's scale, kept on half pixels so the pixel font stays crisp. */
@@ -7,12 +7,12 @@ export function scaledUnit(unit: number, scale: number): number {
 }
 
 /** Sizes the overlay and the canvas to the window, as it stands and for the mode being played. */
-export function fitWindow(renderer: WorldRenderer | null, coop: boolean, touch: boolean, uiScale = 1): void {
+export function fitWindow(renderer: WorldRenderer | null, coop: boolean, touch: boolean, uiScale = 1, resolution: Resolution = 'auto'): void {
   const { innerWidth: width, innerHeight: height } = window;
   document.documentElement.style.setProperty('--u', `${scaledUnit(uiUnit(width, height), uiScale)}px`);
   document.documentElement.style.setProperty('--title-u', `${scaledUnit(titleUnit(width, height), uiScale)}px`);
   document.documentElement.style.setProperty('--dpx', `${1 / (window.devicePixelRatio || 1)}px`);
-  renderer?.resize(viewReachCap(coop, touch, width, height));
+  renderer?.resize(viewReachCap(coop, touch, width, height, resolution), RESOLUTION_FACTOR[resolution]);
 }
 
 /**

@@ -3,7 +3,7 @@
     <div class="options-cards">
       <div class="options-columns">
         <section class="options-card px-frame" aria-labelledby="options-display">
-          <h3 id="options-display" class="options-card-head">Display</h3>
+          <h3 id="options-display" class="options-card-head">Video</h3>
           <DisplayOptions :ui />
         </section>
 

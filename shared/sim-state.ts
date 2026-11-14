@@ -167,6 +167,7 @@ export interface PlayerState extends Omit<PlayerEntity, 'mags' | 'gear' | 'bottl
   /** Bandages and survival items carried to use later (`shared/supplies.ts`). Absent means none. */
   supplies?: Supplies;
   towerHold?: number;
+  drainHold?: number;
   /** Seconds the search key has been held on a closed door this press (`shared/doors.ts`). */
   doorHold: number;
   /** Seconds the search key has been held this press with a car to get into in reach: a tap gets in, a hold searches. */
@@ -233,9 +234,9 @@ export interface ZombieState extends ZombieEntity {
   senseOffset: number;
   /** Lying dead on the street until someone comes close or makes a noise (`shared/sleepers.ts`). Absent once it has risen. */
   dormant?: boolean;
-  /** What rounds have left on it. Absent until one does. */
   /** Getting up: its `recoveryLeft` is the rise still to go. Cleared when the rise ends. */
   gettingUp?: boolean;
+  /** What rounds have left on it. Absent until one does. */
   status?: ZombieStatus;
   /** A screamer's seconds until it can call again. Absent until it first has. */
   screamLeft?: number;
@@ -414,6 +415,8 @@ export interface SimState {
   doors?: BarricadeOpening[];
   /** Cars someone has got into this town, by map prop index (`shared/vehicles.ts`). */
   vehicles: Map<number, VehicleState>;
+  /** Whether the floodwater in a flooded town has been drained via the sewage drain. */
+  drained?: boolean;
 }
 
 export function entityId(sim: SimState, prefix: string): EntityId {

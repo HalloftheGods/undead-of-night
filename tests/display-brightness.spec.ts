@@ -33,7 +33,7 @@ describe('brightness pref', () => {
     saveBrightness(store, 0.6);
     saveDisplayPrefs(store, { palette: 'classic', uiScale: 'larger' });
     expect(loadBrightness(store)).toBe(0.6);
-    expect(loadDisplayPrefs(store)).toEqual({ palette: 'classic', uiScale: 'larger', autoFadeXp: true, speedUnit: 'mph' });
+    expect(loadDisplayPrefs(store)).toEqual({ palette: 'classic', uiScale: 'larger', autoFadeXp: true, speedUnit: 'mph', resolution: 'auto' });
     expect(JSON.parse(store.getItem('outbreak.display') ?? '{}')).toEqual({ palette: 'classic', uiScale: 'larger', brightness: 0.6 });
   });
 
