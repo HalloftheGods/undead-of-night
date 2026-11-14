@@ -300,11 +300,19 @@ function stepItemContainer(direction: -1 | 1): void {
   openContainerEditor(benchContainers[(at + direction + benchContainers.length) % benchContainers.length]);
 }
 
+/** A variant look's first edit gives it its own grid, so editing one look never changes the others. The base look edits the base. */
+function claimOwnGrid(entry: DevContainerEntry): void {
+  if (isBaseLook(entry) || hasOwnGrid(entry)) return;
+  setOwnGrid(entry, true);
+  flashStatus('OWN GRID');
+}
+
 function onEditorSize(size: { cols: number; rows: number }): void {
   const editor = containerEditor.value;
   const entry = editorEntry.value;
   if (!editor || !entry) return;
   const own = editor.flipped ? { cols: size.rows, rows: size.cols } : size;
+  claimOwnGrid(entry);
   setEntrySize(entry, own.cols, own.rows);
 }
 
@@ -312,6 +320,7 @@ function onEditorBlocked(cells: GridPoint[]): void {
   const editor = containerEditor.value;
   const entry = editorEntry.value;
   if (!editor || !entry) return;
+  claimOwnGrid(entry);
   setEntryBlocked(entry, editor.flipped ? cells.map(flipPoint) : cells);
 }
 

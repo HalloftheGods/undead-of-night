@@ -300,7 +300,7 @@ function layoutEditor(edit: LootEditView, viewW: number): EditorLayout {
     const w = textWidth(label) + 6;
     buttons.push({ id: 'grid', label, x, y: ly, w, h: ROW_H - 2 });
     x += w + SEP;
-    lines.push({ x, y: ly + 2, text: look.own ? 'EDITS CHANGE THIS LOOK ONLY' : `EDITS CHANGE ALL ${look.onBase} LOOKS ON BASE` });
+    lines.push({ x, y: ly + 2, text: look.own ? 'EDITS CHANGE THIS LOOK ONLY' : 'ON BASE: AN EDIT GIVES THIS LOOK ITS OWN GRID' });
   }
   return { box: { x: EDGE, y, w: viewW - EDGE * 2, h: h + ROW_H }, lines, buttons };
 }

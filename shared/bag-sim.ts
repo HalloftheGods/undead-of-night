@@ -87,9 +87,9 @@ export function applyBagCommit(sim: SimState, p: PlayerState, commit: BagCommit)
     const containerState = sim.containers[commit.container.id];
     if (containerState) {
       const containerDef = sim.map ? townContainers(sim.map)[commit.container.id] : undefined;
-      const { cols, rows } = containerGridFor(containerDef);
+      const { cols, rows, blocked } = containerGridFor(containerDef);
       const held = new Map((containerState.items ?? []).map((item) => [item.id, item]));
-      const contents = createInventoryGrid(cols, rows);
+      const contents = createInventoryGrid(cols, rows, blocked);
       for (const item of commit.container.items) placeItem(contents, { ...item });
       // Only what the host's container really held can be taken, and each piece once.
       for (const claimed of commit.container.taken) {
