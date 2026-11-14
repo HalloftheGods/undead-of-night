@@ -15,8 +15,8 @@ describe('canvas menus pref', () => {
     canvasMenus.value = false;
   });
 
-  it('is off until the player turns it on', () => {
-    expect(loadCanvasMenus()).toBe(false);
+  it('is on until the player turns it off', () => {
+    expect(loadCanvasMenus()).toBe(true);
   });
 
   it('remembers the switch and updates the live ref', () => {

@@ -23,3 +23,8 @@ export function migrateCamp(save: HomeSave, legacy: SoundUnlock): HomeSave {
   // A brand-new campaign starts with no quest taken: each starter is accepted on the receipt that brings its giver home.
   return { ...save, camp, ...(existing ? {} : { quests: blankQuests(save.quests.seed) }) };
 }
+
+/** The original release starts the camp over: nobody rescued, no radio, no quest taken. Trips, silver and the ledger stay. */
+export function resetCamp(save: HomeSave): HomeSave {
+  return { ...save, camp: emptyCamp(), quests: blankQuests(save.quests.seed) };
+}

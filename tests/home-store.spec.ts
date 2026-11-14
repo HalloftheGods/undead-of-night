@@ -96,7 +96,8 @@ describe('the browser store', () => {
     vi.stubGlobal('navigator', { locks: { request } });
     const spied = { getItem: memory.getItem, setItem: (key: string, value: string) => { order.push('write'); memory.setItem(key, value); } };
     await createBrowserHomeStore(spied).save(save());
-    expect(order).toEqual([`lock ${HOME_KEY}`, 'write', 'unlock']);
+    // The save, then the marker that says this build wrote it: both inside the lock.
+    expect(order).toEqual([`lock ${HOME_KEY}`, 'write', 'write', 'unlock']);
   });
 
   it('still saves on a plain http page, which has no locks', async () => {

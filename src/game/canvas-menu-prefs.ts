@@ -2,12 +2,13 @@ import { ref } from 'vue';
 
 const CANVAS_MENUS_KEY = 'outbreak_canvas_menus';
 
+/** On until the player switches it off: only a saved "false" turns the canvas menus off. */
 export function loadCanvasMenus(): boolean {
-  if (typeof localStorage === 'undefined') return false;
+  if (typeof localStorage === 'undefined') return true;
   try {
-    return localStorage.getItem(CANVAS_MENUS_KEY) === 'true';
+    return localStorage.getItem(CANVAS_MENUS_KEY) !== 'false';
   } catch {
-    return false;
+    return true;
   }
 }
 

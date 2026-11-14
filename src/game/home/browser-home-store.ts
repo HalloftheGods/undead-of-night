@@ -1,7 +1,8 @@
 // The save in this browser. Read, compare and write are one step, so a second tab cannot slip between them.
 
 import { loadSoundUnlock } from '../sound-unlock.ts';
-import { migrateCamp } from './camp-migrate.ts';
+import { CAMP_RESET_KEY, isReset, markReset } from '../settings-reset.ts';
+import { migrateCamp, resetCamp } from './camp-migrate.ts';
 import { reviveSave } from './home-save-revive.ts';
 import { emptySave } from './home-store.ts';
 import type { HomeSave, HomeStore, SaveResult } from './home-store.ts';
@@ -48,7 +49,21 @@ function compareAndWrite(store: Store, next: HomeSave): SaveResult {
   if (isStale) return { kind: 'conflict' };
   const version = next.version + 1;
   store.setItem(HOME_KEY, JSON.stringify({ ...next, version }));
+  // A save written by this build is not an older one, so it never needs the camp reset.
+  markReset(store, CAMP_RESET_KEY);
   return { kind: 'saved', version };
+}
+
+/** An older save's camp starts over, written back at once so the reset is not undone by the next load. */
+function resetOlderCamp(store: Store, found: HomeSave): HomeSave {
+  const next = resetCamp(migrateCamp(found, loadSoundUnlock()));
+  try {
+    store.setItem(HOME_KEY, JSON.stringify(next));
+    markReset(store, CAMP_RESET_KEY);
+  } catch {
+    // The reset stands in memory and is tried again on the next load; the save below reports a failed write itself.
+  }
+  return next;
 }
 
 /** Not `writeJson`: that hides failures, and here a failed write must reach the player. */
@@ -57,6 +72,8 @@ export function createBrowserHomeStore(store: Store | null = browserStore()): Ho
     async load(): Promise<HomeSave> {
       try {
         const found = parsed(store?.getItem(HOME_KEY));
+        if (found && store && !isReset(store, CAMP_RESET_KEY)) return resetOlderCamp(store, found);
+        if (store && !found) markReset(store, CAMP_RESET_KEY);
         return found ? migrateCamp(found, loadSoundUnlock()) : migrateCamp(freshSave(), loadSoundUnlock());
       } catch {
         return freshSave();
