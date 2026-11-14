@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { applyBagCommit } from '../shared/bag-sim.ts';
 import { BOTTLE_CARRY } from '../shared/bottles.ts';
 import { MEDKIT_MAX, START_SPARE_ROUNDS, TICK_RATE, WEAPONS } from '../shared/constants.ts';
 import { townContainers } from '../shared/containers.ts';
@@ -53,8 +54,10 @@ const everyBody = (state: SimState): PlayerState[] => [...state.players, ...stat
 
 function lyingInTown(state: SimState): Haul {
   const shut = state.containers.flatMap(({ loot }) => (loot && isTreasurePickup(loot.type) ? [worth(loot.type)] : []));
+  // A searched container lays what it held out on its grid, until somebody takes it out.
+  const laidOut = state.containers.flatMap(({ items }) => (items ?? []).flatMap((item) => (isTreasurePickup(item.type as PickupType) ? Array.from({ length: item.count ?? 1 }, () => worth(item.type as PickupType)) : [])));
   const dropped = state.pickups.flatMap((item) => (isTreasurePickup(item.type) ? [worth(item.type)] : []));
-  return total([...shut, ...dropped]);
+  return total([...shut, ...laidOut, ...dropped]);
 }
 
 const GRACE_TICKS = 60 * TICK_RATE;
@@ -118,10 +121,18 @@ class TreasureBot {
     p.y = y;
   }
 
+  /** A searched hoard lays its jewels on the container's grid: the bot takes them all out, as a player would. */
+  private takeWhatItFound(state: SimState, p: PlayerState): void {
+    const grid = this.hoard === null ? undefined : state.containers[this.hoard].items;
+    if (this.hoard === null || !grid || grid.length === 0) return;
+    applyBagCommit(state, p, { layout: [], drop: [], container: { id: this.hoard, items: [], taken: [...grid] } });
+  }
+
   think(sim: GameSimulation, state: SimState, claimed: ReadonlySet<number>): void {
     const p = state.players.find(({ id }) => id === this.id);
     const onTheirFeet = p?.status === 'alive';
     if (!onTheirFeet) return;
+    this.takeWhatItFound(state, p);
     if (!this.stillShut(state)) this.standAtNextHoard(state, p, claimed);
     sim.setInput(p.id, input({ seq: state.tick, search: !p.searchSpent }));
   }

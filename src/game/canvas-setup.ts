@@ -48,7 +48,19 @@ const ARROWS: Readonly<Record<string, Direction>> = { ArrowLeft: 'left', ArrowRi
  * the list and then leaves. Typing goes through a real hidden input so IME, paste and phone keyboards behave.
  */
 export function createCanvasSetup(canvas: HTMLCanvasElement, host: CanvasSetupHost, first: SetupModel): CanvasSetup {
-  const win: SetupWindow = { model: first, art: host.art, hover: null, focus: null, previewed: null, facing: FRONT_FACING, editing: false };
+  /** Turned-down motion shows everything where it settles, with no deal-in. */
+  const enterAt = (): number => (host.reducedMotion() ? -Infinity : performance.now());
+  const win: SetupWindow = {
+    model: first,
+    art: host.art,
+    hover: null,
+    focus: null,
+    previewed: null,
+    facing: FRONT_FACING,
+    editing: false,
+    shownAt: enterAt(),
+    listShownAt: -Infinity,
+  };
   let source = first;
   let open: PickKey | null = null;
   let optionFocus = 0;
@@ -103,6 +115,7 @@ export function createCanvasSetup(canvas: HTMLCanvasElement, host: CanvasSetupHo
     if (!pick) return;
     open = key;
     optionFocus = pick.chosen;
+    win.listShownAt = enterAt();
     show();
     // The page puts the keyboard on the chosen option, which previews it.
     preview(chosenOption(pick).id, false);
@@ -297,6 +310,14 @@ export function createCanvasSetup(canvas: HTMLCanvasElement, host: CanvasSetupHo
   input.addEventListener('blur', onBlur);
   show();
   setSetupWindow(win);
+  setLootPad(
+    keyBridgePad(() => {
+      const main = layout().buttons.find((button) => button.primary && button.enabled);
+      if (!main) return false;
+      activate(`button:${main.id}`);
+      return true;
+    }),
+  );
 
   return {
     update(model) {
@@ -310,18 +331,10 @@ export function createCanvasSetup(canvas: HTMLCanvasElement, host: CanvasSetupHo
       window.removeEventListener('click', onClick);
       input.removeEventListener('input', onInput);
       input.removeEventListener('blur', onBlur);
-  setLootPad(
-    keyBridgePad(() => {
-      const main = layout().buttons.find((button) => button.primary && button.enabled);
-      if (!main) return false;
-      activate(`button:${main.id}`);
-      return true;
-    }),
-  );
       spinner.stop();
       input.remove();
       setSetupWindow(null);
+      setLootPad(null);
     },
   };
 }
-      setLootPad(null);

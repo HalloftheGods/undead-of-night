@@ -6,7 +6,8 @@ import {
   type ContainerGridDimensions,
   type ContainerKind,
 } from '../../../shared/containers.ts';
-import type { ContainerLook } from '../../art/containers.ts';
+import { VARIANTS_PER_LOOK } from '../../art/containers.ts';
+import type { ContainerLook, VariantLook } from '../../art/containers.ts';
 import type { GridPoint } from '../../../shared/grid-inventory.ts';
 
 export interface DevContainerEntry {
@@ -46,6 +47,9 @@ const VARIANT_CONTAINERS: ReadonlyArray<{
   readonly name: string;
   readonly description: string;
 }> = [
+  { kind: 'shelf', look: 'shelf_wood', name: 'Pantry Shelving (Timber)', description: 'Houses, cellars and grocery back rooms. Mixed in with the steel shelving.' },
+  { kind: 'shelf', look: 'shelf_wire', name: 'Wire Rack Shelving', description: 'Clinics, schools and stores. Mixed in with the steel shelving.' },
+  { kind: 'shelf', look: 'shelf_rack', name: 'Warehouse Pallet Rack', description: 'Warehouses and garages. Mixed in with the steel shelving.' },
   { kind: 'cabinet', look: 'bench', name: 'Workbench (Cabinet)', description: 'Cellars, garages, warehouses and workshops.' },
   { kind: 'car', look: 'police', name: 'Police Cruiser Trunk', description: 'Streets near police station, armory loot.' },
   { kind: 'car', look: 'ambulance', name: 'Ambulance Medical Bay', description: 'Hospital lots and emergency zones.' },
@@ -54,8 +58,28 @@ const VARIANT_CONTAINERS: ReadonlyArray<{
   { kind: 'car', look: 'van', name: 'Delivery Work Van', description: 'Streets, warehouse loading docks.' },
 ];
 
+/** The four extra looks each of these pieces is drawn with around town, beside the original. */
+const LOOKS_OF: ReadonlyArray<readonly [ContainerKind, string, string]> = [
+  ['drawer', 'drawer', 'Bed / Nightstand Drawer'],
+  ['locker', 'locker', 'Storage Locker'],
+  ['fridge', 'fridge', 'Kitchen Refrigerator'],
+  ['cabinet', 'cabinet', 'Kitchen Counter / Cabinet'],
+  ['box', 'box', 'Crate Stack / Cardboard Box'],
+  ['desk', 'desk', 'Classroom Desk'],
+  ['dumpster', 'dumpster', 'Commercial Dumpster'],
+];
+
+const LOOK_CONTAINERS: ReadonlyArray<{ readonly kind: ContainerKind; readonly look: ContainerLook; readonly name: string; readonly description: string }> =
+  LOOKS_OF.flatMap(([kind, look, name]) =>
+    Array.from({ length: VARIANTS_PER_LOOK }, (_, i) => ({
+      kind,
+      look: `${look}_v${i + 1}` as VariantLook,
+      name: `${name}, look ${i + 2}`,
+      description: `One of ${VARIANTS_PER_LOOK + 1} looks this piece is drawn with. Which one is fixed by its place in the town.`,
+    })));
+
 export function buildContainerCatalogue(): DevContainerEntry[] {
-  const allDefs = [...PRIMARY_CONTAINERS, ...VARIANT_CONTAINERS];
+  const allDefs = [...PRIMARY_CONTAINERS, ...VARIANT_CONTAINERS, ...LOOK_CONTAINERS];
 
   return allDefs.map((def) => {
     const isExplicitlyMapped = CONTAINER_GRID_SIZE[def.kind] !== undefined;

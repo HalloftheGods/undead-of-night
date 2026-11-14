@@ -8,7 +8,7 @@ const walkOf = (nav: TitleNav) => startFlow(nav.invited, nav.startLevel);
 
 describe('title navigation', () => {
   it('an invite link lands on Play with the room deciding the style', () => {
-    expect(INVITE_LANDING).toEqual({ page: 'play', invited: true, startLevel: null });
+    expect(INVITE_LANDING).toEqual({ page: 'play', invited: true, startLevel: null, fromBooks: false });
     expect(walkOf(INVITE_LANDING)).toMatchObject({ mode: 'multi' });
   });
 
@@ -24,17 +24,17 @@ describe('title navigation', () => {
     const afterBack = closePlay(INVITE_LANDING);
     const levels = openPage(afterBack, 'levels');
     const picked = pickLevel(levels, 4);
-    expect(picked).toEqual({ page: 'play', invited: false, startLevel: 4 });
+    expect(picked).toEqual({ page: 'play', invited: false, startLevel: 4, fromBooks: false });
     expect(walkOf(picked)).toMatchObject({ mode: 'solo' });
   });
 
   it('any other page closing also settles an invite that was left standing', () => {
-    expect(closePage({ page: 'records', invited: true, startLevel: null })).toEqual(TITLE_HOME);
+    expect(closePage({ page: 'records', invited: true, startLevel: null, fromBooks: false })).toEqual(TITLE_HOME);
   });
 
   it('backing out of Play after picking a level returns to the Levels page and forgets the level', () => {
     const picked = pickLevel(openPage(TITLE_HOME, 'levels'), 3);
-    expect(closePlay(picked)).toEqual({ page: 'levels', invited: false, startLevel: null });
+    expect(closePlay(picked)).toEqual({ page: 'levels', invited: false, startLevel: null, fromBooks: false });
   });
 
   it('the Level card opens the Levels page in setting mode for its style, and backing out returns to Play, not the title', () => {

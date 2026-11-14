@@ -161,7 +161,7 @@ describe('Daily MP Lobby and Finish Run', () => {
     expect(result.daily?.label).toContain('3P');
     expect(result.daily?.counted).toBe(true);
 
-    const log = loadDailyLog(store);
+    loadDailyLog(store);
     // Since browserStore is mocked globally or fallback, loadDailyLog checks storage
   });
 });

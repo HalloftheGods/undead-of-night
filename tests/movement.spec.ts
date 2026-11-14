@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { PLAYER_RADIUS, PLAYER_SPEED, TICK_DT } from '../shared/constants.ts';
 import { stepMovement } from '../shared/movement.ts';
 import { buildingBox, circleHitsSolid, generateWorldMap } from '../shared/world-map.ts';
+import { groundEffect } from '../shared/ground.ts';
+import { segmentHitsSolid } from '../shared/world-query.ts';
 import { input, quietSim, steps } from './helpers/sim-harness.ts';
 
 const map = generateWorldMap(7);
@@ -73,6 +75,28 @@ describe('stepMovement', () => {
   });
 });
 
+type Way = 'up' | 'down' | 'left' | 'right';
+const WAYS: readonly { way: Way; dx: number; dy: number }[] = [
+  { way: 'right', dx: 1, dy: 0 },
+  { way: 'left', dx: -1, dy: 0 },
+  { way: 'down', dx: 0, dy: 1 },
+  { way: 'up', dx: 0, dy: -1 },
+];
+
+/** A cardinal way with open ground (no wall, no slowing brush or rubble) for `reach` from every point. The town round the spawn changes as buildings are added, so no test assumes east is open. */
+function openWay(world: typeof map, points: readonly { x: number; y: number }[], reach: number): { way: Way; dx: number; dy: number } {
+  const found = WAYS.find(({ dx, dy }) =>
+    points.every((at) => {
+      const hit = segmentHitsSolid(world, at.x, at.y, at.x + dx * reach, at.y + dy * reach) !== null;
+      const cramped = [0.25, 0.5, 0.75, 1].some((f) => circleHitsSolid(world, at.x + dx * reach * f, at.y + dy * reach * f, PLAYER_RADIUS + 2));
+      const drags = Array.from({ length: Math.ceil(reach / 4) + 1 }, (_, k) => k * 4).some((d) => groundEffect(world, at.x + dx * d, at.y + dy * d).speed < 1);
+      return !hit && !cramped && !drags;
+    })
+  );
+  if (!found) throw new Error('no open way from the players');
+  return found;
+}
+
 describe('player input', () => {
   it('moves at a fixed speed however many packets arrive per tick', () => {
     const quiet = quietSim(['once', 'many']);
@@ -80,25 +104,28 @@ describe('player input', () => {
     const [once, many] = state.players;
     many.x = once.x;
     many.y = once.y + 40;
-    const startX = once.x;
+    const way = openWay(state.map, [once, many], PLAYER_SPEED + 20);
+    const start = { x: once.x, y: once.y };
     let seq = 0;
 
     for (let tick = 0; tick < 30; tick++) {
-      sim.setInput('once', input({ seq: tick, right: true }));
-      for (let i = 0; i < 5; i++) sim.setInput('many', input({ seq: ++seq, right: true }));
+      sim.setInput('once', input({ seq: tick, [way.way]: true }));
+      for (let i = 0; i < 5; i++) sim.setInput('many', input({ seq: ++seq, [way.way]: true }));
       sim.step();
     }
-    expect(once.x - startX).toBeCloseTo(PLAYER_SPEED, 5);
-    expect(many.x).toBeCloseTo(once.x, 5);
+    expect(Math.hypot(once.x - start.x, once.y - start.y)).toBeCloseTo(PLAYER_SPEED, 5);
+    expect(many.x - once.x).toBeCloseTo(0, 5);
+    expect(many.y - once.y).toBeCloseTo(40, 5);
   });
 
   it('keeps applying the last input when packets stop', () => {
     const { sim, state } = quietSim();
     const [p] = state.players;
-    const startX = p.x;
-    sim.setInput('a', input({ seq: 1, right: true }));
+    const way = openWay(state.map, [p], PLAYER_SPEED);
+    const start = { x: p.x, y: p.y };
+    sim.setInput('a', input({ seq: 1, [way.way]: true }));
     steps(sim, 15);
-    expect(p.x - startX).toBeCloseTo(PLAYER_SPEED / 2, 5);
+    expect(Math.hypot(p.x - start.x, p.y - start.y)).toBeCloseTo(PLAYER_SPEED / 2, 5);
     expect(p.moving).toBe(true);
   });
 

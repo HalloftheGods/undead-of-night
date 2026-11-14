@@ -270,7 +270,7 @@ function onPointerMove(event: PointerEvent): void {
   if (!isInteracting.value || isLocked.value) return;
 
   const currentKind = kind.value;
-  let status = { progress: 0, locked: false, ratcheted: false };
+  let status: { progress: number; locked: boolean; ratcheted: boolean };
 
   if (currentKind === 'suppressor') {
     const { cx, cy } = getAnchorCenter();

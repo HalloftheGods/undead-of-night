@@ -1,7 +1,7 @@
 // Candy Shop in the bunker: pure state transitions for buying and selling candies.
 
 import { CANDIES, CANDY_ORDER, candyBuyPrice, candySellValue, candyBagWorth, MAX_CANDY_BAG } from '../../../shared/candy.ts';
-import type { CandyDef, CandyId } from '../../../shared/candy.ts';
+import type { CandyId } from '../../../shared/candy.ts';
 import type { HomeSave } from './home-store.ts';
 
 export interface CandyTradeItem {

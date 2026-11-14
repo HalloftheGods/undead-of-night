@@ -88,6 +88,8 @@ export function createPlayer(arrival: Arrival, spot: { x: number; y: number }): 
     fountains: 0,
     candy: [],
     sugar: [],
+    barDropsOwed: 0,
+    barDropsLive: false,
     eatQueued: [],
     keepsakes: [],
     keepsakeOffer: null,

@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import {
   AMMO_PICKUPS,
   AMMO_POPULATION_SHARE,
-  BANDAGE_HEAL,
   KILL_DROP_CHANCE,
   KILL_DROP_ROUNDS,
   KILL_DROP_TTL_SEC,

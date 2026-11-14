@@ -475,10 +475,12 @@ describe('Rolling Timestamp AP Decay & Rusty Survivors', () => {
       const playerBefore = sim.snapshot().players.find((p) => p.id === 'p1')!;
       expect(playerBefore.sugar).toBeUndefined();
 
-      sim.giveBoon('p1', 'jawbreaker');
+      sim.giveBoon('p1', 2);
       const playerAfter = sim.snapshot().players.find((p) => p.id === 'p1')!;
       expect(playerAfter.sugar).toBeDefined();
-      expect(playerAfter.sugar!.some((s) => s.id === 'jawbreaker')).toBe(true);
+      expect(playerAfter.sugar!.some((s) => s.id === 'full_size_bar')).toBe(true);
+      const bars = (sim as unknown as { sim: { players: Array<{ barDropsOwed: number }> } }).sim.players[0];
+      expect(bars.barDropsOwed).toBe(1);
     });
 
     it('safely handles bag commit without layout or drop without throwing errors', () => {

@@ -2,7 +2,6 @@ import { BACK_DOORS } from './building-plans.ts';
 import {
   type BarricadeOpening,
   createBarricadeOpening,
-  type OpeningFacing,
 } from './fortifications.ts';
 import {
   BUILDING_DEFS,

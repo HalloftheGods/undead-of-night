@@ -6,7 +6,6 @@ import { playsFromHome } from "../../shared/game-style.ts";
 import type { GameStyle } from "../../shared/game-style.ts";
 import type { HomeAction } from "../../shared/home-protocol.ts";
 import type {
-  CandyId,
   ClientInputPacket,
   SnapshotPacket,
   WelcomePacket
@@ -62,8 +61,8 @@ export class LocalSession implements GameTransport {
     this.sim?.emote(LOCAL_PLAYER_ID, emote);
   }
 
-  giveBoon(candy: CandyId): void {
-    this.sim?.giveBoon(LOCAL_PLAYER_ID, candy);
+  giveBoon(count: number): void {
+    this.sim?.giveBoon(LOCAL_PLAYER_ID, count);
   }
 
   /**

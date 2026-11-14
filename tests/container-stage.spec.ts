@@ -20,8 +20,8 @@ describe('a container keeps its art still when it is searched', () => {
     expect(shut.y + art.closed.ay).toBe(open.y + art.opened.ay);
   });
 
-  it('shows the shut drawing while there is loot and the searched one when empty', () => {
-    expect(stageSprite(art, true)).toBe(art.closed);
-    expect(stageSprite(art, false)).toBe(art.opened);
+  it('shows the shut drawing while it is searched and the open one once it has been, loot or none', () => {
+    expect(stageSprite(art, false)).toBe(art.closed);
+    expect(stageSprite(art, true)).toBe(art.opened);
   });
 });

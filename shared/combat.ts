@@ -22,7 +22,7 @@ import { eventOf } from './night-events.ts';
 import { bossDown } from './bosses.ts';
 import { headOnBulletPlane, headshotDamage, payHeadshot } from './headshots.ts';
 import type { EntityId } from './protocol.ts';
-import { maybeDropOnKill } from './pickups.ts';
+import { maybeDropBarOnKill, maybeDropOnKill } from './pickups.ts';
 import { hurtPlayer } from './player-health.ts';
 import { PIERCE_DAMAGE_SCALE } from './round-effect-data.ts';
 import type { BulletState, SimState, ZombieState } from './sim-state.ts';
@@ -99,7 +99,10 @@ function killZombie(sim: SimState, z: ZombieState, angle: number, killerId: Enti
   });
   // The bunker's horde drops nothing: the chest is the reward. Off the overrun this rolls as it always has.
   const bunkerHorde = z.horde && sim.overrun !== null;
-  if (!bunkerHorde) maybeDropOnKill(sim, z.x, z.y, killer);
+  if (!bunkerHorde) {
+    maybeDropOnKill(sim, z.x, z.y, killer);
+    maybeDropBarOnKill(sim, z.x, z.y, killer);
+  }
   const isBloater = z.type === 'bloater';
   if (isBloater) burst(sim, z, killerId);
   bossDown(sim, z);

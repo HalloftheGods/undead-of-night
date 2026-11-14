@@ -11,19 +11,19 @@ describe('canvas loot window layout', () => {
   it('puts the container on the left, the survivor on the right, and leaves a gap between', () => {
     expect(layout.container).not.toBeNull();
     const left = layout.container!;
-    expect(left.x + left.w).toBeLessThan(layout.survivor.x);
-    expect(layout.survivor.x + layout.survivor.w).toBeLessThanOrEqual(480);
+    expect(left.x + left.w).toBeLessThan(layout.survivor!.x);
+    expect(layout.survivor!.x + layout.survivor!.w).toBeLessThanOrEqual(480);
   });
 
   it('keeps every dock inside the view', () => {
-    for (const dock of [layout.container!, layout.survivor]) {
+    for (const dock of [layout.container!, layout.survivor!]) {
       expect(dock.y).toBeGreaterThanOrEqual(0);
       expect(dock.y + dock.h).toBeLessThanOrEqual(270);
     }
   });
 
   it('finds the cell under a point, and nothing in the empty gap', () => {
-    const board = layout.pack;
+    const board = layout.pack!;
     const hit = lootHitAt(layout, board.x + 17 * 2 + 3, board.y + 17 + 3);
     expect(hit).toEqual({ kind: 'cell', gridId: 'backpack', col: 2, row: 1 });
     expect(lootHitAt(layout, 240, 135)).toBeNull();
@@ -53,7 +53,7 @@ describe('canvas loot window layout', () => {
     const edit = { on: true, cols: 4, rows: 2, item: { type: 'bandage', width: 1, height: 1 } };
     const withEditor = layoutLootUi(state, 480, 270, edit);
     const bar = withEditor.editor!.box;
-    expect(bar.y + bar.h).toBeLessThanOrEqual(Math.min(withEditor.container!.y, withEditor.survivor.y));
+    expect(bar.y + bar.h).toBeLessThanOrEqual(Math.min(withEditor.container!.y, withEditor.survivor!.y));
     expect(bar.x + bar.w).toBeLessThanOrEqual(480);
     for (const button of withEditor.editor!.buttons) {
       expect(button.x + button.w).toBeLessThanOrEqual(480);

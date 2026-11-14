@@ -5,6 +5,7 @@ import type { Loadout } from '../../../shared/home-protocol.ts';
 import { modsOn } from '../../../shared/loadout.ts';
 import { WEAPON_ORDER } from '../../../shared/protocol.ts';
 import type { WeaponId } from '../../../shared/protocol.ts';
+import { emptySupplies } from '../../../shared/supply-types.ts';
 import type { HomeSave } from './home-store.ts';
 
 type Counts<K extends string> = Record<K, number>;
@@ -12,6 +13,13 @@ type Counts<K extends string> = Record<K, number>;
 function combine<K extends string>(from: Counts<K>, other: Counts<K>, sign: 1 | -1): Counts<K> {
   const keys = Object.keys(from) as K[];
   return Object.fromEntries(keys.map((key) => [key, Math.max(0, from[key] + sign * other[key])])) as Counts<K>;
+}
+
+/** Supplies count like the other bags; a loadout with none reads as all zero, and one with none on either side stays off. */
+function withSupplies(a: Loadout, b: Loadout, sign: 1 | -1): Pick<Loadout, 'supplies'> {
+  if (!a.supplies && !b.supplies) return {};
+  const zero = emptySupplies();
+  return { supplies: combine({ ...zero, ...a.supplies }, { ...zero, ...b.supplies }, sign) };
 }
 
 function added(a: Loadout, b: Loadout): Loadout {
@@ -23,6 +31,7 @@ function added(a: Loadout, b: Loadout): Loadout {
     medkits: a.medkits + b.medkits,
     knife: a.knife || b.knife,
     bottles: a.bottles + b.bottles,
+    ...withSupplies(a, b, 1),
   };
 }
 
@@ -37,6 +46,7 @@ function taken(pool: Loadout, gear: Loadout): Loadout {
     medkits: Math.max(0, pool.medkits - gear.medkits),
     knife: pool.knife && !gear.knife,
     bottles: Math.max(0, pool.bottles - gear.bottles),
+    ...withSupplies(pool, gear, -1),
   };
 }
 

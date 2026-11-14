@@ -44,9 +44,9 @@ describe('InputManager', () => {
 
   it('sends the horn while the horn key is held, and not otherwise', () => {
     expect(input.sample(1, 0, null).horn).toBeUndefined();
-    browser.dispatch('keydown', key('Space'));
+    browser.dispatch('keydown', key('KeyZ'));
     expect(input.sample(2, 0, null).horn).toBe(true);
-    browser.dispatch('keyup', key('Space'));
+    browser.dispatch('keyup', key('KeyZ'));
     expect(input.sample(3, 0, null).horn).toBeUndefined();
   });
 

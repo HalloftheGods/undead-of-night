@@ -519,10 +519,12 @@ describe('game flow', () => {
     const floaters = vi.spyOn(WorldRenderer.prototype, 'addFloatingText');
     const socket = joinRoom();
     socket.receive(frame(50, { events: [kill(113)] }));
-    const texts = floaters.mock.calls.map(([text]) => text);
-    expect(texts).toContain('LEVEL UP!!!');
-    expect(texts.filter((text) => /^\+2 AP: [A-Z]+$/.test(text))).toHaveLength(1);
+    expect(floaters.mock.calls.map(([text]) => text)).toContain('LEVEL UP!!!');
     expect(game.ui.value.callout?.text).toMatch(/^LEVEL UP: \+2 [A-Z]+$/);
+    // The points are the second beat of the level-up, shown a moment after the shout.
+    pump(1000);
+    const texts = floaters.mock.calls.map(([text]) => text);
+    expect(texts.filter((text) => /^\+2 AP: [A-Z]+$/.test(text))).toHaveLength(1);
   });
 
   it('names only the AP that fitted the stat, not all a level-up earned', () => {
@@ -533,6 +535,7 @@ describe('game flow', () => {
     const floaters = vi.spyOn(WorldRenderer.prototype, 'addFloatingText');
     const socket = joinRoom();
     socket.receive(frame(50, { events: [kill(113)] }));
+    pump(1000);
     expect(floaters.mock.calls.map(([text]) => text)).toContain('+1 AP: RELOAD');
     expect(game.ui.value.log.map((line) => line.text)).toContain('LEVEL UP: +1 RELOAD');
   });

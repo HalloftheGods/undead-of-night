@@ -6,7 +6,6 @@ import { AMMO_PICKUPS } from './constants.ts';
 import { townContainers } from './containers.ts';
 import type { ContainerState } from './containers.ts';
 import { FORTIFICATION_TYPES } from './events.ts';
-import { BUILDING_DEFS } from './protocol.ts';
 import type { BuildingInstance, WorldMap } from './protocol.ts';
 import type { PickupState, SimState } from './sim-state.ts';
 import { buildingAt } from './world-query.ts';

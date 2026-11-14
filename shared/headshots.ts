@@ -1,4 +1,4 @@
-import { LICORICE_HEAD_MARGIN, SKULL_POP_HEAD_MARGIN, sugarOf } from './candy.ts';
+import { SKULL_POP_HEAD_MARGIN, sugarOf } from './candy.ts';
 import { CHEST_HEIGHT } from './constants.ts';
 import { chainHeadshot, headshotChainMultiplier } from './kill-chain.ts';
 import { scorerOf, townOf } from './kill-points.ts';

@@ -54,8 +54,8 @@ describe('play style card pictures (#7225)', () => {
     });
   }
 
-  it('keys the built cards campaign then arcade', () => {
-    expect(Object.keys(buildStyleCards())).toEqual(['campaign', 'arcade']);
+  it('keys the built cards campaign, arcade then daily', () => {
+    expect(Object.keys(buildStyleCards())).toEqual(['campaign', 'arcade', 'daily']);
   });
 
   it('draws the two scenes at least 40% differently', () => {

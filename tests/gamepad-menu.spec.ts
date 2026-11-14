@@ -193,10 +193,10 @@ describe('a gamepad behind a menu', () => {
       expect(log.filter((line) => line === 'menu.activate')).toHaveLength(1);
     });
 
-    it('does not answer A or B in play, where they are search and heal', () => {
+    it('does not answer A or B in play, where they are search and the candy bag', () => {
       live = true;
       frame({ buttons: { [PAD.a]: 1, [PAD.b]: 1 } });
-      expect(log).toEqual(['press:KeyE', 'press:KeyH']);
+      expect(log).toEqual(['press:KeyE', 'press:KeyX']);
     });
 
     it('does not let a menu press count as an action once play resumes while it is still held', () => {
@@ -211,9 +211,9 @@ describe('a gamepad behind a menu', () => {
     });
   });
 
-  it('Start and View still pause and open the map behind a menu', () => {
+  it('Start and View still pause and open the inventory behind a menu', () => {
     frame({ buttons: { [PAD.start]: 1, [PAD.view]: 1 } });
-    expect(log).toEqual(['press:KeyN', 'press:Escape']);
+    expect(log).toEqual(['press:KeyI', 'press:Escape']);
   });
 
   it('Start presses the screen\'s main button when it has one, and only pauses when it has none', () => {

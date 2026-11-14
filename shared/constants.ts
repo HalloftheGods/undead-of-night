@@ -196,6 +196,8 @@ export const PICKUP_RADIUS = 12;
 /** Kill drops rot away; loot in buildings stays until someone takes it. */
 export const KILL_DROP_TTL_SEC = 30;
 export const KILL_DROP_CHANCE = 0.04;
+/** After a level up's owed Full-Size Bar has dropped, each later zombie death drops one this often. */
+export const BAR_DROP_CHANCE = 0.1;
 /** Rounds in a kill drop's ammo, far short of a box from a shelf. */
 export const KILL_DROP_ROUNDS = 3;
 export const BANDAGE_HEAL = 18;

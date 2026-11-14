@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
+import { takeFromContainer } from '../shared/container-take.ts';
+import type { GridItem } from '../shared/grid-inventory.ts';
 import { townContainers } from '../shared/containers.ts';
 import { kitsInTown } from '../shared/kit-loot.ts';
 import { FINAL_LEVEL, FIRST_LEVEL } from '../shared/levels.ts';
@@ -23,7 +25,11 @@ function town(seed: number, level: number): SimState {
 }
 
 const onFloors = (state: SimState) => state.pickups.filter((item) => isKitPickup(item.type));
-const inContainers = (state: SimState) => state.containers.filter(({ loot }) => loot !== null && isKitPickup(loot.type));
+/** Kits laid by the town's own kit placing. S.O.S. Discount's shelf is guaranteed a rare item (a kit or a gun part) on top of those. */
+const inContainers = (state: SimState) => {
+  const containers = townContainers(state.map);
+  return state.containers.filter(({ loot }, id) => loot !== null && isKitPickup(loot.type) && containers[id].buildingKind !== 'discount');
+};
 const kitsIn = (state: SimState): number => onFloors(state).length + inContainers(state).length;
 
 describe('round kits in town', () => {
@@ -122,6 +128,10 @@ describe('picking up a round kit', () => {
     sim.setInput('a', input({ seq: 1, search: true }));
     steps(sim, 80);
     expect(state.containers[container.id].opened).toBe(true);
+    // The kit lies in the container's grid; it is counted once taken from there.
+    const stored = state.containers[container.id].items?.find((item) => item.type === 'tranq_kit');
+    expect(stored).toBeDefined();
+    expect(takeFromContainer(p, stored as GridItem)).toBeNull();
     expect(p.kits.tranq).toBe(1);
   });
 });

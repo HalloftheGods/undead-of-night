@@ -378,7 +378,7 @@ export class RunSession {
   }
 
   toMenu(): void {
-    const { state, input, audio, titleMap, renderer } = this.host;
+    const { state, input, audio } = this.host;
     this.host.home.leave();
     this.host.home.close();
     state.transport?.disconnect();
@@ -440,7 +440,7 @@ export class RunSession {
   }
 
   onClosed(reason: string): void {
-    const { state, input, audio, titleMap, renderer } = this.host;
+    const { state, input, audio } = this.host;
     const hasFallback = this.fallbackSoloSession !== null;
     if (hasFallback && !state.welcomed) {
       const fallback = this.fallbackSoloSession;

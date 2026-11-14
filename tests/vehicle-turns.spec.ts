@@ -198,7 +198,7 @@ describe('where a turning car sorts and glows', () => {
   });
 
   it('lights the same half of the car on frame 0 all the way round: its left', () => {
-    const litHalf = (sprite: PixelSprite, across: 'x' | 'y', heading: number): number => {
+    const litHalf = (sprite: PixelSprite, across: 'x' | 'y', _heading: number): number => {
       let sum = 0; let count = 0;
       for (let y = 0; y < sprite.h; y += 1) for (let x = 0; x < sprite.w; x += 1) {
         if (sprite.rgba[(y * sprite.w + x) * 4 + 3] === 0) continue;

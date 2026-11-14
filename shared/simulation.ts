@@ -10,7 +10,7 @@ import { isBunkerMap } from "./home-protocol.ts";
 import type { HomeAction, JoinHome } from "./home-protocol.ts";
 import { exitBoarded } from "./level-exit.ts";
 import { FIRST_LEVEL } from "./levels.ts";
-import { eatCandyDirect, type CandyId } from "./candy.ts";
+import { buffCandy, MAX_BOON_BARS } from "./candy.ts";
 import { giveReturnKit, updateDownedPlayers } from "./player-health.ts";
 import { reclaimDeparted, reclaimLive, rememberDeparted, createPlayer } from "./player-roster.ts";
 import type { Arrival } from "./player-roster.ts";
@@ -234,11 +234,16 @@ export class GameSimulation {
     if (player) giveStreakKit(player, night);
   }
 
-  /** Directly awards a level-up boon buff to the player. */
-  giveBoon(id: string, candy: CandyId): void {
+  /** A level-up boon: `count` Full-Size Bars (one per level) and one owed on the next zombie death. */
+  giveBoon(id: string, count: number): void {
     const player = this.sim.players.find((p) => p.id === id);
     const canReceive = player !== undefined && player.status === "alive";
-    if (canReceive) eatCandyDirect(this.sim, player, candy);
+    if (!canReceive) return;
+    const bars = Math.min(MAX_BOON_BARS, Math.max(0, Math.floor(count)));
+    for (let i = 0; i < bars; i++) buffCandy(this.sim, player, "full_size_bar");
+    player.barDropsOwed += 1;
+    // The 1 in 10 chance lasts only until the next level up: that boon owes its own bar again.
+    player.barDropsLive = false;
   }
 
   emote(id: string, emote: unknown): void {

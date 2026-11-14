@@ -99,6 +99,8 @@ export class HomeSync {
   private retryAt = 0;
   private van: VanState = 'away';
   private atVan = false;
+  /** Quit on purpose from the van: a frame already on its way must not board it again. */
+  private left = false;
   private arriving = false;
   private receiptInFlight: string | null = null;
   private overrunInFlight: string | null = null;
@@ -238,6 +240,7 @@ export class HomeSync {
   leave(): void {
     const boarded = this.van === 'ready' || this.van === 'boarding';
     if (!boarded) return;
+    this.left = true;
     this.atVan = false;
     this.stepAway();
   }
@@ -394,7 +397,7 @@ export class HomeSync {
     const standing = inReach && entity.status === 'alive';
     this.atVan = standing && level !== null;
     this.pickFurthest(snapshot, standing && level === null);
-    const shouldBoard = this.atVan && this.van === 'away' && !this.mustWait;
+    const shouldBoard = this.atVan && this.van === 'away' && !this.mustWait && !this.left;
     if (shouldBoard) this.boardArmed(level as number);
     const walkedOff = !this.atVan && this.van === 'ready';
     if (walkedOff) this.stepAway();

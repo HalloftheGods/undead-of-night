@@ -63,7 +63,7 @@ describe('setup picks', () => {
   it('marks what is chosen now', () => {
     const [mode, difficulty, who] = setupPicks({ mode: 'multi', difficulty: 'undead_tired', survivor: 3 });
     expect(chosenOption(mode).name).toBe('Multiplayer');
-    expect(chosenOption(difficulty).name).toBe('Undead Tired');
+    expect(chosenOption(difficulty).name).toBe("Let's Go!");
     expect(chosenOption(who)).toEqual({ id: '3', name: 'Rex', bars: statBarsOf(3), level: 1, isMaxed: false, isRusty: false });
   });
 

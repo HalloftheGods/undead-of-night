@@ -8,7 +8,7 @@ import type { GameStyle } from '../../shared/game-style.ts';
 import { OVERRUN_LIVE, type HomeAction, type JoinHome } from '../../shared/home-protocol.ts';
 import type { HostDevice, Visibility } from '../../shared/lobby/types.ts';
 import { parseToHostSignal, type HostSignal, type IceCandidate, type IceServer, type RoomReport } from '../../shared/lobby/lobby-protocol.ts';
-import { PROTOCOL_VERSION, type CandyId, type ClientInputPacket, type LobbyStatePacket, type SnapshotPacket, type WelcomePacket } from '../../shared/protocol.ts';
+import { PROTOCOL_VERSION, type ClientInputPacket, type LobbyStatePacket, type SnapshotPacket, type WelcomePacket } from '../../shared/protocol.ts';
 import { HEARTBEAT_MS, JOIN_DEADLINE_MS, MAX_BUFFERED_BYTES, RESTART_VOTE_MS } from '../../shared/room/limits.ts';
 import type { HostClock, PeerSocket } from '../../shared/room/peer.ts';
 import { createRoomHost, type HostedPeer, type RoomHost } from '../../shared/room/room-host.ts';
@@ -154,8 +154,8 @@ export class HostSession implements RoomSession {
     this.inner?.sendEmote(emote);
   }
 
-  giveBoon(candy: CandyId): void {
-    this.inner?.giveBoon?.(candy);
+  giveBoon(count: number): void {
+    this.inner?.giveBoon?.(count);
   }
 
   sendLobbyReady(ready?: boolean): void {

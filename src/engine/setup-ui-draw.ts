@@ -18,7 +18,6 @@ const DIM = '#938d7a';
 const BLOOD = '#e0463a';
 const SICK = '#8fbf3a';
 const AMBER = '#e8a33d';
-const AMBER_TINT = 'rgba(232, 163, 61, 0.16)';
 const NOTE_TONE = { accent: AMBER, dim: DIM, error: BLOOD } as const;
 const CELL = 3;
 const CELL_GAP = 1;
@@ -95,6 +94,36 @@ function optionSprite(win: SetupWindow, key: SetupPick['key'], id: string, bust:
   if (key === 'difficulty') return art.ui.difficulty[id as DifficultyId] ?? null;
   const survivor = art.survivors[Number(id)];
   return (bust ? survivor?.select : survivor?.portrait) ?? survivor?.portrait ?? null;
+}
+
+/** How a card deals in: each one rises this far and fades up over DEAL_MS, DEAL_STEP_MS after the one before, in six steps like the page's titles. */
+const DEAL_MS = 240;
+const DEAL_STEP_MS = 90;
+const DEAL_RISE = 10;
+const DEAL_STEPS = 6;
+
+/** How far the index-th item has dealt in since `start`: 0 not yet showing, 1 settled. */
+function dealt(start: number, index: number): number {
+  const t = (performance.now() - start - index * DEAL_STEP_MS) / DEAL_MS;
+  if (t >= 1) return 1;
+  if (t <= 0) return 0;
+  const stepped = Math.ceil(t * DEAL_STEPS) / DEAL_STEPS;
+  return 1 - (1 - stepped) ** 3;
+}
+
+/** Draws one item at its deal-in point: risen and faded part way, or not at all before its turn. */
+function dealIn(ctx: CanvasRenderingContext2D, progress: number, draw: () => void): void {
+  if (progress <= 0) return;
+  const settled = progress >= 1;
+  if (settled) {
+    draw();
+    return;
+  }
+  ctx.save();
+  ctx.globalAlpha = progress;
+  ctx.translate(0, Math.round((1 - progress) * DEAL_RISE));
+  draw();
+  ctx.restore();
 }
 
 function isFocused(win: SetupWindow, id: FocusId): boolean {
@@ -195,7 +224,7 @@ function drawList(ctx: CanvasRenderingContext2D, win: SetupWindow, layout: Setup
   ctx.fillRect(0, 0, viewW, viewH);
   drawTextScaled(ctx, list.label.text, list.label.x, list.label.y + list.label.scale, BLOOD, list.label.scale);
   drawTextScaled(ctx, list.label.text, list.label.x, list.label.y, BONE, list.label.scale);
-  for (const box of list.options) drawOption(ctx, win, list.pick, box);
+  list.options.forEach((box, index) => dealIn(ctx, dealt(win.listShownAt, index), () => drawOption(ctx, win, list.pick, box)));
 }
 
 function drawButton(ctx: CanvasRenderingContext2D, win: SetupWindow, button: ButtonBox): void {
@@ -227,16 +256,21 @@ function drawCallsign(ctx: CanvasRenderingContext2D, win: SetupWindow, layout: S
   }
 }
 
-/** The setup screen over the game: a light dim on the town, then the heading, the picks, the callsign, the notes and the buttons, then the open list over the lot. */
+/**
+ * The setup screen over the game: a light dim on the town, then the heading, the picks, the callsign, the notes and the buttons,
+ * then the open list over the lot. The cards deal in left to right as the screen opens, the rest after them; a list's options do the same.
+ */
 export function drawSetupUi(ctx: CanvasRenderingContext2D, win: SetupWindow, layout: SetupLayout, viewW: number, viewH: number): void {
   ctx.fillStyle = 'rgba(7, 8, 12, 0.42)';
   ctx.fillRect(0, 0, viewW, viewH);
   const { heading } = layout;
   drawTextScaled(ctx, heading.text, heading.x, heading.y + heading.scale, BLOOD, heading.scale);
   drawTextScaled(ctx, heading.text, heading.x, heading.y, BONE, heading.scale);
-  for (const card of layout.cards) drawCard(ctx, win, card);
-  drawCallsign(ctx, win, layout);
-  for (const line of layout.lines) drawText(ctx, line.text.toUpperCase(), line.x, line.y, NOTE_TONE[line.tone]);
-  for (const button of layout.buttons) drawButton(ctx, win, button);
+  layout.cards.forEach((card, index) => dealIn(ctx, dealt(win.shownAt, index), () => drawCard(ctx, win, card)));
+  dealIn(ctx, dealt(win.shownAt, layout.cards.length), () => {
+    drawCallsign(ctx, win, layout);
+    for (const line of layout.lines) drawText(ctx, line.text.toUpperCase(), line.x, line.y, NOTE_TONE[line.tone]);
+    for (const button of layout.buttons) drawButton(ctx, win, button);
+  });
   drawList(ctx, win, layout, viewW, viewH);
 }

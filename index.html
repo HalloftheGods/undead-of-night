@@ -1,189 +1,320 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <!-- No Google tag here on purpose: src/game/analytics/sender.ts injects it only after a player says yes. -->
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>Undead of Night: Last Round</title>
-    <meta name="author" content="Hall of the Gods, Inc." />
-    <meta name="description" content="A top-down pixel art zombie survival game. Scavenge an open town at night, make every round count, and hold out against the hordes, solo or in co-op." />
-    <link rel="canonical" href="https://undeadofnight.forthexp.com/" />
-    <!-- Link previews. Crawlers need full URLs here; public/og-image.png comes from tools/share-image.ts. -->
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Undead of Night: Last Round" />
-    <meta property="og:title" content="Undead of Night: Last Round" />
-    <meta property="og:description" content="A top-down pixel art zombie survival game. Scavenge an open town at night, make every round count, and hold out against the hordes, solo or in co-op." />
-    <meta property="og:url" content="https://undeadofnight.forthexp.com/" />
-    <meta property="og:image" content="https://undeadofnight.forthexp.com/og-image.png" />
-    <meta property="og:image:type" content="image/png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="The Undead of Night: Last Round logo over survivors and zombies on a town street at night." />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Undead of Night: Last Round" />
-    <meta name="twitter:description" content="A top-down pixel art zombie survival game. Scavenge an open town at night, make every round count, and hold out against the hordes, solo or in co-op." />
-    <meta name="twitter:image" content="https://undeadofnight.forthexp.com/og-image.png" />
-    <meta name="twitter:image:alt" content="The Undead of Night: Last Round logo over survivors and zombies on a town street at night." />
-    <meta name="theme-color" content="#0b0c10" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-title" content="Undead of Night" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="manifest" href="/manifest.webmanifest" />
-    <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
+
+<head>
+  <!-- No Google tag here on purpose: src/game/analytics/sender.ts injects it only after a player says yes. -->
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+  />
+  <title>Undead of Night: Last Round</title>
+  <meta
+    name="author"
+    content="Hall of the Gods, Inc."
+  />
+  <meta
+    name="description"
+    content="A top-down pixel art zombie survival game. Scavenge an open town at night, make every round count, and hold out against the hordes, solo or in co-op."
+  />
+  <link
+    rel="canonical"
+    href="https://undeadofnight.forthexp.com/"
+  />
+  <!-- Link previews. Crawlers need full URLs here; public/og-image.png comes from tools/share-image.ts. -->
+  <meta
+    property="og:type"
+    content="website"
+  />
+  <meta
+    property="og:site_name"
+    content="Undead of Night: Last Round"
+  />
+  <meta
+    property="og:title"
+    content="Undead of Night: Last Round"
+  />
+  <meta
+    property="og:description"
+    content="A top-down pixel art zombie survival game. Scavenge an open town at night, make every round count, and hold out against the hordes, solo or in co-op."
+  />
+  <meta
+    property="og:url"
+    content="https://undeadofnight.forthexp.com/"
+  />
+  <meta
+    property="og:image"
+    content="https://undeadofnight.forthexp.com/og-image.png"
+  />
+  <meta
+    property="og:image:type"
+    content="image/png"
+  />
+  <meta
+    property="og:image:width"
+    content="1200"
+  />
+  <meta
+    property="og:image:height"
+    content="630"
+  />
+  <meta
+    property="og:image:alt"
+    content="The Undead of Night: Last Round logo over survivors and zombies on a town street at night."
+  />
+  <meta
+    name="twitter:card"
+    content="summary_large_image"
+  />
+  <meta
+    name="twitter:title"
+    content="Undead of Night: Last Round"
+  />
+  <meta
+    name="twitter:description"
+    content="A top-down pixel art zombie survival game. Scavenge an open town at night, make every round count, and hold out against the hordes, solo or in co-op."
+  />
+  <meta
+    name="twitter:image"
+    content="https://undeadofnight.forthexp.com/og-image.png"
+  />
+  <meta
+    name="twitter:image:alt"
+    content="The Undead of Night: Last Round logo over survivors and zombies on a town street at night."
+  />
+  <meta
+    name="theme-color"
+    content="#0b0c10"
+  />
+  <meta
+    name="mobile-web-app-capable"
+    content="yes"
+  />
+  <meta
+    name="apple-mobile-web-app-capable"
+    content="yes"
+  />
+  <meta
+    name="apple-mobile-web-app-title"
+    content="Undead of Night"
+  />
+  <meta
+    name="apple-mobile-web-app-status-bar-style"
+    content="black-translucent"
+  />
+  <link
+    rel="icon"
+    type="image/svg+xml"
+    href="/favicon.svg"
+  />
+  <link
+    rel="apple-touch-icon"
+    href="/apple-touch-icon.png"
+  />
+  <link
+    rel="manifest"
+    href="/manifest.webmanifest"
+  />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html,
+    body,
+    #app {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #0b0c10;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    canvas {
+      display: block;
+      image-rendering: -moz-crisp-edges;
+      image-rendering: pixelated;
+    }
+
+    #boot {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+      color: #ffd75e;
+      font-family: 'Silkscreen', monospace;
+      transition: opacity 0.45s ease;
+      text-align: center;
+    }
+
+    #boot.out {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #boot::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      opacity: 0.55;
+      pointer-events: none;
+      background: repeating-linear-gradient(180deg, rgba(0, 0, 0, 0.22) 0 1px, transparent 1px 2px, rgba(255, 255, 255, 0.025) 2px 3px, transparent 3px 4px);
+    }
+
+    #boot::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(ellipse 72% 72% at center, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.45) 80%, rgba(0, 0, 0, 0.92) 100%);
+    }
+
+    #boot .boot-mark {
+      width: clamp(9rem, 38vmin, 16rem);
+      height: auto;
+      filter: drop-shadow(0 0 10px rgba(255, 215, 94, 0.6)) drop-shadow(0 0 28px rgba(224, 160, 32, 0.3));
+      animation: boot-float 3.6s ease-in-out infinite;
+    }
+
+    #boot .boot-presented {
+      margin: 1.4rem 0 0.2rem;
+      font-size: 0.85rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #d9c27a;
+      opacity: 0.85;
+    }
+
+    #boot .boot-studio {
+      font-size: clamp(1.1rem, 4.6vmin, 1.6rem);
+      color: #ffd75e;
+      text-shadow: 0 0 8px rgba(255, 215, 94, 0.5), 2px 2px 0 #4a3300;
+    }
+
+    #boot .boot-progress {
+      margin-top: 1.5rem;
+      display: grid;
+      justify-items: center;
+      gap: 10px;
+    }
+
+    #boot .boot-bar {
+      width: 200px;
+      height: 2px;
+      background: rgba(255, 215, 94, 0.18);
+      overflow: hidden;
+      border-radius: 2px;
+    }
+
+    #boot .boot-bar i {
+      display: block;
+      width: 15%;
+      height: 100%;
+      background: #ffd75e;
+      box-shadow: 0 0 8px rgba(255, 215, 94, 0.8);
+      animation: boot-fill 1.8s ease-in-out infinite alternate;
+    }
+
+    #boot .boot-status {
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #d9c27a;
+      opacity: 0.8;
+    }
+
+    @keyframes boot-float {
+
+      0%,
+      100% {
+        transform: translateY(0);
       }
-      html, body, #app {
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-        background-color: #0b0c10;
-        user-select: none;
-        -webkit-user-select: none;
+
+      50% {
+        transform: translateY(-4px);
       }
-      canvas {
-        display: block;
-        image-rendering: -moz-crisp-edges;
-        image-rendering: pixelated;
+    }
+
+    @keyframes boot-fill {
+      0% {
+        width: 12%;
       }
-      #boot {
-        position: fixed;
-        inset: 0;
-        z-index: 9999;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        background: #000;
-        color: #ffd75e;
-        font-family: 'Silkscreen', monospace;
-        transition: opacity 0.45s ease;
-        text-align: center;
+
+      100% {
+        width: 85%;
       }
-      #boot.out {
-        opacity: 0;
-        pointer-events: none;
-      }
-      #boot::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        opacity: 0.55;
-        pointer-events: none;
-        background: repeating-linear-gradient(180deg, rgba(0, 0, 0, 0.22) 0 1px, transparent 1px 2px, rgba(255, 255, 255, 0.025) 2px 3px, transparent 3px 4px);
-      }
-      #boot::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
-        background: radial-gradient(ellipse 72% 72% at center, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.45) 80%, rgba(0, 0, 0, 0.92) 100%);
-      }
-      #boot .boot-mark {
-        width: clamp(9rem, 38vmin, 16rem);
-        height: auto;
-        filter: drop-shadow(0 0 10px rgba(255, 215, 94, 0.6)) drop-shadow(0 0 28px rgba(224, 160, 32, 0.3));
-        animation: boot-float 3.6s ease-in-out infinite;
-      }
-      #boot .boot-presented {
-        margin: 1.4rem 0 0.2rem;
-        font-size: 0.85rem;
-        letter-spacing: 0.18em;
-        text-transform: uppercase;
-        color: #d9c27a;
-        opacity: 0.85;
-      }
-      #boot .boot-studio {
-        font-size: clamp(1.1rem, 4.6vmin, 1.6rem);
-        color: #ffd75e;
-        text-shadow: 0 0 8px rgba(255, 215, 94, 0.5), 2px 2px 0 #4a3300;
-      }
-      #boot .boot-progress {
-        margin-top: 1.5rem;
-        display: grid;
-        justify-items: center;
-        gap: 10px;
-      }
-      #boot .boot-bar {
-        width: 200px;
-        height: 2px;
-        background: rgba(255, 215, 94, 0.18);
-        overflow: hidden;
-        border-radius: 2px;
-      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+
+      #boot .boot-mark,
       #boot .boot-bar i {
-        display: block;
-        width: 15%;
-        height: 100%;
-        background: #ffd75e;
-        box-shadow: 0 0 8px rgba(255, 215, 94, 0.8);
-        animation: boot-fill 1.8s ease-in-out infinite alternate;
+        animation: none;
       }
-      #boot .boot-status {
-        font-size: 11px;
-        letter-spacing: 2px;
-        text-transform: uppercase;
-        color: #d9c27a;
-        opacity: 0.8;
-      }
-      @keyframes boot-float {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-4px); }
-      }
-      @keyframes boot-fill {
-        0% { width: 12%; }
-        100% { width: 85%; }
-      }
-      @media (prefers-reduced-motion: reduce) {
-        #boot .boot-mark, #boot .boot-bar i { animation: none; }
-      }
-    </style>
-  </head>
-  <body class="booting">
-    <div id="boot" role="status" aria-live="polite" aria-label="Loading Undead of Night">
-      <img class="boot-mark" src="/brand/hall-of-the-gods.webp" alt="" />
-      <div class="boot-presented">Presented by</div>
-      <div class="boot-studio">Hall of the Gods, Inc.</div>
-      <div class="boot-progress">
-        <div class="boot-bar"><i></i></div>
-        <small class="boot-status">Initializing engine...</small>
-      </div>
+    }
+  </style>
+</head>
+
+<body class="booting">
+  <div
+    id="boot"
+    role="status"
+    aria-live="polite"
+    aria-label="Loading Undead of Night"
+  >
+    <img
+      class="boot-mark"
+      src="/brand/hall-of-the-gods.webp"
+      alt=""
+    />
+    <!-- <div class="boot-presented">Presented by</div> -->
+    <div class="boot-studio">Hall of the Gods, Inc.</div>
+    <div class="boot-progress">
+      <div class="boot-bar"><i></i></div>
+      <small class="boot-status">Initializing engine...</small>
     </div>
-    <script>
-      (function () {
-        var bar = document.querySelector("#boot .boot-bar i");
-        var status = document.querySelector("#boot .boot-status");
-        var at = 0.1;
-        var milestones = [
-          [0.25, "Initializing soundstone..."],
-          [0.50, "Scavenging town assets..."],
-          [0.72, "Loading survivor gear..."],
-          [0.90, "Preparing nightfall..."]
-        ];
-        var idx = 0;
-        var ticker = setInterval(function () {
-          if (idx < milestones.length && at < 0.9) {
-            window.__boot && window.__boot.step(milestones[idx][0], milestones[idx][1]);
-            idx++;
-          }
-        }, 320);
-        window.__boot = {
-          step: function (fraction, label) {
-            if (fraction < at) return;
-            at = fraction;
-            if (bar) bar.style.width = Math.round(fraction * 100) + "%";
-            if (status && label) status.textContent = label;
-            if (fraction >= 1) clearInterval(ticker);
-          },
-        };
-      })();
-    </script>
-    <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
-  </body>
+  </div>
+  <script>
+    (function () {
+      var bar = document.querySelector("#boot .boot-bar i");
+      var status = document.querySelector("#boot .boot-status");
+      var at = 0.1;
+      var milestones = [
+        [0.25, "Initializing soundstone..."],
+        [0.50, "Scavenging town assets..."],
+        [0.72, "Loading survivor gear..."],
+        [0.90, "Preparing nightfall..."]
+      ];
+      var idx = 0;
+      var ticker = setInterval(function () {
+        if (idx < milestones.length && at < 0.9) {
+          window.__boot && window.__boot.step(milestones[idx][0], milestones[idx][1]);
+          idx++;
+        }
+      }, 320);
+      window.__boot = {
+        step: function (fraction, label) {
+          if (fraction < at) return;
+          at = fraction;
+          if (bar) bar.style.width = Math.round(fraction * 100) + "%";
+          if (status && label) status.textContent = label;
+          if (fraction >= 1) clearInterval(ticker);
+        },
+      };
+    })();
+  </script>
+  <div id="app"></div>
+  <script
+    type="module"
+    src="/src/main.ts"
+  ></script>
+</body>
+
 </html>

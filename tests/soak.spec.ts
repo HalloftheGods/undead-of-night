@@ -6,7 +6,7 @@ import { GameSimulation } from '../shared/simulation.ts';
 import { circleHitsSolid } from '../shared/world-map.ts';
 import { CirclingBot, ScavengerBot } from './helpers/bots.ts';
 import { arrivesAlone } from './helpers/lone-chase.ts';
-import { input, stateOf } from './helpers/sim-harness.ts';
+import { clearNeeds, input, stateOf } from './helpers/sim-harness.ts';
 
 const SOAK_TICKS = 20000;
 /** A hunter this far from everyone that has not moved this long is stuck, unless it is only queueing behind the crowd. */
@@ -107,6 +107,7 @@ describe('soak', () => {
         if (packet) sim.setInput(ids[index], packet);
       });
       for (const p of state.players) p.health = p.maxHealth;
+      clearNeeds(sim);
       sim.step();
       snapshot = sim.snapshot();
       assertFinite(state);

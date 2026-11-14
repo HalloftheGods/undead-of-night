@@ -417,7 +417,7 @@ export const CHANGE_NOTES: readonly ChangeNote[] = [
     title: "Every town has a name",
     deck: "No more Level 1, Level 2. The towns are named for their numbers.",
     points: [
-      "The run goes Once Home, Two Lake City, Threetropolis, Four Corners, Fiville and on to Tenacity.",
+      "The run goes One Lake City, Twoport, Three Suns, Fourkatello, Phivenix and on to Tenver.",
       "The bunker is Zero Point.",
       "The HUD, the town cards, Continue, the Levels page and your records all use the names."
     ]

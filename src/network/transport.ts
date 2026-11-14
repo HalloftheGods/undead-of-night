@@ -7,8 +7,7 @@ import type {
   ClientInputPacket,
   LobbyStatePacket,
   SnapshotPacket,
-  WelcomePacket,
-  CandyId
+  WelcomePacket
 } from "../../shared/protocol.ts";
 import type { BenchAction } from "../../shared/workbench.ts";
 
@@ -54,7 +53,7 @@ export interface GameTransport {
   /** An icon over this survivor for everyone, paced by the room. */
   sendEmote(emote: EmoteId): void;
   /** Awards a level-up boon buff without pausing or requiring item in bag. */
-  giveBoon?(candy: CandyId): void;
+  giveBoon?(count: number): void;
   /** Solo can begin again from a later level; co-op restarts at level 1 and ignores it. */
   requestRestart(fromLevel?: number): void;
   setPaused(paused: boolean): void;

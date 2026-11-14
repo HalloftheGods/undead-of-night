@@ -3,10 +3,13 @@ import { buildArtBook } from '../src/art/index.ts';
 import { HOW_TO_SECTIONS } from '../src/game/how-to-play.ts';
 import type { HowToSection } from '../src/game/how-to-play.ts';
 import { swipeStep, turnKeyStep } from '../src/game/magazine-controller.ts';
-import { chooseFit, FIT_STEPS, fitSinglePage, fitSpread } from '../src/game/magazine-fit.ts';
+import { chooseFit, FIT_STEPS, fitSpread } from '../src/game/magazine-fit.ts';
 import { buildMagazine, CONTENTS_PAGE, openBook, pageLabel, planTurn, spreadIndexOf, splitLead, steppedPage } from '../src/game/magazine-pages.ts';
 import type { Magazine, MagazineBlock, MagazinePage } from '../src/game/magazine-types.ts';
+import { installFakeBrowser } from './client-fake-dom.ts';
 
+// The town photos paint on a canvas, which node does not have: the fake one stands in.
+installFakeBrowser();
 const art = buildArtBook();
 const everywhere = () => true;
 const magazine = buildMagazine(art, everywhere);

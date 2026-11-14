@@ -4,7 +4,7 @@
 
 import type { GlowPixel } from '../art/glow.ts';
 import type { Color } from '../art/palette.ts';
-import { eyeGlow, paintEyes } from './zombie-eyes.ts';
+import { paintEyes } from './zombie-eyes.ts';
 import type { EyePixel } from './zombie-eyes.ts';
 import type { PixelSprite } from '../art/types.ts';
 

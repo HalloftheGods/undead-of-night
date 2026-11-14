@@ -31,86 +31,80 @@ describe("title scale", () => {
 });
 
 describe("title menu", () => {
-  it("runs section by section: Books with How to Play on top, then Play, then Extras", () => {
+  it("lists every link in its section order: 1-5 Player, then News Stand, Radio and Settings", () => {
     expect(TITLE_MENU.map((item) => item.label)).toEqual([
+      "Nightly Run",
+      "Campaign",
+      "Arcade",
       "How to Play",
       "Candy Magazine",
       "Town Guide",
-      "Records",
-      "Nightly Run",
-      "Arcade",
-      "Campaign",
+      "Statistics",
       "Level Select",
       "Radio",
-      "Sound Test",
-      "Options",
-      "Controls"
+      "Audio",
+      "Controls",
+      "Display",
+      "Gameplay",
+      "Sound Test"
     ]);
   });
 
-  it("shows only three parents on the title, Play on top and pointed at", () => {
+  it("shows the parents on the title, 1-5 Player on top and pointed at", () => {
     const rows = menuRows(null);
-    expect(rows.map((row) => row.label)).toEqual(["Play", "News Stand", "Extras"]);
+    expect(rows.map((row) => row.label)).toEqual(["1-5 Player", "???", "News Stand", "Settings"]);
     expect(rows.every((row) => row.kind === "section")).toBe(true);
     expect(openingRow(rows)).toBe(0);
-    expect(MENU_SECTIONS.map((section) => section.group)).toEqual(["play", "books", "extras"]);
+    expect(MENU_SECTIONS.map((section) => section.group)).toEqual(["play", "radio", "books", "settings"]);
   });
 
-  it("lists a parent's links with Back last, and opens Play at Nightly Run", () => {
+  it("lists a parent's links with Back last, and opens 1-5 Player at Nightly Run", () => {
     const play = menuRows("play");
-    expect(play.map((row) => row.label)).toEqual([
-      "Nightly Run",
-      "Arcade",
-      "Campaign",
-      "Level Select",
-      "Back"
-    ]);
+    expect(play.map((row) => row.label)).toEqual(["Nightly Run", "Campaign", "Arcade", "Back"]);
     expect(play[openingRow(play)].label).toBe("Nightly Run");
     expect(menuRows("books").map((row) => row.label)).toEqual([
       "How to Play",
       "Candy Magazine",
       "Town Guide",
-      "Records",
+      "Statistics",
+      "Level Select",
       "Back"
     ]);
-    expect(menuRows("extras").map((row) => row.label)).toEqual([
-      "Sound Test",
-      "Options",
+    expect(menuRows("settings").map((row) => row.label)).toEqual([
+      "Audio",
       "Controls",
+      "Display",
+      "Gameplay",
       "Back"
     ]);
-    expect(menuRows("extras")[3].kind).toBe("back");
+    expect(menuRows("settings").at(-1)?.kind).toBe("back");
   });
 
-  it("adds Radio to Extras once a Radio has been found", () => {
-    const locked = menuRows("extras", TITLE_MENU, { radio: false, tracks: [] });
-    expect(locked.map((row) => row.label)).toEqual(["Sound Test", "Options", "Controls", "Back"]);
-    const unlocked = menuRows("extras", TITLE_MENU, { radio: true, tracks: [] });
-    expect(unlocked.map((row) => row.label)).toEqual([
-      "Radio",
-      "Sound Test",
-      "Options",
-      "Controls",
-      "Back"
-    ]);
+  it("masks Radio in its list until found, and keeps the Sound Test beside it", () => {
+    const locked = menuRows("radio", TITLE_MENU, { radio: false, tracks: [] });
+    expect(locked.map((row) => row.label)).toEqual(["???", "Sound Test", "Back"]);
+    const unlocked = menuRows("radio", TITLE_MENU, { radio: true, tracks: [] });
+    expect(unlocked.map((row) => row.label)).toEqual(["Radio", "Sound Test", "Back"]);
   });
 
   it("names the Sound Test from the start, and masks Radio as ??? until found", () => {
     const labels = (radio: boolean) =>
       TITLE_MENU.map((item) => menuLabel(item, { radio, tracks: [] }));
     expect(labels(false)).toEqual([
+      "Nightly Run",
+      "Campaign",
+      "Arcade",
       "How to Play",
       "Candy Magazine",
       "Town Guide",
-      "Records",
-      "Nightly Run",
-      "Arcade",
-      "Campaign",
+      "Statistics",
       "Level Select",
       "???",
-      "Sound Test",
-      "Options",
-      "Controls"
+      "Audio",
+      "Controls",
+      "Display",
+      "Gameplay",
+      "Sound Test"
     ]);
     expect(labels(true)).toEqual(TITLE_MENU.map((item) => item.label));
   });

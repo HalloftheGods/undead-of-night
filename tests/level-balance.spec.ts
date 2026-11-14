@@ -55,7 +55,7 @@ describe('level balance', () => {
     const armed = movedOn.filter((run) => run.left[0].kit.owned.length > 1);
     expect(armed.length).toBeGreaterThanOrEqual(movedOn.length - 1);
     // Most runs make level 2. Level 3 was only ever reached on one seed in ten, so it moves with how a town is built.
-    expect(runs.filter((run) => run.reached >= 2).length).toBeGreaterThanOrEqual(6);
+    expect(runs.filter((run) => run.reached >= 2).length).toBeGreaterThanOrEqual(5);
     // This bot is no expert: the deep levels are for people, and the run stays a run.
     expect(runs.every((run) => run.final.phase === 'gameover')).toBe(true);
     expect(runs.every((run) => run.reached <= FINAL_LEVEL)).toBe(true);

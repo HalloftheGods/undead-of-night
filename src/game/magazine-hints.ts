@@ -193,7 +193,7 @@ const supplies: HintMaker = ({ art, photos }) => ({
 });
 
 const survival: HintMaker = ({ art, photos }) => ({
-  layout: 'catalog',
+  layout: 'hero',
   color: 'lime',
   kicker: 'Field biology',
   deck: 'Keeping the meat on your bones.',
@@ -468,9 +468,12 @@ const HINTS: Readonly<Record<string, HintMaker>> = {
 const SPARE_COLORS: readonly MagazineColor[] = ['teal', 'tomato', 'mustard', 'violet', 'pink', 'sky', 'lime'];
 
 /** A section with no hint of its own still gets a proper spread, printed from its own words. */
+/** The layouts an unhinted chapter rotates through, so two of them in a row never share one. */
+const SPARE_LAYOUTS: readonly ChapterLayout[] = ['column', 'hero', 'postcard', 'forecast'];
+
 function defaultHint({ photos }: HintContext, chapterIndex: number): ChapterHint {
   return {
-    layout: 'column',
+    layout: SPARE_LAYOUTS[chapterIndex % SPARE_LAYOUTS.length],
     color: SPARE_COLORS[chapterIndex % SPARE_COLORS.length],
     kicker: 'Stop press',
     deck: 'News reached the Bureau just as this issue went to print.',

@@ -217,7 +217,7 @@ export function consumeSurvivalItem(needs: SurvivalNeeds, playerHealth: { health
   return false;
 }
 
-export function inflictWound(needs: SurvivalNeeds, type: WoundType, rng: () => number = Math.random): void {
+export function inflictWound(needs: SurvivalNeeds, type: WoundType, rng: () => number): void {
   const isNoWound = type === 'none';
   if (isNoWound) return;
 
@@ -335,7 +335,7 @@ export function updateSurvivalNeeds(
   }
 }
 
-export function rollCombatWound(needs: SurvivalNeeds, damage: number, rng: () => number = Math.random): WoundType {
+export function rollCombatWound(needs: SurvivalNeeds, damage: number, rng: () => number): WoundType {
   const isDeadlyHit = damage >= 25;
   const biteThreshold = isDeadlyHit ? 0.20 : 0.10;
   const lacerationThreshold = isDeadlyHit ? 0.55 : 0.40;

@@ -141,11 +141,18 @@ function buttonWidth(label: string): number {
   return Math.max(BUTTON_MIN_W, textWidth(label.toUpperCase()) + BUTTON_PAD * 2);
 }
 
-/** The cards in the order the page shows them: the picks, with the Level link standing in front of the pick it names. */
+/** The cards in the order the page shows them: the picks, with the Level link and any fixed card standing in front of the pick it names. */
 function cardSpecs(model: SetupModel): readonly { key: CardKey; pick: SetupPick | null; fixed: FixedCard | null; number: number; label: string }[] {
   const specs: { key: CardKey; pick: SetupPick | null; fixed: FixedCard | null; number: number; label: string }[] = [];
-  for (const fixed of model.fixed ?? []) specs.push({ key: `fixed:${fixed.key}`, pick: null, fixed, number: fixed.number, label: fixed.label });
+  const pushFixed = (before: PickKey | undefined): void => {
+    for (const fixed of model.fixed ?? []) {
+      const standsHere = fixed.before === before;
+      if (standsHere) specs.push({ key: `fixed:${fixed.key}`, pick: null, fixed, number: fixed.number, label: fixed.label });
+    }
+  };
+  pushFixed(undefined);
   for (const pick of model.picks) {
+    pushFixed(pick.key);
     const link = model.levelLink;
     if (link && link.before === pick.key) specs.push({ key: 'level', pick: null, fixed: null, number: link.number, label: link.label });
     specs.push({ key: pick.key, pick, fixed: null, number: pick.number, label: pick.label });

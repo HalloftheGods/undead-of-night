@@ -1,4 +1,3 @@
-import type { MusicEntry } from './sound-test.ts';
 
 export type RepeatMode = 'off' | 'all' | 'one';
 

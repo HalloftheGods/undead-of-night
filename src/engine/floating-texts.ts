@@ -34,6 +34,8 @@ interface FloatingText {
   text: string;
   width: number;
   age: number;
+  /** How long a repeat keeps it up, from the repeat. */
+  span: number;
   life: number;
   lift: number;
   liftTarget: number;
@@ -74,7 +76,8 @@ export class FloatingTexts {
     return this.items.length;
   }
 
-  add(text: string, x: number, y: number, color: string): void {
+  /** `life` is how long the note stays up, for the notes that must be read (a level up); the usual is TEXT_LIFE. */
+  add(text: string, x: number, y: number, color: string, life = TEXT_LIFE): void {
     const match = AMOUNT.exec(text);
     const base = match ? match[2] : text;
     const key = `${color}|${match ? '+' : ''}${base}`;
@@ -84,7 +87,8 @@ export class FloatingTexts {
       if (adds) same.amount = (same.amount ?? 0) + Number(match[1]);
       same.count += 1;
       this.refresh(same);
-      same.life = same.age + TEXT_LIFE;
+      same.span = Math.max(same.span, life);
+      same.life = same.age + same.span;
       return;
     }
     const full = this.items.length >= MAX_TEXTS;
@@ -96,7 +100,8 @@ export class FloatingTexts {
       text,
       width: 0,
       age: 0,
-      life: TEXT_LIFE,
+      span: life,
+      life,
       lift: 0,
       liftTarget: 0,
     };

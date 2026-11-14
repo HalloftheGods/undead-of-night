@@ -6,7 +6,7 @@ import { RAMPS } from '../palette.ts';
 import type { PixelSprite } from '../types.ts';
 import { CardGrid } from './card-grid.ts';
 
-const { blood, fire, ink, violet } = RAMPS;
+const { blood, fire, violet } = RAMPS;
 
 const CANDY_CARD_LEGEND = {
   ...SWEET_LEGEND,

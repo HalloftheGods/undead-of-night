@@ -165,13 +165,7 @@ export function setupPicks(
   progression?: ProgressionBook
 ): readonly SetupPick[] {
   return [
-    {
-      key: "mode",
-      number: 1,
-      label: "Mode",
-      options: MODE_OPTIONS,
-      chosen: indexOf(MODE_OPTIONS, choices.mode)
-    },
+    modePick(choices.mode, 1),
     {
       key: "difficulty",
       number: 2,
@@ -181,6 +175,11 @@ export function setupPicks(
     },
     survivorPick(choices.survivor, 4, progression)
   ];
+}
+
+/** The Solo / Multiplayer pick on its own, as Nightly Run offers it beside the cards the day has already chosen. */
+export function modePick(mode: PlayMode, number: number): SetupPick {
+  return { key: "mode", number, label: "Mode", options: MODE_OPTIONS, chosen: indexOf(MODE_OPTIONS, mode) };
 }
 
 /** The survivor pick on its own, as the Nightly Run page offers it beside the cards the day has already chosen. */
@@ -206,6 +205,8 @@ export interface FixedCard {
   readonly label: string;
   readonly name: string;
   readonly sprite: PixelSprite | null;
+  /** The pick it stands in front of; left off, it leads the row. */
+  readonly before?: PickKey;
 }
 
 /** The Level card in the picks row: it shows the level Arcade starts at and opens the Levels page to change it. No list behind it. */

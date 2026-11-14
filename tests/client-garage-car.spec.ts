@@ -28,10 +28,10 @@ function seatedInGarage(shutDoorAfter: boolean) {
   p.x = scene.door.x;
   p.y = scene.door.y + 24;
   let seq = 0;
-  let snap = stepSim(scene, seq, {});
-  for (let i = 0; i < 40; i++) snap = stepSim(scene, ++seq, { up: true });
-  for (let i = 0; i < 3; i++) snap = stepSim(scene, ++seq, { search: true });
-  snap = stepSim(scene, ++seq, {});
+  stepSim(scene, seq, {});
+  for (let i = 0; i < 40; i++) stepSim(scene, ++seq, { up: true });
+  for (let i = 0; i < 3; i++) stepSim(scene, ++seq, { search: true });
+  let snap = stepSim(scene, ++seq, {});
   expect(meIn(snap).vehicle).toEqual({ id: scene.car.id, seat: 0 });
   if (shutDoorAfter) toggleDoor(doorsOf(scene.state).find((d) => d.id === `${scene.garage.id}_door_front`)!);
   snap = stepSim(scene, ++seq, {});

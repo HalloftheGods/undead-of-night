@@ -134,8 +134,8 @@ export class ParticleSystem {
     if (hasRoomForClip) this.clips.push({ clip, x, y, age: 0, emissive });
   }
 
-  addText(text: string, x: number, y: number, color: string): void {
-    this.texts.add(text, x, y, color);
+  addText(text: string, x: number, y: number, color: string, life?: number): void {
+    this.texts.add(text, x, y, color, life);
   }
 
   update(dt: number): void {

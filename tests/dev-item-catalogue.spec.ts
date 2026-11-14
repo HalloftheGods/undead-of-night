@@ -28,7 +28,7 @@ describe('Item Catalogue and Footprints Generator', () => {
 
     const shotgun = map.get('shotgun');
     expect(shotgun).toBeDefined();
-    expect(shotgun?.defaultFootprint).toEqual({ width: 4, height: 1 });
+    expect(shotgun?.defaultFootprint).toEqual({ width: 4, height: 2 });
 
     const cannedFood = map.get('canned_food');
     expect(cannedFood).toBeDefined();

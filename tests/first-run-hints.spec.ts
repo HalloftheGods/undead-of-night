@@ -104,8 +104,8 @@ describe('HintTracker', () => {
 describe('hud-keys', () => {
   it('prints the keyboard letter, the pad button, or nothing on a phone', () => {
     expect(keyGlyph('KeyH', 'keys')).toBe('H');
-    expect(keyGlyph('KeyH', 'pad')).toBe('B');
-    expect(keyGlyph('KeyG', 'pad')).toBe('RB');
+    expect(keyGlyph('KeyH', 'pad')).toBe('D-pad Down');
+    expect(keyGlyph('KeyG', 'pad')).toBe('Y');
     expect(keyGlyph('KeyH', 'touch')).toBeNull();
   });
 

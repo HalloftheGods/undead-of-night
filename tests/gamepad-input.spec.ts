@@ -135,19 +135,19 @@ describe('a gamepad on the game', () => {
   });
 
   describe('button edges', () => {
-    it('asks for one reload per press of X, however long it is held', () => {
-      frame(pad({ buttons: { [PAD.x]: 1 } }));
-      frame(pad({ buttons: { [PAD.x]: 1 } }));
+    it('asks for one reload per press of D-pad Up, however long it is held', () => {
+      frame(pad({ buttons: { [PAD.up]: 1 } }));
+      frame(pad({ buttons: { [PAD.up]: 1 } }));
       expect(input.sample(1, 0, null).reload).toBe(true);
-      frame(pad({ buttons: { [PAD.x]: 1 } }));
+      frame(pad({ buttons: { [PAD.up]: 1 } }));
       expect(input.sample(2, 0, null).reload).toBe(false);
     });
 
     it('fires again on a second press after a release', () => {
-      frame(pad({ buttons: { [PAD.b]: 1 } }));
+      frame(pad({ buttons: { [PAD.down]: 1 } }));
       expect(input.sample(1, 0, null).heal).toBe(true);
       frame(pad());
-      frame(pad({ buttons: { [PAD.b]: 1 } }));
+      frame(pad({ buttons: { [PAD.down]: 1 } }));
       expect(input.sample(2, 0, null).heal).toBe(true);
     });
 
@@ -181,37 +181,41 @@ describe('a gamepad on the game', () => {
       expect(input.sample(2, 0, null).search).toBe(false);
     });
 
-    it('steps through the guns both ways on the D-pad', () => {
+    it('steps through the guns both ways on the bumpers', () => {
       const loadout = { owned: ['pistol', 'carbine', 'shotgun'] as const, weapon: 'pistol' as const };
-      frame(pad({ buttons: { [PAD.right]: 1 } }));
+      frame(pad({ buttons: { [PAD.rb]: 1 } }));
       expect(input.sample(1, 0, loadout).weapon).toBe('carbine');
-      frame(pad({ buttons: { [PAD.left]: 1 } }));
+      frame(pad({ buttons: { [PAD.lb]: 1 } }));
       expect(input.sample(2, 0, loadout).weapon).toBe('shotgun');
     });
 
     it('throws, lights a spinner or a fountain, and opens the candy bag', () => {
-      frame(pad({ buttons: { [PAD.rb]: 1, [PAD.up]: 1, [PAD.down]: 1, [PAD.y]: 1 } }));
+      frame(pad({ buttons: { [PAD.y]: 1, [PAD.right]: 1, [PAD.left]: 1, [PAD.b]: 1 } }));
       const packet = input.sample(1, 0, null);
       expect(packet).toMatchObject({ throw: true, spinner: true, fountain: true });
       expect(packet.eat).toBeUndefined();
       expect(calls.onBag).toBe(1);
     });
 
-    it('sprints on LB held, toggles sneak on L3, and a sprint ends the sneak', () => {
-      frame(pad({ buttons: { [PAD.lb]: 1 } }));
-      expect(input.stance).toBe('sprint');
+    it('sneaks on RS held, toggles running on L3, and a held sneak wins over a run', () => {
+      frame(pad({ buttons: { [PAD.r3]: 1 } }));
+      expect(input.stance).toBe('sneak');
+      frame(pad());
+      expect(input.stance).toBe('walk');
       frame(pad({ buttons: { [PAD.l3]: 1 } }));
       frame(pad());
-      expect(input.stance).toBe('sneak');
-      frame(pad({ buttons: { [PAD.lb]: 1 } }));
       expect(input.stance).toBe('sprint');
+      frame(pad({ buttons: { [PAD.r3]: 1 } }));
+      expect(input.stance).toBe('sneak');
+      frame(pad());
+      frame(pad({ buttons: { [PAD.l3]: 1 } }));
       frame(pad());
       expect(input.stance).toBe('walk');
     });
 
-    it('pauses on Start and opens the map on View, once per press', () => {
-      frame(pad({ buttons: { [PAD.start]: 1, [PAD.view]: 1 } }));
-      frame(pad({ buttons: { [PAD.start]: 1, [PAD.view]: 1 } }));
+    it('pauses on Start and opens the map on X, once per press', () => {
+      frame(pad({ buttons: { [PAD.start]: 1, [PAD.x]: 1 } }));
+      frame(pad({ buttons: { [PAD.start]: 1, [PAD.x]: 1 } }));
       expect(calls).toMatchObject({ onPause: 1, onMap: 1 });
     });
   });
@@ -296,7 +300,7 @@ describe('a gamepad on the game', () => {
     });
 
     it('do not get in the way of a standard pad beside them', () => {
-      frame(pad({ mapping: '', index: 0, axes: [1, 0, 0, 0] }), pad({ index: 1, buttons: { [PAD.x]: 1 } }));
+      frame(pad({ mapping: '', index: 0, axes: [1, 0, 0, 0] }), pad({ index: 1, buttons: { [PAD.up]: 1 } }));
       expect(input.sample(1, 0, null)).toMatchObject({ reload: true, right: false });
     });
 
@@ -348,8 +352,8 @@ describe('a gamepad on the game', () => {
     });
 
     it('takes the pad most recently used when two are plugged in', () => {
-      frame(pad({ index: 0, buttons: { [PAD.x]: 1 } }), pad({ index: 1, id: 'DualSense Wireless Controller (STANDARD GAMEPAD Vendor: 054c Product: 0ce6)' }));
-      frame(pad({ index: 0 }), pad({ index: 1, id: 'DualSense Wireless Controller (STANDARD GAMEPAD Vendor: 054c Product: 0ce6)', buttons: { [PAD.b]: 1 } }));
+      frame(pad({ index: 0, buttons: { [PAD.up]: 1 } }), pad({ index: 1, id: 'DualSense Wireless Controller (STANDARD GAMEPAD Vendor: 054c Product: 0ce6)' }));
+      frame(pad({ index: 0 }), pad({ index: 1, id: 'DualSense Wireless Controller (STANDARD GAMEPAD Vendor: 054c Product: 0ce6)', buttons: { [PAD.down]: 1 } }));
       expect(input.gamepad.id).toContain('054c');
       expect(input.sample(1, 0, null)).toMatchObject({ reload: true, heal: true });
     });

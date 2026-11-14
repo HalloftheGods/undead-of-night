@@ -9,6 +9,7 @@ import type { PlayerEntity } from '../shared/protocol.ts';
 import type { SimState } from '../shared/sim-state.ts';
 import { GameSimulation } from '../shared/simulation.ts';
 import { createBrowserHomeStore } from '../src/game/home/browser-home-store.ts';
+import { migrateCamp } from '../src/game/home/camp-migrate.ts';
 import { emptySave } from '../src/game/home/home-store.ts';
 import type { HomeSave, HomeStore, OverrunRecord } from '../src/game/home/home-store.ts';
 import { joinHomeFor } from '../src/game/home/home-sync.ts';
@@ -37,6 +38,9 @@ function oldSave(): Record<string, unknown> {
   return before;
 }
 
+/** A load gives a save with no camp one: a brand-new save starts with nobody rescued and no quest taken. */
+const withCamp = (save: HomeSave): HomeSave => migrateCamp(save, { radio: false, tracks: [] });
+
 const record: OverrunRecord = {
   outcome: 'fled', share: 0.5, highest: 4, difficulty: 'lights_out', kills: 9, merchantsLost: ['medic', 'powder'], silver: 0, at: 1000,
 };
@@ -45,7 +49,7 @@ describe('a save from before the overrun', () => {
   it('loads unchanged, with no records, no open overrun and every stall open', async () => {
     const memory = memoryStore({ [HOME_KEY]: JSON.stringify(oldSave()), [PROGRESS_KEY]: PROGRESS });
     const loaded = await createBrowserHomeStore(memory).load();
-    expect(loaded).toEqual({ ...oldSave(), overruns: [], openOverrun: null });
+    expect(loaded).toEqual(withCamp({ ...oldSave(), overruns: [], openOverrun: null } as unknown as HomeSave));
     for (const stock of Object.values(loaded.shop.merchants)) {
       expect(stock.closedTrips ?? 0).toBe(0);
       expect(stock.thinTrips ?? 0).toBe(0);
@@ -76,7 +80,7 @@ describe('a save with the overrun in it', () => {
     next.shop.merchants.medic = { items: {}, closedTrips: 3 };
     next.shop.merchants.powder = { items: {}, thinTrips: 2 };
     await store.save(next);
-    expect(await store.load()).toEqual({ ...next, version: 1 });
+    expect(await store.load()).toEqual(withCamp({ ...next, version: 1 }));
   });
 
   it('drops a bad record alone, and a bad open overrun becomes none', async () => {

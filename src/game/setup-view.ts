@@ -18,6 +18,10 @@ export interface SetupWindow {
   facing: number;
   /** True while the callsign is being typed in, so it shows a caret. */
   editing: boolean;
+  /** When the screen opened (performance.now()), so its cards deal in one after another; -Infinity shows it settled. */
+  shownAt: number;
+  /** When the open list opened, so its options deal in the same way. */
+  listShownAt: number;
 }
 
 let current: SetupWindow | null = null;

@@ -15,7 +15,7 @@ describe('a car parked nose up shows its grid on end', () => {
 
   it('swaps columns and rows, and flips the blocked cells with them', () => {
     const car = containerGridDimensions('car');
-    expect(flipDimensions(car)).toEqual({ cols: car.rows, rows: car.cols });
+    expect(flipDimensions(car)).toEqual({ cols: car.rows, rows: car.cols, blocked: car.blocked?.map(({ x, y }) => ({ x: y, y: x })) });
     const flipped = flipDimensions({ cols: 3, rows: 2, blocked: [{ x: 2, y: 0 }] });
     expect(flipped).toEqual({ cols: 2, rows: 3, blocked: [{ x: 0, y: 2 }] });
   });

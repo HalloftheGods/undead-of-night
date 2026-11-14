@@ -1,4 +1,4 @@
-<template></template>
+<template><span hidden /></template>
 
 <script setup lang="ts">
 /**

@@ -23,12 +23,7 @@
 
     <template #actions>
       <ShareButton v-if="share" :text="share" />
-      <PixelButton silent :disabled="!ready" @press="game.startDaily()">
-        {{ soloPlayed ? 'Solo Practice' : 'Solo Run' }}
-      </PixelButton>
-      <PixelButton primary silent :disabled="!ready" @press="game.startDailyMp()">
-        {{ mpPlayed ? 'MP Practice' : 'Nightly MP Lobby' }}
-      </PixelButton>
+      <PixelButton primary silent :disabled="!ready" @press="run()">{{ runLabel }}</PixelButton>
     </template>
   </TitlePage>
 </template>
@@ -37,6 +32,7 @@
 /**
  * Today's town, laid out like the Play page: the day's town and difficulty as fixed cards, the survivor as the one
  * pick, and how you did and the streak kit in a few lines under them. Start skips the rest: the day has already chosen.
+ * The Mode card picks Solo or Multiplayer, and the one run button starts that run (or its practice once tonight's counts).
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue';
 import { difficultyDef } from '../../shared/difficulty.ts';
@@ -44,7 +40,8 @@ import { townName } from '../../shared/levels.ts';
 import { loadCharacter, saveCharacter } from '../game/character-pref.ts';
 import { countdownText, dailyShare, dayLabel, loadDailyLog, mpResultOf, msUntilTomorrow, nightFacts, soloResultOf, streakOf, todaysNight } from '../game/daily-night.ts';
 import type { UiState } from '../game/hud-state.ts';
-import { survivorPick } from '../game/setup-picks.ts';
+import type { PlayMode } from '../game/play-flow.ts';
+import { modePick, survivorPick } from '../game/setup-picks.ts';
 import type { FixedCard, PickKey } from '../game/setup-picks.ts';
 import { checkApUpkeep } from '../../shared/progression-save.ts';
 import { streakReward } from '../game/streak-reward.ts';
@@ -81,14 +78,33 @@ const nextLabel = computed(() => {
 });
 
 const survivor = ref(loadCharacter());
+const mode = ref<PlayMode>('solo');
 const progression = checkApUpkeep().book;
-const picks = computed(() => [survivorPick(survivor.value, 3, progression)]);
+const picks = computed(() => [modePick(mode.value, 1), survivorPick(survivor.value, 4, progression)]);
+
+/** The run button for the mode chosen: tonight's counted run, or practice once it is banked. */
+const runLabel = computed(() => {
+  const isMulti = mode.value === 'multi';
+  if (isMulti) return mpPlayed ? 'MP Practice' : 'Nightly MP Lobby';
+  return soloPlayed ? 'Solo Practice' : 'Solo Run';
+});
+
+function run(): void {
+  const isMulti = mode.value === 'multi';
+  if (isMulti) game.startDailyMp();
+  else game.startDaily();
+}
 const fixed = computed<readonly FixedCard[]>(() => [
-  { key: 'town', number: 1, label: 'Tonight', name: facts.title, sprite: ui.art?.ui.levelScenes[night.level - 1] ?? null },
-  { key: 'difficulty', number: 2, label: 'Difficulty', name: difficultyDef(night.difficulty).label, sprite: ui.art?.ui.difficulty[night.difficulty] ?? null },
+  { key: 'difficulty', number: 2, label: 'Difficulty', name: difficultyDef(night.difficulty).label, sprite: ui.art?.ui.difficulty[night.difficulty] ?? null, before: 'who' },
+  { key: 'town', number: 3, label: 'Tonight', name: facts.title, sprite: ui.art?.ui.levelScenes[night.level - 1] ?? null, before: 'who' },
 ]);
 
 function choose(key: PickKey, id: string): void {
+  const isMode = key === 'mode';
+  if (isMode) {
+    mode.value = id as PlayMode;
+    return;
+  }
   const isSurvivor = key === 'who';
   if (!isSurvivor) return;
   survivor.value = Number(id);

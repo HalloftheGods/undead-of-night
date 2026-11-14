@@ -11,7 +11,6 @@ import {
   damageBarricade,
   dismantlePlank,
   FORTIFICATION_ITEMS,
-  FORTIFICATION_LOOT,
   HEALTH_PER_PLANK,
   installCurtain,
   isFortificationItem,
@@ -27,7 +26,6 @@ import {
 import { createPlayer } from '../shared/player-roster.ts';
 import { spawnPickup, updatePickups } from '../shared/pickups.ts';
 import { createSimState } from '../shared/sim-factory.ts';
-import { generateWorldMap } from '../shared/world-map.ts';
 
 describe('Fortification Item Definitions & Loot Tables', () => {
   it('defines valid carpentry materials and tools', () => {

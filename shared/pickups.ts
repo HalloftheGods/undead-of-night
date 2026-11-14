@@ -3,6 +3,7 @@ import { ammoCapOf } from './keepsakes.ts';
 import { characterOf } from './characters.ts';
 import {
   AMMO_PICKUPS,
+  BAR_DROP_CHANCE,
   KILL_DROP_CHANCE,
   KILL_DROP_ROUNDS,
   KILL_DROP_TTL_SEC,
@@ -25,8 +26,6 @@ import { spawnSalvage, takeSalvage } from './salvage.ts';
 import { isSalvagePickup } from './salvage-data.ts';
 import { isTreasurePickup, spawnTreasure, takeTreasure } from './treasure.ts';
 import { syncGun } from './weapons.ts';
-import { buildingAt } from './world-query.ts';
-import { groundBuildingId } from './leftovers.ts';
 
 /** Share of kill drops that are a bandage rather than a few rounds. */
 const KILL_DROP_BANDAGE_ODDS = 0.4;
@@ -51,6 +50,24 @@ export function maybeDropOnKill(sim: SimState, x: number, y: number, killer?: Pl
   const dropsBandage = sim.rng() < KILL_DROP_BANDAGE_ODDS;
   if (dropsBandage) spawnPickup(sim, 'bandage', x, y, 0, KILL_DROP_TTL_SEC);
   else spawnPickup(sim, 'pistol_ammo', x, y, KILL_DROP_ROUNDS, KILL_DROP_TTL_SEC);
+}
+
+/**
+ * A level up owes the killer a Full-Size Bar on their next zombie death. Once that one has dropped,
+ * their kills have a 1 in 10 chance of another until their next level up. Kills with no killer drop nothing here.
+ */
+export function maybeDropBarOnKill(sim: SimState, x: number, y: number, killer?: PlayerState): void {
+  if (!killer) return;
+  const isOwed = killer.barDropsOwed > 0;
+  if (isOwed) {
+    killer.barDropsOwed -= 1;
+    killer.barDropsLive = true;
+    spawnPickup(sim, 'candy', x, y, 0, KILL_DROP_TTL_SEC, 'full_size_bar');
+    return;
+  }
+  if (!killer.barDropsLive) return;
+  const dropsBar = sim.rng() < BAR_DROP_CHANCE;
+  if (dropsBar) spawnPickup(sim, 'candy', x, y, 0, KILL_DROP_TTL_SEC, 'full_size_bar');
 }
 
 /** Banks as much as fits, gun or no gun, and leaves the rest of the box lying there. */

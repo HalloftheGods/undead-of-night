@@ -5,6 +5,7 @@ import { getItemFootprint, type GridItem, type InventoryGrid } from '../../share
 import { drawOutlinedText, drawText, FONT_HEIGHT, textWidth } from './bitmap-font.ts';
 import { drawSpriteScaled, spriteCanvas } from './sprite-cache.ts';
 import { stageBox, stageOffset, stageSprite } from '../game/inventory/container-stage.ts';
+import { cellPhase, itemHidden, searchSweep, sweepRanks } from '../game/inventory/search-overlay.ts';
 import {
   computeTileHighlight,
   formatItemName,
@@ -36,7 +37,7 @@ const AMBER = '#e8a33d';
 export const TILE = 17;
 const PAD = 3;
 const HEAD = 9;
-const GEAR_W = 32;
+const GEAR_W = 40;
 const GEAR_H = 40;
 const GAP = 2;
 const EDGE = 6;
@@ -57,13 +58,15 @@ export interface GridBox extends Box {
 
 export interface LootLayout {
   readonly container: (Box & { readonly board: GridBox }) | null;
-  readonly survivor: Box;
-  readonly pack: GridBox;
-  readonly pockets: GridBox;
-  readonly candy: GridBox;
+  /** Null when the bench hides the survivor's own docks. */
+  readonly survivor: Box | null;
+  readonly pack: GridBox | null;
+  readonly pockets: GridBox | null;
+  readonly candy: GridBox | null;
   readonly gear: readonly (Box & { readonly id: GearSlotId })[];
   readonly buttons: readonly (Box & { readonly id: 'rotate' | 'close'; readonly label: string })[];
   readonly editor: EditorLayout | null;
+  readonly library: { readonly box: Box; readonly cells: readonly (Box & LibraryEntry)[] } | null;
 }
 
 /** The dev bench's edit panel buttons. */
@@ -79,6 +82,12 @@ export interface LootEditView {
   readonly hint?: string;
   /** Where this object is in the list the bench steps through, such as "3 OF 17". */
   readonly position?: string;
+  /** The dev bench shows only the container and the editor: the survivor's backpack, pockets, gear and buttons are left out. */
+  readonly benchOnly?: boolean;
+  /** The bench's library of containers, drawn at in-game size where the survivor's dock would be. */
+  readonly library?: readonly LibraryEntry[];
+  /** The library entry the editor is showing, outlined. */
+  readonly libraryCurrent?: string;
 }
 
 export interface EditorLayout {
@@ -91,7 +100,15 @@ export type LootHit =
   | { readonly kind: 'edit'; readonly id: EditId }
   | { readonly kind: 'cell'; readonly gridId: GridIdentifier; readonly col: number; readonly row: number }
   | { readonly kind: 'gear'; readonly slot: GearSlotId }
-  | { readonly kind: 'button'; readonly id: 'rotate' | 'close' };
+  | { readonly kind: 'button'; readonly id: 'rotate' | 'close' }
+  | { readonly kind: 'library'; readonly id: string };
+
+/** One container in the bench's library: its drawing at in-game size, and the label under it. */
+export interface LibraryEntry {
+  readonly id: string;
+  readonly label: string;
+  readonly art: ContainerArt | null;
+}
 
 export interface LootView {
   readonly state: DualLootState;
@@ -125,25 +142,27 @@ export function layoutLootUi(state: DualLootState, viewW: number, viewH: number,
   const packH = pack.rows * TILE + 8;
   const pocketsH = state.pocketsGrid.rows * TILE + 8;
   const gridsH = Math.max(packH + GAP + pocketsH, state.candyBagGrid.rows * TILE + 8);
-  const sh = HEAD + GAP + GEAR_H + GAP + gridsH + GAP + BUTTON_H + PAD * 2;
+  const sh = HEAD + GAP + gridsH + GAP + BUTTON_H + PAD * 2;
   const sx = viewW - EDGE - sw;
   // With the editor's toolbar up, the docks centre in the space under it and above the help line.
   const top = edit ? EDITOR_TOP : 0;
   const room = viewH - top - (edit ? EDITOR_BOTTOM : 0);
   const margin = edit ? 2 : EDGE;
-  const sy = top + Math.max(margin, Math.round((room - sh) / 2));
+  // The gear row hangs along the bottom centre of the whole canvas; the survivor dock stays above it.
+  const gearY = viewH - (edit ? EDITOR_BOTTOM : 0) - EDGE - GEAR_H;
+  const sy = Math.max(top + margin, Math.min(top + Math.round((room - sh) / 2), gearY - GAP - sh));
 
   const gx = sx + PAD;
-  let gy = sy + PAD + HEAD + GAP;
-  const gear = GEAR_SLOT_DEFS.map((def, i) => ({ id: def.id, x: gx + i * (GEAR_W + GAP), y: gy, w: GEAR_W, h: GEAR_H }));
-  gy += GEAR_H + GAP;
+  const gridsY = sy + PAD + HEAD + GAP;
+  const packBox = gridBox('backpack', pack, `PACK ${pack.cols}X${pack.rows}`, gx, gridsY + 8);
+  const pocketsBox = gridBox('pockets', state.pocketsGrid, 'POCKETS', gx, gridsY + packH + GAP + 8);
+  const candyBox = gridBox('candyBag', state.candyBagGrid, 'CANDY', gx + innerW - candyW, gridsY + 8);
 
-  const packBox = gridBox('backpack', pack, `PACK ${pack.cols}X${pack.rows}`, gx, gy + 8);
-  const pocketsBox = gridBox('pockets', state.pocketsGrid, 'POCKETS', gx, gy + packH + GAP + 8);
-  const candyBox = gridBox('candyBag', state.candyBagGrid, 'CANDY', gx + innerW - candyW, gy + 8);
+  const gearX = Math.round((viewW - gearW) / 2);
+  const gear = GEAR_SLOT_DEFS.map((def, i) => ({ id: def.id, x: gearX + i * (GEAR_W + GAP), y: gearY, w: GEAR_W, h: GEAR_H }));
 
   const buttonY = sy + sh - PAD - BUTTON_H;
-  const rotateW = textWidth('[R] ROTATE'.replace(/[\[\]]/g, '')) + 8;
+  const rotateW = textWidth('[R] ROTATE'.replace(/[[\]]/g, '')) + 8;
   const closeW = textWidth('ESC CLOSE') + 8;
   const buttons = [
     { id: 'rotate' as const, label: 'R ROTATE', x: gx, y: buttonY, w: rotateW, h: BUTTON_H },
@@ -166,10 +185,32 @@ export function layoutLootUi(state: DualLootState, viewW: number, viewH: number,
   }
 
   const survivor: Box = { x: sx, y: sy, w: sw, h: sh };
-  return { container, survivor, pack: packBox, pockets: pocketsBox, candy: candyBox, gear, buttons, editor: edit ? layoutEditor(edit, viewW) : null };
+  if (edit?.benchOnly) {
+    const library = edit.library ? layoutLibrary(edit.library, viewW, viewH, top, edit ? EDITOR_BOTTOM : 0) : null;
+    return { container, survivor: null, pack: null, pockets: null, candy: null, gear: [], buttons: [], editor: layoutEditor(edit, viewW), library };
+  }
+  return { container, survivor, pack: packBox, pockets: pocketsBox, candy: candyBox, gear, buttons, editor: edit ? layoutEditor(edit, viewW) : null, library: null };
 }
 
 const GEAR_SLOT_COUNT = GEAR_SLOT_DEFS.length;
+
+/** The library sits on the right, where the survivor's dock was. Each cell is a container drawn at in-game size. */
+function layoutLibrary(entries: readonly LibraryEntry[], viewW: number, viewH: number, top: number, bottom: number) {
+  const sprites = entries.map((entry) => (entry.art ? stageSprite(entry.art, true) : null));
+  const cellW = Math.max(40, ...sprites.map((s) => (s ? s.w : 0)), ...entries.map((e) => textWidth(upper(e.label)) / 1)) + 4;
+  const cellH = Math.max(0, ...sprites.map((s) => (s ? s.h : 0))) + ROW_H + 4;
+  const maxW = Math.round(viewW * 0.42);
+  const cols = Math.max(1, Math.floor((maxW - PAD * 2) / cellW));
+  const w = cols * cellW + PAD * 2;
+  const x = viewW - EDGE - w;
+  const maxRows = Math.max(1, Math.floor((viewH - top - bottom - HEAD - PAD * 2 - EDGE) / cellH));
+  const shown = entries.slice(0, cols * maxRows);
+  const rows = Math.ceil(shown.length / cols);
+  const y = top + EDGE;
+  const h = HEAD + PAD * 2 + rows * cellH;
+  const cells = shown.map((entry, i) => ({ ...entry, x: x + PAD + (i % cols) * cellW, y: y + HEAD + PAD + Math.floor(i / cols) * cellH, w: cellW, h: cellH }));
+  return { box: { x, y, w, h }, cells };
+}
 
 const ROW_H = 11;
 /** Space the editor's toolbar takes at the top, and its help line at the bottom. */
@@ -250,6 +291,7 @@ function inside(box: Box, x: number, y: number): boolean {
 export function lootHitAt(layout: LootLayout, x: number, y: number): LootHit | null {
   for (const button of layout.editor?.buttons ?? []) if (inside(button, x, y)) return { kind: 'edit', id: button.id };
   for (const button of layout.buttons) if (inside(button, x, y)) return { kind: 'button', id: button.id };
+  for (const cell of layout.library?.cells ?? []) if (inside(cell, x, y)) return { kind: 'library', id: cell.id };
   for (const slot of layout.gear) if (inside(slot, x, y)) return { kind: 'gear', slot: slot.id };
   const boards = [layout.container?.board, layout.pack, layout.pockets, layout.candy];
   for (const board of boards) {
@@ -330,6 +372,15 @@ function drawItem(ctx: CanvasRenderingContext2D, art: ArtBook | null, item: Grid
   if (badge !== '') drawOutlinedText(ctx, badge.toUpperCase(), box.x + box.w - textWidth(badge) / 2 - 2, box.y + box.h - FONT_HEIGHT - 2, BONE);
 }
 
+/** An item the search has found but not yet shown: its plate with a "?" on it. */
+function drawHiddenItem(ctx: CanvasRenderingContext2D, box: Box): void {
+  ctx.globalAlpha = 0.1;
+  fill(ctx, AMBER, box.x, box.y, box.w, box.h);
+  ctx.globalAlpha = 1;
+  ring(ctx, DIM, box);
+  drawOutlinedText(ctx, '?', box.x + box.w / 2, box.y + box.h / 2 - 2, AMBER);
+}
+
 function cellBox(board: GridBox, col: number, row: number, w = 1, h = 1): Box {
   return { x: board.x + col * TILE, y: board.y + row * TILE, w: w * TILE, h: h * TILE };
 }
@@ -356,11 +407,17 @@ function drawBoard(ctx: CanvasRenderingContext2D, view: LootView, board: GridBox
   const hover = view.hover && view.hover.kind === 'cell' && view.hover.gridId === board.id ? view.hover : null;
   const held = state.heldItem ? state.heldItem.item : null;
   const blocked = new Set((grid.blocked ?? []).map((p) => `${p.x},${p.y}`));
+  const ranks = sweepingNow(view) && board.id === 'container' ? sweepRanks(grid) : null;
+  const sweep = searchSweep.value ?? 0;
   for (let row = 0; row < grid.rows; row += 1) {
     for (let col = 0; col < grid.cols; col += 1) {
       const box = cellBox(board, col, row);
-      const shut = blocked.has(`${col},${row}`);
-      const light = hover && hover.col === col && hover.row === row && held === null ? LINE : translucent ? 'rgba(11,12,16,0.35)' : RAISED;
+      const phase = ranks ? cellPhase(ranks.rankOf(col, row), ranks.open, sweep) : 'read';
+      // A void is not lit: it looks like any other cell until the head reaches it, then shows as a void.
+      const shut = blocked.has(`${col},${row}`) && phase !== 'waiting';
+      // A cell the search has not reached yet is blank: it covers the drawing underneath until its turn comes.
+      const covered = ranks !== null && phase === 'waiting';
+      const light = hover && hover.col === col && hover.row === row && held === null ? LINE : translucent && !covered ? 'rgba(11,12,16,0.35)' : RAISED;
       if (shut) {
         drawDisabledCell(ctx, box);
         continue;
@@ -370,6 +427,8 @@ function drawBoard(ctx: CanvasRenderingContext2D, view: LootView, board: GridBox
       fill(ctx, INK, box.x + 1, box.y + 1, 1, TILE - 2);
       fill(ctx, LINE, box.x + 1, box.y + TILE - 2, TILE - 2, 1);
       fill(ctx, LINE, box.x + TILE - 2, box.y + 1, 1, TILE - 2);
+      if (ranks && phase === 'read') fill(ctx, 'rgba(124,196,120,0.32)', box.x + 2, box.y + 2, TILE - 4, TILE - 4);
+      if (phase === 'head') fill(ctx, AMBER, box.x + 1, box.y + 1, TILE - 2, TILE - 2);
       const mark = computeTileHighlight(grid, col, row, hover ? hover.col : null, hover ? hover.row : null, held, board.id);
       if (mark !== 'none') fill(ctx, mark === 'valid' ? SICK : BLOOD, box.x + 2, box.y + 2, TILE - 4, TILE - 4);
     }
@@ -381,8 +440,17 @@ function drawBoard(ctx: CanvasRenderingContext2D, view: LootView, board: GridBox
     const isHeld = state.heldItem !== null && state.heldItem.item.id === item.id;
     if (isHeld) continue;
     const over = hover !== null && hover.col >= item.x && hover.col < item.x + dims.width && hover.row >= item.y && hover.row < item.y + dims.height;
+    if (board.id === 'container' && itemHidden(item.id)) {
+      drawHiddenItem(ctx, plateBox);
+      continue;
+    }
     drawItem(ctx, view.art, item, plateBox, state.selectedItemId === item.id, over && held === null);
   }
+}
+
+/** The search is under way: the container's grid is empty and being swept, and the drawing is still shut. */
+function sweepingNow(view: LootView): boolean {
+  return searchSweep.value !== null && view.state.containerGrid.items.length === 0;
 }
 
 function containerArtOf(view: LootView): ContainerArt | null {
@@ -399,7 +467,7 @@ function drawContainerArt(ctx: CanvasRenderingContext2D, view: LootView, board: 
   const art = containerArtOf(view);
   if (!art) return;
   const box = stageBox(art);
-  const sprite = stageSprite(art, view.state.containerGrid.items.length > 0);
+  const sprite = stageSprite(art, !sweepingNow(view));
   if (!box || !sprite) return;
   const at = stageOffset(box, sprite);
   const x0 = board.x + Math.round((at.x / box.width) * board.w);
@@ -428,6 +496,26 @@ function drawButton(ctx: CanvasRenderingContext2D, box: Box, label: string, colo
   drawText(ctx, label, box.x + Math.round((box.w - textWidth(label)) / 2), box.y + 2, active ? INK : hovered ? AMBER : color);
 }
 
+function drawLibrary(ctx: CanvasRenderingContext2D, view: LootView, library: NonNullable<LootLayout['library']>): void {
+  plate(ctx, library.box, 0.92);
+  drawTitle(ctx, 'CONTAINERS', library.box);
+  for (const cell of library.cells) {
+    const current = view.edit?.libraryCurrent === cell.id;
+    const hovered = view.hover !== null && view.hover.kind === 'library' && view.hover.id === cell.id;
+    fill(ctx, RAISED, cell.x, cell.y, cell.w, cell.h);
+    ring(ctx, current ? AMBER : hovered ? BONE : LINE, cell);
+    const sprite = cell.art ? stageSprite(cell.art, true) : null;
+    if (sprite) {
+      const canvas = spriteCanvas(sprite);
+      const at = { x: cell.x + Math.round((cell.w - sprite.w) / 2), y: cell.y + 2 };
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(canvas, at.x, at.y, sprite.w, sprite.h);
+    }
+    const label = upper(cell.label);
+    drawText(ctx, label, cell.x + Math.round((cell.w - textWidth(label)) / 2), cell.y + cell.h - ROW_H + 2, current ? AMBER : DIM);
+  }
+}
+
 /** Paints the whole window over whatever is already on the canvas. The world is left as it is: dimming is the caller's call. */
 export function drawLootUi(ctx: CanvasRenderingContext2D, view: LootView, given: LootLayout): void {
   const { state } = view;
@@ -445,10 +533,12 @@ export function drawLootUi(ctx: CanvasRenderingContext2D, view: LootView, given:
   }
 
   const dock = layout.survivor;
-  plate(ctx, dock, 0.9);
-  drawTitle(ctx, 'SURVIVOR INVENTORY', dock);
-  const tier = tierName(state);
-  drawText(ctx, tier, dock.x + dock.w - PAD - textWidth(tier), dock.y + PAD + 1, SICK);
+  if (dock) {
+    plate(ctx, dock, 0.9);
+    drawTitle(ctx, 'SURVIVOR INVENTORY', dock);
+    const tier = tierName(state);
+    drawText(ctx, tier, dock.x + dock.w - PAD - textWidth(tier), dock.y + PAD + 1, SICK);
+  }
 
   for (const slot of layout.gear) {
     const item = state.gear[slot.id];
@@ -463,12 +553,22 @@ export function drawLootUi(ctx: CanvasRenderingContext2D, view: LootView, given:
       continue;
     }
     const sprite = view.art ? lootSprite(view.art, item.type, false) : null;
-    if (sprite) drawCentred(ctx, sprite, body, 2);
+    if (sprite) {
+      // The largest whole scale (at most 2) that fits the body, and a clip so nothing spills past the slot's frame.
+      const scale = Math.max(1, Math.min(2, Math.floor(Math.min((body.w - 4) / sprite.w, (body.h - 4) / sprite.h))));
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(slot.x + 1, slot.y + 1, slot.w - 2, slot.h - 2);
+      ctx.clip();
+      drawCentred(ctx, sprite, body, scale);
+      ctx.restore();
+    }
     const badge = lootBadge(item.count, item.ammo);
     if (badge !== '') drawOutlinedText(ctx, badge.toUpperCase(), slot.x + slot.w - textWidth(badge) / 2 - 3, slot.y + slot.h - FONT_HEIGHT - 2, BONE);
   }
 
   for (const board of [layout.pack, layout.candy, layout.pockets]) {
+    if (!board) continue;
     drawText(ctx, board.title, board.x, board.y - 8, DIM);
     drawBoard(ctx, view, board, false);
   }
@@ -483,6 +583,8 @@ export function drawLootUi(ctx: CanvasRenderingContext2D, view: LootView, given:
       drawButton(ctx, button, button.label, button.id === 'save' ? SICK : BONE, hovered, active);
     }
   }
+
+  if (layout.library) drawLibrary(ctx, view, layout.library);
 
   if (view.edit?.hint) drawOutlinedText(ctx, view.edit.hint, Math.round(ctx.canvas.width / 2), ctx.canvas.height - EDGE - FONT_HEIGHT, DIM);
 

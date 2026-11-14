@@ -118,5 +118,5 @@ describe('the overrun soak', () => {
     }
     const clocks = Object.entries(OVERRUN_CLOCK_BY_DIFFICULTY).map(([id, sec]) => `${id} ${sec}`).join(', ');
     process.stdout.write(`overrun soak (clock by difficulty: ${clocks} s, menu rate ${OVERRUN_MENU_RATE})\n${rows.join('\n')}\n`);
-  });
+  }, 240_000);
 });

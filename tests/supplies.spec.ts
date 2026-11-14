@@ -15,7 +15,7 @@ import { createDefaultSurvivalNeeds } from '../shared/survival-needs.ts';
 import { createPlayer } from '../shared/player-roster.ts';
 import { applyBagCommit } from '../shared/bag-sim.ts';
 import { bagLayout, bagWanted, syncBag } from '../shared/bag.ts';
-import { quietSim, stateOf } from './helpers/sim-harness.ts';
+import { quietSim } from './helpers/sim-harness.ts';
 import type { PlayerState } from '../shared/sim-state.ts';
 
 function makePatient(health = 100, maxHealth = 100): PlayerState {
@@ -179,7 +179,7 @@ describe('usePocketSupplies', () => {
 
 describe('applyBagCommit with use entries', () => {
   it('applies use actions from bag commit', () => {
-    const { sim, state } = quietSim();
+    const { state } = quietSim();
     const [p] = state.players;
     p.health = 40;
     p.supplies = { ...emptySupplies(), bandage: 2 };

@@ -35,8 +35,6 @@ type GroundPick = (col: number, row: number) => TileKind;
 
 /** A town that lays out well for a picture. Any seed would do: this one is simply the one in the photo. */
 const POSTCARD_SEED = 1986;
-const TOWN_CLIP_W = 288;
-const TOWN_CLIP_H = 200;
 
 const SOUTH = 2;
 const EAST = 0;

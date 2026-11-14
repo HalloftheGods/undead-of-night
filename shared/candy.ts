@@ -238,6 +238,8 @@ export const CANDY_ORDER = Object.keys(CANDIES) as CandyId[];
 /** About a horde. */
 export const CANDY_SEC = 75;
 export const FULL_SIZE_SEC = 20;
+/** A level-up boon is one Full-Size Bar per level reached. Capped, so a bad packet cannot flood the buff. */
+export const MAX_BOON_BARS = 99;
 /** What every other candy is worth while a Full-Size Bar works. A Caramel Apple and Fireballs need the real thing. */
 export const FULL_SIZE_STRENGTH = 0.5;
 
@@ -446,6 +448,11 @@ export function eatCandyDirect(sim: SimState, p: PlayerState, id: CandyId): void
   const index = p.candy.indexOf(id);
   const inBag = index >= 0;
   if (inBag) p.candy.splice(index, 1);
+  buffCandy(sim, p, id);
+}
+
+/** Starts a candy's buff on the survivor without touching the bag: a boon, or a bar that was never carried. */
+export function buffCandy(sim: SimState, p: PlayerState, id: CandyId): void {
   const seconds = candySeconds(id, p);
   const working = p.sugar.find((sugar) => sugar.id === id);
   if (working) {

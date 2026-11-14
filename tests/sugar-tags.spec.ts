@@ -17,7 +17,7 @@ describe('the candy timer over a head', () => {
 
   it('names the stat and the whole seconds left, with a bar for the whole boost', () => {
     const [tag] = sugarTags(eater([{ id: 'pumpkin_fizz', left: CANDY_SEC / 2 - 0.2 }]), 0);
-    expect(tag.label).toBe(`SPEED ${Math.ceil(CANDY_SEC / 2 - 0.2)}`);
+    expect(tag.label).toBe(`${CANDIES.pumpkin_fizz.stat} ${Math.ceil(CANDY_SEC / 2 - 0.2)}`);
     expect(tag.fraction).toBeCloseTo((CANDY_SEC / 2 - 0.2) / CANDY_SEC);
     expect(tag.lit).toBe(true);
   });
@@ -48,7 +48,7 @@ describe('the candy timer over a head', () => {
   });
 
   it('has a short stat word for every candy', () => {
-    for (const def of Object.values(CANDIES)) expect(def.stat).toMatch(/^[A-Z]{3,6}$/);
+    for (const def of Object.values(CANDIES)) expect(def.stat).toMatch(/^[A-Z]{3,7}$/);
   });
 });
 

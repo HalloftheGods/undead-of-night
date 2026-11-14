@@ -23,8 +23,9 @@ describe('overlay polish', () => {
   });
 
   it('follows the slider live, not only when a run loads', () => {
-    const controller = source('../src/game/game-controller.ts');
-    expect(controller).toContain('watch(brightness, () => this.renderer?.setBrightness(brightnessLift()))');
+    // Formatter-owned line breaks: collapse whitespace before matching.
+    const controller = source('../src/game/game-controller.ts').replace(/\s+/g, ' ');
+    expect(controller).toContain('watch(brightness, () => this.renderer?.setBrightness(brightnessLift()) )');
     expect(controller).toContain('this.stopBrightnessWatch();');
   });
 

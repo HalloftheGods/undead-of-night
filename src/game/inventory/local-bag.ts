@@ -1,6 +1,5 @@
 import { bagHash, bagLayout, bagWanted, createBag, isAmmoBoxType, isBagItemType, isDroppableBagItem, layoutHash, retierBag, stampAmmoBoxes, syncBag } from '@shared/bag.ts';
 import type { BagCommit, BagDrop, BagItemType, BagWanted, PlayerBag } from '@shared/bag.ts';
-import { backpackDef } from '@shared/backpack.ts';
 import type { BackpackTier } from '@shared/backpack.ts';
 import { autoPackItem, canPlaceItem, createInventoryGrid, findAvailableSlot, placeItem } from '@shared/grid-inventory.ts';
 import type { GridItem, InventoryGrid } from '@shared/grid-inventory.ts';

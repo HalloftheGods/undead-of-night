@@ -25,9 +25,10 @@ export const SPLASH_CARDS: readonly SplashCard[] = [
   {
     id: "hall-of-the-gods",
     image: BRAND_MARK,
-    kicker: "Presented by",
+    // kicker: "Presented by",
+    kicker: "",
     title: "Hall of the Gods, Inc.",
-    ariaLabel: "Presented by Hall of the Gods, Inc.",
+    ariaLabel: "Hall of the Gods, Inc.",
     bg: "#000000",
     hold: 400
   },

@@ -6,7 +6,7 @@
         <PixelButton
           class="view-tab-btn"
           :class="{ 'is-active': activeView === 'items' }"
-          @press="activeView = 'items'"
+          @press="showItemsBench"
         >
           Items ({{ catalogue.length }})
         </PixelButton>
@@ -17,7 +17,23 @@
         >
           Lootable Objects ({{ containerCatalogue.length }})
         </PixelButton>
+        <PixelButton
+          class="view-tab-btn"
+          :class="{ 'is-active': activeView === 'buildings' }"
+          @press="activeView = 'buildings'"
+        >
+          Buildings ({{ BUILDING_KINDS.length }})
+        </PixelButton>
       </nav>
+
+      <!-- ============================================== -->
+      <!-- SECTION 3: BUILDINGS EDITOR (drafts; saves later) -->
+      <!-- ============================================== -->
+      <BuildingEditor
+        v-if="activeView === 'buildings'"
+        @open-container="openContainerById"
+        @open-item="openItemById"
+      />
 
       <!-- ============================================== -->
       <!-- SECTION 1: ITEMS SIZING BENCH                  -->
@@ -97,17 +113,16 @@
             <PixelButton @press="clearItemFilters">Reset Filters</PixelButton>
           </div>
 
-          <div v-else class="items-cards-grid">
-            <ItemSizingCard
+          <div v-else class="bench-list">
+            <PixelButton
               v-for="entry in filteredItems"
               :key="entry.id"
-              :art="art"
-              :entry="entry"
-              :width="footprints[entry.id]?.width ?? entry.defaultFootprint.width"
-              :height="footprints[entry.id]?.height ?? entry.defaultFootprint.height"
-              @update:width="updateItemWidth(entry.id, $event)"
-              @update:height="updateItemHeight(entry.id, $event)"
-            />
+              class="bench-list-btn"
+              :class="{ 'is-modified': isItemModified(entry) }"
+              @press="openItemPreview(entry)"
+            >
+              {{ entry.name }} ({{ footprints[entry.id]?.width ?? entry.defaultFootprint.width }}x{{ footprints[entry.id]?.height ?? entry.defaultFootprint.height }})
+            </PixelButton>
           </div>
         </main>
 
@@ -167,14 +182,11 @@
       <!-- ============================================== -->
       <!-- SECTION 2: LOOTABLE OBJECTS SIZING BENCH       -->
       <!-- ============================================== -->
-      <template v-else>
+      <template v-else-if="activeView === 'containers'">
         <!-- Containers Controls Deck -->
         <section class="dev-toolbar px-frame">
           <div class="toolbar-top-row">
             <div class="toolbar-stats">
-              <PixelButton class="stat-pill" @press="previewCanvas = !previewCanvas">
-                Preview: {{ previewCanvas ? 'Canvas' : 'Vue overlay' }}
-              </PixelButton>
               <span class="stat-pill">Total: {{ containerCatalogue.length }}</span>
               <span class="stat-pill" :class="{ 'is-highlight': modifiedContainersCount > 0 }">
                 Modified: {{ modifiedContainersCount }}
@@ -232,20 +244,16 @@
             <PixelButton @press="clearContainerFilters">Reset Filters</PixelButton>
           </div>
 
-          <div v-else class="containers-cards-grid">
-            <ContainerSizingCard
+          <div v-else class="bench-list">
+            <PixelButton
               v-for="entry in filteredContainers"
               :key="entry.id"
-              :art="art"
-              :entry="shownEntry(entry)"
-              :cols="shownSize(entry).cols"
-              :rows="shownSize(entry).rows"
-              :blocked="shownSize(entry).blocked ?? []"
-              @update:cols="onCardSize(entry, 'cols', $event)"
-              @update:rows="onCardSize(entry, 'rows', $event)"
-              @update:blocked="onCardBlocked(entry, $event)"
-              @preview="openPreviewModal(entry)"
-            />
+              class="bench-list-btn"
+              :class="{ 'is-modified': isContainerModified(entry) }"
+              @press="openPreviewModal(entry)"
+            >
+              {{ entry.name }} ({{ shownSize(entry).cols }}x{{ shownSize(entry).rows }})
+            </PixelButton>
           </div>
         </main>
 
@@ -303,9 +311,9 @@
       </template>
     </div>
 
-    <!-- In-Game Dual Loot Modal Preview -->
+    <!-- In-Game Loot Window Editor: drawn on the game's canvas, the only bench preview -->
     <CanvasLootPreview
-      v-if="previewModal && previewCanvas"
+      v-if="previewModal"
       :key="previewModal.entryId"
       :position="previewPosition"
       :art="art"
@@ -313,6 +321,9 @@
       :kind="previewModal.containerKind"
       :grid="previewModal.grid"
       :container-art="previewModal.containerArt"
+      :library="libraryEntries"
+      :library-current="previewModal.entryId"
+      @pick="pickFromLibrary"
       @close="closePreviewModal"
       @size="onCanvasSize(previewModal, $event)"
       @blocked="onCanvasBlocked(previewModal, $event)"
@@ -320,21 +331,28 @@
       @save="saveFromCanvas"
       @step="stepPreview"
     />
-    <DualLootModal
-      v-else-if="previewModal"
+    <CanvasLootPreview
+      v-else-if="itemPreview"
+      :key="itemPreview.entryId"
+      :position="itemPreviewPosition"
       :art="art"
-      :container-title="previewModal.title"
-      :container-kind="previewModal.containerKind"
-      :container-art="previewModal.containerArt"
-      :container-grid="previewModal.grid"
-      backpack-tier="satchel"
-      @close="closePreviewModal"
+      :title="itemPreview.name"
+      kind="box"
+      :grid="itemPreview.grid"
+      :container-art="itemBenchArt"
+      :library="libraryEntries"
+      @pick="pickFromLibrary"
+      :focus-item="itemPreview.entryId"
+      @close="closeItemPreview"
+      @footprint="onCanvasFootprint"
+      @save="saveFromCanvas"
+      @step="stepItemContainer"
     />
   </TitlePage>
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import type { ArtBook } from '../../art/types.ts';
 import {
   buildItemCatalogue,
@@ -367,10 +385,9 @@ import {
 import PixelButton from '../PixelButton.vue';
 import TitlePage from '../TitlePage.vue';
 import { flipDimensions, flipPoint, isVerticalLook } from '../../../shared/container-flip.ts';
-import DualLootModal from '../DualLootModal.vue';
 import CanvasLootPreview from './CanvasLootPreview.vue';
-import ItemSizingCard from './ItemSizingCard.vue';
-import ContainerSizingCard from './ContainerSizingCard.vue';
+import BuildingEditor from './BuildingEditor.vue';
+import { BUILDING_KINDS } from '../../../shared/map-protocol.ts';
 
 interface Props {
   art?: ArtBook | null;
@@ -383,7 +400,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{ close: [] }>();
 
 // Bench view switcher: 'items' or 'containers'
-const activeView = ref<'items' | 'containers'>('items');
+const activeView = ref<'items' | 'containers' | 'buildings'>('items');
 const isSaving = ref(false);
 
 // ==========================================
@@ -768,8 +785,15 @@ interface PreviewModalState {
 }
 
 const previewModal = ref<PreviewModalState | null>(null);
-/** Preview draws the loot window on a canvas, as the game would, instead of the Vue overlay. */
-const previewCanvas = ref(true);
+
+/** An item open in the editor: the bench shows it in the in-game grid, with its entry id so Prev and Next know where it is. */
+interface ItemPreviewState {
+  entryId: string;
+  name: string;
+  grid: InventoryGrid;
+}
+
+const itemPreview = ref<ItemPreviewState | null>(null);
 
 const SAMPLE_LOOT_ITEMS = ['bandage', 'water_bottle', 'pistol_ammo', 'knife', 'medkit', 'full_size_bar'];
 
@@ -803,28 +827,13 @@ const openPreviewModal = (entry: DevContainerEntry): void => {
     grid,
     flipped: isVerticalLook(entry.look),
   };
+  itemPreview.value = null;
 };
 
-/** What a card or the preview shows: the kind's saved size, on its side for a car drawn standing on end. */
+/** What a list row or the editor shows: the kind's saved size, on its side for a car drawn standing on end. */
 const shownSize = (entry: DevContainerEntry): ContainerGridDimensions => {
   const saved = containerSizes[entry.kind] ?? entry.defaultDimensions;
   return isVerticalLook(entry.look) ? flipDimensions(saved) : saved;
-};
-
-/** The entry a card shows: a car standing on end has its defaults on their side too, so Reset Default and the modified check agree with what the card shows. */
-const shownEntry = (entry: DevContainerEntry): DevContainerEntry =>
-  isVerticalLook(entry.look) ? { ...entry, defaultDimensions: flipDimensions(entry.defaultDimensions) } : entry;
-
-/** A card edit, turned back into the kind's own columns and rows when the card shows it flipped. */
-const onCardSize = (entry: DevContainerEntry, side: 'cols' | 'rows', value: number): void => {
-  const flipped = isVerticalLook(entry.look);
-  const isCols = flipped ? side === 'rows' : side === 'cols';
-  if (isCols) updateContainerCols(entry.kind, value);
-  else updateContainerRows(entry.kind, value);
-};
-
-const onCardBlocked = (entry: DevContainerEntry, blocked: GridPoint[]): void => {
-  updateContainerBlocked(entry.kind, isVerticalLook(entry.look) ? blocked.map(flipPoint) : blocked);
 };
 
 /** The canvas editor changed a container's size: the bench keeps it, so its own Save button writes it. */
@@ -868,6 +877,81 @@ const stepPreview = (direction: -1 | 1): void => {
 const closePreviewModal = (): void => {
   previewModal.value = null;
 };
+
+/** The library: every container, with its drawing as the game shows it, so a click loads its grid. */
+const libraryEntries = computed(() =>
+  containerCatalogue.map((entry) => ({ id: entry.id, label: entry.name, art: props.art?.containers[entry.look] ?? null })),
+);
+
+const pickFromLibrary = (id: string): void => {
+  const entry = containerCatalogue.find((candidate) => candidate.id === id);
+  if (entry) openPreviewModal(entry);
+};
+
+/** The item editor's backdrop: the opened drawing of a box, as the game shows a searched container. */
+const itemBenchArt = computed<ContainerArt | null>(() => props.art?.containers.box ?? null);
+
+/** The grid the item sits in: the box's saved size and void cells, so the void paths show as they do in the game. */
+const itemBenchGrid = (): InventoryGrid => {
+  const box = containerSizes.box;
+  return createInventoryGrid(box.cols, box.rows, box.blocked ?? []);
+};
+
+/** Opens an item in the in-game grid editor, with its footprint as the bench has it. */
+const openItemPreview = (entry: DevItemEntry): void => {
+  previewModal.value = null;
+  itemPreview.value = {
+    entryId: entry.id,
+    name: entry.name,
+    grid: itemBenchGrid(),
+  };
+};
+
+/** Where the open item is in the list the page shows, such as "3 OF 40". */
+const itemPreviewPosition = computed(() => {
+  const list = filteredItems.value;
+  const at = itemPreview.value ? list.findIndex((entry) => entry.id === itemPreview.value!.entryId) : -1;
+  return at < 0 ? '' : `${at + 1} OF ${list.length}`;
+});
+
+/** Prev and Next in the item editor: the item before or after this one in the list, wrapping round. */
+/** Prev and Next in the item editor move to the previous or next container, opening it in the container editor. */
+const stepItemContainer = (direction: -1 | 1): void => {
+  const list = containerCatalogue;
+  if (list.length === 0) return;
+  const at = Math.max(0, list.findIndex((entry) => entry.kind === 'box'));
+  openPreviewModal(list[(at + direction + list.length) % list.length]);
+};
+
+const closeItemPreview = (): void => {
+  itemPreview.value = null;
+};
+
+/** The items bench is the in-game editor itself: it opens on the first item, drawn with the container's opened sprite. */
+const openFirstItem = (): void => {
+  if (itemPreview.value || filteredItems.value.length === 0) return;
+  openItemPreview(filteredItems.value[0]);
+};
+
+/** The building editor's drill-downs: the same in-game canvas editors the bench already uses. */
+const openContainerById = (kind: ContainerKind): void => {
+  const entry = containerCatalogue.find((candidate) => candidate.kind === kind);
+  if (entry) openPreviewModal(entry);
+};
+
+const openItemById = (id: string): void => {
+  const entry = catalogue.find((candidate) => candidate.id === id);
+  if (entry) openItemPreview(entry);
+};
+
+const showItemsBench = (): void => {
+  activeView.value = 'items';
+  openFirstItem();
+};
+
+onMounted(() => {
+  if (activeView.value === 'items') openFirstItem();
+});
 </script>
 
 <style scoped>
@@ -1017,16 +1101,20 @@ const closePreviewModal = (): void => {
   color: var(--bone-dim);
 }
 
-.items-cards-grid {
+/* Rows that open the in-game editor for an item or object. */
+.bench-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: calc(var(--u) * 4);
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: calc(var(--u) * 2);
 }
 
-.containers-cards-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: calc(var(--u) * 4);
+.bench-list-btn {
+  text-align: left;
+  font-size: calc(var(--u) * 4.5);
+}
+
+.bench-list-btn.is-modified {
+  border-color: var(--amber);
 }
 
 .export-section {

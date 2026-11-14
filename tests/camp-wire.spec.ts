@@ -14,7 +14,7 @@ import { isSnapshotPacket, isWelcomePacket } from '../src/network/packet-guards.
 import { RunStage } from '../src/game/run-stage.ts';
 import type { ClientWorld } from '../src/game/client-world.ts';
 import type { RunHud } from '../src/game/run-hud.ts';
-import { driveToTown, homeSim } from './helpers/home-harness.ts';
+import { driveToTown } from './helpers/home-harness.ts';
 import { SEED, stateOf } from './helpers/sim-harness.ts';
 
 /** A room with one seat taken by a player who has reached `highest`, and the packets that player was sent. */

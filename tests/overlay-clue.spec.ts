@@ -1,30 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { buildArtBook } from '../src/art/index.ts';
 import { OverlayRenderer } from '../src/engine/overlay-renderer.ts';
-import type { SceneView } from '../src/engine/scene.ts';
+import { EMPTY_SCENE, type SceneView } from '../src/engine/scene.ts';
 import { VisualStore } from '../src/engine/visuals.ts';
 import { CLUE_COLOR } from '../src/game/map-leftovers.ts';
 import { fakeCanvas, installFakeBrowser } from './client-fake-dom.ts';
-
-const EMPTY_SCENE: SceneView = {
-  players: [],
-  zombies: [],
-  bullets: [],
-  pickups: [],
-  exit: null,
-  drop: null,
-  openedContainers: [],
-  searchable: null,
-  localId: null,
-  viewerId: null,
-  focusX: 0,
-  focusY: 0,
-  pointerX: null,
-  pointerY: null,
-  showCrosshair: false,
-  phase: 'wave',
-  hostiles: 0,
-};
 
 describe('overlay clue cache markers', () => {
   beforeEach(() => {

@@ -75,7 +75,7 @@
     </div>
 
     <template #actions>
-      <PixelButton v-if="resumeAt !== null && !multi && runStyle === 'arcade'" :disabled="!ready" @press="game.continueSolo()">
+      <PixelButton v-if="resumeAt !== null && !isMulti && runStyle === 'arcade'" :disabled="!ready" @press="game.continueSolo()">
         Continue from {{ townName(resumeAt) }}
       </PixelButton>
       <PixelButton primary silent :disabled="!ready" @press="start">{{ actionLabel }}</PixelButton>
@@ -136,7 +136,7 @@ const chosen = requested === null ? null : chosenStartLevel(requested, progress)
 const isChosenUnlocked = requested !== null && isLevelUnlocked(requested, progress);
 /** What this page may say about the style: nothing on an invite link, since the room decides. The run still offers the remembered one to an empty room. */
 const shownStyle = computed(() => claimedStyle(join, runStyle.value));
-const levelLines = computed(() => setupLevelLines({ style: shownStyle.value, multi: multi.value, level: requested, unlocked: isChosenUnlocked, chosen }));
+const levelLines = computed(() => setupLevelLines({ style: shownStyle.value, multi: isMulti.value, level: requested, unlocked: isChosenUnlocked, chosen }));
 const startLine = computed(() => levelLines.value.startLine);
 const coopNote = computed(() => levelLines.value.coopNote);
 const heading = computed(() => setupHeading(join, flow.value.mode, runStyle.value));
@@ -155,7 +155,7 @@ const levelLink = computed<LevelLinkCard>(() => {
   return { number: 3, label: 'Level', name: levelDef(number).town, sprite: ui.art?.ui.levelScenes[number - 1] ?? null, before: 'who' };
 });
 /** The mode decides how the run starts, and whether the co-op fields show. */
-const multi = computed(() => flow.value.mode === 'multi');
+const isMulti = computed(() => flow.value.mode === 'multi');
 const serverShown = computed(() => showsServer(flow.value));
 const ready = computed(() => ui.art !== null && !ui.connecting);
 /** A build with online rooms takes a room code in the same field, and a blank one hosts a new room. */
@@ -172,7 +172,7 @@ const ENTRY_HINTS: Readonly<Record<'find' | 'host', string>> = {
   host: 'A private game. Your room code and invite link show on screen once you are in town.',
 };
 const coopAction = computed<CoopAction>(() => (online ? COOP_ACTIONS[entry.value] : 'join'));
-const actionLabel = computed(() => setupActionLabel(multi.value, ui.art !== null, ui.connecting, coopAction.value));
+const actionLabel = computed(() => setupActionLabel(isMulti.value, ui.art !== null, ui.connecting, coopAction.value));
 const failure = computed(() => setupFailure(flow.value.mode, runStyle.value, ui.error));
 const defaultServer = `${window.location.hostname}:${DEFAULT_SERVER_PORT}`;
 /** The address friends need: what is typed, or this host's default when the field is blank. */
@@ -217,7 +217,7 @@ function choose(key: PickKey, id: string): void {
 }
 
 function start(): void {
-  if (multi.value) {
+  if (isMulti.value) {
     game.startCoop(runStyle.value, online ? entry.value : undefined);
     return;
   }

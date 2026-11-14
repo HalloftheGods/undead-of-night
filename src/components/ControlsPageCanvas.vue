@@ -1,11 +1,11 @@
-<template></template>
+<template><span hidden /></template>
 
 <script setup lang="ts">
 /**
  * Controls drawn on the game canvas with the page kit instead of ControlsPage (the "In-game menus" switch): the same
  * bindings and the same remapping, a keyboard or controller tab, and a row per action that listens for its new key.
  */
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted } from 'vue';
 import type { PageItem, PageModel, PagePanel } from '../engine/page-ui.ts';
 import { ACTION_METADATA, formatKeyCode } from '../game/controls-prefs.ts';
 import type { ActionMetadata } from '../game/controls-prefs.ts';

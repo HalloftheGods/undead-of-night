@@ -11,7 +11,6 @@ import {
   placeItem,
   removeItem,
   rotateItem,
-  type GridFootprint,
   type GridItem,
   type InventoryGrid,
 } from '@shared/grid-inventory.ts';

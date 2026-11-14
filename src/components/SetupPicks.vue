@@ -1,7 +1,8 @@
 <template>
   <div ref="root" class="picks">
     <ol class="picks-row" aria-label="Setup">
-      <li v-for="card in fixed" :key="card.key" class="picks-stop">
+      <template v-for="pick in picks" :key="pick.key">
+      <li v-for="card in fixedBefore(pick.key)" :key="card.key" class="picks-stop">
         <div class="pick px-frame is-fixed" role="group" :aria-label="`${card.label}: ${card.name}`">
           <span class="pick-head">
             <span class="pick-number" aria-hidden="true">{{ card.number }}</span>
@@ -13,7 +14,6 @@
           </span>
         </div>
       </li>
-      <template v-for="pick in picks" :key="pick.key">
       <li v-if="levelLink && levelLink.before === pick.key" class="picks-stop">
         <button
           class="pick px-frame"
@@ -146,6 +146,11 @@ interface SetupPicksProps {
 }
 
 const { picks, art, fixed = [], levelLink = null } = defineProps<SetupPicksProps>();
+
+/** The fixed cards that stand in front of a pick; one with no `before` leads the row, in front of the first. */
+function fixedBefore(key: PickKey): readonly FixedCard[] {
+  return fixed.filter((card) => (card.before ?? picks[0]?.key) === key);
+}
 const emit = defineEmits<{ choose: [key: PickKey, id: string]; levels: [] }>();
 const game = useGame();
 const root = useTemplateRef<HTMLElement>('root');

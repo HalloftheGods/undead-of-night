@@ -23,6 +23,11 @@ All notable changes to the Undead of Night: Last Round game are documented in th
 - The reload call shows in camp once the guns are free.
 - Co-op: version 6. A player on an older build is turned away from a newer room, since it would draw the old bunker.
 
+## [2026-11-13] - Town renames: One Lake City through Tenver
+
+### Changed
+- All ten towns renamed in `shared/levels.ts`: One Lake City, Twoport, Three Suns, Fourkatello, Phivenix, Sixinnati, Sevannah, Eightlanta, Nine Vegas, Tenver. Player-facing text (how-to-play, change notes, stamps, quests) and tests follow.
+
 ## [2026-11-13] - Held items on the canvas, ammo boxes
 
 ### Added

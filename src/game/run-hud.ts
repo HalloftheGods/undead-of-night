@@ -28,6 +28,7 @@ import { dailyShare, dayLabel, recordDaily } from "./daily-night.ts";
 import type { DailyPartySize } from "./daily-night.ts";
 import { TownMapView } from "./town-map.ts";
 import { containerInReach } from "../../shared/containers.ts";
+import type { Container } from "../../shared/containers.ts";
 import { BUNKER_LEVEL } from "../../shared/home-protocol.ts";
 import { levelDef } from "../../shared/levels.ts";
 import { BITE_MS, BiteTracker } from "./bite-marker.ts";
@@ -179,6 +180,9 @@ export class RunHud {
   /** The town the run is in, which is where a Radio's track belongs. */
   private level = 1;
   private lastScene: SceneView | null = null;
+  /** The container in reach while idle, so that when a search begins we know which one it is. */
+  private lastReach: Container | null = null;
+  private searchTarget: Container | null = null;
   /** The streak kit's line for the run's first title card, and whether that card has gone up yet. */
   private streakLine: string | null = null;
   private streakShown = false;
@@ -463,5 +467,25 @@ export class RunHud {
       ...(this.ui().bite && ms > this.biteUntilMs ? { bite: null } : {})
     });
     this.stepHints(world, scene, ms);
+    this.stepSearch(local, scene);
+  }
+
+  /** Follows the local player's search from the first tick to the last, so the overlay can sweep the container as it goes. */
+  private stepSearch(local: PlayerEntity, scene: SceneView): void {
+    const searching = local.search > 0 && local.status === "alive";
+    if (!searching) {
+      this.lastReach = scene.searchable;
+      this.searchTarget = null;
+      if (this.ui().searching) this.publish({ searching: null });
+      return;
+    }
+    const reach = this.map ? containerInReach(this.map, local.x, local.y, () => false) : null;
+    this.searchTarget ??= this.lastReach ?? reach;
+    const target = this.searchTarget;
+    // A fireworks bus is a shop, not a search: nothing to sweep.
+    const sweeps = target !== null && target.kind !== "booth";
+    this.publish({
+      searching: sweeps ? { id: target.id, kind: target.kind, propIndex: target.propIndex, progress: local.search } : null
+    });
   }
 }

@@ -449,3 +449,31 @@
     font-size: max(calc(var(--u) * 5), calc(var(--m) * 2.5));
   }
 }
+
+/* A search under way: the head walks the open cells and leaves each one read, like the classic defrag pass. */
+/* Cells not yet reached are blank and opaque, so the drawing underneath stays hidden until the head passes. */
+.container-grid .grid-cell.is-sweep-wait {
+  background: var(--ink-raised);
+}
+.container-grid .grid-cell.is-sweep-read {
+  background: rgba(124, 196, 120, 0.32);
+  box-shadow: inset 0 0 0 var(--ap) rgba(124, 196, 120, 0.6);
+}
+.container-grid .grid-cell.is-sweep-head {
+  background: var(--amber);
+  box-shadow: 0 0 0 var(--ap) var(--amber);
+  position: relative;
+  z-index: 1;
+}
+
+/* An item found by a search stays a "?" until its turn comes in the reveal. */
+.item-unknown {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: var(--amber);
+  font-weight: 700;
+  font-size: max(calc(var(--u) * 9), calc(var(--m) * 5));
+}

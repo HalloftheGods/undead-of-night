@@ -41,6 +41,7 @@ import type { HomeUi } from "./home-hud.ts";
 import type { BestRun, LeaderboardEntry } from "./storage.ts";
 import type { HintLine } from "./first-run-hints.ts";
 import type { BiteMark } from "./bite-marker.ts";
+import type { SearchingNow } from "./inventory/search-overlay.ts";
 
 export type Screen = "title" | "game" | "gameover" | "lost";
 
@@ -227,6 +228,8 @@ export interface UiState {
   readonly hint?: HintLine | null;
   /** A short red edge mark for a bite from where the player was not looking (game/bite-marker.ts). */
   readonly bite?: BiteMark | null;
+  /** The container the local player is searching, and how far through they are. Null when not searching. */
+  readonly searching?: SearchingNow | null;
   /** The bunker and the trip, on a Campaign run. */
   readonly home: HomeUi | null;
   /** The style the player last chose: what the Play page offers, and what an empty room is given. */

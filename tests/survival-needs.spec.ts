@@ -8,7 +8,6 @@ import {
   scroungeSurvivalLoot,
   staminaRecoveryMultiplier,
   SURVIVAL_ITEMS,
-  SURVIVAL_LOOT_TABLES,
   type SurvivalItemType,
   type SurvivalNeeds,
   updateSurvivalNeeds,
@@ -194,14 +193,14 @@ describe('Survival Needs Core Data & Mechanics', () => {
 
 describe('Survival Pixel Art Standards', () => {
   it('uses only valid palette colors in SURVIVAL_LEGEND', () => {
-    for (const [key, color] of Object.entries(SURVIVAL_LEGEND)) {
+    for (const color of Object.values(SURVIVAL_LEGEND)) {
       expect(color === null || inPalette(color)).toBe(true);
     }
   });
 
   it('contains valid legend characters in all item grids', () => {
     const validChars = new Set(['.', ...Object.keys(SURVIVAL_LEGEND)]);
-    for (const [name, spec] of Object.entries(SURVIVAL_ITEM_ART)) {
+    for (const spec of Object.values(SURVIVAL_ITEM_ART)) {
       for (const row of spec.rows) {
         for (const char of row) {
           expect(validChars.has(char)).toBe(true);
@@ -241,7 +240,7 @@ describe('Survival Pixel Art Standards', () => {
   });
 
   it('renders all 16x16 moodle pixel art sprites adhering to palette rules', () => {
-    for (const [key, color] of Object.entries(MOODLE_LEGEND)) {
+    for (const color of Object.values(MOODLE_LEGEND)) {
       expect(color === null || inPalette(color)).toBe(true);
     }
 

@@ -11,12 +11,12 @@ function memoryStore(): Store {
 describe("Game Over retry button", () => {
   it("solo Arcade tries the town you died in again, with Start over beside it past the first town", () => {
     expect(retryPlan({ mode: "solo", runStyle: "arcade", level: 3, daily: false })).toEqual({
-      label: "Try again from Threetropolis",
+      label: "Try again from Three Suns",
       fromLevel: 3,
       startOver: true
     });
     expect(retryPlan({ mode: "solo", runStyle: "arcade", level: 1, daily: false })).toEqual({
-      label: "Try again from Once Home",
+      label: "Try again from One Lake City",
       fromLevel: 1,
       startOver: false
     });
@@ -24,7 +24,7 @@ describe("Game Over retry button", () => {
 
   it("a Nightly Run replays its own town", () => {
     expect(retryPlan({ mode: "solo", runStyle: "arcade", level: 4, daily: true })).toEqual({
-      label: "Try again in Four Corners",
+      label: "Try again in Fourkatello",
       fromLevel: undefined,
       startOver: false
     });

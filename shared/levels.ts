@@ -35,19 +35,19 @@ export interface LevelDef {
 
 /** A run, in order. Level 1 adds nothing, so it plays as the endless game did. */
 export const LEVELS: readonly LevelDef[] = [
-  { number: 1, town: 'Once Home', title: 'Silent Ruins', hordes: 2, difficulty: 1, theme: 'night', mix: { runner: 0, bloater: 0, brute: 0 } },
-  { number: 2, town: 'Two Lake City', title: 'Escalation', hordes: 2, difficulty: 1.06, theme: 'night', mix: { runner: 0.02, bloater: 0.01, brute: 0 } },
-  { number: 3, town: 'Threetropolis', title: 'Into the Breach', hordes: 3, difficulty: 1.13, theme: 'industrial-dusk', mix: { runner: 0.04, bloater: 0.02, brute: 0 } },
-  { number: 4, town: 'Four Corners', title: 'Abyssal Depths', hordes: 3, difficulty: 1.2, theme: 'flooded', mix: { runner: 0.06, bloater: 0.03, brute: 0.005 } },
-  { number: 5, town: 'Fiville', title: 'Contamination Zone', hordes: 3, difficulty: 1.27, theme: 'contaminated', mix: { runner: 0.08, bloater: 0.05, brute: 0.01 } },
-  { number: 6, town: 'Sixburg', title: 'Blackout', hordes: 4, difficulty: 1.34, theme: 'blackout', mix: { runner: 0.1, bloater: 0.05, brute: 0.015 } },
-  { number: 7, town: 'Seven Springs', title: 'Quarantine Breach', hordes: 4, difficulty: 1.41, theme: 'emergency', mix: { runner: 0.13, bloater: 0.06, brute: 0.02 } },
-  { number: 8, town: 'Eight Below', title: 'Frozen Wasteland', hordes: 4, difficulty: 1.48, theme: 'snow', mix: { runner: 0.15, bloater: 0.06, brute: 0.025 } },
-  { number: 9, town: 'Ninevah', title: 'The Hive', hordes: 5, difficulty: 1.54, theme: 'infested', mix: { runner: 0.17, bloater: 0.08, brute: 0.03 } },
-  { number: 10, town: 'Tenacity', title: 'Final Stand', hordes: 5, difficulty: 1.6, theme: 'burning', mix: { runner: 0.2, bloater: 0.08, brute: 0.04 } },
+  { number: 1, town: 'One Lake City', title: 'Silent Ruins', hordes: 2, difficulty: 1, theme: 'night', mix: { runner: 0, bloater: 0, brute: 0 } },
+  { number: 2, town: 'Twoport', title: 'Escalation', hordes: 2, difficulty: 1.06, theme: 'night', mix: { runner: 0.02, bloater: 0.01, brute: 0 } },
+  { number: 3, town: 'Three Suns', title: 'Into the Breach', hordes: 3, difficulty: 1.13, theme: 'industrial-dusk', mix: { runner: 0.04, bloater: 0.02, brute: 0 } },
+  { number: 4, town: 'Fourkatello', title: 'Abyssal Depths', hordes: 3, difficulty: 1.2, theme: 'flooded', mix: { runner: 0.06, bloater: 0.03, brute: 0.005 } },
+  { number: 5, town: 'Phivenix', title: 'Contamination Zone', hordes: 3, difficulty: 1.27, theme: 'contaminated', mix: { runner: 0.08, bloater: 0.05, brute: 0.01 } },
+  { number: 6, town: 'Sixinnati', title: 'Blackout', hordes: 4, difficulty: 1.34, theme: 'blackout', mix: { runner: 0.1, bloater: 0.05, brute: 0.015 } },
+  { number: 7, town: 'Sevannah', title: 'Quarantine Breach', hordes: 4, difficulty: 1.41, theme: 'emergency', mix: { runner: 0.13, bloater: 0.06, brute: 0.02 } },
+  { number: 8, town: 'Eightlanta', title: 'Frozen Wasteland', hordes: 4, difficulty: 1.48, theme: 'snow', mix: { runner: 0.15, bloater: 0.06, brute: 0.025 } },
+  { number: 9, town: 'Nine Vegas', title: 'The Hive', hordes: 5, difficulty: 1.54, theme: 'infested', mix: { runner: 0.17, bloater: 0.08, brute: 0.03 } },
+  { number: 10, town: 'Tenver', title: 'Final Stand', hordes: 5, difficulty: 1.6, theme: 'burning', mix: { runner: 0.2, bloater: 0.08, brute: 0.04 } },
 ];
 
-/** The bunker's name, the town before Once Home. */
+/** The bunker's name, the town before One Lake City. */
 export const BASE_NAME = 'Zero Point';
 
 export const FIRST_LEVEL = 1;

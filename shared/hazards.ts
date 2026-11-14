@@ -1,5 +1,5 @@
 import type { SimState } from './sim-state.ts';
-import type { TileKind, WorldMap } from './map-protocol.ts';
+import type { TileKind } from './map-protocol.ts';
 import { TILE_SIZE } from './map-protocol.ts';
 import { makeNoise } from './zombie-senses.ts';
 

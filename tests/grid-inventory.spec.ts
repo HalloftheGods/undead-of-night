@@ -3,7 +3,6 @@ import {
   autoPackItem,
   canPlaceItem,
   createInventoryGrid,
-  findAvailableSlot,
   findItemAtTile,
   getItemFootprint,
   isCellBlocked,
@@ -35,10 +34,10 @@ describe('Spatial Grid Inventory Engine', () => {
     expect(rotatedKnife).toEqual({ width: 2, height: 1 });
 
     const normalShotgun = getItemFootprint('shotgun', false);
-    expect(normalShotgun).toEqual({ width: 4, height: 1 });
+    expect(normalShotgun).toEqual({ width: 4, height: 2 });
 
     const rotatedShotgun = getItemFootprint('shotgun', true);
-    expect(rotatedShotgun).toEqual({ width: 1, height: 4 });
+    expect(rotatedShotgun).toEqual({ width: 2, height: 4 });
   });
 
   it('validates boundaries properly', () => {
@@ -72,8 +71,8 @@ describe('Spatial Grid Inventory Engine', () => {
     const canOverlapCorner = canPlaceItem(grid, 'ammo_box', 2, 2, false);
     expect(canOverlapCorner).toBe(false);
 
-    // Free tile at (0, 0)
-    const canPlaceFree = canPlaceItem(grid, 'ammo_box', 0, 0, false);
+    // Free tile at (3, 0): the 2x2 ammo box clears the 2x2 medkit
+    const canPlaceFree = canPlaceItem(grid, 'ammo_box', 3, 0, false);
     expect(canPlaceFree).toBe(true);
 
     // Placing overlapping item fails
@@ -200,7 +199,7 @@ describe('Spatial Grid Inventory Engine', () => {
 
     const firstPacked = autoPackItem(grid, {
       id: 'ammo-1',
-      type: 'ammo_box',
+      type: 'pistol_ammo',
       rotated: false,
     });
     expect(firstPacked).toBe(true);
@@ -208,7 +207,7 @@ describe('Spatial Grid Inventory Engine', () => {
 
     const secondPacked = autoPackItem(grid, {
       id: 'ammo-2',
-      type: 'ammo_box',
+      type: 'pistol_ammo',
       rotated: false,
     });
     expect(secondPacked).toBe(true);
@@ -226,7 +225,7 @@ describe('Spatial Grid Inventory Engine', () => {
     // Grid full now
     const overflowPacked = autoPackItem(grid, {
       id: 'ammo-3',
-      type: 'ammo_box',
+      type: 'pistol_ammo',
       rotated: false,
     });
     expect(overflowPacked).toBe(false);

@@ -140,7 +140,6 @@ import { aimsCursor } from './game/home-screens.ts';
 import { useInventoryModal, type InventoryPanel } from './game/inventory-modal.ts';
 import type { CanvasLoot } from './game/inventory/canvas-loot.ts';
 import { useCanvasLoot } from './game/inventory/use-canvas-loot.ts';
-import { LOCAL_PLAYER_ID } from './network/local-session.ts';
 import { shouldShowSplash } from './game/studio-splash.ts';
 
 const game = new GameController();
@@ -178,7 +177,7 @@ watch(() => ui.value.searching, (now, was) => {
   feedSearch(now?.progress ?? null);
   if (now && !was && !inventory.isOpen.value) {
     const prop = now.propIndex !== undefined ? game.currentMap?.props[now.propIndex] : undefined;
-    const art = ui.value.art ? searchArtFor(ui.value.art, now.kind, prop) : null;
+    const art = ui.value.art ? searchArtFor(ui.value.art, now.kind, prop, now.propIndex) : null;
     inventory.showContainer(now.id, searchTitle(now.kind), [], now.kind, art, searchFlipped(prop), true);
   }
   const over = !now && was && inventory.searchingOpen.value;
@@ -190,7 +189,7 @@ watch(() => ui.value.openedContainer, (loot) => {
     const title = loot.title ?? (loot.kind ? CONTAINER_LABEL[loot.kind] : 'Container');
     const activeMap = game.currentMap;
     const prop = loot.propIndex !== undefined && activeMap ? activeMap.props[loot.propIndex] : undefined;
-    const specificArt = prop && ui.value.art ? (paintedContainer(ui.value.art, prop) ?? ui.value.art.containers[containerLook({ kind: loot.kind ?? 'car', prop: prop.kind })]) : null;
+    const specificArt = prop && ui.value.art ? (paintedContainer(ui.value.art, prop) ?? ui.value.art.containers[containerLook({ kind: loot.kind ?? 'car', prop: prop.kind, propIndex: loot.propIndex })]) : null;
     // A car parked nose up is drawn standing on end, so its grid stands on end too.
     const flipped = isVerticalLook(prop?.kind);
     startReveal(loot.items);

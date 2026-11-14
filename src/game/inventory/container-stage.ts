@@ -25,9 +25,9 @@ export function stageBox(art: ContainerArt): StageBox | null {
   return { minX, minY, width: maxX - minX, height: maxY - minY };
 }
 
-/** Which drawing shows: the shut one while there is still something inside, the searched one once it is empty. */
-export function stageSprite(art: ContainerArt, hasItems: boolean): PixelSprite | null {
-  return hasItems ? (art.closed ?? art.opened ?? null) : (art.opened ?? art.closed ?? null);
+/** Which drawing shows: the shut one while it is being searched, the open one once it has been, with whatever it held laid out in it. */
+export function stageSprite(art: ContainerArt, searched: boolean): PixelSprite | null {
+  return searched ? (art.opened ?? art.closed ?? null) : (art.closed ?? art.opened ?? null);
 }
 
 /** Where a drawing sits inside the box, in art pixels from the box's top left. */

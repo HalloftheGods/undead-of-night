@@ -68,7 +68,7 @@ const stats: GameOverStats = {
 
 describe('level wording', () => {
   it('names the level', () => {
-    expect(levelLine(3)).toBe('Threetropolis: Into the Breach');
+    expect(levelLine(3)).toBe('Three Suns: Into the Breach');
   });
 
   it('counts only the hordes already seen off', () => {
@@ -83,7 +83,7 @@ describe('level wording', () => {
   });
 
   it('words a title card from the level table', () => {
-    expect(levelTitle(4)).toEqual({ heading: `Town 4 of ${FINAL_LEVEL}: Abyssal Depths`, title: 'Four Corners', goal: 'Survive 3 hordes, then reach the van', rule: 'Floodwater: Wading outdoors slows you down. Buildings are dry.' });
+    expect(levelTitle(4)).toEqual({ heading: `Town 4 of ${FINAL_LEVEL}: Abyssal Depths`, title: 'Fourkatello', goal: 'Survive 3 hordes, then reach the van', rule: 'Floodwater: Wading outdoors slows you down. Buildings are dry.' });
     expect(levelTitle(FINAL_LEVEL).heading).toBe('The last town: Final Stand');
   });
 

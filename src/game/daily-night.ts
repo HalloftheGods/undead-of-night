@@ -222,7 +222,7 @@ export function withRun(
   const isMp = run.partySize !== undefined && run.partySize >= 2 && run.partySize <= 5;
 
   let nextResult: DailyResult;
-  let counted = false;
+  let counted: boolean;
 
   if (isMp) {
     const partySize = run.partySize as DailyPartySize;

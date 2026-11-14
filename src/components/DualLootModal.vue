@@ -14,7 +14,7 @@
           <header class="dock-header container-header">
             <div class="dock-title-group">
               <h2 id="modal-title" class="dock-title">{{ modalState.containerTitle.toUpperCase() }}</h2>
-              <span class="dock-capacity">{{ modalState.containerGrid.items.length }} ITEMS</span>
+              <span class="dock-capacity">{{ sweeping ? 'SEARCHING' : `${modalState.containerGrid.items.length} ITEMS` }}</span>
             </div>
           </header>
 
@@ -49,7 +49,8 @@
                 class="grid-cell"
                 :class="[
                   getCellHighlightClass('container', cell.col, cell.row),
-                  { 'is-blocked': isCellBlocked(modalState.containerGrid, cell.col, cell.row) },
+                  sweepClass(cell.col, cell.row),
+                  { 'is-blocked': showsVoid(cell.col, cell.row) },
                 ]"
                 :style="getCellCustomProperties(cell.col, cell.row)"
                 @pointerenter="setHoverTile('container', cell.col, cell.row)"
@@ -63,7 +64,7 @@
                 v-for="item in modalState.containerGrid.items"
                 :key="item.id"
                 class="grid-item"
-                :class="{ 'is-selected': modalState.selectedItemId === item.id }"
+                :class="{ 'is-selected': modalState.selectedItemId === item.id, 'is-pad': padItemId === item.id }"
                 :style="getItemCustomProperties(item)"
                 draggable="true"
                 @click.stop="onItemClick('container', item)"
@@ -71,7 +72,8 @@
                 @dragstart="onItemDragStart($event, 'container', item)"
                 @dragend="onItemDragEnd"
               >
-                <LootItemArt :art :type="item.type" :name="getItemName(item.type)" :scale="getItemArtScale(item)" :count="item.count" :ammo="item.ammo" :lying="lyingOf(item)" />
+                <span v-if="itemHidden(item.id)" class="item-unknown" aria-label="Unrevealed item">?</span>
+                <LootItemArt v-else :art :type="item.type" :name="getItemName(item.type)" :scale="getItemArtScale(item)" :count="item.count" :ammo="item.ammo" :lying="lyingOf(item)" />
               </div>
 
               <div
@@ -162,7 +164,7 @@
                   v-for="item in pocketsSection.grid.items"
                   :key="item.id"
                   class="grid-item"
-                  :class="{ 'is-selected': modalState.selectedItemId === item.id }"
+                  :class="{ 'is-selected': modalState.selectedItemId === item.id, 'is-pad': padItemId === item.id }"
                   :style="getItemCustomProperties(item)"
                   draggable="true"
                   @click.stop="onItemClick('pockets', item)"
@@ -211,7 +213,7 @@
                   v-for="item in candyBagSection.grid.items"
                   :key="item.id"
                   class="grid-item"
-                  :class="{ 'is-selected': modalState.selectedItemId === item.id }"
+                  :class="{ 'is-selected': modalState.selectedItemId === item.id, 'is-pad': padItemId === item.id }"
                   :style="getItemCustomProperties(item)"
                   draggable="true"
                   @click.stop="onItemClick('candyBag', item)"
@@ -261,7 +263,7 @@
                 v-for="item in backpackSection.grid.items"
                 :key="item.id"
                 class="grid-item"
-                :class="{ 'is-selected': modalState.selectedItemId === item.id }"
+                :class="{ 'is-selected': modalState.selectedItemId === item.id, 'is-pad': padItemId === item.id }"
                 :style="getItemCustomProperties(item)"
                 draggable="true"
                 @click.stop="onItemClick('backpack', item)"
@@ -298,10 +300,12 @@ import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
 import LootItemArt from './LootItemArt.vue';
 import { useGame } from './use-game.ts';
 import { backpackDef } from '../../shared/backpack.ts';
-import { getItemFootprint, isCellBlocked, type GridItem } from '../../shared/grid-inventory.ts';
-import { spriteDataUrl } from '../engine/sprite-cache.ts';
-import { stageBox, stageOffset, stageSprite } from '../game/inventory/container-stage.ts';
+import { findItemAtTile, getItemFootprint, isCellBlocked, type GridItem } from '../../shared/grid-inventory.ts';
+import { cellPhase, itemHidden, searchSweep, stageView, sweepRanks } from '../game/inventory/search-overlay.ts';
+import type { CellPhase } from '../game/inventory/search-overlay.ts';
 import { heldButtonAt, heldOnSurvivor, setHeld } from '../game/held-cursor.ts';
+import { anchorOf, isLootPadInCharge, moveCursor, setLootPad, settleCursor, startCursor } from '../game/inventory/loot-pad.ts';
+import type { LootButton, LootCursor, LootDirection } from '../game/inventory/loot-pad.ts';
 import { itemBlurb } from '../game/inventory/item-blurb.ts';
 import { heldActions, isLoadable } from '../game/inventory/held-actions.ts';
 import { useSoundOf } from '../game/inventory/use-sound.ts';
@@ -378,13 +382,34 @@ const hasContainer = computed(() => modalState.containerGrid.items.length > 0 ||
 /** The container's picture, placed by its anchor in a box that holds both drawings. */
 const containerArtStage = computed(() => {
   const containerArt = props.containerArt ?? (props.art && props.containerKind ? props.art.containers[props.containerKind] : null);
-  if (!containerArt) return null;
-  const box = stageBox(containerArt);
-  const sprite = stageSprite(containerArt, modalState.containerGrid.items.length > 0);
-  if (!box || !sprite) return null;
-  const at = stageOffset(box, sprite);
-  return { url: spriteDataUrl(sprite), viewBox: `0 0 ${box.width} ${box.height}`, x: at.x, y: at.y, w: sprite.w, h: sprite.h };
+  // The open drawing comes with the loot; while the search is still under way the container is shut.
+  return containerArt ? stageView(containerArt, !sweeping.value) : null;
 });
+
+/** The search is under way: the grid is empty and being read like a defrag pass, over exactly as long as the search. */
+const sweeping = computed(() => searchSweep.value !== null && modalState.containerGrid.items.length === 0);
+
+function sweepPhase(col: number, row: number): CellPhase | null {
+  if (!sweeping.value) return null;
+  const ranks = sweepRanks(modalState.containerGrid);
+  return cellPhase(ranks.rankOf(col, row), ranks.open, searchSweep.value ?? 0);
+}
+
+/** Head and read cells light up. A void is never lit: it shows as a void when the head reaches it, and looks like any other cell before. */
+function sweepClass(col: number, row: number): string | null {
+  const phase = sweepPhase(col, row);
+  // A cell the search has not reached is blank, covering the drawing underneath.
+  if (phase === 'waiting') return 'is-sweep-wait';
+  // A void is not lit: it just shows itself when its turn comes.
+  if (isCellBlocked(modalState.containerGrid, col, row)) return null;
+  if (phase === 'head') return 'is-sweep-head';
+  return phase === 'read' ? 'is-sweep-read' : null;
+}
+
+function showsVoid(col: number, row: number): boolean {
+  const phase = sweepPhase(col, row);
+  return isCellBlocked(modalState.containerGrid, col, row) && phase !== 'waiting';
+}
 
 const currentOrientationLabel = computed(() => {
   const activeHeld = modalState.heldItem;
@@ -489,6 +514,12 @@ function getCellCustomProperties(col: number, row: number) {
 }
 
 function getCellHighlightClass(gridId: GridIdentifier, col: number, row: number): string {
+  const pad = isPadCell(gridId, col, row) ? 'is-pad' : '';
+  const target = hoverHighlightClass(gridId, col, row);
+  return pad && target ? `${pad} ${target}` : pad || target;
+}
+
+function hoverHighlightClass(gridId: GridIdentifier, col: number, row: number): string {
   const isTargetGrid = hoveredGrid.value === gridId;
   const isNotTargetGrid = !isTargetGrid;
   if (isNotTargetGrid) return '';
@@ -768,7 +799,59 @@ function onHeldButtonClick(event: MouseEvent): void {
   }
 }
 
+/** The controller's highlight: one cell, on the first item at first, moved by the D-pad. Null until a pad is in hand. */
+const padCursor = ref<LootCursor | null>(null);
+const padGridOf = (id: GridIdentifier) => resolveGridById(modalState, id);
+
+const padItemId = computed(() => {
+  const cursor = padCursor.value;
+  if (!cursor) return null;
+  return findItemAtTile(padGridOf(cursor.gridId), cursor.col, cursor.row)?.id ?? null;
+});
+
+/** The cursor's cell where no item covers it: an empty spot to set something down. */
+function isPadCell(gridId: GridIdentifier, col: number, row: number): boolean {
+  const cursor = padCursor.value;
+  if (!cursor || cursor.gridId !== gridId) return false;
+  const onItem = padItemId.value !== null;
+  return !onItem && cursor.col === col && cursor.row === row;
+}
+
+function padMove(direction: LootDirection): boolean {
+  const cursor = padCursor.value ?? startCursor(padGridOf);
+  const next = padCursor.value ? moveCursor(cursor, direction, padGridOf) : cursor;
+  padCursor.value = next ?? cursor;
+  // A lifted item rides the highlight, and shows green or red where it would land.
+  const at = padCursor.value;
+  if (modalState.heldItem !== null) setHoverTile(at.gridId, at.col, at.row);
+  return true;
+}
+
+/** A takes the item under the highlight across (or sets a held one down); X lifts it to move it; Y turns it. */
+function padPress(button: LootButton): boolean {
+  const cursor = padCursor.value ?? startCursor(padGridOf);
+  padCursor.value = cursor;
+  const grid = padGridOf(cursor.gridId);
+  const item = findItemAtTile(grid, cursor.col, cursor.row);
+  if (button === 'y') {
+    onRotateClick();
+    return true;
+  }
+  if (modalState.heldItem !== null) {
+    onCellClick(cursor.gridId, cursor.col, cursor.row);
+    padCursor.value = { gridId: cursor.gridId, ...anchorOf(grid, cursor.col, cursor.row) };
+    return true;
+  }
+  if (!item) return true;
+  if (button === 'x') onItemClick(cursor.gridId, item);
+  else triggerQuickTransfer(cursor.gridId, item.id);
+  padCursor.value = settleCursor(cursor, padGridOf);
+  return true;
+}
+
 onMounted(() => {
+  if (isLootPadInCharge()) padCursor.value = startCursor(padGridOf);
+  setLootPad({ move: padMove, press: padPress });
   const isWindowDefined = typeof window !== 'undefined';
   if (isWindowDefined) {
     window.addEventListener('keydown', handleGlobalKey);
@@ -785,6 +868,7 @@ function settle(): void {
 defineExpose({ escape: onEscape, rotate: onRotateClick, settle });
 
 onUnmounted(() => {
+  setLootPad(null);
   const isWindowDefined = typeof window !== 'undefined';
   if (isWindowDefined) {
     window.removeEventListener('keydown', handleGlobalKey);

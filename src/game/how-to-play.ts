@@ -15,7 +15,7 @@ export const HOW_TO_SECTIONS: readonly HowToSection[] = [
     title: 'Survive the night',
     points: [
       "Survive each town's hordes and reach the escape van.",
-      'There are ten towns, each named for its number: Once Home, Two Lake City, Threetropolis and on to Tenacity. The camp is Zero Point.',
+      'There are ten towns, each named for its number: One Lake City, Twoport, Three Suns and on to Tenver. The camp is Zero Point.',
       'Every town is a new map, with more and tougher zombies.',
     ],
   },
@@ -67,7 +67,7 @@ export const HOW_TO_SECTIONS: readonly HowToSection[] = [
       'Fireworks stay in the town they were found in. Use them before the van.',
       'Stay quiet and let them wander past.',
       'After the first horde, a red flare goes up and a supply crate comes down on it: ammo, a medkit, a round kit and something better. The flare hisses until it lands, so you will not be the only one heading there.',
-      'From Threetropolis on, grey screamers roam. One that spots you calls everything nearby. Shoot it first, or stay out of its sight.',
+      'From Three Suns on, grey screamers roam. One that spots you calls everything nearby. Shoot it first, or stay out of its sight.',
       'Some towns bend the rules: floodwater slows you, a blackout hides you but carries sound, fresh snow keeps your footprints.',
     ],
   },
@@ -248,7 +248,7 @@ export const HOW_TO_SECTIONS: readonly HowToSection[] = [
     tab: 'Overrun',
     title: 'Campaign: the overrun',
     points: [
-      'The camp is not safe for long. Once you have reached Two Lake City, a clock starts every time you come home.',
+      'The camp is not safe for long. Once you have reached Twoport, a clock starts every time you come home.',
       'It lasts four minutes on Night Light On, three on Stay Close, two and a half on Lights Out and two on Undead Tired.',
       'It runs at half speed while you are at a stall or station, and the pause menu stops it.',
       'Warnings sound as it runs down. At the last one you can draw your guns, and the fence starts to rattle where it will give.',

@@ -11,7 +11,7 @@ import type { Shell } from './shell.ts';
 import { GREY_PARAPET, parapetRoof, puddle, rollSeams } from './shop.ts';
 import { blockText, signBoard, smallText } from './signage.ts';
 
-const { asphalt, blood, bone, concrete, fire, ink, metal, teal } = RAMPS;
+const { asphalt, blood, bone, concrete, fire, ink, metal } = RAMPS;
 
 const WALL = 32;
 const ROOF_TOP = 4;

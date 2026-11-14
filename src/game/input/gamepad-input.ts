@@ -66,24 +66,25 @@ export function getActivePadBindings(): ReadonlyMap<number, string> {
 
 /**
  * In play, each button stands for the key it presses. L3 toggles running (handled in playPress, not here).
- * LB holds sneak. Y reloads, X toggles the map, B toggles the candy bag, R3 uses a medkit, Select opens the inventory.
+ * RS holds sneak, B opens the candy bag, A searches, X the map, Y throws, LB and RB cycle weapons,
+ * D-pad Up reloads, Down uses a medkit, Left fires a fountain, Right fires a spinner, View opens the inventory.
  */
 export const PLAY_BINDINGS: ReadonlyMap<number, string> = new Map<number, string>([
   [PAD.a, 'KeyE'],
   [PAD.b, 'KeyX'],
   [PAD.x, 'KeyN'],
-  [PAD.y, 'KeyR'],
-  [PAD.lb, SNEAK_CODE],
-  [PAD.rb, 'KeyG'],
+  [PAD.y, 'KeyG'],
+  [PAD.lb, PAD_PREV_WEAPON],
+  [PAD.rb, 'KeyQ'],
   [PAD.lt, 'KeyF'],
   [PAD.rt, PAD_FIRE],
   [PAD.view, 'KeyI'],
   [PAD.start, 'Escape'],
-  [PAD.r3, 'KeyH'],
-  [PAD.up, 'KeyT'],
-  [PAD.down, 'KeyV'],
-  [PAD.left, PAD_PREV_WEAPON],
-  [PAD.right, 'KeyQ'],
+  [PAD.r3, SNEAK_CODE],
+  [PAD.up, 'KeyR'],
+  [PAD.down, 'KeyH'],
+  [PAD.left, 'KeyV'],
+  [PAD.right, 'KeyT'],
 ]);
 
 export type NavDirection = 'up' | 'down' | 'left' | 'right';

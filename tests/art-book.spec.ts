@@ -157,10 +157,25 @@ describe('art book', () => {
       hatch: 'car_hatch_h', hatch_v: 'car_hatch_v', pickup: 'pickup_h', police: 'police_h', police_v: 'police_v', ambulance: 'ambulance_h',
       booth: 'fireworks_bus', dumpster: 'dumpster',
     } as const;
-    expect(Object.keys(book.containers).sort()).toEqual(Object.keys(props).sort());
-    for (const [look, prop] of Object.entries(props)) {
+    // Every piece that comes in several looks draws all of them on its one footprint.
+    const looks: Record<string, string> = { ...props };
+    const original: Record<string, string> = {};
+    for (const [base, prop] of Object.entries({ drawer: 'bed', locker: 'locker', fridge: 'fridge', cabinet: 'counter', box: 'crate_stack', desk: 'table', dumpster: 'dumpster' })) {
+      for (let n = 1; n <= 4; n++) { looks[`${base}_v${n}`] = prop; original[`${base}_v${n}`] = base; }
+    }
+    for (const [look, prop] of [['shelf_wood', 'shelf'], ['shelf_wire', 'shelf'], ['shelf_rack', 'shelf']]) { looks[look] = prop; original[look] = 'shelf'; }
+    expect(Object.keys(book.containers).sort()).toEqual(Object.keys(looks).sort());
+    for (const [look, prop] of Object.entries(looks)) {
       const { closed, opened } = book.containers[look as keyof typeof props];
-      const { w, h } = PROP_DEFS[prop];
+      const first = original[look] ? book.containers[original[look] as keyof typeof props] : null;
+      if (first) {
+        // A shut variant fills exactly the space the original does. A searched one may carry more room for
+        // what spills out, so only its anchor, checked below, has to sit on the footprint.
+        expect([closed.w, closed.h, closed.ax, closed.ay], look).toEqual([first.closed.w, first.closed.h, first.closed.ax, first.closed.ay]);
+        expect(changedPixels(closed, first.closed), look).toBeGreaterThan(MIN_CHANGED_PIXELS);
+        expect(changedPixels(opened, first.opened), look).toBeGreaterThan(MIN_CHANGED_PIXELS);
+      }
+      const { w, h } = PROP_DEFS[prop as keyof typeof PROP_DEFS];
       for (const state of [closed, opened]) {
         expect(state.ay, look).toBeGreaterThanOrEqual(h);
         expect(state.ax, look).toBeGreaterThanOrEqual(w / 2);

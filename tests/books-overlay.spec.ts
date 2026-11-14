@@ -25,7 +25,7 @@ describe('book cover art generation', () => {
     const covers = buildBookCovers();
     expect(Object.keys(covers)).toEqual(['changelog', 'howto', 'candy', 'guide', 'records']);
 
-    for (const [id, sprite] of Object.entries(covers)) {
+    for (const sprite of Object.values(covers)) {
       expect(sprite.w).toBe(BOOK_CARD_W);
       expect(sprite.h).toBe(BOOK_CARD_H);
       expect(sprite.rgba.length).toBe(BOOK_CARD_W * BOOK_CARD_H * 4);

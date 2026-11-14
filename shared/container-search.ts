@@ -6,7 +6,6 @@ import { autoPackItem, createInventoryGrid, randomPackItem } from './grid-invent
 import type { BuildingInstance, PickupType, WorldMap } from './protocol.ts';
 import { TICK_DT } from './constants.ts';
 import { isBunkerMap } from './home-protocol.ts';
-import { spawnPickup } from './pickups.ts';
 import { isSalvagePickup } from './salvage-data.ts';
 import { isTreasurePickup } from './treasure.ts';
 import type { PlayerState, SimState } from './sim-state.ts';
@@ -16,7 +15,7 @@ import { makeNoise } from './zombie-senses.ts';
 import { BOTTLE_CARRY, BOTTLE_FIND_CHANCE, maybeCarAlarm } from './bottles.ts';
 import { stashIn } from './throwables.ts';
 import { roomFor } from './bag.ts';
-import { candiesInBowl, candyIn, STICKY_SEARCH_SCALE, sugarOf, takeCandy, type CandyBowlLoot, type CandyId } from './candy.ts';
+import { candiesInBowl, candyIn, STICKY_SEARCH_SCALE, sugarOf, type CandyBowlLoot, type CandyId } from './candy.ts';
 import { hasKeepsake, RABBIT_LUCK } from './keepsakes.ts';
 import { isBooth, sellFireworks } from './fireworks-booth.ts';
 import { AMMO_PICKUPS } from './constants.ts';

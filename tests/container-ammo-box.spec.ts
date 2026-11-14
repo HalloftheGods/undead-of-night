@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { PickupType } from '../shared/protocol.ts';
 import { containerInReach, townContainers, type Container } from '../shared/containers.ts';
 import { isAmmoPickup } from '../shared/pickups.ts';
 import { PLAYER_RADIUS } from '../shared/constants.ts';
@@ -60,10 +61,11 @@ describe('Ammo Loot Prioritization for Box Containers', () => {
 
       expect(state.containers[box.id].opened).toBe(true);
       const afterAmmo = p.ammoBag.pistol + p.ammoBag.shotgun + p.ammoBag.carbine;
-      const ammoGained = afterAmmo > beforeAmmo || state.pickups.some((pickup) => isAmmoPickup(pickup.type));
+      const ammoGained = afterAmmo > beforeAmmo || (state.containers[box.id].items ?? []).some((item) => isAmmoPickup(item.type as PickupType));
       if (ammoGained) foundAmmoCount += 1;
     }
 
     expect(foundAmmoCount / trials).toBeGreaterThanOrEqual(0.35);
-  });
+    // Builds twenty whole towns, so it scales with machine load; the default cap is too tight.
+  }, 120_000);
 });

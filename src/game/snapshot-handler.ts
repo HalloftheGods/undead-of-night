@@ -24,31 +24,16 @@ import { loadLeaderboard } from "./storage.ts";
 import { loadBests } from "./trip-record.ts";
 import { CANDIES } from "../../shared/candy.ts";
 import type { StatKey } from "../../shared/character-stats.ts";
-import type { CandyId } from "../../shared/protocol.ts";
 import { crashShake } from "../engine/vehicle-draw.ts";
 import {
   addExperience,
   allocateEarnedAp,
+  characterLevel,
   isCharacterMaxed,
   pickWinningStat,
   xpBarFraction
 } from "../../shared/progression.ts";
 import { loadProgression, saveProgression } from "../../shared/progression-save.ts";
-
-const LEVEL_UP_BOONS: readonly CandyId[] = [
-  "corn_rush",
-  "fang_taffy",
-  "pumpkin_fizz",
-  "witchs_brittle",
-  "bat_bites",
-  "jawbreaker",
-  "cherry_bombs",
-  "shock_tarts",
-  "everlasting_chews",
-  "frost_bites",
-  "grave_gels",
-  "full_size_bar"
-];
 
 const EVENT_MUSIC: Partial<Record<GameEvent["type"], "wave" | "intermission">> = {
   wave_start: "wave",
@@ -260,31 +245,30 @@ export class SnapshotHandler {
         const stat = winningStat.toUpperCase();
         const shout = `LEVEL UP: +${apLanded} ${stat}`;
         const shoutMs = readMs(shout);
+        // The boon is a Full-Size Bar for every level reached, so a level 2 survivor gets two.
+        const level = characterLevel(updatedState);
+        const boonDef = CANDIES.full_size_bar;
+        const boonSubtitle = `${boonDef.name} x${level}: ${boonDef.blurb}`;
+        const boonAt = now + shoutMs + 300;
+        const boonHoldMs = readMs("LEVEL UP BOON!", boonSubtitle);
+        const boonDoneAt = boonAt + boonHoldMs + 300;
+        // Each note stays up until the beat after it has had its turn, so none is pushed off by the next.
+        const sec = (ms: number): number => ms / 1000;
         renderer?.triggerLevelUpFx(playerX, playerY);
-        renderer?.addFloatingText("LEVEL UP!!!", playerX, playerY - 36, "#ffe066");
+        renderer?.addFloatingText("LEVEL UP!!!", playerX, playerY - 36, "#ffe066", sec(boonDoneAt));
         audio.playSfx("level_up");
         runHud.callout({ text: shout, tone: "chain", holdMs: shoutMs }, now);
 
         const pointsAt = now + 900;
         runHud.later(pointsAt, () => {
-          renderer?.addFloatingText(`+${apLanded} AP: ${stat}`, playerX, playerY - 26, "#ffc03c");
+          renderer?.addFloatingText(`+${apLanded} AP: ${stat}`, playerX, playerY - 26, "#ffc03c", sec(boonDoneAt - pointsAt));
         });
 
-        const boonAt = now + shoutMs + 300;
-        const boonIndex = Math.floor(Math.random() * LEVEL_UP_BOONS.length);
-        const boonId = LEVEL_UP_BOONS[boonIndex];
-        const boonDef = CANDIES[boonId];
-        let boonDoneAt = boonAt;
-        if (boonDef) {
-          const subtitle = `${boonDef.name}: ${boonDef.blurb}`;
-          const holdMs = readMs("LEVEL UP BOON!", subtitle);
-          boonDoneAt = boonAt + holdMs + 300;
-          runHud.later(boonAt, () => {
-            renderer?.addFloatingText(`BOON: ${boonDef.name.toUpperCase()}`, playerX, playerY - 16, "#38ef7d");
-            runHud.say({ title: "LEVEL UP BOON!", subtitle, tone: "hope", holdMs }, performance.now());
-          });
-          this.host.state.transport?.giveBoon?.(boonId);
-        }
+        runHud.later(boonAt, () => {
+          renderer?.addFloatingText(`BOON: ${boonDef.name.toUpperCase()} x${level}`, playerX, playerY - 16, "#38ef7d", sec(boonDoneAt - boonAt));
+          runHud.say({ title: "LEVEL UP BOON!", subtitle: boonSubtitle, tone: "hope", holdMs: boonHoldMs }, performance.now());
+        });
+        this.host.state.transport?.giveBoon?.(level);
 
         const newlyMaxed = isCharacterMaxed(playerSkin, updatedState);
         if (newlyMaxed) {
@@ -336,7 +320,7 @@ export class SnapshotHandler {
     }
     const openedContainer = event.type === "container_opened" && event.playerId === world.localId;
     if (openedContainer && event.items && event.items.length > 0) {
-      const activeMap = (world as any).worldMap ?? (world as any).map;
+      const activeMap = world.worldMap;
       const containerDef =
         event.container !== undefined && activeMap
           ? townContainers(activeMap)[event.container]

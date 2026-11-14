@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TICK_RATE, ZOMBIES } from '../shared/constants.ts';
+import { TICK_RATE } from '../shared/constants.ts';
 import { moveToNextTown } from '../shared/level-change.ts';
 import { hurtPlayer } from '../shared/player-health.ts';
 import { WEAPON_ORDER } from '../shared/protocol.ts';

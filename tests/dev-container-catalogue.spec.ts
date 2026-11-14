@@ -30,15 +30,15 @@ describe('Container Catalogue and CONTAINER_GRID_SIZE Generator', () => {
 
     const locker = map.get('locker');
     expect(locker).toBeDefined();
-    expect(locker?.defaultDimensions).toEqual({ cols: 5, rows: 9 });
+    expect(locker?.defaultDimensions).toMatchObject({ cols: 8, rows: 10 });
 
     const drawer = map.get('drawer');
     expect(drawer).toBeDefined();
-    expect(drawer?.defaultDimensions).toEqual({ cols: 4, rows: 4 });
+    expect(drawer?.defaultDimensions).toMatchObject({ cols: 12, rows: 12 });
 
     const desk = map.get('desk');
     expect(desk).toBeDefined();
-    expect(desk?.defaultDimensions).toEqual({ cols: 4, rows: 3 });
+    expect(desk?.defaultDimensions).toMatchObject({ cols: 6, rows: 6 });
   });
 
   it('generates full CONTAINER_GRID_SIZE TypeScript code snippet', () => {

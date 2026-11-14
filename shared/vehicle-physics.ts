@@ -1,7 +1,7 @@
 // One deterministic step for a driven car. The sim runs it each tick and the client runs it to
 // predict the local driver's car, so it reads no sim state, no clock and no randomness.
 
-import { FACING_HEADING, VEHICLE_BODIES, VEHICLE_FACINGS, type VehicleBody, type VehicleFacing } from './vehicle-bodies.ts';
+import { FACING_HEADING, VEHICLE_BODIES, type VehicleBody, type VehicleFacing } from './vehicle-bodies.ts';
 
 /** Fastest a car goes forward, in px/s. */
 export const VEHICLE_TOP_SPEED = 220;

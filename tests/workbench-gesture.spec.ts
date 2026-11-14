@@ -49,11 +49,10 @@ describe('workbench tactile gestures', () => {
       expect(counterStep.ratcheted).toBe(false);
 
       // Move clockwise another 1.75 turns to complete 2 full turns (4 * PI)
-      let currentAngle = 0;
       const steps = 30;
       const totalSweep = Math.PI * 4;
       for (let i = 1; i <= steps; i++) {
-        currentAngle = (i / steps) * totalSweep;
+        const currentAngle = (i / steps) * totalSweep;
         const x = cx + Math.cos(currentAngle) * 50;
         const y = cy + Math.sin(currentAngle) * 50;
         twist.update(x, y, cx, cy);

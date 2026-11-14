@@ -20,7 +20,7 @@ import {
   type InventoryGrid,
 } from '../../../shared/grid-inventory.ts';
 import type { ContainerKind } from '../../../shared/containers.ts';
-import { layoutLootUi, lootHitAt, type EditId, type LootEditView, type LootHit } from '../../engine/loot-ui.ts';
+import { layoutLootUi, lootHitAt, type EditId, type LibraryEntry, type LootEditView, type LootHit } from '../../engine/loot-ui.ts';
 import { canvasEditing } from '../../game/dev/canvas-edit.ts';
 import { setLootWindow, type LootWindow } from '../../game/loot-view.ts';
 import {
@@ -44,9 +44,14 @@ interface Props {
   containerArt?: ContainerArt | null;
   /** Where this object is in the list the bench steps through. */
   position?: string;
+  /** An item bench: this item is placed in the grid and selected, so its footprint is what the editor changes. */
+  focusItem?: string;
+  /** The library of containers shown in the editor's right-hand column. */
+  library?: readonly LibraryEntry[];
+  libraryCurrent?: string;
 }
 
-const props = withDefaults(defineProps<Props>(), { containerArt: null });
+const props = withDefaults(defineProps<Props>(), { containerArt: null, focusItem: undefined });
 const emit = defineEmits<{
   close: [];
   /** The container's size changed; the bench keeps it and saves it. */
@@ -57,6 +62,8 @@ const emit = defineEmits<{
   save: [];
   /** Go to the previous (-1) or next (1) object. */
   step: [direction: -1 | 1];
+  /** A container in the library was clicked: load it into the editor. */
+  pick: [id: string];
 }>();
 
 const MIN_SIDE = 1;
@@ -80,6 +87,11 @@ const state = createDualLootState({
   backpackTier: 'satchel',
 });
 PACK_SAMPLE.forEach((type, i) => autoPackItem(state.backpackGrid, { id: `pack-${i}`, type, rotated: false }));
+if (props.focusItem) {
+  autoPackItem(state.containerGrid, { id: 'focus', type: props.focusItem, rotated: false });
+  state.selectedItemId = 'focus';
+  selectedType.value = props.focusItem;
+}
 
 /** The footprints as the game has them, put back when the editor closes so a preview never changes a run. */
 const originals = new Map<string, GridFootprint | undefined>();
@@ -98,6 +110,9 @@ function editView(): LootEditView {
     on: editOn.value,
     hint: editOn.value ? HINTS.edit : HINTS.play,
     ...(props.position ? { position: props.position } : {}),
+    benchOnly: true,
+    library: props.library ?? [],
+    libraryCurrent: props.libraryCurrent,
     cols: state.containerGrid.cols,
     rows: state.containerGrid.rows,
     item: type && fp ? { type, width: fp.width, height: fp.height } : null,
@@ -251,6 +266,10 @@ function onClick(event: MouseEvent): void {
   if (event.target !== canvas) return;
   const hit = hitAt(event);
   if (!hit) return;
+  if (hit.kind === 'library') {
+    emit('pick', hit.id);
+    return;
+  }
   if (hit.kind === 'edit') onEdit(hit.id);
   else if (editOn.value) {
     if (hit.kind === 'cell') onEditCell(hit);

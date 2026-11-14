@@ -59,7 +59,11 @@ const BANNED: readonly Ban[] = [
 ];
 
 /** Hits that exist on purpose, as { path from the app root: { ban name: why it is safe } }. A manual search found none today. */
-const ALLOWED: Readonly<Record<string, Readonly<Record<string, string>>>> = {};
+const ALLOWED: Readonly<Record<string, Readonly<Record<string, string>>>> = {
+  'shared/grid-inventory.ts': {
+    'Math.random': 'only the default of randomPackItem rng; the room (shared/container-search.ts) always passes sim.rng, the dev inventory page passes its own',
+  },
+};
 
 const scanned = [...new Set([...tsFilesIn(ROOM_DIR), ...tsFilesIn(LOBBY_DIR), ...LOOSE_FILES, ...reachableFrom(ROOTS)])].sort();
 const label = (file: string): string => relative(APP, file);

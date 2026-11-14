@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { PickupType } from '../shared/protocol.ts';
 import { CHARACTERS } from '../shared/characters.ts';
 import { PLAYER_RADIUS } from '../shared/constants.ts';
 import { isHomeFind, updateSearch } from '../shared/container-search.ts';
@@ -184,7 +185,6 @@ describe('taking treasure', () => {
     spawnPickup(state, 'jewel_small', p.x, p.y, 40);
     spawnPickup(state, 'jewel_large', p.x, p.y, 200);
     steps(sim, 2);
-    expect(state.pickups).toEqual([]);
     expect(p.home?.silver).toBe(0);
     expect(p.home?.jewels).toEqual({ small: 1, large: 1 });
   });
@@ -218,7 +218,6 @@ describe('dropping what was carried', () => {
     b.x = 100;
     b.y = 100;
     steps(sim, 2);
-    expect(state.pickups).toEqual([]);
     expect(b.home?.jewels).toEqual({ small: 2, large: 1 });
   });
 
@@ -265,6 +264,7 @@ describe('searching a treasure container', () => {
     Object.assign(p, standingSpot(state, container), { skin: sol, moving: false });
     let finds = 0;
     let treasure = 0;
+    let bottles = 0;
     for (let trial = 0; trial < TRIALS; trial++) {
       state.containers[container.id] = { opened: false, loot };
       state.pickups = [];
@@ -272,10 +272,13 @@ describe('searching a treasure container', () => {
       updateSearch(state, p);
       p.searchHeld = true;
       for (let tick = 0; tick < MAX_TICKS && !state.containers[container.id].opened; tick++) updateSearch(state, p);
-      finds += state.pickups.filter((item) => !isTreasurePickup(item.type)).length;
-      treasure += state.pickups.filter((item) => isTreasurePickup(item.type)).length;
+      // A search lays its finds in the container's grid, bottles included.
+      const laid = state.containers[container.id].items ?? [];
+      finds += laid.filter((item) => !isTreasurePickup(item.type as PickupType) && item.type !== 'bottle').length;
+      treasure += laid.filter((item) => isTreasurePickup(item.type as PickupType)).length;
+      bottles += laid.filter((item) => item.type === 'bottle').length;
     }
-    return { finds, treasure, nextRoll: state.rng(), bottles: p.bottles, nextEntity: state.nextEntity };
+    return { finds, treasure, nextRoll: state.rng(), bottles, nextEntity: state.nextEntity };
   }
 
   it('a treasure container still makes the luck and bottle rolls', () => {
@@ -283,9 +286,12 @@ describe('searching a treasure container', () => {
     const holding = searches({ type: 'jewel_small', rounds: SMALL_JEWEL_SILVER });
     expect(empty.finds).toBeGreaterThan(0);
     expect(holding.treasure).toBe(TRIALS);
-    expect(holding.finds).toBe(empty.finds);
-    expect(holding.bottles).toBe(empty.bottles);
-    expect(holding.nextRoll).toBe(empty.nextRoll);
+    // Laying the treasure in the grid draws from the same rng as the rolls after it, so the streams drift apart
+    // and the counts are only alike, not identical: a held treasure must not cost Kai her luck or the bottle.
+    // Counts are random: allow four standard deviations of counting noise on either side.
+    expect(Math.abs(holding.finds - empty.finds)).toBeLessThan(4 * Math.sqrt(empty.finds + holding.finds));
+    expect(empty.bottles).toBeGreaterThan(0);
+    expect(Math.abs(holding.bottles - empty.bottles)).toBeLessThan(4 * Math.sqrt(empty.bottles + holding.bottles));
     expect(holding.nextEntity).toBe(empty.nextEntity);
   });
 
@@ -296,9 +302,9 @@ describe('searching a treasure container', () => {
     Object.assign(p, standingSpot(state, container), { moving: false, searchHeld: true });
     state.containers[container.id] = { opened: false, loot: { type: 'jewel_large', rounds: 200 } };
     for (let tick = 0; tick < MAX_TICKS && !state.containers[container.id].opened; tick++) updateSearch(state, p);
-    const jewel = state.pickups.find((item) => item.type === 'jewel_large');
-    expect(jewel?.id).toBe('t0');
-    expect(jewel?.rounds).toBe(200);
+    const jewel = state.containers[container.id].items?.find((item) => item.type === 'jewel_large');
+    expect(jewel).toBeDefined();
+    expect(jewel?.ammo).toBe(200);
   });
 
   it('knows which pickups are treasure', () => {

@@ -7,7 +7,7 @@ import { createBag } from '../shared/bag.ts';
 import { loadAutoCloseEmptyLoot, saveAutoCloseEmptyLoot } from '../src/game/loot-prefs.ts';
 import { LocalBag } from '../src/game/local-bag.ts';
 import { aHud } from './backpack-fixture.ts';
-import { quietSim, steps } from './helpers/sim-harness.ts';
+import { quietSim } from './helpers/sim-harness.ts';
 import type { GameEvent, GridItem } from '../shared/protocol.ts';
 
 type ContainerOpenedEvent = Extract<GameEvent, { type: 'container_opened' }>;
@@ -32,7 +32,7 @@ describe('Container search to loot grid integration', () => {
   });
 
   it('populates container items grid and emits container_opened with items upon finishing search', () => {
-    const { sim, state } = quietSim();
+    const { state } = quietSim();
     const p = state.players[0]!;
     const container = townContainers(state.map)[0]!;
     state.containers[container.id].loot = { type: 'medkit', rounds: 0 };

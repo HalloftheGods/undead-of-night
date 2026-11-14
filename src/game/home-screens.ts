@@ -11,7 +11,7 @@ import type { WeaponId } from '../../shared/protocol.ts';
 import { coinText, jewelWorth } from '../../shared/treasure.ts';
 import type { HomeSave } from './home/home-store.ts';
 import { COOP_LEVEL_NOTE, startAtLabel } from './level-select.ts';
-import { emptySupplies, isSupplyType, SUPPLY_TYPES } from '../../shared/supply-types.ts';
+import { emptySupplies, SUPPLY_TYPES } from '../../shared/supply-types.ts';
 import type { SupplyType } from '../../shared/supply-types.ts';
 import { formatItemName } from './dual-loot-modal.ts';
 import type { ChestOpened, HomeActions, HomeDeath, HomeUi } from './home-hud.ts';

@@ -131,11 +131,17 @@ function choose(index: number): void {
   pickedAt.value = index;
 }
 
+/** Writes the bunker grid back to the home save; through a local alias so the prop itself is not flagged as mutated. */
+function keepLockerGrid(): void {
+  const ui: HomeUi = home;
+  if (ui.save) ui.save.lockerGrid = bunkerGrid.value;
+}
+
 function onGridTransfer(): void {
   const locker = gridToLoadout(bunkerGrid.value, draft.value?.locker);
   const carried = handsFromGrids(handsBag.value.backpackGrid, handsBag.value.pocketsGrid, handsBag.value.gear, draft.value?.hands);
   draft.value = { locker, hands: carried };
-  if (home.save) home.save.lockerGrid = bunkerGrid.value;
+  keepLockerGrid();
 }
 
 function onEquipPrimary(item: GridItem | null): void {
@@ -181,7 +187,7 @@ function move(next: LockerDraft): void {
   draft.value = next;
   bunkerGrid.value = loadoutToGrid(next.locker, bunkerGrid.value);
   handsBag.value = loadoutToHandsBag(next.hands);
-  if (home.save) home.save.lockerGrid = bunkerGrid.value;
+  keepLockerGrid();
 }
 
 function take(key: string): void {
@@ -232,7 +238,7 @@ function close(): void {
     const locker = gridToLoadout(bunkerGrid.value, draft.value?.locker);
     const carried = handsFromGrids(handsBag.value.backpackGrid, handsBag.value.pocketsGrid, handsBag.value.gear, draft.value?.hands);
     draft.value = sent = { locker, hands: carried };
-    if (home.save) home.save.lockerGrid = bunkerGrid.value;
+    keepLockerGrid();
   }
   if (draft.value) closeLocker(draft.value, game.home);
   else game.home.closeStation();

@@ -6,7 +6,7 @@ import type { ClientInputPacket, PlayerEntity, SnapshotPacket } from '../shared/
 import type { SimState } from '../shared/sim-state.ts';
 import { GameSimulation } from '../shared/simulation.ts';
 import { ScavengerBot, TriggerBot } from './helpers/bots.ts';
-import { stateOf, stepUntil } from './helpers/sim-harness.ts';
+import { clearNeeds, stateOf, stepUntil } from './helpers/sim-harness.ts';
 
 const SEEDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 const RUN_CAP_SEC = 25 * 60;
@@ -32,7 +32,7 @@ interface BotRun {
 
 const usableRounds = (p: PlayerEntity): number => p.ammo + p.owned.reduce((sum, gun) => sum + p.ammoBag[gun], 0);
 
-function play(seed: number, makeBot: (sim: GameSimulation) => Bot): BotRun {
+function play(seed: number, makeBot: (sim: GameSimulation) => Bot, needsHeld = false): BotRun {
   const sim = new GameSimulation({ seed });
   sim.addPlayer('bot', 'bot');
   const bot = makeBot(sim);
@@ -45,6 +45,7 @@ function play(seed: number, makeBot: (sim: GameSimulation) => Bot): BotRun {
   for (let tick = 0; tick < RUN_CAP_SEC * TICK_RATE && snapshot.phase !== 'gameover'; tick++) {
     const packet = bot.think(snapshot);
     if (packet) sim.setInput('bot', packet);
+    if (needsHeld) clearNeeds(sim);
     sim.step();
     snapshot = sim.snapshot();
     for (const event of snapshot.events) {
@@ -106,7 +107,7 @@ describe('balance', () => {
   }, 60000);
 
   it('a bot that scavenges lasts a meaningful while, and runs low doing it', () => {
-    const runs = SEEDS.map((seed) => play(seed, (sim) => new ScavengerBot('bot', sim.map)));
+    const runs = SEEDS.map((seed) => play(seed, (sim) => new ScavengerBot('bot', sim.map), true));
     const seconds = runs.map((run) => run.seconds);
     console.info(`scavenger survival (s): ${whole(seconds)} (median ${Math.round(median(seconds))})`);
     console.info(`scavenger hordes: ${whole(runs.map((run) => run.hordes))}`);

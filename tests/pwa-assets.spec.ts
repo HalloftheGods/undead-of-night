@@ -47,7 +47,8 @@ describe('web manifest', () => {
 });
 
 describe('index.html', () => {
-  const html = read('index.html').toString();
+  // Attribute whitespace is formatter-owned, so collapse it before matching.
+  const html = read('index.html').toString().replace(/\s+/g, ' ');
 
   it('links the manifest and the Apple touch icon and sets the iOS app tags', () => {
     expect(html).toContain('rel="manifest" href="/manifest.webmanifest"');

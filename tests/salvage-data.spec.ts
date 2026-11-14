@@ -6,7 +6,9 @@ import { EFFECT_ORDER } from '../shared/round-effect-data.ts';
 
 describe('salvage data', () => {
   it('is a pickup like any other, appended after the rest', () => {
-    expect(PICKUP_TYPES.slice(-SALVAGE_TYPES.length)).toEqual([...SALVAGE_TYPES]);
+    // Salvage sits as one block in the pickup list (fortification items were appended after it).
+    const at = PICKUP_TYPES.indexOf(SALVAGE_TYPES[0]);
+    expect(PICKUP_TYPES.slice(at, at + SALVAGE_TYPES.length)).toEqual([...SALVAGE_TYPES]);
     expect(SALVAGE_TYPES.every(isSalvagePickup)).toBe(true);
     expect(isSalvagePickup('jewel_small')).toBe(false);
   });

@@ -1,9 +1,10 @@
-<template></template>
+<template><span hidden /></template>
 
 <script setup lang="ts">
 /**
  * Nightly Run drawn on the game canvas instead of DailyPage (the "In-game menus" switch). It has no markup: it works out
  * the same words and choices DailyPage does, hands them to the canvas setup screen, and runs what the screen asks for.
+ * The Mode card picks Solo or Multiplayer; the one run button starts that run (or its practice once tonight's counts).
  */
 import { computed, onBeforeUnmount, onMounted, ref, watchEffect } from 'vue';
 import { difficultyDef } from '../../shared/difficulty.ts';
@@ -15,7 +16,8 @@ import { loadCharacter, saveCharacter } from '../game/character-pref.ts';
 import { countdownText, dailyShare, dayLabel, loadDailyLog, mpResultOf, msUntilTomorrow, nightFacts, soloResultOf, streakOf, todaysNight } from '../game/daily-night.ts';
 import type { UiState } from '../game/hud-state.ts';
 import { motion } from '../game/motion.ts';
-import { survivorPick } from '../game/setup-picks.ts';
+import type { PlayMode } from '../game/play-flow.ts';
+import { modePick, survivorPick } from '../game/setup-picks.ts';
 import type { FixedCard, PickKey } from '../game/setup-picks.ts';
 import { streakReward } from '../game/streak-reward.ts';
 import { useGame } from './use-game.ts';
@@ -39,6 +41,7 @@ const ready = computed(() => ui.art !== null && !ui.connecting);
 
 const left = ref(msUntilTomorrow());
 const survivor = ref(loadCharacter());
+const mode = ref<PlayMode>('solo');
 const progression = checkApUpkeep().book;
 const share = dailyShare(night.key);
 /** What the Copy button last said, shown for two seconds like the page's own. */
@@ -46,8 +49,8 @@ const copied = ref<'idle' | 'done' | 'failed'>('idle');
 const COPY_LABELS = { idle: 'Copy result', done: 'Copied', failed: 'Copy failed' } as const;
 
 const fixed = computed<readonly FixedCard[]>(() => [
-  { key: 'town', number: 1, label: 'Tonight', name: facts.title, sprite: ui.art?.ui.levelScenes[night.level - 1] ?? null },
-  { key: 'difficulty', number: 2, label: 'Difficulty', name: difficultyDef(night.difficulty).label, sprite: ui.art?.ui.difficulty[night.difficulty] ?? null },
+  { key: 'difficulty', number: 2, label: 'Difficulty', name: difficultyDef(night.difficulty).label, sprite: ui.art?.ui.difficulty[night.difficulty] ?? null, before: 'who' },
+  { key: 'town', number: 3, label: 'Tonight', name: facts.title, sprite: ui.art?.ui.levelScenes[night.level - 1] ?? null, before: 'who' },
 ]);
 
 const lines = computed<readonly SetupFact[]>(() => {
@@ -66,26 +69,37 @@ const lines = computed<readonly SetupFact[]>(() => {
   return out;
 });
 
+/** The run button for the mode chosen: tonight's counted run, or practice once it is banked. */
+const runLabel = computed(() => {
+  const isMulti = mode.value === 'multi';
+  if (isMulti) return mp ? 'MP Practice' : 'Nightly MP Lobby';
+  return solo ? 'Solo Practice' : 'Solo Run';
+});
+
 const model = computed<SetupModel>(() => ({
   heading: 'Nightly Run',
-  picks: [survivorPick(survivor.value, 3, progression)],
+  picks: [modePick(mode.value, 1), survivorPick(survivor.value, 4, progression)],
   levelLink: null,
   fixed: fixed.value,
   facts: lines.value,
   callsign: null,
   startLine: null,
   failure: null,
-  start: { label: 'Solo Run', enabled: ready.value },
+  start: { label: runLabel.value, enabled: ready.value },
   resume: null,
   actions: [
     ...(share ? [{ id: 'share' as const, label: COPY_LABELS[copied.value], enabled: true, primary: false }] : []),
-    { id: 'solo', label: solo ? 'Solo Practice' : 'Solo Run', enabled: ready.value, primary: false },
-    { id: 'mp', label: mp ? 'MP Practice' : 'Nightly MP Lobby', enabled: ready.value, primary: true },
+    { id: mode.value === 'multi' ? 'mp' : 'solo', label: runLabel.value, enabled: ready.value, primary: true },
   ],
   open: null,
 }));
 
 function choose(key: PickKey, id: string): void {
+  const isMode = key === 'mode';
+  if (isMode) {
+    mode.value = id as PlayMode;
+    return;
+  }
   const isSurvivor = key === 'who';
   if (!isSurvivor) return;
   survivor.value = Number(id);

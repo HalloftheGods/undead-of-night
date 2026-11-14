@@ -1,16 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { TICK_DT, TICK_RATE } from '../shared/constants.ts';
+import { TICK_DT } from '../shared/constants.ts';
 import { generateWorldMap } from '../shared/world-map.ts';
 import {
   canTriggerRadioTower,
-  RADIO_TOWER_ALARM_NOISE_RADIUS,
   RADIO_TOWER_HOLD_SEC,
   RADIO_TOWER_REACH,
   radioTowerNear,
   radioTowerPrompt,
   triggerRadioTowerAlarm,
 } from '../shared/radio-tower.ts';
-import { input, quietSim, stateOf, steps } from './helpers/sim-harness.ts';
+import { input, quietSim, steps } from './helpers/sim-harness.ts';
 import { BUNKER_SEED } from '../shared/home-protocol.ts';
 
 describe('radio tower map generation', () => {

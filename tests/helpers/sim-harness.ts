@@ -1,4 +1,5 @@
 import { EXIT_HOLD_SEC, TICK_RATE } from '../../shared/constants.ts';
+import { createDefaultSurvivalNeeds } from '../../shared/survival-needs.ts';
 import { openExit } from '../../shared/level-exit.ts';
 import { levelDef } from '../../shared/levels.ts';
 import { BUILDING_DEFS, TILE_SIZE } from '../../shared/protocol.ts';
@@ -31,6 +32,15 @@ export function input(overrides: Partial<ClientInputPacket> = {}): ClientInputPa
 
 /** The sim's private state, for arranging scenes the public API cannot reach. */
 export const stateOf = (sim: GameSimulation): SimState => sim['sim'];
+
+/**
+ * Survivors' hunger, thirst, wounds and infection put back to fresh. The scavenger and circling bots fire, loot and
+ * walk but never eat, drink, bandage or take pills, so left alone they bleed out or turn; the bot tests measure
+ * combat, ammo and pacing, not that system, which has its own specs.
+ */
+export function clearNeeds(sim: GameSimulation): void {
+  for (const p of stateOf(sim).players) if (p.needs) p.needs = createDefaultSurvivalNeeds();
+}
 
 export function steps(sim: GameSimulation, ticks: number): void {
   for (let i = 0; i < ticks; i++) sim.step();

@@ -84,16 +84,10 @@ describe('useCandyMagazinePages Controller', () => {
       '../src/components/candy-magazine/use-candy-magazine-pages.ts'
     );
     const leaves = candyMagazineLeaves();
-    let turned = 0;
-    let closed = 0;
     const pages = useCandyMagazinePages(
       leaves,
-      () => {
-        turned += 1;
-      },
-      () => {
-        closed += 1;
-      },
+      () => {},
+      () => {},
     );
 
     // Initial state: closed cover

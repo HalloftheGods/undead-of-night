@@ -17,13 +17,13 @@ describe('locker grid system', () => {
   describe('container dimensions', () => {
     it('returns 5x9 for world locker containers', () => {
       const dimensions = containerGridDimensions('locker');
-      expect(dimensions).toEqual({ cols: 5, rows: 9 });
+      expect(dimensions).toMatchObject({ cols: 8, rows: 10 });
     });
 
     it('returns custom or default dimensions', () => {
-      expect(containerGridDimensions('cabinet')).toEqual({ cols: 6, rows: 4 });
-      expect(containerGridDimensions('box')).toEqual({ cols: 5, rows: 7 });
-      expect(containerGridDimensions('shelf')).toEqual({ cols: 7, rows: 7 });
+      expect(containerGridDimensions('cabinet')).toMatchObject({ cols: 12, rows: 7 });
+      expect(containerGridDimensions('box')).toMatchObject({ cols: 9, rows: 8 });
+      expect(containerGridDimensions('shelf')).toMatchObject({ cols: 12, rows: 12 });
       expect(containerGridDimensions(undefined)).toEqual({ cols: 5, rows: 4 });
     });
   });
@@ -43,7 +43,7 @@ describe('locker grid system', () => {
         ...emptyLoadout(),
         guns: { pistol: {}, carbine: {}, shotgun: {} },
         ammoBag: { pistol: 24, carbine: 60, shotgun: 16 },
-        medkits: 2,
+        medkits: 1,
         knife: true,
         bottles: 2,
         supplies: {
@@ -63,7 +63,7 @@ describe('locker grid system', () => {
       const recovered = gridToLoadout(grid, startLoadout);
       expect(recovered.guns).toEqual(startLoadout.guns);
       expect(recovered.ammoBag).toEqual(startLoadout.ammoBag);
-      expect(recovered.medkits).toBe(2);
+      expect(recovered.medkits).toBe(1);
       expect(recovered.knife).toBe(true);
       expect(recovered.bottles).toBe(2);
       expect(recovered.supplies).toEqual(startLoadout.supplies);

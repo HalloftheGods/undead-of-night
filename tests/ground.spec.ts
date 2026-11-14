@@ -16,7 +16,7 @@ function firstOf(level: number, kind: TileKind): { x: number; y: number } {
 
 describe('ground effects', () => {
   it('only slow and muffle the ground a biome lays down', () => {
-    for (const kind of Object.keys(GROUND_EFFECTS)) expect(['water', 'snow', 'sludge', 'ash']).toContain(kind);
+    for (const kind of Object.keys(GROUND_EFFECTS)) expect(['water', 'snow', 'sludge', 'ash', 'floor_sewer_channel', 'floor_sewer_channel_v']).toContain(kind);
     const map = generateWorldMap(SEED, 1);
     expect(groundEffect(map, map.spawn.x, map.spawn.y)).toEqual({ speed: 1, noise: 1 });
     expect(groundAt(map, -5, -5)).toBeNull();

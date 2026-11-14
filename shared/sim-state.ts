@@ -93,6 +93,10 @@ export interface PlayerState extends Omit<PlayerEntity, 'mags' | 'gear' | 'bottl
   /** Candy carried, oldest first, and candy working now (`shared/candy.ts`). The bag has no bottom. */
   candy: CandyId[];
   sugar: SugarState[];
+  /** Full-Size Bars owed on the next zombie death, from a level up. Each is spent on a kill. */
+  barDropsOwed: number;
+  /** Once an owed bar has dropped, later kills have a 1 in 10 chance of one more, until the next level up. */
+  barDropsLive: boolean;
   /** Candy picked out of the bag and not yet eaten, in the order picked. `true` is the first in the bag. */
   eatQueued: (true | CandyId)[];
   /** Kept for the run, and the three on offer while the choice is open (`shared/keepsakes.ts`). */

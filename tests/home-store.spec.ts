@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { TripReceipt } from '../shared/home-protocol.ts';
 import { emptyLoadout } from '../shared/loadout.ts';
 import { createBrowserHomeStore } from '../src/game/home/browser-home-store.ts';
+import { migrateCamp } from '../src/game/home/camp-migrate.ts';
 import { smeltTick } from '../src/game/home/forge.ts';
 import { settleHands } from '../src/game/home/gear-pool.ts';
 import { emptySave } from '../src/game/home/home-store.ts';
@@ -129,7 +130,7 @@ describe('the browser store', () => {
     await store.save({ ...written, openTrip: trip() });
     const { version: _version, ...loaded } = await store.load();
     const { version: _old, ...expected } = { ...written, openTrip: trip() };
-    expect(loaded).toEqual(expected);
+    expect(loaded).toEqual(migrateCamp(expected as HomeSave, { radio: false, tracks: [] }));
   });
 });
 

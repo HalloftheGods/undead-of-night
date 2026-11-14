@@ -37,7 +37,6 @@ export function seatDriver(sim: GameSimulation, state: SimState): { car: Vehicle
   });
   if (!parked) throw new Error('no roomy car on this map');
   const heading = FACING_HEADING[parked.parked.facing];
-  const half = Math.max(parked.box.x1 - parked.box.x0, parked.box.y1 - parked.box.y0) / 2;
   const off = PLAYER_RADIUS + 4;
   const wide = parked.box.x1 - parked.box.x0 > parked.box.y1 - parked.box.y0;
   const sides = wide

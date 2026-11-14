@@ -4,9 +4,10 @@ import { modeFacts } from '../src/game/mode-select-view.ts';
 import { STYLE_CARDS, styleFacts, styleIndex } from '../src/game/style-select-view.ts';
 
 describe('style select view', () => {
-  it('lists Arcade then Campaign, one card for each style', () => {
+  it('lists Arcade then Campaign, one card for each picked style', () => {
     expect(STYLE_CARDS.map((each) => each.style)).toEqual(['arcade', 'campaign']);
-    expect([...STYLE_CARDS.map((each) => each.style)].sort()).toEqual([...GAME_STYLES].sort());
+    // Daily is its own title entry, not a card on the Style step.
+    expect([...STYLE_CARDS.map((each) => each.style)].sort()).toEqual(GAME_STYLES.filter((each) => each !== 'daily').sort());
     expect(STYLE_CARDS.map((each) => each.label)).toEqual(['Arcade', 'Campaign']);
     expect(styleIndex('arcade')).toBe(0);
     expect(styleIndex('campaign')).toBe(1);

@@ -249,8 +249,8 @@ export class WorldRenderer {
   }
 
   /** Add floating text over the world (e.g. "+1 AP"). */
-  addFloatingText(text: string, x: number, y: number, color: string): void {
-    this.fx.particles.addText(text, x, y, color);
+  addFloatingText(text: string, x: number, y: number, color: string, life?: number): void {
+    this.fx.particles.addText(text, x, y, color, life);
   }
 
   handleEvent(event: GameEvent, ctx: Omit<FxContext, 'time'>): void {

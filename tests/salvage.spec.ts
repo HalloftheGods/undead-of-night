@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CHARACTERS } from '../shared/characters.ts';
+import type { PickupType } from '../shared/protocol.ts';
 import { PLAYER_RADIUS } from '../shared/constants.ts';
 import { isHomeFind, updateSearch } from '../shared/container-search.ts';
 import { containerInReach, townContainers } from '../shared/containers.ts';
@@ -191,6 +192,7 @@ describe('searching a salvage container', () => {
     Object.assign(p, standingSpot(state, container), { skin: sol, moving: false });
     let finds = 0;
     let salvage = 0;
+    let bottles = 0;
     for (let trial = 0; trial < TRIALS; trial++) {
       state.containers[container.id] = { opened: false, loot };
       state.pickups = [];
@@ -198,10 +200,13 @@ describe('searching a salvage container', () => {
       updateSearch(state, p);
       p.searchHeld = true;
       for (let tick = 0; tick < MAX_TICKS && !state.containers[container.id].opened; tick++) updateSearch(state, p);
-      finds += state.pickups.filter((item) => !isHomeFind(item.type)).length;
-      salvage += state.pickups.filter((item) => isSalvagePickup(item.type)).length;
+      // A search lays its finds in the container's grid, bottles included.
+      const laid = state.containers[container.id].items ?? [];
+      finds += laid.filter((item) => !isHomeFind(item.type as PickupType) && item.type !== 'bottle').length;
+      salvage += laid.filter((item) => isSalvagePickup(item.type as PickupType)).length;
+      bottles += laid.filter((item) => item.type === 'bottle').length;
     }
-    return { finds, salvage, nextRoll: state.rng(), bottles: p.bottles, nextEntity: state.nextEntity };
+    return { finds, salvage, nextRoll: state.rng(), bottles, nextEntity: state.nextEntity };
   }
 
   it('still makes the luck and bottle rolls, as treasure does', () => {
@@ -209,9 +214,12 @@ describe('searching a salvage container', () => {
     const holding = searches({ type: 'scrap_steel', rounds: 1 });
     expect(empty.finds).toBeGreaterThan(0);
     expect(holding.salvage).toBe(TRIALS);
-    expect(holding.finds).toBe(empty.finds);
-    expect(holding.bottles).toBe(empty.bottles);
-    expect(holding.nextRoll).toBe(empty.nextRoll);
+    // Laying the salvage in the grid draws from the same rng as the rolls after it, so the streams drift apart
+    // and the counts are only alike, not identical.
+    // Counts are random: allow four standard deviations of counting noise on either side.
+    expect(Math.abs(holding.finds - empty.finds)).toBeLessThan(4 * Math.sqrt(empty.finds + holding.finds));
+    expect(empty.bottles).toBeGreaterThan(0);
+    expect(Math.abs(holding.bottles - empty.bottles)).toBeLessThan(4 * Math.sqrt(empty.bottles + holding.bottles));
     expect(holding.nextEntity).toBe(empty.nextEntity);
   });
 

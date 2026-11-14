@@ -50,6 +50,7 @@
   <RadioPage v-else-if="nav.page === 'radio'" :ui @close="close" />
   <ControlsPageCanvas v-else-if="nav.page === 'controls' && pagesOnCanvas.controls" @close="close" />
   <ControlsPage v-else-if="nav.page === 'controls'" @close="close" />
+  <DevInventoryPageCanvas v-else-if="nav.page === 'dev_inventory' && devOnCanvas" :art="ui.art" @close="close" />
   <DevInventoryPage v-else-if="nav.page === 'dev_inventory'" :art="ui.art" @close="close" />
   <OptionsPageCanvas v-else-if="optionsKind !== null && pagesOnCanvas[optionsKind]" :ui :kind="optionsKind" @close="close" />
   <AudioPage v-else-if="nav.page === 'audio'" :ui @close="close" />
@@ -81,6 +82,7 @@ import ControlsPageCanvas from './ControlsPageCanvas.vue';
 import OptionsPageCanvas from './OptionsPageCanvas.vue';
 import PlaySetupCanvas from './PlaySetupCanvas.vue';
 import SoundTestPageCanvas from './SoundTestPageCanvas.vue';
+import DevInventoryPageCanvas from './dev/DevInventoryPageCanvas.vue';
 import RadioPageCanvas from './RadioPageCanvas.vue';
 import RecordsPageCanvas from './RecordsPageCanvas.vue';
 import PressAnyKey from './PressAnyKey.vue';
@@ -161,6 +163,8 @@ const dailyOnCanvas = ref(false);
 const pagesOnCanvas = ref({ records: false, controls: false, radio: false, sound: false, gameplay: false, display: false, audio: false });
 const OPTIONS_PAGES = ['gameplay', 'display', 'audio'] as const;
 const optionsKind = computed(() => OPTIONS_PAGES.find((each) => each === nav.value.page) ?? null);
+/** The dev bench is drawn on the canvas when the in-game menus are on; the Vue bench stays for when they are off. */
+const devOnCanvas = computed(() => canvasMenus.value && !ui.touch && ui.art !== null);
 function opensOnCanvas(): boolean {
   return usesCanvasSetup({
     pref: canvasMenus.value,

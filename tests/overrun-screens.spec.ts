@@ -34,7 +34,7 @@ describe('an overrun death', () => {
 
   it('leaves a trip death as it was', () => {
     const trip = { receipt: { outcome: 'died', level: 3, silver: 0, jewels: { small: 1, large: 0 } }, lost: gear() } as unknown as HomeDeath;
-    expect(deathHeading(trip)).toBe('You died in Threetropolis');
+    expect(deathHeading(trip)).toBe('You died in Three Suns');
     expect(deathSummary(trip)).toEqual(['1 small jewel', '40 silver once smelted']);
   });
 });

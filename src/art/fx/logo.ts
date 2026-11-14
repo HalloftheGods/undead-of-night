@@ -9,7 +9,7 @@ import type { Legend, Point } from '../kit.ts';
 import { RAMPS } from '../palette.ts';
 import type { Color } from '../palette.ts';
 import { STENCIL } from './lettering.ts';
-import { paintSky } from './logo-sky.ts';
+import { paintSky, swell } from './logo-sky.ts';
 import type { Grid } from './shared.ts';
 
 const { blood, bone, denim, fire, ink, wood } = RAMPS;
@@ -157,7 +157,7 @@ const RUNS: readonly RunShape[] = [
 const DRIPS: readonly (readonly [number, number, number, number])[] = [
   [11, 0, 2, 0], [20, 0, 1, 1], [35, 0, 2, 10], [55, 0, 2, 0], [66, 0, 0, 34], [82, 0, 1, 0], [100, 0, 2, 1],
   [108, 0, 2, 14], [122, 0, 1, 0], [146, 0, 2, 0], [161, 0, 2, 12], [182, 0, 1, 1], [194, 0, 2, 16], [212, 0, 1, 0], [232, 0, 0, 2], [250, 0, 2, 0],
-  [11, 1, 1, 1], [24, 1, 2, 0], [46, 1, 0, 2], [84, 1, 2, 1], [100, 1, 1, 0], [118, 1, 2, 1], [140, 1, 1, 1], [152, 1, 2, 0], [171, 1, 2, 2], [187, 1, 1, 0], [209, 1, 0, 5],
+  [11, 1, 1, 1], [24, 1, 2, 0], [42, 1, 1, 2],[84, 1, 2, 1], [100, 1, 1, 0], [118, 1, 2, 1], [140, 1, 1, 1], [152, 1, 2, 0], [171, 1, 2, 2], [187, 1, 1, 0], [209, 1, 0, 5],
 ];
 
 /** A drop that has let go of its run. */
@@ -392,14 +392,6 @@ function bottomOf(mask: PixelCanvas, x: number, word: Word): number {
   return -1;
 }
 
-/**
- * The blood at a point in the loop, 0 up to 1 and back to 0 with no seam. Each run's neck swells and
- * draws back on this curve, so the blood creeps down the letters and retreats.
- */
-function swell(phase: number): number {
-  return (1 - Math.cos(2 * Math.PI * phase)) / 2;
-}
-
 /** A drop lets go and falls a few rows, then the loop puts it back at its run. */
 const LOOSE_FALL = 4;
 
@@ -474,7 +466,7 @@ function buildLogoFrame(mask: PixelCanvas, phase: number): PixelSprite {
   letters.outline({ color: ink[0] });
   const art = new PixelCanvas(W, H);
   paintGlow(art, letters);
-  paintSky(art);
+  paintSky(art, phase);
   art.blit(letters);
   paintSubtitle(art);
   return art.toSprite(W, H, W / 2, H / 2);

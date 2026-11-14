@@ -6,7 +6,6 @@ import {
   nextTrackManual,
   nextTrackOnEnd,
   prevTrackManual,
-  saveRadioFavorites,
   shuffleIndices,
   toggleFavoriteTrack,
 } from '../src/game/radio-player.ts';

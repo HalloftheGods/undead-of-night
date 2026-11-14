@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { CHARACTERS, characterOf } from '../shared/characters.ts';
 import { CLATTER_CHANCE, CLATTER_RADIUS, LANDMARK_BUILDINGS } from '../shared/container-search.ts';
 import { CONTAINER_LOOT, containerLoot } from '../shared/container-loot.ts';
+import { DOOR_TAP_SEC } from '../shared/doors.ts';
+import { takeFromContainer } from '../shared/container-take.ts';
+import type { GridItem } from '../shared/grid-inventory.ts';
 import { containerInReach, SEARCH_SEC, townContainers } from '../shared/containers.ts';
 import type { Container } from '../shared/containers.ts';
 import { AMMO_FLOOR_SHARE, AMMO_PICKUPS, AMMO_POPULATION_SHARE, PLAYER_RADIUS, TICK_RATE } from '../shared/constants.ts';
@@ -110,29 +113,39 @@ describe('searching', () => {
     }
   });
 
-  it('drops what was inside at the searcher\'s feet, and they take it', () => {
+  it('lays what was inside in the container\'s grid, and they take it from there', () => {
     const { sim, state, p, container } = setup();
     state.containers[container.id].loot = { type: 'pistol_ammo', rounds: 4 };
     const before = p.ammoBag.pistol;
     hold(sim);
     steps(sim, ticksFor(container));
-    expect(p.ammoBag.pistol).toBe(before + 4);
     expect(state.containers[container.id].loot).toBeNull();
     expect(state.pickups).toEqual([]);
+    expect(p.ammoBag.pistol).toBe(before);
+    const stored = state.containers[container.id].items?.find((item) => item.type === 'pistol_ammo');
+    expect(stored).toMatchObject({ type: 'pistol_ammo', ammo: 4 });
+    expect(takeFromContainer(p, stored as GridItem)).toBeNull();
+    expect(p.ammoBag.pistol).toBe(before + 4);
   });
 
-  it('leaves what a full player cannot carry lying there', () => {
+  it('leaves what a full player cannot carry in the container', () => {
     const { sim, state, p, container } = setup();
     state.containers[container.id].loot = { type: 'medkit', rounds: 0 };
     p.medkits = 3;
     hold(sim);
     steps(sim, ticksFor(container));
-    expect(state.pickups.map((item) => item.type)).toEqual(['medkit']);
+    expect(state.pickups).toEqual([]);
+    const stored = state.containers[container.id].items?.find((item) => item.type === 'medkit');
+    expect(stored).toBeDefined();
+    expect(takeFromContainer(p, stored as GridItem)).toEqual(stored);
+    expect(p.medkits).toBe(3);
   });
 
   it('says so when there was nothing in it', () => {
     const { sim, state, container } = setup();
     state.containers[container.id].loot = null;
+    // A fixed high roll: no bottle, no clatter, no luck.
+    fixRoll(state, 0.99);
     hold(sim);
     steps(sim, ticksFor(container));
     const [opened] = eventsOf(sim.snapshot(), 'container_opened');
@@ -200,7 +213,8 @@ describe('searching', () => {
     hold(sim);
     steps(sim, ticksFor(container) * 2);
     expect(p.health).toBeLessThan(p.maxHealth);
-    expect(state.containers[container.id].opened).toBe(false);
+    // A swing can open a bleeding wound (a seeded roll), and a bleeding player keeps searching through hits.
+    if (!p.needs.bleeding) expect(state.containers[container.id].opened).toBe(false);
   });
 
   it('does not chain on to the next container on one press', () => {
@@ -233,7 +247,8 @@ describe('searching', () => {
     expect(state.containers[container.id].opened).toBe(true);
     expect(a.search).toBe(0);
     expect(b.search).toBe(0);
-    expect(eventsOf(sim.snapshot(), 'container_opened').length).toBe(1);
+    // The teammate's press on the opened container only reopens it: one fresh search, one open.
+    expect(eventsOf(sim.snapshot(), 'container_opened').filter((event) => !event.reopen).length).toBe(1);
   });
 
   it('stops for anyone who goes down', () => {
@@ -266,7 +281,8 @@ describe('Kai\'s luck', () => {
     fixRoll(state, roll);
     hold(sim);
     steps(sim, ticksFor(container));
-    return eventsOf(sim.snapshot(), 'container_opened')[0].found;
+    // A bottle turns up on its own odds, whoever searches; only what Kai's luck adds is counted here.
+    return (state.containers[container.id].items ?? []).some((item) => item.type !== 'bottle');
   }
 
   it('is a modest edge, and Kai\'s alone', () => {
@@ -296,7 +312,7 @@ describe('Kai\'s luck', () => {
       fixRoll(state, searchLuck / 2);
       hold(sim);
       steps(sim, ticksFor(container));
-      return state.pickups.map((item) => item.type);
+      return (state.containers[container.id].items ?? []).map((item) => item.type).filter((type) => type !== 'bottle');
     };
     const found = search();
     expect(['bandage', 'medkit', 'disinfectant', 'antibiotics']).toContain(found[0]);
@@ -311,7 +327,7 @@ describe('Kai\'s luck', () => {
     fixRoll(state, 0);
     hold(sim);
     steps(sim, ticksFor(container));
-    expect(state.pickups.map((item) => item.type)).toEqual(['medkit']);
+    expect((state.containers[container.id].items ?? []).map((item) => item.type)).toEqual(['medkit']);
   });
 });
 
@@ -449,7 +465,9 @@ describe('what is in them', () => {
   it.each(['car', 'box', 'shelf'] as const)('searches a %s', (kind) => {
     const { sim, state, container } = setup((c) => c.kind === kind);
     hold(sim);
-    steps(sim, ticksFor(container));
+    // A car can be got into by a tap, so its search starts once the tap window has passed.
+    const tapWindow = kind === 'car' ? Math.ceil(DOOR_TAP_SEC * TICK_RATE) : 0;
+    steps(sim, ticksFor(container) + tapWindow);
     expect(state.containers[container.id].opened).toBe(true);
     expect(sim.snapshot().openedContainers).toContain(container.id);
   });
@@ -465,14 +483,13 @@ describe('what is in them', () => {
   });
 
   it('searching a police car can yield carbines or shotguns', () => {
-    const { sim, state, p, container } = setup((c) => c.prop === 'police_h' || c.prop === 'police_v');
+    const { sim, state, container } = setup((c) => c.prop === 'police_h' || c.prop === 'police_v');
     state.containers[container.id].loot = null;
     fixRoll(state, 0.1);
     hold(sim);
     steps(sim, ticksFor(container));
-    const guns = state.pickups.map((item) => item.type).filter((t) => t === 'carbine' || t === 'shotgun');
-    const playerHasGun = p.owned.includes('carbine') || p.owned.includes('shotgun');
-    expect(guns.length > 0 || playerHasGun).toBe(true);
+    const guns = (state.containers[container.id].items ?? []).map((item) => item.type).filter((t) => t === 'carbine' || t === 'shotgun');
+    expect(guns.length).toBeGreaterThan(0);
   });
 
   it('searching an ambulance yields medical supplies', () => {
@@ -483,7 +500,7 @@ describe('what is in them', () => {
     fixRoll(state, 0.1);
     hold(sim);
     steps(sim, ticksFor(container));
-    const meds = state.pickups.map((item) => item.type).filter((t) => ['medkit', 'bandage', 'antibiotics', 'disinfectant'].includes(t));
+    const meds = (state.containers[container.id].items ?? []).map((item) => item.type).filter((t) => ['medkit', 'bandage', 'antibiotics', 'disinfectant'].includes(t));
     expect(meds.length).toBeGreaterThan(0);
   });
 
@@ -494,8 +511,7 @@ describe('what is in them', () => {
     hold(sim);
     steps(sim, ticksFor(container));
     expect(state.containers[container.id].opened).toBe(true);
-    const hasDrop = state.pickups.length > 0 || eventsOf(sim.snapshot(), 'pickup').length > 0;
-    expect(hasDrop).toBe(true);
+    expect((state.containers[container.id].items ?? []).length).toBeGreaterThan(0);
   });
 
   it('an empty search can turn up a map clue revealing an unvisited cache building', () => {
