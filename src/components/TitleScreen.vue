@@ -1,5 +1,5 @@
 <template>
-  <section v-if="nav.page === null" class="px-screen px-title-scale title" :class="{ 'is-revealed': !splashing }">
+  <section v-if="nav.page === null && !devSprites" class="px-screen px-title-scale title" :class="{ 'is-revealed': !splashing }">
     <div class="title-hero">
       <SpriteImg v-if="ui.art" class="title-logo" :sprite="ui.art.ui.logoFrames[logoFrame]" />
       <h1 v-else class="px-heading">UNDEAD OF NIGHT: TAKE ONE</h1>
@@ -16,6 +16,7 @@
         <MenuLink v-if="!privacyOpen" class="title-privacy" @press="openPrivacy()">Privacy</MenuLink>
         <MenuLink class="title-version" aria-label="What's new in this version" @press="nav = openPage(nav, 'changelog')">v{{ APP_VERSION }}</MenuLink>
         <MenuLink v-if="isDev" class="title-dev" @press="nav = openPage(nav, 'dev_inventory')">Dev: Items</MenuLink>
+        <MenuLink v-if="isDev" class="title-dev" @press="devSprites = true">Dev: Sprites</MenuLink>
         <MenuLink v-if="isDev" class="title-dev" @press="game.startTestDrive()">Dev: Test Drive</MenuLink>
       </div>
       <p class="title-credit">
@@ -50,6 +51,8 @@
   <RadioPage v-else-if="nav.page === 'radio'" :ui @close="close" />
   <ControlsPageCanvas v-else-if="nav.page === 'controls' && pagesOnCanvas.controls" @close="close" />
   <ControlsPage v-else-if="nav.page === 'controls'" @close="close" />
+  <ZombieSpritesPageCanvas v-else-if="devSprites && devOnCanvas" :art="ui.art" @close="devSprites = false" />
+  <ZombieSpritesPage v-else-if="devSprites" :art="ui.art" @close="devSprites = false" />
   <DevInventoryPageCanvas v-else-if="nav.page === 'dev_inventory' && devOnCanvas" :art="ui.art" @close="close" />
   <DevInventoryPage v-else-if="nav.page === 'dev_inventory'" :art="ui.art" @close="close" />
   <OptionsPageCanvas v-else-if="optionsKind !== null && pagesOnCanvas[optionsKind]" :ui :kind="optionsKind" @close="close" />
@@ -83,6 +86,8 @@ import OptionsPageCanvas from './OptionsPageCanvas.vue';
 import PlaySetupCanvas from './PlaySetupCanvas.vue';
 import SoundTestPageCanvas from './SoundTestPageCanvas.vue';
 import DevInventoryPageCanvas from './dev/DevInventoryPageCanvas.vue';
+import ZombieSpritesPage from './dev/ZombieSpritesPage.vue';
+import ZombieSpritesPageCanvas from './dev/ZombieSpritesPageCanvas.vue';
 import RadioPageCanvas from './RadioPageCanvas.vue';
 import RecordsPageCanvas from './RecordsPageCanvas.vue';
 import PressAnyKey from './PressAnyKey.vue';
@@ -124,6 +129,8 @@ const game = useGame();
 // Missed weeks are charged here, between runs, and never on a kill.
 checkApUpkeep();
 const nav = ref(TITLE_HOME);
+/** Dev builds: the zombie sprite viewer is open. */
+const devSprites = ref(false);
 /** Read before the invite below rewrites the address, so an invite link never waits for a key. */
 const asking = ref(shouldAskForPress(window.location.search));
 /** The menu fades in after a press, not when coming back to the title. */
