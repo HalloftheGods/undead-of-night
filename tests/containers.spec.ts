@@ -214,7 +214,7 @@ describe('searching', () => {
     steps(sim, ticksFor(container) * 2);
     expect(p.health).toBeLessThan(p.maxHealth);
     // A swing can open a bleeding wound (a seeded roll), and a bleeding player keeps searching through hits.
-    if (!p.needs.bleeding) expect(state.containers[container.id].opened).toBe(false);
+    if (!p.needs?.bleeding) expect(state.containers[container.id].opened).toBe(false);
   });
 
   it('does not chain on to the next container on one press', () => {
