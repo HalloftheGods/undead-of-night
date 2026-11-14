@@ -1,6 +1,6 @@
 import { DOG_TAG_REVIVE, hasKeepsake, ROSARY_BLEEDOUT } from './keepsakes.ts';
 import { caramelCatch, JAWBREAKER_GUARD, sugarOf } from './candy.ts';
-import { bandageWound, rollCombatWound } from './survival-needs.ts';
+import { bandageWound, resetSurvivalNeeds, rollCombatWound } from './survival-needs.ts';
 import {
   BLEEDOUT_ALONE_RATE,
   BLEEDOUT_SEC,
@@ -156,6 +156,7 @@ export function returnDeadPlayers(sim: SimState): void {
     p.x = spot.x;
     p.y = spot.y;
     p.status = 'alive';
+    if (p.needs) resetSurvivalNeeds(p.needs);
     giveReturnKit(p);
   };
   for (const p of sim.players) {

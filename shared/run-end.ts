@@ -3,6 +3,7 @@ import { enterTown, moveToNextTown, placeAtEntry } from './level-change.ts';
 import { FINAL_LEVEL, FIRST_LEVEL } from './levels.ts';
 import { giveReturnKit, giveStartingLoadout } from './player-health.ts';
 import type { GameOverStats, RunOutcome } from './protocol.ts';
+import { resetSurvivalNeeds } from './survival-needs.ts';
 import type { SimState } from './sim-state.ts';
 import { overrunFalls } from './overrun-fight.ts';
 import { emit, standingPlayers } from './sim-state.ts';
@@ -80,6 +81,7 @@ export function restartRun(sim: SimState, fromLevel?: number): void {
     placeAtEntry(sim, p);
     p.status = 'alive';
     p.health = p.maxHealth;
+    if (p.needs) resetSurvivalNeeds(p.needs);
     p.score = 0;
     p.kills = 0;
     p.keepsakes = [];

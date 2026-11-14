@@ -3,19 +3,17 @@ import { TICK_DT } from '../shared/constants.ts';
 import { generateWorldMap } from '../shared/world-map.ts';
 import {
   canDrainCity,
-  drainTownWater,
   isTownFlooded,
   SEWAGE_DRAIN_HOLD_SEC,
   SEWAGE_DRAIN_REACH,
   sewageDrainNear,
   sewageDrainPrompt,
-  triggerDrainCity,
 } from '../shared/sewage-drain.ts';
-import { climbPrompt, manholeFlightNear, takeManhole } from '../shared/take-manhole.ts';
-import { FLOOD_SPEED_SCALE, groundSpeedScale } from '../shared/town-rules.ts';
+import { climbPrompt, manholeFlightNear } from '../shared/take-manhole.ts';
+import { groundSpeedScale } from '../shared/town-rules.ts';
 import { levelSidequest, levelTitle } from '../src/game/level-hud.ts';
 import { buildSnapshot } from '../shared/snapshot-build.ts';
-import { addZombie, eventsOf, input, quietSim, steps } from './helpers/sim-harness.ts';
+import { addZombie, eventsOf, input } from './helpers/sim-harness.ts';
 import { GameSimulation } from '../shared/simulation.ts';
 
 function floodedSim(seed = 4242) {

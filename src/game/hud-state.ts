@@ -526,11 +526,15 @@ export function ammoWarning(hud: Loadout & Partial<Pick<HudState, "level">>): Am
   return hud.level === BUNKER_LEVEL ? "ok" : ammoState(hud);
 }
 
-/** Whether to tell the player to reload: the gun in hand is dry, and there is something at home to shoot at. */
+/**
+ * Whether to tell the player to reload: the gun in hand is dry, there is a spare magazine's worth
+ * of rounds to load, and there is something at home to shoot at. With no reserve, R does nothing.
+ */
 export function reloadPrompt(
-  hud: Pick<HudState, "ammo"> & Partial<Pick<HudState, "level">>
+  hud: Pick<HudState, "ammo" | "ammoBag" | "weapon"> & Partial<Pick<HudState, "level">>
 ): boolean {
-  return hud.ammo === 0 && hud.level !== BUNKER_LEVEL;
+  const hasReserve = hud.ammoBag[hud.weapon] > 0;
+  return hud.ammo === 0 && hasReserve && hud.level !== BUNKER_LEVEL;
 }
 
 /** The number key of a gun with rounds, when the one in hand has none, or null. */

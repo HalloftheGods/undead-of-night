@@ -257,6 +257,11 @@ export function bandageWound(needs: SurvivalNeeds): boolean {
   return true;
 }
 
+/** Waking up on a fresh life: every moodle back to zero, with no wound, bleed or infection left over from the last one. */
+export function resetSurvivalNeeds(needs: SurvivalNeeds): void {
+  Object.assign(needs, createDefaultSurvivalNeeds());
+}
+
 export function staminaRecoveryMultiplier(needs: SurvivalNeeds): number {
   let multiplier = 1.0;
   const isSeverelyStarving = needs.hunger >= 80;

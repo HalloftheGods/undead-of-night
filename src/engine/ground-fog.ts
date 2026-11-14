@@ -1,5 +1,5 @@
 import { windTravel } from './ground-motion.ts';
-import type { FogKind, LevelLook } from './level-look.ts';
+import type { LevelLook } from './level-look.ts';
 
 const SMOKE_CLUSTER_COUNT = 14;
 const WAVY_RIBBON_BANDS = 4;

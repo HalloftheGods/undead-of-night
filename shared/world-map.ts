@@ -41,7 +41,6 @@ const STOREY_FURNISH_SALT = 0x464c5253;
 
 const SODIUM = '#ffb066';
 const COOL = '#9ad0ff';
-const FIRE = '#ff7a2e';
 /** A barrel fire's light: a dimmer, redder orange than the bright fire colour. */
 const BARREL_FIRE = '#c24a1c';
 /** Dim sodium at each ladder; the tunnels' own emergency green lamps come with the sewer plan. */

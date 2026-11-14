@@ -8,8 +8,6 @@ import {
   POWER_SUBSTATION_REACH,
   powerSubstationNear,
   powerSubstationPrompt,
-  triggerRestorePower,
-  updatePowerSubstation,
 } from '../shared/power-substation.ts';
 import { hearingScale, sightScale } from '../shared/town-rules.ts';
 import { levelSidequest, levelTitle } from '../src/game/level-hud.ts';

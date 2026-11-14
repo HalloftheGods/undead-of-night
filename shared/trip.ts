@@ -11,6 +11,7 @@ import { writeFlight } from './overrun-fight.ts';
 import { startOverrunClock } from './overrun.ts';
 import { noSalvage } from './salvage-data.ts';
 import { announceRunStart, clampLevel } from './sim-factory.ts';
+import { resetSurvivalNeeds } from './survival-needs.ts';
 import type { HomeRun, PlayerHome, PlayerState, SimState } from './sim-state.ts';
 import { emit } from './sim-state.ts';
 import { bankTrip, loseTrip } from './trip-receipt.ts';
@@ -122,6 +123,7 @@ function settleInBunker(sim: SimState, p: PlayerState): void {
   placeAtEntry(sim, p);
   p.status = 'alive';
   p.health = p.maxHealth;
+  if (p.needs) resetSurvivalNeeds(p.needs);
   applyLoadout(p, emptyLoadout());
   leaveStation(home);
   home.silver = 0;
