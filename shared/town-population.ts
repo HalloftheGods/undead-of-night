@@ -20,6 +20,7 @@ import type { BuildingInstance, BuildingKind, ZombieType } from './protocol.ts';
 import { pick, randRange } from './rng.ts';
 import type { SimState } from './sim-state.ts';
 import { hiddenFromEveryone } from './sim-state.ts';
+import { placeSleepers } from './sleepers.ts';
 import { spawnZombie } from './waves.ts';
 import { buildingAt, circleHitsSolid, isBlockedAt, segmentHitsSolid } from './world-query.ts';
 import { townBuildings, townHeight } from './storeys.ts';
@@ -132,9 +133,10 @@ export function seedPopulation(sim: SimState): void {
   while (sim.zombies.length < sim.populationTarget) {
     const type = rollType(sim);
     const spot = findSpot(sim, type, (candidate) => farFromSpawn(sim, candidate));
-    if (!spot) return;
+    if (!spot) break;
     spawnZombie(sim, type, spot.x, spot.y);
   }
+  placeSleepers(sim, (spot) => farFromSpawn(sim, spot));
 }
 
 /** One replacement at a time, out of sight, so a cleared street fills back in slowly. */
@@ -143,7 +145,7 @@ export function updatePopulation(sim: SimState): void {
   const isTopUpPending = sim.topUpTimer > 0;
   if (isTopUpPending) return;
   sim.topUpTimer = POPULATION_TOPUP_SEC;
-  const roamers = sim.zombies.filter((z) => !z.horde).length;
+  const roamers = sim.zombies.filter((z) => !z.horde && !z.dormant).length;
   // A horde's waiting bodies hold their places under the cap, so the HUD's count stays true.
   const wanted = roamers < sim.populationTarget && sim.zombies.length + sim.spawnQueue.length < ZOMBIE_CAP;
   if (!wanted) return;

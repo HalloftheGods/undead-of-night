@@ -856,6 +856,11 @@ export class EntityRenderer {
       const spot = pixels[Math.floor(pixels.length / 2)];
       const light = lightAt(Math.round(x - sprite.ax + spot.x), Math.round(y - sprite.ay + spot.y));
       paintSelfLit(ctx, pixels, sprite, x, y, light, strength, bodies);
+    if (zombie.dormant) {
+      const lying = art.death.frames[art.death.frames.length - 1];
+      drawSprite(ctx, lying, Math.round(zombie.x) - left, Math.round(zombie.y) - top);
+      return;
+    }
     };
     for (const placed of this.buildings.placed) {
       if (isStoreyKind(placed.building.kind)) continue;

@@ -231,6 +231,8 @@ export interface ZombieState extends ZombieEntity {
   home: string | null;
   /** Spreads sight checks over the ticks. */
   senseOffset: number;
+  /** Lying dead on the street until someone comes close or makes a noise (`shared/sleepers.ts`). Absent once it has risen. */
+  dormant?: boolean;
   /** What rounds have left on it. Absent until one does. */
   status?: ZombieStatus;
   /** A screamer's seconds until it can call again. Absent until it first has. */

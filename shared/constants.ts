@@ -122,6 +122,14 @@ export const ZOMBIE_INVESTIGATE_SEC = 12;
 /** Farther than this from every player, a roaming zombie is not simulated at all. */
 export const ZOMBIE_SLEEP_RANGE = 900;
 export const ZOMBIE_WANDER_SPEED_SCALE = 0.45;
+/** Bodies left on the streets that may get up again, per level of the town. */
+export const SLEEPER_COUNT = 10;
+/** A body this close to a standing survivor may stir. */
+export const SLEEPER_WAKE_RANGE = 70;
+/** Chance each tick, inside the wake range, that it stirs: about a second's grace at a walk. */
+export const SLEEPER_WAKE_CHANCE = 0.04;
+/** Seconds it takes to get up, standing still, before it goes for whoever woke it. */
+export const SLEEPER_RISE_SEC = 1.2;
 
 /** Roaming zombies at the start of a run, and the level top-ups hold it at. */
 export const STANDING_POPULATION = 130;

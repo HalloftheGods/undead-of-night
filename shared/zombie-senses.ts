@@ -5,6 +5,7 @@ import type { PlayerState, SimState, ZombieMode, ZombieState } from './sim-state
 import { emit } from './sim-state.ts';
 import { doorBlocksSegment } from './doors.ts';
 import { buildingAt, groundOf, segmentHitsCover } from './world-query.ts';
+import { riseSleeper } from './sleepers.ts';
 import { printUnder } from './snow-tracks.ts';
 import { eventOf } from './night-events.ts';
 import { hearingScale, sightScale, TRACK_REST_SEC, TRACK_SEARCH_SEC } from './town-rules.ts';
@@ -66,6 +67,10 @@ export function makeNoise(sim: SimState, x: number, y: number, radius: number): 
     const ear = groundOf(sim.map, z.x, z.y);
     const heard = !z.horde && z.health > 0 && (ear.x - source.x) ** 2 + (ear.y - source.y) ** 2 <= radiusSquared;
     if (!heard) continue;
+    if (z.dormant) {
+      riseSleeper(sim, z);
+      continue;
+    }
     // A noise beats a nose: a bottle pulls a tracker off the trail.
     delete z.trail;
     const isHunting = z.mode === 'hunt';

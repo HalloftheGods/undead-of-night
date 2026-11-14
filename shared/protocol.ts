@@ -188,6 +188,8 @@ export interface ZombieEntity {
   boss?: BossId;
   /** Wedged in a narrow opening like a sewer manhole, unable to move. */
   stuck?: boolean;
+  /** Lying dead, drawn as a corpse until it rises. Left off unless true. */
+  dormant?: boolean;
 }
 
 /** A footprint in the snow, for drawing: where, which way it points, and seconds before it fills in. */

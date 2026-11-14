@@ -26,6 +26,7 @@ import { alivePlayers, emit, standingPlayers } from './sim-state.ts';
 import type { FlowField } from './flow-field.ts';
 import { buildingAt, groundOf, segmentHitsSolid } from './world-query.ts';
 import { backToRoaming, loseTrail, updateAwareness } from './zombie-senses.ts';
+import { stirSleeper } from './sleepers.ts';
 import { nextPrint, trailMakerAlive } from './snow-tracks.ts';
 import { TRACK_ARRIVE_PX, TRACKER_SPEED_SCALE } from './town-rules.ts';
 import { zombieSpeed } from './zombie-status.ts';
@@ -428,6 +429,10 @@ export function updateZombies(sim: SimState): void {
   for (const z of sim.zombies) {
     const isDead = z.health <= 0;
     if (isDead) continue;
+    if (z.dormant) {
+      stirSleeper(sim, z, players);
+      continue;
+    }
     if (!isAsleep(sim, z, players)) {
       updateZombie(sim, z, quarry);
     } else {

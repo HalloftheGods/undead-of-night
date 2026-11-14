@@ -49,9 +49,8 @@ Documented from playtest review and design session (Ronan and Commander).
   * Status: Done
   * Implementation: `shared/fortifications.ts` (door closing, plank/nail counts, zombie door damage scaling, curtains, glass vaulting).
 * **Town Street Corpses and Reanimation**
-  * Status: Partially Done
-  * Built: `shared/hazards.ts` (decaying zombie corpses generate sickness fields).
-  * Remaining: Ambient human dead pre-placed on streets with chance to reanimate on close approach.
+  * Status: Done
+  * Implementation: `shared/hazards.ts` (decaying zombie corpses generate sickness fields); `shared/sleepers.ts` (dead people pre-placed on the streets, dormant walkers that may rise when a survivor stands close or a noise carries to them).
 
 ### 5. Campaign, Story, and Endgame Modes
 * **Intel Chain to Military Outpost (Round 10)**

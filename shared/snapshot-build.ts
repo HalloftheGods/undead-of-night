@@ -204,6 +204,7 @@ export function buildSnapshot(sim: SimState): SnapshotPacket {
       ...(z.trail && !z.trail.searching ? { tracking: true } : {}),
       ...(z.boss ? { boss: z.boss } : {}),
       ...(z.stuck ? { stuck: true } : {}),
+      ...(z.dormant ? { dormant: true } : {}),
     })),
     bullets: sim.bullets.map((b) => ({
       id: b.id,

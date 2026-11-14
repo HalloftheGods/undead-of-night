@@ -168,12 +168,12 @@ function startHorde(sim: SimState): void {
  * uncleared hordes never fill the cap and the guards placed in the buildings stay put.
  */
 function thinRoamers(sim: SimState): void {
-  let excess = sim.zombies.filter((z) => !z.horde).length - sim.populationTarget;
+  let excess = sim.zombies.filter((z) => !z.horde && !z.dormant).length - sim.populationTarget;
   const leaving = new Set<ZombieState>();
   for (let i = sim.zombies.length - 1; i >= 0 && excess > 0; i--) {
     const z = sim.zombies[i];
     // Past the corner of the view is enough: a crowd trailing an evasive player must count too.
-    const staysPut = z.horde || !hiddenFromEveryone(sim, z, SPAWN_MIN_DISTANCE);
+    const staysPut = z.horde || z.dormant || !hiddenFromEveryone(sim, z, SPAWN_MIN_DISTANCE);
     if (staysPut) continue;
     leaving.add(z);
     excess -= 1;
