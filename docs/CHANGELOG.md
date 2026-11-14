@@ -1,6 +1,11 @@
-# Changelog - Undead of Night: Last Round
+# Changelog - Undead of Night: Take One
 
-All notable changes to the Undead of Night: Last Round game are documented in this file.
+All notable changes to the Undead of Night: Take One game are documented in this file.
+
+## [2026-11-14] - The game is now Undead of Night: Take One
+
+### Changed
+- The subtitle is now "Take One", like the "please take one" sign on a candy bowl and the first take on a film set. It replaces "Last Round" on the title screen logo, the page title and share cards, the app manifest, the credits and the magazine issue line. The logo gets a new stencil K, and the belt still has its one round left.
 
 ## [2026-11-13] - Controller headshots: lock on and close the ring
 

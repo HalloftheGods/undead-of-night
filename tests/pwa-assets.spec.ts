@@ -19,7 +19,7 @@ function pngSize(file: string): { width: number; height: number; signature: stri
 describe('web manifest', () => {
   it('is installable, standalone and relative so it works under a subfolder', () => {
     expect(manifest.display).toBe('standalone');
-    expect(manifest.name).toBe('Undead of Night: Last Round');
+    expect(manifest.name).toBe('Undead of Night: Take One');
     for (const key of ['id', 'start_url', 'scope']) expect(manifest[key]).toBe('./');
     for (const icon of manifest.icons) expect(icon.src.startsWith('/') || icon.src.includes('://')).toBe(false);
     expect(manifest.theme_color).toBe('#0b0c10');

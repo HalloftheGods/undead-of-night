@@ -17,7 +17,7 @@ const POSTCARD_SEED = 1986;
 
 export const MAGAZINE_TITLE = 'Out of Town';
 export const MAGAZINE_STRAP = 'The Town Survival Bureau\'s official survival manual and travel guide';
-export const MAGAZINE_ISSUE = 'Vol. 10: Last Round Edition';
+export const MAGAZINE_ISSUE = 'Vol. 10: Take One Edition';
 export const MAGAZINE_PRICE = 'Free to anyone still breathing';
 
 const LEVEL_COUNT = 10;

@@ -14,7 +14,7 @@ import type { CartridgeWords } from '../src/art/cartridge-art.ts';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 
-/** The cartridge's label for the app icons. "Last Round" is under the icon in every launcher, so the label keeps the title. */
+/** The cartridge's label for the app icons. The launcher prints the short name under the icon, so the label keeps the title and drops the subtitle. */
 export const ICON_WORDS: CartridgeWords = { ribbon: 'UNDEAD OF', title: 'NIGHT' };
 
 export type Rgb = readonly [number, number, number];

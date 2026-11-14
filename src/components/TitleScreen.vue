@@ -2,7 +2,7 @@
   <section v-if="nav.page === null" class="px-screen px-title-scale title" :class="{ 'is-revealed': !splashing }">
     <div class="title-hero">
       <SpriteImg v-if="ui.art" class="title-logo" :sprite="ui.art.ui.logoFrames[logoFrame]" />
-      <h1 v-else class="px-heading">UNDEAD OF NIGHT: LAST ROUND</h1>
+      <h1 v-else class="px-heading">UNDEAD OF NIGHT: TAKE ONE</h1>
     </div>
 
     <PressAnyKey v-if="asking" class="title-press" :touch="ui.touch" :splashing @wake="answer" />

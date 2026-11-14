@@ -1,4 +1,4 @@
-# Copy audit: Undead of Night: Last Round
+# Copy audit: Undead of Night: Take One
 
 Audited 2026-11-07. Read only; no source was edited. Every "Current text" cell below was copied from the file named in the Where column.
 
@@ -59,7 +59,7 @@ Ordered by how soon a new player meets them.
 | C1 | `credits.ts` | `'Majora D.'` | A bare initial gives the player nothing to look up. Resolved with A1. | Full credit as the artist wants it, with a link if allowed. |
 | C2 | `credits.ts` | `{ kind: 'role', text: 'Starring' }` then Night, Bear, Kat, Rex, Kai | "Night" is both a survivor and the setting ("Survive the night", the "Night Light On" difficulty). On the roll it reads as a theme word. | Leave the roll as is. In How to Play, label the survivor (see D17). |
 | C3 | `magazine-pages.ts` | `MAGAZINE_STRAP`: "The Town Survival Bureau's official survival manual and travel guide" | Reads fine. It repeats "survival", and "Bureau" is capitalised the same way on the letter's signature. | No change needed. |
-| C4 | `magazine-pages.ts` | `MAGAZINE_ISSUE`: "Vol. 10: Last Round Edition" | Fine. It matches the ten levels. Note that adding a level would make "Vol. 10" wrong. | No change. |
+| C4 | `magazine-pages.ts` | `MAGAZINE_ISSUE`: "Vol. 10: Take One Edition" | Fine. It matches the ten levels. Note that adding a level would make "Vol. 10" wrong. | No change. |
 | C5 | `magazine-pages.ts` tip | "Prev and Next turn the page, and so do the arrow keys. On a touch screen, swipe." | Fine. | No change. |
 
 ## D. How to Play chapters (`src/game/how-to-play.ts`)

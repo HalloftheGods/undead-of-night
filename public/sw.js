@@ -1,5 +1,5 @@
 /*
- * Undead of Night: Last Round, service worker. Plain JavaScript on purpose: it is copied as is, and the build stamps two lines.
+ * Undead of Night: Take One, service worker. Plain JavaScript on purpose: it is copied as is, and the build stamps two lines.
  *
  * - The app shell is precached, so solo play opens offline.
  * - A page navigation asks the network first and falls back to the cached page.

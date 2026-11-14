@@ -1,4 +1,4 @@
-# Undead of Night: Last Round
+# Undead of Night: Take One
 
 A Hall of the Gods, Inc. game. A top-down pixel art zombie survival game across ten levels at night. Ammo and health are scarce, so you search buildings and furniture for them, and every gunshot tells nearby zombies where you are. Survive each town's hordes and get to the van.
 

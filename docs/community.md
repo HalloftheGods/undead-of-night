@@ -180,7 +180,7 @@ Check each claim against the build that actually ships before posting. This draf
 
 ---
 
-### Undead of Night: Last Round, the November update
+### Undead of Night: Take One, the November update
 
 Thanks for playing, and for telling us what you think. The community server is open. Use the Feedback link on the title screen or the results screen, or find us at (TODO: Discord invite).
 

@@ -1,4 +1,4 @@
-# Undead of Night: Last Round
+# Undead of Night: Take One
 
 A Hall of the Gods, Inc. game. A top-down pixel art zombie survival game set in an open town at night. Play solo in the browser, or co-op over a small WebSocket server. Ammo and health are finite: you find them in the town's buildings, and every gunshot tells nearby zombies where you are.
 

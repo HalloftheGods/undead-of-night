@@ -17,7 +17,7 @@ const { blood, bone, denim, fire, ink, wood } = RAMPS;
 const W = 276;
 const H = 94;
 const EXTRUDE = 2;
-const SUBTITLE = 'LAST ROUND';
+const SUBTITLE = 'TAKE ONE';
 const SUB_Y = 81;
 const SUB_PITCH = 11;
 const SUB_SPACE = 7;
@@ -230,6 +230,7 @@ const LOWER_STENCIL: Readonly<Record<string, Grid>> = {
   A: ['.###.###.', '####.####', '###...###', '###...###', '###...###', '#########', '#########', '###...###', '###...###', '###...###'],
   U: ['###...###', '###...###', '###...###', '###...###', '###...###', '###...###', '###...###', '###...###', '####.####', '.###.###.'],
   N: ['####..###', '#####.###', '###.#.###', '###.#.###', '###.#.###', '###.#.###', '###.#.###', '###.#.###', '###.#####', '###..####'],
+  K: ['###...###', '###..####', '###.####.', '###.###..', '###.##...', '###.##...', '###.###..', '###.####.', '###..####', '###...###'],
   D: ['###.####.', '###.#####', '###...###', '###...###', '###...###', '###...###', '###...###', '###...###', '###.#####', '###.####.'],
 };
 const stencil = (letter: string): Grid => LOWER_STENCIL[letter] ?? STENCIL[letter];
@@ -426,7 +427,7 @@ function paintBelt(target: PixelCanvas, from: number, to: number): void {
   }
 }
 
-/** The last round: a brass case and a copper nose, standing tall in its loop. */
+/** The one round left to take: a brass case and a copper nose, standing tall in its loop. */
 function paintRound(target: PixelCanvas, x: number): void {
   target.grid(x, SUB_Y - 5, ['..p..', '.pqr.', '.pqr.', 'pqqqr', 'pqqqr', 'abbbc', 'abbbc', 'abbbc', 'abbbc', 'abbbc', 'abbbc', 'ddddd'], {
     p: fire[3], q: fire[1], r: fire[0], a: fire[3], b: fire[2], c: fire[1], d: fire[0],

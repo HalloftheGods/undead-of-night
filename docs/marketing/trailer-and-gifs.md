@@ -1,4 +1,4 @@
-# Undead of Night: Last Round — Trailer and GIF Plan
+# Undead of Night: Take One — Trailer and GIF Plan
 
 Status: DRAFT for Commander approval. Nothing here has been posted.
 Built from docs/launch-plan.md (2026-11-07) plus a read of the live build, v26.11.8-191, https://undeadofnight.forthexp.com/.

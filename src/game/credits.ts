@@ -9,7 +9,7 @@ export interface CreditLine {
 export const CAST: readonly string[] = ['Night', 'Bear', 'Kat', 'Rex', 'Rich'];
 
 export const CREDITS: readonly CreditLine[] = [
-  { kind: 'title', text: 'Undead of Night: Last Round' },
+  { kind: 'title', text: 'Undead of Night: Take One' },
   { kind: 'studio', text: 'Hall of the Gods, Inc.' },
   { kind: 'role', text: 'Music by' },
   { kind: 'name', text: 'Majora D.' },
