@@ -55,13 +55,26 @@
       <WaveBanner v-if="ui.banner" v-show="!overlayUp" :key="ui.banner.key" :banner="ui.banner" />
       <KillCallout v-if="ui.callout" v-show="!overlayUp" :key="ui.callout.key" :callout="ui.callout" />
       <LogPanel v-if="ui.logOpen && ui.hud && !canvasLogOn" :log="ui.log" />
-      <WorkbenchScreen v-if="ui.hud?.bench && ui.art" :hud="ui.hud" :bench="ui.hud.bench" :art="ui.art" />
+      <WorkbenchPageCanvas v-if="ui.hud?.bench && ui.art && canvasMenusOn" :hud="ui.hud" :bench="ui.hud.bench" :art="ui.art" />
+      <WorkbenchScreen v-else-if="ui.hud?.bench && ui.art" :hud="ui.hud" :bench="ui.hud.bench" :art="ui.art" />
       <template v-if="ui.home">
         <LockerScreen v-if="ui.home.station === 'locker'" :home="ui.home" :art="ui.art" />
-        <CandyShopScreen v-else-if="ui.home.station === 'candy_shop'" :home="ui.home" :art="ui.art" />
-        <GarageMap v-else-if="ui.home.station === 'level_map'" :home="ui.home" :art="ui.art" />
-        <JukeboxScreen v-else-if="ui.home.station === 'jukebox'" :home="ui.home" :art="ui.art" />
-        <MerchantScreen v-else-if="ui.home.shop && ui.art" :home="ui.home" :art="ui.art" />
+        <template v-else-if="ui.home.station === 'candy_shop'">
+          <CandyShopPageCanvas v-if="canvasMenusOn" :home="ui.home" :art="ui.art" />
+          <CandyShopScreen v-else :home="ui.home" :art="ui.art" />
+        </template>
+        <template v-else-if="ui.home.station === 'level_map'">
+          <GarageMapCanvas v-if="canvasMenusOn" :home="ui.home" :art="ui.art" />
+          <GarageMap v-else :home="ui.home" :art="ui.art" />
+        </template>
+        <template v-else-if="ui.home.station === 'jukebox'">
+          <JukeboxPageCanvas v-if="canvasMenusOn" :home="ui.home" :art="ui.art" />
+          <JukeboxScreen v-else :home="ui.home" :art="ui.art" />
+        </template>
+        <template v-else-if="ui.home.shop && ui.art">
+          <MerchantPageCanvas v-if="canvasMenusOn" :home="ui.home" :art="ui.art" />
+          <MerchantScreen v-else :home="ui.home" :art="ui.art" />
+        </template>
         <DeathSummary v-if="ui.home.death" :death="ui.home.death" />
         <OverrunChest v-else-if="ui.home.chest" :chest="ui.home.chest" />
         <OverrunClock :overrun="ui.home.overrun" />
@@ -138,6 +151,11 @@ import VanTransition from './components/VanTransition.vue';
 import WaveBanner from './components/WaveBanner.vue';
 import KillCallout from './components/KillCallout.vue';
 import WorkbenchScreen from './components/WorkbenchScreen.vue';
+import CandyShopPageCanvas from './components/CandyShopPageCanvas.vue';
+import GarageMapCanvas from './components/GarageMapCanvas.vue';
+import JukeboxPageCanvas from './components/JukeboxPageCanvas.vue';
+import MerchantPageCanvas from './components/MerchantPageCanvas.vue';
+import WorkbenchPageCanvas from './components/WorkbenchPageCanvas.vue';
 import { privacyOpen, startAnalytics } from './game/analytics/index.ts';
 import { containerLook } from './art/containers.ts';
 import { feedSearch, searchArtFor, searchFlipped, searchTitle, startReveal } from './game/inventory/search-overlay.ts';
@@ -157,8 +175,9 @@ import { shouldShowSplash } from './game/studio-splash.ts';
 
 const game = new GameController();
 const ui = game.ui;
-/** The pause card follows In-game menus, and phones keep the page card. */
-const canvasPauseOn = computed(() => canvasMenus.value && !ui.value.touch);
+/** The in-game menus switch (Pause, Stations, Dev pages), and phones keep the page card. */
+const canvasMenusOn = computed(() => canvasMenus.value && !ui.value.touch);
+const canvasPauseOn = canvasMenusOn;
 /** The in-game HUD draws the run log on the canvas, so the page log stays shut. */
 const canvasLogOn = computed(() => canvasHudAllowed(canvasHud.value, ui.value.touch));
 const hudTest = hudTestOn(window.location.search, import.meta.env.DEV, window.location.hostname);

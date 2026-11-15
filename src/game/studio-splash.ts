@@ -42,7 +42,7 @@ export const SPLASH_CARDS: readonly SplashCard[] = [
   {
     id: "majora-d",
     image: "brand/majora-d-music-optimize.gif",
-    ariaLabel: "Music by Majora D.",
+    ariaLabel: "Music Producer and Artist: Majora D.",
     bg: "#110a25",
     hold: 1600
   }

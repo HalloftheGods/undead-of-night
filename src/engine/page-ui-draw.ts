@@ -93,10 +93,23 @@ function drawControl(ctx: CanvasRenderingContext2D, win: PageWindow, control: Pl
   const isRow = item.kind === 'switch' || item.kind === 'link' || item.kind === 'bind';
   const labelY = box.y + (isRow ? Math.floor((box.h - FONT_HEIGHT) / 2) : 0);
   if (item.kind === 'link') {
-    if (lit) frame(ctx, box, AMBER, RAISED);
+    const disabled = item.disabled === true;
+    if (lit && !disabled) frame(ctx, box, AMBER, RAISED);
     const textX = item.icon ? box.x + box.h + 4 : box.x + 4;
     if (item.icon) drawIcon(ctx, item.icon, { x: box.x + 2, y: box.y + 2, w: box.h - 4, h: box.h - 4 });
-    drawText(ctx, item.label.toUpperCase(), textX, labelY, lit ? BONE : AMBER);
+    const hasSub = item.sub !== undefined && item.sub !== '';
+    const mainY = hasSub ? box.y + 3 : labelY;
+    const labelColor = disabled ? DIM : (lit ? BONE : AMBER);
+    drawText(ctx, item.label.toUpperCase(), textX, mainY, labelColor);
+    if (item.value) {
+      const val = item.value.toUpperCase();
+      const valColor = disabled ? DIM : (lit ? BONE : DIM);
+      drawText(ctx, val, box.x + box.w - 4 - textWidth(val), mainY, valColor);
+    }
+    if (hasSub) {
+      const subY = mainY + FONT_HEIGHT + 2;
+      drawText(ctx, item.sub!.toUpperCase(), textX, subY, DIM);
+    }
     return;
   }
   drawText(ctx, item.label.toUpperCase(), box.x, labelY, lit ? AMBER : DIM);

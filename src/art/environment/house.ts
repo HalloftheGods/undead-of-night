@@ -18,14 +18,14 @@ const { ink, metal, ash, wood, bone, brick, concrete, olive, grass, denim } = RA
 const WALL = 28;
 const WHITE: Trim = [ash[0], bone[0], bone[1]];
 
-interface Plane {
+export interface Plane {
   readonly points: readonly Point[];
   readonly base: Color;
   readonly course: Color;
 }
 
 /** Paints shingle courses over one plane only, with staggered tab cuts. */
-function shingles(c: PixelCanvas, plane: Plane, alongY = false): void {
+export function shingles(c: PixelCanvas, plane: Plane, alongY = false): void {
   const mask = new PixelCanvas(c.w, c.h).poly(plane.points, plane.base);
   for (let y = 0; y < c.h; y++) {
     for (let x = 0; x < c.w; x++) {
@@ -40,7 +40,7 @@ function shingles(c: PixelCanvas, plane: Plane, alongY = false): void {
   }
 }
 
-function chimney(c: PixelCanvas, x: number, y: number): void {
+export function chimney(c: PixelCanvas, x: number, y: number): void {
   c.rect(x + 12, y + 19, 4, 3, metal[0]);
   c.rect(x, y + 6, 12, 15, brick[1]);
   c.rect(x, y + 6, 1, 15, brick[2]).rect(x + 11, y + 6, 1, 15, brick[0]);
@@ -54,7 +54,7 @@ function chimney(c: PixelCanvas, x: number, y: number): void {
   c.rect(x, y + 21, 12, 1, wood[0]);
 }
 
-function dormer(c: PixelCanvas, x: number, y: number): void {
+export function dormer(c: PixelCanvas, x: number, y: number): void {
   // Cheek shade, then wall, then a small gable lit on its left slope.
   c.rect(x + 18, y + 10, 3, 12, metal[0]);
   c.rect(x + 1, y + 9, 17, 13, olive[1]);
@@ -66,13 +66,13 @@ function dormer(c: PixelCanvas, x: number, y: number): void {
   c.rect(x - 1, y + 10, 22, 1, ash[0]);
 }
 
-interface Boards {
+export interface Boards {
   readonly face: Color;
   readonly joint: Color;
   readonly lit: Color;
 }
 
-function clapboard(s: Shell, b: Boards): void {
+export function clapboard(s: Shell, b: Boards): void {
   const { c, left, right, footW, ground, wallTop } = s;
   c.rect(left, wallTop, footW, WALL, b.face);
   for (let y = wallTop + 3; y < ground; y += 3) c.rect(left, y, footW, 1, b.joint);

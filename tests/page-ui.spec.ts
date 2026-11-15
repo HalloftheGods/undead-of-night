@@ -161,4 +161,33 @@ describe('page kit layout', () => {
     });
     expect((hitTuner as { along: number }).along).toBeCloseTo(0.5, 1);
   });
+
+  it('respects custom width on PageModel and allocates height for link items with subtitles', () => {
+    const wideModel: PageModel = {
+      heading: 'Market',
+      width: 400,
+      panels: [
+        {
+          heading: 'Weapons',
+          items: [
+            { kind: 'link', id: 'shotgun', label: '12G Pump Shotgun', value: '25 Silver', sub: 'High close damage' },
+            { kind: 'link', id: 'locked', label: 'Carbine', value: '50 Silver', disabled: true },
+          ],
+        },
+      ],
+      buttons: [{ id: 'close', label: 'Close', enabled: true, primary: true }],
+    };
+
+    const placed = layoutPageUi(wideModel, 480, 270, 0);
+    expect(placed.panels[0].box.w).toBe(400);
+
+    const shotgun = placed.controls.find((c) => c.id === 'shotgun')!;
+    expect(shotgun).toBeDefined();
+    // A link without an icon but with subtitle has extra height (ROW_H + 9 = 22)
+    expect(shotgun.box.h).toBe(22);
+
+    const locked = placed.controls.find((c) => c.id === 'locked')!;
+    expect(locked).toBeDefined();
+    expect(locked.box.h).toBe(13);
+  });
 });

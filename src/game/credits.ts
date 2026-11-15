@@ -11,7 +11,7 @@ export const CAST: readonly string[] = ['Night', 'Bear', 'Kat', 'Rex', 'Rich'];
 export const CREDITS: readonly CreditLine[] = [
   { kind: 'title', text: 'Undead of Night: Take One' },
   { kind: 'studio', text: 'Hall of the Gods, Inc.' },
-  { kind: 'role', text: 'Music by' },
+  { kind: 'role', text: 'Music Producer & Artist' },
   { kind: 'name', text: 'Majora D.' },
   { kind: 'role', text: 'Starring' },
   ...CAST.map((text): CreditLine => ({ kind: 'name', text })),

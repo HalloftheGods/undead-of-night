@@ -15,6 +15,7 @@ import { buildDumpsterVariants } from './containers/variants/dumpster-variants.t
 import { buildFridgeVariants } from './containers/variants/fridge-variants.ts';
 import { buildLockerVariants } from './containers/variants/locker-variants.ts';
 import { buildRackShelfArt, buildWireShelfArt, buildWoodShelfArt } from './containers/shelf-variants.ts';
+import { buildGlassCounterArt, buildPharmacyShelfArt } from './containers/pharmacy-fittings.ts';
 import { buildFridgeArt, buildLockerArt, buildShelfArt } from './containers/shelving.ts';
 import type { ContainerArt } from './containers/stage.ts';
 import { buildCarArt } from './containers/vehicles.ts';
@@ -25,14 +26,14 @@ import type { PixelSprite } from './types.ts';
 
 export type { ContainerArt } from './containers/stage.ts';
 
-export type ShelfLook = 'shelf' | 'shelf_wood' | 'shelf_wire' | 'shelf_rack';
+export type ShelfLook = 'shelf' | 'shelf_wood' | 'shelf_wire' | 'shelf_rack' | 'shelf_pharmacy';
 /** The pieces that come in five looks: the original and four more, picked per piece by its place in the map. */
 export const VARIED_PROPS = VARIED_PROP_LOOKS as Partial<Record<PropKind, ContainerLook>>;
 export type VariedLook = 'drawer' | 'locker' | 'fridge' | 'cabinet' | 'box' | 'desk' | 'dumpster';
 export const VARIANTS_PER_LOOK = LOOK_VARIANT_COUNT;
 export type VariantLook = `${VariedLook}_v${1 | 2 | 3 | 4}`;
 
-export type ContainerLook = ContainerKind | 'bench' | 'desk' | ShelfLook | VariantLook | Exclude<CarLook, 'car'>;
+export type ContainerLook = ContainerKind | 'bench' | 'desk' | 'cabinet_glass' | ShelfLook | VariantLook | Exclude<CarLook, 'car'>;
 
 /** Every shelf look, in the order a town hands them out. */
 export const SHELF_LOOKS: readonly ShelfLook[] = SHELF_LOOK_IDS;
@@ -67,6 +68,8 @@ export function buildContainers(props: Record<PropKind, PixelSprite>): Record<Co
     shelf_wood: buildWoodShelfArt(),
     shelf_wire: buildWireShelfArt(),
     shelf_rack: buildRackShelfArt(),
+    shelf_pharmacy: buildPharmacyShelfArt(),
+    cabinet_glass: buildGlassCounterArt(props.counter),
     ...(variantEntries('drawer', buildDrawerVariants(props.bed)) as Record<`drawer_v${1 | 2 | 3 | 4}`, ContainerArt>),
     ...(variantEntries('locker', buildLockerVariants(props.locker)) as Record<`locker_v${1 | 2 | 3 | 4}`, ContainerArt>),
     ...(variantEntries('fridge', buildFridgeVariants(props.fridge)) as Record<`fridge_v${1 | 2 | 3 | 4}`, ContainerArt>),

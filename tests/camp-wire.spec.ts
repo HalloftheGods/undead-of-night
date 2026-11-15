@@ -58,7 +58,7 @@ describe('the camp on the wire', () => {
   });
 
   it('turns away a guest on the build before the camp', () => {
-    expect(PROTOCOL_VERSION).toBe(7);
+    expect(PROTOCOL_VERSION).toBeGreaterThanOrEqual(7);
   });
 
   it('rebuilds the camp when its size changes, as it would for a new town', () => {

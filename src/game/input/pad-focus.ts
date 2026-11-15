@@ -9,7 +9,7 @@
 //   data-pad-back     the control B clicks, when its label is not Back, Close, Cancel or Done
 //   data-pad-gate     a gate (the Press Any Key line) is up: a pad press only answers the gate
 
-import type { NavDirection } from './gamepad-input.ts';
+import type { NavDirection } from "./gamepad-input.ts";
 
 export interface Rect {
   readonly left: number;
@@ -40,12 +40,16 @@ function centreOf(rect: Rect): Point {
 }
 
 /** How far `to` lies along the pushed direction, and how far off to the side. */
-function offsets(from: Point, to: Point, direction: NavDirection): { along: number; across: number } {
+function offsets(
+  from: Point,
+  to: Point,
+  direction: NavDirection
+): { along: number; across: number } {
   const dx = to.x - from.x;
   const dy = to.y - from.y;
-  if (direction === 'right') return { along: dx, across: Math.abs(dy) };
-  if (direction === 'left') return { along: -dx, across: Math.abs(dy) };
-  if (direction === 'down') return { along: dy, across: Math.abs(dx) };
+  if (direction === "right") return { along: dx, across: Math.abs(dy) };
+  if (direction === "left") return { along: -dx, across: Math.abs(dy) };
+  if (direction === "down") return { along: dy, across: Math.abs(dx) };
   return { along: -dy, across: Math.abs(dx) };
 }
 
@@ -54,7 +58,11 @@ function offsets(from: Point, to: Point, direction: NavDirection): { along: numb
  * weighted double. With nothing ahead it wraps to the far end of the line (inside the group, when
  * `from` is in one). Null when there is nowhere else to go.
  */
-export function pickTarget<T>(from: FocusTarget<T>, targets: readonly FocusTarget<T>[], direction: NavDirection): FocusTarget<T> | null {
+export function pickTarget<T>(
+  from: FocusTarget<T>,
+  targets: readonly FocusTarget<T>[],
+  direction: NavDirection
+): FocusTarget<T> | null {
   const others = targets.filter((target) => target.ref !== from.ref);
   const origin = centreOf(from.rect);
   let best: FocusTarget<T> | null = null;
@@ -69,7 +77,8 @@ export function pickTarget<T>(from: FocusTarget<T>, targets: readonly FocusTarge
     }
   }
   if (best) return best;
-  const pool = from.group === null ? others : others.filter((target) => target.group === from.group);
+  const pool =
+    from.group === null ? others : others.filter((target) => target.group === from.group);
   let far: FocusTarget<T> | null = null;
   let farScore = -Infinity;
   for (const target of pool) {
@@ -86,10 +95,16 @@ export function pickTarget<T>(from: FocusTarget<T>, targets: readonly FocusTarge
 // --- The DOM layer -----------------------------------------------------------------------
 
 /** What a pad can land on. Text fields count: a pad has no keyboard to be stranded in one with. */
-export const PAD_FOCUSABLE = 'button, a[href], summary, select, textarea, input:not([type="hidden"]), [role="button"], [tabindex="0"]';
+export const PAD_FOCUSABLE =
+  'button, a[href], summary, select, textarea, input:not([type="hidden"]), [role="button"], [tabindex="0"]';
 const DISABLED = ':disabled, [aria-disabled="true"]';
 /** Where focus lands first when nothing has it, best first. The title menu marks its row with aria-current. */
-const DEFAULT_FIRST: readonly string[] = ['[data-pad-default]', '[aria-current="true"]', '.is-selected', '.is-primary'];
+const DEFAULT_FIRST: readonly string[] = [
+  "[data-pad-default]",
+  '[aria-current="true"]',
+  ".is-selected",
+  ".is-primary"
+];
 const BACK_LABEL = /^[<‹«]?\s*(back|close|cancel|done)\s*$/i;
 const NAV_STEP: Readonly<Record<NavDirection, number>> = { left: -1, right: 1, up: 0, down: 0 };
 
@@ -106,14 +121,19 @@ export interface PadMenu {
 }
 
 function hasDom(doc: Document | undefined): doc is Document {
-  return doc !== undefined && typeof doc.querySelectorAll === 'function' && doc.documentElement !== undefined;
+  return (
+    doc !== undefined &&
+    typeof doc.querySelectorAll === "function" &&
+    doc.documentElement !== undefined
+  );
 }
 
 function visibleRect(el: HTMLElement, doc: Document): Rect | null {
   // tabindex="-1" does not rule a control out: the shelves, tab strips and rosters keep every tile but the chosen one at -1, and a pad has no arrow keys to walk them.
-  const isOff = el.matches(DISABLED) || el.closest('[inert]') !== null;
+  const isOff = el.matches(DISABLED) || el.closest("[inert]") !== null;
   if (isOff) return null;
-  const isHidden = typeof el.checkVisibility === 'function' && !el.checkVisibility({ checkVisibilityCSS: true });
+  const isHidden =
+    typeof el.checkVisibility === "function" && !el.checkVisibility({ checkVisibilityCSS: true });
   if (isHidden) return null;
   const rect = el.getBoundingClientRect();
   if (rect.width <= 0 || rect.height <= 0) return null;
@@ -135,7 +155,12 @@ export function focusTargets(doc: Document): FocusTarget<HTMLElement>[] {
   const found: FocusTarget<HTMLElement>[] = [];
   for (const node of Array.from(doc.querySelectorAll<HTMLElement>(PAD_FOCUSABLE))) {
     const rect = visibleRect(node, doc);
-    if (rect) found.push({ ref: node, rect, group: node.closest('[data-pad-group]')?.getAttribute('data-pad-group') ?? null });
+    if (rect)
+      found.push({
+        ref: node,
+        rect,
+        group: node.closest("[data-pad-group]")?.getAttribute("data-pad-group") ?? null
+      });
   }
   return found;
 }
@@ -152,22 +177,24 @@ function isRange(el: Element | null): el is HTMLInputElement {
 
 /** One step of a slider, as the arrow key would. Fires input and change, which v-model listens to. */
 function stepRange(slider: HTMLInputElement, sign: number): void {
-  const min = Number(slider.min === '' ? 0 : slider.min);
-  const max = Number(slider.max === '' ? 100 : slider.max);
+  const min = Number(slider.min === "" ? 0 : slider.min);
+  const max = Number(slider.max === "" ? 100 : slider.max);
   // An unset step is 1, as the browser reads it; step="any" has no size, so a twentieth of the range.
-  const rawStep = slider.step === '' ? 1 : Number(slider.step);
+  const rawStep = slider.step === "" ? 1 : Number(slider.step);
   const step = Number.isFinite(rawStep) && rawStep > 0 ? rawStep : (max - min) / 20;
   const value = Number(slider.value);
   const next = Math.min(max, Math.max(min, value + sign * step));
   const rounded = Number(next.toFixed(6));
   if (rounded === value) return;
   slider.value = String(rounded);
-  slider.dispatchEvent(new Event('input', { bubbles: true }));
-  slider.dispatchEvent(new Event('change', { bubbles: true }));
+  slider.dispatchEvent(new Event("input", { bubbles: true }));
+  slider.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
 /** The control to take focus first: the best marker present wins, else the first control on the page. */
-function defaultTarget(targets: readonly FocusTarget<HTMLElement>[]): FocusTarget<HTMLElement> | null {
+function defaultTarget(
+  targets: readonly FocusTarget<HTMLElement>[]
+): FocusTarget<HTMLElement> | null {
   for (const marker of DEFAULT_FIRST) {
     const marked = targets.find((target) => target.ref.matches(marker));
     if (marked) return marked;
@@ -177,11 +204,14 @@ function defaultTarget(targets: readonly FocusTarget<HTMLElement>[]): FocusTarge
 
 /** True while a gate (Press Any Key) is on screen: the D-pad must not wander off to the footer links behind it. */
 function gateUp(doc: Document): boolean {
-  return doc.querySelector('[data-pad-gate]') !== null;
+  return doc.querySelector("[data-pad-gate]") !== null;
 }
 
 /** Moves focus one step. Nothing focused yet: takes the screen's default control instead. */
-export function navigateFocus(direction: NavDirection, doc: Document | undefined = globalThis.document): boolean {
+export function navigateFocus(
+  direction: NavDirection,
+  doc: Document | undefined = globalThis.document
+): boolean {
   if (!hasDom(doc)) return false;
   const active = doc.activeElement;
   const sign = NAV_STEP[direction];
@@ -202,7 +232,11 @@ export function navigateFocus(direction: NavDirection, doc: Document | undefined
 export function activateFocus(doc: Document | undefined = globalThis.document): boolean {
   if (!hasDom(doc)) return false;
   const active = doc.activeElement as HTMLElement | null;
-  const isControl = active !== null && active.matches('button, a[href], summary, [role="button"], input[type="checkbox"], input[type="radio"]');
+  const isControl =
+    active !== null &&
+    active.matches(
+      'button, a[href], summary, [role="button"], input[type="checkbox"], input[type="radio"]'
+    );
   if (!isControl || active.matches(DISABLED)) return false;
   active.click();
   return true;
@@ -210,14 +244,14 @@ export function activateFocus(doc: Document | undefined = globalThis.document): 
 
 /** The label a control shows: its aria-label, else its text. */
 function labelOf(el: HTMLElement): string {
-  return (el.getAttribute('aria-label') ?? el.textContent ?? '').trim();
+  return (el.getAttribute("aria-label") ?? el.textContent ?? "").trim();
 }
 
 /** Clicks the screen's Back or Close: a `data-pad-back` control first, else one labelled Back, Close, Cancel or Done. */
 export function pressBack(doc: Document | undefined = globalThis.document): boolean {
   if (!hasDom(doc)) return false;
   const targets = focusTargets(doc);
-  const marked = targets.find((target) => target.ref.matches('[data-pad-back]'));
+  const marked = targets.find((target) => target.ref.matches("[data-pad-back]"));
   const labelled = targets.find((target) => BACK_LABEL.test(labelOf(target.ref)));
   const button = marked ?? labelled;
   if (!button) return false;
@@ -227,17 +261,17 @@ export function pressBack(doc: Document | undefined = globalThis.document): bool
 
 /**
  * Start: a `data-pad-start` control, else the screen's primary button (Start Run, Play), else the title menu's
- * highlighted row, so Start on 1-5 Player opens that list. Null-safe: a screen with none leaves Start to pause.
+ * highlighted row, so Start on Play (1-5 Player) opens that list. Null-safe: a screen with none leaves Start to pause.
  */
 export function pressStart(doc: Document | undefined = globalThis.document): boolean {
   if (!hasDom(doc)) return false;
   const targets = focusTargets(doc);
   const pick = (selector: string) => targets.find((target) => target.ref.matches(selector));
   const button =
-    pick('[data-pad-start]') ??
-    pick('.px-button.is-primary') ??
+    pick("[data-pad-start]") ??
+    pick(".px-button.is-primary") ??
     pick('.px-menu-item[aria-current="true"]') ??
-    pick('.px-menu-item.is-primary');
+    pick(".px-menu-item.is-primary");
   if (!button) return false;
   button.ref.click();
   return true;
@@ -248,7 +282,7 @@ export const DOM_PAD_MENU: PadMenu = {
   navigate: (direction) => navigateFocus(direction),
   activate: () => activateFocus(),
   back: () => pressBack(),
-  start: () => pressStart(),
+  start: () => pressStart()
 };
 
 /** Puts focus on the screen's default control, for a screen that opens with the pad in charge. True if it did. */

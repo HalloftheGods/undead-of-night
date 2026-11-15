@@ -120,6 +120,7 @@ export function createCanvasPage(canvas: HTMLCanvasElement, host: CanvasPageHost
       host.playUi('click');
       host.toggle(hit.id);
     } else if (kind === 'link' || kind === 'bind') {
+      if (control.item.kind === 'link' && control.item.disabled) return;
       host.playUi('click');
       host.press(hit.id);
     }
@@ -152,7 +153,9 @@ export function createCanvasPage(canvas: HTMLCanvasElement, host: CanvasPageHost
     const hit = pageHitAt(current, at.x, at.y);
     if (JSON.stringify(hit) === JSON.stringify(win.hover)) return;
     win.hover = hit;
-    const soundsOff = hit === null || (hit.kind === 'control' && hit.part !== null);
+    const controlItem = hit?.kind === 'control' ? current.controls.find((c) => c.id === hit.id)?.item : null;
+    const isDisabledLink = controlItem?.kind === 'link' && controlItem.disabled;
+    const soundsOff = hit === null || (hit.kind === 'control' && (hit.part !== null || isDisabledLink));
     if (!soundsOff) host.playUi('hover');
   }
 

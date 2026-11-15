@@ -35,7 +35,7 @@ describe("title scale", () => {
 });
 
 describe("title menu", () => {
-  it("lists every link in its section order: 1-5 Player, then News Stand, Radio and Settings", () => {
+  it("lists every link in its section order: Play (1-5 Player), then News Stand, Radio and Settings", () => {
     expect(TITLE_MENU.map((item) => item.label)).toEqual([
       "Nightly Run",
       "Campaign",
@@ -54,15 +54,25 @@ describe("title menu", () => {
     ]);
   });
 
-  it("shows the parents on the title, 1-5 Player on top and pointed at", () => {
+  it("shows the parents on the title, Play (1-5 Player) on top and pointed at", () => {
     const rows = menuRows(null);
-    expect(rows.map((row) => row.label)).toEqual(["1-5 Player", "???", "News Stand", "Settings"]);
+    expect(rows.map((row) => row.label)).toEqual([
+      "Play (1-5 Player)",
+      "???",
+      "News Stand",
+      "Settings"
+    ]);
     expect(rows.every((row) => row.kind === "section")).toBe(true);
     expect(openingRow(rows)).toBe(0);
-    expect(MENU_SECTIONS.map((section) => section.group)).toEqual(["play", "radio", "books", "settings"]);
+    expect(MENU_SECTIONS.map((section) => section.group)).toEqual([
+      "play",
+      "radio",
+      "books",
+      "settings"
+    ]);
   });
 
-  it("lists a parent's links with Back last, and opens 1-5 Player at Nightly Run", () => {
+  it("lists a parent's links with Back last, and opens Play (1-5 Player) at Nightly Run", () => {
     const play = menuRows("play");
     expect(play.map((row) => row.label)).toEqual(["Nightly Run", "Campaign", "Arcade", "Back"]);
     expect(play[openingRow(play)].label).toBe("Nightly Run");
@@ -241,14 +251,31 @@ describe("developer mode", () => {
     expect(normalSections.map((sec) => sec.group)).toEqual(["play", "radio", "books", "settings"]);
 
     const devSections = menuSections(undefined, true);
-    expect(devSections.map((sec) => sec.group)).toEqual(["play", "radio", "books", "settings", "dev"]);
+    expect(devSections.map((sec) => sec.group)).toEqual([
+      "play",
+      "radio",
+      "books",
+      "settings",
+      "dev"
+    ]);
     expect(devSections.at(-1)?.label).toBe("Developer Mode");
 
     const normalRows = menuRows(null, TITLE_MENU, undefined, false, false);
-    expect(normalRows.map((row) => row.label)).toEqual(["1-5 Player", "???", "News Stand", "Settings"]);
+    expect(normalRows.map((row) => row.label)).toEqual([
+      "Play (1-5 Player)",
+      "???",
+      "News Stand",
+      "Settings"
+    ]);
 
     const devRows = menuRows(null, TITLE_MENU, undefined, false, true);
-    expect(devRows.map((row) => row.label)).toEqual(["1-5 Player", "???", "News Stand", "Settings", "Developer Mode"]);
+    expect(devRows.map((row) => row.label)).toEqual([
+      "Play (1-5 Player)",
+      "???",
+      "News Stand",
+      "Settings",
+      "Developer Mode"
+    ]);
   });
 
   it("lists Items, Sprites, Test Drive, HUD and Back inside Developer Mode", () => {

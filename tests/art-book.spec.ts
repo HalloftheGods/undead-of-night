@@ -163,7 +163,7 @@ describe('art book', () => {
     for (const [base, prop] of Object.entries({ drawer: 'bed', locker: 'locker', fridge: 'fridge', cabinet: 'counter', box: 'crate_stack', desk: 'table', dumpster: 'dumpster' })) {
       for (let n = 1; n <= 4; n++) { looks[`${base}_v${n}`] = prop; original[`${base}_v${n}`] = base; }
     }
-    for (const [look, prop] of [['shelf_wood', 'shelf'], ['shelf_wire', 'shelf'], ['shelf_rack', 'shelf']]) { looks[look] = prop; original[look] = 'shelf'; }
+    for (const [look, prop] of [['shelf_wood', 'shelf'], ['shelf_wire', 'shelf'], ['shelf_rack', 'shelf'], ['shelf_pharmacy', 'shelf'], ['cabinet_glass', 'counter']]) { looks[look] = prop; original[look] = prop === 'shelf' ? 'shelf' : 'cabinet'; }
     expect(Object.keys(book.containers).sort()).toEqual(Object.keys(looks).sort());
     for (const [look, prop] of Object.entries(looks)) {
       const { closed, opened } = book.containers[look as keyof typeof props];

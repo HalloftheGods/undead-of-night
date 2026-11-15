@@ -139,8 +139,11 @@ const playing = ref<SoundEntry | null>(null);
 const monitorMeta = computed(() => {
   const current = playing.value;
   if (!current) return 'SOURCE: IDLE';
-  const prefix = current.kind === 'music' ? 'MUSIC' : 'SFX';
-  return `${prefix} // ${current.where}`;
+  const isMusic = current.kind === 'music';
+  if (isMusic) {
+    return `MUSIC // ${current.where} // PRODUCER & ARTIST: MAJORA D.`;
+  }
+  return `SFX // ${current.where}`;
 });
 
 let isOpen = true;

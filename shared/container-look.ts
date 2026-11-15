@@ -9,6 +9,9 @@ import type { PropKind } from './protocol.ts';
 
 export const SHELF_LOOK_IDS = ['shelf', 'shelf_wood', 'shelf_wire', 'shelf_rack'] as const;
 
+/** Pharmacies dress every counter as a glass display case and every shelf as pharmacy shelving. */
+export const PHARMACY_LOOKS: Partial<Record<PropKind, string>> = { counter: 'cabinet_glass', shelf: 'shelf_pharmacy' };
+
 /** The pieces that come in five looks: the original and four more, picked per piece by its place in the map. */
 export const VARIED_PROP_LOOKS: Partial<Record<PropKind, string>> = {
   bed: 'drawer', locker: 'locker', fridge: 'fridge', counter: 'cabinet', crate_stack: 'box', table: 'desk', dumpster: 'dumpster',

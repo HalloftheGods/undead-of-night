@@ -73,12 +73,12 @@ export class RunStage {
     if (newTown) world.enterTown(this.open(snapshot.mapSeed, snapshot.level, campSize));
     // The fence's fallen sections, lifted out of this copy's collision as the room's sim lifts them out of its own.
     settleFence(world.worldMap, fallenOf(snapshot.home?.overrun));
-    const hasDrained = snapshot.drained === true || snapshot.events.some((e) => e.type === 'city_drained');
+    const hasDrained = snapshot.drained === true || snapshot.events?.some((e) => e.type === 'city_drained') === true;
     if (hasDrained && !this.drained) {
       this.drained = true;
       this.renderer()?.setTheme(levelDef(snapshot.level).theme, nightEventFor(snapshot.mapSeed, snapshot.level)?.id ?? null, this.drained, this.powered);
     }
-    const hasPowered = snapshot.powered === true || snapshot.events.some((e) => e.type === 'power_restored');
+    const hasPowered = snapshot.powered === true || snapshot.events?.some((e) => e.type === 'power_restored') === true;
     if (hasPowered && !this.powered) {
       this.powered = true;
       this.renderer()?.setTheme(levelDef(snapshot.level).theme, nightEventFor(snapshot.mapSeed, snapshot.level)?.id ?? null, this.drained, this.powered);

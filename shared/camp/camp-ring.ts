@@ -15,10 +15,10 @@ export const CAMP_SIZES: readonly CampSize[] = [1, 2, 3, 4, 5];
 
 /** The fenced ground in tiles at each size. Every width and height is even, so 32 px sections tile the north, south and west sides exactly. */
 export const CAMP_RING_TILES: Readonly<Record<CampSize, { readonly w: number; readonly h: number }>> = {
-  1: { w: 24, h: 14 },
-  2: { w: 28, h: 16 },
-  3: { w: 32, h: 18 },
-  4: { w: 36, h: 22 },
+  1: { w: 28, h: 18 },
+  2: { w: 32, h: 20 },
+  3: { w: 36, h: 22 },
+  4: { w: 38, h: 24 },
   5: { w: 40, h: 26 },
 };
 

@@ -25,7 +25,7 @@ export type PageItem =
   | { readonly kind: 'choice'; readonly id: string; readonly label: string; readonly options: readonly ChoiceOption[]; readonly value: string }
   | { readonly kind: 'slider'; readonly id: string; readonly label: string; readonly value: number; readonly readout: string }
   /** A link with `icon` is a taller row with the sprite drawn at its left, so you can see what you are picking. */
-  | { readonly kind: 'link'; readonly id: string; readonly label: string; readonly icon?: PixelSprite }
+  | { readonly kind: 'link'; readonly id: string; readonly label: string; readonly icon?: PixelSprite; readonly value?: string; readonly sub?: string; readonly disabled?: boolean }
   /** An action and the key or button it is bound to; pressing it starts listening for a new one. */
   | { readonly kind: 'bind'; readonly id: string; readonly label: string; readonly value: string; readonly listening: boolean }
   | RadioItem
@@ -105,6 +105,8 @@ export interface PageModel {
   readonly panels: readonly PagePanel[];
   /** Along the foot, Back first. */
   readonly buttons: readonly PageButton[];
+  /** Optional custom width in art pixels (defaults to COLUMN_MAX). */
+  readonly width?: number;
 }
 
 export interface PlacedPanel {
@@ -197,7 +199,10 @@ function itemHeight(item: PageItem, innerW: number): number {
   if (item.kind === 'text') return wrapWords(item.text.toUpperCase(), innerW, textWidth).length * LINE_H - (LINE_H - FONT_HEIGHT);
   if (item.kind === 'choice') return FONT_HEIGHT + 3 + ROW_H;
   if (item.kind === 'slider') return FONT_HEIGHT + 3 + SLIDER_H;
-  if (item.kind === 'link' && item.icon) return ICON_ROW_H;
+  if (item.kind === 'link') {
+    if (item.icon) return item.sub ? Math.max(ICON_ROW_H, 24) : ICON_ROW_H;
+    return item.sub ? ROW_H + 9 : ROW_H;
+  }
   if (item.kind === 'radio') return RADIO_ROW_H;
   if (item.kind === 'album_slider') return 18 + 144 + 6 + 8 + 6 + item.tracks.length * 18;
   return item.kind === 'stat' ? FONT_HEIGHT : ROW_H;
@@ -227,7 +232,7 @@ export function layoutPageUi(model: PageModel, viewW: number, viewH: number, scr
 
   const areaY = EDGE + headingH + HEADING_GAP;
   const area: Box = { x: 0, y: areaY, w: viewW, h: Math.max(0, footY - FOOT_GAP - areaY) };
-  const columnW = Math.min(COLUMN_MAX, viewW - EDGE * 2);
+  const columnW = Math.min(model.width ?? COLUMN_MAX, viewW - EDGE * 2);
   const columnX = Math.floor((viewW - columnW) / 2);
   const innerW = columnW - PANEL_PAD * 2;
 

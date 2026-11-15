@@ -1,7 +1,7 @@
 import { BUILDING_DEFS, PROP_DEFS, TILE_SIZE, WALL_THICKNESS } from './protocol.ts';
 import type { BuildingInstance, BuildingKind, PropKind } from './protocol.ts';
 import type { MapBuilder } from './map-builder.ts';
-import { buildingBoxLookId, buildingShelfLookId } from './container-look.ts';
+import { buildingBoxLookId, buildingShelfLookId, PHARMACY_LOOKS } from './container-look.ts';
 
 /** `left` and `bottom` are pixels from the footprint's top left corner. */
 type Slot = readonly [kind: PropKind, left: number, bottom: number, odds?: number];
@@ -260,7 +260,7 @@ export function furnish(b: MapBuilder, building: BuildingInstance): void {
   const crateLook = building.kind === 'warehouse' ? buildingBoxLookId(building.x, building.y) : undefined;
   LAYOUTS[building.kind].forEach(([kind, , bottom, odds], index) => {
     const skipped = odds !== undefined && b.rng() >= odds;
-    const look = kind === 'shelf' ? shelfLook : kind === 'crate_stack' ? crateLook : undefined;
+    const look = building.kind === 'pharmacy' ? PHARMACY_LOOKS[kind] : kind === 'shelf' ? shelfLook : kind === 'crate_stack' ? crateLook : undefined;
     if (!skipped) b.fixture(kind, building.x + lefts[index] + PROP_DEFS[kind].w / 2, building.y + bottom, look);
   });
 }

@@ -37,8 +37,8 @@ export const ROSTER_PLACE = { x: 784, y: 312 } as const;
 
 /** Where each merchant stands when the camp is raised: in the market's four corners, clear of the candy shop's circle. */
 export const MERCHANT_STANDS: Readonly<Record<MerchantId, { readonly x: number; readonly y: number }>> = {
-  gunsmith: { x: 552, y: 304 },
-  quartermaster: { x: 664, y: 304 },
+  gunsmith: { x: 552, y: 312 },
+  quartermaster: { x: 664, y: 312 },
   medic: { x: 552, y: 344 },
   powder: { x: 664, y: 344 },
 };
@@ -64,7 +64,7 @@ export interface FloorBox {
 }
 
 /** The market tent's floor, where the merchants spend most of their time. */
-const MARKET_STRIP: FloorBox = { x0: 542, y0: 300, x1: 674, y1: 356 };
+const MARKET_STRIP: FloorBox = { x0: 542, y0: 308, x1: 674, y1: 356 };
 /** The east edge of where a merchant wanders, short of the van. */
 const ROAM_EAST = 800;
 

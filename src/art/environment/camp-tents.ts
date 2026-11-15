@@ -1,156 +1,305 @@
-// The camp's tents: big ridge tents you walk into, drawn as every building is, roof and front wall in one shell.
-// Canvas over a pole frame, seams every panel, the door flap rolled up and tied. Lit from the upper left like the town.
+// The camp's core structures: survival lodge buildings with handcrafted shingles,
+// clapboard siding, stone/concrete foundations, porches, and distinct character.
+// Drawn as every building is: roof and front wall in one shell, lit from upper-left.
 
-import type { BuildingKind } from '../../../shared/protocol.ts';
 import type { PixelSprite } from '../types.ts';
+import { PixelCanvas } from '../kit.ts';
 import { RAMPS } from '../palette.ts';
 import type { Color } from '../palette.ts';
+import { grime, windowUnit } from './facade.ts';
 import type { Trim } from './facade.ts';
 import { bakeShell, doorway, startShell } from './shell.ts';
 import type { Shell } from './shell.ts';
 import { blockText } from './signage.ts';
+import { chimney, clapboard, dormer, shingles } from './house.ts';
 
-const { ink, bone, denim, fire, metal, olive, teal, wood } = RAMPS;
+const { ink, bone, denim, fire, metal, olive, wood, ash, concrete, grass } = RAMPS;
 
-/** The canvas side wall under the eave. */
-const WALL = 20;
-const DOOR_TALL = 18;
-/** Top of the far slope, and the ridge pole's row. */
-const ROOF_TOP = 6;
-const RIDGE = 22;
-const PANEL = 16;
+/** Front wall height under the eave. */
+const WALL = 28;
+const WHITE: Trim = [ash[0], bone[0], bone[1]];
+const TIMBER: Trim = [wood[0], wood[1], wood[2]];
+const STEEL: Trim = [metal[0], metal[1], metal[2]];
 
-type Cloth = readonly [Color, Color, Color];
-
-interface TentLook {
-  /** Shadow, body and lit tones of the canvas. */
-  readonly cloth: Cloth;
-  /** A second cloth for alternate panels, for a striped canopy. */
-  readonly stripe?: Cloth;
+/** Covered porch over doorway with timber posts and roof overhang. */
+function frontPorch(s: Shell, trim: Trim, floor: Color): void {
+  const { c, ground, wallTop, doorL, doorR } = s;
+  doorway(s, 22, 'timber', trim, floor);
+  const px = doorL - 4;
+  const pw = doorR - doorL + 8;
+  const pTop = wallTop - 5;
+  c.rect(px, pTop + 8, 2, ground - pTop - 9, trim[1]).rect(px, pTop + 8, 1, ground - pTop - 9, trim[2]);
+  c.rect(px + pw - 2, pTop + 8, 2, ground - pTop - 9, trim[0]).rect(px + pw - 2, pTop + 8, 1, ground - pTop - 9, trim[1]);
+  c.rect(px - 3, pTop, pw + 6, 6, trim[1]).rect(px - 3, pTop, pw + 6, 1, trim[2]).rect(px - 3, pTop + 3, pw + 6, 1, trim[0]);
+  c.rect(px - 3, pTop + 6, pw + 6, 1, trim[1]).rect(px - 3, pTop + 7, pw + 6, 1, ink[1]);
 }
 
-const panelCloth = (look: TentLook, x: number): Cloth => {
-  const isStripe = look.stripe !== undefined && Math.floor(x / PANEL) % 2 === 1;
-  return isStripe ? (look.stripe as Cloth) : look.cloth;
-};
-
-/** The far slope, hipped at both ends, then the ridge pole, then the near slope down to a scalloped eave. */
-function roof(s: Shell, look: TentLook): void {
-  const { c, left, footW, wallTop } = s;
-  for (let y = ROOF_TOP; y < RIDGE; y++) {
-    const inset = Math.round(((RIDGE - y) * 3) / 2);
-    for (let x = left + inset; x < left + footW - inset; x++) c.px(x, y, panelCloth(look, x - left)[0]);
+/** Tarp draped over a roof section and held down by concrete blocks. */
+function roofTarp(c: PixelCanvas, x: number, y: number, w: number, h: number): void {
+  c.poly([[x, y + 2], [x + w, y], [x + w + 3, y + h - 2], [x + 2, y + h]], denim[1]);
+  c.line(x, y + 2, x + w, y, denim[2]).line(x + 2, y + h, x + w + 3, y + h - 2, denim[0]);
+  c.line(x + 6, y + 2, x + 8, y + h - 1, denim[0]).line(x + w - 6, y + 1, x + w - 4, y + h - 1, denim[0]);
+  for (const [bx, by] of [[x - 1, y + 1], [x + w - 1, y - 1], [x + w + 2, y + h - 3], [x + 1, y + h - 1]] as const) {
+    c.rect(bx, by, 3, 2, concrete[3]);
   }
-  const slope = wallTop - 3 - (RIDGE + 2);
-  for (let x = left; x < left + footW; x++) {
-    const cloth = panelCloth(look, x - left);
-    // Canvas sags between the poles: the middle of each panel dips into shadow lower down than its seams do.
-    const across = ((x - left) % PANEL) / PANEL;
-    const dip = Math.sin(across * Math.PI);
-    for (let y = RIDGE + 2; y < wallTop - 3; y++) {
-      const down = (y - RIDGE - 2) / slope;
-      const lit = down < 0.12 || (down < 0.3 && dip < 0.5);
-      const shade = down > 0.86 - dip * 0.22;
-      let tone = cloth[1];
-      if (shade) tone = cloth[0];
-      if (lit) tone = cloth[2];
-      c.px(x, y, tone);
-    }
-    // Scalloped valance: the canvas hangs a little lower between each pair of seams.
-    const sag = Math.round(Math.sin((((x - left) % PANEL) / PANEL) * Math.PI) * 2);
-    c.rect(x, wallTop - 3, 1, 2 + sag, cloth[1]).px(x, wallTop - 1 + sag, ink[1]);
-  }
-  for (let x = left + PANEL; x < left + footW; x += PANEL) {
-    c.rect(x, RIDGE + 2, 1, wallTop - RIDGE - 4, panelCloth(look, x - left - 1)[0]);
-    c.rect(x - 1, RIDGE + 2, 1, 4, panelCloth(look, x - left - 1)[2]);
-  }
-  c.rect(left + 4, RIDGE, footW - 8, 2, wood[2]).rect(left + 4, RIDGE, footW - 8, 1, wood[3]);
-  c.rect(left + 2, RIDGE - 1, 3, 4, wood[1]).rect(left + footW - 5, RIDGE - 1, 3, 4, wood[1]);
-  // Guy ropes from each end of the ridge down across the hips to the corner pegs.
-  c.line(left + 3, RIDGE + 2, left + 1, wallTop - 3, bone[1]).line(left + footW - 4, RIDGE + 2, left + footW - 2, wallTop - 3, bone[0]);
-  c.line(left + 3, RIDGE + 2, left + 10, wallTop - 3, bone[0]).line(left + footW - 4, RIDGE + 2, left + footW - 11, wallTop - 3, bone[0]);
 }
 
-/** Canvas wall with a pole at each corner and a mud-stained hem. */
-function wall(s: Shell, look: TentLook): void {
-  const { c, left, right, footW, ground, wallTop } = s;
-  for (let x = left; x < left + footW; x++) {
-    const cloth = panelCloth(look, x - left);
-    // Hanging canvas: a soft fold every few pixels, deeper at each pole.
-    const fold = (x - left) % 6 === 5;
-    c.rect(x, wallTop, 1, WALL, fold ? cloth[0] : cloth[1]);
-    c.rect(x, wallTop, 1, 3, cloth[0]);
-    const isPole = (x - left) % PANEL === 0;
-    if (isPole) c.rect(x, wallTop, 1, WALL, ink[1]);
-  }
-  c.rect(left, wallTop, footW, 1, ink[1]);
-  c.rect(left, ground - 3, footW, 3, wood[0]).rect(left, ground - 3, footW, 1, wood[1]);
-  c.rect(left, wallTop - 2, 2, WALL + 2, wood[1]).rect(left, wallTop - 2, 1, WALL + 2, wood[2]);
-  c.rect(right - 1, wallTop - 2, 2, WALL + 2, wood[0]);
-}
+const ROOF_TOP = 4;
+const RIDGE_Y = 42;
 
-/** The opening, then its flap rolled up over it and tied with two cords. */
-function flapDoor(s: Shell, look: TentLook, floor: Color): void {
-  const trim: Trim = [look.cloth[0], wood[1], wood[2]];
-  doorway(s, DOOR_TALL, 'shutter', trim, floor);
-  const { c, ground, doorL, doorR } = s;
-  const top = ground - DOOR_TALL;
-  c.rect(doorL, top, doorR - doorL, 5, look.cloth[1]).rect(doorL, top, doorR - doorL, 1, look.cloth[2]).rect(doorL, top + 4, doorR - doorL, 1, look.cloth[0]);
-  for (const x of [doorL + 6, doorR - 7]) c.rect(x, top - 1, 1, 7, bone[1]);
-}
+// --- Market -----------------------------------------------------------------------------
 
-function startTent(kind: BuildingKind, look: TentLook, floor: Color): Shell {
-  const s = startShell(kind, WALL);
-  roof(s, look);
-  wall(s, look);
-  flapDoor(s, look, floor);
-  return s;
-}
-
-/** Striped canopy, a painted board over the door. */
+/**
+ * A grand survival trading post: cedar clapboard siding, stone foundation,
+ * shingled gable roof with clerestory cupola, storefront windows with warm interior glow,
+ * and a carved wooden "MARKET" sign mounted on iron brackets.
+ */
 export function buildCampMarket(): PixelSprite {
-  const look: TentLook = { cloth: [teal[0], teal[1], teal[2]], stripe: [bone[0], bone[1], bone[2]] };
-  const s = startTent('camp_market', look, wood[2]);
-  const { c, doorL, wallTop } = s;
-  const signX = doorL - 6;
-  const signY = wallTop - 15;
-  c.rect(signX, signY, 44, 11, wood[1]).rect(signX, signY, 44, 1, wood[3]).rect(signX, signY + 10, 44, 1, ink[1]);
-  blockText(c, signX + 4, signY + 3, 'MARKET', bone[3], wood[0]);
-  c.rect(signX + 6, signY + 11, 1, 4, metal[1]).rect(signX + 37, signY + 11, 1, 4, metal[1]);
-  return bakeShell(s);
-}
+  const s = startShell('camp_market', WALL);
+  const { c, left, right, footW, ground, wallTop, doorL } = s;
+  const eaveL = left - 1;
+  const eaveR = right + 1;
 
-/** Army canvas with a tin patch, and a stovepipe through the roof for the forge inside. */
-export function buildCampWorkshop(): PixelSprite {
-  const look: TentLook = { cloth: [olive[0], olive[1], olive[2]] };
-  const s = startTent('camp_workshop', look, metal[1]);
-  const { c, left, footW } = s;
-  const patch = { x: left + 18, y: RIDGE + 20, w: 22, h: 14 };
-  c.rect(patch.x, patch.y, patch.w, patch.h, metal[1]).rect(patch.x, patch.y, patch.w, 1, metal[3]);
-  for (let x = patch.x + 2; x < patch.x + patch.w; x += 3) c.rect(x, patch.y + 1, 1, patch.h - 1, metal[2]);
-  c.px(patch.x + 3, patch.y + patch.h - 2, fire[0]).px(patch.x + patch.w - 4, patch.y + 3, fire[0]);
-  const pipe = left + footW - 30;
-  c.rect(pipe, RIDGE - 12, 5, 26, metal[1]).rect(pipe, RIDGE - 12, 1, 26, metal[3]).rect(pipe + 4, RIDGE - 12, 1, 26, metal[0]);
-  c.rect(pipe - 2, RIDGE - 14, 9, 3, metal[2]).rect(pipe - 2, RIDGE - 14, 9, 1, metal[3]);
-  c.rect(pipe - 3, RIDGE + 13, 11, 3, ink[1]);
-  return bakeShell(s);
-}
+  // Dual slope shingled roof: lit upper slope and shaded lower slope.
+  shingles(c, {
+    points: [[eaveL, ROOF_TOP], [eaveR, ROOF_TOP], [eaveR, RIDGE_Y], [eaveL, RIDGE_Y]],
+    base: wood[2],
+    course: wood[1],
+  });
+  shingles(c, {
+    points: [[eaveL, RIDGE_Y], [eaveR, RIDGE_Y], [eaveR, wallTop - 1], [eaveL, wallTop - 1]],
+    base: wood[1],
+    course: wood[0],
+  });
 
-/** Denim-blue canvas, a mesh window, and a string of bulbs along the eave that still glow off the generator. */
-export function buildCampQuarters(): PixelSprite {
-  const look: TentLook = { cloth: [denim[0], denim[1], denim[2]] };
-  const s = startTent('camp_quarters', look, wood[2]);
-  const { c, left, footW, wallTop, ground } = s;
-  for (let x = left + 3; x < left + footW - 3; x++) {
-    const droop = Math.round(Math.sin(((x - left) / footW) * Math.PI * 4) * 1.5) + 2;
-    c.px(x, wallTop - 6 + droop, ink[1]);
-    const isBulb = (x - left) % 9 === 4;
-    if (isBulb) c.px(x, wallTop - 5 + droop, fire[2]).px(x, wallTop - 4 + droop, fire[1]);
+  // Ridge cap and eave lines with highlights.
+  c.rect(eaveL, RIDGE_Y, footW + 2, 1, wood[3]).rect(eaveL, RIDGE_Y + 1, footW + 2, 1, wood[0]);
+  c.rect(eaveL, ROOF_TOP, footW + 2, 1, wood[3]).rect(eaveL, ROOF_TOP, 1, wallTop - ROOF_TOP, wood[2]);
+  c.rect(eaveR, ROOF_TOP, 1, wallTop - ROOF_TOP, wood[0]);
+
+  // Raised cupola / monitor roof vent in the centre of the upper ridge.
+  const cupolaX = left + Math.floor(footW / 2) - 16;
+  const cupolaY = ROOF_TOP + 6;
+  c.rect(cupolaX + 2, cupolaY + 8, 32, 2, wood[0]);
+  c.rect(cupolaX, cupolaY, 32, 8, wood[1]).rect(cupolaX, cupolaY, 32, 1, wood[3]);
+  for (let lx = cupolaX + 3; lx < cupolaX + 29; lx += 4) {
+    c.rect(lx, cupolaY + 2, 2, 4, ink[1]).px(lx, cupolaY + 2, wood[2]);
   }
-  const win = { x: left + 12, y: wallTop + 4, w: 18, h: 9 };
-  c.rect(win.x - 1, win.y - 1, win.w + 2, win.h + 2, denim[2]).rect(win.x, win.y, win.w, win.h, ink[1]);
-  for (let x = win.x; x < win.x + win.w; x += 2) c.rect(x, win.y, 1, win.h, ink[0]);
-  c.rect(win.x + 2, win.y + 3, 5, 3, fire[1]);
-  c.rect(left + footW - 22, ground - 9, 8, 6, wood[1]).rect(left + footW - 22, ground - 9, 8, 1, wood[3]);
+  c.rect(cupolaX - 1, cupolaY - 2, 34, 2, wood[2]).rect(cupolaX - 1, cupolaY - 2, 34, 1, wood[3]);
+
+  // Corrugated tin patch on the right slope with rust streaks.
+  const patchX = left + footW - 38;
+  const patchY = RIDGE_Y + 4;
+  c.rect(patchX, patchY, 20, 10, metal[1]).rect(patchX, patchY, 20, 1, metal[3]);
+  for (let px = patchX + 2; px < patchX + 19; px += 3) c.rect(px, patchY + 1, 1, 8, metal[2]);
+  c.px(patchX + 3, patchY + 8, fire[0]).px(patchX + 16, patchY + 2, fire[0]);
+
+  // Wall: clapboard in earthy olive ranger tones with sturdy corner posts.
+  clapboard(s, { face: olive[1], joint: metal[0], lit: olive[2] });
+
+  // Stone foundation skirting.
+  c.rect(left, ground - 4, footW, 4, concrete[1]).rect(left, ground - 4, footW, 1, concrete[2]);
+
+  // Storefront display windows on both sides of entrance.
+  windowUnit(c, left + 14, wallTop + 6, 18, 13, 'lit', TIMBER);
+  windowUnit(c, left + 128, wallTop + 6, 18, 13, 'lit', TIMBER);
+
+  // Wooden window shutters on outer sides.
+  c.rect(left + 8, wallTop + 6, 5, 13, wood[1]).rect(left + 8, wallTop + 6, 1, 13, wood[2]);
+  c.rect(left + 147, wallTop + 6, 5, 13, wood[0]).rect(left + 151, wallTop + 6, 1, 13, wood[1]);
+
+  // Porch over entrance with hanging lanterns.
+  frontPorch(s, TIMBER, wood[2]);
+  c.px(doorL - 6, wallTop + 4, fire[2]).px(doorL - 6, wallTop + 5, fire[1]);
+  c.px(doorL + 28, wallTop + 4, fire[2]).px(doorL + 28, wallTop + 5, fire[1]);
+
+  // Prominent carved wooden sign mounted on iron brackets above entrance.
+  const signX = doorL - 10;
+  const signY = wallTop - 15;
+  c.rect(signX, signY, 52, 12, wood[1]).rect(signX, signY, 52, 1, wood[3]).rect(signX, signY + 11, 52, 1, ink[1]);
+  blockText(c, signX + 7, signY + 3, 'MARKET', bone[3], wood[0]);
+  c.rect(signX + 4, signY + 12, 2, 4, metal[0]).rect(signX + 46, signY + 12, 2, 4, metal[0]);
+
+  // Stack of trade goods / crates beside west wall.
+  c.rect(left + 2, ground - 9, 8, 6, wood[1]).rect(left + 2, ground - 9, 8, 1, wood[3]);
+
+  // Grime and weathering along foundation.
+  grime(c, left, ground - 4, 28, [2, 3, 1, 3], metal[0]);
+  grime(c, right - 24, ground - 4, 24, [3, 2, 4], metal[0]);
+
+  return bakeShell(s);
+}
+
+// --- Workshop ---------------------------------------------------------------------------
+
+/**
+ * Heavy industrial survival forge & armory:
+ * Corrugated tin roofing with rust blooms, heavy timber framing, bolted steel tie-plates,
+ * tall industrial forge stovepipe with rain cap and soot staining, reinforced steel door,
+ * and an overhead work floodlight.
+ */
+export function buildCampWorkshop(): PixelSprite {
+  const s = startShell('camp_workshop', WALL);
+  const { c, left, right, footW, ground, wallTop, doorL } = s;
+  const eaveL = left - 1;
+  const eaveR = right + 1;
+
+  // Corrugated metal roofing: vertical alternating ribs.
+  for (let x = eaveL; x <= eaveR; x++) {
+    const isLit = (x - eaveL) % 3 === 0;
+    const tone = isLit ? metal[2] : (x - eaveL) % 3 === 1 ? metal[1] : metal[0];
+    c.rect(x, ROOF_TOP, 1, wallTop - ROOF_TOP, tone);
+  }
+
+  // Steel ridge cap with bolt heads.
+  c.rect(eaveL, RIDGE_Y, footW + 2, 2, metal[2]).rect(eaveL, RIDGE_Y, footW + 2, 1, metal[3]);
+  for (let bx = eaveL + 4; bx < eaveR - 4; bx += 8) c.px(bx, RIDGE_Y + 1, ink[0]);
+  c.rect(eaveL, ROOF_TOP, footW + 2, 1, metal[3]).rect(eaveL, ROOF_TOP, 1, wallTop - ROOF_TOP, metal[2]);
+  c.rect(eaveR, ROOF_TOP, 1, wallTop - ROOF_TOP, metal[0]);
+
+  // Rust streaks running down roof panels.
+  c.rect(left + 16, RIDGE_Y - 6, 2, 14, wood[1]).px(left + 16, RIDGE_Y + 8, fire[0]);
+  c.rect(left + 48, RIDGE_Y + 2, 2, 12, wood[1]).px(left + 48, RIDGE_Y + 14, fire[0]);
+  c.rect(left + 82, RIDGE_Y - 8, 3, 18, wood[1]).px(left + 83, RIDGE_Y + 10, fire[0]);
+
+  // Protective blue canvas tarp tied over part of the north slope.
+  roofTarp(c, left + 14, ROOF_TOP + 4, 24, 16);
+
+  // Tall forge chimney / stovepipe with exhaust rain cap and soot staining.
+  const pipeX = left + footW - 28;
+  // Soot on roof behind pipe.
+  c.rect(pipeX - 5, ROOF_TOP + 4, 16, 26, ink[1]);
+  // Stovepipe column.
+  c.rect(pipeX, ROOF_TOP - 2, 6, 22, metal[1])
+    .rect(pipeX, ROOF_TOP - 2, 1, 22, metal[3])
+    .rect(pipeX + 5, ROOF_TOP - 2, 1, 22, metal[0]);
+  // Rain cap.
+  c.rect(pipeX - 3, ROOF_TOP - 4, 12, 3, metal[2])
+    .rect(pipeX - 3, ROOF_TOP - 4, 12, 1, metal[3])
+    .rect(pipeX - 1, ROOF_TOP - 5, 8, 1, metal[3]);
+  c.rect(pipeX - 2, ROOF_TOP + 18, 10, 3, metal[0]);
+
+  // Wall: industrial corrugated steel siding with dark timber posts.
+  for (let x = left; x <= right; x++) {
+    const isRib = (x - left) % 3 === 0;
+    c.rect(x, wallTop, 1, WALL, isRib ? metal[1] : metal[0]);
+  }
+  // Heavy timber corner posts.
+  c.rect(left, wallTop, 3, WALL, wood[1]).rect(left, wallTop, 1, WALL, wood[2]);
+  c.rect(right - 2, wallTop, 3, WALL, wood[0]);
+
+  // Horizontal bolted steel reinforcement straps.
+  c.rect(left, wallTop + 6, footW, 2, metal[2]).rect(left, wallTop + 6, footW, 1, metal[3]);
+  c.rect(left, wallTop + 16, footW, 2, metal[2]).rect(left, wallTop + 16, footW, 1, metal[3]);
+  for (let rx = left + 8; rx < right - 8; rx += 14) {
+    c.px(rx, wallTop + 7, ink[0]).px(rx, wallTop + 17, ink[0]);
+  }
+
+  // Eave shadow and heavy stained foundation.
+  c.rect(left, wallTop, footW, 3, ink[1]);
+  c.rect(left, ground - 4, footW, 4, concrete[0]).rect(left, ground - 4, footW, 1, concrete[1]);
+  c.rect(left + 20, ground - 3, 16, 2, ink[1]);
+
+  // Barred workshop windows on both sides of door.
+  windowUnit(c, left + 14, wallTop + 6, 14, 12, 'blind', STEEL);
+  windowUnit(c, left + 96, wallTop + 6, 14, 12, 'boarded', STEEL);
+
+  // Heavy steel reinforced doorway.
+  doorway(s, 22, 'steel', STEEL, concrete[1]);
+
+  // Overhead angled industrial work floodlight with glowing beam.
+  const lightX = doorL + 10;
+  const lightY = wallTop - 4;
+  c.rect(lightX - 2, lightY, 6, 3, metal[2]).rect(lightX - 1, lightY + 3, 4, 2, fire[2]);
+  c.px(lightX, lightY + 5, fire[1]).px(lightX + 1, lightY + 5, fire[1]);
+
+  // Grime and soot stains along ground.
+  grime(c, left, ground - 4, 32, [3, 2, 4, 2], ink[1]);
+  grime(c, right - 24, ground - 4, 24, [2, 4, 1], ink[1]);
+
+  return bakeShell(s);
+}
+
+// --- Quarters ---------------------------------------------------------------------------
+
+/**
+ * Cozy survivor bunkhouse & lodge:
+ * Pitched cedar shingle roof with brick chimney, cute roof dormer, moss along the eaves,
+ * denim-stained weatherboard siding with crisp white trim, welcoming porch with railing,
+ * curtained glowing windows, and warm festive string lights along the front eaves.
+ */
+export function buildCampQuarters(): PixelSprite {
+  const s = startShell('camp_quarters', WALL);
+  const { c, left, right, footW, ground, wallTop, doorL } = s;
+  const eaveL = left - 1;
+  const eaveR = right + 1;
+
+  // Handcrafted shingle courses: lit upper slope and shadowed lower slope.
+  shingles(c, {
+    points: [[eaveL, ROOF_TOP], [eaveR, ROOF_TOP], [eaveR, RIDGE_Y], [eaveL, RIDGE_Y]],
+    base: wood[2],
+    course: wood[1],
+  });
+  shingles(c, {
+    points: [[eaveL, RIDGE_Y], [eaveR, RIDGE_Y], [eaveR, wallTop - 1], [eaveL, wallTop - 1]],
+    base: wood[1],
+    course: wood[0],
+  });
+
+  // Ridge cap and eave gutters.
+  c.rect(eaveL, RIDGE_Y, footW + 2, 1, wood[3]).rect(eaveL, RIDGE_Y + 1, footW + 2, 1, wood[0]);
+  c.rect(eaveL, ROOF_TOP, footW + 2, 1, wood[3]).rect(eaveL, ROOF_TOP, 1, wallTop - ROOF_TOP, wood[2]);
+  c.rect(eaveR, ROOF_TOP, 1, wallTop - ROOF_TOP, wood[0]);
+
+  // Brick/stone chimney on the west side of the roof.
+  chimney(c, left + 14, ROOF_TOP + 4);
+
+  // Roof dormer on the east side of the roof.
+  dormer(c, left + 76, ROOF_TOP + 10);
+
+  // Moss and lichen patches on the wet end of the shingles.
+  for (const [mx, my, mw] of [[left + 44, wallTop - 6, 8], [left + 46, wallTop - 5, 5], [left + 104, wallTop - 7, 7]] as const) {
+    c.rect(mx, my, mw, 1, olive[1]).px(mx + 1, my - 1, grass[1]);
+  }
+
+  // Wall: rich denim weatherboard clapboard siding with white trim.
+  clapboard(s, { face: denim[0], joint: metal[0], lit: denim[1] });
+
+  // Stone foundation ledge.
+  c.rect(left, ground - 4, footW, 4, concrete[1]).rect(left, ground - 4, footW, 1, concrete[2]);
+
+  // Cozy cabin windows with warm amber glowing interior lights.
+  windowUnit(c, left + 14, wallTop + 6, 14, 12, 'lit', WHITE);
+  windowUnit(c, left + 96, wallTop + 6, 14, 12, 'lit', WHITE);
+
+  // Front porch with railings and welcoming doorway.
+  frontPorch(s, WHITE, wood[2]);
+
+  // Warm amber porch lantern beside the door.
+  c.px(doorL - 6, wallTop + 6, fire[2]).px(doorL - 6, wallTop + 7, fire[1]);
+
+  // String lights draped across the front eave that glow warmly.
+  for (let x = left + 4; x < right - 4; x++) {
+    const droop = Math.round(Math.sin(((x - left) / footW) * Math.PI * 4) * 1.5) + 2;
+    c.px(x, wallTop - 5 + droop, ink[1]);
+    const isBulb = (x - left) % 7 === 3;
+    if (isBulb) {
+      c.px(x, wallTop - 4 + droop, fire[2]);
+      c.px(x, wallTop - 3 + droop, fire[1]);
+    }
+  }
+
+  // Stack of neatly chopped firewood against the east wall.
+  const woodX = left + footW - 20;
+  const woodY = ground - 10;
+  c.rect(woodX, woodY, 14, 7, wood[1]).rect(woodX, woodY, 14, 1, wood[3]);
+  for (let wx = woodX + 2; wx < woodX + 13; wx += 3) {
+    c.rect(wx, woodY + 1, 1, 6, wood[0]).px(wx + 1, woodY + 3, wood[2]);
+  }
+
+  // Grime and soil along the base.
+  grime(c, left, ground - 4, 24, [2, 3, 1], metal[0]);
+  grime(c, right - 20, ground - 4, 20, [3, 2, 3], metal[0]);
+
   return bakeShell(s);
 }

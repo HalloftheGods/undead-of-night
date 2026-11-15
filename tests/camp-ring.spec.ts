@@ -13,7 +13,7 @@ describe('camp fence ring', () => {
   });
 
   it('keeps the east side and the middle fixed and grows west, north and south', () => {
-    expect(ringRect(1)).toEqual({ col0: 32, row0: 17, col1: 55, row1: 30 });
+    expect(ringRect(1)).toEqual({ col0: 28, row0: 15, col1: 55, row1: 32 });
     expect(ringRect(5)).toEqual({ col0: 16, row0: 11, col1: 55, row1: 36 });
     for (const size of CAMP_SIZES) {
       const rect = ringRect(size);

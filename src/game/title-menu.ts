@@ -59,7 +59,7 @@ export function menuLine(item: TitleMenuItem, unlock?: SoundUnlock): string {
 
 /** Every link, section by section. */
 export const TITLE_MENU: readonly TitleMenuItem[] = [
-  // 1-5 Player (Nightly Run on top, then Campaign and Arcade)
+  // Play (1-5 Player) (Nightly Run on top, then Campaign and Arcade)
   {
     group: "play",
     page: "daily",
@@ -169,7 +169,7 @@ export interface MenuSection {
 export const MENU_SECTIONS: readonly MenuSection[] = [
   {
     group: "play",
-    label: "1-5 Player",
+    label: "Play (1-5 Player)",
     line: "Nightly Run, Campaign and Arcade."
   },
   {
@@ -230,7 +230,10 @@ export function isLocalInstall(hostname?: string): boolean {
 }
 
 /** The menu's sections. A locked Radio stays in the list as ??? with no line, so the top menu holds its place until the radio is found. */
-export function menuSections(unlock?: SoundUnlock, showDev: boolean = false): readonly MenuSection[] {
+export function menuSections(
+  unlock?: SoundUnlock,
+  showDev: boolean = false
+): readonly MenuSection[] {
   const base = MENU_SECTIONS.map((sec) => {
     const isLocked = sec.needs === "radio" && !unlock?.radio;
     return isLocked ? { ...sec, label: "???", line: "" } : sec;
@@ -276,9 +279,10 @@ export function menuRows(
     return parentRows;
   }
 
-  const effectiveEntries = (showDev || section === "dev") && !entries.some((item) => item.group === "dev")
-    ? [...entries, ...DEV_MENU_ITEMS]
-    : entries;
+  const effectiveEntries =
+    (showDev || section === "dev") && !entries.some((item) => item.group === "dev")
+      ? [...entries, ...DEV_MENU_ITEMS]
+      : entries;
   const links = effectiveEntries.filter((item) => item.group === section);
 
   const rows: MenuRow[] = links.map((item) => ({
@@ -287,7 +291,9 @@ export function menuRows(
     line: menuLine(item, unlock),
     primary: false,
     item,
-    ...(item.page === "daily" ? { badgeType: dailyCompleted ? ("star" as const) : ("undead_star" as const) } : {})
+    ...(item.page === "daily"
+      ? { badgeType: dailyCompleted ? ("star" as const) : ("undead_star" as const) }
+      : {})
   }));
   return [...rows, { kind: "back", label: "Back", line: "", primary: false }];
 }
