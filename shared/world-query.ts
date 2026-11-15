@@ -199,9 +199,11 @@ function eachTile(map: WorldMap, box: Box, visit: (index: number) => void): void
 }
 
 function addBox(map: WorldMap, index: Pick<SolidIndex, 'buckets' | 'blocked'>, box: Box): void {
+  // Buckets are replaced, never changed in place, so every tile the box has to itself can share one list.
+  const alone = [box];
   eachTile(map, box, (tile) => {
     const bucket = index.buckets[tile];
-    index.buckets[tile] = bucket === NO_BOXES ? [box] : [...bucket, box];
+    index.buckets[tile] = bucket === NO_BOXES ? alone : [...bucket, box];
     index.blocked[tile] = 1;
   });
 }

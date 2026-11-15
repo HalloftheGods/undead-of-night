@@ -2,11 +2,11 @@ const LEAD_FACTOR = 0.16;
 export const LEAD_MAX = 40;
 const LEAD_RATE = 5;
 
-/** Top-left of the view along one axis. A world smaller than the view stays centred. */
-export function clampCameraAxis(position: number, viewSize: number, worldSize: number): number {
+/** Top-left of the view along one axis, in a world that starts at `worldStart`. A world smaller than the view stays centred. */
+export function clampCameraAxis(position: number, viewSize: number, worldSize: number, worldStart = 0): number {
   const isWorldSmaller = worldSize <= viewSize;
-  if (isWorldSmaller) return Math.round((worldSize - viewSize) / 2);
-  return Math.min(Math.max(position, 0), worldSize - viewSize);
+  if (isWorldSmaller) return worldStart + Math.round((worldSize - viewSize) / 2);
+  return Math.min(Math.max(position, worldStart), worldStart + worldSize - viewSize);
 }
 
 /** Angle from the player's on-screen position to the pointer, both in buffer pixels. */
@@ -30,6 +30,8 @@ export class Camera {
   viewH = 0;
   worldW = 0;
   worldH = 0;
+  /** Where the world the camera keeps to starts, down the map: the top of the layer being looked at. */
+  worldTop = 0;
   private leadX = 0;
   private leadY = 0;
 
@@ -38,9 +40,11 @@ export class Camera {
     this.viewH = viewH;
   }
 
-  setWorld(worldW: number, worldH: number): void {
+  /** The world the view keeps to: the whole town, or one layer of a map, `worldH` tall from `worldTop`. */
+  setWorld(worldW: number, worldH: number, worldTop = 0): void {
     this.worldW = worldW;
     this.worldH = worldH;
+    this.worldTop = worldTop;
   }
 
   /** Pointer in buffer pixels, or null to drift the lead back to nothing. */
@@ -53,7 +57,7 @@ export class Camera {
     const left = Math.round(focusX) + Math.round(this.leadX - this.viewW / 2);
     const top = Math.round(focusY) + Math.round(this.leadY - this.viewH / 2);
     this.left = clampCameraAxis(left, this.viewW, this.worldW);
-    this.top = clampCameraAxis(top, this.viewH, this.worldH);
+    this.top = clampCameraAxis(top, this.viewH, this.worldH, this.worldTop);
   }
 
   screenX(worldX: number): number {

@@ -40,7 +40,7 @@ import { OcclusionGrid } from './occlusion.ts';
 import { addVehicleHeadlights } from './vehicle-lights.ts';
 import { OverlayRenderer } from './overlay-renderer.ts';
 import type { PlacedDoor } from '../../shared/door-view.ts';
-import { isStoreyKind } from '../../shared/storeys.ts';
+import { isStoreyKind, layerBounds } from '../../shared/storeys.ts';
 import type { SceneView } from './scene.ts';
 import { ScreenEffects } from './screen-effects.ts';
 import { paintPrints, paintTrackingMarks } from './snow-prints.ts';
@@ -427,6 +427,9 @@ export class WorldRenderer {
     this.buildings.doors.set(fullScene.doors ?? NO_DOORS);
     this.occlusion?.setDoors(fullScene.doors ?? NO_DOORS);
     const scene = this.withoutHidden(fullScene);
+    // The view keeps to the layer the focus is on: the town, a band of floors or the sewers, so a floor is framed as its house is.
+    const layer = this.map ? layerBounds(this.map, scene.focusY) : null;
+    if (layer && this.map) this.camera.setWorld(this.map.width, layer.y1 - layer.y0, layer.y0);
     this.camera.follow(scene.focusX, scene.focusY, scene.pointerX, scene.pointerY, dt);
 
     const viewW = this.viewport.bufferW;

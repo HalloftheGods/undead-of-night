@@ -223,7 +223,7 @@ function lightsFor(props: readonly PropInstance[], rng: Rng, sewerLamps: readonl
  * unchanged at the top, then dark, then each floor with its own floorboards and furniture.
  */
 function withStoreys(town: WorldMap): WorldMap {
-  const plan = planStoreys(town.seed, town.buildings, town.cols, town.rows);
+  const plan = planStoreys(town.seed, town.buildings, town.rows);
   const hasNoStoreys = plan.rows === 0;
   if (hasNoStoreys) return town;
   const rows = town.rows + plan.rows;

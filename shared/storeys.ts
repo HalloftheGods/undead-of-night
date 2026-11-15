@@ -1,7 +1,9 @@
-// Floors above and below the town's houses. Each one is a building of its own, laid out in a strip below
-// the town where nothing else is, and reached only by its stairs: they link a tile in the house to the same
-// tile on the floor, both ways. Walls, sight, bullets and the flow fields all work there as they do in town,
-// and the dark between the floors is solid, so nothing crosses it but by the stairs.
+// Floors above and below the town's houses. Each one is a building of its own on a layer of its own: the
+// map carries on below the town in whole-town bands, the upstairs one town down and the cellars two, and
+// every floor lies at its house's own place in its band, so a floor is framed just as its house is. Only the
+// stairs reach a floor: they link a tile in the house to the same tile on the floor, both ways. Walls, sight,
+// bullets and the flow fields all work there as they do in town, and the dark between the floors is solid,
+// so nothing crosses it but by the stairs. The sewers lie below the last band.
 
 import type { Point } from './flow-field.ts';
 import { BUILDING_DEFS, TILE_SIZE } from './protocol.ts';
@@ -22,13 +24,18 @@ export type StoreyKind = 'upstairs' | 'cellar' | 'apartment_upstairs' | 'hospita
 const STOREY_SALT = 0x53545259;
 export const UPSTAIRS_ODDS = 0.3;
 export const CELLAR_ODDS = 0.2;
-/** Dark kept between the town's south fence and the first floor, so nothing in town is drawn or heard there. */
+/** Rows of dark kept above the sewers, under the last band of floors. */
 export const ANNEX_GAP_TILES = 6;
-/** Each floor gets a cell with three tiles of dark around it, at least the size an apartment's floor needs. */
-const CELL_COLS = 13;
-const CELL_ROWS = 11;
-const CELL_DARK_TILES = 3;
-const ANNEX_MARGIN_TILES = 2;
+/** Which band under the town each kind of floor lies in: a whole town down for upstairs, two for a cellar. */
+export const FLOOR_LAYER: Readonly<Record<StoreyKind, 1 | 2>> = {
+  upstairs: 1,
+  apartment_upstairs: 1,
+  hospital_upstairs: 1,
+  school_upstairs: 1,
+  cellar: 2,
+};
+/** Bands the floors take under the town, whenever a town has any floors at all. */
+const FLOOR_LAYERS = 2;
 
 /**
  * The stairs, in tiles from the footprint's top left, the same on every floor so they line up. In a
@@ -94,7 +101,7 @@ export function townBuildings(map: Pick<WorldMap, 'buildings'>): readonly Buildi
 
 export interface StoreyPlan {
   readonly storeys: BuildingInstance[];
-  /** Rows the floors add below the town: none when no house has one. */
+  /** Rows the floors add below the town: a whole town per band, or none when no house has a floor. */
   readonly rows: number;
 }
 
@@ -124,30 +131,18 @@ function storeysOf(seed: number, buildings: readonly BuildingInstance[]): { hous
   return found;
 }
 
-/** Which houses get a floor above or below, and where each floor lies in the strip under the town. */
-export function planStoreys(seed: number, buildings: readonly BuildingInstance[], cols: number, townRows: number): StoreyPlan {
-  const storeys: BuildingInstance[] = [];
-  const right = cols - ANNEX_MARGIN_TILES;
-  // Cells go along a band left to right, and a new band starts below when one will not fit.
-  let col = ANNEX_MARGIN_TILES;
-  let bandTop = townRows + ANNEX_GAP_TILES;
-  let bandRows = 0;
-  for (const { house, kind } of storeysOf(seed, buildings)) {
-    const def = BUILDING_DEFS[kind];
-    const cellCols = Math.max(CELL_COLS, def.w / TILE_SIZE + CELL_DARK_TILES);
-    const cellRows = Math.max(CELL_ROWS, def.h / TILE_SIZE + CELL_DARK_TILES);
-    const bandIsFull = col > ANNEX_MARGIN_TILES && col + cellCols > right;
-    if (bandIsFull) {
-      bandTop += bandRows;
-      bandRows = 0;
-      col = ANNEX_MARGIN_TILES;
-    }
-    storeys.push({ id: `${house.id}${kind === 'cellar' ? 'c' : 'u'}`, kind, x: (col + 1) * TILE_SIZE, y: (bandTop + 1) * TILE_SIZE, variant: house.variant, of: house.id });
-    col += cellCols;
-    bandRows = Math.max(bandRows, cellRows);
-  }
-  const used = bandTop + bandRows - townRows;
-  return { storeys, rows: storeys.length === 0 ? 0 : used + 1 };
+/** Which houses get a floor above or below, each laid at its house's place in its own band under the town. */
+export function planStoreys(seed: number, buildings: readonly BuildingInstance[], townRows: number): StoreyPlan {
+  const townH = townRows * TILE_SIZE;
+  const storeys = storeysOf(seed, buildings).map(({ house, kind }): BuildingInstance => ({
+    id: `${house.id}${kind === 'cellar' ? 'c' : 'u'}`,
+    kind,
+    x: house.x,
+    y: house.y + FLOOR_LAYER[kind] * townH,
+    variant: house.variant,
+    of: house.id,
+  }));
+  return { storeys, rows: storeys.length === 0 ? 0 : FLOOR_LAYERS * townRows };
 }
 
 /** One way up or down a flight of stairs. */
@@ -224,29 +219,53 @@ export function flightAt(map: Pick<WorldMap, 'buildings' | 'cols' | 'rows'>, x: 
   return onMap ? flightsOf(map).get(row * map.cols + col) ?? null : null;
 }
 
+/** The vertical span of the layer `y` is on: the town, a band of floors, or the sewers. The camera keeps to it. */
+export function layerBounds(map: Pick<WorldMap, 'height' | 'townRows' | 'sewers'>, y: number): { y0: number; y1: number } {
+  const town = townHeight(map);
+  const sewerTop = map.sewers === undefined ? Infinity : map.sewers.top * TILE_SIZE;
+  const inSewers = y >= sewerTop;
+  if (inSewers) return { y0: sewerTop, y1: map.height };
+  const band = Math.max(0, Math.min(FLOOR_LAYERS, Math.floor(y / town)));
+  return { y0: band * town, y1: Math.min(map.height, (band + 1) * town) };
+}
+
 /** The town's own height in pixels, without the floors laid out below it. */
 export function townHeight(map: Pick<WorldMap, 'height' | 'townRows'>): number {
   return map.townRows === undefined ? map.height : map.townRows * TILE_SIZE;
 }
 
-/** The dark strip under the town, solid everywhere but on the floors themselves, a tile row at a time. */
+/** The dark under the town, solid everywhere but on the floors themselves: a tile row at a time, rows alike run together. */
 export function voidBoxes(map: Pick<WorldMap, 'buildings' | 'cols' | 'rows' | 'townRows'>, footprint: (building: BuildingInstance) => Rect): Rect[] {
   const top = map.townRows ?? map.rows;
   const boxes: Rect[] = [];
   const floors = map.buildings.filter(isStorey).map(footprint);
   const width = map.cols * TILE_SIZE;
+  // The row above's gaps, by their span: a gap that carries on in this row grows down instead of starting anew.
+  let open = new Map<string, { x0: number; y0: number; x1: number; y1: number }>();
   for (let row = top; row < map.rows; row++) {
     const y0 = row * TILE_SIZE;
     const y1 = y0 + TILE_SIZE;
     const across = floors.filter((box) => box.y0 < y1 && box.y1 > y0).sort((a, b) => a.x0 - b.x0);
+    const gaps: [number, number][] = [];
     let x = 0;
     for (const box of across) {
       const hasGapBefore = box.x0 > x;
-      if (hasGapBefore) boxes.push({ x0: x, y0, x1: box.x0, y1 });
+      if (hasGapBefore) gaps.push([x, box.x0]);
       x = Math.max(x, box.x1);
     }
     const hasGapAfter = x < width;
-    if (hasGapAfter) boxes.push({ x0: x, y0, x1: width, y1 });
+    if (hasGapAfter) gaps.push([x, width]);
+    const next = new Map<string, { x0: number; y0: number; x1: number; y1: number }>();
+    for (const [x0, x1] of gaps) {
+      const key = `${x0},${x1}`;
+      const above = open.get(key);
+      const grows = above !== undefined && above.y1 === y0;
+      const gap = grows ? above : { x0, y0, x1, y1 };
+      gap.y1 = y1;
+      next.set(key, gap);
+      if (!grows) boxes.push(gap);
+    }
+    open = next;
   }
   return boxes;
 }

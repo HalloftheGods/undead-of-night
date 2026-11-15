@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { FlowField } from '../shared/flow-field.ts';
 import { makeNoise } from '../shared/zombie-senses.ts';
-import { flightAt, flightsOf, isStorey, planStoreys, stairsPoint, stairsPoints, townBuildings, townHeight } from '../shared/storeys.ts';
+import { FLOOR_LAYER, flightAt, flightsOf, isStorey, layerBounds, planStoreys, stairsPoint, stairsPoints, townBuildings, townHeight } from '../shared/storeys.ts';
+import type { StoreyKind } from '../shared/storeys.ts';
+import { Camera } from '../src/engine/camera.ts';
 import { isSewerBuilding } from '../shared/map-protocol.ts';
 import { BUILDING_DEFS, TILE_SIZE } from '../shared/protocol.ts';
 import type { BuildingInstance, WorldMap } from '../shared/protocol.ts';
@@ -32,6 +34,47 @@ describe('floors above and below', () => {
     }
   });
 
+  it.each(SEEDS)('seed %i: each floor lies directly under its house, a whole town down per layer', (seed) => {
+    const map = generateWorldMap(seed);
+    const town = townHeight(map);
+    for (const storey of map.buildings.filter(isFloor)) {
+      const house = houseOf(map, storey);
+      const layer = FLOOR_LAYER[storey.kind as StoreyKind];
+      expect(storey.x).toBe(house.x);
+      expect(storey.y).toBe(house.y + layer * town);
+      expect(BUILDING_DEFS[storey.kind].w).toBe(BUILDING_DEFS[house.kind].w);
+      expect(BUILDING_DEFS[storey.kind].h).toBe(BUILDING_DEFS[house.kind].h);
+    }
+    expect(map.townRows! * 3).toBeLessThanOrEqual(map.sewers?.top ?? map.rows);
+  });
+
+  it('says which layer a point is on: the town, upstairs, the cellars or the sewers', () => {
+    const map = generateWorldMap(2);
+    const town = townHeight(map);
+    expect(layerBounds(map, 10)).toEqual({ y0: 0, y1: town });
+    expect(layerBounds(map, town + 10)).toEqual({ y0: town, y1: town * 2 });
+    expect(layerBounds(map, town * 2 + 10)).toEqual({ y0: town * 2, y1: town * 3 });
+    const sewerTop = map.sewers!.top * TILE_SIZE;
+    expect(layerBounds(map, sewerTop + 10)).toEqual({ y0: sewerTop, y1: map.height });
+  });
+
+  it('keeps the camera inside the layer it is on, framing a floor as its house is framed', () => {
+    const map = generateWorldMap(2);
+    const town = townHeight(map);
+    const camera = new Camera();
+    camera.setView(320, 180);
+    const house = map.buildings.find((b) => b.kind === 'house' && map.buildings.some((f) => f.of === b.id))!;
+    camera.setWorld(map.width, town, 0);
+    camera.follow(house.x, house.y, null, null, 0);
+    const onHouse = { left: camera.left, top: camera.top };
+    camera.setWorld(map.width, town, town);
+    camera.follow(house.x, house.y + town, null, null, 0);
+    expect(camera.left).toBe(onHouse.left);
+    expect(camera.top).toBe(onHouse.top + town);
+    camera.follow(house.x, town + 4, null, null, 0);
+    expect(camera.top).toBe(town);
+  });
+
   it.each(SEEDS)('seed %i: every apartment block has a second floor', (seed) => {
     const map = generateWorldMap(seed);
     const blocks = map.buildings.filter((b) => b.kind === 'apartment');
@@ -47,7 +90,7 @@ describe('floors above and below', () => {
 
   it('leaves the town itself as it was', () => {
     const map = generateWorldMap(2);
-    const plan = planStoreys(map.seed, townBuildings(map), map.cols, map.townRows ?? map.rows);
+    const plan = planStoreys(map.seed, townBuildings(map), map.townRows ?? map.rows);
     // The sewers lay their own band under the floors, so the floors' rows are the town's plus theirs, up to the first sewer piece.
     const firstSewerRow = Math.min(...map.buildings.filter(isSewerBuilding).map((building) => building.y / TILE_SIZE));
     expect(Math.max(...map.buildings.filter(isFloor).map((storey) => (storey.y + BUILDING_DEFS[storey.kind].h) / TILE_SIZE))).toBeLessThanOrEqual((map.townRows ?? 0) + plan.rows);

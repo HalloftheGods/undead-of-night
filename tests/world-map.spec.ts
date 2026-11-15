@@ -96,7 +96,8 @@ describe('generateWorldMap', () => {
     expect(map.width).toBe(map.cols * TILE_SIZE);
     expect(map.width).toBe(3200);
     expect(map.tiles.length).toBe(map.cols * map.rows);
-    expect(Math.max(...map.tiles)).toBeLessThan(TILE_KINDS.length);
+    // A reduce, not a spread: the floors' layers make far too many tiles to pass as arguments.
+    expect(map.tiles.reduce((most, tile) => Math.max(most, tile), 0)).toBeLessThan(TILE_KINDS.length);
     expect(map.props.length).toBeGreaterThan(800);
     expect(map.props.length).toBeLessThan(4000);
     expect(map.lights.length).toBeGreaterThan(40);
