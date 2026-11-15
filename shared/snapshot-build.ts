@@ -1,4 +1,5 @@
-import { bagHash } from './bag.ts';
+import { bagHash, bagLayout } from './bag.ts';
+import { viewedContainers } from './container-viewers.ts';
 import { merchantView } from './bunker-merchants.ts';
 import { rescueeView } from './camp/rescuee.ts';
 import { campSizeField } from './camp/camp-ring.ts';
@@ -144,6 +145,8 @@ export function playerSnapshot(p: PlayerState): PlayerEntity {
     ...(p.materials ? { materials: { ...p.materials } } : {}),
     ...(hasSupplies(p.supplies) ? { supplies: { ...p.supplies } } : {}),
     bagHash: bagHash(p.inventory),
+    bagLayout: bagLayout(p.inventory),
+    lastMoveId: p.lastMoveId,
     ...(p.towerHold ? { towerHold: round2(p.towerHold) } : {}),
     ...(p.drainHold ? { drainHold: round2(p.drainHold) } : {}),
     ...(p.powerHold ? { powerHold: round2(p.powerHold) } : {}),
@@ -175,6 +178,12 @@ function vehiclesField(sim: SimState): Pick<SnapshotPacket, 'vehicles'> {
 function doorsField(sim: SimState, inRange: (item: { x: number; y: number }) => boolean): Pick<SnapshotPacket, 'doors'> {
   const doors = doorViews(sim, inRange);
   return doors.length > 0 ? { doors } : {};
+}
+
+/** The contents of every container someone has open. Left off when nobody has one open. */
+function viewedField(sim: SimState): Pick<SnapshotPacket, 'viewedContainers'> {
+  const viewed = viewedContainers(sim);
+  return viewed.length > 0 ? { viewedContainers: viewed } : {};
 }
 
 export function buildSnapshot(sim: SimState): SnapshotPacket {
@@ -221,6 +230,7 @@ export function buildSnapshot(sim: SimState): SnapshotPacket {
     pickups: sim.pickups.filter(inRange).map((item) => ({ id: item.id, type: item.type, x: round2(item.x), y: round2(item.y) })),
     exit: exitView(exitEntity(sim)),
     openedContainers: openedContainers(sim),
+    ...viewedField(sim),
     ...leftoversField(sim),
     ...dropField(sim),
     ...bossField(sim),

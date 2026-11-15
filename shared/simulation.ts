@@ -40,6 +40,9 @@ import { updateSpinners } from "./throwables.ts";
 import { updateSupplyDrop } from "./supply-drop.ts";
 import { updateBosses } from "./bosses.ts";
 import { applyBagCommit, reconcileBag } from "./bag-sim.ts";
+import { dropStaleViewers, leaveContainer, viewContainer } from "./container-viewers.ts";
+import { applyItemMove } from "./item-move-sim.ts";
+import type { ItemMove } from "./item-move.ts";
 import { usePocketSupplies } from "./supplies.ts";
 import type { BagCommit } from "./bag.ts";
 import { benchCommand, updateBench } from "./workbench.ts";
@@ -222,6 +225,20 @@ export class GameSimulation {
     if (player) applyBagCommit(this.sim, player, commit);
   }
 
+  /** One item move from this player's window: see `applyItemMove`. */
+  moveCommand(id: string, move: ItemMove): void {
+    const player = this.sim.players.find((p) => p.id === id);
+    if (player) applyItemMove(this.sim, player, move);
+  }
+
+  /** This player's window on a container opened or closed. */
+  viewCommand(id: string, containerId: number, open: boolean): void {
+    const player = this.sim.players.find((p) => p.id === id);
+    if (!player) return;
+    if (open) viewContainer(this.sim, player, containerId);
+    else leaveContainer(this.sim, player, containerId);
+  }
+
   benchCommand(id: string, action: BenchAction): void {
     const player = this.sim.players.find((p) => p.id === id);
     if (player) benchCommand(this.sim, player, action);
@@ -272,6 +289,7 @@ export class GameSimulation {
     }
     rebuildZombieGrid(sim);
     for (const p of sim.players) updatePlayer(sim, p);
+    dropStaleViewers(sim);
     updateDoors(sim, TICK_DT);
     noteEntered(sim);
     ageFootprints(sim);

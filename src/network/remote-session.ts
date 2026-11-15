@@ -1,4 +1,5 @@
 import type { BagCommit } from '../../shared/bag.ts';
+import type { ItemMove } from '../../shared/item-move.ts';
 import type { EmoteId } from '../../shared/emotes.ts';
 import { closeText } from '../../shared/close-codes.ts';
 import type { GameStyle } from '../../shared/game-style.ts';
@@ -77,6 +78,14 @@ export class RemoteSession implements RoomSession {
 
   sendBench(action: BenchAction): void {
     if (this.welcomed) this.send({ type: 'bench', action });
+  }
+
+  sendMove(move: ItemMove): void {
+    if (this.welcomed) this.send({ type: 'move', move });
+  }
+
+  sendView(id: number, open: boolean): void {
+    if (this.welcomed) this.send({ type: 'container_view', id, open });
   }
 
   sendHome(action: HomeAction): void {

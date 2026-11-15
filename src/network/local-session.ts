@@ -1,4 +1,5 @@
 import type { BagCommit } from "../../shared/bag.ts";
+import type { ItemMove } from "../../shared/item-move.ts";
 import { campSizeField } from "../../shared/camp/camp-ring.ts";
 import { TICK_DT, TICK_RATE } from "../../shared/constants.ts";
 import type { EmoteId } from "../../shared/emotes.ts";
@@ -51,6 +52,14 @@ export class LocalSession implements GameTransport {
 
   sendBench(action: BenchAction): void {
     this.sim?.benchCommand(LOCAL_PLAYER_ID, action);
+  }
+
+  sendMove(move: ItemMove): void {
+    this.sim?.moveCommand(LOCAL_PLAYER_ID, move);
+  }
+
+  sendView(id: number, open: boolean): void {
+    this.sim?.viewCommand(LOCAL_PLAYER_ID, id, open);
   }
 
   sendHome(action: HomeAction): void {

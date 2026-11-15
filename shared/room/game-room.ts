@@ -279,6 +279,8 @@ export function createGameRoom(options: GameRoomOptions): GameRoom {
     else if (packet.type === 'input') sim.setInput(client.playerId, packet.input);
     else if (packet.type === 'bench') sim.benchCommand(client.playerId, packet.action);
     else if (packet.type === 'bag') sim.bagCommand(client.playerId, packet.commit);
+    else if (packet.type === 'move') sim.moveCommand(client.playerId, packet.move);
+    else if (packet.type === 'container_view') sim.viewCommand(client.playerId, packet.id, packet.open);
     else if (packet.type === 'home') sim.homeCommand(client.playerId, packet.action);
     else if (packet.type === 'emote') sim.emote(client.playerId, packet.emote);
     else if (packet.type === 'boon') sim.giveBoon(client.playerId, packet.count);

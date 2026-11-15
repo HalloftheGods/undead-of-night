@@ -94,6 +94,7 @@ export function createSimState(options: SimulationOptions): SimState {
     entered: new Set(),
     clues: new Map(),
     containers: [],
+    containerViewers: new Map(),
     events: [],
     gameOver: null,
     nextEntity: 0,

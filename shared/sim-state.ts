@@ -78,7 +78,7 @@ export interface PlayerHome extends Omit<HomeView, 'overrun' | 'chest' | 'salvag
 }
 
 /** Magazines live in `guns` and are read out for snapshots, so there is one copy of the count. */
-export interface PlayerState extends Omit<PlayerEntity, 'mags' | 'gear' | 'bottles' | 'fireworks' | 'fountains' | 'home' | 'candy' | 'sugar' | 'keepsakes' | 'keepsakeOffer' | 'vehicle'> {
+export interface PlayerState extends Omit<PlayerEntity, 'mags' | 'gear' | 'bottles' | 'fireworks' | 'fountains' | 'home' | 'candy' | 'sugar' | 'keepsakes' | 'keepsakeOffer' | 'vehicle' | 'bagLayout' | 'lastMoveId'> {
   bottles: number;
   /** Spinners and fountains to light, found in town and left there (`shared/throwables.ts`). */
   fireworks: number;
@@ -149,6 +149,8 @@ export interface PlayerState extends Omit<PlayerEntity, 'mags' | 'gear' | 'bottl
   searchLeft: number;
   /** Health at the last tick, so a hit shows up as a drop. */
   searchHealth: number;
+  /** The last item move the host applied for this connection (`shared/item-move-sim.ts`). Moves at or below it are ignored. */
+  lastMoveId: number;
   /** Sneaking, walking or sprinting, once a winded survivor's sprint is taken out. */
   stance: Stance;
   /** What the held keys ask for, before stamina has its say. */
@@ -394,6 +396,8 @@ export interface SimState {
   rescuees: RescueeState[];
   bullets: BulletState[];
   pickups: PickupState[];
+  /** Who has each container's window open, by container id (`shared/container-viewers.ts`). */
+  containerViewers: Map<number, Set<EntityId>>;
   /** Town buildings, by ground floor, that any player has been inside: where the map marks supplies left behind. */
   entered: Set<string>;
   /** Buildings revealed by a map cache clue, mapped to the item type found. */

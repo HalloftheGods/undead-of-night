@@ -17,7 +17,7 @@ import { armHordeSurge } from './waves.ts';
 const countCandy = (items: readonly { type: string }[]): number => items.filter((item) => isCandyId(item.type)).length;
 
 /** Takes up to `count` units of a type off the counters and returns how many it took. */
-function take(p: PlayerState, type: BagItemType, count: number): number {
+export function take(p: PlayerState, type: BagItemType, count: number): number {
   const held = bagWanted(p)[type];
   const taken = Math.min(held, count);
   if (taken <= 0) return 0;

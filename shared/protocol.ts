@@ -13,7 +13,8 @@ import type { GunEffect } from './round-effect-data.ts';
 import type { BackpackTier } from './backpack.ts';
 import type { SurvivalNeeds } from './survival-needs.ts';
 import type { FortificationInventory, FortificationItemType } from './fortifications.ts';
-import type { BagCommit } from './bag.ts';
+import type { BagCommit, BagGridId, BagLayoutRow } from './bag.ts';
+import type { ItemMove, MoveReason } from './item-move.ts';
 import type { Supplies } from './supply-types.ts';
 import type { BenchAction, BenchView } from './workbench.ts';
 import type { GridItem } from './grid-inventory.ts';
@@ -133,8 +134,12 @@ export interface PlayerEntity {
   materials?: FortificationInventory;
   /** Bandages and survival items carried (`shared/supply-types.ts`). Left off at none. */
   supplies?: Supplies;
-  /** Hash of where this survivor's things sit in the bag (`shared/bag.ts`). The layout itself is never sent. */
+  /** Hash of where this survivor's things sit in the bag (`shared/bag.ts`). */
   bagHash?: number;
+  /** Where this survivor's things sit in the pack and pockets, so their window rebuilds the host's bag (`bagLayout`). */
+  bagLayout?: BagLayoutRow[];
+  /** The last item move the host applied for this survivor: their window drops every pending move at or below it. */
+  lastMoveId?: number;
   /** Hold progress (0..1) on the radio tower alarm. Left off when 0. */
   towerHold?: number;
   /** Hold progress (0..1) on opening the municipal sewage drain. Left off when 0. */
@@ -264,6 +269,12 @@ export type GameEvent =
   | { readonly type: 'dry_fire'; readonly playerId: EntityId; readonly x: number; readonly y: number }
   | { readonly type: 'melee'; readonly playerId: EntityId; readonly x: number; readonly y: number; readonly angle: number; readonly hit: boolean }
   | { readonly type: 'heal'; readonly playerId: EntityId; readonly x: number; readonly y: number; readonly amount: number }
+  /** The host applied this survivor's item move (`shared/item-move-sim.ts`). */
+  | { readonly type: 'move_ok'; readonly playerId: EntityId; readonly moveId: number }
+  /** The host refused this survivor's item move; nothing changed. */
+  | { readonly type: 'move_no'; readonly playerId: EntityId; readonly moveId: number; readonly reason: MoveReason }
+  /** A world pickup went into the bag: where it was picked up (x, y) and the cell it was packed into. */
+  | { readonly type: 'item_in'; readonly playerId: EntityId; readonly itemId: string; readonly itemType: string; readonly x: number; readonly y: number; readonly grid: BagGridId; readonly cellX: number; readonly cellY: number }
   | { readonly type: 'zombie_alert'; readonly zombieId: EntityId; readonly zombieType: ZombieType; readonly x: number; readonly y: number }
   /** A roamer put its nose on someone's snow trail and started following it. */
   | { readonly type: 'zombie_track'; readonly zombieId: EntityId; readonly zombieType: ZombieType; readonly x: number; readonly y: number }
@@ -406,6 +417,8 @@ export interface SnapshotPacket {
   readonly exit: ExitEntity | null;
   /** Ids of the town's containers that have been opened, so everyone sees them open. */
   readonly openedContainers: readonly number[];
+  /** What is in every container someone has open, so every open window stays live. Left off when none is open. */
+  readonly viewedContainers?: readonly { readonly id: number; readonly items: readonly GridItem[] }[];
   /** Buildings the team has been inside that still hold supplies, sent to everyone. Left off when there are none. */
   readonly leftovers?: readonly LeftoverView[];
   /** The town's supply drop, from its flare to the end of its marked time, sent to everyone. Left off otherwise. */
@@ -533,6 +546,10 @@ export type ClientPacket =
   | { readonly type: 'bench'; readonly action: BenchAction }
   /** The bag closed: where everything now sits and what was dropped. One per close. */
   | { readonly type: 'bag'; readonly commit: BagCommit }
+  /** One item moved, as it happens. The host answers with `move_ok` or `move_no` by id. */
+  | { readonly type: 'move'; readonly move: ItemMove }
+  /** A container's window opened or closed, so the host keeps it live in snapshots. */
+  | { readonly type: 'container_view'; readonly id: number; readonly open: boolean }
   | { readonly type: 'home'; readonly action: HomeAction }
   | { readonly type: 'emote'; readonly emote: EmoteId }
   | { readonly type: 'restart' }

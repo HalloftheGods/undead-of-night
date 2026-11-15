@@ -6,6 +6,7 @@ import type { EmoteId } from "../../shared/emotes.ts";
 import type { GameStyle } from "../../shared/game-style.ts";
 import { levelDef, levelSeed } from "../../shared/levels.ts";
 import type { BagCommit } from "../../shared/bag.ts";
+import type { ItemMove } from "../../shared/item-move.ts";
 import type { CandyId, WorldMap } from "../../shared/protocol.ts";
 import { TILE_SIZE } from "../../shared/protocol.ts";
 import { generateWorldMap } from "../../shared/world-map.ts";
@@ -519,6 +520,16 @@ export class GameController {
   /** An icon over this survivor for the team; the wheel is only offered in co-op. */
   sendEmote(emote: EmoteId): void {
     this.run.transport?.sendEmote(emote);
+  }
+
+  /** One item moved in the loot window, sent as it happens. Solo and co-op alike. */
+  sendMove(move: ItemMove): void {
+    this.run.transport?.sendMove(move);
+  }
+
+  /** A container's window opened or closed: the host keeps a viewed container's contents in every snapshot. */
+  sendView(id: number, open: boolean): void {
+    this.run.transport?.sendView(id, open);
   }
 
   /** The one message a closed bag sends: its final layout and what was dropped. Solo and co-op alike. */

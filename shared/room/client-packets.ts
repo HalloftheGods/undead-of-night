@@ -9,6 +9,7 @@ import { isGameStyle } from '../game-style.ts';
 import { WEAPON_ORDER } from '../protocol.ts';
 import type { ClientInputPacket, ClientPacket, WeaponId } from '../protocol.ts';
 import { parseBagCommit } from '../bag-commit.ts';
+import { parseItemMove } from '../item-move.ts';
 import { isBenchAction } from '../workbench.ts';
 import { parseHome, parseJoinHome } from './home-packets.ts';
 
@@ -110,6 +111,16 @@ export function parseClientPacket(raw: string): ClientPacket | null {
   if (isBag) {
     const commit = parseBagCommit(value.commit);
     return commit ? { type: 'bag', commit } : null;
+  }
+  const isMove = value.type === 'move';
+  if (isMove) {
+    const move = parseItemMove(value.move);
+    return move ? { type: 'move', move } : null;
+  }
+  const isView = value.type === 'container_view';
+  if (isView) {
+    const isId = Number.isInteger(value.id) && (value.id as number) >= 0;
+    return isId && typeof value.open === 'boolean' ? { type: 'container_view', id: value.id as number, open: value.open } : null;
   }
   const emote = value.type === 'emote' && isEmoteId(value.emote) ? value.emote : null;
   if (emote) return { type: 'emote', emote };

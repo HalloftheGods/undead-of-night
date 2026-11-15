@@ -1,4 +1,5 @@
 import type { BackpackTier } from "../../shared/backpack.ts";
+import type { BagLayoutRow } from "../../shared/bag.ts";
 import type { FortificationInventory } from "../../shared/fortifications.ts";
 import type { Supplies } from "../../shared/supply-types.ts";
 import { streetAt } from "../../shared/street-names.ts";
@@ -130,6 +131,10 @@ export interface HudState {
   readonly supplies?: Supplies;
   /** The host's hash of where this survivor's things sit in the bag; the client compares it with its own. */
   readonly bagHash?: number;
+  /** Where the host has this survivor's things in the pack and pockets. Absent until the sim sends it. */
+  readonly bagLayout?: readonly BagLayoutRow[];
+  /** The last item move the host applied for this survivor. Absent until the sim sends it. */
+  readonly lastMoveId?: number;
   /** Whether the town floodwater has been drained. */
   readonly drained?: boolean;
   /** Whether the town electrical power grid has been restored. */
@@ -352,6 +357,8 @@ export function buildHud(
     ...(local.materials ? { materials: { ...local.materials } } : {}),
     ...(local.supplies ? { supplies: { ...local.supplies } } : {}),
     ...(local.bagHash !== undefined ? { bagHash: local.bagHash } : {}),
+    ...(local.bagLayout ? { bagLayout: local.bagLayout.map((row) => ({ ...row })) } : {}),
+    ...(local.lastMoveId !== undefined ? { lastMoveId: local.lastMoveId } : {}),
     drained: Boolean(snapshot.drained),
     powered: Boolean(snapshot.powered)
   };

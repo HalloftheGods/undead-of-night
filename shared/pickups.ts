@@ -175,6 +175,21 @@ export function takeItem(p: PlayerState, item: PickupState): boolean {
   return used;
 }
 
+function bagIds(p: PlayerState): Set<string> {
+  return new Set([...p.inventory.pack.items, ...p.inventory.pockets.items].map((item) => item.id));
+}
+
+/** Each item a pickup put in the bag, with the cell it was packed into, for the arrival animation. */
+function emitArrivals(sim: SimState, p: PlayerState, item: PickupState, before: ReadonlySet<string>): void {
+  const grids = [['pack', p.inventory.pack], ['pockets', p.inventory.pockets]] as const;
+  for (const [grid, contents] of grids) {
+    for (const packed of contents.items) {
+      if (before.has(packed.id)) continue;
+      emit(sim, { type: 'item_in', playerId: p.id, itemId: packed.id, itemType: packed.type, x: item.x, y: item.y, grid, cellX: packed.x, cellY: packed.y });
+    }
+  }
+}
+
 function collectedBy(sim: SimState, item: PickupState): PlayerState | null {
   for (const p of sim.players) {
     const touching = p.status === 'alive' && Math.hypot(p.x - item.x, p.y - item.y) <= PICKUP_RADIUS;
@@ -183,8 +198,11 @@ function collectedBy(sim: SimState, item: PickupState): PlayerState | null {
       if (!touching) delete item.leftBy;
       continue;
     }
-    const picksUp = touching && applyPickup(p, item);
-    if (picksUp) return p;
+    if (!touching) continue;
+    const before = bagIds(p);
+    if (!applyPickup(p, item)) continue;
+    emitArrivals(sim, p, item, before);
+    return p;
   }
   return null;
 }

@@ -1,4 +1,5 @@
 import type { BagCommit } from "../../shared/bag.ts";
+import type { ItemMove } from "../../shared/item-move.ts";
 import type { DifficultyId } from "../../shared/difficulty.ts";
 import type { EmoteId } from "../../shared/emotes.ts";
 import type { GameStyle } from "../../shared/game-style.ts";
@@ -48,6 +49,10 @@ export interface GameTransport {
   sendBench(action: BenchAction): void;
   /** The bag closed: where everything sits and what was dropped. One message per close. */
   sendBag(commit: BagCommit): void;
+  /** One item moved in the loot window, as it happens. The host answers `move_ok` / `move_no` by id. */
+  sendMove(move: ItemMove): void;
+  /** A container's window opened or closed, so the host keeps its contents live in snapshots. */
+  sendView(id: number, open: boolean): void;
   sendHome(action: HomeAction): void;
   sendLobbyReady?(ready?: boolean): void;
   sendLobbyStart?(): void;

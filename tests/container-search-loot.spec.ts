@@ -1,12 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { updateSearch } from '../shared/container-search.ts';
 import { townContainers } from '../shared/containers.ts';
-import { placeItem } from '../shared/grid-inventory.ts';
-import { applyBagCommit } from '../shared/bag-sim.ts';
-import { createBag } from '../shared/bag.ts';
+import { viewContainer } from '../shared/container-viewers.ts';
+import { applyItemMove } from '../shared/item-move-sim.ts';
+import { bagWanted, createBag, syncBag } from '../shared/bag.ts';
 import { loadAutoCloseEmptyLoot, saveAutoCloseEmptyLoot } from '../src/game/loot-prefs.ts';
-import { LocalBag } from '../src/game/local-bag.ts';
-import { aHud } from './backpack-fixture.ts';
 import { quietSim } from './helpers/sim-harness.ts';
 import type { GameEvent, GridItem } from '../shared/protocol.ts';
 
@@ -97,35 +95,28 @@ describe('Container search to loot grid integration', () => {
     expect(event?.items).toHaveLength(1);
   });
 
-  it('transfers item from container to player stash and updates container on commit', () => {
+  it('takes an item from the container into the pack, one move at a time', () => {
     const { state } = quietSim();
     const p = state.players[0]!;
     p.inventory = createBag('satchel');
+    p.medkits = 0;
     const container = townContainers(state.map)[0]!;
     const containerState = state.containers[container.id];
     containerState.opened = true;
     containerState.items = [{ id: 'cont-item-1', type: 'medkit', x: 0, y: 0, rotated: false }];
+    p.x = container.x;
+    p.y = container.y;
+    expect(viewContainer(state, p, container.id)).toBe(true);
 
-    let sentCommit: unknown = null;
-    const local = new LocalBag((commit) => { sentCommit = commit; });
-    const hud = aHud({ medkits: 0 });
-    const working = local.open(hud, container.id, 'BOX', containerState.items);
-
-    expect(working.container.items).toHaveLength(1);
-    const item = working.container.items[0]!;
-    working.container.items = [];
-    placeItem(working.pack, { ...item, x: 0, y: 0 });
-
-    local.close(working);
-    expect(sentCommit).toBeDefined();
-
-    const commit = sentCommit as any;
-    expect(commit.container.id).toBe(container.id);
-    expect(commit.container.items).toEqual([]);
-    expect(commit.container.taken).toHaveLength(1);
-    expect(commit.container.taken[0].type).toBe('medkit');
-
-    applyBagCommit(state, p, commit);
+    const reason = applyItemMove(state, p, {
+      id: 1,
+      item: 'cont-item-1',
+      type: 'medkit',
+      from: { kind: 'cell', grid: 'container', x: 0, y: 0 },
+      to: { kind: 'cell', grid: 'pack', x: 0, y: 0, rotated: false },
+      container: container.id,
+    });
+    expect(reason).toBeNull();
     expect(state.containers[container.id].items).toEqual([]);
     expect(p.medkits).toBe(1);
   });
@@ -135,33 +126,25 @@ describe('Container search to loot grid integration', () => {
     const p = state.players[0]!;
     p.knife = true;
     p.inventory = createBag('satchel');
+    syncBag(p.inventory, bagWanted(p));
     const container = townContainers(state.map)[0]!;
     const containerState = state.containers[container.id];
     containerState.opened = true;
     containerState.items = [];
+    p.x = container.x;
+    p.y = container.y;
+    viewContainer(state, p, container.id);
 
-    let sentCommit: unknown = null;
-    const local = new LocalBag((commit) => { sentCommit = commit; });
-    const hud = aHud({ knife: true });
-    local.sync(hud);
-
-    const working = local.open(hud, container.id, 'BOX', []);
-    expect(working.pack.items.some((i) => i.type === 'knife')).toBe(true);
-
-    const knifeItem = working.pack.items.find((i) => i.type === 'knife')!;
-    working.pack.items = working.pack.items.filter((i) => i.id !== knifeItem.id);
-    placeItem(working.container, { ...knifeItem, x: 0, y: 0 });
-
-    local.close(working);
-    expect(sentCommit).toBeDefined();
-
-    const commit = sentCommit as any;
-    expect(commit.container.id).toBe(container.id);
-    expect(commit.container.items).toHaveLength(1);
-    expect(commit.container.deposited).toHaveLength(1);
-    expect(commit.container.deposited[0].type).toBe('knife');
-
-    applyBagCommit(state, p, commit);
+    const knifeItem = p.inventory.pack.items.find((i) => i.type === 'knife')!;
+    const reason = applyItemMove(state, p, {
+      id: 1,
+      item: knifeItem.id,
+      type: 'knife',
+      from: { kind: 'cell', grid: 'pack', x: knifeItem.x, y: knifeItem.y },
+      to: { kind: 'cell', grid: 'container', x: 0, y: 0, rotated: false },
+      container: container.id,
+    });
+    expect(reason).toBeNull();
     expect(state.containers[container.id].items).toHaveLength(1);
     expect(state.containers[container.id].items![0].type).toBe('knife');
     expect(p.knife).toBe(false);
@@ -176,18 +159,19 @@ describe('Container search to loot grid integration', () => {
     const containerState = state.containers[container.id];
     containerState.opened = true;
     containerState.items = [];
+    p.x = container.x;
+    p.y = container.y;
+    viewContainer(state, p, container.id);
 
-    applyBagCommit(state, p, {
-      layout: [],
-      drop: [],
-      container: {
-        id: container.id,
-        items: [{ id: 'deposited-candy', type: 'jawbreaker', x: 0, y: 0, rotated: false }],
-        taken: [],
-        deposited: [{ id: 'deposited-candy', type: 'jawbreaker', x: 0, y: 0, rotated: false }],
-      },
+    const reason = applyItemMove(state, p, {
+      id: 1,
+      item: 'candy-carried-jawbreaker-0',
+      type: 'jawbreaker',
+      from: { kind: 'cell', grid: 'candy', x: 0, y: 5 },
+      to: { kind: 'cell', grid: 'container', x: 0, y: 0, rotated: false },
+      container: container.id,
     });
-
+    expect(reason).toBeNull();
     expect(state.containers[container.id].items).toHaveLength(1);
     expect(p.candy).toEqual([]);
   });
