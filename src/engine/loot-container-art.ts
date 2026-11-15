@@ -28,3 +28,33 @@ export function drawStageArt(ctx: CanvasRenderingContext2D, art: ContainerArt, s
   ctx.globalAlpha = before;
   ctx.imageSmoothingEnabled = smoothing;
 }
+
+/**
+ * The drawing mid-search: each cell the search has read shows its piece of the open drawing, the rest the shut one,
+ * so the container comes open cell by cell under the sweep instead of all at once when it ends. The rect is the grid,
+ * so a cell of the grid covers its own piece of the stage box.
+ */
+export function drawSweptStageArt(
+  ctx: CanvasRenderingContext2D,
+  art: ContainerArt,
+  rect: ScreenRect,
+  cols: number,
+  rows: number,
+  isRead: (col: number, row: number) => boolean,
+  alpha = 0.9,
+): void {
+  const cellW = rect.w / cols;
+  const cellH = rect.h / rows;
+  for (const searched of [false, true]) {
+    ctx.save();
+    ctx.beginPath();
+    for (let row = 0; row < rows; row += 1) {
+      for (let col = 0; col < cols; col += 1) {
+        if (isRead(col, row) === searched) ctx.rect(rect.x + col * cellW, rect.y + row * cellH, cellW, cellH);
+      }
+    }
+    ctx.clip();
+    drawStageArt(ctx, art, searched, rect, alpha);
+    ctx.restore();
+  }
+}

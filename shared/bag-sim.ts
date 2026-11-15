@@ -1,4 +1,4 @@
-import { ammoBoxRounds, ammoBoxWeapon, bagWanted, isAmmoBoxType, isBagItemType, isDroppableBagItem, retierBag, stampAmmoBoxes, syncBag, validateLayout, adoptLayout } from './bag.ts';
+import { ammoBoxRounds, ammoBoxWeapon, arrangeHeldByLayout, bagWanted, isAmmoBoxType, isBagItemType, isDroppableBagItem, retierBag, stampAmmoBoxes, syncBag, validateLayout, adoptLayout } from './bag.ts';
 import type { AmmoBoxType, BagCommit, BagItemType, BagWanted, DroppableBagItem } from './bag.ts';
 import { MAX_COMMIT_DROPS, MAX_COMMIT_LAYOUT } from './bag-commit.ts';
 import { FORTIFICATION_ITEMS } from './fortifications.ts';
@@ -109,6 +109,11 @@ export function applyBagCommit(sim: SimState, p: PlayerState, commit: BagCommit)
       const candyBefore = countCandy(containerState.items ?? []);
       const contents = createInventoryGrid(cols, rows, blocked);
       for (const item of commit.container.items) placeItem(contents, { ...item });
+      // The player may have moved things to make room for a find: the host checks room in the player's arrangement.
+      if (commit.container.taken.length > 0) {
+        syncBag(p.inventory, bagWanted(p));
+        arrangeHeldByLayout(p.inventory, layout);
+      }
       // Only what the host's container really held can be taken, and each piece once.
       for (const claimed of commit.container.taken) {
         const real = held.get(claimed.id);

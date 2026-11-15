@@ -6,8 +6,9 @@ import { drawOutlinedText, drawText, FONT_HEIGHT, textWidth } from './bitmap-fon
 import { drawSpriteScaled, spriteCanvas } from './sprite-cache.ts';
 import { stageSprite } from '../game/inventory/container-stage.ts';
 import { cellPhase, itemHidden, searchSweep, shownSweep, sweepRanks } from '../game/inventory/search-overlay.ts';
-import { lerpRect, noteStageRect, toSpace, zoomFrame } from '../game/inventory/container-zoom.ts';
-import { drawStageArt } from './loot-container-art.ts';
+import { lerpRect, noteStageRect, toSpace, zoomFrame, zoomLandedAt } from '../game/inventory/container-zoom.ts';
+import { drawStageArt, drawSweptStageArt } from './loot-container-art.ts';
+import { bareCellLook, drawBareCell } from './loot-bare-cells.ts';
 import {
   computeTileHighlight,
   formatItemName,
@@ -469,9 +470,20 @@ function drawBoard(ctx: CanvasRenderingContext2D, view: LootView, board: GridBox
   const blocked = new Set((grid.blocked ?? []).map((p) => `${p.x},${p.y}`));
   const ranks = sweepingNow(view) && board.id === 'container' ? sweepRanks(grid) : null;
   const sweep = shownSweep.value ?? 0;
+  // In game the container's drawing is the board: no plate, no cell edges, no voids (loot-bare-cells.ts).
+  const bare = translucent && !view.edit;
   for (let row = 0; row < grid.rows; row += 1) {
     for (let col = 0; col < grid.cols; col += 1) {
       const box = cellBox(board, col, row);
+      if (bare) {
+        const hovered = hover !== null && hover.col === col && hover.row === row;
+        const rank = ranks ? ranks.rankOf(col, row) : null;
+        const look = bareCellLook({ rank, open: ranks?.open ?? 0, sweep, hovered, holding: held !== null, blocked: blocked.has(`${col},${row}`) });
+        if (look) drawBareCell(ctx, look, box.x, box.y, TILE);
+        const bareMark = computeTileHighlight(grid, col, row, hover ? hover.col : null, hover ? hover.row : null, held, board.id, state.candyBagGrid);
+        if (bareMark !== 'none') fill(ctx, bareMark === 'valid' ? SICK : BLOOD, box.x + 2, box.y + 2, TILE - 4, TILE - 4);
+        continue;
+      }
       const phase = ranks ? cellPhase(ranks.rankOf(col, row), ranks.open, sweep) : 'read';
       // A void is not lit: it looks like any other cell until the head reaches it, then shows as a void.
       const shut = blocked.has(`${col},${row}`) && phase !== 'waiting';
@@ -533,6 +545,22 @@ function drawContainerArt(ctx: CanvasRenderingContext2D, view: LootView, rect: B
   if (art) drawStageArt(ctx, art, !sweepingNow(view), rect, alpha);
 }
 
+/** The landed drawing: while the search runs it comes open cell by cell behind the sweep head. */
+function drawLandedArt(ctx: CanvasRenderingContext2D, view: LootView, board: GridBox): void {
+  const art = containerArtOf(view);
+  if (!art) return;
+  if (!sweepingNow(view)) {
+    drawStageArt(ctx, art, true, board);
+    return;
+  }
+  const ranks = sweepRanks(board.grid);
+  const sweep = shownSweep.value ?? 0;
+  drawSweptStageArt(ctx, art, board, board.grid.cols, board.grid.rows, (col, row) => cellPhase(ranks.rankOf(col, row), ranks.open, sweep) === 'read');
+}
+
+/** How long the container's labels take to fade in once its drawing lands. */
+const LABEL_FADE_MS = 160;
+
 /** Text with a pixel of ink under it, so it reads over the world with no plate behind it. */
 function floatingText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, color: string): void {
   drawText(ctx, text, x + 1, y + 1, INK);
@@ -558,13 +586,17 @@ function drawContainerDock(ctx: CanvasRenderingContext2D, view: LootView, dock: 
     else drawContainerArt(ctx, view, dock.board, zoom.kind === 'fade' ? 0.9 * zoom.eased : 0);
     return;
   }
-  drawContainerArt(ctx, view, dock.board);
+  drawLandedArt(ctx, view, dock.board);
   drawBoard(ctx, view, dock.board, true);
   if (view.edit) return;
   const board = dock.board;
   const label = sweepingNow(view) ? 'SEARCHING' : count;
+  // The labels fade in as the drawing settles, instead of popping on with the landing.
+  const before = ctx.globalAlpha;
+  ctx.globalAlpha = Math.min(1, Math.max(0, (performance.now() - zoomLandedAt()) / LABEL_FADE_MS));
   floatingText(ctx, upper(state.containerTitle), board.x, board.y - 8, AMBER);
   floatingText(ctx, label, board.x + dock.w - textWidth(label), board.y - 8, DIM);
+  ctx.globalAlpha = before;
   noteStageRect('buffer', board, !sweepingNow(view));
 }
 

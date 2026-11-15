@@ -7,7 +7,7 @@ import { drawHeldUi, drawQuip, QUIP_COLOR } from './held-ui.ts';
 import { drawOutline } from './sprite-cache.ts';
 import { survivorReaction } from '../game/inventory/survivor-quips.ts';
 import { setArrivalCamera } from '../game/inventory/pickup-arrivals.ts';
-import { backFlight, lerpRect, noteWorldFrame, toSpace } from '../game/inventory/container-zoom.ts';
+import { backFlight, lerpRect, noteWorldFrame, toSpace, zoomFrame } from '../game/inventory/container-zoom.ts';
 import { drawStageArt } from './loot-container-art.ts';
 import { drawCanvasHud } from './canvas-hud.ts';
 import { drawDoorZone, zoneToShow } from './door-zones.ts';
@@ -522,7 +522,8 @@ export class WorldRenderer {
       this.drawLootFlyBack(ctx, left, top);
       return;
     }
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+    // The world dims as the container flies in, not all at once when the window opens.
+    ctx.fillStyle = `rgba(0, 0, 0, ${0.3 * zoomFrame().eased})`;
     ctx.fillRect(0, 0, viewW, viewH);
     drawLootUi(ctx, win, layoutLootUi(win.state, viewW, viewH));
   }

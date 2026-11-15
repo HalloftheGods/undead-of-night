@@ -326,30 +326,55 @@ export function bagHash(bag: PlayerBag): number {
   return layoutHash(bagLayout(bag));
 }
 
+type Placements = { row: BagLayoutRow; item: GridItem }[];
+
 /**
- * Checks a layout against a bag without touching it and, if it holds, returns the placements. Its rows must be exactly
- * the multiset of types the bag holds, each in bounds and clear of the others. Each row takes an unused item of its
- * type (items of a type are interchangeable), so the bag keeps its own ids and counts. Anything else is null.
+ * Places the bag's items by a layout's rows, each row taking an unused item of its type. With `unheld` 'refuse' a row
+ * with no item left for it fails the whole layout; with 'skip' it is passed over (a find not taken yet). Every held
+ * item must get a row, in bounds and clear of the others.
  */
-export function validateLayout(bag: PlayerBag, layout: readonly BagLayoutRow[]): { row: BagLayoutRow; item: GridItem }[] | null {
+function placeRows(bag: PlayerBag, layout: readonly BagLayoutRow[], unheld: 'refuse' | 'skip'): Placements | null {
   const pool = new Map<string, GridItem[]>();
   let total = 0;
   for (const item of [...bag.pack.items, ...bag.pockets.items]) {
     pool.set(item.type, [...(pool.get(item.type) ?? []), item]);
     total += 1;
   }
-  if (layout.length !== total) return null;
+  if (unheld === 'refuse' && layout.length !== total) return null;
   const scratch = { pack: createInventoryGrid(bag.pack.cols, bag.pack.rows), pockets: createInventoryGrid(bag.pockets.cols, bag.pockets.rows) };
-  const placements: { row: BagLayoutRow; item: GridItem }[] = [];
+  const placements: Placements = [];
   for (const row of layout) {
     const grid = row.grid === 'pack' || row.grid === 'pockets' ? scratch[row.grid] : null;
     const item = isBagItemType(row.type) ? pool.get(row.type)?.shift() : undefined;
+    if (item === undefined && unheld === 'skip') continue;
     const wellFormed = item !== undefined && grid !== null && Number.isInteger(row.x) && Number.isInteger(row.y) && typeof row.rotated === 'boolean';
     if (!wellFormed || !canPlaceItem(grid, item.type, row.x, row.y, row.rotated)) return null;
     placeItem(grid, { ...item, x: row.x, y: row.y, rotated: row.rotated });
     placements.push({ row, item });
   }
-  return placements;
+  return placements.length === total ? placements : null;
+}
+
+/**
+ * Checks a layout against a bag without touching it and, if it holds, returns the placements. Its rows must be exactly
+ * the multiset of types the bag holds, each in bounds and clear of the others. Each row takes an unused item of its
+ * type (items of a type are interchangeable), so the bag keeps its own ids and counts. Anything else is null.
+ */
+export function validateLayout(bag: PlayerBag, layout: readonly BagLayoutRow[]): Placements | null {
+  return placeRows(bag, layout, 'refuse');
+}
+
+/**
+ * Before the finds a commit takes from a container are counted in, arranges what the bag already holds the way the
+ * player's layout has it, so the room the player made in the window is the room the host checks. Rows for things not
+ * held yet are left as free space. True when it moved the bag; false, and the bag untouched, when the layout does not
+ * place everything held.
+ */
+export function arrangeHeldByLayout(bag: PlayerBag, layout: readonly BagLayoutRow[]): boolean {
+  const placements = placeRows(bag, layout, 'skip');
+  if (!placements) return false;
+  adoptLayout(bag, placements);
+  return true;
 }
 
 /** Moves the bag's items to a layout `validateLayout` accepted. */
