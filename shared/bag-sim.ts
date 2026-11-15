@@ -1,20 +1,10 @@
-import { ammoBoxRounds, ammoBoxWeapon, arrangeHeldByLayout, bagWanted, isAmmoBoxType, isBagItemType, isDroppableBagItem, retierBag, stampAmmoBoxes, syncBag, validateLayout, adoptLayout } from './bag.ts';
-import type { AmmoBoxType, BagCommit, BagItemType, BagWanted, DroppableBagItem } from './bag.ts';
-import { MAX_COMMIT_DROPS, MAX_COMMIT_LAYOUT } from './bag-commit.ts';
+import { ammoBoxRounds, ammoBoxWeapon, bagWanted, isAmmoBoxType, isDroppableBagItem, retierBag, stampAmmoBoxes, syncBag } from './bag.ts';
+import type { AmmoBoxType, BagItemType, BagWanted, DroppableBagItem } from './bag.ts';
 import { FORTIFICATION_ITEMS } from './fortifications.ts';
-import { takeFromContainer } from './container-take.ts';
-import { autoPackItem, createInventoryGrid, placeItem } from './grid-inventory.ts';
 import { spawnPickup } from './pickups.ts';
-import { eatCandyDirect, isCandyId, type CandyId } from './candy.ts';
-import { emit } from './sim-state.ts';
+import type { CandyId } from './candy.ts';
 import type { PlayerState, SimState } from './sim-state.ts';
-import { useSupply } from './supplies.ts';
 import { isSupplyType } from './supply-types.ts';
-import { containerGridFor, townContainers } from './containers.ts';
-import { armHordeSurge } from './waves.ts';
-
-/** How many pieces of candy are in a container's grid. */
-const countCandy = (items: readonly { type: string }[]): number => items.filter((item) => isCandyId(item.type)).length;
 
 /** Takes up to `count` units of a type off the counters and returns how many it took. */
 export function take(p: PlayerState, type: BagItemType, count: number): number {
@@ -37,7 +27,7 @@ export function take(p: PlayerState, type: BagItemType, count: number): number {
 }
 
 /** Puts what was taken on the ground at the player's feet. A box of nails goes down as whole finds. */
-function leaveOnGround(sim: SimState, p: PlayerState, type: DroppableBagItem, count: number): void {
+export function leaveOnGround(sim: SimState, p: PlayerState, type: DroppableBagItem, count: number): void {
   if (isAmmoBoxType(type)) return leaveAmmoOnGround(sim, p, type, count);
   const per = type === 'nails' ? FORTIFICATION_ITEMS.nails.unitsPerFind : 1;
   const pieces = Math.floor(count / per);
@@ -60,7 +50,7 @@ function leaveAmmoOnGround(sim: SimState, p: PlayerState, type: AmmoBoxType, box
   }
 }
 
-function leaveCandyOnGround(sim: SimState, p: PlayerState, id: CandyId, count: number): void {
+export function leaveCandyOnGround(sim: SimState, p: PlayerState, id: CandyId, count: number): void {
   for (let i = 0; i < count; i += 1) {
     const candyIndex = p.candy.indexOf(id);
     const hasCandy = candyIndex >= 0;
@@ -87,95 +77,4 @@ export function reconcileBag(sim: SimState, p: PlayerState): void {
   }
   if (Object.keys(overflow).length > 0) syncBag(p.inventory, bagWanted(p));
   stampAmmoBoxes(p.inventory, p.ammoBag);
-}
-
-/**
- * The bag closed. Drops first (clamped to what is held), then the bag is brought to the counters, then the client's
- * layout is adopted if it holds and the host's own kept if it does not. Never believes a count or a type beyond the clamp.
- * True when the layout was adopted.
- */
-export function applyBagCommit(sim: SimState, p: PlayerState, commit: BagCommit): boolean {
-  const layout = commit.layout ?? [];
-  const drop = commit.drop ?? [];
-  const use = commit.use ?? [];
-  const tooBig = layout.length > MAX_COMMIT_LAYOUT || drop.length > MAX_COMMIT_DROPS || use.length > MAX_COMMIT_DROPS;
-  if (tooBig || p.status !== 'alive') return false;
-  if (commit.container) {
-    const containerState = sim.containers[commit.container.id];
-    if (containerState) {
-      const containerDef = sim.map ? townContainers(sim.map)[commit.container.id] : undefined;
-      const { cols, rows, blocked } = containerGridFor(containerDef);
-      const held = new Map((containerState.items ?? []).map((item) => [item.id, item]));
-      const candyBefore = countCandy(containerState.items ?? []);
-      const contents = createInventoryGrid(cols, rows, blocked);
-      for (const item of commit.container.items) placeItem(contents, { ...item });
-      // The player may have moved things to make room for a find: the host checks room in the player's arrangement.
-      if (commit.container.taken.length > 0) {
-        syncBag(p.inventory, bagWanted(p));
-        arrangeHeldByLayout(p.inventory, layout);
-      }
-      // Only what the host's container really held can be taken, and each piece once.
-      for (const claimed of commit.container.taken) {
-        const real = held.get(claimed.id);
-        if (!real || real.type !== claimed.type) continue;
-        held.delete(claimed.id);
-        const left = takeFromContainer(p, real);
-        // A Radio is found the moment it leaves the grid: the event unlocks it for the party and gives up its track, as one on the floor does.
-        const foundRadio = real.type === 'radio' && left === null;
-        if (foundRadio) emit(sim, { type: 'pickup', playerId: p.id, pickup: 'radio', x: p.x, y: p.y });
-        if (left && !placeItem(contents, { ...left })) autoPackItem(contents, left);
-      }
-      containerState.items = contents.items;
-      // A candy bowl starts full, so the pieces gone from it are the ones taken. The second one calls the horde.
-      if (containerDef?.kind === 'bowl') {
-        const full = cols * rows - (blocked?.length ?? 0);
-        const takenBefore = full - candyBefore;
-        const takenAfter = full - countCandy(contents.items);
-        if (takenBefore < 2 && takenAfter >= 2) armHordeSurge(sim);
-      }
-      for (const item of commit.container.deposited ?? []) {
-        const isCandy = isCandyId(item.type);
-        if (isCandy) {
-          const candyIndex = p.candy.indexOf(item.type as CandyId);
-          const hasCandy = candyIndex >= 0;
-          if (hasCandy) p.candy.splice(candyIndex, 1);
-        } else {
-          const isBagItem = isBagItemType(item.type);
-          if (isBagItem) take(p, item.type, item.count ?? 1);
-        }
-      }
-    }
-  }
-  for (const row of use) {
-    const isCandy = isCandyId(row.type) && Number.isInteger(row.count) && row.count >= 1;
-    if (isCandy) {
-      for (let used = 0; used < row.count; used += 1) {
-        eatCandyDirect(sim, p, row.type as CandyId);
-      }
-      continue;
-    }
-    // Loading a box: the gun it feeds, if it is the one in hand, starts its reload. The rounds leave the counter when it ends, and the box with them.
-    if (isAmmoBoxType(row.type)) {
-      if (ammoBoxWeapon(row.type) === p.weapon) p.reloadQueued = true;
-      continue;
-    }
-    const isUsable = isSupplyType(row.type) && Number.isInteger(row.count) && row.count >= 1;
-    if (!isUsable) continue;
-    for (let used = 0; used < row.count && useSupply(p, row.type); used += 1);
-  }
-  for (const row of drop) {
-    const isCandy = isCandyId(row.type) && Number.isFinite(row.count) && row.count >= 1;
-    if (isCandy) {
-      leaveCandyOnGround(sim, p, row.type as CandyId, Math.floor(row.count));
-      continue;
-    }
-    const real = isBagItemType(row.type) && isDroppableBagItem(row.type) && Number.isFinite(row.count) && row.count >= 1;
-    if (real) leaveOnGround(sim, p, row.type, Math.floor(row.count));
-  }
-  reconcileBag(sim, p);
-  const placements = validateLayout(p.inventory, layout);
-  if (!placements) return false;
-  adoptLayout(p.inventory, placements);
-  stampAmmoBoxes(p.inventory, p.ammoBag);
-  return true;
 }

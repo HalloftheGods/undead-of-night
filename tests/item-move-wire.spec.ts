@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bagLayout, bagWanted, createBag, syncBag } from '../shared/bag.ts';
+import { bagLayout, bagRows, bagWanted, createBag, syncBag } from '../shared/bag.ts';
 import { townContainers } from '../shared/containers.ts';
 import { viewContainer } from '../shared/container-viewers.ts';
 import type { ItemMove } from '../shared/item-move.ts';
@@ -45,8 +45,11 @@ describe('snapshot move fields', () => {
     p.lastMoveId = 5;
 
     const entity = buildSnapshot(state).players.find((each) => each.id === p.id)!;
-    expect(entity.bagLayout).toEqual(bagLayout(p.inventory));
+    expect(entity.bagLayout).toEqual(bagRows(p.inventory));
     expect(entity.bagLayout!.some((row) => row.type === 'medkit')).toBe(true);
+    // The rows name the host's own ids, so the window moves the item the host has.
+    expect(entity.bagLayout!.map((row) => row.id).sort()).toEqual(p.inventory.pack.items.concat(p.inventory.pockets.items).map((item) => item.id).sort());
+    expect(entity.bagLayout!.map(({ type, grid, x, y, rotated }) => ({ type, grid, x, y, rotated })).sort((a, b) => a.type.localeCompare(b.type))).toEqual([...bagLayout(p.inventory)].sort((a, b) => a.type.localeCompare(b.type)));
     expect(entity.lastMoveId).toBe(5);
   });
 

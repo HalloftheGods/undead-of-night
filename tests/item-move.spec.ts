@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parseItemMove } from '../shared/item-move.ts';
 import type { ItemMove } from '../shared/item-move.ts';
-import { applyMoveToGrids } from '../shared/item-move-grids.ts';
+import { applyMoveToGrids, candyMoveFor } from '../shared/item-move-grids.ts';
 import type { MoveGrids } from '../shared/item-move-grids.ts';
 import { createInventoryGrid } from '../shared/grid-inventory.ts';
 
@@ -98,5 +98,35 @@ describe('applyMoveToGrids', () => {
     const use: ItemMove = { id: 4, item: 'medkit:1', type: 'medkit', from: { kind: 'cell', grid: 'pack', x: 0, y: 0 }, to: { kind: 'use' } };
     expect(applyMoveToGrids(g, use)).toBeNull();
     expect(g.pack.items).toEqual([]);
+  });
+
+  it('trades two worn guns between their slots when each fits the other', () => {
+    const g = grids();
+    g.gear.primary = { id: 'pistol', type: 'pistol', x: 0, y: 0, rotated: false };
+    g.gear.secondary = { id: 'shotgun', type: 'shotgun', x: 0, y: 0, rotated: false };
+    const swap: ItemMove = { id: 5, item: 'shotgun', type: 'shotgun', from: { kind: 'gear', slot: 'secondary' }, to: { kind: 'gear', slot: 'primary' } };
+    expect(applyMoveToGrids(g, swap)).toBeNull();
+    expect(g.gear.primary?.id).toBe('shotgun');
+    expect(g.gear.secondary?.id).toBe('pistol');
+  });
+
+  it('refuses a worn slot that is taken by a gun that can not go where the other came from', () => {
+    const g = grids();
+    g.gear.primary = { id: 'carbine', type: 'carbine', x: 0, y: 0, rotated: false };
+    g.gear.sidearm = { id: 'pistol', type: 'pistol', x: 0, y: 0, rotated: false };
+    const swap: ItemMove = { id: 6, item: 'pistol', type: 'pistol', from: { kind: 'gear', slot: 'sidearm' }, to: { kind: 'gear', slot: 'primary' } };
+    expect(applyMoveToGrids(g, swap)).toBe('no_room');
+    expect(g.gear.primary?.id).toBe('carbine');
+  });
+
+  it('finds a candy piece by its kind when its id is not in the bag, and a free cell when its own is taken', () => {
+    const g = grids();
+    g.candy.items.push({ id: 'candy-carried-jawbreaker-0', type: 'jawbreaker', x: 0, y: 5, rotated: false });
+    const eat: ItemMove = { id: 7, item: 'old-id', type: 'jawbreaker', from: { kind: 'cell', grid: 'candy', x: 1, y: 5 }, to: { kind: 'use' } };
+    expect(candyMoveFor(g, eat).item).toBe('candy-carried-jawbreaker-0');
+    const into: ItemMove = { id: 8, item: 'c-1', type: 'ghost_gum', from: { kind: 'cell', grid: 'container', x: 0, y: 0 }, to: { kind: 'cell', grid: 'candy', x: 0, y: 5, rotated: false }, container: 3 };
+    const moved = candyMoveFor(g, into);
+    expect(moved.to).not.toMatchObject({ x: 0, y: 5 });
+    expect(moved.to.kind).toBe('cell');
   });
 });

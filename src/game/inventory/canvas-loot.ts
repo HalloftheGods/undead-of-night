@@ -2,7 +2,8 @@ import type { SfxName } from '../../audio/sfx-registry.ts';
 import type { ArtBook } from '../../art/types.ts';
 import { findItemAtTile, getItemFootprint, type InventoryGrid } from '../../../shared/grid-inventory.ts';
 import { heldAnchor, itemPlateAt, layoutLootUi, lootHitAt, TILE, type LootHit, type LootLayout } from '../../engine/loot-ui.ts';
-import { noteMove, notePlaced } from './pickup-arrivals.ts';
+import type { CellOrigin, MotionKind } from './move-motion.ts';
+import { cellFrom, findShown, GROUND_TARGET, placedAt, sourceOf, USE_TARGET, windowMove, type ProposedMove } from './loot-moves.ts';
 import { heldButtonAt, heldOnSurvivor, setHeld } from '../held-cursor.ts';
 import { setLootWindow, type LootWindow } from '../loot-view.ts';
 import { isLootPadInCharge, moveCursor, setLootPad, settleCursor, startCursor, type LootButton, type LootCursor, type LootDirection } from './loot-pad.ts';
@@ -20,21 +21,18 @@ import {
   resolveGridById,
   returnHeldItemToSource,
   rotateActiveItem,
-  sourceName,
   type DualLootModalProps,
   type DualLootState,
   type GridIdentifier,
-  type TransferEventPayload,
 } from './dual-loot-modal.ts';
 import type { GridItem } from '../../../shared/grid-inventory.ts';
 import type { InventoryPanel } from './inventory-modal.ts';
 
-/** What the loot window hands back to the inventory, the same four things the Vue modal emits. */
+/** What the loot window hands back to the inventory, the same things the Vue modal emits. */
 export interface CanvasLootHost {
   close: () => void;
-  transfer: (payload: TransferEventPayload) => void;
-  use: (item: GridItem) => void;
-  drop: (item: GridItem) => void;
+  /** One item moved, used or dropped, as it happens (loot-moves.ts). */
+  move: (move: ProposedMove, motion: MotionKind, origin: CellOrigin | null) => void;
   playSfx: (name: SfxName) => void;
 }
 
@@ -104,15 +102,27 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
     setHeld({ sprite: null, name: formatItemName(item.type), hint: itemBlurb(item.type), actions: heldActions(item), type: item.type, itemId: item.id });
   }
 
+  /** Hands the inventory what the hand just did. The hand drawer is told first, so the grids refill around the right item. */
+  function sendMove(item: GridItem, from: ReturnType<typeof sourceOf>, motion: MotionKind, origin: CellOrigin | null = null): void {
+    syncHeld();
+    const move = windowMove(item, from, placedAt(state, item.id));
+    if (move) host.move(move, motion, origin);
+  }
+
+  /** Where an item is drawn now, in buffer pixels, for a flight back or a puff. */
+  function itemOrigin(itemId: string): CellOrigin | null {
+    const shown = findShown(state, itemId);
+    const plate = shown ? itemPlateAt(layout(), shown.gridId, shown.item) : null;
+    return plate ? { buffer: plate } : null;
+  }
+
   function place(gridId: GridIdentifier, col: number, row: number): boolean {
     const held = state.heldItem;
     if (!held) return false;
-    const from = sourceName(held.source);
     const placed = placeHeldItemInGrid(state, gridId, col, row);
     if (placed) {
       // Set down by hand: it only lands, it does not fly.
-      notePlaced(held.item);
-      host.transfer({ itemId: state.selectedItemId ?? '', source: from, target: gridId });
+      sendMove(held.item, sourceOf(held.source), 'land');
       host.playSfx('ui_place');
     }
     return placed;
@@ -121,13 +131,14 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
   function quickTransfer(gridId: GridIdentifier, itemId: string): void {
     // A double click sends it across: it flies from the cell it is leaving.
     const leaving = gridOf(gridId).items.find((item) => item.id === itemId);
-    const origin = leaving ? itemPlateAt(layout(), gridId, leaving) : null;
-    const moving = leaving ?? state.heldItem?.item ?? null;
+    const plate = leaving ? itemPlateAt(layout(), gridId, leaving) : null;
+    const held = state.heldItem;
+    const moving = leaving ?? held?.item ?? null;
+    const heldFrom = held ? sourceOf(held.source) : null;
+  const from = leaving ? cellFrom(gridId, leaving) : heldFrom;
     if (!quickTransferBetweenInventories(state, gridId, itemId)) return;
-    if (moving && origin) noteMove(moving, { buffer: origin });
-    else if (moving) notePlaced(moving);
     host.playSfx('ui_place');
-    host.transfer({ itemId, source: gridId, target: gridId === 'container' ? 'backpack' : 'container' });
+    if (moving && from) sendMove(moving, from, plate ? 'fly' : 'land', plate ? { buffer: plate } : null);
   }
 
   function onCell(hit: Extract<LootHit, { kind: 'cell' }>): void {
@@ -159,8 +170,9 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
   }
 
   function onGear(slot: Extract<LootHit, { kind: 'gear' }>['slot']): void {
-    if (state.heldItem) {
-      if (placeHeldItemInGear(state, slot)) host.transfer({ itemId: state.gear[slot]?.id ?? '', source: 'held', target: `gear-${slot}` });
+    const held = state.heldItem;
+    if (held) {
+      if (placeHeldItemInGear(state, slot)) sendMove(held.item, sourceOf(held.source), 'land');
       return;
     }
     if (state.gear[slot] !== null) pickUpItemFromGear(state, slot);
@@ -170,17 +182,22 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
     const held = state.heldItem;
     if (!held) return;
     const item = { ...held.item };
+    const from = sourceOf(held.source);
     // A box of rounds is loaded, not spent: it goes back where it was.
     if (isLoadable(item)) returnHeldItemToSource(state);
     else state.heldItem = null;
-    host.use(item);
+    syncHeld();
+    const move = windowMove(item, from, USE_TARGET);
+    if (move) host.move(move, 'land', null);
   }
 
   function dropHeld(): void {
     const held = state.heldItem;
     if (!held) return;
-    host.drop(held.item);
     state.heldItem = null;
+    syncHeld();
+    const move = windowMove(held.item, sourceOf(held.source), GROUND_TARGET);
+    if (move) host.move(move, 'land', null);
   }
 
   function rotate(): void {
@@ -362,6 +379,7 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
     rotate,
     settle,
     ownsPoint: onUi,
+    itemOrigin,
     dispose() {
       canvas.style.cursor = '';
       window.removeEventListener('mousemove', onMove);

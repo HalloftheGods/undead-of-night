@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { applyBagCommit } from '../shared/bag-sim.ts';
-import { parseBagCommit } from '../shared/bag-commit.ts';
-import { adoptLayout, bagHash, bagLayout, bagWanted, canCarry, createBag, retierBag, syncBag, validateLayout } from '../shared/bag.ts';
-import type { BagCommit, BagWanted } from '../shared/bag.ts';
+import { adoptLayout, bagHash, bagLayout, bagRows, bagWanted, canCarry, createBag, layoutHash, retierBag, syncBag, validateLayout } from '../shared/bag.ts';
+import type { BagWanted } from '../shared/bag.ts';
 import { PICKUP_RADIUS } from '../shared/constants.ts';
 import { parseClientPacket } from '../shared/room/client-packets.ts';
+import type { PlayerState } from '../shared/sim-state.ts';
+import { actOn, rearrange } from './helpers/item-moves.ts';
 import { quietSim, steps } from './helpers/sim-harness.ts';
 
 const none: BagWanted = {
@@ -154,7 +154,7 @@ describe('in a run', () => {
   });
 });
 
-describe('a commit', () => {
+describe('a move inside the bag', () => {
   function bagged() {
     const quiet = quietSim();
     const p = quiet.state.players[0]!;
@@ -164,49 +164,39 @@ describe('a commit', () => {
     steps(quiet.sim, 1);
     return { ...quiet, p };
   }
-  /** The nth row of a type, as an index into the layout. */
-  const at = (rows: ReturnType<typeof bagLayout>, type: string, nth = 0): number =>
-    rows.map((row, index) => [row, index] as const).filter(([row]) => row.type === type)[nth]![1];
-  const moved = (rows: ReturnType<typeof bagLayout>, index: number, change: Partial<ReturnType<typeof bagLayout>[number]>) =>
-    rows.map((row, i) => (i === index ? { ...row, ...change } : row));
+  const first = (p: PlayerState, type: string) => p.inventory.pack.items.find((item) => item.type === type)!;
 
-  it('is adopted when the layout holds', () => {
+  it('is applied when the item fits where it was set down', () => {
     const { state, p } = bagged();
-    const rows = bagLayout(p.inventory);
-    const layout = moved(rows, at(rows, 'medkit'), { grid: 'pockets', x: 0, y: 0, rotated: false });
-    expect(applyBagCommit(state, p, { layout, drop: [] })).toBe(true);
+    expect(rearrange(state, p, first(p, 'medkit'), 'pack', 'pockets', 0, 0, false)).toBeNull();
     expect(p.inventory.pockets.items.map((item) => item.type)).toEqual(['medkit']);
     expect(p.inventory.pack.items.some((item) => item.type === 'medkit')).toBe(false);
   });
 
-  it('is rejected, and the host layout kept, when items overlap or leave the grid', () => {
+  it('is refused, and the host layout kept, when the item would overlap or leave the grid', () => {
     const { state, p } = bagged();
     const before = bagHash(p.inventory);
-    const rows = bagLayout(p.inventory);
-    expect(applyBagCommit(state, p, { layout: moved(rows, at(rows, 'medkit'), { x: 4, y: 3, rotated: false }), drop: [] })).toBe(false);
-    const target = rows[at(rows, 'plank', 0)]!;
-    expect(applyBagCommit(state, p, { layout: moved(rows, at(rows, 'plank', 1), { x: target.x, y: target.y }), drop: [] })).toBe(false);
+    expect(rearrange(state, p, first(p, 'medkit'), 'pack', 'pack', p.inventory.pack.cols - 1, p.inventory.pack.rows - 1, false)).toBe('no_room');
+    const planks = p.inventory.pack.items.filter((item) => item.type === 'plank');
+    expect(rearrange(state, p, planks[1]!, 'pack', 'pack', planks[0]!.x, planks[0]!.y)).toBe('no_room');
     expect(bagHash(p.inventory)).toBe(before);
   });
 
-  it('is rejected when the rows are not the multiset of types the host holds', () => {
+  it('is refused when the item is not where the move says, or is not that type', () => {
     const { state, p } = bagged();
     const before = bagHash(p.inventory);
-    const rows = bagLayout(p.inventory);
-    expect(applyBagCommit(state, p, { layout: moved(rows, at(rows, 'plank', 1), { type: 'knife' }), drop: [] })).toBe(false);
-    expect(applyBagCommit(state, p, { layout: rows.slice(1), drop: [] })).toBe(false);
-    expect(applyBagCommit(state, p, { layout: [...rows, rows[0]!], drop: [] })).toBe(false);
+    const plank = first(p, 'plank');
+    expect(rearrange(state, p, { ...plank, id: 'forged' }, 'pack', 'pockets', 0, 0)).toBe('gone');
+    expect(rearrange(state, p, { ...plank, type: 'knife' }, 'pack', 'pockets', 0, 0)).toBe('gone');
     expect(bagHash(p.inventory)).toBe(before);
   });
 
-  it('adopts positions onto the host items and keeps the host ids and counts', () => {
+  it('keeps the host ids and counts', () => {
     const { sim, state, p } = bagged();
     p.materials!.nails = 12;
     steps(sim, 1);
-    const ids = p.inventory.pack.items.map((item) => item.id).sort();
-    const rows = bagLayout(p.inventory);
-    const layout = moved(rows, at(rows, 'medkit'), { grid: 'pockets', x: 0, y: 0, rotated: false });
-    expect(applyBagCommit(state, p, { layout, drop: [] })).toBe(true);
+    const ids = [...p.inventory.pack.items, ...p.inventory.pockets.items].map((item) => item.id).sort();
+    expect(rearrange(state, p, first(p, 'medkit'), 'pack', 'pockets', 0, 0, false)).toBeNull();
     const all = [...p.inventory.pack.items, ...p.inventory.pockets.items];
     expect(all.map((item) => item.id).sort()).toEqual([...ids].sort());
     expect(all.find((item) => item.type === 'nails')?.count).toBe(12);
@@ -214,10 +204,7 @@ describe('a commit', () => {
 
   it('drops what was held, at the feet, and the player does not take it straight back', () => {
     const { sim, state, p } = bagged();
-    const drop: BagCommit['drop'] = [{ type: 'plank', count: 1 }];
-    const rows = bagLayout(p.inventory);
-    const layout = rows.filter((_, i) => i !== at(rows, 'plank', 1));
-    expect(applyBagCommit(state, p, { layout, drop })).toBe(true);
+    expect(actOn(state, p, 'plank', 'ground')).toBeNull();
     expect(p.materials!.planks).toBe(1);
     const left = state.pickups.filter((item) => item.type === 'plank');
     expect(left.length).toBe(1);
@@ -226,37 +213,18 @@ describe('a commit', () => {
     expect(p.materials!.planks).toBe(1);
   });
 
-  it('clamps a drop to what is held', () => {
-    const { state, p } = bagged();
-    applyBagCommit(state, p, { layout: [], drop: [{ type: 'plank', count: 50 }] });
-    expect(p.materials!.planks).toBe(0);
-    expect(state.pickups.filter((item) => item.type === 'plank').length).toBe(2);
-  });
-
   it('cannot drop what is not held', () => {
     const { state, p } = bagged();
     p.bottles = 0;
-    applyBagCommit(state, p, { layout: [], drop: [{ type: 'bottle', count: 1 }, { type: 'crowbar', count: 1 }] });
+    expect(actOn(state, p, 'bottle', 'ground')).toBe('gone');
+    expect(actOn(state, p, 'crowbar', 'ground')).toBe('gone');
     expect(p.bottles).toBe(0);
     expect(state.pickups.length).toBe(0);
   });
 
-  it('is ignored over the row caps, at the wire and in the sim', () => {
-    const { state, p } = bagged();
-    const row = { type: 'plank', grid: 'pack', x: 0, y: 0, rotated: false };
-    const long = { layout: Array.from({ length: 65 }, () => row), drop: [] };
-    expect(parseBagCommit(long)).toBeNull();
-    expect(parseBagCommit({ layout: [], drop: Array.from({ length: 17 }, () => ({ type: 'plank', count: 1 })) })).toBeNull();
-    expect(applyBagCommit(state, p, long as unknown as BagCommit)).toBe(false);
-    expect(p.materials!.planks).toBe(2);
-  });
-
-  it('comes off the wire as a bag packet, and nothing malformed does', () => {
-    const good = { type: 'bag', commit: { layout: [{ type: 'plank', grid: 'pack', x: 0, y: 0, rotated: false }], drop: [{ type: 'plank', count: 1 }] } };
-    expect(parseClientPacket(JSON.stringify(good))).toEqual(good);
-    expect(parseClientPacket(JSON.stringify({ type: 'bag', commit: { layout: [{ type: 'plank', grid: 'floor', x: 0, y: 0, rotated: false }], drop: [] } }))).toBeNull();
-    expect(parseClientPacket(JSON.stringify({ type: 'bag', commit: { layout: [], drop: [{ type: 'gold', count: 1 }] } }))).toBeNull();
-    expect(parseClientPacket(JSON.stringify({ type: 'bag' }))).toBeNull();
+  it('no longer comes off the wire as a bag packet', () => {
+    const old = { type: 'bag', commit: { layout: [{ type: 'plank', grid: 'pack', x: 0, y: 0, rotated: false }], drop: [{ type: 'plank', count: 1 }] } };
+    expect(parseClientPacket(JSON.stringify(old))).toBeNull();
   });
 });
 
@@ -278,26 +246,20 @@ describe('ids do not matter across the wire', () => {
     expect(bagHash(b)).toBe(bagHash(a));
   });
 
-  it('heals with one commit when the client missed a snapshot and its ids diverged', () => {
-    const { state } = quietSim();
-    const p = state.players[0]!;
+  it('sends the host ids on the snapshot rows, so a client that missed a snapshot still names the same items', () => {
+    const host = createBag('satchel');
     const client = createBag('satchel');
     const seen = [want({ medkit: 2, plank: 2 }), want({ medkit: 1, plank: 2, bottle: 1 }), want({ medkit: 2, plank: 2, bottle: 1, nails: 6 })];
-    for (const w of seen) syncBag(p.inventory, w);
-    p.ammoBag = { pistol: 0, carbine: 0, shotgun: 0 };
-    p.medkits = 2;
-    p.bottles = 1;
-    p.knife = false;
-    p.fireworks = 0;
-    p.fountains = 0;
-    Object.assign(p.materials!, { planks: 2, nails: 6, sheets: 0, hasHammer: false, hasCrowbar: false });
-    // The client misses the middle snapshot, so it mints different ids.
+    for (const w of seen) syncBag(host, w);
+    // The client misses the middle snapshot, so the ids it would mint itself differ.
     syncBag(client, seen[0]!);
     syncBag(client, seen[2]!);
     const ids = (bag: typeof client) => [...bag.pack.items, ...bag.pockets.items].map((item) => item.id).sort();
-    expect(ids(client)).not.toEqual(ids(p.inventory));
-    expect(applyBagCommit(state, p, { layout: bagLayout(client), drop: [] })).toBe(true);
-    expect(bagHash(p.inventory)).toBe(bagHash(client));
+    expect(ids(client)).not.toEqual(ids(host));
+    const rows = bagRows(host);
+    expect(rows.map((row) => row.id).sort()).toEqual(ids(host));
+    expect(layoutHash(rows)).toBe(bagHash(host));
+    expect(rows.find((row) => row.type === 'nails')?.count).toBe(6);
   });
 
   it('reaches the same hash from different orderings of changes once the client layout is committed', () => {

@@ -25,7 +25,7 @@
           @action="game.pickFromBackpack($event)"
           @inventory="openInventory"
         />
-        <!-- The grid inventory: I on a desktop, the Grid button on the backpack ring on a phone. Edits a copy; closing sends one commit. -->
+        <!-- The grid inventory: I on a desktop, the Grid button on the backpack ring on a phone. Every move goes to the host as it happens. -->
         <DualLootModal
           v-if="inventory.isOpen.value && inventory.working.value && !canvasLoot.active.value"
           :key="inventory.openings.value"
@@ -43,9 +43,7 @@
           :equipped-secondary="inventory.working.value.gear.secondary"
           :equipped-sidearm="inventory.working.value.gear.sidearm"
           @close="onInventoryClose"
-          @transfer="inventory.onTransfer()"
-          @use="inventory.onUse($event)"
-          @drop="inventory.onDrop($event)"
+          @move="inventory.onMove"
         />
         <EmoteWheel :art="ui.art" :enabled="emotesOn" />
         <RoomInvite v-if="ui.onlineRoom && !ui.paused && ui.hud.teammates.length === 0" :room="ui.onlineRoom" :is-public="ui.onlinePublic" />
@@ -192,7 +190,8 @@ const inventory = useInventoryModal(
   ui,
   game.input,
   inventoryPanel,
-  (commit) => game.sendBag(commit),
+  (move) => game.sendMove(move),
+  (id, open) => game.sendView(id, open),
   (containerId) => game.walkedAwayFrom(containerId),
   () => onInventoryClose()
 );

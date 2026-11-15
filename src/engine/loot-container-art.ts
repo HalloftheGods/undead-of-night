@@ -1,6 +1,6 @@
 import type { ContainerArt } from '../art/containers.ts';
 import { stageBox, stageOffset, stageSprite } from '../game/inventory/container-stage.ts';
-import type { ScreenRect } from '../game/inventory/pickup-arrivals.ts';
+import type { ScreenRect } from '../game/inventory/move-motion.ts';
 import { spriteCanvas } from './sprite-cache.ts';
 
 /**

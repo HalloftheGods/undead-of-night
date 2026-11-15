@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { GameSimulation } from '../shared/simulation.ts';
-import { applyBagCommit } from '../shared/bag-sim.ts';
 import { MAX_CHARACTER_LEVEL, addExperience, allocateEarnedAp, allocateStatPoint, applyApDecay, AP_DECAY_INTERVAL_MS, baseStatSlotFor, canAllocateStat, canRespecCharacter, characterBadgeName, characterLevel, createInitialBook, createInitialProgression, effectiveStatSlots, isCharacterMaxed, isCharacterRusty, loseOnePip, pickWinningStat, respecCharacter, totalXpForLevel, xpBarFraction, xpRequiredForLevel } from '../shared/progression.ts';
 import { checkApUpkeep, loadProgression, loadProgressionBook, PROGRESSION_STORAGE_KEY, saveProgression } from '../shared/progression-save.ts';
 import type { ProgressionState } from '../shared/progression.ts';
@@ -468,7 +467,7 @@ describe('Rolling Timestamp AP Decay & Rusty Survivors', () => {
     });
   });
 
-  describe('Level Up Boon Fluidity & applyBagCommit Resilience', () => {
+  describe('Level Up Boon Fluidity & item move resilience', () => {
     it('applies level up boon directly to the player without bag items or pausing', () => {
       const sim = new GameSimulation({ seed: 42 });
       sim.addPlayer('p1', 'Player 1', null, 0);
@@ -483,12 +482,13 @@ describe('Rolling Timestamp AP Decay & Rusty Survivors', () => {
       expect(bars.barDropsOwed).toBe(1);
     });
 
-    it('safely handles bag commit without layout or drop without throwing errors', () => {
+    it('safely refuses a move for candy that is not carried, without throwing', () => {
       const sim = new GameSimulation({ seed: 42 });
       sim.addPlayer('p1', 'Player 1', null, 0);
-      const p = (sim as unknown as { sim: { players: Array<{ status: string; inventory: unknown; candy: unknown[] }> } }).sim.players[0];
-      const partialCommit = { use: [{ type: 'jawbreaker', count: 1 }] } as unknown as Parameters<typeof applyBagCommit>[2];
-      expect(() => applyBagCommit((sim as unknown as { sim: Parameters<typeof applyBagCommit>[0] }).sim, p as unknown as Parameters<typeof applyBagCommit>[1], partialCommit)).not.toThrow();
+      const eat = { id: 1, item: 'candy-carried-jawbreaker-0', type: 'jawbreaker', from: { kind: 'cell' as const, grid: 'candy' as const, x: 0, y: 0 }, to: { kind: 'use' as const } };
+      expect(() => sim.moveCommand('p1', eat)).not.toThrow();
+      const answer = sim.snapshot().events.find((event) => event.type === 'move_no');
+      expect(answer).toMatchObject({ playerId: 'p1', moveId: 1 });
     });
   });
 });

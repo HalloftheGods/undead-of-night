@@ -1,12 +1,12 @@
 // A searched container flies out of the world into its loot window. Opening it starts a zoom keyed by its id;
 // the world renderer reports where the prop stands each frame, and both loot windows read one shared clock from
 // here, so a remount of the page window (it remounts on every use or drop) picks up where the zoom is instead of
-// replaying it. Plain module state, like pickup-arrivals.ts: nothing here needs to be reactive.
+// replaying it. Plain module state, like move-motion.ts: nothing here needs to be reactive.
 
 import type { ContainerArt } from '../../art/containers.ts';
 import type { StageBox } from './container-stage.ts';
-import { easeOut, nowMs } from './pickup-arrivals.ts';
-import type { ArrivalCamera, ScreenRect, WorldPoint } from './pickup-arrivals.ts';
+import { easeOut, nowMs } from './move-motion.ts';
+import type { ArrivalCamera, ScreenRect, WorldPoint } from './move-motion.ts';
 
 export const ZOOM_MS = 400;
 export const FADE_MS = 180;

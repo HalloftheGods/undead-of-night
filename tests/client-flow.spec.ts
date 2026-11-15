@@ -498,7 +498,7 @@ describe('game flow', () => {
     const nothing = (): void => {};
     const room = {
       kind: 'coop', interpolationDelayMs: 0, onRoom: null, onWelcome: nothing as (packet: object) => void, onSnapshot: nothing, onClosed: nothing,
-      connect: nothing, join: nothing, disconnect: nothing, setPaused: nothing, sendInput: nothing, sendBench: nothing, sendBag: nothing, sendMove: nothing, sendView: nothing, sendHome: nothing, sendEmote: nothing, requestRestart: nothing,
+      connect: nothing, join: nothing, disconnect: nothing, setPaused: nothing, sendInput: nothing, sendBench: nothing, sendMove: nothing, sendView: nothing, sendHome: nothing, sendEmote: nothing, requestRestart: nothing,
     };
     vi.doMock('../src/network/online-session.ts', () => ({ hostRoom: () => room }));
     game.startSolo('arcade');

@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { parseBagCommit } from '../shared/bag-commit.ts';
-import { applyBagCommit } from '../shared/bag-sim.ts';
+import { parseItemMove } from '../shared/item-move.ts';
 import { ammoBoxRounds, bagWanted, createBag, stampAmmoBoxes, syncBag } from '../shared/bag.ts';
 import { WEAPONS } from '../shared/constants.ts';
 import { emptySupplies } from '../shared/supply-types.ts';
 import { heldActions } from '../src/game/inventory/held-actions.ts';
+import { actOn } from './helpers/item-moves.ts';
 import { quietSim, steps } from './helpers/sim-harness.ts';
 
 const noAmmo = { pistol: 0, carbine: 0, shotgun: 0 };
@@ -64,14 +64,25 @@ describe('ammo boxes', () => {
     p.ammoBag = { ...noAmmo, pistol: 12 };
     steps(sim, 1);
     p.reloadQueued = false;
-    applyBagCommit(state, p, { layout: [], drop: [], use: [{ type: 'pistol_ammo', count: 1 }] });
+    expect(actOn(state, p, 'pistol_ammo', 'use')).toBeNull();
     expect(p.reloadQueued).toBe(true);
     expect(boxesIn(p.inventory, 'pistol_ammo').length).toBe(1);
   });
 
-  it('travel in a commit as a use row', () => {
-    const commit = parseBagCommit({ layout: [], drop: [], use: [{ type: 'shells', count: 1 }] });
-    expect(commit?.use).toEqual([{ type: 'shells', count: 1 }]);
+  it('travel as a use move', () => {
+    const move = parseItemMove({ id: 1, item: 'shells:1', type: 'shells', from: { kind: 'cell', grid: 'pack', x: 0, y: 0 }, to: { kind: 'use' } });
+    expect(move?.to).toEqual({ kind: 'use' });
+  });
+
+  it('are not loaded into a gun that is not in hand', () => {
+    const { sim, state } = quietSim();
+    const p = state.players[0]!;
+    p.ammoBag = { ...noAmmo, shotgun: 6 };
+    steps(sim, 1);
+    p.reloadQueued = false;
+    expect(p.weapon).not.toBe('shotgun');
+    expect(actOn(state, p, 'shells', 'use')).toBe('not_needed');
+    expect(p.reloadQueued).toBe(false);
   });
 
   it('give the held item a LOAD button and no drop', () => {

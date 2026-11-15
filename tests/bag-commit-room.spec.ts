@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { applyBagCommit } from '../shared/bag-sim.ts';
 import { bagLayout, createBag } from '../shared/bag.ts';
-import type { BagLayoutRow } from '../shared/bag.ts';
 import { townContainers } from '../shared/containers.ts';
 import type { GridItem } from '../shared/grid-inventory.ts';
+import { applyItemMove } from '../shared/item-move-sim.ts';
+import { nextMoveId, rearrange, viewAt } from './helpers/item-moves.ts';
 import { quietSim } from './helpers/sim-harness.ts';
 
 /**
  * The host checks room for a find taken out of a container against its own copy of the bag. The player may have
- * moved things in the window to make that room: the commit's layout shows it, and the find must not be refused.
+ * moved things in the window to make that room: each of those moves reached the host first, so the find fits.
  */
 describe('a find taken into room the player made', () => {
   it('lands in the bag when the host copy is fragmented but the player compacted it', () => {
@@ -29,52 +29,50 @@ describe('a find taken into room the player made', () => {
     p.supplies = { bandage: serial, canned_food: 0, water_bottle: 0, disinfectant: 0, antibiotics: 0 };
     p.inventory.serial = serial;
 
-    // The player's layout: the same bandages packed from the far corner, and the medkit in the 2x2 that opened up.
-    const layout: BagLayoutRow[] = [{ type: 'medkit', grid: 'pack', x: 0, y: 0, rotated: false }];
-    let placed = 0;
-    for (let y = 0; y < pack.rows; y++) {
-      for (let x = 0; x < pack.cols; x++) {
-        const inMedkit = x < 2 && y < 2;
-        if (inMedkit || placed >= serial - 4) continue;
-        layout.push({ type: 'bandage', grid: 'pack', x, y, rotated: false });
-        placed++;
-      }
-    }
-    for (let y = 0; y < pockets.rows; y++) for (let x = 0; x < pockets.cols; x++) layout.push({ type: 'bandage', grid: 'pockets', x, y, rotated: false });
-    expect(placed + 4).toBe(serial);
-
+    // The player makes the room in the window: the three bandages in the top-left 2x2 go to three of the holes.
     const container = townContainers(state.map)[0]!;
     const containerState = state.containers[container.id];
-    containerState.opened = true;
     const medkit: GridItem = { id: 'cont-1', type: 'medkit', x: 0, y: 0, rotated: false };
     containerState.items = [medkit];
+    const spare = ['2,0', '0,2', '2,2'];
+    const inCorner = pack.items.filter((item) => item.x < 2 && item.y < 2);
+    expect(inCorner).toHaveLength(3);
+    for (const item of inCorner) {
+      const [x, y] = spare.shift()!.split(',').map(Number);
+      expect(rearrange(state, p, item, 'pack', 'pack', x!, y!)).toBeNull();
+    }
 
-    applyBagCommit(state, p, { layout, drop: [], container: { id: container.id, items: [], taken: [medkit], deposited: [] } });
+    viewAt(state, p, container.id);
+    const move = { id: nextMoveId(p), item: medkit.id, type: 'medkit', from: { kind: 'cell' as const, grid: 'container' as const, x: 0, y: 0 }, to: { kind: 'cell' as const, grid: 'pack' as const, x: 0, y: 0, rotated: false }, container: container.id };
+    expect(applyItemMove(state, p, move)).toBeNull();
 
     expect(p.medkits).toBe(1);
     expect(state.containers[container.id].items).toEqual([]);
     expect(bagLayout(p.inventory)).toContainEqual({ type: 'medkit', grid: 'pack', x: 0, y: 0, rotated: false });
   });
 
-  it('keeps the host arrangement when the layout does not place everything held', () => {
+  it('lands the find in the chosen cell and leaves what is held where it is', () => {
     const { state } = quietSim();
     const p = state.players[0]!;
     p.inventory = createBag('satchel');
     p.medkits = 0;
-    // Nothing else carried, so the bandages and the find are the whole bag.
+    // Nothing else carried, so the bandage and the find are the whole bag.
     p.bottles = 0;
     p.ammoBag = { pistol: 0, carbine: 0, shotgun: 0 };
     p.supplies = { bandage: 1, canned_food: 0, water_bottle: 0, disinfectant: 0, antibiotics: 0 };
     p.inventory.pack.items.push({ id: 'b0', type: 'bandage', x: 4, y: 3, rotated: false });
     const container = townContainers(state.map)[0]!;
     const containerState = state.containers[container.id];
-    containerState.opened = true;
     const medkit: GridItem = { id: 'cont-1', type: 'medkit', x: 0, y: 0, rotated: false };
     containerState.items = [medkit];
-    // A layout that leaves the held bandage out: nothing held is moved, and the find still goes in where it fits.
-    const layout: BagLayoutRow[] = [{ type: 'medkit', grid: 'pack', x: 0, y: 0, rotated: false }];
-    applyBagCommit(state, p, { layout, drop: [], container: { id: container.id, items: [], taken: [medkit], deposited: [] } });
+    viewAt(state, p, container.id);
+    const take = (x: number, y: number) => ({ id: nextMoveId(p), item: medkit.id, type: 'medkit', from: { kind: 'cell' as const, grid: 'container' as const, x: 0, y: 0 }, to: { kind: 'cell' as const, grid: 'pack' as const, x, y, rotated: false }, container: container.id });
+    // Aimed over the bandage: no room there, and nothing moves.
+    expect(applyItemMove(state, p, take(3, 2))).toBe('no_room');
+    expect(containerState.items).toHaveLength(1);
+    expect(applyItemMove(state, p, take(0, 0))).toBeNull();
     expect(p.medkits).toBe(1);
     expect(p.inventory.pack.items.find((item) => item.type === 'bandage')).toMatchObject({ x: 4, y: 3 });
+    expect(p.inventory.pack.items.find((item) => item.type === 'medkit')).toMatchObject({ x: 0, y: 0 });
   });
 });

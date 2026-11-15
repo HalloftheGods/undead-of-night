@@ -1,21 +1,17 @@
-import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch, type Ref } from "vue";
-import type { BagCommit } from "@shared/bag.ts";
+import { computed, onBeforeUnmount, onMounted, ref, watch, type Ref } from "vue";
 import type { ContainerArt } from "@art/containers.ts";
 import type { ContainerKind } from "@shared/containers.ts";
 import type { GridItem } from "@shared/grid-inventory.ts";
-import { flipItem } from "@shared/container-flip.ts";
+import type { ItemMove } from "@shared/item-move.ts";
 import { loadKeyBindings } from "@game/controls-prefs.ts";
 import { aimsCursor } from "@game/home-screens.ts";
 import type { UiState } from "@game/hud-state.ts";
 import type { InputManager } from "@game/input-manager.ts";
-import { LocalBag, type BagWorking } from "./local-bag.ts";
 import { loadAutoCloseEmptyLoot } from "@game/loot-prefs.ts";
-import { clearArrivals, noteArrivals } from "./pickup-arrivals.ts";
+import { type CellOrigin, type MotionKind } from "./move-motion.ts";
+import { useMoveLedger, type ProposedMove } from "./use-move-ledger.ts";
 import { beginContainerZoom, endContainerZoom } from "./container-zoom.ts";
 import { inventoryHolding, setInventoryHands } from "./inventory-hands.ts";
-
-/** How often a shut bag checks itself against the host's hash. */
-const HEAL_CHECK_MS = 500;
 
 /** The grid inventory opens on I or B. Tab is the map's; neither letter is in `DEFAULT_KEY_BINDINGS`. */
 export const INVENTORY_CODES: readonly string[] = ["KeyI", "KeyB"];
@@ -28,22 +24,11 @@ export interface InventoryPanel {
   settle: () => void;
   /** The client point is on this window's own UI, so a click there is the inventory's and never a shot. */
   ownsPoint: (clientX: number, clientY: number) => boolean;
+  /** Where an item is drawn now, so a flight back or a puff starts from there. */
+  itemOrigin?: (itemId: string) => CellOrigin | null;
 }
 
 type Held = Pick<InputManager, "setEnabled" | "setWalkOnly" | "letGoButtons">;
-
-/** What the grid was opened with: nothing for the pack alone, or the container it searches. */
-interface OpenedGrid {
-  containerId: number | null;
-  title: string;
-  items: readonly GridItem[];
-  kind?: ContainerKind;
-  art?: ContainerArt | null;
-  /** Shown on its side: a car parked nose up. */
-  flipped?: boolean;
-  /** The look it is drawn with, which may have its own grid. */
-  look?: string;
-}
 
 /** How often an open container checks whether the survivor has walked off from it. */
 const AWAY_CHECK_MS = 150;
@@ -101,27 +86,27 @@ export function inventoryReachable(ui: UiState): boolean {
  * The grid inventory over a live run. On desktop the game stays live under it: the mouse aims and fires, and
  * the keys and the pad play, except where the window owns the pointer (inventory-hands.ts). On touch, opening
  * takes the hands off the game and leaves the feet free (`setWalkOnly`); closing gives them back only if nothing
- * else has them. Moves in the modal edit a working copy and send nothing; closing sends one commit if anything changed.
+ * else has them. Every move in the window is sent as it happens (`onMove`, use-move-ledger.ts); closing sends nothing
+ * but the container's `container_view` close.
  */
 export function useInventoryModal(
   ui: Ref<UiState>,
   input: Held,
   panel: Ref<InventoryPanel | null>,
-  send: (commit: BagCommit) => void,
+  send: (move: ItemMove) => void,
+  /** A container's window opened or closed, so the host keeps its contents live. */
+  sendView: (id: number, open: boolean) => void,
   /** True once the survivor has walked clear of the container with this id. */
   walkedAwayFrom: (containerId: number) => boolean = () => false,
   /** Closes the grid the way the Close button does, so the container can be searched again. */
   onAway: () => void = () => hide()
 ) {
   const isOpen = ref(false);
-  const bag = new LocalBag(send);
-  const working = shallowRef<BagWorking | null>(null);
-  /** Changes on every opening, so the modal rebuilds from what is carried then. */
-  const openings = ref(0);
+  const moves = useMoveLedger(send, sendView, () => panel.value?.itemOrigin ?? null);
+  /** The grids on screen, refilled in place from the ledger; `openings` changes when the window must be rebuilt. */
+  const { working, openings } = moves;
   /** The window was opened by a search that is still under way: its grid is empty and being swept. */
   const searchingOpen = ref(false);
-  /** How the grid was last opened, so a live use or drop can rebuild it the same way. */
-  let lastOpen: OpenedGrid | null = null;
   /** This opening took the hands off the game (touch only), so closing must give them back. */
   let tookHands = false;
 
@@ -140,23 +125,19 @@ export function useInventoryModal(
 
   /**
    * A window opening over one already open (a search that ends under the Nearby window) first puts back what is
-   * held and sends what was done in the old one, so no move is lost when the copy is rebuilt.
+   * held. Every move was sent as it was made, so nothing is lost when the grids are rebuilt.
    */
-  function commitOpen(): void {
+  function settleOpen(): void {
     if (!isOpen.value) return;
     panel.value?.settle();
-    if (working.value) bag.close(working.value);
   }
 
   function show(): boolean {
     const hud = ui.value.hud;
     const canShow = inventoryReachable(ui.value) && hud !== null;
     if (!canShow) return false;
-    commitOpen();
-    bag.sync(hud);
-    lastOpen = { containerId: null, title: "Nearby", items: [] };
-    working.value = bag.open(hud);
-    openings.value += 1;
+    settleOpen();
+    moves.open(hud, { containerId: null, title: "Nearby", items: [] });
     openHands(false);
     endContainerZoom();
     isOpen.value = true;
@@ -178,11 +159,8 @@ export function useInventoryModal(
     const hud = ui.value.hud;
     const canShow = inventoryReachable(ui.value) && hud !== null;
     if (!canShow) return false;
-    commitOpen();
-    bag.sync(hud);
-    lastOpen = { containerId, title: containerTitle, items, kind: containerKind, art: containerArt, flipped, look };
-    working.value = bag.open(hud, containerId, containerTitle, items, containerKind, containerArt, flipped, look);
-    openings.value += 1;
+    settleOpen();
+    moves.open(hud, { containerId, title: containerTitle, items, kind: containerKind, art: containerArt, flipped, look });
     searchingOpen.value = searching;
     openHands(searching);
     beginContainerZoom(containerId);
@@ -190,53 +168,21 @@ export function useInventoryModal(
     return true;
   }
 
-  function onTransfer(): void {
-    if (
-      working.value &&
-      working.value.containerId !== null &&
-      working.value.containerId !== undefined
-    ) {
-      if (working.value.container.items.length === 0 && loadAutoCloseEmptyLoot()) {
+  /** A searched container left empty shuts itself, if the player asked for that. */
+  function checkEmpty(): void {
+    const active = working.value;
+    const isFurniture = active && active.containerId !== null && active.containerId !== undefined;
+    if (isFurniture) {
+      if (active.container.items.length === 0 && loadAutoCloseEmptyLoot()) {
         hide();
       }
     }
   }
 
-  /**
-   * A use or a drop happens at once: the commit goes out now, and the copy is rebuilt from the bag as it now
-   * stands, so the item leaves the grid and its effect or its drop shows without waiting for the modal to close.
-   */
-  function commitLive(): void {
-    const before = working.value;
-    const hud = ui.value.hud;
-    const opened = lastOpen;
-    const canRebuild = before !== null && opened !== null && hud !== null;
-    if (!canRebuild) return;
-    bag.close(before);
-    const isFurniture = opened.containerId !== null;
-    // The copy on screen may be flipped; the bag takes the host's layout and flips it again itself.
-    const onScreen = before.container.items;
-    const containerItems = isFurniture ? (before.flipped ? onScreen.map(flipItem) : onScreen) : [];
-    const rebuilt = bag.open(hud, opened.containerId, opened.title, containerItems, opened.kind, opened.art, opened.flipped === true, opened.look);
-    // The host's candy count can lag one snapshot behind, so a candy used or dropped here is taken out of the rebuilt candy bag too.
-    const gone = new Set([...before.used, ...before.dropped].map((item) => item.id));
-    rebuilt.candyBag.items = rebuilt.candyBag.items.filter((item) => !gone.has(item.id));
-    working.value = rebuilt;
-    openings.value += 1;
-  }
-
-  function onUse(item: GridItem): void {
-    if (working.value) {
-      working.value.used.push(item);
-      commitLive();
-    }
-  }
-
-  function onDrop(item: GridItem): void {
-    if (working.value) {
-      working.value.dropped.push(item);
-      commitLive();
-    }
+  /** One move from the window, sent as it happens: `land` when set down by hand, `fly` when sent across from `origin`. */
+  function onMove(move: ProposedMove, motion: MotionKind, origin: CellOrigin | null = null): void {
+    moves.onMove(move, motion, origin);
+    checkEmpty();
   }
 
   function hide(): void {
@@ -246,10 +192,8 @@ export function useInventoryModal(
     setInventoryHands(null);
     searchingOpen.value = false;
     panel.value?.settle();
-    if (working.value) bag.close(working.value);
     isOpen.value = false;
-    working.value = null;
-    clearArrivals();
+    moves.close();
     endContainerZoom();
     // A desktop close leaves the input alone, so the shot of the frame it closes on is not wiped.
     if (gave && inventoryReachable(ui.value)) input.setEnabled(true);
@@ -295,33 +239,22 @@ export function useInventoryModal(
     if (gone) hide();
   });
 
-  /** What is carried drives the local bag with every snapshot, as it drives the host's. */
+  /** Every snapshot settles the move ledger against the host, open or shut, so an open window shows what the host has. */
   watch(
     () => ui.value.hud,
-    (hud) => {
-      if (!hud) {
-        bag.reset();
-        return;
-      }
-      bag.sync(hud);
-      // Open: what was just picked up joins the grids on screen at once, and flies in from where it was.
-      const open = working.value;
-      if (isOpen.value && open) noteArrivals(bag.absorb(open, hud));
-    },
+    (hud) => moves.confirm(hud),
     { immediate: true }
   );
-  const healTimer = setInterval(() => bag.heal(), HEAL_CHECK_MS);
   const awayTimer = setInterval(checkAway, AWAY_CHECK_MS);
 
   /** Capture, so the press lands before the game's own listener on the same window. */
   onMounted(() => window.addEventListener("keydown", onKey, true));
   onBeforeUnmount(() => {
     window.removeEventListener("keydown", onKey, true);
-    clearInterval(healTimer);
     clearInterval(awayTimer);
     setInventoryHands(null);
     if (isOpen.value && tookHands) input.setEnabled(true);
   });
 
-  return { isOpen, working, openings, searchingOpen, show, showContainer, hide, onTransfer, onUse, onDrop };
+  return { isOpen, working, openings, searchingOpen, show, showContainer, hide, onMove };
 }

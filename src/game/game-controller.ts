@@ -5,7 +5,6 @@ import { containerGap, SEARCH_WALK_AWAY } from "../../shared/containers.ts";
 import type { EmoteId } from "../../shared/emotes.ts";
 import type { GameStyle } from "../../shared/game-style.ts";
 import { levelDef, levelSeed } from "../../shared/levels.ts";
-import type { BagCommit } from "../../shared/bag.ts";
 import type { ItemMove } from "../../shared/item-move.ts";
 import type { CandyId, WorldMap } from "../../shared/protocol.ts";
 import { TILE_SIZE } from "../../shared/protocol.ts";
@@ -522,24 +521,21 @@ export class GameController {
     this.run.transport?.sendEmote(emote);
   }
 
-  /** One item moved in the loot window, sent as it happens. Solo and co-op alike. */
+  /** One item moved in the loot window, sent as it happens. Solo and co-op alike. The run log and the survivor note it. */
   sendMove(move: ItemMove): void {
     this.run.transport?.sendMove(move);
+    const now = performance.now();
+    this.runHud.noteMove(move, now);
+    // The survivor has a word about it: a drop, or a take from a container.
+    const fromContainer = move.from.kind === 'cell' && move.from.grid === 'container';
+    const intoBag = move.to.kind === 'cell' && move.to.grid !== 'container';
+    if (move.to.kind === 'ground') speak('drop', now);
+    else if (fromContainer && intoBag) speak('pickup', now);
   }
 
   /** A container's window opened or closed: the host keeps a viewed container's contents in every snapshot. */
   sendView(id: number, open: boolean): void {
     this.run.transport?.sendView(id, open);
-  }
-
-  /** The one message a closed bag sends: its final layout and what was dropped. Solo and co-op alike. */
-  sendBag(commit: BagCommit): void {
-    this.run.transport?.sendBag(commit);
-    const now = performance.now();
-    this.runHud.noteBag(commit, now);
-    // The survivor has a word about it: a drop always, a take from a container if nothing was dropped.
-    if (commit.drop.length > 0) speak('drop', now);
-    else if ((commit.container?.taken.length ?? 0) > 0) speak('pickup', now);
   }
 
   private canUseMap(): boolean {

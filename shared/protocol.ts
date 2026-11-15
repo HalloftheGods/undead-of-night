@@ -13,7 +13,7 @@ import type { GunEffect } from './round-effect-data.ts';
 import type { BackpackTier } from './backpack.ts';
 import type { SurvivalNeeds } from './survival-needs.ts';
 import type { FortificationInventory, FortificationItemType } from './fortifications.ts';
-import type { BagCommit, BagGridId, BagLayoutRow } from './bag.ts';
+import type { BagGridId, BagLayoutRow } from './bag.ts';
 import type { ItemMove, MoveReason } from './item-move.ts';
 import type { Supplies } from './supply-types.ts';
 import type { BenchAction, BenchView } from './workbench.ts';
@@ -503,8 +503,9 @@ export interface RoomPacket {
  * 6: home is an outdoor camp in a fence, with tents, of five sizes (welcome and snapshot `campSize`); version 5 would build the indoor bunker.
  * 7: the people to rescue (snapshot `merchants` entries carry `rescue` in a town, join `rescued`, `radio`, receipt `rescued` and `radioLevels`).
  * 8: dropped bottles, fireworks and fountains lie in the world as pickups (`bottle`, `firework`, `fountain`); version 7 has no art for them.
+ * 10: every item move is its own `move` packet answered by `move_ok`/`move_no`; the closing `bag` commit is gone.
  */
-export const PROTOCOL_VERSION = 9;
+export const PROTOCOL_VERSION = 10;
 
 /**
  * Sent just before a link is closed on purpose, because a data channel has no close code.
@@ -544,8 +545,6 @@ export type ClientPacket =
   | { readonly type: 'join'; readonly name: string; readonly token: string; readonly difficulty?: DifficultyId; readonly character?: number; readonly home?: JoinHome; readonly style?: GameStyle; readonly protocol?: number }
   | { readonly type: 'input'; readonly input: ClientInputPacket }
   | { readonly type: 'bench'; readonly action: BenchAction }
-  /** The bag closed: where everything now sits and what was dropped. One per close. */
-  | { readonly type: 'bag'; readonly commit: BagCommit }
   /** One item moved, as it happens. The host answers with `move_ok` or `move_no` by id. */
   | { readonly type: 'move'; readonly move: ItemMove }
   /** A container's window opened or closed, so the host keeps it live in snapshots. */

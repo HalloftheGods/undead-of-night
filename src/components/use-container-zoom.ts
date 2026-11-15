@@ -1,5 +1,5 @@
 import { computed, onBeforeUnmount, onMounted, ref, type Ref } from 'vue';
-import { arrivalCamera, type ScreenRect } from '../game/inventory/pickup-arrivals.ts';
+import { arrivalCamera, type ScreenRect } from '../game/inventory/move-motion.ts';
 import { BACK_MS, backFlight, lerpRect, noteStageRect, toSpace, zoomFrame } from '../game/inventory/container-zoom.ts';
 
 /** The page canvas is dimmed under the window (App.vue `.is-looting`), so the copy starts as dim as the world it leaves. */

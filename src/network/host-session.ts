@@ -1,4 +1,3 @@
-import type { BagCommit } from '../../shared/bag.ts';
 import type { ItemMove } from '../../shared/item-move.ts';
 // Hosting an online room from this tab (spec option A). The simulation and the room host run here, the
 // host's own player joins over an in-tab loopback, and each guest arrives over its own WebRTC data channel.
@@ -137,10 +136,6 @@ export class HostSession implements RoomSession {
 
   sendInput(input: ClientInputPacket): void {
     this.inner?.sendInput(input);
-  }
-
-  sendBag(commit: BagCommit): void {
-    this.inner?.sendBag(commit);
   }
 
   sendBench(action: BenchAction): void {

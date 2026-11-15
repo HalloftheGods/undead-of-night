@@ -1,6 +1,6 @@
-import { ammoBoxRounds, ammoBoxWeapon, bagWanted, isAmmoBoxType, isBagItemType, stampAmmoBoxes, syncBag } from './bag.ts';
+import { ammoBoxRounds, ammoBoxWeapon, bagWanted, isAmmoBoxType, isBagItemType, isDroppableBagItem, stampAmmoBoxes, syncBag } from './bag.ts';
 import type { BagGridId } from './bag.ts';
-import { take } from './bag-sim.ts';
+import { leaveCandyOnGround, leaveOnGround, take } from './bag-sim.ts';
 import { bagOf, eatCandyDirect, isCandyId } from './candy.ts';
 import type { CandyId } from './candy.ts';
 import { WEAPONS } from './constants.ts';
@@ -8,11 +8,11 @@ import { takeFromContainer } from './container-take.ts';
 import { isViewing } from './container-viewers.ts';
 import { containerGridFor, townContainers } from './containers.ts';
 import type { ContainerState } from './containers.ts';
-import { canPlaceItem, createInventoryGrid, findAvailableSlot, placeItem, removeItem } from './grid-inventory.ts';
+import { canPlaceItem, createInventoryGrid, placeItem, removeItem } from './grid-inventory.ts';
 import type { GridItem, InventoryGrid } from './grid-inventory.ts';
 import { touchesContainer } from './item-move.ts';
 import type { GearSlotId, ItemMove, MoveFrom, MoveReason } from './item-move.ts';
-import { applyMoveToGrids, candyGridOf, copyGrid, moveSourceItem } from './item-move-grids.ts';
+import { applyMoveToGrids, candyGridOf, candyMoveFor, copyGrid, moveSourceItem } from './item-move-grids.ts';
 import type { MoveGrids } from './item-move-grids.ts';
 import { useMedkit } from './player-health.ts';
 import type { WeaponId } from './protocol.ts';
@@ -70,23 +70,6 @@ function moveGridsOf(p: PlayerState, view: ViewedContainer | null): MoveGrids {
     container: view ? view.grid : null,
     gear: gearOf(p),
   };
-}
-
-/**
- * The host keeps candy as a list, not a layout, so its candy bag can not hold the client's ids or cells: a piece is
- * named by its kind, and one set down in the candy bag goes wherever there is room.
- */
-function hostCandyMove(grids: MoveGrids, move: ItemMove): ItemMove {
-  let { item, to } = move;
-  if (move.from.kind === 'cell' && move.from.grid === 'candy') {
-    const piece = grids.candy.items.find((each) => each.id === item) ?? grids.candy.items.find((each) => each.type === move.type);
-    if (piece) item = piece.id;
-  }
-  if (to.kind === 'cell' && to.grid === 'candy' && !canPlaceItem(grids.candy, move.type, to.x, to.y, to.rotated)) {
-    const slot = findAvailableSlot(grids.candy, move.type, false);
-    if (slot) to = { ...to, x: slot.x, y: slot.y, rotated: slot.rotated };
-  }
-  return { ...move, item, to };
 }
 
 function syncAll(p: PlayerState): void {
@@ -189,11 +172,30 @@ function useItem(sim: SimState, p: PlayerState, item: GridItem, from: MoveFrom):
   return null;
 }
 
+/**
+ * Dropped from the survivor's own bag: it goes down at their feet, as a closed bag's drop did. The aimed throw to the
+ * target point comes with aimed drops; the target is not read yet. Nothing goes down from a container's grid.
+ */
+function dropItem(sim: SimState, p: PlayerState, item: GridItem, from: MoveFrom): MoveReason | null {
+  if (from.kind !== 'cell' || from.grid === 'container') return 'bad';
+  if (from.grid === 'candy') {
+    if (!isCandyId(item.type) || !p.candy.includes(item.type)) return 'gone';
+    leaveCandyOnGround(sim, p, item.type, 1);
+    return null;
+  }
+  if (!isDroppableBagItem(item.type)) return 'bad';
+  removeItem(p.inventory[from.grid], item.id);
+  leaveOnGround(sim, p, item.type, isAmmoBoxType(item.type) ? 1 : (item.count ?? 1));
+  syncAll(p);
+  return null;
+}
+
 /** What the move does to the survivor and the container once the grids say it fits. Changes nothing when it refuses. */
 function moveEffects(sim: SimState, p: PlayerState, item: GridItem, move: ItemMove, grids: MoveGrids, view: ViewedContainer | null): MoveReason | null {
   const { from, to } = move;
   if (to.kind === 'use') return useItem(sim, p, item, from);
-  if (to.kind === 'ground' || to.kind === 'player') return 'bad';
+  if (to.kind === 'ground') return dropItem(sim, p, item, from);
+  if (to.kind === 'player') return 'bad';
   const fromContainer = from.kind === 'cell' && from.grid === 'container';
   const toContainer = to.kind === 'cell' && to.grid === 'container';
   if (view && fromContainer && toContainer) {
@@ -206,7 +208,9 @@ function moveEffects(sim: SimState, p: PlayerState, item: GridItem, move: ItemMo
   if (from.kind === 'gear' || to.kind === 'gear') {
     const isSlotChange = from.kind === 'gear' && to.kind === 'gear';
     if (!isSlotChange || !isGun(item.type)) return 'bad';
-    if (to.slot === 'primary') p.weaponQueued = item.type;
+    // A swap may bring the other gun to the primary slot: whichever gun is primary now is the one drawn.
+    const primary = grids.gear.primary;
+    if (primary && isGun(primary.type) && primary.type !== p.weapon) p.weaponQueued = primary.type;
     return null;
   }
   // Within the survivor's own bag: the host keeps the pack and pockets as laid out; the candy bag has no layout to keep.
@@ -222,7 +226,7 @@ function tryMove(sim: SimState, p: PlayerState, move: ItemMove): MoveReason | nu
   const view = usesContainer ? viewedContainer(sim, p, move.container) : null;
   if (usesContainer && !view) return 'bad';
   const grids = moveGridsOf(p, view);
-  const hostMove = hostCandyMove(grids, move);
+  const hostMove = candyMoveFor(grids, move);
   const item = moveSourceItem(grids, hostMove);
   if (!item) return 'gone';
   const refusal = applyMoveToGrids(grids, hostMove);
@@ -234,7 +238,8 @@ function tryMove(sim: SimState, p: PlayerState, move: ItemMove): MoveReason | nu
  * One item move from a survivor's window. A move at or below the last one applied is a repeat and is ignored ('bad',
  * no event). Otherwise the host checks it against its own bag and container, applies it, and answers `move_ok`, or
  * `move_no` with the reason and nothing changed. Container items move one at a time by id; the container is never
- * replaced wholesale. Ground and teammate targets are refused until aimed drops and care land.
+ * replaced wholesale. A ground drop goes down at the survivor's feet until aimed drops land; a teammate target is refused
+ * until care lands.
  */
 export function applyItemMove(sim: SimState, p: PlayerState, move: ItemMove): MoveReason | null {
   if (move.id <= p.lastMoveId) return 'bad';

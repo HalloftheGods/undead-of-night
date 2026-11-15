@@ -1,4 +1,3 @@
-import type { BagCommit } from "../../shared/bag.ts";
 import type { ItemMove } from "../../shared/item-move.ts";
 import { campSizeField } from "../../shared/camp/camp-ring.ts";
 import { TICK_DT, TICK_RATE } from "../../shared/constants.ts";
@@ -44,10 +43,6 @@ export class LocalSession implements GameTransport {
 
   sendInput(input: ClientInputPacket): void {
     this.sim?.setInput(LOCAL_PLAYER_ID, input);
-  }
-
-  sendBag(commit: BagCommit): void {
-    this.sim?.bagCommand(LOCAL_PLAYER_ID, commit);
   }
 
   sendBench(action: BenchAction): void {

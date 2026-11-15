@@ -6,7 +6,7 @@ import type { ArtBook, PixelSprite } from '../art/types.ts';
 import { drawHeldUi, drawQuip, QUIP_COLOR } from './held-ui.ts';
 import { drawOutline } from './sprite-cache.ts';
 import { survivorReaction } from '../game/inventory/survivor-quips.ts';
-import { setArrivalCamera } from '../game/inventory/pickup-arrivals.ts';
+import { setArrivalCamera } from '../game/inventory/move-motion.ts';
 import { backFlight, lerpRect, noteWorldFrame, toSpace, zoomFrame } from '../game/inventory/container-zoom.ts';
 import { drawStageArt } from './loot-container-art.ts';
 import { drawCanvasHud } from './canvas-hud.ts';

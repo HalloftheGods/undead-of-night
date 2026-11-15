@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyBagCommit } from '../shared/bag-sim.ts';
+import { takeOut } from './helpers/item-moves.ts';
 import { BOTTLE_CARRY } from '../shared/bottles.ts';
 import { MEDKIT_MAX, START_SPARE_ROUNDS, TICK_RATE, WEAPONS } from '../shared/constants.ts';
 import { townContainers } from '../shared/containers.ts';
@@ -125,7 +125,7 @@ class TreasureBot {
   private takeWhatItFound(state: SimState, p: PlayerState): void {
     const grid = this.hoard === null ? undefined : state.containers[this.hoard].items;
     if (this.hoard === null || !grid || grid.length === 0) return;
-    applyBagCommit(state, p, { layout: [], drop: [], container: { id: this.hoard, items: [], taken: [...grid] } });
+    for (const item of [...grid]) takeOut(state, p, this.hoard, item);
   }
 
   think(sim: GameSimulation, state: SimState, claimed: ReadonlySet<number>): void {

@@ -22,7 +22,7 @@ import {
   zoomFrame,
   zoomLandedAt,
 } from '../src/game/inventory/container-zoom.ts';
-import { easeOut } from '../src/game/inventory/pickup-arrivals.ts';
+import { easeOut } from '../src/game/inventory/move-motion.ts';
 
 const ART = {} as ContainerArt;
 const WORLD = { x: 100, y: 50, w: 20, h: 10 };

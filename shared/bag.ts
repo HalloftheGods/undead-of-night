@@ -67,32 +67,24 @@ export interface PlayerBag {
   serial: number;
 }
 
-/** What the layout says about one item: the whole of what a commit may say. Ids never cross the wire; the type says which item. */
+/**
+ * What the layout says about one item. The hash reads only type, grid, cell and turn. A snapshot's rows also carry the
+ * host's id, stack count and rounds (`bagRows`), so a window names each item the way the host does when it moves it.
+ */
 export interface BagLayoutRow {
   readonly type: BagItemType;
   readonly grid: BagGridId;
   readonly x: number;
   readonly y: number;
   readonly rotated: boolean;
+  readonly id?: string;
+  readonly count?: number;
+  readonly ammo?: number;
 }
 
 export interface BagDrop {
   readonly type: BagItemType | CandyId;
   readonly count: number;
-}
-
-/** What the client sends when the bag closes. */
-export interface BagCommit {
-  readonly layout: readonly BagLayoutRow[];
-  readonly drop: readonly BagDrop[];
-  /** Supplies used by hand while the bag was open (the USE button). Left off when there were none. */
-  readonly use?: readonly BagDrop[];
-  readonly container?: {
-    readonly id: number;
-    readonly items: readonly GridItem[];
-    readonly taken: readonly GridItem[];
-    readonly deposited?: readonly GridItem[];
-  };
 }
 
 export type BagWanted = Record<BagItemType, number>;
@@ -312,6 +304,18 @@ export function bagLayout(bag: PlayerBag): BagLayoutRow[] {
   return rows.sort(byRow);
 }
 
+/** The layout with the host's ids, stack counts and rounds on each row: what a snapshot sends its survivor. */
+export function bagRows(bag: PlayerBag): BagLayoutRow[] {
+  const rows: BagLayoutRow[] = [];
+  for (const [name, grid] of [['pack', bag.pack], ['pockets', bag.pockets]] as const) {
+    for (const item of grid.items) {
+      const extras = { ...(item.count !== undefined ? { count: item.count } : {}), ...(item.ammo !== undefined ? { ammo: item.ammo } : {}) };
+      rows.push({ type: item.type as BagItemType, grid: name, x: item.x, y: item.y, rotated: item.rotated, id: item.id, ...extras });
+    }
+  }
+  return rows;
+}
+
 /** A small integer over (type, grid, x, y, rotated) sorted: the same things in the same places hash the same, whatever their ids. */
 export function layoutHash(layout: readonly BagLayoutRow[]): number {
   let hash = 0x811c9dc5;
@@ -362,19 +366,6 @@ function placeRows(bag: PlayerBag, layout: readonly BagLayoutRow[], unheld: 'ref
  */
 export function validateLayout(bag: PlayerBag, layout: readonly BagLayoutRow[]): Placements | null {
   return placeRows(bag, layout, 'refuse');
-}
-
-/**
- * Before the finds a commit takes from a container are counted in, arranges what the bag already holds the way the
- * player's layout has it, so the room the player made in the window is the room the host checks. Rows for things not
- * held yet are left as free space. True when it moved the bag; false, and the bag untouched, when the layout does not
- * place everything held.
- */
-export function arrangeHeldByLayout(bag: PlayerBag, layout: readonly BagLayoutRow[]): boolean {
-  const placements = placeRows(bag, layout, 'skip');
-  if (!placements) return false;
-  adoptLayout(bag, placements);
-  return true;
 }
 
 /** Moves the bag's items to a layout `validateLayout` accepted. */

@@ -13,8 +13,8 @@ import {
 } from '../shared/supplies.ts';
 import { createDefaultSurvivalNeeds } from '../shared/survival-needs.ts';
 import { createPlayer } from '../shared/player-roster.ts';
-import { applyBagCommit } from '../shared/bag-sim.ts';
-import { bagLayout, bagWanted, syncBag } from '../shared/bag.ts';
+import { bagWanted, syncBag } from '../shared/bag.ts';
+import { actOn } from './helpers/item-moves.ts';
 import { quietSim } from './helpers/sim-harness.ts';
 import type { PlayerState } from '../shared/sim-state.ts';
 
@@ -177,26 +177,18 @@ describe('usePocketSupplies', () => {
   });
 });
 
-describe('applyBagCommit with use entries', () => {
-  it('applies use actions from bag commit', () => {
+describe('a use move from the window', () => {
+  it('applies the supply and takes that one out of the bag', () => {
     const { state } = quietSim();
     const [p] = state.players;
     p.health = 40;
     p.supplies = { ...emptySupplies(), bandage: 2 };
     syncBag(p.inventory, bagWanted(p));
 
-    // Player used one bandage, leaving one in layout
-    p.inventory.pack.items.pop();
-
-    const commit = {
-      layout: bagLayout(p.inventory),
-      drop: [],
-      use: [{ type: 'bandage' as const, count: 1 }],
-    };
-
-    const accepted = applyBagCommit(state, p, commit);
-    expect(accepted).toBe(true);
+    expect(actOn(state, p, 'bandage', 'use')).toBeNull();
     expect(p.health).toBe(40 + BANDAGE_HEAL);
     expect(p.supplies.bandage).toBe(1);
+    const bandages = [...p.inventory.pack.items, ...p.inventory.pockets.items].filter((item) => item.type === 'bandage');
+    expect(bandages).toHaveLength(1);
   });
 });

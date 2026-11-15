@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyBagCommit } from '../shared/bag-sim.ts';
+import { takeOut } from './helpers/item-moves.ts';
 import { containerInReach, SEARCH_SEC, townContainers } from '../shared/containers.ts';
 import { PLAYER_RADIUS, TICK_RATE } from '../shared/constants.ts';
 import { radioContainerId } from '../shared/radio.ts';
@@ -75,8 +75,7 @@ describe('the Radio', () => {
     // Searching lays the Radio in the container's grid; it is found when it is taken out of it.
     const laid = quiet.state.containers[container.id].items?.find((item) => item.type === 'radio');
     if (!laid) throw new Error('the radio was not laid in the grid');
-    const remaining = (quiet.state.containers[container.id].items ?? []).filter((item) => item.id !== laid.id);
-    applyBagCommit(quiet.state, p, { layout: [], drop: [], container: { id: container.id, items: remaining, taken: [laid], deposited: [] } });
+    expect(takeOut(quiet.state, p, container.id, laid)).toBeNull();
     quiet.sim.setInput('a', input({ seq: 2 }));
     steps(quiet.sim, 1);
     const frame = quiet.sim.snapshot();

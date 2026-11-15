@@ -1,5 +1,5 @@
 import { CANDY_GRID, isCandyId } from './candy.ts';
-import { autoPackFromBottom, canPlaceItem, createInventoryGrid, placeItem, removeItem } from './grid-inventory.ts';
+import { autoPackFromBottom, canPlaceItem, createInventoryGrid, findAvailableSlot, placeItem, removeItem } from './grid-inventory.ts';
 import type { GridItem, InventoryGrid } from './grid-inventory.ts';
 import type { GearSlotId, ItemMove, MoveGridId, MoveReason } from './item-move.ts';
 
@@ -77,14 +77,41 @@ function cellRefusal(grids: MoveGrids, move: ItemMove, item: GridItem): MoveReas
   return fits ? null : 'no_room';
 }
 
-/** Why a worn slot can not take the item, or null when it can. */
+/** What a gear-to-gear move swaps out: the worn item, when it can take the slot the moving one left. */
+function swappedOut(grids: MoveGrids, move: ItemMove, item: GridItem): GridItem | null {
+  const { from, to } = move;
+  if (to.kind !== 'gear' || from.kind !== 'gear') return null;
+  const worn = grids.gear[to.slot];
+  const isOther = worn !== null && worn.id !== item.id;
+  return isOther && isItemValidForGearSlot(worn.type, from.slot) ? worn : null;
+}
+
+/** Why a worn slot can not take the item, or null when it can. Two guns trade slots when each fits the other's. */
 function gearRefusal(grids: MoveGrids, move: ItemMove, item: GridItem): MoveReason | null {
   const { to } = move;
   if (to.kind !== 'gear') return null;
   if (!isItemValidForGearSlot(item.type, to.slot)) return 'bad';
   const worn = grids.gear[to.slot];
-  const isTaken = worn !== null && worn.id !== item.id;
+  const isTaken = worn !== null && worn.id !== item.id && swappedOut(grids, move, item) === null;
   return isTaken ? 'no_room' : null;
+}
+
+/**
+ * The host keeps candy as a list, not a layout, so neither side's candy bag keeps ids or cells across a snapshot: a
+ * piece is found by its kind when its id is gone, and one set down where there is no room goes wherever there is.
+ */
+export function candyMoveFor(grids: MoveGrids, move: ItemMove): ItemMove {
+  let { item, to } = move;
+  if (move.from.kind === 'cell' && move.from.grid === 'candy') {
+    const piece = grids.candy.items.find((each) => each.id === item) ?? grids.candy.items.find((each) => each.type === move.type);
+    if (piece) item = piece.id;
+  }
+  const isCandyTarget = to.kind === 'cell' && to.grid === 'candy';
+  if (isCandyTarget && to.kind === 'cell' && !canPlaceItem(grids.candy, move.type, to.x, to.y, to.rotated, item)) {
+    const slot = findAvailableSlot(grids.candy, move.type, false);
+    if (slot) to = { ...to, x: slot.x, y: slot.y, rotated: slot.rotated };
+  }
+  return { ...move, item, to };
 }
 
 /**
@@ -99,13 +126,15 @@ export function applyMoveToGrids(grids: MoveGrids, move: ItemMove): MoveReason |
   const refusal = cellRefusal(grids, move, item) ?? gearRefusal(grids, move, item);
   if (refusal) return refusal;
   const moved: GridItem = { ...item };
+  const swapped = swappedOut(grids, move, item);
   takeFromSource(grids, move);
-  const { to } = move;
+  const { to, from } = move;
   if (to.kind === 'cell') {
     const target = gridOf(grids, to.grid);
     if (target) placeItem(target, { ...moved, x: to.x, y: to.y, rotated: to.rotated });
   } else if (to.kind === 'gear') {
     grids.gear[to.slot] = moved;
+    if (swapped && from.kind === 'gear') grids.gear[from.slot] = { ...swapped };
   }
   return null;
 }

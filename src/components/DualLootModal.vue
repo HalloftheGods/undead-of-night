@@ -306,7 +306,9 @@ import LootItemArt from './LootItemArt.vue';
 import { useGame } from './use-game.ts';
 import { useItemArrivals } from './use-item-arrivals.ts';
 import { useContainerZoom } from './use-container-zoom.ts';
-import { noteMove, notePlaced } from '../game/inventory/pickup-arrivals.ts';
+import { cellFrom, findShown, GROUND_TARGET, moveGridOf, placedAt, sourceOf, USE_TARGET, windowMove } from '../game/inventory/loot-moves.ts';
+import { cellKey, type CellOrigin, type MotionKind } from '../game/inventory/move-motion.ts';
+import type { MoveFrom, MoveTo } from '../../shared/item-move.ts';
 import { backpackDef } from '../../shared/backpack.ts';
 import { findItemAtTile, getItemFootprint, isCellBlocked, type GridItem } from '../../shared/grid-inventory.ts';
 import { cellPhase, itemHidden, searchSweep, shownSweep, stageView, sweepRanks } from '../game/inventory/search-overlay.ts';
@@ -333,7 +335,6 @@ import {
   resolveGridById,
   returnHeldItemToSource,
   rotateActiveItem,
-  sourceName,
   type DualLootModalEmits,
   type DualLootModalProps,
   type GearSlotId,
@@ -374,7 +375,7 @@ const modalState = reactive(
 const hoveredGrid = ref<GridIdentifier | null>(null);
 /** Items picked up while the window is open land in the grids live, flying in from the world. */
 const backdrop = useTemplateRef<HTMLElement>('backdrop');
-const { arrivalClass } = useItemArrivals(backdrop, () => [modalState.backpackGrid, modalState.pocketsGrid, modalState.candyBagGrid, modalState.containerGrid]);
+const { arrivalClass, isShaking } = useItemArrivals(backdrop, () => [modalState.backpackGrid, modalState.pocketsGrid, modalState.candyBagGrid, modalState.containerGrid]);
 /** The container's own drawing zooms out of the world to where its art sits; the grid shows once it lands. */
 const stageArt = useTemplateRef<SVGSVGElement>('stageArt');
 const { zoomClass, zoomStyle } = useContainerZoom(backdrop, stageArt);
@@ -531,7 +532,9 @@ function getCellCustomProperties(col: number, row: number) {
 
 function getCellHighlightClass(gridId: GridIdentifier, col: number, row: number): string {
   const pad = isPadCell(gridId, col, row) ? 'is-pad' : '';
-  const target = hoverHighlightClass(gridId, col, row);
+  // A cell a refused move was aimed at shows red for its shake.
+  const refused = isShaking(cellKey(moveGridOf(gridId), col, row)) ? 'is-invalid-target' : '';
+  const target = refused || hoverHighlightClass(gridId, col, row);
   return pad && target ? `${pad} ${target}` : pad || target;
 }
 
@@ -623,15 +626,28 @@ function onClose(): void {
   emit('close');
 }
 
+/** Hands the inventory what the hand just did, as one move (loot-moves.ts). By default the target is where it now sits. */
+function emitMove(item: GridItem, from: MoveFrom, motion: MotionKind, origin: CellOrigin | null = null, to: MoveTo | null = placedAt(modalState, item.id)): void {
+  const move = windowMove(item, from, to);
+  // The hand is empty now: the cursor hears it first, so the grids refill with the item where it was set down.
+  if (modalState.heldItem === null) setHeld(null);
+  if (move) emit('move', move, motion, origin);
+}
+
+/** Where an item is drawn now, in client pixels, for a flight back or a puff. */
+function itemOrigin(itemId: string): CellOrigin | null {
+  if (!findShown(modalState, itemId)) return null;
+  const rect = backdrop.value?.querySelector<HTMLElement>(`[data-item-id="${CSS.escape(itemId)}"]`)?.getBoundingClientRect() ?? null;
+  return rect ? { client: { x: rect.left, y: rect.top, w: rect.width, h: rect.height } } : null;
+}
+
 function onCellClick(gridId: GridIdentifier, col: number, row: number): boolean {
   const held = modalState.heldItem;
   if (held === null) return false;
-  const from = sourceName(held.source);
   const placed = placeHeldItemInGrid(modalState, gridId, col, row);
   if (placed) {
     // Set down by hand (a click or a drag): it only lands, it does not fly.
-    notePlaced(held.item);
-    emit('transfer', { itemId: modalState.selectedItemId ?? '', source: from, target: gridId });
+    emitMove(held.item, sourceOf(held.source), 'land');
     game.playSfx('ui_place');
   }
   return placed;
@@ -641,18 +657,17 @@ const lastItemClick = ref<{ id: string; gridId: GridIdentifier; time: number } |
 
 function triggerQuickTransfer(gridId: GridIdentifier, itemId: string): void {
   // A double click sends it across: it flies from where its cell is now.
-  const moving = resolveGridById(modalState, gridId).items.find((item) => item.id === itemId) ?? modalState.heldItem?.item ?? null;
+  const leaving = resolveGridById(modalState, gridId).items.find((item) => item.id === itemId);
+  const held = modalState.heldItem;
+  const moving = leaving ?? held?.item ?? null;
+  const heldFrom = held ? sourceOf(held.source) : null;
+  const from = leaving ? cellFrom(gridId, leaving) : heldFrom;
   const cell = backdrop.value?.querySelector<HTMLElement>(`[data-item-id="${CSS.escape(itemId)}"]`)?.getBoundingClientRect() ?? null;
   const didTransfer = quickTransferBetweenInventories(modalState, gridId, itemId);
-  if (didTransfer && moving) {
-    if (cell) noteMove(moving, { client: { x: cell.left, y: cell.top, w: cell.width, h: cell.height } });
-    else notePlaced(moving);
-  }
   if (didTransfer) {
     game.playSfx('ui_place');
-    const isContainer = gridId === 'container';
-    const targetName = isContainer ? 'backpack' : 'container';
-    emit('transfer', { itemId, source: gridId, target: targetName });
+    const origin = cell ? { client: { x: cell.left, y: cell.top, w: cell.width, h: cell.height } } : null;
+    if (moving && from) emitMove(moving, from, origin ? 'fly' : 'land', origin);
   }
 }
 
@@ -671,17 +686,18 @@ function onUseHeld(): void {
   const held = modalState.heldItem;
   if (!held) return;
   const item = { ...held.item };
+  const from = sourceOf(held.source);
   // A box of rounds is loaded, not spent: it goes back where it was, and leaves the bag when the gun has used the rounds.
   if (isLoadable(item)) returnHeldItemToSource(modalState);
   else modalState.heldItem = null;
-  emit('use', item);
+  emitMove(item, from, 'land', null, USE_TARGET);
 }
 
 function onDropHeld(): void {
   const held = modalState.heldItem;
   if (!held) return;
-  emit('drop', held.item);
   modalState.heldItem = null;
+  emitMove(held.item, sourceOf(held.source), 'land', null, GROUND_TARGET);
 }
 
 function onGhostClick(gridId: GridIdentifier): void {
@@ -719,10 +735,12 @@ function onItemDblClick(gridId: GridIdentifier, item: GridItem): void {
 function onGearSlotClick(slotId: GearSlotId): boolean {
   const isHolding = modalState.heldItem !== null;
   if (isHolding) {
+    const held = modalState.heldItem!;
     const placed = placeHeldItemInGear(modalState, slotId);
     if (placed) {
       syncGearEmits(slotId);
-      emit('transfer', { itemId: modalState.gear[slotId]?.id ?? '', source: 'held', target: `gear-${slotId}` });
+      if (held.source.kind === 'gear') syncGearEmits(held.source.slotId);
+      emitMove(held.item, sourceOf(held.source), 'land');
     }
     return placed;
   }
@@ -917,7 +935,7 @@ function ownsPoint(clientX: number, clientY: number): boolean {
   return elementOwnsPoint(backdrop.value, clientX, clientY);
 }
 
-defineExpose({ escape: onEscape, rotate: onRotateClick, settle, ownsPoint });
+defineExpose({ escape: onEscape, rotate: onRotateClick, settle, ownsPoint, itemOrigin });
 
 onUnmounted(() => {
   setLootPad(null);

@@ -1,4 +1,4 @@
-import { bagHash, bagLayout } from './bag.ts';
+import { bagHash, bagRows } from './bag.ts';
 import { viewedContainers } from './container-viewers.ts';
 import { merchantView } from './bunker-merchants.ts';
 import { rescueeView } from './camp/rescuee.ts';
@@ -145,7 +145,7 @@ export function playerSnapshot(p: PlayerState): PlayerEntity {
     ...(p.materials ? { materials: { ...p.materials } } : {}),
     ...(hasSupplies(p.supplies) ? { supplies: { ...p.supplies } } : {}),
     bagHash: bagHash(p.inventory),
-    bagLayout: bagLayout(p.inventory),
+    bagLayout: bagRows(p.inventory),
     lastMoveId: p.lastMoveId,
     ...(p.towerHold ? { towerHold: round2(p.towerHold) } : {}),
     ...(p.drainHold ? { drainHold: round2(p.drainHold) } : {}),

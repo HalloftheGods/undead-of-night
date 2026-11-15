@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { bagLines } from '../src/game/inventory/bag-notes.ts';
+import { moveLines } from '../src/game/inventory/bag-notes.ts';
 import { VOICES } from '../src/game/inventory/survivor-voices.ts';
 import { hush, PICKUP_QUIET_MS, speak, SPEECH_MS, speechNow } from '../src/game/survivor-speech.ts';
 
@@ -31,18 +31,19 @@ describe('the survivor talking about what they pick up and drop', () => {
 });
 
 describe('the log lines for what the inventory did', () => {
+  const cell = (grid: 'pack' | 'container') => ({ kind: 'cell' as const, grid, x: 0, y: 0 });
+
   it('logs drops, uses and takes from a container', () => {
-    const lines = bagLines({
-      layout: [],
-      drop: [{ type: 'plank', count: 2 }],
-      use: [{ type: 'canned_food', count: 1 }],
-      container: { id: 3, items: [], taken: [{ id: 'c1', type: 'bandage', x: 0, y: 0, rotated: false }], deposited: [] },
-    });
-    expect(lines.map((line) => line.text)).toEqual([expect.stringMatching(/^DROPPED 2 /), expect.stringMatching(/^ATE /), expect.stringMatching(/^\+1 /)]);
+    const lines = [
+      ...moveLines({ id: 1, item: 'plank:1', type: 'plank', from: cell('pack'), to: { kind: 'ground', x: 0, y: 0 } }),
+      ...moveLines({ id: 2, item: 'canned_food:2', type: 'canned_food', from: cell('pack'), to: { kind: 'use' } }),
+      ...moveLines({ id: 3, item: 'c1', type: 'bandage', from: cell('container'), to: { ...cell('pack'), rotated: false }, container: 3 }),
+    ];
+    expect(lines.map((line) => line.text)).toEqual([expect.stringMatching(/^DROPPED /), expect.stringMatching(/^ATE /), expect.stringMatching(/^\+1 /)]);
     expect(lines.every((line) => line.kind === 'loot')).toBe(true);
   });
 
-  it('logs nothing for a bag that was only rearranged', () => {
-    expect(bagLines({ layout: [], drop: [] })).toEqual([]);
+  it('logs nothing for a move inside the bag', () => {
+    expect(moveLines({ id: 4, item: 'plank:1', type: 'plank', from: cell('pack'), to: { kind: 'cell', grid: 'pockets', x: 0, y: 0, rotated: false } })).toEqual([]);
   });
 });

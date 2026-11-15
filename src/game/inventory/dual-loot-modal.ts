@@ -1,3 +1,5 @@
+import type { ProposedMove } from './loot-moves.ts';
+import type { CellOrigin, MotionKind } from './move-motion.ts';
 import { CANDIES, CANDY_GRID, isCandyId } from '@shared/candy.ts';
 import { containerGridDimensions, type ContainerKind } from '@shared/containers.ts';
 import type { ContainerArt } from '@art/containers.ts';
@@ -115,21 +117,14 @@ export interface DualLootState {
   selectedGridId: GridIdentifier | null;
 }
 
-export interface TransferEventPayload {
-  readonly itemId: string;
-  readonly source: string;
-  readonly target: string;
-}
-
 export type DualLootModalEmits = {
   (e: 'close'): void;
   (e: 'update:equippedPrimary', item: GridItem | null): void;
   (e: 'update:equippedSecondary', item: GridItem | null): void;
   (e: 'update:equippedSidearm', item: GridItem | null): void;
   (e: 'update:equippedArmor', item: GridItem | null): void;
-  (e: 'transfer', event: TransferEventPayload): void;
-  (e: 'use', item: GridItem): void;
-  (e: 'drop', item: GridItem): void;
+  /** One item moved, used or dropped, as it happens (loot-moves.ts): `land` when set down by hand, `fly` when sent across. */
+  (e: 'move', move: ProposedMove, motion: MotionKind, origin: CellOrigin | null): void;
 };
 
 export const ITEM_DISPLAY_NAMES: Record<string, string> = {
@@ -446,6 +441,17 @@ export function placeHeldItemInGear(
 
   const existingEquipped = state.gear[slotId];
   state.gear[slotId] = { ...activeHeld.item };
+
+  // Two worn guns trade slots outright when each fits the other's, the way the host applies the move.
+  const { source } = activeHeld;
+  const tradesSlots = existingEquipped !== null && source.kind === 'gear' && isItemValidForGearSlot(existingEquipped.type, source.slotId);
+  if (tradesSlots && source.kind === 'gear') {
+    state.gear[source.slotId] = { ...existingEquipped };
+    state.heldItem = null;
+    state.selectedItemId = activeHeld.item.id;
+    state.selectedGridId = null;
+    return true;
+  }
 
   const hasExistingItem = existingEquipped !== null;
   if (hasExistingItem) {

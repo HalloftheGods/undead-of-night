@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { applyBagCommit } from '../shared/bag-sim.ts';
 import { AMMO_BOX_TYPES, ammoBoxRounds, BAG_ITEM_TYPES, bagLayout, isDroppableBagItem } from '../shared/bag.ts';
 import { PICKUP_TYPES } from '../shared/protocol.ts';
 import { takeItem } from '../shared/pickups.ts';
+import { actOn } from './helpers/item-moves.ts';
 import { quietSim, steps } from './helpers/sim-harness.ts';
 
 function carrying(set: (p: ReturnType<typeof quietSim>['state']['players'][number]) => void) {
@@ -15,12 +15,11 @@ function carrying(set: (p: ReturnType<typeof quietSim>['state']['players'][numbe
   return { ...quiet, p };
 }
 
-/** Drops one of `type` with the rest of the bag where it is. */
+/** Drops one of `type` from the bag (the DROP button): the rest of the bag stays where it is. */
 function dropOne(state: ReturnType<typeof quietSim>['state'], p: ReturnType<typeof quietSim>['state']['players'][number], type: string) {
-  const rows = bagLayout(p.inventory);
-  const index = rows.findIndex((row) => row.type === type);
-  const layout = rows.filter((_, i) => i !== index);
-  applyBagCommit(state, p, { layout, drop: [{ type: type as never, count: 1 }] });
+  const others = bagLayout(p.inventory).filter((row) => row.type !== type);
+  expect(actOn(state, p, type, 'ground')).toBeNull();
+  for (const row of others) expect(bagLayout(p.inventory)).toContainEqual(row);
 }
 
 describe('dropping anything the bag holds', () => {

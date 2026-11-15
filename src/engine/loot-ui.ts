@@ -19,8 +19,9 @@ import {
   type GridIdentifier,
 } from '../game/inventory/dual-loot-modal.ts';
 import { longSprite, lootBadge, lootSprite } from '../game/inventory/loot-item-art.ts';
-import { arrivalCamera, arrivalPhase } from '../game/inventory/pickup-arrivals.ts';
-import { drawFlight, drawPop } from './loot-arrivals-draw.ts';
+import { arrivalCamera, cellKey, motionOf, shakeOf } from '../game/inventory/move-motion.ts';
+import { moveGridOf } from '../game/inventory/loot-moves.ts';
+import { drawFlight, drawPop, drawPuffs, drawShake } from './loot-arrivals-draw.ts';
 
 /**
  * The loot window drawn on the game canvas, in art pixels, like the rest of the game. A pure layout step
@@ -515,15 +516,23 @@ function drawBoard(ctx: CanvasRenderingContext2D, view: LootView, board: GridBox
       drawHiddenItem(ctx, plateBox);
       continue;
     }
-    // Just picked up: it flies in from the world first (drawn after every board, over them), then pops into its cell.
-    const arriving = arrivalPhase(item.id);
+    // Moving: it flies in from the world or the cell it left first (drawn after every board, over them), then pops.
+    const arriving = motionOf(item.id);
     if (arriving?.phase === 'fly') {
       const drawIn = (box: Box) => drawItem(ctx, view.art, item, box, false, false);
-      flights.push(() => drawFlight(ctx, arriving.arrival, plateBox, arriving.t, drawIn) || drawIn(plateBox));
+      flights.push(() => drawFlight(ctx, arriving.motion, plateBox, arriving.t, drawIn) || drawIn(plateBox));
       continue;
     }
     drawItem(ctx, view.art, item, plateBox, state.selectedItemId === item.id, over && held === null);
     if (arriving?.phase === 'pop') drawPop(ctx, plateBox, arriving.t);
+  }
+  // A cell a refused move was aimed at shakes red.
+  const moveGrid = moveGridOf(board.id);
+  for (let row = 0; row < grid.rows; row += 1) {
+    for (let col = 0; col < grid.cols; col += 1) {
+      const shake = shakeOf(cellKey(moveGrid, col, row));
+      if (shake !== null) drawShake(ctx, cellBox(board, col, row), shake);
+    }
   }
 }
 
@@ -713,6 +722,7 @@ export function drawLootUi(ctx: CanvasRenderingContext2D, view: LootView, given:
     drawButton(ctx, button, button.label, button.id === 'close' ? BLOOD : BONE, hovered, button.id === 'rotate' && holding);
   }
 
+  drawPuffs(ctx);
   for (const flight of flights.splice(0)) flight();
   const held = state.heldItem;
   if (held && view.pointer) drawItem(ctx, view.art, held.item, heldBox(held.item, view.pointer), true, false);

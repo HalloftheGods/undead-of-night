@@ -34,7 +34,7 @@ import {
   xpBarFraction
 } from "../../shared/progression.ts";
 import { loadProgression, saveProgression } from "../../shared/progression-save.ts";
-import { notePickup } from "./inventory/pickup-arrivals.ts";
+import { noteMoveEvent, noteViewedContainers } from "./inventory/move-feed.ts";
 import { speak } from "./survivor-speech.ts";
 
 const EVENT_MUSIC: Partial<Record<GameEvent["type"], "wave" | "intermission">> = {
@@ -100,15 +100,15 @@ export class SnapshotHandler {
     this.setMood(snapshot, world.latest === null);
     state.lastSnapshotMs = now;
     noteDriveSnapshot(snapshot, after?.vehicle?.id ?? null);
+    // An open loot window keeps to what the host has: its container's contents, and the answers to its moves.
+    noteViewedContainers(snapshot.viewedContainers);
     for (const event of snapshot.events) {
       this.onGameEvent(event, world, now, before, after);
       // The pad's ring speeds up with the local player's headshot streak.
       if (event.type === 'headshot' && event.playerId === world.localId) noteHeadshotStreak(event.chain ?? 1, now);
-      // Where a pickup was taken, so an open inventory can fly the item in from there (inventory/pickup-arrivals.ts).
-      if (event.type === 'pickup' && event.playerId === world.localId) {
-        notePickup({ x: event.x, y: event.y });
-        speak('pickup', now);
-      }
+      // A move answered, or a pickup gone into the bag: it flies in from where it lay (inventory/move-feed.ts).
+      noteMoveEvent(event, world.localId);
+      if (event.type === 'pickup' && event.playerId === world.localId) speak('pickup', now);
     }
     const callout = this.punctuate(snapshot, world.localId, after, now);
     this.stamp(snapshot, world.localId, after, callout, now);

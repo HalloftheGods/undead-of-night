@@ -3,11 +3,11 @@ import { candyIn, DOORSTEP_HOMES, MAX_CANDY_BAG } from '../shared/candy.ts';
 import { containerGridFor, containerInReach, SEARCH_SEC, townContainers } from '../shared/containers.ts';
 import type { Container } from '../shared/containers.ts';
 import { PLAYER_RADIUS, TICK_RATE } from '../shared/constants.ts';
-import { applyBagCommit } from '../shared/bag-sim.ts';
 import { GameSimulation } from '../shared/simulation.ts';
 import type { PlayerState, SimState } from '../shared/sim-state.ts';
 import { stashIn } from '../shared/throwables.ts';
 import { buildingAt, circleHitsSolid, doorBox } from '../shared/world-query.ts';
+import { takeOut } from './helpers/item-moves.ts';
 import { eventsOf, input, quietSim, stateOf, steps } from './helpers/sim-harness.ts';
 
 const SEEDS = [1, 2, 3, 4, 5, 6];
@@ -75,15 +75,7 @@ describe('Halloween night candy bowls', () => {
     expect(opened.title).toBe('TAKE ONE');
     expect(opened.items).toEqual(items);
 
-    applyBagCommit(state, p, {
-      layout: [],
-      drop: [],
-      container: {
-        id: bowl.id,
-        items: [],
-        taken: items,
-      },
-    });
+    for (const item of [...items]) expect(takeOut(state, p, bowl.id, item)).toBeNull();
     expect(p.candy).toEqual(items.map((it) => it.type));
   });
 
@@ -91,7 +83,7 @@ describe('Halloween night candy bowls', () => {
     const { sim, state, p, bowl } = atAFullBowl();
     searchFor(sim, bowl);
     const items = state.containers[bowl.id].items!;
-    applyBagCommit(state, p, { layout: [], drop: [], container: { id: bowl.id, items: [], taken: items } });
+    for (const item of [...items]) takeOut(state, p, bowl.id, item);
     expect(state.containers[bowl.id].items).toEqual([]);
   });
 
@@ -100,17 +92,17 @@ describe('Halloween night candy bowls', () => {
     searchFor(sim, bowl);
     const items = state.containers[bowl.id].items!;
     const [first, ...left] = items;
-    applyBagCommit(state, p, { layout: [], drop: [], container: { id: bowl.id, items: left, taken: [first] } });
+    expect(takeOut(state, p, bowl.id, first!)).toBeNull();
     expect(state.containers[bowl.id].items).toEqual(left);
   });
 
   it('a second piece out of a bowl arms the horde surge, and the first does not', () => {
     const { sim, state, p, bowl } = atAFullBowl();
     searchFor(sim, bowl);
-    const [first, second, ...left] = state.containers[bowl.id].items!;
-    applyBagCommit(state, p, { layout: [], drop: [], container: { id: bowl.id, items: [second, ...left], taken: [first] } });
+    const [first, second] = state.containers[bowl.id].items!;
+    takeOut(state, p, bowl.id, first!);
     expect(state.hordeSurges ?? 0).toBe(0);
-    applyBagCommit(state, p, { layout: [], drop: [], container: { id: bowl.id, items: left, taken: [second] } });
+    takeOut(state, p, bowl.id, second!);
     expect(state.hordeSurges).toBe(1);
   });
 
@@ -119,16 +111,9 @@ describe('Halloween night candy bowls', () => {
     p.candy = Array.from({ length: MAX_CANDY_BAG - 1 }, () => 'ghost_gum' as const);
     searchFor(sim, bowl);
     expect(state.containers[bowl.id].opened).toBe(true);
-    const items = state.containers[bowl.id].items!;
-    applyBagCommit(state, p, {
-      layout: [],
-      drop: [],
-      container: {
-        id: bowl.id,
-        items: [],
-        taken: items,
-      },
-    });
+    const items = [...state.containers[bowl.id].items!];
+    const answers = items.map((item) => takeOut(state, p, bowl.id, item));
+    expect(answers.slice(1).every((answer) => answer === 'no_room')).toBe(true);
     expect(items.length).toBeGreaterThan(1);
     expect(p.candy).toHaveLength(MAX_CANDY_BAG);
     expect(state.containers[bowl.id].items).toHaveLength(items.length - 1);

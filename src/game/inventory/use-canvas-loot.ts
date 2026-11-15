@@ -1,25 +1,24 @@
 import { computed, onBeforeUnmount, watch, type Ref, type ShallowRef } from 'vue';
-import type { GridItem } from '../../../shared/grid-inventory.ts';
 import type { ArtBook } from '../../art/types.ts';
 import type { SfxName } from '../../audio/sfx-registry.ts';
 import type { UiState } from '../hud-state.ts';
 import { canvasLoot } from '../loot-prefs.ts';
 import { createCanvasLoot, type CanvasLoot } from './canvas-loot.ts';
-import type { BagWorking } from './local-bag.ts';
+import type { BagWorking } from './bag-working.ts';
+import type { ProposedMove } from './loot-moves.ts';
+import type { CellOrigin, MotionKind } from './move-motion.ts';
 
 interface Inventory {
   readonly isOpen: Ref<boolean>;
   readonly working: Ref<BagWorking | null>;
   readonly openings: Ref<number>;
-  onTransfer: () => void;
-  onUse: (item: GridItem) => void;
-  onDrop: (item: GridItem) => void;
+  onMove: (move: ProposedMove, motion: MotionKind, origin: CellOrigin | null) => void;
 }
 
 /**
  * Picks the loot window's home. With the in-game switch on, a mouse and keyboard player gets the window drawn
  * on the game canvas; a phone keeps the page version, which has the touch and focus handling. Each opening
- * (and each live use or drop, which rebuilds the grids) gets a fresh window.
+ * (and each rebuild the ledger asks for: a new pack, the guns changed) gets a fresh window.
  */
 export function useCanvasLoot(
   ui: Ref<UiState>,
@@ -61,7 +60,7 @@ export function useCanvasLoot(
           equippedSecondary: working.gear.secondary,
           equippedSidearm: working.gear.sidearm,
         },
-        { close: onClose, transfer: () => inventory.onTransfer(), use: (item) => inventory.onUse(item), drop: (item) => inventory.onDrop(item), playSfx }
+        { close: onClose, move: (move, motion, origin) => inventory.onMove(move, motion, origin), playSfx }
       );
     },
     { immediate: true, flush: 'post' }

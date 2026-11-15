@@ -18,8 +18,8 @@ import type { Banner, RunResult, UiState } from "./hud-state.ts";
 import type { CalloutWords } from "./kill-juice.ts";
 import { bannerLine, calloutLine, eventLine, EventLog, levelLines } from "./event-log.ts";
 import type { LogContext, LogLine } from "./event-log.ts";
-import type { BagCommit } from "../../shared/bag.ts";
-import { bagLines } from "./inventory/bag-notes.ts";
+import type { ItemMove } from "../../shared/item-move.ts";
+import { moveLines } from "./inventory/bag-notes.ts";
 import { hordeBanner, isLandmark, overrunBanner, radioBanner, RunNotices } from "./run-notices.ts";
 import { tapGameEvent, tapLocalPlayer } from "./analytics/event-tap.ts";
 import { lockedTracksOf } from "../audio/playlists.ts";
@@ -345,8 +345,8 @@ export class RunHud {
   }
 
   /** What the inventory just did (dropped, used, took from a container), into the log. */
-  noteBag(commit: BagCommit, now: number): void {
-    for (const line of bagLines(commit)) this.note(line, now);
+  noteMove(move: ItemMove, now: number): void {
+    for (const line of moveLines(move)) this.note(line, now);
   }
 
   /** Writes a line in the run's log, which outlasts every toast. */
