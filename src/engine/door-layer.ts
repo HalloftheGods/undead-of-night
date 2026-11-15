@@ -12,6 +12,11 @@ import { fadedCanvas, spriteCanvas } from './sprite-cache.ts';
 
 const HALF = DOOR_WIDTH / 2 + DOOR_LAP;
 const DEBRIS_H = 8;
+/**
+ * How tall a back door stands, from the foot of the north wall up. The wall collides a tile deep but the door is
+ * drawn as tall as the lockers beside it, rising past the wall's top: art only, nobody's feet go there.
+ */
+export const BACK_DOOR_HEIGHT = 26;
 
 export class DoorLayer {
   private byBuilding = new Map<string, PlacedDoor[]>();
@@ -22,6 +27,16 @@ export class DoorLayer {
 
   constructor(wallFaceHeight: number) {
     this.backHeight = WALL_THICKNESS + wallFaceHeight;
+  }
+
+  /** The back door of a building when it is shut or broken in; an open one is the building's own art. */
+  hasBackDoor(buildingId: string): boolean {
+    return (this.byBuilding.get(buildingId) ?? []).some((door) => door.facing === 'north');
+  }
+
+  /** The foot of a back door in the world: where the north wall ends and the floor begins. */
+  backFoot(door: Pick<PlacedDoor, 'y'>): number {
+    return door.y + this.backHeight;
   }
 
   /** This frame's doors. The same list as last frame costs nothing. */
@@ -60,8 +75,8 @@ export class DoorLayer {
         const y = isBack ? door.y + this.backHeight + 1 : door.y - WALL_THICKNESS - DEBRIS_H - 1;
         ctx.drawImage(spriteCanvas(this.debris(isBack ? 'steel' : kind)), x, Math.round(y - top));
       } else if (isBack) {
-        const sprite = this.face({ kind: 'steel', height: this.backHeight + 1 }, door);
-        ctx.drawImage(spriteCanvas(sprite), x, Math.round(door.y - top));
+        const sprite = this.face({ kind: 'steel', height: BACK_DOOR_HEIGHT + 1 }, door);
+        ctx.drawImage(spriteCanvas(sprite), x, Math.round(this.backFoot(door) - BACK_DOOR_HEIGHT - top));
       } else {
         const sprite = this.sprite(`above:${kind}:${door.planks}`, () => shutDoorFromAbove(kind, door.planks));
         ctx.drawImage(spriteCanvas(sprite), x, Math.round(door.y - WALL_THICKNESS - BOARD_SPILL - top));

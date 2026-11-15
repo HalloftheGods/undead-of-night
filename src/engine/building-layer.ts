@@ -1,4 +1,4 @@
-import { BUILDING_DEFS, DOOR_WIDTH, TILE_SIZE, WALL_THICKNESS } from '../../shared/protocol.ts';
+import { BUILDING_DEFS, DOOR_WIDTH, NORTH_WALL_DEPTH, TILE_SIZE, WALL_THICKNESS } from '../../shared/protocol.ts';
 import type { BuildingInstance, BuildingKind, WorldMap } from '../../shared/protocol.ts';
 import { isSewerBuilding } from '../../shared/map-protocol.ts';
 import { buildingAt } from '../../shared/world-map.ts';
@@ -6,7 +6,7 @@ import { BACK_DOORS, partitionsOf } from '../../shared/building-plans.ts';
 import { flightsOf, isStoreyKind } from '../../shared/storeys.ts';
 import type { Flight } from '../../shared/storeys.ts';
 import type { EnvironmentArt, PixelSprite } from '../art/types.ts';
-import { DoorLayer } from './door-layer.ts';
+import { BACK_DOOR_HEIGHT, DoorLayer } from './door-layer.ts';
 import type { ScreenRect } from './light-field.ts';
 import { frontHeightOf } from '../art/environment/shell.ts';
 import { fadedCanvas, FADE_STEPS, spriteCanvas } from './sprite-cache.ts';
@@ -149,6 +149,25 @@ function northWall(ctx: CanvasRenderingContext2D, kind: BuildingKind, art: Envir
   ctx.drawImage(spriteCanvas(art.doorMat), middle - Math.round(art.doorMat.w / 2), wall + faceH);
 }
 
+const FRAME = '#262932';
+const LINTEL = '#3b3f4b';
+
+/** An open back door seen face on: dark night in a frame, the top bar catching a little light. */
+function paintOpenBackDoor(): HTMLCanvasElement {
+  const canvas = document.createElement('canvas');
+  canvas.width = DOOR_WIDTH;
+  canvas.height = BACK_DOOR_HEIGHT;
+  const ctx = canvas.getContext('2d')!;
+  ctx.fillStyle = BACK_DOOR_DARK;
+  ctx.fillRect(0, 0, DOOR_WIDTH, BACK_DOOR_HEIGHT);
+  ctx.fillStyle = FRAME;
+  ctx.fillRect(0, 0, 2, BACK_DOOR_HEIGHT);
+  ctx.fillRect(DOOR_WIDTH - 2, 0, 2, BACK_DOOR_HEIGHT);
+  ctx.fillStyle = LINTEL;
+  ctx.fillRect(0, 0, DOOR_WIDTH, 2);
+  return canvas;
+}
+
 /** The town's buildings: closed shells from outside, opened rooms from within. */
 export class BuildingLayer {
   placed: PlacedBuilding[] = [];
@@ -160,6 +179,7 @@ export class BuildingLayer {
   private readonly stairs = new Map<string, Flight[]>();
   private readonly stairsArt = { up: null as HTMLCanvasElement | null, down: null as HTMLCanvasElement | null };
   private map: WorldMap | null = null;
+  private openBack: HTMLCanvasElement | null = null;
   /** Doors shut, boarded or broken in, drawn into the openings the rooms and shells leave. */
   readonly doors: DoorLayer;
 
@@ -282,7 +302,19 @@ export class BuildingLayer {
       ctx.drawImage(this.interior(placed.building), placed.building.x - left, placed.building.y - top);
       for (const flight of this.stairs.get(placed.building.id) ?? []) this.drawStairs(ctx, flight, left, top);
       this.doors.drawInside(ctx, placed.building.id, placed.sprite, left, top);
+      this.drawOpenBackDoor(ctx, placed.building, left, top);
     }
+  }
+
+  /** A back door standing open: the night through a doorway as tall as the lockers, rising past the wall's top. */
+  private drawOpenBackDoor(ctx: CanvasRenderingContext2D, building: BuildingInstance, left: number, top: number): void {
+    const middle = BACK_DOORS[building.kind];
+    const hasNone = middle === undefined || this.doors.hasBackDoor(building.id);
+    if (hasNone) return;
+    this.openBack ??= paintOpenBackDoor();
+    const x = building.x + middle - DOOR_WIDTH / 2 - left;
+    const y = building.y + NORTH_WALL_DEPTH - BACK_DOOR_HEIGHT - top;
+    ctx.drawImage(this.openBack, Math.round(x), Math.round(y));
   }
 
   private drawStairs(ctx: CanvasRenderingContext2D, flight: Flight, left: number, top: number): void {
