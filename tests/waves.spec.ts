@@ -67,7 +67,7 @@ describe('the standing population', () => {
   it('fills the town at the start, indoors and out, and leaves the spawn alone', () => {
     const { state } = soloSim();
     const [p] = state.players;
-    expect(state.zombies.length).toBe(STANDING_POPULATION);
+    expect(state.zombies.filter((z) => !z.dormant).length).toBe(STANDING_POPULATION);
     const indoors = state.zombies.filter((z) => buildingAt(state.map, z.x, z.y) !== null).length;
     expect(indoors).toBeGreaterThan(STANDING_POPULATION * 0.25);
     expect(indoors).toBeLessThan(STANDING_POPULATION * 0.75);

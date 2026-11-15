@@ -9,6 +9,7 @@ import type { ContainerKind } from '../../../shared/containers.ts';
 import { isVerticalLook } from '../../../shared/container-flip.ts';
 import type { InventoryGrid } from '../../../shared/grid-inventory.ts';
 import { stageBox, stageOffset, stageSprite } from './container-stage.ts';
+import { heldSweep, zoomLandedAt } from './container-zoom.ts';
 
 export type PlacedProp = Parameters<typeof paintedContainer>[1];
 
@@ -19,21 +20,28 @@ export interface SearchingNow {
   readonly propIndex?: number;
   /** 0..1 through the search, as the sim reports it. */
   readonly progress: number;
+  /** The searcher's Loot slot, 0..STAT_SLOTS: it picks how the sweep reads the grid. */
+  readonly lootSlot?: number;
 }
 
 /** How far through the search of the open container the sweep has got, 0..1, or null when no search is under way. */
 export const searchSweep = ref<number | null>(null);
+/** The sweep the windows draw: held at 0 while the container zooms in, then catching up with searchSweep. */
+export const shownSweep = ref<number | null>(null);
 
 let lastSearchMs = Number.NEGATIVE_INFINITY;
 let target = 0;
 let rate = 0;
 let stamp = 0;
 let frame = 0;
+/** The order the sweep reads the grid in, set by the searcher's Loot slot as the search runs. */
+let sweepPattern: SweepPattern = 'random';
 
 function carry(now: number): void {
   const current = searchSweep.value;
   if (current === null) return;
   searchSweep.value = Math.min(1, Math.max(current, target + rate * (now - stamp)));
+  shownSweep.value = heldSweep(searchSweep.value, zoomLandedAt(now), now);
   frame = requestAnimationFrame(carry);
 }
 
@@ -41,20 +49,23 @@ function carry(now: number): void {
  * The sim reports progress about ten times a second, so the sweep is carried forward at the rate it has been
  * moving, and never past the end. It follows the sim's own number, so it takes exactly as long as the search.
  */
-export function feedSearch(progress: number | null): void {
+export function feedSearch(progress: number | null, lootSlot = 0): void {
   lastSearchMs = performance.now();
   if (progress === null) {
     if (frame) cancelAnimationFrame(frame);
     frame = 0;
     searchSweep.value = null;
+    shownSweep.value = null;
     return;
   }
+  sweepPattern = sweepPatternFor(lootSlot);
   const now = performance.now();
   if (searchSweep.value === null) {
     target = 0;
     rate = 0;
     stamp = now;
     searchSweep.value = 0;
+    shownSweep.value = 0;
     frame = requestAnimationFrame(carry);
   }
   const dt = now - stamp;
@@ -70,26 +81,82 @@ export interface SweepRanks {
   rankOf(col: number, row: number): number;
 }
 
-const ranked = new WeakMap<InventoryGrid, SweepRanks>();
+/**
+ * The order a search reads the grid in. The first two Loot slots are a random defrag pass; each slot after that reads
+ * the grid in a tighter, more geometric order, so a survivor who has looted a lot sweeps it in a pattern.
+ */
+export type SweepPattern = 'random' | 'rows' | 'columns' | 'diagonal' | 'spiral';
 
-export function sweepRanks(grid: InventoryGrid): SweepRanks {
-  const known = ranked.get(grid);
-  if (known) return known;
-  const cells: number[] = [];
-  for (let row = 0; row < grid.rows; row++) {
-    for (let col = 0; col < grid.cols; col++) {
-      cells.push(row * grid.cols + col);
+export function sweepPatternFor(lootSlot: number): SweepPattern {
+  if (lootSlot >= 5) return 'spiral';
+  if (lootSlot === 4) return 'diagonal';
+  if (lootSlot === 3) return 'columns';
+  if (lootSlot === 2) return 'rows';
+  return 'random';
+}
+
+/** The cells of a grid in the order a geometric sweep reads them, from the top left. */
+function patternCells(cols: number, rows: number, pattern: Exclude<SweepPattern, 'random'>): number[] {
+  const out: number[] = [];
+  const at = (col: number, row: number): number => row * cols + col;
+  if (pattern === 'rows') {
+    for (let row = 0; row < rows; row++) for (let col = 0; col < cols; col++) out.push(at(col, row));
+  } else if (pattern === 'columns') {
+    for (let col = 0; col < cols; col++) for (let row = 0; row < rows; row++) out.push(at(col, row));
+  } else if (pattern === 'diagonal') {
+    // Anti-diagonal bands, each started at the top and running down to the left.
+    for (let band = 0; band <= cols + rows - 2; band++) {
+      for (let row = 0; row < rows; row++) {
+        const col = band - row;
+        if (col >= 0 && col < cols) out.push(at(col, row));
+      }
+    }
+  } else {
+    // A spiral in from the outside edge: across the top, down the right, back along the bottom, up the left.
+    let top = 0;
+    let bottom = rows - 1;
+    let left = 0;
+    let right = cols - 1;
+    while (top <= bottom && left <= right) {
+      for (let col = left; col <= right; col++) out.push(at(col, top));
+      top++;
+      for (let row = top; row <= bottom; row++) out.push(at(right, row));
+      right--;
+      if (top <= bottom) for (let col = right; col >= left; col--) out.push(at(col, bottom));
+      bottom--;
+      if (left <= right) for (let row = bottom; row >= top; row--) out.push(at(left, row));
+      left++;
     }
   }
-  // Fisher-Yates: the cells light in a random order, fixed for this grid so the sweep does not reshuffle mid-search.
-  for (let i = cells.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [cells[i], cells[j]] = [cells[j], cells[i]];
+  return out;
+}
+
+const ranked = new WeakMap<InventoryGrid, { pattern: SweepPattern; ranks: SweepRanks }>();
+
+export function sweepRanks(grid: InventoryGrid): SweepRanks {
+  const pattern = sweepPattern;
+  const known = ranked.get(grid);
+  if (known && known.pattern === pattern) return known.ranks;
+  let cells: number[];
+  if (pattern === 'random') {
+    cells = [];
+    for (let row = 0; row < grid.rows; row++) {
+      for (let col = 0; col < grid.cols; col++) {
+        cells.push(row * grid.cols + col);
+      }
+    }
+    // Fisher-Yates: the cells light in a random order, fixed for this grid so the sweep does not reshuffle mid-search.
+    for (let i = cells.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [cells[i], cells[j]] = [cells[j], cells[i]];
+    }
+  } else {
+    cells = patternCells(grid.cols, grid.rows, pattern);
   }
   const ranks = new Map<number, number>(cells.map((cell, rank) => [cell, rank]));
   const open = cells.length;
   const made: SweepRanks = { open, rankOf: (col, row) => ranks.get(row * grid.cols + col) ?? 0 };
-  ranked.set(grid, made);
+  ranked.set(grid, { pattern, ranks: made });
   return made;
 }
 
@@ -109,7 +176,7 @@ export function cellPhase(rank: number, open: number, progress: number): CellPha
 /** The art a searched container is drawn with: its own painted car, or the look for its kind. */
 export function searchArtFor(art: ArtBook, kind: ContainerKind, prop: PlacedProp | undefined, propIndex?: number): ContainerArt | null {
   if (!prop) return art.containers[kind] ?? null;
-  return paintedContainer(art, prop) ?? art.containers[containerLook({ kind, prop: prop.kind, propIndex })] ?? null;
+  return paintedContainer(art, prop) ?? art.containers[containerLook({ kind, prop: prop.kind, propIndex, look: prop.look })] ?? null;
 }
 
 export function searchTitle(kind: ContainerKind): string {
@@ -142,6 +209,13 @@ let revealStart = 0;
 let revealFrame = 0;
 
 function runReveal(now: number): void {
+  // The '?' reveal waits for the container to land, whichever order the search end and the reopen ran in.
+  if (zoomLandedAt(now) === Number.POSITIVE_INFINITY) {
+    revealStart = now;
+    revealProgress.value = 0;
+    revealFrame = requestAnimationFrame(runReveal);
+    return;
+  }
   const done = (now - revealStart) / REVEAL_MS;
   if (done >= 1) {
     revealProgress.value = null;

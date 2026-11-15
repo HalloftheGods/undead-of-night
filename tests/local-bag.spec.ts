@@ -93,7 +93,7 @@ describe('LocalBag', () => {
     expect(bagHash(local.bag)).toBe(after.bagHash);
   });
 
-  it('keeps what the host cannot drop, and sends nothing for it', () => {
+  it('drops a bottle put out of the bag, as it drops anything else', () => {
     const { p, local, sent, watch } = pair();
     p.bottles = 1;
     const working = local.open(watch());
@@ -101,8 +101,8 @@ describe('LocalBag', () => {
     working.pack.items = working.pack.items.filter((item) => item !== bottle);
     working.container.items.push({ ...bottle, x: 0, y: 0, rotated: false });
     local.close(working);
-    expect(sent).toEqual([]);
-    expect(local.bag.pack.items.some((item) => item.type === 'bottle') || local.bag.pockets.items.some((item) => item.type === 'bottle')).toBe(true);
+    expect(sent.at(-1)?.drop).toEqual([{ type: 'bottle', count: 1 }]);
+    expect(p.bottles).toBe(0);
   });
 
   it('heals a layout the host disagrees with, once the bag has been shut a second', () => {

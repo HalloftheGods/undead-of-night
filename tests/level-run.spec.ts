@@ -196,7 +196,7 @@ describe('moving to the next town', () => {
     expect(frame.wave).toBe(0);
     expect(frame.intermission).toBeCloseTo(LEAD_IN_SEC, 1);
     expect(frame.exit).toBeNull();
-    expect(state.zombies.length).toBe(levelPopulation(2));
+    expect(state.zombies.filter((z) => !z.dormant).length).toBe(levelPopulation(2));
     expect(state.populationTarget).toBe(levelPopulation(2));
     expect(state.pickups.length).toBeGreaterThan(30);
     expect(state.pickups.some((item) => item.id === 'old')).toBe(false);

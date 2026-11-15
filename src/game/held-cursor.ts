@@ -11,6 +11,9 @@ export interface HeldInfo {
   readonly name: string;
   readonly hint: string;
   readonly actions: readonly HeldAction[];
+  /** The item's type and id, so the survivor can say what they think of it (inventory/survivor-quips.ts). */
+  readonly type: string;
+  readonly itemId: string;
 }
 
 /** Where a button was drawn, in client pixels. */

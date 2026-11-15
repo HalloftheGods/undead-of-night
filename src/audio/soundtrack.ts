@@ -43,6 +43,8 @@ export class Soundtrack {
   private level = 1;
   private style: GameStyle = 'arcade';
   private current: Track | null = null;
+  /** True while the user has manually picked a track via the Radio. */
+  private manualTrack = false;
   /** Set while the Sound Test is playing one track on its own. */
   private auditionEnd: (() => void) | null = null;
   /** True while that hold is a Radio's find rather than the Sound Test. */
@@ -60,7 +62,10 @@ export class Soundtrack {
   setScene(scene: Scene): void {
     const changed = scene !== this.scene;
     this.scene = scene;
-    if (changed) this.letGoOfFound();
+    if (changed) {
+      this.letGoOfFound();
+      this.manualTrack = false;
+    }
     this.retune();
   }
 
@@ -68,7 +73,10 @@ export class Soundtrack {
   setLevel(level: number): void {
     const changed = level !== this.level;
     this.level = level;
-    if (changed) this.letGoOfFound();
+    if (changed) {
+      this.letGoOfFound();
+      this.manualTrack = false;
+    }
     this.retune();
   }
 
@@ -159,11 +167,74 @@ export class Soundtrack {
     this.retune();
   }
 
+  /** Plays a specific track as the live soundtrack (e.g. chosen from the Radio). */
+  playTrack(file: string): void {
+    this.manualTrack = true;
+    if (this.auditionEnd) this.auditionEnd = null;
+    const track = this.trackFor(file);
+    const isSameTrack = this.current === track;
+    if (isSameTrack && !track.element.paused) return;
+    this.fadeOut(this.current);
+    track.element.currentTime = 0;
+    this.current = track;
+    this.start(track);
+  }
+
+  /** Pauses the live soundtrack. */
+  pauseTrack(): void {
+    if (!this.current) return;
+    this.current.element.pause();
+  }
+
+  /** Resumes the live soundtrack. */
+  resumeTrack(): void {
+    if (!this.current) return;
+    void this.current.element.play().catch(() => undefined);
+  }
+
+  /** Stops whatever soundtrack is currently playing. */
+  stopTrack(): void {
+    if (!this.current) return;
+    this.fadeOut(this.current);
+    this.current = null;
+    this.manualTrack = false;
+  }
+
+  /** Seeks the live soundtrack to a given time in seconds. */
+  seekTrack(seconds: number): void {
+    if (!this.current) return;
+    const duration = this.current.element.duration || 0;
+    this.current.element.currentTime = Math.max(0, Math.min(seconds, duration || seconds));
+  }
+
+  /** Current playback status of the live soundtrack. */
+  getCurrentTrack(): { readonly file: string; readonly paused: boolean; readonly currentTime: number; readonly duration: number } | null {
+    if (!this.current) return null;
+    const el = this.current.element;
+    return {
+      file: this.current.file,
+      paused: el.paused,
+      currentTime: el.currentTime || 0,
+      duration: Number.isFinite(el.duration) ? el.duration : 0,
+    };
+  }
+
+  /** Updates the menu scene's playlist to match changed favorites. */
+  refreshTitlePlaylist(): void {
+    const isMenu = this.scene === 'menu';
+    if (!isMenu) return;
+    this.playlist = playlistFor('menu', this.level, this.style);
+    const hasNoTrack = !this.current;
+    if (hasNoTrack) this.playNext();
+  }
+
   private retune(): void {
     if (this.auditionEnd) return;
+    const isManualPlaying = this.manualTrack && this.current && !this.current.element.paused;
+    if (isManualPlaying) return;
     const playlist = playlistFor(this.scene, this.level, this.style);
     const unchanged = playlist === this.playlist;
-    if (unchanged) return;
+    if (unchanged && this.current) return;
     this.playlist = playlist;
     this.fadeOut(this.current);
     this.current = null;
@@ -254,6 +325,7 @@ export class Soundtrack {
       return;
     }
     track.element.currentTime = 0;
+    this.manualTrack = false;
     this.playNext();
   }
 

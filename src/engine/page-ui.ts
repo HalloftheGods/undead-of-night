@@ -27,7 +27,66 @@ export type PageItem =
   /** A link with `icon` is a taller row with the sprite drawn at its left, so you can see what you are picking. */
   | { readonly kind: 'link'; readonly id: string; readonly label: string; readonly icon?: PixelSprite }
   /** An action and the key or button it is bound to; pressing it starts listening for a new one. */
-  | { readonly kind: 'bind'; readonly id: string; readonly label: string; readonly value: string; readonly listening: boolean };
+  | { readonly kind: 'bind'; readonly id: string; readonly label: string; readonly value: string; readonly listening: boolean }
+  | RadioItem
+  | AlbumSliderItem;
+
+export interface RadioTrackInfo {
+  readonly name: string;
+  readonly where: string;
+  readonly find?: boolean;
+}
+
+export const RADIO_PARTS = [
+  'prev',
+  'rewind',
+  'play',
+  'stop',
+  'forward',
+  'next',
+  'shuffle',
+  'repeat',
+  'favorite',
+] as const;
+
+export type RadioPart = (typeof RADIO_PARTS)[number];
+
+export interface RadioItem {
+  readonly kind: 'radio';
+  readonly id: string;
+  readonly track: RadioTrackInfo | null;
+  readonly isPlaying: boolean;
+  readonly isPaused: boolean;
+  readonly currentTime: number;
+  readonly duration: number;
+  readonly position: number;
+  readonly repeatMode: string;
+  readonly isShuffle: boolean;
+  readonly isFavorite: boolean;
+}
+
+export interface AlbumTrackInfo {
+  readonly id: string;
+  readonly name: string;
+  readonly where: string;
+  readonly file: string;
+  readonly isPlaying: boolean;
+  readonly isPaused: boolean;
+  readonly isFavorite: boolean;
+}
+
+export interface AlbumSliderItem {
+  readonly kind: 'album_slider';
+  readonly id: string;
+  readonly volume: string;
+  readonly title: string;
+  readonly subtitle: string;
+  readonly art: PixelSprite;
+  readonly albumIndex: number;
+  readonly totalAlbums: number;
+  readonly isHorde: boolean;
+  readonly tracks: readonly AlbumTrackInfo[];
+}
 
 export interface PagePanel {
   readonly heading: string;
@@ -115,6 +174,7 @@ const LINE_H = FONT_HEIGHT + 2;
 const ROW_H = 13;
 /** An icon link: room for a 24px picture with a pixel of frame around it. */
 export const ICON_ROW_H = 28;
+export const RADIO_ROW_H = 88;
 const SLIDER_H = 5;
 const BUTTON_H = 13;
 const BUTTON_PAD = 8;
@@ -138,6 +198,8 @@ function itemHeight(item: PageItem, innerW: number): number {
   if (item.kind === 'choice') return FONT_HEIGHT + 3 + ROW_H;
   if (item.kind === 'slider') return FONT_HEIGHT + 3 + SLIDER_H;
   if (item.kind === 'link' && item.icon) return ICON_ROW_H;
+  if (item.kind === 'radio') return RADIO_ROW_H;
+  if (item.kind === 'album_slider') return 18 + 144 + 6 + 8 + 6 + item.tracks.length * 18;
   return item.kind === 'stat' ? FONT_HEIGHT : ROW_H;
 }
 
@@ -198,6 +260,85 @@ export function layoutPageUi(model: PageModel, viewW: number, viewH: number, scr
         controls.push({ id: item.id, item, box: row, parts, track: null });
       } else if (item.kind === 'slider') {
         controls.push({ id: item.id, item, box: row, parts: [], track: { x, y: rowY + FONT_HEIGHT + 3, w: innerW, h: SLIDER_H } });
+      } else if (item.kind === 'radio') {
+        const chassisY = rowY + 7;
+        const speakerW = Math.max(30, Math.min(42, Math.floor((innerW - 140) / 2)));
+        const centerW = innerW - (speakerW + 6) * 2;
+        const centerX = x + speakerW + 6;
+
+        const tunerX = centerX + 2;
+        const tunerY = chassisY + 4;
+        const tunerW = centerW - 4;
+        const track: Box = { x: tunerX, y: tunerY + 6, w: tunerW, h: 8 };
+
+        const btnGap = 2;
+        const btnCount = 6;
+        const totalGap = (btnCount - 1) * btnGap;
+        const btnW = Math.floor((centerW - 4 - totalGap) / btnCount);
+        const transportW = btnCount * btnW + totalGap;
+        const transportStartX = centerX + 2 + Math.floor((centerW - 4 - transportW) / 2);
+        const transportY = chassisY + 61;
+        const transportH = 14;
+
+        const transportParts = Array.from({ length: btnCount }, (_, n): Box => ({
+          x: transportStartX + n * (btnW + btnGap),
+          y: transportY,
+          w: btnW,
+          h: transportH,
+        }));
+
+        const sideBtnX = x + innerW - speakerW - 2;
+        const sideBtnW = speakerW - 4;
+        const sideBtnY = chassisY + 38;
+        const sideBtnH = 11;
+        const sideBtnGap = 2;
+        const sideParts = Array.from({ length: 3 }, (_, n): Box => ({
+          x: sideBtnX,
+          y: sideBtnY + n * (sideBtnH + sideBtnGap),
+          w: sideBtnW,
+          h: sideBtnH,
+        }));
+
+        const parts: Box[] = [...transportParts, ...sideParts];
+        controls.push({ id: item.id, item, box: row, parts, track });
+      } else if (item.kind === 'album_slider') {
+        const cardW = 112;
+        const cardH = 144;
+        const cardX = x + Math.floor((innerW - cardW) / 2);
+        const cardY = rowY + 18;
+
+        const flipperW = 16;
+        const flipperH = 26;
+        const flipperY = cardY + Math.floor((cardH - flipperH) / 2);
+        const prevFlipper: Box = { x: cardX - flipperW - 6, y: flipperY, w: flipperW, h: flipperH };
+        const nextFlipper: Box = { x: cardX + cardW + 6, y: flipperY, w: flipperW, h: flipperH };
+
+        const dotsY = cardY + cardH + 6;
+        const dotSize = 8;
+        const dotGap = 2;
+        const totalDotsW = item.totalAlbums * dotSize + (item.totalAlbums - 1) * dotGap;
+        const dotsStartX = x + Math.floor((innerW - totalDotsW) / 2);
+        const dotParts = Array.from({ length: item.totalAlbums }, (_, n): Box => ({
+          x: dotsStartX + n * (dotSize + dotGap),
+          y: dotsY,
+          w: dotSize,
+          h: dotSize,
+        }));
+
+        const tracksStartY = dotsY + 8 + 6;
+        const trackParts: Box[] = [];
+        const favParts: Box[] = [];
+        const favW = 16;
+        const trackRowH = 16;
+        const trackGap = 2;
+        item.tracks.forEach((_, n) => {
+          const ty = tracksStartY + n * (trackRowH + trackGap);
+          trackParts.push({ x, y: ty, w: innerW - favW - 4, h: trackRowH });
+          favParts.push({ x: x + innerW - favW, y: ty, w: favW, h: trackRowH });
+        });
+
+        const parts: Box[] = [prevFlipper, nextFlipper, ...dotParts, ...trackParts, ...favParts];
+        controls.push({ id: item.id, item, box: row, parts, track: null });
       } else {
         controls.push({ id: item.id, item, box: row, parts: [], track: null });
       }

@@ -19,6 +19,8 @@ export const FORTIFICATION_TYPES = ['plank', 'nails', 'hammer_tool', 'sheet_curt
 
 export const PICKUP_TYPES = [
   'candy', 'bandage', 'medkit', 'pistol_ammo', 'carbine_ammo', 'shells', 'carbine', 'shotgun', 'knife', 'radio',
+  // Only ever lying in the world because a survivor dropped one from the bag.
+  'bottle', 'firework', 'fountain',
   ...PART_ORDER, ...KIT_ORDER, ...TREASURE_TYPES, ...SURVIVAL_ITEM_TYPES, ...SALVAGE_TYPES, ...FORTIFICATION_TYPES,
 ] as const;
 

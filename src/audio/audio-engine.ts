@@ -222,6 +222,35 @@ export class AudioEngine {
     this.soundtrack?.stopAudition();
   }
 
+  /** Plays a specific track as the live soundtrack (e.g. from the Radio). */
+  playTrack(file: string): void {
+    this.soundtrack?.playTrack(file);
+  }
+
+  pauseTrack(): void {
+    this.soundtrack?.pauseTrack();
+  }
+
+  resumeTrack(): void {
+    this.soundtrack?.resumeTrack();
+  }
+
+  stopTrack(): void {
+    this.soundtrack?.stopTrack();
+  }
+
+  seekTrack(seconds: number): void {
+    this.soundtrack?.seekTrack(seconds);
+  }
+
+  getTrackStatus(): { readonly file: string; readonly paused: boolean; readonly currentTime: number; readonly duration: number } | null {
+    return this.soundtrack?.getCurrentTrack() ?? null;
+  }
+
+  refreshTitlePlaylist(): void {
+    this.soundtrack?.refreshTitlePlaylist();
+  }
+
   private clearPreviewTimer(): void {
     if (this.previewTimer) clearTimeout(this.previewTimer);
     this.previewTimer = null;

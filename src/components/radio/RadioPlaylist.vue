@@ -41,7 +41,7 @@
           v-model="searchQuery"
           class="search-input"
           type="text"
-          placeholder="SEARCH TAPES..."
+          placeholder="SEARCH TAPES OR ALBUMS..."
           aria-label="Search tracks"
           spellcheck="false"
         />
@@ -57,68 +57,114 @@
       </div>
     </div>
 
-    <!-- Scrollable track list -->
-    <ul class="playlist-items" role="listbox" aria-label="Unlocked tapes" @keydown="onListKey">
-      <li
-        v-for="(entry, index) in filteredTracks"
-        :key="entry.id"
-        class="playlist-row"
-        role="option"
-        :aria-selected="entry.id === currentTrack?.id"
+    <!-- Scrollable tape albums container -->
+    <div class="playlist-scroll" role="listbox" aria-label="Tape albums" @keydown="onListKey">
+      <div
+        v-for="group in filteredAlbumGroups"
+        :key="group.album.id"
+        class="tape-album"
+        :class="{ 'has-current': group.hasCurrentTrack, 'is-horde': group.album.isHorde }"
       >
-        <button
-          class="track-item"
-          :class="{ 'is-current': entry.id === currentTrack?.id }"
-          type="button"
-          @click="emit('select', entry)"
-        >
-          <!-- Play indicator / track number -->
-          <span class="track-num">
-            <span v-if="entry.id === currentTrack?.id && isPlaying && !isPaused" class="mini-eq" aria-hidden="true">
-              <span class="eq-bar" />
-              <span class="eq-bar" />
-              <span class="eq-bar" />
-            </span>
-            <span v-else-if="entry.id === currentTrack?.id && isPaused" class="mini-pause">⏸</span>
-            <span v-else>{{ index + 1 }}</span>
-          </span>
+        <!-- Album J-Card Sleeve Header -->
+        <div class="album-header">
+          <!-- Album Cover Art (Level art or Horde art) -->
+          <div class="album-cover-box">
+            <SpriteImg :sprite="group.album.art" :scale="1" />
+            <span class="album-vol-badge">{{ group.album.volume }}</span>
+          </div>
 
-          <!-- Track details -->
-          <span class="track-info">
-            <span class="track-title">{{ entry.name }}</span>
-            <span class="track-meta">
-              <span class="track-origin">{{ entry.where }}</span>
-              <span v-if="entry.find" class="track-badge">RADIO FIND</span>
-            </span>
-          </span>
-        </button>
+          <!-- Album Meta Info -->
+          <div class="album-meta">
+            <div class="album-title-row">
+              <span class="album-title">{{ group.album.title }}</span>
+              <span v-if="group.album.isHorde" class="album-horde-pill">HORDE MODE</span>
+            </div>
+            <div class="album-sub">
+              <span class="album-subtitle">{{ group.album.subtitle }}</span>
+              <span class="album-count">{{ group.tracks.length }} {{ group.tracks.length === 1 ? 'TAPE' : 'TAPES' }}</span>
+            </div>
+          </div>
+        </div>
 
-        <!-- Favorite heart toggle button -->
-        <button
-          class="track-fav-btn"
-          :class="{ 'is-fav': favorites.has(entry.file) }"
-          type="button"
-          :title="favorites.has(entry.file) ? 'Remove from favorites' : 'Add to favorites'"
-          :aria-label="`Favorite ${entry.name}`"
-          @click.stop="emit('toggleFavorite', entry.file)"
-        >
-          {{ favorites.has(entry.file) ? '♥' : '♡' }}
-        </button>
-      </li>
+        <!-- Cassette Tapes Tracklist -->
+        <ul class="album-tracks">
+          <li
+            v-for="(entry, index) in group.tracks"
+            :key="entry.id"
+            class="cassette-tape-row"
+            role="option"
+            :aria-selected="entry.id === currentTrack?.id"
+          >
+            <button
+              class="cassette-btn"
+              :class="{ 'is-current': entry.id === currentTrack?.id }"
+              type="button"
+              @click="emit('select', entry)"
+            >
+              <!-- Corner screws on cassette shell -->
+              <span class="tape-screw is-tl" aria-hidden="true" />
+              <span class="tape-screw is-bl" aria-hidden="true" />
+
+              <!-- Side index or Equalizer playing indicator -->
+              <span class="tape-index">
+                <span v-if="entry.id === currentTrack?.id && isPlaying && !isPaused" class="mini-eq" aria-hidden="true">
+                  <span class="eq-bar" />
+                  <span class="eq-bar" />
+                  <span class="eq-bar" />
+                </span>
+                <span v-else-if="entry.id === currentTrack?.id && isPaused" class="mini-pause">⏸</span>
+                <span v-else class="side-label">A{{ index + 1 }}</span>
+              </span>
+
+              <!-- Tape label band with track title and origin -->
+              <span class="tape-label-band">
+                <span class="tape-title">{{ entry.name }}</span>
+                <span class="tape-meta">
+                  <span class="tape-type">TYPE II // CrO2</span>
+                  <span class="tape-origin">{{ entry.where }}</span>
+                  <span v-if="entry.find" class="tape-badge">RADIO FIND</span>
+                </span>
+              </span>
+
+              <!-- Spool hub pip -->
+              <span class="tape-spool-pip" aria-hidden="true">
+                <span class="spool-ring" />
+              </span>
+
+              <span class="tape-screw is-tr" aria-hidden="true" />
+              <span class="tape-screw is-br" aria-hidden="true" />
+            </button>
+
+            <!-- Favorite heart toggle button -->
+            <button
+              class="track-fav-btn"
+              :class="{ 'is-fav': favorites.has(entry.file) }"
+              type="button"
+              :title="favorites.has(entry.file) ? 'Remove from favorites' : 'Add to favorites'"
+              :aria-label="`Favorite ${entry.name}`"
+              @click.stop="emit('toggleFavorite', entry.file)"
+            >
+              {{ favorites.has(entry.file) ? '♥' : '♡' }}
+            </button>
+          </li>
+        </ul>
+      </div>
 
       <!-- Empty state -->
-      <li v-if="filteredTracks.length === 0" class="playlist-empty">
-        <p v-if="activeTab === 'favorites'">No favorite tapes yet. Click the heart on any track to favorite it.</p>
-        <p v-else-if="searchQuery">No tracks match "{{ searchQuery }}".</p>
+      <div v-if="filteredAlbumGroups.length === 0" class="playlist-empty">
+        <p v-if="activeTab === 'favorites'">No favorite tapes yet. Click the heart on any tape to favorite it.</p>
+        <p v-else-if="searchQuery">No tapes or albums match "{{ searchQuery }}".</p>
         <p v-else>No unlocked tapes found.</p>
-      </li>
-    </ul>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import type { MusicEntry } from '../../game/sound-test.ts';
+import { groupTracksIntoAlbums } from '../../game/radio-albums.ts';
+import SpriteImg from '../SpriteImg.vue';
 
 type PlaylistTab = 'all' | 'favorites' | 'finds';
 
@@ -153,7 +199,6 @@ const filteredTracks = computed(() => {
   const query = searchQuery.value.trim().toLowerCase();
 
   return tracks.filter((track) => {
-    // Tab criteria
     const matchesTab =
       activeTab.value === 'all' ||
       (activeTab.value === 'favorites' && favorites.has(track.file)) ||
@@ -161,7 +206,6 @@ const filteredTracks = computed(() => {
 
     if (!matchesTab) return false;
 
-    // Search query criteria
     const matchesSearch =
       query.length === 0 ||
       track.name.toLowerCase().includes(query) ||
@@ -171,12 +215,16 @@ const filteredTracks = computed(() => {
   });
 });
 
+const filteredAlbumGroups = computed(() => {
+  return groupTracksIntoAlbums(filteredTracks.value, currentTrack?.id);
+});
+
 function onListKey(event: KeyboardEvent): void {
   const isDown = event.code === 'ArrowDown';
   const isUp = event.code === 'ArrowUp';
   if (!isDown && !isUp) return;
 
-  const buttons = [...document.querySelectorAll<HTMLButtonElement>('.playlist-items .track-item')];
+  const buttons = [...document.querySelectorAll<HTMLButtonElement>('.playlist-scroll .cassette-btn')];
   const at = buttons.indexOf(document.activeElement as HTMLButtonElement);
   const onButton = at >= 0;
   if (!onButton) return;

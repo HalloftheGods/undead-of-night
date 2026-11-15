@@ -48,7 +48,7 @@ describe('level 1 opening', () => {
       expect(z.type).toBe('walker');
       expect(z.speed).toBeLessThan(30);
     }
-    expect(state.zombies.length).toBeLessThanOrEqual(levelPopulation(1));
+    expect(state.zombies.filter((z) => !z.dormant).length).toBeLessThanOrEqual(levelPopulation(1));
   });
 
   it.each(SEEDS)('seed %i: a walker is on a player who stands still within 20 s', (seed) => {
@@ -90,7 +90,7 @@ describe('level 1 opening', () => {
     state.intermissionLeft = 0.01;
     for (let i = 0; i < 4; i++) sim.step();
     expect(state.wave).toBe(1);
-    expect(state.spawnQueue.length + state.zombies.length).toBe(5);
+    expect(state.spawnQueue.length + state.zombies.filter((z) => !z.dormant).length).toBe(5);
     for (let t = 0; t < 5 * TICK_RATE; t++) sim.step();
     expect(state.zombies.filter((z) => z.horde).length).toBeLessThanOrEqual(3);
   });

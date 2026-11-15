@@ -48,7 +48,7 @@ export function variedLook(look: VariedLook, propIndex: number): ContainerLook {
 }
 
 /** The look a piece is drawn with. The rule lives in shared/container-look.ts, so its loot grid follows the same look. */
-export const containerLook = (piece: Pick<Container, 'kind' | 'prop'> & Partial<Pick<Container, 'propIndex'>>): ContainerLook =>
+export const containerLook = (piece: Pick<Container, 'kind' | 'prop'> & Partial<Pick<Container, 'propIndex' | 'look'>>): ContainerLook =>
   containerLookId(piece) as ContainerLook;
 
 /** Names a prop's variants in order, so a builder's four arts land on the right looks. */

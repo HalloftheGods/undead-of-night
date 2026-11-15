@@ -1,13 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { titleUnit } from "../src/engine/viewport.ts";
 import {
+  DEV_MENU_ITEMS,
+  DEV_MENU_SECTION,
   isConfirmKey,
+  isLocalInstall,
   menuLabel,
   menuLine,
   isBackKey,
   MENU_SECTIONS,
   menuOwnsKey,
   menuRows,
+  menuSections,
   menuStep,
   openingRow,
   steppedRow,
@@ -44,8 +48,8 @@ describe("title menu", () => {
       "Radio",
       "Audio",
       "Controls",
-      "Display",
       "Gameplay",
+      "Video",
       "Sound Test"
     ]);
   });
@@ -73,8 +77,8 @@ describe("title menu", () => {
     expect(menuRows("settings").map((row) => row.label)).toEqual([
       "Audio",
       "Controls",
-      "Display",
       "Gameplay",
+      "Video",
       "Back"
     ]);
     expect(menuRows("settings").at(-1)?.kind).toBe("back");
@@ -102,8 +106,8 @@ describe("title menu", () => {
       "???",
       "Audio",
       "Controls",
-      "Display",
       "Gameplay",
+      "Video",
       "Sound Test"
     ]);
     expect(labels(true)).toEqual(TITLE_MENU.map((item) => item.label));
@@ -228,5 +232,44 @@ describe("records page", () => {
       "Campaign trip",
       "Arcade run"
     ]);
+  });
+});
+
+describe("developer mode", () => {
+  it("shows Developer Mode parent only when showDev is enabled", () => {
+    const normalSections = menuSections(undefined, false);
+    expect(normalSections.map((sec) => sec.group)).toEqual(["play", "radio", "books", "settings"]);
+
+    const devSections = menuSections(undefined, true);
+    expect(devSections.map((sec) => sec.group)).toEqual(["play", "radio", "books", "settings", "dev"]);
+    expect(devSections.at(-1)?.label).toBe("Developer Mode");
+
+    const normalRows = menuRows(null, TITLE_MENU, undefined, false, false);
+    expect(normalRows.map((row) => row.label)).toEqual(["1-5 Player", "???", "News Stand", "Settings"]);
+
+    const devRows = menuRows(null, TITLE_MENU, undefined, false, true);
+    expect(devRows.map((row) => row.label)).toEqual(["1-5 Player", "???", "News Stand", "Settings", "Developer Mode"]);
+  });
+
+  it("lists Items, Sprites, Test Drive, HUD and Back inside Developer Mode", () => {
+    const rows = menuRows("dev");
+    expect(rows.map((row) => row.label)).toEqual(["Items", "Sprites", "Test Drive", "HUD", "Back"]);
+    expect(rows.at(-1)?.kind).toBe("back");
+  });
+
+  it("gives each dev item a non-empty descriptive subtitle", () => {
+    for (const item of DEV_MENU_ITEMS) {
+      expect(item.line.length).toBeGreaterThan(0);
+      expect(item.line).not.toContain("\n");
+      expect(item.line).not.toContain("—");
+    }
+    expect(DEV_MENU_SECTION.line).not.toContain("—");
+  });
+
+  it("identifies local installs by hostname and dev environment", () => {
+    expect(isLocalInstall("localhost")).toBe(true);
+    expect(isLocalInstall("127.0.0.1")).toBe(true);
+    expect(isLocalInstall("test.localhost")).toBe(true);
+    expect(isLocalInstall("production.example.com")).toBe(false);
   });
 });

@@ -51,6 +51,7 @@
       <p v-else-if="warning" class="px-error" role="alert">{{ warning }}</p>
       <MenuLink class="pause-menu-link" @press="emit('openControls')">Controls</MenuLink>
       <MenuLink class="pause-menu-link" @press="emit('openBook')">News Stand</MenuLink>
+      <MenuLink v-if="hasRadio" class="pause-menu-link" @press="emit('openRadio')">Radio</MenuLink>
       <MenuLink class="pause-menu-link" @press="game.toMenu()">Main menu</MenuLink>
     </div>
 
@@ -67,6 +68,7 @@ import { computed, nextTick, onMounted, ref, useTemplateRef } from 'vue';
 import { townName } from '../../shared/levels.ts';
 import { leaveWarning } from '../game/home-screens.ts';
 import type { UiState } from '../game/hud-state.ts';
+import { loadSoundUnlock } from '../game/sound-unlock.ts';
 import type { TransportKind } from '../network/transport.ts';
 import { onlineRoomsLive } from '../network/play-api.ts';
 import BrightnessSlider from './BrightnessSlider.vue';
@@ -77,7 +79,7 @@ import { useRoomLink } from './use-room-link.ts';
 import { useGame } from './use-game.ts';
 
 const { ui, mode } = defineProps<{ ui: UiState; mode: TransportKind }>();
-const emit = defineEmits<{ openBook: []; openControls: [] }>();
+const emit = defineEmits<{ openBook: []; openControls: []; openRadio: [] }>();
 const game = useGame();
 const resumeBox = useTemplateRef<HTMLElement>('resumeBox');
 /** While the Brightness thumb is held the backdrop and the rest of the card fade, so the town shows what it does. */
@@ -85,6 +87,7 @@ const previewing = ref(false);
 const warning = computed(() => leaveWarning(ui.home));
 const inBunker = computed(() => ui.home?.inBunker === true);
 const level = computed(() => ui.hud?.level ?? null);
+const hasRadio = computed(() => loadSoundUnlock().radio || ui.home?.save?.camp?.radio === true);
 const volumeShown = computed(() => (ui.muted ? 'Muted' : `${Math.round(ui.volume * 100)}%`));
 const canHost = computed(() => {
   const isSolo = mode === 'solo';

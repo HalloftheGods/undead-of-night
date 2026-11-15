@@ -489,8 +489,9 @@ export interface RoomPacket {
  * 5: the bunker's merchants walk it (snapshot `merchants`, events `merchant_hurt` and `merchant_downed`), and its stalls have no counters.
  * 6: home is an outdoor camp in a fence, with tents, of five sizes (welcome and snapshot `campSize`); version 5 would build the indoor bunker.
  * 7: the people to rescue (snapshot `merchants` entries carry `rescue` in a town, join `rescued`, `radio`, receipt `rescued` and `radioLevels`).
+ * 8: dropped bottles, fireworks and fountains lie in the world as pickups (`bottle`, `firework`, `fountain`); version 7 has no art for them.
  */
-export const PROTOCOL_VERSION = 7;
+export const PROTOCOL_VERSION = 8;
 
 /**
  * Sent just before a link is closed on purpose, because a data channel has no close code.

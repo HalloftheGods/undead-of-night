@@ -1,5 +1,6 @@
 <template>
   <div
+    ref="backdrop"
     class="dual-loot-backdrop"
     role="dialog"
     aria-modal="true"
@@ -10,18 +11,18 @@
     <div class="dual-loot-overlay">
       <!-- Left Dock: Container (Enlarged Prop with Overlaid Grid) -->
       <div class="left-column">
-        <section v-if="hasContainer" class="loot-dock container-dock container-panel">
-          <header class="dock-header container-header">
-            <div class="dock-title-group">
-              <h2 id="modal-title" class="dock-title">{{ modalState.containerTitle.toUpperCase() }}</h2>
-              <span class="dock-capacity">{{ sweeping ? 'SEARCHING' : `${modalState.containerGrid.items.length} ITEMS` }}</span>
-            </div>
+        <section v-if="hasContainer" class="loot-dock container-dock container-panel" :class="zoomClass" :style="zoomStyle">
+          <!-- No card: the container floats over the game under a small label. -->
+          <header class="container-label">
+            <h2 id="modal-title" class="dock-title">{{ modalState.containerTitle.toUpperCase() }}</h2>
+            <span class="dock-capacity">{{ sweeping ? 'SEARCHING' : `${modalState.containerGrid.items.length} ITEMS` }}</span>
           </header>
 
           <div class="container-grid-stage">
             <!-- Both drawings sit by their anchors in one box, and the box is stretched over the grid so each cell covers its own part of the object. -->
             <svg
               v-if="containerArtStage"
+              ref="stageArt"
               class="container-stage-bg-art"
               :viewBox="containerArtStage.viewBox"
               preserveAspectRatio="none"
@@ -64,7 +65,8 @@
                 v-for="item in modalState.containerGrid.items"
                 :key="item.id"
                 class="grid-item"
-                :class="{ 'is-selected': modalState.selectedItemId === item.id, 'is-pad': padItemId === item.id }"
+                :class="[{ 'is-selected': modalState.selectedItemId === item.id, 'is-pad': padItemId === item.id }, arrivalClass(item.id)]"
+                :data-item-id="item.id"
                 :style="getItemCustomProperties(item)"
                 draggable="true"
                 @click.stop="onItemClick('container', item)"
@@ -164,7 +166,8 @@
                   v-for="item in pocketsSection.grid.items"
                   :key="item.id"
                   class="grid-item"
-                  :class="{ 'is-selected': modalState.selectedItemId === item.id, 'is-pad': padItemId === item.id }"
+                  :class="[{ 'is-selected': modalState.selectedItemId === item.id, 'is-pad': padItemId === item.id }, arrivalClass(item.id)]"
+                :data-item-id="item.id"
                   :style="getItemCustomProperties(item)"
                   draggable="true"
                   @click.stop="onItemClick('pockets', item)"
@@ -213,7 +216,8 @@
                   v-for="item in candyBagSection.grid.items"
                   :key="item.id"
                   class="grid-item"
-                  :class="{ 'is-selected': modalState.selectedItemId === item.id, 'is-pad': padItemId === item.id }"
+                  :class="[{ 'is-selected': modalState.selectedItemId === item.id, 'is-pad': padItemId === item.id }, arrivalClass(item.id)]"
+                :data-item-id="item.id"
                   :style="getItemCustomProperties(item)"
                   draggable="true"
                   @click.stop="onItemClick('candyBag', item)"
@@ -263,7 +267,8 @@
                 v-for="item in backpackSection.grid.items"
                 :key="item.id"
                 class="grid-item"
-                :class="{ 'is-selected': modalState.selectedItemId === item.id, 'is-pad': padItemId === item.id }"
+                :class="[{ 'is-selected': modalState.selectedItemId === item.id, 'is-pad': padItemId === item.id }, arrivalClass(item.id)]"
+                :data-item-id="item.id"
                 :style="getItemCustomProperties(item)"
                 draggable="true"
                 @click.stop="onItemClick('backpack', item)"
@@ -296,14 +301,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, reactive, ref, useTemplateRef, watch } from 'vue';
 import LootItemArt from './LootItemArt.vue';
 import { useGame } from './use-game.ts';
+import { useItemArrivals } from './use-item-arrivals.ts';
+import { useContainerZoom } from './use-container-zoom.ts';
+import { noteMove, notePlaced } from '../game/inventory/pickup-arrivals.ts';
 import { backpackDef } from '../../shared/backpack.ts';
 import { findItemAtTile, getItemFootprint, isCellBlocked, type GridItem } from '../../shared/grid-inventory.ts';
-import { cellPhase, itemHidden, searchSweep, stageView, sweepRanks } from '../game/inventory/search-overlay.ts';
+import { cellPhase, itemHidden, searchSweep, shownSweep, stageView, sweepRanks } from '../game/inventory/search-overlay.ts';
 import type { CellPhase } from '../game/inventory/search-overlay.ts';
 import { heldButtonAt, heldOnSurvivor, setHeld } from '../game/held-cursor.ts';
+import { elementOwnsPoint } from '../game/inventory/inventory-hands.ts';
 import { anchorOf, isLootPadInCharge, moveCursor, setLootPad, settleCursor, startCursor } from '../game/inventory/loot-pad.ts';
 import type { LootButton, LootCursor, LootDirection } from '../game/inventory/loot-pad.ts';
 import { itemBlurb } from '../game/inventory/item-blurb.ts';
@@ -363,6 +372,13 @@ const modalState = reactive(
 );
 
 const hoveredGrid = ref<GridIdentifier | null>(null);
+/** Items picked up while the window is open land in the grids live, flying in from the world. */
+const backdrop = useTemplateRef<HTMLElement>('backdrop');
+const { arrivalClass } = useItemArrivals(backdrop, () => [modalState.backpackGrid, modalState.pocketsGrid, modalState.candyBagGrid, modalState.containerGrid]);
+/** The container's own drawing zooms out of the world to where its art sits; the grid shows once it lands. */
+const stageArt = useTemplateRef<SVGSVGElement>('stageArt');
+const { zoomClass, zoomStyle } = useContainerZoom(backdrop, stageArt);
+
 const hoveredCol = ref<number | null>(null);
 const hoveredRow = ref<number | null>(null);
 const hoveredGearSlot = ref<GearSlotId | null>(null);
@@ -392,7 +408,7 @@ const sweeping = computed(() => searchSweep.value !== null && modalState.contain
 function sweepPhase(col: number, row: number): CellPhase | null {
   if (!sweeping.value) return null;
   const ranks = sweepRanks(modalState.containerGrid);
-  return cellPhase(ranks.rankOf(col, row), ranks.open, searchSweep.value ?? 0);
+  return cellPhase(ranks.rankOf(col, row), ranks.open, shownSweep.value ?? 0);
 }
 
 /** Head and read cells light up. A void is never lit: it shows as a void when the head reaches it, and looks like any other cell before. */
@@ -613,6 +629,8 @@ function onCellClick(gridId: GridIdentifier, col: number, row: number): boolean 
   const from = sourceName(held.source);
   const placed = placeHeldItemInGrid(modalState, gridId, col, row);
   if (placed) {
+    // Set down by hand (a click or a drag): it only lands, it does not fly.
+    notePlaced(held.item);
     emit('transfer', { itemId: modalState.selectedItemId ?? '', source: from, target: gridId });
     game.playSfx('ui_place');
   }
@@ -622,7 +640,14 @@ function onCellClick(gridId: GridIdentifier, col: number, row: number): boolean 
 const lastItemClick = ref<{ id: string; gridId: GridIdentifier; time: number } | null>(null);
 
 function triggerQuickTransfer(gridId: GridIdentifier, itemId: string): void {
+  // A double click sends it across: it flies from where its cell is now.
+  const moving = resolveGridById(modalState, gridId).items.find((item) => item.id === itemId) ?? modalState.heldItem?.item ?? null;
+  const cell = backdrop.value?.querySelector<HTMLElement>(`[data-item-id="${CSS.escape(itemId)}"]`)?.getBoundingClientRect() ?? null;
   const didTransfer = quickTransferBetweenInventories(modalState, gridId, itemId);
+  if (didTransfer && moving) {
+    if (cell) noteMove(moving, { client: { x: cell.left, y: cell.top, w: cell.width, h: cell.height } });
+    else notePlaced(moving);
+  }
   if (didTransfer) {
     game.playSfx('ui_place');
     const isContainer = gridId === 'container';
@@ -753,8 +778,9 @@ function handleGlobalKey(event: KeyboardEvent): void {
     onEscape();
     return;
   }
+  // R turns only an item in hand; with the hand empty it is left to the game as the reload key.
   const isRotateKey = event.key === 'r' || event.key === 'R';
-  if (isRotateKey) {
+  if (isRotateKey && modalState.heldItem !== null) {
     event.preventDefault();
     onRotateClick();
   }
@@ -775,6 +801,8 @@ watch(
       name: formatItemName(item.type),
       hint: itemBlurb(item.type),
       actions: heldActions(item),
+      type: item.type,
+      itemId: item.id,
     });
   },
   { immediate: true },
@@ -790,13 +818,21 @@ function onHeldButtonClick(event: MouseEvent): void {
   const onButton = heldButtonAt(event.clientX, event.clientY);
   const onGame = event.target instanceof HTMLCanvasElement;
   const kind = onButton ?? (onGame ? (heldOnSurvivor(event.clientX, event.clientY) ? 'use' : 'drop') : null);
+  actOnHeld(kind, canUse, canDrop);
+}
+
+/** USE or DROP on the item in hand, with its sound, when the item allows it. True when something happened. */
+function actOnHeld(kind: 'use' | 'drop' | null, canUse: boolean, canDrop: boolean): boolean {
+  const held = modalState.heldItem;
+  if (!held) return false;
   if (kind === 'use' && canUse) {
     game.playSfx(useSoundOf(held.item.type));
     onUseHeld();
   } else if (kind === 'drop' && canDrop) {
     game.playSfx('ui_drop');
     onDropHeld();
-  }
+  } else return false;
+  return true;
 }
 
 /** The controller's highlight: one cell, on the first item at first, moved by the D-pad. Null until a pad is in hand. */
@@ -829,6 +865,9 @@ function padMove(direction: LootDirection): boolean {
 
 /** A takes the item under the highlight across (or sets a held one down); X lifts it to move it; Y turns it. */
 function padPress(button: LootButton): boolean {
+  // With the hand empty the triggers are the game's (fire and shove), so they leave the highlight unlit.
+  const isTrigger = button === 'rt' || button === 'lt';
+  if (isTrigger && modalState.heldItem === null) return false;
   const cursor = padCursor.value ?? startCursor(padGridOf);
   padCursor.value = cursor;
   const grid = padGridOf(cursor.gridId);
@@ -836,6 +875,14 @@ function padPress(button: LootButton): boolean {
   if (button === 'y') {
     onRotateClick();
     return true;
+  }
+  if (isTrigger) {
+    const held = modalState.heldItem;
+    if (!held) return false;
+    const actions = heldActions(held.item);
+    const acted = actOnHeld(button === 'rt' ? 'use' : 'drop', actions.some((a) => a.kind === 'use'), actions.some((a) => a.kind === 'drop'));
+    if (acted) padCursor.value = settleCursor(cursor, padGridOf);
+    return acted;
   }
   if (modalState.heldItem !== null) {
     onCellClick(cursor.gridId, cursor.col, cursor.row);
@@ -865,7 +912,12 @@ function settle(): void {
   if (modalState.heldItem !== null) returnHeldItemToSource(modalState);
 }
 
-defineExpose({ escape: onEscape, rotate: onRotateClick, settle });
+/** The page element under the point is this window's own: its panels, not the see-through gaps over the game. */
+function ownsPoint(clientX: number, clientY: number): boolean {
+  return elementOwnsPoint(backdrop.value, clientX, clientY);
+}
+
+defineExpose({ escape: onEscape, rotate: onRotateClick, settle, ownsPoint });
 
 onUnmounted(() => {
   setLootPad(null);

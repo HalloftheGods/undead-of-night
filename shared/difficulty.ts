@@ -16,6 +16,12 @@ export interface DifficultyDef {
   readonly hordeSize: number;
   /** Multiplies the lull between hordes. */
   readonly lull: number;
+  /** How far the town is lit, 0 for none up to 1 for the most the Brightness setting allows. */
+  readonly light: number;
+  /** Horde Mode's blackout: the streets go dark, with only some lamps still working. */
+  readonly eerie: boolean;
+  /** Blips on the card's Night bar, 1 for the brightest night up to 5 for the darkest. */
+  readonly night: number;
 }
 
 /** In picker order, easiest first. Lights Out is the balance the game was tuned on. */
@@ -28,7 +34,10 @@ export const DIFFICULTIES: readonly DifficultyDef[] = [
     zombieSpeed: 0.85,
     zombieDamage: 0.75,
     hordeSize: 0.75,
-    lull: 1.3
+    lull: 1.3,
+    light: 1,
+    eerie: false,
+    night: 1
   },
   {
     id: "stay_close",
@@ -38,7 +47,10 @@ export const DIFFICULTIES: readonly DifficultyDef[] = [
     zombieSpeed: 0.93,
     zombieDamage: 1,
     hordeSize: 0.9,
-    lull: 1
+    lull: 1,
+    light: 0.5,
+    eerie: false,
+    night: 2
   },
   {
     id: "lights_out",
@@ -48,7 +60,10 @@ export const DIFFICULTIES: readonly DifficultyDef[] = [
     zombieSpeed: 1,
     zombieDamage: 1,
     hordeSize: 1,
-    lull: 1
+    lull: 1,
+    light: 0,
+    eerie: false,
+    night: 4
   },
   {
     id: "undead_tired",
@@ -58,7 +73,10 @@ export const DIFFICULTIES: readonly DifficultyDef[] = [
     zombieSpeed: 1.12,
     zombieDamage: 1.3,
     hordeSize: 1.25,
-    lull: 0.8
+    lull: 0.8,
+    light: 0,
+    eerie: true,
+    night: 5
   }
 ];
 

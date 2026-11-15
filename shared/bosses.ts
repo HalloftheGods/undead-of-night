@@ -113,6 +113,7 @@ function bossSpot(sim: SimState, rng: Rng, radius: number): { x: number; y: numb
 
 /** Called as a horde starts: the town's last horde on a boss night brings the boss. Returns it, for the caller to announce. */
 export function maybeSummonBoss(sim: SimState): ZombieState | null {
+  if (sim.hudTest) return null;
   const boss = bossFor(sim);
   const lastHorde = sim.wave === levelDef(sim.level).hordes;
   if (!boss) return null;

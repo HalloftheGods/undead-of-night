@@ -45,6 +45,7 @@ import {
   bodyHeight,
   clipFrame,
   clipFrameAt,
+  drawOutline,
   drawSilhouette,
   drawSprite,
   drawSpriteScaled,
@@ -54,6 +55,8 @@ import {
 import { beginStatusFrame, paintBurn, paintEffectTrail, paintTint } from "./status-fx.ts";
 import { SurvivorFrames } from "./survivor-frames.ts";
 import { trackWalking } from "./visuals.ts";
+import { stageBox } from "../game/inventory/container-stage.ts";
+import { noteContainerDrawn, SEARCH_OUTLINE, searchedContainer, stageWorldRect } from "../game/inventory/container-zoom.ts";
 import { glowOf } from "../art/glow.ts";
 import { paintSelfLit } from "./self-lit.ts";
 import type { Body } from "./self-lit.ts";
@@ -612,6 +615,15 @@ export class EntityRenderer {
       Math.round(placed.prop.x) - sprite.ax - left,
       Math.round(placed.prop.y) - sprite.ay - top
     );
+    // The container whose loot window is open is outlined where it stands, and tells the window where that is.
+    const isSearched = container !== null && container.id === searchedContainer();
+    if (isSearched) {
+      const ax = Math.round(placed.prop.x);
+      const ay = Math.round(placed.prop.y);
+      drawOutline(ctx, sprite, ax - left, ay - top, SEARCH_OUTLINE);
+      const box = stageBox(container.art);
+      if (box) noteContainerDrawn(container.id, stageWorldRect({ x: ax, y: ay }, box), container.art);
+    }
     if (placed.prop.sign) drawStreetSign(ctx, placed.prop, left, top);
     ctx.globalAlpha = 1;
   }

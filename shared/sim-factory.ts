@@ -34,6 +34,8 @@ export interface SimulationOptions {
   readonly overrun?: boolean;
   /** Test Drive: every car prop can be driven, and the exit van never comes. Off unless asked for. */
   readonly testDrive?: boolean;
+  /** HUD test: no zombie spawns and nobody dies, so the HUD and its pickups can be checked in a live town. Off unless asked for. */
+  readonly hudTest?: boolean;
 }
 
 /** A level number held to the real range, so a stale or hand-edited save cannot start a town that is not there. */
@@ -100,6 +102,7 @@ export function createSimState(options: SimulationOptions): SimState {
     vehicles: new Map(),
     homeRun: home ? newHomeRun(options.seed) : null,
     testDrive: !home && options.testDrive === true,
+    hudTest: !home && options.hudTest === true,
     overrunOn: home && options.overrun === true,
     overrun: null,
   };

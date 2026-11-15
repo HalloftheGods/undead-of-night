@@ -128,6 +128,8 @@ function placeOpeningShamblers(sim: SimState): void {
 
 /** Fills the town for a new run, leaving the ground around the spawn empty. */
 export function seedPopulation(sim: SimState): void {
+  // A HUD test town starts with nobody in it: the fill loop below would never end if spawns did nothing.
+  if (sim.hudTest) return;
   if (sim.level === FIRST_LEVEL) placeOpeningShamblers(sim);
   placeGuards(sim);
   while (sim.zombies.length < sim.populationTarget) {
@@ -141,6 +143,7 @@ export function seedPopulation(sim: SimState): void {
 
 /** One replacement at a time, out of sight, so a cleared street fills back in slowly. */
 export function updatePopulation(sim: SimState): void {
+  if (sim.hudTest) return;
   sim.topUpTimer -= TICK_DT;
   const isTopUpPending = sim.topUpTimer > 0;
   if (isTopUpPending) return;

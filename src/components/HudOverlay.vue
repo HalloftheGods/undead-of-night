@@ -1,5 +1,5 @@
 <template>
-  <section class="hud" :class="{ 'has-moodles': hasMoodles }">
+  <section v-if="!isCanvasHud" class="hud" :class="{ 'has-moodles': hasMoodles }">
     <header class="hud-top">
       <!-- What is carried, across the top left like the item row of a Zelda screen. -->
       <div class="hud-vitals">
@@ -208,6 +208,7 @@ import GunFitPips from './GunFitPips.vue';
 import SpriteImg from './SpriteImg.vue';
 import QuestTracker from './QuestTracker.vue';
 import TreasureChip from './TreasureChip.vue';
+import { canvasHud, canvasHudAllowed } from '../game/canvas-hud-prefs.ts';
 
 const LOW_HEALTH = 0.34;
 
@@ -244,6 +245,9 @@ const biteStyle = computed(() => {
 function glyph(code: string): string | null {
   return keyGlyph(code, device.value, input.gamepad.id);
 }
+
+/** The canvas paints the vitals, items, horde and weapons; a phone keeps them here, where the weapon slots are tap targets. */
+const isCanvasHud = computed(() => canvasHudAllowed(canvasHud.value, ui.value.touch));
 
 const isLow = computed(() => hud.health / hud.maxHealth < LOW_HEALTH);
 const hasMoodles = computed(() => (hud.moodles?.length ?? 0) > 0);

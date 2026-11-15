@@ -147,6 +147,14 @@ export function takeItem(p: PlayerState, item: PickupState): boolean {
   }
   const isRadio = type === 'radio';
   if (isRadio) return true;
+  // A dropped throwable back into the bag; applyPickup has already checked there is room.
+  const isThrowable = type === 'bottle' || type === 'firework' || type === 'fountain';
+  if (isThrowable) {
+    if (type === 'bottle') p.bottles += 1;
+    else if (type === 'firework') p.fireworks += 1;
+    else p.fountains += 1;
+    return true;
+  }
   const isFortification = isFortificationItem(type);
   if (isFortification) {
     const materials = p.materials ?? (p.materials = createEmptyFortificationInventory());

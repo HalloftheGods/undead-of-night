@@ -23,13 +23,16 @@
 import { computed, onBeforeUnmount, onMounted, useTemplateRef } from 'vue';
 import { loadMenuInfo } from '../game/menu-info-pref.ts';
 import { loadSoundUnlock } from '../game/sound-unlock.ts';
-import { isBackKey, isConfirmKey, MENU_SECTIONS, menuOwnsKey, menuSections, menuRows, menuStep, openingRow, steppedRow, TITLE_MENU } from '../game/title-menu.ts';
+import { isBackKey, isConfirmKey, menuOwnsKey, menuSections, menuRows, menuStep, openingRow, steppedRow, TITLE_MENU } from '../game/title-menu.ts';
 import type { KeyFocus, MenuGroup, MenuRow, TitleMenuItem } from '../game/title-menu.ts';
 import type { SoundUnlock } from '../game/sound-unlock.ts';
 import { menuLabel, menuLine } from '../game/title-menu.ts';
 import { useGame } from './use-game.ts';
 
-const { entries = TITLE_MENU } = defineProps<{ entries?: readonly TitleMenuItem[] }>();
+const { entries = TITLE_MENU, showDev = false } = defineProps<{
+  entries?: readonly TitleMenuItem[];
+  showDev?: boolean;
+}>();
 /** The highlighted row of whichever list is showing. */
 const selected = defineModel<number>({ required: true });
 /** Null on the title (the three parents); a group once its parent is opened. */
@@ -37,8 +40,8 @@ const section = defineModel<MenuGroup | null>('section', { default: null });
 const emit = defineEmits<{ open: [item: TitleMenuItem] }>();
 const game = useGame();
 const unlock = loadSoundUnlock();
-const rows = computed(() => menuRows(section.value, entries, unlock));
-const heading = computed(() => menuSections(unlock).find((each) => each.group === section.value)?.label ?? '');
+const rows = computed(() => menuRows(section.value, entries, unlock, false, showDev));
+const heading = computed(() => menuSections(unlock, showDev).find((each) => each.group === section.value)?.label ?? '');
 /** The lines under the items, switched on in Options. Read on mount, so coming back from Options shows the change. */
 const showInfo = loadMenuInfo();
 const buttons: HTMLButtonElement[] = [];
@@ -78,14 +81,14 @@ function moveTo(index: number): void {
 /** Opens a parent's list pointed at its primary row; the title remembers which parent it came from. */
 function enter(group: MenuGroup): void {
   section.value = group;
-  selected.value = openingRow(menuRows(group, entries, unlock));
+  selected.value = openingRow(menuRows(group, entries, unlock, false, showDev));
 }
 
 function leave(): void {
   const group = section.value;
   if (group === null) return;
   section.value = null;
-  selected.value = Math.max(0, MENU_SECTIONS.findIndex((each) => each.group === group));
+  selected.value = Math.max(0, menuSections(unlock, showDev).findIndex((each) => each.group === group));
 }
 
 function open(index: number): void {

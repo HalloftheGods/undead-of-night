@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { CHARACTERS, characterOf } from '../shared/characters.ts';
 import { CLATTER_CHANCE, CLATTER_RADIUS, LANDMARK_BUILDINGS } from '../shared/container-search.ts';
 import { CONTAINER_LOOT, containerLoot } from '../shared/container-loot.ts';
+import { candyIn } from '../shared/candy.ts';
+import { stashIn } from '../shared/throwables.ts';
 import { DOOR_TAP_SEC } from '../shared/doors.ts';
 import { takeFromContainer } from '../shared/container-take.ts';
 import type { GridItem } from '../shared/grid-inventory.ts';
@@ -515,7 +517,9 @@ describe('what is in them', () => {
   });
 
   it('an empty search can turn up a map clue revealing an unvisited cache building', () => {
-    const { sim, state, container } = setup((c) => c.kind === 'drawer');
+    // Skip drawers that hold candy or a stash: those come up with something, so the search is not empty.
+    const empty = (c: Container) => c.kind === 'drawer' && candyIn(SEED, c) === null && stashIn(SEED, c) === null;
+    const { sim, state, container } = setup(empty);
     state.containers[container.id].loot = null;
     const [p] = state.players;
     p.bottles = 4;

@@ -4,9 +4,11 @@ import type { ClientInputPacket, Stance, WeaponId } from '@shared/protocol.ts';
 import { GamepadInput, PAD_FIRE, PAD_HORN, PAD_PREV_WEAPON } from './gamepad-input.ts';
 import type { NavDirection, PadConnection } from './gamepad-input.ts';
 import { isPadKey, lootPadMove, lootPadPress, setLootPadDevice } from '../inventory/loot-pad.ts';
+import { inventoryHolding, inventoryOwnsPointer, inventoryPadShared } from '../inventory/inventory-hands.ts';
 import type { SwipeDirection } from './swipe-gesture.ts';
 import { TouchInput } from './touch-input.ts';
 import { loadKeyBindings } from '@game/controls-prefs.ts';
+import { keepsakeAt, keepsakeForCode } from '@game/keepsake-cursor.ts';
 
 /** A keydown the pad made: marked so the input manager does not take it for the keyboard. */
 function dispatchPadKeyDown(code: string): void {
@@ -167,6 +169,7 @@ export class InputManager {
       back: () => this.callbacks.onPause(),
       navigate: (direction) => lootPadMove(direction) || this.callbacks.onNavigate?.(direction),
       take: (button) => lootPadPress(button),
+      inventoryUp: () => inventoryPadShared(),
       onActive: () => this.use('gamepad'),
       onConnection: (change) => this.callbacks.onGamepadConnection?.(change),
     });
@@ -199,7 +202,7 @@ export class InputManager {
     this.gamepad.poll();
   }
 
-  /** Off while any menu is up; nothing typed or clicked there reaches the game. */
+  /** Off while any menu is up; nothing typed or clicked there reaches the game. The desktop inventory leaves it on. */
   setEnabled(enabled: boolean): void {
     this.enabled = enabled;
     this.walkOnly = false;
@@ -207,7 +210,7 @@ export class InputManager {
     this.clearLatches();
   }
 
-  /** Off like `setEnabled(false)`, except WASD (or whatever is bound) still walks the survivor. */
+  /** Off like `setEnabled(false)`, except WASD (or whatever is bound) still walks the survivor. The touch inventory uses it. */
   setWalkOnly(): void {
     this.setEnabled(false);
     this.walkOnly = true;
@@ -353,6 +356,8 @@ export class InputManager {
   sample(seq: number, angle: number, weapons: OwnedWeapons | null): ClientInputPacket {
     const cycled = weapons ? cycleWeapon(weapons, this.cycleLatch) : null;
     const binds = loadKeyBindings();
+    // An item in hand is the inventory's: no source fires or shoves until it is set down.
+    const handsFree = !inventoryHolding();
     const packet: ClientInputPacket = {
       seq,
       up: this.isFootHeld(binds.moveUp) || this.touch.dirY < 0 || this.gamepad.dirY < 0,
@@ -361,10 +366,10 @@ export class InputManager {
       right: this.isFootHeld(binds.moveRight) || this.touch.dirX > 0 || this.gamepad.dirX > 0,
       angle,
       ...(this.touch.used ? { touch: true } : {}),
-      shoot: this.fireLatch || (this.enabled && this.firing) || this.touch.shooting || this.isHeld([PAD_FIRE]),
+      shoot: handsFree && (this.fireLatch || (this.enabled && this.firing) || this.touch.shooting || this.isHeld([PAD_FIRE])),
       reload: this.reloadLatch,
       weapon: this.weaponLatch ?? cycled,
-      melee: this.shoveLatch || (this.enabled && this.shoving) || this.isHeld(binds.melee),
+      melee: handsFree && (this.shoveLatch || (this.enabled && this.shoving) || this.isHeld(binds.melee)),
       heal: this.healLatch,
       ...(this.throwLatch ? { throw: true } : {}),
       ...(this.spinnerLatch ? { spinner: true } : {}),
@@ -406,6 +411,12 @@ export class InputManager {
     if (isHandled) return;
     if (isTyping(event.target)) return;
     this.callbacks.onGesture();
+    const keepsake = keepsakeForCode(event.code);
+    if (keepsake) {
+      event.preventDefault();
+      this.pickKeepsake(keepsake);
+      return;
+    }
     // P pauses like Escape, but only outside text fields, where it is just a letter.
     const isPauseLetter = event.code === 'KeyP' && !isShortcut(event);
     if (isPauseLetter) {
@@ -507,6 +518,14 @@ export class InputManager {
     const pressedRight = event.button === RIGHT_BUTTON;
     // A press on a menu belongs to the menu, which may never hand back its release.
     if (!this.enabled) return;
+    // The open inventory takes a press on its own UI, and every press while an item is in hand.
+    if (inventoryOwnsPointer(event.clientX, event.clientY)) return;
+    // A keepsake card on the canvas takes the click before the shot does.
+    const keepsake = pressedLeft ? keepsakeAt(event.clientX, event.clientY) : null;
+    if (keepsake) {
+      this.pickKeepsake(keepsake);
+      return;
+    }
     const pressedMiddle = event.button === MIDDLE_BUTTON;
     if (pressedMiddle) {
       // Whether the ring takes it or not: a middle press left alone scrolls the page.
@@ -526,7 +545,8 @@ export class InputManager {
   };
 
   private readonly onWheel = (event: WheelEvent): void => {
-    if (!this.enabled) return;
+    // Over the open inventory the wheel scrolls its panel, not the guns.
+    if (!this.enabled || inventoryOwnsPointer(event.clientX, event.clientY)) return;
     event.preventDefault();
     const now = performance.now();
     const isWheelIgnored = now - this.lastWheelAt < WHEEL_COOLDOWN_MS || event.deltaY === 0;

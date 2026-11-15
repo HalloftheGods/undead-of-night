@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isInventoryKey } from '../src/game/inventory-modal.ts';
+import { inventoryKeyAction, isInventoryKey } from '../src/game/inventory-modal.ts';
 
 /** The inventory's own keys are I and B; the second argument is the codes the player has rebound elsewhere. */
 const INVENTORY = ['KeyI', 'KeyB'];
@@ -26,5 +26,25 @@ describe('isInventoryKey', () => {
     expect(isInventoryKey(press({ repeat: true }), INVENTORY, [])).toBe(false);
     expect(isInventoryKey(press({ ctrlKey: true }), INVENTORY, [])).toBe(false);
     expect(isInventoryKey(press(), INVENTORY, ['KeyI'])).toBe(false);
+  });
+});
+
+describe('inventoryKeyAction', () => {
+  it('keeps Esc and the inventory keys for the open grid', () => {
+    expect(inventoryKeyAction('Escape', false, false, INVENTORY)).toBe('escape');
+    expect(inventoryKeyAction('KeyI', false, false, INVENTORY)).toBe('close');
+    expect(inventoryKeyAction('KeyI', true, false, INVENTORY)).toBe('ignore');
+  });
+
+  it('turns the item in hand on R, and leaves R to the game as reload with the hand empty', () => {
+    expect(inventoryKeyAction('KeyR', false, true, INVENTORY)).toBe('rotate');
+    expect(inventoryKeyAction('KeyR', false, false, INVENTORY)).toBeNull();
+  });
+
+  it('hands every other key to the game, holding or not', () => {
+    for (const code of ['KeyF', 'Digit1', 'KeyQ', 'Tab', 'KeyW', 'ShiftLeft']) {
+      expect(inventoryKeyAction(code, false, false, INVENTORY)).toBeNull();
+      expect(inventoryKeyAction(code, false, true, INVENTORY)).toBeNull();
+    }
   });
 });

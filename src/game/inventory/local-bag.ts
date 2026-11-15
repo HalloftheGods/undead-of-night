@@ -1,7 +1,7 @@
 import { bagHash, bagLayout, bagWanted, createBag, isAmmoBoxType, isBagItemType, isDroppableBagItem, layoutHash, retierBag, stampAmmoBoxes, syncBag } from '@shared/bag.ts';
 import type { BagCommit, BagDrop, BagItemType, BagWanted, PlayerBag } from '@shared/bag.ts';
 import type { BackpackTier } from '@shared/backpack.ts';
-import { autoPackItem, canPlaceItem, createInventoryGrid, findAvailableSlot, placeItem } from '@shared/grid-inventory.ts';
+import { autoPackItem, canPlaceItem, createInventoryGrid, findAvailableSlot, placeItem, removeItem } from '@shared/grid-inventory.ts';
 import type { GridItem, InventoryGrid } from '@shared/grid-inventory.ts';
 import { containerGridDimensions } from '@shared/containers.ts';
 import { flipDimensions, flipItem } from '@shared/container-flip.ts';
@@ -82,6 +82,8 @@ export class LocalBag {
   private lastHeal = -Infinity;
   private heals = 0;
   private pending: { type: BagItemType; before: number; dropped: number; at: number }[] = [];
+  /** Numbers candy taken in while the window is open, so each one has its own id. */
+  private candySerial = 0;
 
   constructor(
     private readonly send: (commit: BagCommit) => void,
@@ -180,6 +182,64 @@ export class LocalBag {
     };
   }
 
+  /**
+   * The bag is open and a snapshot changed what is carried: brings the working copy up to date in place, so the open
+   * window shows a pickup at once. New items go where the host packed them if that spot is free in the copy, else
+   * anywhere they fit; stacks and ammo boxes take their new counts; an item the host took away (an auto-used pocket
+   * supply) leaves. Candy is topped up from the host's count. Returns the items that arrived, for their animation.
+   */
+  absorb(working: BagWorking, hud: Pick<Carried, 'bag'>): GridItem[] {
+    const openIds = this.openIds;
+    if (openIds === null) return [];
+    const added: GridItem[] = [];
+    const live = [...this.bag.pack.items, ...this.bag.pockets.items];
+    const liveIds = new Set(live.map((item) => item.id));
+    const grids = [working.pack, working.pockets];
+    const shown = (id: string): GridItem | undefined => grids.flatMap((grid) => grid.items).find((item) => item.id === id);
+    for (const item of live) {
+      const mine = shown(item.id);
+      if (mine) {
+        const stackGrew = (item.count ?? 1) > (mine.count ?? 1);
+        mine.count = item.count;
+        mine.ammo = item.ammo;
+        if (stackGrew) added.push(mine);
+        continue;
+      }
+      // Here when the window opened: the player has it in hand, in the container or meant to drop it. Leave it be.
+      if (openIds.has(item.id)) continue;
+      const copy = { ...item };
+      const inPocket = this.bag.pockets.items.includes(item);
+      const order = inPocket ? [working.pockets, working.pack] : [working.pack, working.pockets];
+      const exact = order[0];
+      const fits = canPlaceItem(exact, copy.type, copy.x, copy.y, copy.rotated) && placeItem(exact, copy);
+      const packed = fits || order.some((grid) => findAvailableSlot(grid, copy.type, true) !== null && autoPackItem(grid, copy));
+      if (!packed) continue;
+      openIds.add(item.id);
+      added.push(copy);
+    }
+    for (const grid of grids) {
+      const gone = grid.items.filter((item) => openIds.has(item.id) && !liveIds.has(item.id));
+      for (const item of gone) removeItem(grid, item.id);
+    }
+    return [...added, ...this.absorbCandy(working, hud)];
+  }
+
+  /** New candy from the host's count goes into the open candy bag. The carried ones are the `candy-carried-` items. */
+  private absorbCandy(working: BagWorking, hud: Pick<Carried, 'bag'>): GridItem[] {
+    const added: GridItem[] = [];
+    const carried = (type: string) => [...working.candyBag.items, ...working.used, ...working.dropped].filter((item) => item.type === type && item.id.startsWith('candy-carried-')).length;
+    for (const stack of hud.bag ?? []) {
+      for (let missing = stack.count - carried(stack.id); missing > 0; missing -= 1) {
+        this.candySerial += 1;
+        const item: GridItem = { id: `candy-carried-${stack.id}-live-${this.candySerial}`, type: stack.id, x: 0, y: 0, rotated: false };
+        if (!autoPackItem(working.candyBag, item)) return added;
+        const placed = working.candyBag.items.find((each) => each.id === item.id);
+        if (placed) added.push(placed);
+      }
+    }
+    return added;
+  }
+
   /** The bag closed. Sends one commit if anything changed, adopts the working copy, and says what it sent (null for nothing). */
   close(working: BagWorking): BagCommit | null {
     const openIds = this.openIds ?? new Set<string>();
@@ -268,7 +328,7 @@ export class LocalBag {
 
     const isUnchanged = drop.length === 0 && use.length === 0 && !container && bagHash(this.bag) === layoutHash(layout);
     if (isUnchanged) return null;
-    this.adopt(scratch, [...drop, ...use], containerDeposited);
+    this.adopt(scratch, drop, use, containerDeposited);
     const commit: BagCommit = { layout, drop, ...(use.length > 0 ? { use } : {}), ...(container ? { container } : {}) };
     this.send(commit);
     return commit;
@@ -277,11 +337,17 @@ export class LocalBag {
   /** Takes the edited layout as the bag's own. The host drops the newest of a type, but ids are not on the wire, so which survive does not matter. */
   private adopt(
     scratch: { pack: InventoryGrid; pockets: InventoryGrid },
-    gone: BagDrop[],
+    dropped: readonly BagDrop[],
+    used: readonly BagDrop[],
     deposited: readonly GridItem[] = [],
   ): void {
     const before = bagWanted(this.currentCounters());
-    for (const { type, count } of gone) {
+    // Boxes of rounds are counted off the bag itself: the counters here carry no rounds.
+    const boxes = (type: BagItemType) => [...this.bag.pack.items, ...this.bag.pockets.items].filter((item) => item.type === type).length;
+    for (const { type, count } of dropped) {
+      if (isBagItemType(type)) this.pending.push({ type, before: isAmmoBoxType(type) ? boxes(type) : before[type], dropped: count, at: this.now() });
+    }
+    for (const { type, count } of used) {
       // Loading a box leaves it in the bag until the rounds are spent, so it is no pending removal.
       const isBagItem = isBagItemType(type) && !isAmmoBoxType(type);
       if (isBagItem) this.pending.push({ type, before: before[type], dropped: count, at: this.now() });

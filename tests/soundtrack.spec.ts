@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FINAL_LEVEL, LEVELS } from '../shared/levels.ts';
 import type { Scene } from '../src/audio/music.ts';
-import { LULLS, playlistFor } from '../src/audio/playlists.ts';
+import { LULLS, playlistFor, titlePlaylist, clearTitlePlaylistsCache } from '../src/audio/playlists.ts';
 import { Soundtrack } from '../src/audio/soundtrack.ts';
 
 const SCENES: readonly Scene[] = ['menu', 'intermission', 'wave', 'gameover', 'victory', 'credits'];
@@ -278,5 +278,38 @@ describe('the soundtrack', () => {
     vi.runAllTimers();
     expect(playing().includes('music/level-01-sunken-tomb.mp3')).toBe(false);
     expect(playing()).toHaveLength(1);
+  });
+
+  it('plays radio favorites on the title screen when favorites are set', () => {
+    clearTitlePlaylistsCache();
+    const favorites = new Set(['level-02-metro-tunnels.mp3', 'level-03-factory-raid.mp3']);
+    const playlist = titlePlaylist(favorites);
+    expect(playlist.files).toEqual(['level-02-metro-tunnels.mp3', 'level-03-factory-raid.mp3']);
+  });
+
+  it('allows manual track control via playTrack, pauseTrack, and resumeTrack', () => {
+    music.setScene('intermission');
+    music.playTrack('level-04-overgrown-hospital.mp3');
+    vi.runAllTimers();
+    expect(playing()).toEqual(['music/level-04-overgrown-hospital.mp3']);
+    expect(music.getCurrentTrack()?.file).toBe('level-04-overgrown-hospital.mp3');
+
+    music.pauseTrack();
+    expect(music.getCurrentTrack()?.paused).toBe(true);
+
+    music.resumeTrack();
+    expect(music.getCurrentTrack()?.paused).toBe(false);
+  });
+
+  it('resets manual track override to the new level soundtrack when level changes', () => {
+    music.setLevel(1);
+    music.setScene('intermission');
+    music.playTrack('level-04-overgrown-hospital.mp3');
+    vi.runAllTimers();
+    expect(playing()).toEqual(['music/level-04-overgrown-hospital.mp3']);
+
+    music.setLevel(2);
+    vi.runAllTimers();
+    expect(playing()).toEqual(['music/escalation.mp3']);
   });
 });

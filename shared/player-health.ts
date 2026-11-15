@@ -100,6 +100,11 @@ function down(sim: SimState, p: PlayerState): void {
 export function collapsePlayer(sim: SimState, p: PlayerState): void {
   const isNotAlive = p.status !== 'alive';
   if (isNotAlive) return;
+  // Every way down or out lands here, so the HUD test survivor stays on their feet at one health.
+  if (sim.hudTest) {
+    p.health = Math.max(1, p.health);
+    return;
+  }
   const caughtByCaramel = caramelCatch(sim, p);
   if (caughtByCaramel) return;
   const teammateCanRevive = sim.players.some((other) => other !== p && other.status === 'alive');

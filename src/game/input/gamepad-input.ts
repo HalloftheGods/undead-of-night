@@ -96,6 +96,9 @@ const DPAD_NAV: ReadonlyMap<number, NavDirection> = new Map<number, NavDirection
   [PAD.right, 'right'],
 ]);
 
+/** Beside an open inventory these stay the window's: the face buttons, Start, View and the D-pad. Play keeps the rest. */
+const INVENTORY_PAD: ReadonlySet<number> = new Set<number>([PAD.a, PAD.b, PAD.x, PAD.y, PAD.start, PAD.view, PAD.up, PAD.down, PAD.left, PAD.right]);
+
 /** A stick inside this reach is resting. Measured on the circle, so a diagonal is not cut short. */
 export const STICK_DEADZONE = 0.2;
 /** An analog trigger counts as down past this, whatever the browser says `pressed` means. */
@@ -136,7 +139,9 @@ export interface GamepadHost {
   /** The D-pad or left stick, behind a menu. */
   navigate(direction: NavDirection): void | boolean;
   /** A, B, X or Y behind a menu, offered to a screen that reads them itself. True if it took the press. */
-  take?(button: 'a' | 'b' | 'x' | 'y' | 'start'): boolean;
+  take?(button: 'a' | 'b' | 'x' | 'y' | 'start' | 'lt' | 'rt'): boolean;
+  /** A loot window shares the pad: it keeps the face buttons and the D-pad, play keeps the rest. Not mid-search. */
+  inventoryUp?(): boolean;
   /** The pad did something this frame. */
   onActive(): void;
   onConnection?(change: PadConnection): void;
@@ -358,12 +363,15 @@ export class GamepadInput {
     const isActive = pressed.some(Boolean) || this.move !== null || this.aim !== null;
     if (isActive) this.host.onActive();
     const live = this.host.live();
+    const shared = live && (this.host.inventoryUp?.() ?? false);
     pressed.forEach((isPressed, index) => {
       if (!isPressed) return;
-      if (live) this.playPress(index);
+      if (shared) this.sharedPress(index);
+      else if (live) this.playPress(index);
       else this.menuPress(index);
     });
-    this.navStep(live, down);
+    // Shared: the D-pad steps the loot cursor while the left stick keeps walking the survivor.
+    this.navStep(live && !shared, down, !shared);
     this.held = this.heldCodes(down);
   }
 
@@ -379,6 +387,18 @@ export class GamepadInput {
     if (code) this.host.press(code);
   }
 
+  /**
+   * Beside an open inventory its buttons go to it, as behind a menu. A trigger offers itself to the item in hand
+   * first (use or drop) and is spent if it acted, so holding it never fires; with the hand empty it fires or shoves.
+   */
+  private sharedPress(index: number): void {
+    const isTrigger = index === PAD.rt || index === PAD.lt;
+    if (INVENTORY_PAD.has(index)) this.menuPress(index);
+    else if (!isTrigger) this.playPress(index);
+    else if (this.host.take?.(index === PAD.rt ? 'rt' : 'lt')) this.spent.add(index);
+    else this.playPress(index);
+  }
+
   private menuPress(index: number): void {
     this.spent.add(index);
     if (index === PAD.start) this.start();
@@ -390,6 +410,9 @@ export class GamepadInput {
     else if (index === PAD.a) this.confirm();
     else if (index === PAD.b && this.host.take?.('b')) return;
     else if (index === PAD.b) this.back();
+    // The triggers use or drop the item in hand on a loot screen; nothing else behind a menu reads them.
+    else if (index === PAD.rt) this.host.take?.('rt');
+    else if (index === PAD.lt) this.host.take?.('lt');
     // The D-pad is spent above and moves focus in navStep, so a held one repeats.
   }
 
@@ -412,18 +435,18 @@ export class GamepadInput {
     this.host.back();
   }
 
-  /** The D-pad (first of up, down, left, right held), else the left stick pushed past halfway. */
-  private navTarget(down: readonly boolean[]): NavDirection | null {
+  /** The D-pad (first of up, down, left, right held), else the left stick pushed past halfway when it steers focus. */
+  private navTarget(down: readonly boolean[], stickNavigates: boolean): NavDirection | null {
     for (const [index, direction] of DPAD_NAV) if (down[index]) return direction;
-    return navOf(this.move);
+    return stickNavigates ? navOf(this.move) : null;
   }
 
   /**
    * One step per push, then a repeat after NAV_REPEAT_DELAY_MS and every NAV_REPEAT_MS while held.
    * A direction already held when a menu opens waits to be let go: it moved the survivor, not focus.
    */
-  private navStep(live: boolean, down: readonly boolean[]): void {
-    const direction = this.navTarget(down);
+  private navStep(live: boolean, down: readonly boolean[], stickNavigates = true): void {
+    const direction = this.navTarget(down, stickNavigates);
     if (direction === null) {
       this.navDirection = null;
       this.navNextAt = Infinity;

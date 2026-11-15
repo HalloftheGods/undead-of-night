@@ -18,6 +18,8 @@ import type { Banner, RunResult, UiState } from "./hud-state.ts";
 import type { CalloutWords } from "./kill-juice.ts";
 import { bannerLine, calloutLine, eventLine, EventLog, levelLines } from "./event-log.ts";
 import type { LogContext, LogLine } from "./event-log.ts";
+import type { BagCommit } from "../../shared/bag.ts";
+import { bagLines } from "./inventory/bag-notes.ts";
 import { hordeBanner, isLandmark, overrunBanner, radioBanner, RunNotices } from "./run-notices.ts";
 import { tapGameEvent, tapLocalPlayer } from "./analytics/event-tap.ts";
 import { lockedTracksOf } from "../audio/playlists.ts";
@@ -30,6 +32,8 @@ import { TownMapView } from "./town-map.ts";
 import { containerInReach } from "../../shared/containers.ts";
 import type { Container } from "../../shared/containers.ts";
 import { BUNKER_LEVEL } from "../../shared/home-protocol.ts";
+import { effectiveStatSlots } from "../../shared/progression.ts";
+import { loadProgression } from "../../shared/progression-save.ts";
 import { levelDef } from "../../shared/levels.ts";
 import { BITE_MS, BiteTracker } from "./bite-marker.ts";
 import { deathWitness } from "./death-cause.ts";
@@ -160,6 +164,12 @@ export interface HudFrame {
   readonly lastSnapshotMs: number;
 }
 
+/** A survivor's Loot slot (0..STAT_SLOTS) as their save has it, which is how far their looting has come. */
+function lootSlotOf(skin: number): number {
+  const progression = loadProgression(skin);
+  return effectiveStatSlots(skin, progression.allocations[skin], progression.level).search;
+}
+
 /** Keeps the Vue-facing state and the town map in step with the run, a few times a second. */
 export class RunHud {
   private readonly notices = new RunNotices();
@@ -183,6 +193,8 @@ export class RunHud {
   /** The container in reach while idle, so that when a search begins we know which one it is. */
   private lastReach: Container | null = null;
   private searchTarget: Container | null = null;
+  /** The searcher's Loot slot, read once when a search begins: it picks the sweep's pattern. */
+  private searchLootSlot: number | null = null;
   /** The streak kit's line for the run's first title card, and whether that card has gone up yet. */
   private streakLine: string | null = null;
   private streakShown = false;
@@ -332,6 +344,11 @@ export class RunHud {
     this.publish({ hint: next === "clear" ? null : next });
   }
 
+  /** What the inventory just did (dropped, used, took from a container), into the log. */
+  noteBag(commit: BagCommit, now: number): void {
+    for (const line of bagLines(commit)) this.note(line, now);
+  }
+
   /** Writes a line in the run's log, which outlasts every toast. */
   private note(line: LogLine, now: number): void {
     this.publish({ log: this.log.add(line, now) });
@@ -476,16 +493,18 @@ export class RunHud {
     if (!searching) {
       this.lastReach = scene.searchable;
       this.searchTarget = null;
+      this.searchLootSlot = null;
       if (this.ui().searching) this.publish({ searching: null });
       return;
     }
     const reach = this.map ? containerInReach(this.map, local.x, local.y, () => false) : null;
     this.searchTarget ??= this.lastReach ?? reach;
+    this.searchLootSlot ??= lootSlotOf(local.skin);
     const target = this.searchTarget;
     // A fireworks bus is a shop, not a search: nothing to sweep.
     const sweeps = target !== null && target.kind !== "booth";
     this.publish({
-      searching: sweeps ? { id: target.id, kind: target.kind, propIndex: target.propIndex, progress: local.search } : null
+      searching: sweeps ? { id: target.id, kind: target.kind, propIndex: target.propIndex, progress: local.search, lootSlot: this.searchLootSlot } : null
     });
   }
 }

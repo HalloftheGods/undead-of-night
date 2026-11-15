@@ -5,7 +5,7 @@
 // and a Nightly Run hides the same candy in the same places for everyone.
 
 import { TICK_DT } from "./constants.ts";
-import type { Container } from "./containers.ts";
+import { containerGridFor, type Container } from "./containers.ts";
 import type { CandyBag, CandyId, EntityId } from "./protocol.ts";
 import { hasKeepsake, TREAT_BAG_TIME } from "./keepsakes.ts";
 import { createRng, pickWeighted } from "./rng.ts";
@@ -329,22 +329,25 @@ export function candyIn(seed: number, container: Container): CandyId | null {
 }
 
 export interface CandyBowlLoot {
-  readonly label: "TAKE ONE" | "TAKE TWO";
-  readonly count: 1 | 2;
+  readonly label: "TAKE ONE";
+  readonly count: number;
   readonly candies: readonly CandyId[];
 }
 
-/** Rolls 1 or 2 candies for a doorstep candy bowl, with a matching house rule label. */
+/**
+ * Fills a doorstep candy bowl to its max: one piece for every open cell of its grid. It says TAKE ONE; a second
+ * piece taken from it is the player's own choice, and it calls the horde (see armHordeSurge in shared/waves.ts).
+ */
 export function candiesInBowl(seed: number, container: Container): CandyBowlLoot {
   const rng = createRng((seed ^ CANDY_SALT ^ Math.imul(container.id + 1, 0x85ebca6b)) >>> 0);
-  const count: 1 | 2 = rng() < 0.5 ? 1 : 2;
+  const { cols, rows, blocked } = containerGridFor(container);
+  const count = cols * rows - (blocked?.length ?? 0);
   const candies: CandyId[] = [];
   for (let i = 0; i < count; i += 1) {
     const candy = pickWeighted(rng, WEIGHTS);
     if (candy) candies.push(candy);
   }
-  const label = count === 1 ? "TAKE ONE" : "TAKE TWO";
-  return { label, count, candies };
+  return { label: "TAKE ONE", count, candies };
 }
 
 /** Maximum candy pieces one survivor can carry in their bag. */

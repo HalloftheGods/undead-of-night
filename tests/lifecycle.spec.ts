@@ -327,7 +327,7 @@ describe('restart', () => {
     const state = stateOf(sim);
     state.zombies = state.zombies.slice(0, 5);
     sim.restart();
-    expect(state.zombies.length).toBe(STANDING_POPULATION);
+    expect(state.zombies.filter((z) => !z.dormant).length).toBe(STANDING_POPULATION);
     expect(state.zombies.every((z) => z.mode === 'wander')).toBe(true);
   });
 

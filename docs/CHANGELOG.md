@@ -2,6 +2,53 @@
 
 All notable changes to the Undead of Night: Take One game are documented in this file.
 
+## [2026-11-14] - Containers zoom out of the world
+
+### Changed
+- Searching a container zooms the container itself up from where it stands, with its grid over it and no panel around it.
+- The search sweep starts once the container has landed.
+- The container you are searching is outlined in the world.
+- It flies back to its spot when you close it.
+- With reduced motion on, the container opens without the zoom.
+
+## [2026-11-14] - Keep shooting with the inventory open
+
+### Changed
+- With the inventory open you can still aim, shoot, shove, reload, switch guns and use your other keys and buttons. A click on the inventory itself, or any click while an item is in your hand, goes to the inventory instead.
+- R reloads unless you are holding an item, which it turns.
+- On a controller the sticks walk and aim while the inventory is open, and RT and LT fire and shove when your hand is empty.
+- The crosshair hides while you point at the inventory, and the HUD stays readable behind it.
+- Phones and tablets work as before.
+
+### Fixed
+- Searching again at an open container, or a search ending while the inventory is open, no longer throws away the moves you made in it.
+- In a narrow or portrait desktop window you can shoot beside the inventory too.
+- Holding fire while sweeping across the canvas inventory no longer picks up the item you let go over.
+- While searching, R turns an item in your hand instead of also reloading, and the controller stays on the game.
+
+## [2026-11-14] - Drop anything, and the survivor has a word about it
+
+### Added
+- Bottles, spinner and fountain fireworks, and boxes of rounds can be dropped like everything else. Each lies in the world with its own picture, and a dropped box keeps its rounds.
+- Your survivor says something when they pick an item up or drop one, in their own voice.
+- The run log's Loot tab now lists what you drop, what you use from the inventory, and what you take from containers.
+- Double-clicking an item to send it across the inventory now flies it to its new spot. Dragging and dropping it yourself just lands it with the flash.
+
+### Changed
+- Protocol version 8: older builds cannot draw the new pickups, so they cannot join a newer room.
+
+## [2026-11-14] - The inventory fills up while it is open
+
+### Added
+- Anything you pick up with the inventory open now shows up in it straight away, with no need to close and reopen it.
+- A pickup flies from where it lay in the world into its spot in the bag, then lands with a flash and a ring of light. Reduced motion skips the flight and keeps the flash.
+
+## [2026-11-14] - Survivors talk back about the item in hand
+
+### Added
+- Holding an item over your survivor in the inventory rings them and they say something about it, in their own voice: Night broods, Bear wants food, Kat is a cat, Rex roars, Rich puts it on his tab. The line and the rim's colour say whether they need it (green), would take it (white), would waste it (amber) or cannot use it (grey).
+- Controller: RT uses the item in hand and LT drops it. The USE and DROP buttons show which trigger presses them, and the survivor's reaction shows the whole time a pad is in hand.
+
 ## [2026-11-14] - Dev bench: the editor has the screen, and each look can have its own grid
 
 ### Added

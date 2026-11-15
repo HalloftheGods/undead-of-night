@@ -7,7 +7,7 @@
   width: 100%;
   flex: 1;
   min-height: calc(var(--u) * 85);
-  max-height: calc(var(--u) * 120);
+  max-height: calc(var(--u) * 125);
   box-sizing: border-box;
 }
 
@@ -88,113 +88,320 @@
   color: var(--blood-bright);
 }
 
-/* Playlist scroll view */
-.playlist-items {
-  list-style: none;
-  margin: 0;
-  padding: calc(var(--u) * 2);
+/* Playlist scroll view containing tape albums */
+.playlist-scroll {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: calc(var(--u) * 1.5);
+  gap: calc(var(--u) * 3);
+  padding: calc(var(--u) * 2.5);
   flex: 1;
 }
 
-.playlist-row {
+/* Tape Album Box / Case */
+.tape-album {
+  background: #13141c;
+  border: 1px solid #262936;
+  box-shadow: inset 1px 1px 0 0 #333748, inset -1px -1px 0 0 #090a0e;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+
+.tape-album.has-current {
+  border-color: rgba(232, 163, 61, 0.7);
+  box-shadow: inset 1px 1px 0 0 rgba(232, 163, 61, 0.3), 0 0 calc(var(--u) * 2) rgba(232, 163, 61, 0.15);
+}
+
+.tape-album.is-horde {
+  background: #171113;
+  border-color: #3d2024;
+  box-shadow: inset 1px 1px 0 0 #4f282e, inset -1px -1px 0 0 #0a0607;
+}
+
+.tape-album.is-horde.has-current {
+  border-color: rgba(224, 70, 58, 0.8);
+  box-shadow: inset 1px 1px 0 0 rgba(224, 70, 58, 0.4), 0 0 calc(var(--u) * 2) rgba(224, 70, 58, 0.2);
+}
+
+/* Album J-Card Header */
+.album-header {
   display: flex;
   align-items: center;
-  background: var(--ink-raised);
-  border: 1px solid var(--ink-line);
+  gap: calc(var(--u) * 3);
+  background: #1a1c26;
+  padding: calc(var(--u) * 2) calc(var(--u) * 2.5);
+  border-bottom: 1px solid #2d3040;
+}
+
+.is-horde .album-header {
+  background: #221417;
+  border-bottom-color: #3e2226;
+}
+
+.album-cover-box {
+  position: relative;
+  flex: none;
+  border: 1px solid #3d4154;
+  background: #0b0c10;
+  box-shadow: inset 1px 1px 0 #525770;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.album-vol-badge {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(11, 12, 16, 0.85);
+  color: var(--amber);
+  font-size: calc(var(--u) * 2.5);
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  text-align: center;
+  padding: 1px 2px;
+  border-top: 1px solid rgba(232, 163, 61, 0.4);
+}
+
+.is-horde .album-vol-badge {
+  color: var(--blood-bright);
+  border-top-color: rgba(224, 70, 58, 0.5);
+}
+
+.album-meta {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 0.8);
+  min-width: 0;
+}
+
+.album-title-row {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 2);
+}
+
+.album-title {
+  color: var(--bone);
+  font-size: calc(var(--u) * 4);
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.has-current .album-title {
+  color: var(--amber);
+}
+
+.is-horde .album-title {
+  color: #ff9d94;
+}
+
+.album-horde-pill {
+  background: rgba(224, 70, 58, 0.3);
+  color: var(--blood-bright);
+  border: 1px solid var(--blood);
+  padding: 1px calc(var(--u) * 1.5);
+  font-size: calc(var(--u) * 2.5);
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  flex: none;
+}
+
+.album-sub {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 2.5);
+  font-size: calc(var(--u) * 3);
+  color: var(--bone-dim);
+}
+
+.album-subtitle {
+  letter-spacing: 0.5px;
+}
+
+.album-count {
+  color: var(--amber);
+  font-weight: bold;
+}
+
+.is-horde .album-count {
+  color: var(--blood-bright);
+}
+
+/* Cassette Tapes inside Album */
+.album-tracks {
+  list-style: none;
+  margin: 0;
+  padding: calc(var(--u) * 1.5) calc(var(--u) * 2);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 1);
+}
+
+.cassette-tape-row {
+  display: flex;
+  align-items: center;
+  background: #171822;
+  border: 1px solid #282a38;
+  box-shadow: inset 1px 1px 0 #333648, inset -1px -1px 0 #0a0b10;
   box-sizing: border-box;
   transition: background 0.1s, border-color 0.1s;
 }
 
-.playlist-row:hover {
-  background: #252733;
-  border-color: #4a4d5e;
+.cassette-tape-row:hover {
+  background: #202230;
+  border-color: #40445a;
 }
 
-.playlist-row:has(.is-current) {
+.cassette-tape-row:has(.is-current) {
   background: rgba(232, 163, 61, 0.12);
   border-color: var(--amber);
-  box-shadow: inset 1px 1px 0 0 rgba(232, 163, 61, 0.3);
+  box-shadow: inset 1px 1px 0 0 rgba(232, 163, 61, 0.4), 0 0 calc(var(--u) * 1.5) rgba(232, 163, 61, 0.2);
 }
 
-.track-item {
+.cassette-btn {
+  position: relative;
   flex: 1;
   display: flex;
   align-items: center;
-  gap: calc(var(--u) * 3);
+  gap: calc(var(--u) * 2.5);
   background: transparent;
   border: none;
   color: inherit;
-  padding: calc(var(--u) * 2) calc(var(--u) * 3);
+  padding: calc(var(--u) * 1.8) calc(var(--u) * 2.5);
   font-family: inherit;
   text-align: left;
   cursor: pointer;
   min-width: 0;
 }
 
-.track-num {
+/* Cassette Corner Screws */
+.tape-screw {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: #44485c;
+  pointer-events: none;
+}
+
+.tape-screw.is-tl { top: 2px; left: 2px; }
+.tape-screw.is-bl { bottom: 2px; left: 2px; }
+.tape-screw.is-tr { top: 2px; right: 2px; }
+.tape-screw.is-br { bottom: 2px; right: 2px; }
+
+.tape-index {
   flex: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: calc(var(--u) * 6);
+  width: calc(var(--u) * 7);
   color: var(--bone-dim);
   font-size: calc(var(--u) * 3.5);
-  font-variant-numeric: tabular-nums;
+  font-family: monospace;
 }
 
-.track-info {
+.side-label {
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
+
+.tape-label-band {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: calc(var(--u) * 0.5);
+  gap: calc(var(--u) * 0.4);
+  background: #11121a;
+  border-left: 2px solid var(--amber);
+  padding: calc(var(--u) * 0.8) calc(var(--u) * 2);
   min-width: 0;
 }
 
-.track-title {
+.is-current .tape-label-band {
+  background: #191b26;
+  border-left-color: #ffd070;
+}
+
+.is-horde .tape-label-band {
+  border-left-color: var(--blood-bright);
+}
+
+.tape-title {
   color: var(--bone);
-  font-size: calc(var(--u) * 4);
+  font-size: calc(var(--u) * 3.8);
   font-weight: bold;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.is-current .track-title {
+.is-current .tape-title {
   color: var(--amber);
-  text-shadow: 0 0 calc(var(--u) * 2) rgba(232, 163, 61, 0.5);
+  text-shadow: 0 0 calc(var(--u) * 1.5) rgba(232, 163, 61, 0.4);
 }
 
-.track-meta {
+.tape-meta {
   display: flex;
   gap: calc(var(--u) * 2);
   align-items: center;
-  font-size: calc(var(--u) * 3);
+  font-size: calc(var(--u) * 2.8);
   color: var(--bone-dim);
 }
 
-.track-origin {
+.tape-type {
+  font-family: monospace;
+  color: #6a6e82;
+}
+
+.tape-origin {
   letter-spacing: 0.5px;
 }
 
-.track-badge {
+.tape-badge {
   background: rgba(232, 70, 58, 0.25);
   color: var(--blood-bright);
   border: 1px solid var(--blood);
-  padding: 0 calc(var(--u) * 1.5);
-  font-size: calc(var(--u) * 2.5);
+  padding: 0 calc(var(--u) * 1.2);
+  font-size: calc(var(--u) * 2.4);
   font-weight: bold;
+}
+
+.tape-spool-pip {
+  flex: none;
+  width: calc(var(--u) * 4);
+  height: calc(var(--u) * 4);
+  border-radius: 50%;
+  border: 1px solid #36394c;
+  background: #0d0e14;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spool-ring {
+  width: calc(var(--u) * 1.5);
+  height: calc(var(--u) * 1.5);
+  border-radius: 50%;
+  background: var(--bone-dim);
+}
+
+.is-current .spool-ring {
+  background: var(--amber);
 }
 
 .track-fav-btn {
   background: transparent;
   border: none;
   color: var(--bone-dim);
-  padding: calc(var(--u) * 2) calc(var(--u) * 3);
-  font-size: calc(var(--u) * 5);
+  padding: calc(var(--u) * 2) calc(var(--u) * 2.5);
+  font-size: calc(var(--u) * 4.5);
   cursor: pointer;
   transition: transform 0.1s, color 0.1s;
 }

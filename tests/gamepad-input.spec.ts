@@ -4,6 +4,9 @@ import { InputManager } from '../src/game/input-manager.ts';
 import type { InputCallbacks } from '../src/game/input-manager.ts';
 import { padFamily, padLabel } from '../src/game/pad-glyphs.ts';
 import { installFakeBrowser } from './client-fake-dom.ts';
+import { setInventoryHands } from '../src/game/inventory/inventory-hands.ts';
+import { setLootPad } from '../src/game/inventory/loot-pad.ts';
+import type { LootButton, LootDirection } from '../src/game/inventory/loot-pad.ts';
 import type { FakeBrowser } from './client-fake-dom.ts';
 
 const XBOX_ID = 'Xbox Wireless Controller (STANDARD GAMEPAD Vendor: 045e Product: 0b13)';
@@ -261,6 +264,98 @@ describe('a gamepad on the game', () => {
       input.setEnabled(true);
       frame(pad({ buttons: { [PAD.rt]: 1 } }));
       expect(input.sample(2, 0, null).shoot).toBe(true);
+    });
+  });
+
+  describe('beside an open inventory', () => {
+    let presses: LootButton[];
+    let moves: LootDirection[];
+    /** Whether the loot window has an item in hand to use or drop on a trigger. */
+    let triggersAct: boolean;
+
+    beforeEach(() => {
+      presses = [];
+      moves = [];
+      triggersAct = false;
+      setInventoryHands({ ownsPoint: () => false });
+      setLootPad({
+        move: (direction) => {
+          moves.push(direction);
+          return true;
+        },
+        press: (button) => {
+          presses.push(button);
+          const isTrigger = button === 'rt' || button === 'lt';
+          return isTrigger ? triggersAct : true;
+        },
+      });
+    });
+
+    afterEach(() => {
+      setInventoryHands(null);
+      setLootPad(null);
+    });
+
+    it('gives A, X and Y to the window: no search held, no map opened', () => {
+      frame(pad({ buttons: { [PAD.a]: 1, [PAD.x]: 1, [PAD.y]: 1 } }));
+      expect(presses).toEqual(expect.arrayContaining(['a', 'x', 'y']));
+      expect(input.sample(1, 0, null)).toMatchObject({ search: false });
+      expect(calls.onMap).toBe(0);
+    });
+
+    it('fires on RT and shoves on LT with the hand empty, through the hold', () => {
+      frame(pad({ buttons: { [PAD.rt]: 1 } }));
+      expect(input.sample(1, 0, null).shoot).toBe(true);
+      frame(pad({ buttons: { [PAD.rt]: 1 } }));
+      expect(input.sample(2, 0, null).shoot).toBe(true);
+      frame(pad());
+      frame(pad({ buttons: { [PAD.lt]: 1 } }));
+      expect(input.sample(3, 0, null).melee).toBe(true);
+    });
+
+    it('spends a trigger that used or dropped the item in hand, so it neither fires nor shoves', () => {
+      triggersAct = true;
+      frame(pad({ buttons: { [PAD.rt]: 1 } }));
+      expect(input.sample(1, 0, null).shoot).toBe(false);
+      frame(pad({ buttons: { [PAD.rt]: 1 } }));
+      expect(input.sample(2, 0, null).shoot).toBe(false);
+      frame(pad());
+      frame(pad({ buttons: { [PAD.lt]: 1 } }));
+      expect(input.sample(3, 0, null).melee).toBe(false);
+      frame(pad({ buttons: { [PAD.lt]: 1 } }));
+      expect(input.sample(4, 0, null).melee).toBe(false);
+    });
+
+    it('walks on the left stick without moving the loot cursor, and steps the cursor on the D-pad only', () => {
+      frame(pad({ axes: [0.9, 0, 0, 0] }));
+      expect(input.dirX).toBe(1);
+      expect(moves).toEqual([]);
+      expect(calls.navigate).toEqual([]);
+      frame(pad());
+      frame(pad({ buttons: { [PAD.right]: 1 } }));
+      frame(pad({ buttons: { [PAD.right]: 1 } }));
+      expect(moves).toEqual(['right']);
+      const packet = input.sample(1, 0, null);
+      expect(packet.reload).toBe(false);
+      expect(packet.spinner).toBeUndefined();
+    });
+
+    it('leaves the whole pad to the game in a search window: the D-pad reloads and A keeps searching', () => {
+      setInventoryHands({ ownsPoint: () => false, sharesPad: () => false });
+      frame(pad({ buttons: { [PAD.up]: 1, [PAD.a]: 1 } }));
+      const packet = input.sample(1, 0, null);
+      expect(packet.reload).toBe(true);
+      expect(packet.search).toBe(true);
+      expect(presses).toEqual([]);
+      expect(moves).toEqual([]);
+    });
+
+    it('still steps through the guns on the bumpers', () => {
+      const loadout = { owned: ['pistol', 'carbine', 'shotgun'] as const, weapon: 'pistol' as const };
+      frame(pad({ buttons: { [PAD.rb]: 1 } }));
+      expect(input.sample(1, 0, loadout).weapon).toBe('carbine');
+      frame(pad({ buttons: { [PAD.lb]: 1 } }));
+      expect(input.sample(2, 0, loadout).weapon).toBe('shotgun');
     });
   });
 

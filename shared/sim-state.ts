@@ -359,6 +359,8 @@ export interface SimState {
   hordesBehind: number;
   /** Most recently started wave in this town, 0 before the first. */
   wave: number;
+  /** Second candy-bowl pieces taken since the last horde began: each one doubles the next horde. */
+  hordeSurges?: number;
   intermissionLeft: number;
   /** Seconds until the current horde gives up. */
   hordeLeft: number;
@@ -408,6 +410,8 @@ export interface SimState {
   homeRun: HomeRun | null;
   /** Test Drive: every car prop drives and the exit van never comes. */
   readonly testDrive: boolean;
+  /** HUD test: no zombie ever spawns and nobody can die (health floors at 1). Off unless the dev HUD page asks for it. */
+  readonly hudTest: boolean;
   /** The bunker runs a horde clock. Off unless asked for. */
   readonly overrunOn: boolean;
   /** Null with the overrun off, on a first visit, out on a trip, and from its end to the next arrival. */

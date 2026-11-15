@@ -2,7 +2,7 @@ const BAYER_4X4 = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
 export const BAYER_CELLS = Uint8Array.from(BAYER_4X4);
 
 /** Steps from black to full light, squeezed toward the dark where the eye sees them most. */
-const LIGHT_LEVELS = 14;
+const LIGHT_LEVELS = 32;
 const LEVEL_CURVE = 1.9;
 /** Dither steps a band is divided into, one per Bayer cell. */
 export const DITHER_STEPS = 16;

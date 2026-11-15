@@ -8,7 +8,7 @@ import { dirFromAngle } from '../art/types.ts';
 import type { ArtBook } from '../art/types.ts';
 import { drawOutlinedText, FONT_HEIGHT } from './bitmap-font.ts';
 import { ammoPrompt } from './ammo-prompt.ts';
-import { DrivingActionPrompt, drivingPrompts, vehiclePrompt } from './vehicle-prompt.ts';
+import { type DrivingActionPrompt, drivingPrompts, vehiclePrompt } from './vehicle-prompt.ts';
 import { VEHICLE_BODIES } from '../../shared/vehicle-bodies.ts';
 import type { SceneView } from './scene.ts';
 import { climbPrompt } from '../../shared/take-manhole.ts';

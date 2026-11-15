@@ -1,12 +1,20 @@
 import type { LevelTheme } from '../../shared/levels.ts';
 import type { NightEventId } from '../../shared/night-events.ts';
 import { TILE_SIZE } from '../../shared/protocol.ts';
-import type { EntityId, GameEvent, WorldMap, ZombieType } from '../../shared/protocol.ts';
+import type { EntityId, GameEvent, PlayerEntity, WorldMap, ZombieType } from '../../shared/protocol.ts';
 import type { ArtBook, PixelSprite } from '../art/types.ts';
-import { drawHeldUi } from './held-ui.ts';
+import { drawHeldUi, drawQuip, QUIP_COLOR } from './held-ui.ts';
+import { drawOutline } from './sprite-cache.ts';
+import { survivorReaction } from '../game/inventory/survivor-quips.ts';
+import { setArrivalCamera } from '../game/inventory/pickup-arrivals.ts';
+import { backFlight, lerpRect, noteWorldFrame, toSpace } from '../game/inventory/container-zoom.ts';
+import { drawStageArt } from './loot-container-art.ts';
+import { drawCanvasHud } from './canvas-hud.ts';
 import { drawDoorZone, zoneToShow } from './door-zones.ts';
 import { mapDoors, wayToOpening } from '../../shared/doors.ts';
 import { buildingAt, circleHitsSolid } from '../../shared/world-map.ts';
+import { setKeepsakeBoxes } from '../game/keepsake-cursor.ts';
+import type { CanvasHudView } from '../game/canvas-hud-view.ts';
 import { setHeldButtons, setHeldSurvivor } from '../game/held-cursor.ts';
 import { lootWindow } from '../game/loot-view.ts';
 import { drawLootUi, layoutLootUi } from './loot-ui.ts';
@@ -89,6 +97,8 @@ export class WorldRenderer {
   private readonly visuals = new VisualStore();
   private readonly entities: EntityRenderer;
   private readonly overlay: OverlayRenderer;
+  /** The run's HUD as the canvas draws it, or null while the page HUD is on. Set each frame by the run. */
+  private hudView: CanvasHudView | null = null;
   private readonly emotes: EmoteOverlay;
   private readonly buildings: BuildingLayer;
   private readonly lighting = new Lighting();
@@ -146,6 +156,11 @@ export class WorldRenderer {
   }
 
   /** `reach` holds the view to that far from its middle, when the mode calls for it. */
+  setHudView(view: CanvasHudView | null): void {
+    this.hudView = view;
+    if (view === null) setKeepsakeBoxes([]);
+  }
+
   resize(reach: number | null = null, detail = 1): void {
     const cssW = window.innerWidth;
     const cssH = window.innerHeight;
@@ -214,6 +229,12 @@ export class WorldRenderer {
     const isSame = lift === this.brightness;
     if (isSame) return;
     this.brightness = lift;
+    this.applyLook();
+  }
+
+  /** Horde Mode's blackout over the town: the streets go dark and only some lamps work. */
+  setEerie(on: boolean): void {
+    this.atmosphere.setEerie(on);
     this.applyLook();
   }
 
@@ -473,7 +494,16 @@ export class WorldRenderer {
     this.fx.particles.keepTextsClear(this.overlay.sugarKeepOuts());
     this.fx.particles.drawTexts(ctx, left, top);
     if (scene.showCrosshair && !scene.held) this.overlay.drawCrosshair(ctx, scene, left, top, lightAt, isKilled);
-    this.drawLoot(ctx, viewW, viewH);
+    this.drawCanvasHud(ctx, viewW, viewH);
+    // The world has drawn its props: a container window that just opened learns whether it can zoom from one.
+    noteWorldFrame(performance.now(), this.reducedMotion);
+    // An item picked up with the inventory open flies from where it lay: the loot windows need this frame's camera.
+    setArrivalCamera({
+      still: this.reducedMotion,
+      toBuffer: (point) => ({ x: point.x - left, y: point.y - top }),
+      toClient: (point) => ({ x: this.toClientX(point.x - left), y: this.toClientY(point.y - top) }),
+    });
+    this.drawLoot(ctx, viewW, viewH, left, top);
     this.drawSetup(ctx, viewW, viewH);
     this.drawPage(ctx, viewW, viewH);
     this.drawHeld(ctx, scene, left, top, viewW, viewH);
@@ -483,12 +513,24 @@ export class WorldRenderer {
   }
 
   /** The loot window, when it is drawn on the game: the world dims a step, and the docks go over it, under the item in hand. */
-  private drawLoot(ctx: CanvasRenderingContext2D, viewW: number, viewH: number): void {
+  private drawLoot(ctx: CanvasRenderingContext2D, viewW: number, viewH: number, left: number, top: number): void {
     const win = lootWindow();
-    if (!win) return;
+    if (!win) {
+      this.drawLootFlyBack(ctx, left, top);
+      return;
+    }
     ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
     ctx.fillRect(0, 0, viewW, viewH);
     drawLootUi(ctx, win, layoutLootUi(win.state, viewW, viewH));
+  }
+
+  /** The canvas window just shut: its container's drawing flies back to where it stands, for a moment. */
+  private drawLootFlyBack(ctx: CanvasRenderingContext2D, left: number, top: number): void {
+    const back = backFlight(performance.now());
+    const flies = back !== null && back.space === 'buffer' && back.art !== null;
+    if (!flies || !back.art) return;
+    const camera = { still: false, toBuffer: (point: { x: number; y: number }) => ({ x: point.x - left, y: point.y - top }), toClient: (point: { x: number; y: number }) => point };
+    drawStageArt(ctx, back.art, back.searched, lerpRect(back.to, toSpace(back.from, camera, 'buffer'), back.eased), 0.9 * (1 - back.t * 0.3));
   }
 
   /** The Campaign / Arcade setup screen, when it is drawn on the game: it stands over the title's drifting town. */
@@ -520,7 +562,32 @@ export class WorldRenderer {
   }
 
   /** The item in hand takes the crosshair's place; its words and buttons hang under the survivor. Reports where the buttons are, in client pixels. */
-  /** The item in hand takes the crosshair's place; its words and buttons hang under the survivor. Reports where the buttons are, in client pixels. */
+  private drawCanvasHud(ctx: CanvasRenderingContext2D, viewW: number, viewH: number): void {
+    if (!this.hudView) return;
+    const cards = drawCanvasHud(ctx, this.hudView, this.art, viewW, viewH);
+    setKeepsakeBoxes(
+      cards.map((card) => {
+        const x = this.toClientX(card.x);
+        const y = this.toClientY(card.y);
+        return { id: card.id, code: card.code, x, y, w: this.toClientX(card.x + card.w) - x, h: this.toClientY(card.y + card.h) - y };
+      })
+    );
+  }
+
+  /**
+   * With the item in hand over the survivor (or a pad in hand, whose RT feeds them), the survivor is ringed in the
+   * colour of how keen they are, and says so. Returns their line, or null when they are not being offered it.
+   */
+  private highlightSurvivor(ctx: CanvasRenderingContext2D, held: NonNullable<SceneView['held']>, me: PlayerEntity, anchor: { x: number; y: number }): ReturnType<typeof survivorReaction> | null {
+    const over = held.x >= anchor.x - 14 && held.x <= anchor.x + 14 && held.y >= anchor.y - 30 && held.y <= anchor.y + 6;
+    if (!over && !held.padKeys) return null;
+    const usable = held.actions.some((action) => action.kind === 'use');
+    const reaction = survivorReaction(held.type, held.itemId, usable, me);
+    const sprite = this.visuals.get(me.id).sprite;
+    if (sprite) drawOutline(ctx, sprite, anchor.x, anchor.y, QUIP_COLOR[reaction.mood]);
+    return reaction;
+  }
+
   private drawHeld(ctx: CanvasRenderingContext2D, scene: SceneView, left: number, top: number, viewW: number, viewH: number): void {
     if (!scene.held) {
       setHeldButtons([]);
@@ -534,7 +601,9 @@ export class WorldRenderer {
       const y0 = this.toClientY(anchor.y - 30);
       setHeldSurvivor({ x: x0, y: y0, w: this.toClientX(anchor.x + 14) - x0, h: this.toClientY(anchor.y + 6) - y0 });
     } else setHeldSurvivor(null);
+    const quip = me && anchor ? this.highlightSurvivor(ctx, scene.held, me, anchor) : null;
     const rects = drawHeldUi(ctx, scene.held, anchor, viewW, viewH);
+    if (quip && anchor) drawQuip(ctx, quip, anchor, viewW);
     setHeldButtons(
       rects.map((r) => ({
         kind: r.kind,

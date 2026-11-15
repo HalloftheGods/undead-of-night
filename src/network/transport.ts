@@ -29,6 +29,8 @@ export interface ConnectOptions {
   readonly streakNight?: number;
   /** Solo only: a Test Drive run, where every car drives and the exit van never comes. */
   readonly testDrive?: boolean;
+  /** Solo only: the HUD test town, with no zombies and nobody who can die. Set by the dev HUD page. */
+  readonly hudTest?: boolean;
 }
 
 /** The one seam between the game client and a simulation, in-browser or over ws. */

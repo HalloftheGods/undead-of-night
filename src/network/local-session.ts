@@ -120,7 +120,7 @@ export class LocalSession implements GameTransport {
   }
 
   private beginRun(): void {
-    const { name, difficulty, character, startLevel, home, streakNight, testDrive } = this.options;
+    const { name, difficulty, character, startLevel, home, streakNight, testDrive, hudTest } = this.options;
     const seed = this.options.seed ?? Math.floor(Math.random() * 0x7fffffff);
     const overrun = overrunOn(globalThis.location?.search ?? "", import.meta.env.DEV);
     const sim = new GameSimulation({
@@ -130,7 +130,8 @@ export class LocalSession implements GameTransport {
       startLevel,
       home: this.playsHome,
       overrun,
-      testDrive
+      testDrive,
+      hudTest
     });
     sim.addPlayer(LOCAL_PLAYER_ID, name, null, character, home);
     // Campaign brings its own gear from the locker, so the streak kit is for town runs.

@@ -1,4 +1,5 @@
 import { readonly, ref } from 'vue';
+import { difficultyDef, type DifficultyId } from '../../shared/difficulty.ts';
 import { setHitPalette, type PaletteId } from '../engine/hit-palette.ts';
 import { RESOLUTION_FACTOR, type Resolution } from '../engine/viewport.ts';
 import { browserStore, readJson, writeJson, type Store } from './storage.ts';
@@ -113,4 +114,13 @@ export function setBrightness(value: number, store: Store | null = browserStore(
  */
 export function brightnessLift(): number {
   return brightnessLevel.value * MAX_BRIGHTNESS_LIFT;
+}
+
+/**
+ * The lift a run is lit at. Each difficulty sets its own (Lights On at the most the setting allows, Lights Out
+ * at none), so a run ignores the slider. Outside a run, with no difficulty, the slider's lift applies.
+ */
+export function liftFor(difficulty: DifficultyId | null): number {
+  const isRun = difficulty !== null;
+  return isRun ? difficultyDef(difficulty).light * MAX_BRIGHTNESS_LIFT : brightnessLift();
 }

@@ -40,6 +40,7 @@ import { loadStyle, saveStyle } from "./style-pref.ts";
 import { loadBests } from "./trip-record.ts";
 import { isTouchDevice } from "./touch-input.ts";
 import { fitWindow, watchDpr } from "./view-fit.ts";
+import { speak } from "./survivor-speech.ts";
 import {
   applyPalette,
   brightness,
@@ -215,9 +216,7 @@ export class GameController {
       this.renderer?.setMotion(reduced, shake)
     );
     // The Brightness slider moves the picture as it moves, from the pause card as much as from Options.
-    this.stopBrightnessWatch = watch(brightness, () =>
-      this.renderer?.setBrightness(brightnessLift())
-    );
+    this.stopBrightnessWatch = watch(brightness, () => this.stage.applyLook());
     this.audio.setScene("menu");
   }
 
@@ -417,6 +416,11 @@ export class GameController {
     this.session.startTestDrive();
   }
 
+  /** Dev HUD page: a random survivor in a town with no zombies, where nobody can die. */
+  startHudTest(): void {
+    this.session.startHudTest();
+  }
+
   /** Arcade from `chosen` (guarded by what is unlocked) or, with none, the furthest level reached. Does nothing if there is no later level to start at. */
   continueSolo(chosen?: number): void {
     this.session.continueSolo(chosen);
@@ -520,6 +524,11 @@ export class GameController {
   /** The one message a closed bag sends: its final layout and what was dropped. Solo and co-op alike. */
   sendBag(commit: BagCommit): void {
     this.run.transport?.sendBag(commit);
+    const now = performance.now();
+    this.runHud.noteBag(commit, now);
+    // The survivor has a word about it: a drop always, a take from a container if nothing was dropped.
+    if (commit.drop.length > 0) speak('drop', now);
+    else if ((commit.container?.taken.length ?? 0) > 0) speak('pickup', now);
   }
 
   private canUseMap(): boolean {
@@ -693,6 +702,8 @@ export class GameController {
 
   /** The city at night behind the menu, drifting past with nobody in it. */
   private frameTitle(renderer: WorldRenderer, dt: number): void {
+    // The run's HUD belongs to the run: the title draws the city bare.
+    renderer.setHudView(null);
     const map = this.titleMap;
     const noMap = !map;
     if (noMap) return;

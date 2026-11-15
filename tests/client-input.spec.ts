@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cycleWeapon, InputManager } from '../src/game/input-manager.ts';
 import { installFakeBrowser } from './client-fake-dom.ts';
+import { setHeld } from '../src/game/held-cursor.ts';
+import type { HeldInfo } from '../src/game/held-cursor.ts';
+import { setInventoryHands } from '../src/game/inventory/inventory-hands.ts';
+import { PAD_FIRE } from '../src/game/input/gamepad-input.ts';
 import type { FakeBrowser } from './client-fake-dom.ts';
 
 const noop = { onGesture() {}, onPause() {}, onMute() {}, onConfirm() {}, onMap: () => false, mapUsable: () => false };
@@ -423,5 +427,73 @@ describe('InputManager', () => {
     input.dispose();
     const left = [...browser.listeners.values()].reduce((sum, set) => sum + set.size, 0);
     expect(left).toBe(0);
+  });
+});
+
+describe('InputManager with the inventory open', () => {
+  const inHand: HeldInfo = { sprite: null, name: 'Water', hint: '', actions: [], type: 'water', itemId: 'held-1' };
+  const loadout = { owned: ['pistol', 'carbine'] as const, weapon: 'pistol' as const };
+  const wheel = () => ({ deltaY: 100, clientX: 40, clientY: 40, preventDefault: vi.fn() });
+  let browser: FakeBrowser;
+  let input: InputManager;
+
+  /** The open window, owning every point or none: a panel under the pointer, or the game. */
+  const openInventory = (ownsUi: boolean) => setInventoryHands({ ownsPoint: () => ownsUi });
+
+  beforeEach(() => {
+    browser = installFakeBrowser();
+    input = new InputManager(noop);
+    input.setEnabled(true);
+  });
+
+  afterEach(() => {
+    input.dispose();
+    setInventoryHands(null);
+    setHeld(null);
+    vi.unstubAllGlobals();
+  });
+
+  it('gives a press on the inventory\'s own UI to the inventory: no shot, no shove', () => {
+    openInventory(true);
+    browser.dispatch('mousedown', { button: 0, clientX: 40, clientY: 40 });
+    expect(input.sample(1, 0, null).shoot).toBe(false);
+    browser.dispatch('mousedown', { button: 2, clientX: 40, clientY: 40 });
+    expect(input.sample(2, 0, null).melee).toBe(false);
+  });
+
+  it('fires on a press over the game beside the open inventory', () => {
+    openInventory(false);
+    browser.dispatch('mousedown', { button: 0, clientX: 900, clientY: 500 });
+    expect(input.sample(1, 0, null).shoot).toBe(true);
+  });
+
+  it('neither fires nor shoves from any source while an item is in hand', () => {
+    openInventory(false);
+    setHeld(inHand);
+    browser.dispatch('mousedown', { button: 0, clientX: 900, clientY: 500 });
+    expect(input.sample(1, 0, null).shoot).toBe(false);
+    browser.dispatch('mouseup', { button: 0 });
+    browser.dispatch('keydown', key('KeyF'));
+    expect(input.sample(2, 0, null).melee).toBe(false);
+    browser.dispatch('keyup', key('KeyF'));
+    input.padDown(PAD_FIRE);
+    expect(input.sample(3, 0, null).shoot).toBe(false);
+    input.padUp(PAD_FIRE);
+    setHeld(null);
+    browser.dispatch('keydown', key('KeyF'));
+    expect(input.sample(4, 0, null).melee).toBe(true);
+  });
+
+  it('leaves the wheel to the panel under the pointer, and cycles guns over the game', () => {
+    openInventory(true);
+    const overPanel = wheel();
+    browser.dispatch('wheel', overPanel);
+    expect(overPanel.preventDefault).not.toHaveBeenCalled();
+    expect(input.sample(1, 0, loadout).weapon).toBeNull();
+    openInventory(false);
+    const overGame = wheel();
+    browser.dispatch('wheel', overGame);
+    expect(overGame.preventDefault).toHaveBeenCalled();
+    expect(input.sample(2, 0, loadout).weapon).toBe('carbine');
   });
 });

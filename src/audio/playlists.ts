@@ -1,6 +1,7 @@
 import { playsFromHome } from '../../shared/game-style.ts';
 import type { GameStyle } from '../../shared/game-style.ts';
 import { FINAL_LEVEL, FIRST_LEVEL } from '../../shared/levels.ts';
+import { loadRadioFavorites } from '../game/radio-player.ts';
 import { foundTracks } from '../game/sound-unlock.ts';
 import type { Scene } from './music.ts';
 
@@ -112,11 +113,31 @@ function heardOn(index: number, style: GameStyle, found: ReadonlySet<string>): P
 
 
 
+const TITLE_PLAYLISTS = new Map<string, Playlist>();
+
+export function clearTitlePlaylistsCache(): void {
+  TITLE_PLAYLISTS.clear();
+}
+
+/** The title screen music: plays radio favorites in sequence/random cycle when any exist, or ruins when empty. */
+export function titlePlaylist(favorites: ReadonlySet<string> = loadRadioFavorites()): Playlist {
+  const hasNoFavorites = favorites.size === 0;
+  if (hasNoFavorites) return RUINS;
+  const key = [...favorites].sort().join();
+  const kept = TITLE_PLAYLISTS.get(key);
+  if (kept) return kept;
+  const made = lull(...favorites);
+  TITLE_PLAYLISTS.set(key, made);
+  return made;
+}
+
 /** Scenes that play the same thing on every level. */
-const SCENE_PLAYLISTS: Partial<Record<Scene, Playlist>> = { menu: RUINS, wave: HORDE, victory: VICTORY, credits: CREDITS, gameover: QUIET };
+const SCENE_PLAYLISTS: Partial<Record<Scene, Playlist>> = { wave: HORDE, victory: VICTORY, credits: CREDITS, gameover: QUIET };
 
 /** What plays in a scene on a level. Levels past either end of the run hold to the nearest. */
 export function playlistFor(scene: Scene, level: number, style: GameStyle = 'arcade', found: ReadonlySet<string> = foundTracks()): Playlist {
+  const isMenu = scene === 'menu';
+  if (isMenu) return titlePlaylist();
   const fixed = SCENE_PLAYLISTS[scene];
   if (fixed) return fixed;
   const isHomeBunker = scene === 'bunker' && playsFromHome(style);

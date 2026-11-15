@@ -3,6 +3,7 @@ import type { ComputedRef } from 'vue';
 import type { ChoiceOption, PagePanel } from '../engine/page-ui.ts';
 import { consent, openPrivacy } from '../game/analytics/index.ts';
 import { canvasMenus, saveCanvasMenus } from '../game/canvas-menu-prefs.ts';
+import { canvasHud, gunOnTop, saveCanvasHud, saveGunOnTop } from '../game/canvas-hud-prefs.ts';
 import { brightness, brightnessLift, setBrightness } from '../game/display-prefs.ts';
 import type { PaletteId, Resolution, SpeedUnit, UiScale } from '../game/display-prefs.ts';
 import type { UiState } from '../game/hud-state.ts';
@@ -85,6 +86,10 @@ export function useOptionsPanels(getUi: () => UiState, kind: OptionsKind) {
       { kind: 'text', text: 'Draws the loot grids on the game itself, over a dimmed world. Mouse only for now: phones and gamepads keep the page version.', tone: 'dim' },
       { kind: 'switch', id: 'canvasmenus', label: 'In-game menus', on: canvasMenus.value, enabled: true },
       { kind: 'text', text: 'Draws the title menus on the game itself instead of a page. Mouse and keyboard only for now: phones and gamepads keep the page version.', tone: 'dim' },
+      { kind: 'switch', id: 'canvashud', label: 'In-game HUD', on: canvasHud.value, enabled: true },
+      { kind: 'text', text: 'Draws the HUD on the game itself, over the world. Mouse and keyboard, and gamepads: phones keep the page HUD, where the weapon slots are tap targets.', tone: 'dim' },
+      { kind: 'switch', id: 'gunontop', label: 'Gun box on top', on: gunOnTop.value, enabled: true },
+      { kind: 'text', text: 'Puts the equipped gun at the top centre. Off, it moves to the bottom centre and the run info takes the top.', tone: 'dim' },
     ],
   }));
 
@@ -123,6 +128,8 @@ export function useOptionsPanels(getUi: () => UiState, kind: OptionsKind) {
     },
     canvasloot: saveCanvasLoot,
     canvasmenus: saveCanvasMenus,
+    canvashud: saveCanvasHud,
+    gunontop: saveGunOnTop,
     analytics: (on) => (on ? consent.grant() : consent.deny()),
     xp: (on) => game.setAutoFadeXp(on),
     menuinfo: (on) => {
@@ -134,6 +141,8 @@ export function useOptionsPanels(getUi: () => UiState, kind: OptionsKind) {
     autoclose: () => autoCloseLoot.value,
     canvasloot: () => canvasLoot.value,
     canvasmenus: () => canvasMenus.value,
+    canvashud: () => canvasHud.value,
+    gunontop: () => gunOnTop.value,
     analytics: () => analyticsOn.value,
     xp: () => ui().autoFadeXp,
     menuinfo: () => menuInfo.value,

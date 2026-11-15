@@ -16,6 +16,7 @@ export const PICKUP_SFX: Record<PickupType, SfxName> = {
   bandage: 'pickup_bandage', medkit: 'pickup_medkit', pistol_ammo: 'pickup_pistol_ammo',
   carbine_ammo: 'pickup_carbine_ammo', shells: 'pickup_shells', carbine: 'pickup_weapon', shotgun: 'pickup_weapon',
   knife: 'pickup_weapon', radio: 'pickup_radio',
+  bottle: 'pickup_part', firework: 'pickup_part', fountain: 'pickup_part',
   // Parts and kits go in the bag; only a whole gun gets the gun pickup's flourish.
   barrel: 'pickup_part', grip: 'pickup_part', magazine: 'pickup_part', suppressor: 'pickup_part', toolkit: 'pickup_part',
   incendiary_kit: 'pickup_part', acid_kit: 'pickup_part', piercing_kit: 'pickup_part', tranq_kit: 'pickup_part',

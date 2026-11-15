@@ -22,6 +22,10 @@
             <p class="options-note">Draws the loot grids on the game itself, over a dimmed world. Mouse only for now: phones and gamepads keep the page version.</p>
             <PixelSwitch label="In-game menus" :on="canvasMenus" @change="saveCanvasMenus" />
             <p class="options-note">Draws the Campaign and Arcade setup screen on the game itself instead of a page. Mouse and keyboard only for now: multiplayer, phones and gamepads keep the page version.</p>
+            <PixelSwitch label="In-game HUD" :on="canvasHud" @change="saveCanvasHud" />
+            <p class="options-note">Draws the HUD on the game itself, over the world. Mouse and keyboard, and gamepads: phones keep the page HUD, where the weapon slots are tap targets.</p>
+            <PixelSwitch label="Gun box on top" :on="gunOnTop" @change="saveGunOnTop" />
+            <p class="options-note">Puts the equipped gun at the top centre. Off, it moves to the bottom centre and the run's info takes the top.</p>
           </div>
         </section>
 
@@ -43,6 +47,7 @@ import { computed, ref } from 'vue';
 import { consent, openPrivacy } from '../game/analytics/index.ts';
 import type { UiState } from '../game/hud-state.ts';
 import { canvasMenus, saveCanvasMenus } from '../game/canvas-menu-prefs.ts';
+import { canvasHud, gunOnTop, saveCanvasHud, saveGunOnTop } from '../game/canvas-hud-prefs.ts';
 import { canvasLoot, loadAutoCloseEmptyLoot, saveAutoCloseEmptyLoot, saveCanvasLoot } from '../game/loot-prefs.ts';
 import DisplayOptions from './DisplayOptions.vue';
 import MenuLink from './MenuLink.vue';

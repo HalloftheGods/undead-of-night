@@ -10,6 +10,9 @@ import type { UiState } from "@game/hud-state.ts";
 import type { InputManager } from "@game/input-manager.ts";
 import { LocalBag, type BagWorking } from "./local-bag.ts";
 import { loadAutoCloseEmptyLoot } from "@game/loot-prefs.ts";
+import { clearArrivals, noteArrivals } from "./pickup-arrivals.ts";
+import { beginContainerZoom, endContainerZoom } from "./container-zoom.ts";
+import { inventoryHolding, setInventoryHands } from "./inventory-hands.ts";
 
 /** How often a shut bag checks itself against the host's hash. */
 const HEAL_CHECK_MS = 500;
@@ -23,6 +26,8 @@ export interface InventoryPanel {
   rotate: () => void;
   /** Puts back what is being held, so the grids are whole. */
   settle: () => void;
+  /** The client point is on this window's own UI, so a click there is the inventory's and never a shot. */
+  ownsPoint: (clientX: number, clientY: number) => boolean;
 }
 
 type Held = Pick<InputManager, "setEnabled" | "setWalkOnly" | "letGoButtons">;
@@ -61,6 +66,23 @@ export function isInventoryKey(
   return isTheKey && isBare && isFree;
 }
 
+/**
+ * What the open grid does with a key: 'escape' and 'close' and 'rotate' are its own, 'ignore' is an inventory key
+ * held down (swallowed, so it does not reopen), and null is the game's, so the game stays playable under the grid.
+ * R rotates only an item in hand; with the hand empty it is the reload key again.
+ */
+export function inventoryKeyAction(
+  code: string,
+  repeat: boolean,
+  holding: boolean,
+  inventoryCodes: readonly string[]
+): "escape" | "close" | "rotate" | "ignore" | null {
+  if (code === "Escape") return "escape";
+  if (inventoryCodes.includes(code)) return repeat ? "ignore" : "close";
+  if (code === "KeyR" && holding) return "rotate";
+  return null;
+}
+
 /** The keys are the game's and the survivor is on their feet: the same test the crosshair uses. */
 export function inventoryReachable(ui: UiState): boolean {
   const aiming = aimsCursor({
@@ -76,9 +98,10 @@ export function inventoryReachable(ui: UiState): boolean {
 }
 
 /**
- * The grid inventory over a live run. Opening takes the player's hands off the game (the same
- * `setEnabled` the pause menu uses); closing gives them back only if nothing else has them. Moves in
- * the modal edit a working copy and send nothing; closing sends one commit if anything changed.
+ * The grid inventory over a live run. On desktop the game stays live under it: the mouse aims and fires, and
+ * the keys and the pad play, except where the window owns the pointer (inventory-hands.ts). On touch, opening
+ * takes the hands off the game and leaves the feet free (`setWalkOnly`); closing gives them back only if nothing
+ * else has them. Moves in the modal edit a working copy and send nothing; closing sends one commit if anything changed.
  */
 export function useInventoryModal(
   ui: Ref<UiState>,
@@ -99,17 +122,43 @@ export function useInventoryModal(
   const searchingOpen = ref(false);
   /** How the grid was last opened, so a live use or drop can rebuild it the same way. */
   let lastOpen: OpenedGrid | null = null;
+  /** This opening took the hands off the game (touch only), so closing must give them back. */
+  let tookHands = false;
+
+  /**
+   * Registers the window as the one that may own the pointer. A phone has no pointer to share, so there the
+   * grid takes the hands as it always has; a desktop keeps playing, so its latches are never wiped.
+   */
+  function openHands(searching: boolean): void {
+    setInventoryHands({ ownsPoint: (x, y) => panel.value?.ownsPoint(x, y) ?? false, sharesPad: () => !searchingOpen.value });
+    const takesHands = !searching && ui.value.touch && !tookHands;
+    if (!takesHands) return;
+    input.letGoButtons();
+    input.setWalkOnly();
+    tookHands = true;
+  }
+
+  /**
+   * A window opening over one already open (a search that ends under the Nearby window) first puts back what is
+   * held and sends what was done in the old one, so no move is lost when the copy is rebuilt.
+   */
+  function commitOpen(): void {
+    if (!isOpen.value) return;
+    panel.value?.settle();
+    if (working.value) bag.close(working.value);
+  }
 
   function show(): boolean {
     const hud = ui.value.hud;
     const canShow = inventoryReachable(ui.value) && hud !== null;
     if (!canShow) return false;
+    commitOpen();
     bag.sync(hud);
     lastOpen = { containerId: null, title: "Nearby", items: [] };
     working.value = bag.open(hud);
     openings.value += 1;
-    input.letGoButtons();
-    input.setWalkOnly();
+    openHands(false);
+    endContainerZoom();
     isOpen.value = true;
     return true;
   }
@@ -129,15 +178,14 @@ export function useInventoryModal(
     const hud = ui.value.hud;
     const canShow = inventoryReachable(ui.value) && hud !== null;
     if (!canShow) return false;
+    commitOpen();
     bag.sync(hud);
     lastOpen = { containerId, title: containerTitle, items, kind: containerKind, art: containerArt, flipped, look };
     working.value = bag.open(hud, containerId, containerTitle, items, containerKind, containerArt, flipped, look);
     openings.value += 1;
     searchingOpen.value = searching;
-    if (!searching) {
-      input.letGoButtons();
-      input.setWalkOnly();
-    }
+    openHands(searching);
+    beginContainerZoom(containerId);
     isOpen.value = true;
     return true;
   }
@@ -193,13 +241,18 @@ export function useInventoryModal(
 
   function hide(): void {
     if (!isOpen.value) return;
-    const wasSearching = searchingOpen.value;
+    const gave = tookHands;
+    tookHands = false;
+    setInventoryHands(null);
     searchingOpen.value = false;
     panel.value?.settle();
     if (working.value) bag.close(working.value);
     isOpen.value = false;
     working.value = null;
-    if (!wasSearching && inventoryReachable(ui.value)) input.setEnabled(true);
+    clearArrivals();
+    endContainerZoom();
+    // A desktop close leaves the input alone, so the shot of the frame it closes on is not wiped.
+    if (gave && inventoryReachable(ui.value)) input.setEnabled(true);
   }
 
   /** A grid over a searched container shuts itself when the survivor walks away from it. */
@@ -209,7 +262,10 @@ export function useInventoryModal(
     if (walkedAwayFrom(id)) onAway();
   }
 
-  /** Swallows the press so the game's own key listener never sees it, and answers the few the modal knows. */
+  /**
+   * Opens the grid on I or B. While it is open only Esc, I/B and R with an item in hand are its own: those are
+   * swallowed so the game's listener never sees them. Every other key goes on to the game, which stays live.
+   */
   function onKey(event: KeyboardEvent): void {
     if (!isOpen.value) {
       const { inventory, ...others } = loadKeyBindings();
@@ -221,23 +277,16 @@ export function useInventoryModal(
       return;
     }
     if (isTypingTarget(event.target)) return;
-    // Mid-search the hands are still on the game: every key, the search key above all, goes straight through.
-    if (searchingOpen.value) return;
-    // The feet are free: a walking key goes on to the game's own listener, which is what walks the survivor.
-    const binds = loadKeyBindings();
-    const isWalkKey = [...binds.moveUp, ...binds.moveDown, ...binds.moveLeft, ...binds.moveRight, ...binds.sprint, ...binds.sneak].includes(event.code);
-    if (isWalkKey) return;
+    const action = inventoryKeyAction(event.code, event.repeat, inventoryHolding(), loadKeyBindings().inventory);
+    // Mid-search the hands are still on the game: every key, the search key above all, goes straight through,
+    // except R on an item in hand, which turns it there too instead of reloading.
+    const passes = action === null || (searchingOpen.value && action !== "rotate");
+    if (passes) return;
     event.stopPropagation();
-    if (event.code === "Escape") {
-      event.preventDefault();
-      panel.value?.escape();
-    } else if (loadKeyBindings().inventory.includes(event.code)) {
-      event.preventDefault();
-      if (!event.repeat) hide();
-    } else if (event.code === "KeyR") {
-      event.preventDefault();
-      panel.value?.rotate();
-    }
+    event.preventDefault();
+    if (action === "escape") panel.value?.escape();
+    else if (action === "close") hide();
+    else if (action === "rotate") panel.value?.rotate();
   }
 
   /** Something else took the screen (pause, a death, a station): the modal goes with it. */
@@ -250,8 +299,14 @@ export function useInventoryModal(
   watch(
     () => ui.value.hud,
     (hud) => {
-      if (hud) bag.sync(hud);
-      else bag.reset();
+      if (!hud) {
+        bag.reset();
+        return;
+      }
+      bag.sync(hud);
+      // Open: what was just picked up joins the grids on screen at once, and flies in from where it was.
+      const open = working.value;
+      if (isOpen.value && open) noteArrivals(bag.absorb(open, hud));
     },
     { immediate: true }
   );
@@ -264,7 +319,8 @@ export function useInventoryModal(
     window.removeEventListener("keydown", onKey, true);
     clearInterval(healTimer);
     clearInterval(awayTimer);
-    if (isOpen.value) input.setEnabled(true);
+    setInventoryHands(null);
+    if (isOpen.value && tookHands) input.setEnabled(true);
   });
 
   return { isOpen, working, openings, searchingOpen, show, showContainer, hide, onTransfer, onUse, onDrop };

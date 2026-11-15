@@ -230,6 +230,8 @@ export interface PropInstance {
   readonly y: number;
   /** The two streets an intersection signal's sign names, set only on signals at a crossing. */
   readonly sign?: readonly [string, string];
+  /** The look a searchable piece is drawn with, when its building picks one for all its furniture (a warehouse's, a police station's). */
+  readonly look?: string;
 }
 
 export interface MapLight {

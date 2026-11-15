@@ -1,5 +1,5 @@
-import { ammoBoxWeapon, bagWanted, isAmmoBoxType, isBagItemType, isDroppableBagItem, retierBag, stampAmmoBoxes, syncBag, validateLayout, adoptLayout } from './bag.ts';
-import type { BagCommit, BagItemType, BagWanted, DroppableBagItem } from './bag.ts';
+import { ammoBoxRounds, ammoBoxWeapon, bagWanted, isAmmoBoxType, isBagItemType, isDroppableBagItem, retierBag, stampAmmoBoxes, syncBag, validateLayout, adoptLayout } from './bag.ts';
+import type { AmmoBoxType, BagCommit, BagItemType, BagWanted, DroppableBagItem } from './bag.ts';
 import { MAX_COMMIT_DROPS, MAX_COMMIT_LAYOUT } from './bag-commit.ts';
 import { FORTIFICATION_ITEMS } from './fortifications.ts';
 import { takeFromContainer } from './container-take.ts';
@@ -11,6 +11,10 @@ import type { PlayerState, SimState } from './sim-state.ts';
 import { useSupply } from './supplies.ts';
 import { isSupplyType } from './supply-types.ts';
 import { containerGridFor, townContainers } from './containers.ts';
+import { armHordeSurge } from './waves.ts';
+
+/** How many pieces of candy are in a container's grid. */
+const countCandy = (items: readonly { type: string }[]): number => items.filter((item) => isCandyId(item.type)).length;
 
 /** Takes up to `count` units of a type off the counters and returns how many it took. */
 function take(p: PlayerState, type: BagItemType, count: number): number {
@@ -34,11 +38,24 @@ function take(p: PlayerState, type: BagItemType, count: number): number {
 
 /** Puts what was taken on the ground at the player's feet. A box of nails goes down as whole finds. */
 function leaveOnGround(sim: SimState, p: PlayerState, type: DroppableBagItem, count: number): void {
+  if (isAmmoBoxType(type)) return leaveAmmoOnGround(sim, p, type, count);
   const per = type === 'nails' ? FORTIFICATION_ITEMS.nails.unitsPerFind : 1;
   const pieces = Math.floor(count / per);
   const taken = take(p, type, pieces * per);
   for (let i = 0; i < taken / per; i += 1) {
     spawnPickup(sim, type, p.x, p.y);
+    sim.pickups[sim.pickups.length - 1]!.leftBy = p.id;
+  }
+}
+
+/** Each box goes down holding a full box of spare rounds, or what is left. The gun's loaded rounds stay in the gun. */
+function leaveAmmoOnGround(sim: SimState, p: PlayerState, type: AmmoBoxType, boxes: number): void {
+  const weapon = ammoBoxWeapon(type);
+  for (let i = 0; i < boxes; i += 1) {
+    const rounds = Math.min(p.ammoBag[weapon], ammoBoxRounds(type));
+    if (rounds <= 0) return;
+    p.ammoBag[weapon] -= rounds;
+    spawnPickup(sim, type, p.x, p.y, rounds);
     sim.pickups[sim.pickups.length - 1]!.leftBy = p.id;
   }
 }
@@ -89,6 +106,7 @@ export function applyBagCommit(sim: SimState, p: PlayerState, commit: BagCommit)
       const containerDef = sim.map ? townContainers(sim.map)[commit.container.id] : undefined;
       const { cols, rows, blocked } = containerGridFor(containerDef);
       const held = new Map((containerState.items ?? []).map((item) => [item.id, item]));
+      const candyBefore = countCandy(containerState.items ?? []);
       const contents = createInventoryGrid(cols, rows, blocked);
       for (const item of commit.container.items) placeItem(contents, { ...item });
       // Only what the host's container really held can be taken, and each piece once.
@@ -103,6 +121,13 @@ export function applyBagCommit(sim: SimState, p: PlayerState, commit: BagCommit)
         if (left && !placeItem(contents, { ...left })) autoPackItem(contents, left);
       }
       containerState.items = contents.items;
+      // A candy bowl starts full, so the pieces gone from it are the ones taken. The second one calls the horde.
+      if (containerDef?.kind === 'bowl') {
+        const full = cols * rows - (blocked?.length ?? 0);
+        const takenBefore = full - candyBefore;
+        const takenAfter = full - countCandy(contents.items);
+        if (takenBefore < 2 && takenAfter >= 2) armHordeSurge(sim);
+      }
       for (const item of commit.container.deposited ?? []) {
         const isCandy = isCandyId(item.type);
         if (isCandy) {

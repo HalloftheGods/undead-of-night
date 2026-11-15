@@ -43,13 +43,26 @@ export function variedLookId(look: string, propIndex: number): string {
   return n === 0 ? look : `${look}_v${n}`;
 }
 
+/** Warehouses and police stations: the look their shelves all share, picked from the four shelf looks. */
+export function buildingShelfLookId(x: number, y: number): string {
+  return SHELF_LOOK_IDS[placeHash(x * 73856093 + y * 19349663, SHELF_LOOK_IDS.length)];
+}
+
+/** A warehouse's crates all share one of the five box looks. */
+export function buildingBoxLookId(x: number, y: number): string {
+  return variedLookId('box', x * 83492791 + y * 2654435761);
+}
+
 export interface LookedPiece {
   readonly kind: ContainerKind;
   readonly prop: PropKind;
   readonly propIndex?: number;
+  /** The look its building picked for all its furniture, which overrides the piece's own. */
+  readonly look?: string;
 }
 
-export function containerLookId({ kind, prop, propIndex }: LookedPiece): string {
+export function containerLookId({ kind, prop, propIndex, look }: LookedPiece): string {
+  if (look !== undefined) return look;
   if (propIndex === undefined) return PROP_LOOK_IDS[prop] ?? kind;
   if (kind === 'shelf') return shelfLookId(propIndex);
   const varied = VARIED_PROP_LOOKS[prop];

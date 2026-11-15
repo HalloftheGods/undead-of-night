@@ -48,6 +48,17 @@ describe('canvas loot window layout', () => {
     expect(anchor.y).toBe(box.y + 8);
   });
 
+  it('floats the container in game with no card: only its label row and board catch the pointer', () => {
+    const dock = layout.container!;
+    const board = dock.board;
+    expect(dock.x).toBe(board.x);
+    expect(dock.y).toBe(board.y - 9);
+    expect(dock.h).toBe(board.h + 9);
+    expect(dock.w).toBeGreaterThanOrEqual(board.w);
+    expect(lootHitAt(layout, board.x - 2, board.y + 3)).toBeNull();
+    expect(lootHitAt(layout, board.x + 3, board.y + board.h + 1)).toBeNull();
+  });
+
   it('lays the dev editor out as a toolbar above the docks, overlaying nothing, only when asked for', () => {
     expect(layout.editor).toBeNull();
     const edit = { on: true, cols: 4, rows: 2, item: { type: 'bandage', width: 1, height: 1 } };

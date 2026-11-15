@@ -1,4 +1,5 @@
 import type { GameStyle } from "../../shared/game-style.ts";
+import { isLocalHost } from "./analytics/analytics-config.ts";
 import { formatDuration } from "./hud-state.ts";
 import { STYLE_LABELS } from "./play-flow.ts";
 import type { SoundUnlock } from "./sound-unlock.ts";
@@ -22,10 +23,13 @@ export type TitlePage =
   | "gameplay"
   | "controls"
   | "changelog"
-  | "dev_inventory";
+  | "dev_inventory"
+  | "dev_sprites"
+  | "test_drive"
+  | "hud_test";
 
 /** The menu's top-level groups. */
-export type MenuGroup = "play" | "books" | "settings" | "radio";
+export type MenuGroup = "play" | "books" | "settings" | "radio" | "dev";
 
 export interface TitleMenuItem {
   readonly page: TitlePage;
@@ -186,12 +190,55 @@ export const MENU_SECTIONS: readonly MenuSection[] = [
   }
 ];
 
+export const DEV_MENU_SECTION: MenuSection = {
+  group: "dev",
+  label: "Developer Mode",
+  line: "Items, Sprites, Test Drive and HUD."
+};
+
+export const DEV_MENU_ITEMS: readonly TitleMenuItem[] = [
+  {
+    group: "dev",
+    page: "dev_inventory",
+    label: "Items",
+    line: "Inventory sizing bench, container and building editors."
+  },
+  {
+    group: "dev",
+    page: "dev_sprites",
+    label: "Sprites",
+    line: "Preview zombie animation frames and facings."
+  },
+  {
+    group: "dev",
+    page: "test_drive",
+    label: "Test Drive",
+    line: "Drive every vehicle with hordes and no extract van."
+  },
+  {
+    group: "dev",
+    page: "hud_test",
+    label: "HUD",
+    line: "Heads-up display preview over a live town."
+  }
+];
+
+export function isLocalInstall(hostname?: string): boolean {
+  if (typeof window === "undefined" && hostname === undefined) return false;
+  const host = hostname ?? (typeof window !== "undefined" ? window.location.hostname : "");
+  return isLocalHost(host);
+}
+
 /** The menu's sections. A locked Radio stays in the list as ??? with no line, so the top menu holds its place until the radio is found. */
-export function menuSections(unlock?: SoundUnlock): readonly MenuSection[] {
-  return MENU_SECTIONS.map((sec) => {
+export function menuSections(unlock?: SoundUnlock, showDev: boolean = false): readonly MenuSection[] {
+  const base = MENU_SECTIONS.map((sec) => {
     const isLocked = sec.needs === "radio" && !unlock?.radio;
     return isLocked ? { ...sec, label: "???", line: "" } : sec;
   });
+  if (showDev) {
+    return [...base, DEV_MENU_SECTION];
+  }
+  return base;
 }
 
 /** One line of the menu as drawn: a parent, one of its links, or the Back that leaves a list. */
@@ -213,9 +260,10 @@ export function menuRows(
   section: MenuGroup | null,
   entries: readonly TitleMenuItem[] = TITLE_MENU,
   unlock?: SoundUnlock,
-  dailyCompleted: boolean = false
+  dailyCompleted: boolean = false,
+  showDev: boolean = false
 ): readonly MenuRow[] {
-  const sections = menuSections(unlock);
+  const sections = menuSections(unlock, showDev);
   if (section === null) {
     const parentRows: MenuRow[] = sections.map((each) => ({
       kind: "section",
@@ -228,7 +276,10 @@ export function menuRows(
     return parentRows;
   }
 
-  const links = entries.filter((item) => item.group === section);
+  const effectiveEntries = (showDev || section === "dev") && !entries.some((item) => item.group === "dev")
+    ? [...entries, ...DEV_MENU_ITEMS]
+    : entries;
+  const links = effectiveEntries.filter((item) => item.group === section);
 
   const rows: MenuRow[] = links.map((item) => ({
     kind: "item",

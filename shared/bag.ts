@@ -44,7 +44,8 @@ export const BAG_ITEM_TYPES = [
 export type BagItemType = (typeof BAG_ITEM_TYPES)[number];
 
 /** Types that have a pickup to leave on the ground. Bottles, fireworks and fountains have none, so they cannot be dropped. */
-export const DROPPABLE_BAG_ITEMS = ['medkit', 'knife', 'plank', 'hammer_tool', 'crowbar', 'sheet_curtain', 'nails', ...SUPPLY_TYPES] as const;
+/** Everything in the bag that has a world pickup to leave behind: all of it. A box of rounds goes down with its rounds. */
+export const DROPPABLE_BAG_ITEMS = ['medkit', 'bottle', 'knife', 'plank', 'hammer_tool', 'crowbar', 'sheet_curtain', 'firework', 'fountain', 'nails', ...AMMO_BOX_TYPES, ...SUPPLY_TYPES] as const;
 export type DroppableBagItem = (typeof DROPPABLE_BAG_ITEMS)[number];
 
 export function isDroppableBagItem(type: string): type is DroppableBagItem {

@@ -3,6 +3,7 @@ import {
   layoutPageUi,
   pageFocusTargets,
   pageHitAt,
+  RADIO_PARTS,
   SCROLL_STEP,
   scrollToShow,
   stepPageFocus,
@@ -59,7 +60,9 @@ export function createCanvasPage(canvas: HTMLCanvasElement, host: CanvasPageHost
   }
 
   function slideTo(id: string, value: number): void {
-    host.slide(id, Math.min(1, Math.max(0, Math.round(value * 20) / 20)));
+    const isRadio = layout().controls.find((each) => each.id === id)?.item.kind === 'radio';
+    const clamped = Math.min(1, Math.max(0, value));
+    host.slide(id, isRadio ? clamped : Math.round(clamped * 20) / 20);
   }
 
   function press(hit: PageHit, along: number | null): void {
@@ -74,6 +77,41 @@ export function createCanvasPage(canvas: HTMLCanvasElement, host: CanvasPageHost
     if (kind === 'slider' && along !== null) {
       sliding = hit.id;
       slideTo(hit.id, along);
+    } else if (kind === 'radio') {
+      if (along !== null) {
+        sliding = hit.id;
+        slideTo(hit.id, along);
+      } else if (hit.part !== null) {
+        const option = RADIO_PARTS[hit.part];
+        if (option) {
+          host.playUi('click');
+          host.choose(hit.id, option);
+        }
+      }
+    } else if (kind === 'album_slider' && hit.part !== null) {
+      const item = control.item;
+      if (item.kind === 'album_slider') {
+        const totalAlbums = item.totalAlbums;
+        const tracksCount = item.tracks.length;
+        if (hit.part === 0) {
+          host.playUi('click');
+          host.choose(hit.id, 'prev');
+        } else if (hit.part === 1) {
+          host.playUi('click');
+          host.choose(hit.id, 'next');
+        } else if (hit.part >= 2 && hit.part < 2 + totalAlbums) {
+          host.playUi('click');
+          host.choose(hit.id, `dot:${hit.part - 2}`);
+        } else if (hit.part >= 2 + totalAlbums && hit.part < 2 + totalAlbums + tracksCount) {
+          const trackIndex = hit.part - (2 + totalAlbums);
+          host.playUi('click');
+          host.choose(hit.id, `track:${item.tracks[trackIndex].id}`);
+        } else if (hit.part >= 2 + totalAlbums + tracksCount) {
+          const favIndex = hit.part - (2 + totalAlbums + tracksCount);
+          host.playUi('click');
+          host.choose(hit.id, `fav:${item.tracks[favIndex].file}`);
+        }
+      }
     } else if (kind === 'choice' && hit.part !== null) {
       host.playUi('click');
       host.choose(hit.id, control.item.kind === 'choice' ? control.item.options[hit.part].id : '');
@@ -145,6 +183,10 @@ export function createCanvasPage(canvas: HTMLCanvasElement, host: CanvasPageHost
       slideTo(item.id, stepSlider(item.value, direction));
       return true;
     }
+    if (item?.kind === 'radio') {
+      slideTo(item.id, stepSlider(item.position, direction));
+      return true;
+    }
     if (item?.kind === 'choice') {
       const at = item.options.findIndex((option) => option.id === item.value);
       const to = Math.min(item.options.length - 1, Math.max(0, at + direction));
@@ -170,6 +212,9 @@ export function createCanvasPage(canvas: HTMLCanvasElement, host: CanvasPageHost
     if (item?.kind === 'switch' && item.enabled) {
       host.playUi('click');
       host.toggle(id);
+    } else if (item?.kind === 'radio') {
+      host.playUi('click');
+      host.choose(id, 'play');
     } else if (item?.kind === 'link' || item?.kind === 'bind') {
       host.playUi('click');
       host.press(id);

@@ -34,6 +34,8 @@ import {
   xpBarFraction
 } from "../../shared/progression.ts";
 import { loadProgression, saveProgression } from "../../shared/progression-save.ts";
+import { notePickup } from "./inventory/pickup-arrivals.ts";
+import { speak } from "./survivor-speech.ts";
 
 const EVENT_MUSIC: Partial<Record<GameEvent["type"], "wave" | "intermission">> = {
   wave_start: "wave",
@@ -102,6 +104,11 @@ export class SnapshotHandler {
       this.onGameEvent(event, world, now, before, after);
       // The pad's ring speeds up with the local player's headshot streak.
       if (event.type === 'headshot' && event.playerId === world.localId) noteHeadshotStreak(event.chain ?? 1, now);
+      // Where a pickup was taken, so an open inventory can fly the item in from there (inventory/pickup-arrivals.ts).
+      if (event.type === 'pickup' && event.playerId === world.localId) {
+        notePickup({ x: event.x, y: event.y });
+        speak('pickup', now);
+      }
     }
     const callout = this.punctuate(snapshot, world.localId, after, now);
     this.stamp(snapshot, world.localId, after, callout, now);

@@ -31,7 +31,7 @@ function frame(ctx: CanvasRenderingContext2D, box: Box, edge: string, fill: stri
 }
 
 /** A sprite filling `box` like CSS object-fit: cover crops the overflow, contain shows it whole. Pixels stay sharp. */
-function drawFit(ctx: CanvasRenderingContext2D, sprite: PixelSprite, box: Box, mode: 'cover' | 'contain'): void {
+export function drawFit(ctx: CanvasRenderingContext2D, sprite: PixelSprite, box: Box, mode: 'cover' | 'contain'): void {
   const canvas = spriteCanvas(sprite);
   const smoothing = ctx.imageSmoothingEnabled;
   ctx.imageSmoothingEnabled = false;
@@ -50,7 +50,7 @@ function drawFit(ctx: CanvasRenderingContext2D, sprite: PixelSprite, box: Box, m
 }
 
 /** The film-title name over the foot of a picture, on a rising dark wash: shrunk until its longest word fits. */
-function drawName(ctx: CanvasRenderingContext2D, art: Box, name: string, color: string, maxScale: number): void {
+export function drawName(ctx: CanvasRenderingContext2D, art: Box, name: string, color: string, maxScale: number): void {
   const fitted = fitTitle(name.toUpperCase(), art.w - 6, maxScale);
   const height = titleHeight(fitted.scale, fitted.lines.length);
   const washH = Math.min(art.h, height + 14);

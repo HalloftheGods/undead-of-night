@@ -11,8 +11,8 @@ export interface LootCursor {
 
 export type LootDirection = 'up' | 'down' | 'left' | 'right';
 
-/** The pad buttons a loot screen takes for itself: A takes or sets down, X lifts, Y turns. */
-export type LootButton = 'a' | 'b' | 'x' | 'y' | 'start';
+/** The pad buttons a loot screen takes for itself: A takes or sets down, X lifts, Y turns, RT uses and LT drops the item in hand. */
+export type LootButton = 'a' | 'b' | 'x' | 'y' | 'start' | 'lt' | 'rt';
 
 /** What the open loot screen answers to. One at a time: the screen on top. */
 export interface LootPadTarget {

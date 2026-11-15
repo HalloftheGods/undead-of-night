@@ -28,6 +28,31 @@ const BEAM_EDGE = Float32Array.from({ length: TABLE_SIZE }, (_, i) => {
   return (1 - t * t * (3 - 2 * t)) ** 1.35;
 });
 
+/**
+ * A [1 2 1] blur down the columns then across the rows, clamped at the edges.
+ * Weights sum to one, so flat light stays flat. t is scratch space the same size as a.
+ */
+function blurChannel(a: Float32Array, t: Float32Array, cols: number, rows: number): void {
+  for (let row = 0; row < rows; row += 1) {
+    const base = row * cols;
+    for (let col = 0; col < cols; col += 1) {
+      const i = base + col;
+      const left = col > 0 ? a[i - 1] : a[i];
+      const right = col < cols - 1 ? a[i + 1] : a[i];
+      t[i] = (left + 2 * a[i] + right) * 0.25;
+    }
+  }
+  for (let row = 0; row < rows; row += 1) {
+    const base = row * cols;
+    for (let col = 0; col < cols; col += 1) {
+      const i = base + col;
+      const up = row > 0 ? t[i - cols] : t[i];
+      const down = row < rows - 1 ? t[i + cols] : t[i];
+      a[i] = (up + 2 * t[i] + down) * 0.25;
+    }
+  }
+}
+
 function rayVisibility(stop: number, dist: number): number {
   const penumbraDepth = Math.min(10, Math.max(3, stop * 0.2));
   if (dist <= stop - penumbraDepth) return 1;
@@ -73,6 +98,8 @@ export class LightField {
   private red = new Float32Array(0);
   private green = new Float32Array(0);
   private blue = new Float32Array(0);
+  private scratch = new Float32Array(0);
+  private softened = false;
   private lowColor = new Int32Array(0);
   private highColor = new Int32Array(0);
   private mix = new Uint8Array(0);
@@ -100,6 +127,7 @@ export class LightField {
     this.red = new Float32Array(cells);
     this.green = new Float32Array(cells);
     this.blue = new Float32Array(cells);
+    this.scratch = new Float32Array(cells);
     this.lowColor = new Int32Array(cells);
     this.highColor = new Int32Array(cells);
     this.mix = new Uint8Array(cells);
@@ -115,6 +143,16 @@ export class LightField {
     this.red.fill(ambient[0]);
     this.green.fill(ambient[1]);
     this.blue.fill(ambient[2]);
+    this.softened = false;
+  }
+
+  /** One soft pass over the cells, so no light edge is harder than one cell. Runs once per frame. */
+  private soften(): void {
+    if (this.softened) return;
+    this.softened = true;
+    blurChannel(this.red, this.scratch, this.cols, this.rows);
+    blurChannel(this.green, this.scratch, this.cols, this.rows);
+    blurChannel(this.blue, this.scratch, this.cols, this.rows);
   }
 
   private colOf(x: number): number {
@@ -381,6 +419,7 @@ export class LightField {
 
   /** Copies each cell's light as RGBA floats into out (cols * rows * 4 long), row by row, for a GPU to quantise. */
   packCells(out: Float32Array): void {
+    this.soften();
     const { red, green, blue } = this;
     const cells = this.cols * this.rows;
     for (let i = 0; i < cells; i += 1) {
@@ -393,6 +432,7 @@ export class LightField {
 
   /** Writes width*height RGBA pixels, as little-endian words. */
   write(pixels: Int32Array): void {
+    this.soften();
     this.quantise();
     for (let y = 0; y < this.height; y += 1) this.writeRow(pixels, y);
   }

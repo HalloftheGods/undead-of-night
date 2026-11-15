@@ -1,6 +1,7 @@
 import { BUILDING_DEFS, PROP_DEFS, TILE_SIZE, WALL_THICKNESS } from './protocol.ts';
 import type { BuildingInstance, BuildingKind, PropKind } from './protocol.ts';
 import type { MapBuilder } from './map-builder.ts';
+import { buildingBoxLookId, buildingShelfLookId } from './container-look.ts';
 
 /** `left` and `bottom` are pixels from the footprint's top left corner. */
 type Slot = readonly [kind: PropKind, left: number, bottom: number, odds?: number];
@@ -20,7 +21,7 @@ const STAIRS_CLEAR_BED = 72;
 const LAYOUTS: Record<BuildingKind, readonly Slot[]> = {
   pharmacy: [
     ['shelf', 16, NORTH_WALL], ['shelf', 48, NORTH_WALL], ['shelf', 80, NORTH_WALL], ['shelf', 112, NORTH_WALL],
-    ['counter', 64, 30],
+    ['counter', 64, 44],
     ['shelf', 16, 64], ['shelf', 112, 64],
   ],
   clinic: [
@@ -253,8 +254,13 @@ export function placedLefts(kind: BuildingKind): readonly number[] {
 /** Furnishes one building. Pieces go down as fixtures: the layouts already leave their own aisles. */
 export function furnish(b: MapBuilder, building: BuildingInstance): void {
   const lefts = placedLefts(building.kind);
+  // A warehouse and a police station give all their shelves one look, and a warehouse all its crates one too.
+  const ownsShelves = building.kind === 'warehouse' || building.kind === 'police';
+  const shelfLook = ownsShelves ? buildingShelfLookId(building.x, building.y) : undefined;
+  const crateLook = building.kind === 'warehouse' ? buildingBoxLookId(building.x, building.y) : undefined;
   LAYOUTS[building.kind].forEach(([kind, , bottom, odds], index) => {
     const skipped = odds !== undefined && b.rng() >= odds;
-    if (!skipped) b.fixture(kind, building.x + lefts[index] + PROP_DEFS[kind].w / 2, building.y + bottom);
+    const look = kind === 'shelf' ? shelfLook : kind === 'crate_stack' ? crateLook : undefined;
+    if (!skipped) b.fixture(kind, building.x + lefts[index] + PROP_DEFS[kind].w / 2, building.y + bottom, look);
   });
 }

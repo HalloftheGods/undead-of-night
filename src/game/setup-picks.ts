@@ -72,11 +72,12 @@ function modeBars(mode: PlayMode): readonly PickBar[] {
 
 type DifficultyDial = "ammo" | "zombieSpeed" | "zombieDamage" | "hordeSize";
 
-const DIFFICULTY_DIALS: ReadonlyArray<{ readonly key: DifficultyDial; readonly label: string }> = [
+const DIFFICULTY_DIALS: ReadonlyArray<{ readonly key: DifficultyDial | "night"; readonly label: string }> = [
   { key: "ammo", label: "Ammo" },
   { key: "zombieSpeed", label: "Speed" },
   { key: "zombieDamage", label: "Bite" },
-  { key: "hordeSize", label: "Horde" }
+  { key: "hordeSize", label: "Horde" },
+  { key: "night", label: "Night" }
 ];
 
 /** Where a value sits between the easiest and hardest difficulty's, as 1 to STAT_SLOTS cells. */
@@ -92,7 +93,7 @@ export function dialSlots(key: DifficultyDial, value: number): number {
 /** Ammo is the player's side, so a full ammo bar is the one picked out; the rest measure the zombies. */
 function difficultyBars(def: DifficultyDef): readonly PickBar[] {
   return DIFFICULTY_DIALS.map(({ key, label }) => {
-    const filled = dialSlots(key, def[key]);
+    const filled = key === "night" ? def.night : dialSlots(key, def[key]);
     const isAmmo = key === "ammo";
     return { key, label, filled, strong: isAmmo && filled === STAT_SLOTS };
   });

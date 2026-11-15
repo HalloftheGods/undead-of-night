@@ -22,6 +22,7 @@ import type { GameTransport } from "../network/transport.ts";
 import type { BenchLink } from "./bench-link.ts";
 import { ClientWorld } from "./client-world.ts";
 import { loadCharacter } from "./character-pref.ts";
+import { randomSurvivor } from "./dev/hud-test.ts";
 import { loadDifficulty } from "./difficulty-pref.ts";
 import type { HomeLink } from "./home-link.ts";
 import type { RunResult, UiState } from "./hud-state.ts";
@@ -92,7 +93,14 @@ export interface RunHost {
   hitStop(ms: number): void;
 }
 
-const ONLINE_UNLOADED = "Could not load online play. Check the connection and try again.";
+/** What a dev run changes about a plain solo Arcade run. */
+interface DevRunOptions {
+  readonly testDrive?: boolean;
+  readonly hudTest?: boolean;
+  readonly character?: number;
+}
+
+const ONLINE_UNLOADED ="Could not load online play. Check the connection and try again.";
 
 /** The Multiplayer choice on the setup page, in a build with online rooms. */
 export type CoopEntry = "find" | "host" | "code";
@@ -143,13 +151,22 @@ export class RunSession {
 
   /** Test Drive: a solo Arcade run where every car drives, hordes come and the van never does. */
   startTestDrive(): void {
+    this.beginDevRun({ testDrive: true });
+  }
+
+  /** Dev HUD page: a Test Drive run with a random survivor and no zombies, where nobody can die. Banks no XP. */
+  startHudTest(): void {
+    this.beginDevRun({ testDrive: true, hudTest: true, character: randomSurvivor() });
+  }
+
+  private beginDevRun(fixed: DevRunOptions): void {
     if (!this.canStart()) return;
     this.host.audio.unlock();
     this.host.audio.playUi("start");
     this.host.publish({ mode: "solo", error: null });
     this.host.state.daily = null;
     this.host.state.ghost = null;
-    this.beginSession(new LocalSession(), "arcade", undefined, { testDrive: true });
+    this.beginSession(new LocalSession(), "arcade", undefined, fixed);
   }
 
   /** Today's town: its seed, level and difficulty, Arcade rules, solo. Its first run is the one that counts. */
@@ -411,6 +428,7 @@ export class RunSession {
     state.testDrive = packet.testDrive === true;
     this.host.home.welcomed(packet);
     const map = stage.open(packet.mapSeed, packet.level, readCampSize(packet.campSize));
+    stage.setDifficulty(packet.difficulty ?? null);
     if (packet.testDrive) markTestDrive(map);
     // Walls and cars that only this copy of the town has would be walked straight through.
     const builtAnotherTown = packet.town !== undefined && packet.town !== townPrint(map);
@@ -487,7 +505,7 @@ export class RunSession {
     transport: GameTransport,
     style: GameStyle,
     startLevel?: number,
-    fixed: { seed?: number; difficulty?: DifficultyId; testDrive?: boolean } = {}
+    fixed: DevRunOptions & { seed?: number; difficulty?: DifficultyId } = {}
   ): void {
     const { state, ui } = this.host;
     state.transport = transport;
@@ -511,11 +529,12 @@ export class RunSession {
     const options = {
       name: cleanCallsign(ui.value.callsign),
       difficulty: fixed.difficulty ?? loadDifficulty(),
-      character: loadCharacter(),
+      character: fixed.character ?? loadCharacter(),
       style,
       streakNight,
       ...(fixed.seed === undefined ? {} : { seed: fixed.seed }),
-      ...(fixed.testDrive ? { testDrive: true } : {})
+      ...(fixed.testDrive ? { testDrive: true } : {}),
+      ...(fixed.hudTest ? { hudTest: true } : {})
     };
     const shouldConnect = roomDecides || !playsFromHome(style);
     if (shouldConnect) transport.connect({ ...options, startLevel });

@@ -14,6 +14,7 @@ import { BANDAGE, CARBINE_AMMO, PISTOL_AMMO, SHELLS } from './pickups.ts';
 import { CANDY, CROWBAR_GRID, CURTAIN_GRID, HAMMER_GRID, NAILS_GRID, PLANK_GRID } from './shared-grids.ts';
 import { JEWEL_LARGE, JEWEL_SMALL, SILVER, TREASURE_LEGEND } from './treasure.ts';
 import { SURVIVAL_ITEM_ART, SURVIVAL_LEGEND } from './survival-art.ts';
+import { BOTTLE, FIREWORKS, FOUNTAIN } from './throwable-art.ts';
 
 const { blood, bone, fire, ink, metal, olive, rot, violet, wood } = RAMPS;
 
@@ -205,32 +206,7 @@ const HEART: Grid = [
   '.....ss......',
 ];
 
-/** An empty green bottle with a cork. */
-const BOTTLE: Grid = [
-  '..x..',
-  '..y..',
-  '.aba.',
-  '.abc.',
-  '.abc.',
-  'abbcc',
-  'abbec',
-  'abbec',
-  'abbcc',
-  'abbcc',
-  'abbcc',
-  '.aaa.',
-];
 
-/** A ground spinner firework: a striped drum with its fuse lit. Lit and tossed, it whirls sparks on the street. */
-const FIREWORKS: Grid = [
-  '.YB.jjj....',
-  '...jjjtt...',
-  '..jjjjttt.B',
-  '..jjjYttt.Y',
-  'Y.ttttjjj..',
-  'B..ttjjj...',
-  '....tjj.BY.',
-];
 
 /** The earlier drawing of FIREWORKS, kept to switch back to. */
 export const FIREWORKS_OLD: Grid = [
@@ -248,21 +224,6 @@ export const FIREWORKS_OLD: Grid = [
   '..rrsssst..',
 ];
 
-/** A fountain firework: a striped cone on a card base, lit and spraying sparks straight up. */
-const FOUNTAIN: Grid = [
-  '..Y..Y..Y..',
-  '.B..YBY..B.',
-  '...B.Y.B...',
-  '....YBY....',
-  '.....e.....',
-  '....rst....',
-  '....YBB....',
-  '...rsstu...',
-  '...rsstt...',
-  '..YYBBBBC..',
-  '..rsssttu..',
-  '.gffffffee.',
-];
 
 /** The earlier drawing of FOUNTAIN, kept to switch back to. */
 export const FOUNTAIN_OLD: Grid = [
@@ -383,6 +344,9 @@ export function buildPickupIcons(): Record<PickupType, PixelSprite> {
     shotgun: outlined(SHOTGUN_SMALL, 15, 15),
     knife: outlined(KNIFE_SMALL, 15, 15),
     radio: outlined(RADIO_SMALL, 15, 15),
+    bottle: outlined(BOTTLE, 15, 15),
+    firework: outlined(FIREWORKS, 15, 15),
+    fountain: outlined(FOUNTAIN, 15, 15),
     canned_food: outlined(SURVIVAL_ITEM_ART.canned_food.rows, 15, 15, SURVIVAL_LEGEND),
     water_bottle: outlined(SURVIVAL_ITEM_ART.water_bottle.rows, 15, 15, SURVIVAL_LEGEND),
     disinfectant: outlined(SURVIVAL_ITEM_ART.disinfectant.rows, 15, 15, SURVIVAL_LEGEND),

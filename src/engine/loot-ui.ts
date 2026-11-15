@@ -4,8 +4,10 @@ import { backpackDef } from '../../shared/backpack.ts';
 import { getItemFootprint, type GridItem, type InventoryGrid } from '../../shared/grid-inventory.ts';
 import { drawOutlinedText, drawText, FONT_HEIGHT, textWidth } from './bitmap-font.ts';
 import { drawSpriteScaled, spriteCanvas } from './sprite-cache.ts';
-import { stageBox, stageOffset, stageSprite } from '../game/inventory/container-stage.ts';
-import { cellPhase, itemHidden, searchSweep, sweepRanks } from '../game/inventory/search-overlay.ts';
+import { stageSprite } from '../game/inventory/container-stage.ts';
+import { cellPhase, itemHidden, searchSweep, shownSweep, sweepRanks } from '../game/inventory/search-overlay.ts';
+import { lerpRect, noteStageRect, toSpace, zoomFrame } from '../game/inventory/container-zoom.ts';
+import { drawStageArt } from './loot-container-art.ts';
 import {
   computeTileHighlight,
   formatItemName,
@@ -16,6 +18,8 @@ import {
   type GridIdentifier,
 } from '../game/inventory/dual-loot-modal.ts';
 import { longSprite, lootBadge, lootSprite } from '../game/inventory/loot-item-art.ts';
+import { arrivalCamera, arrivalPhase } from '../game/inventory/pickup-arrivals.ts';
+import { drawFlight, drawPop } from './loot-arrivals-draw.ts';
 
 /**
  * The loot window drawn on the game canvas, in art pixels, like the rest of the game. A pure layout step
@@ -202,7 +206,9 @@ export function layoutLootUi(state: DualLootState, viewW: number, viewH: number,
     const x = EDGE;
     const y = top + Math.max(margin, Math.round((room - h) / 2));
     const board = gridBox('container', grid, upper(state.containerTitle), x + Math.round((w - boardW) / 2), y + PAD + HEAD + GAP);
-    container = { x, y, w, h, board };
+    // In game the container floats with no card: only its label row and its board catch the pointer.
+    const labelW = textWidth(upper(state.containerTitle)) + 6 + Math.max(textWidth('SEARCHING'), textWidth(`${grid.items.length} ITEMS`));
+    container = edit ? { x, y, w, h, board } : { x: board.x, y: board.y - HEAD, w: Math.max(boardW, labelW), h: boardH + HEAD, board };
   }
 
   const survivor: Box = { x: sx, y: sy, w: sw, h: sh };
@@ -315,6 +321,15 @@ function tierName(state: DualLootState): string {
 }
 
 /** The item in hand, at the size the grid shows it, hung from the pointer. */
+/** Where an item sits on screen, in buffer pixels: the plate it is drawn on. Null when its grid is not shown. */
+export function itemPlateAt(layout: LootLayout, gridId: GridBox['id'], item: GridItem): Box | null {
+  const board = [layout.container?.board, layout.pack, layout.pockets, layout.candy].find((each) => each?.id === gridId);
+  if (!board) return null;
+  const dims = getItemFootprint(item.type, item.rotated);
+  const area = cellBox(board, item.x, item.y, dims.width, dims.height);
+  return { x: area.x + 1, y: area.y + 1, w: area.w - 2, h: area.h - 2 };
+}
+
 export function heldBox(item: GridItem, pointer: { readonly x: number; readonly y: number }): Box {
   const dims = getItemFootprint(item.type, item.rotated);
   const w = dims.width * TILE - 2;
@@ -453,7 +468,7 @@ function drawBoard(ctx: CanvasRenderingContext2D, view: LootView, board: GridBox
   const held = state.heldItem ? state.heldItem.item : null;
   const blocked = new Set((grid.blocked ?? []).map((p) => `${p.x},${p.y}`));
   const ranks = sweepingNow(view) && board.id === 'container' ? sweepRanks(grid) : null;
-  const sweep = searchSweep.value ?? 0;
+  const sweep = shownSweep.value ?? 0;
   for (let row = 0; row < grid.rows; row += 1) {
     for (let col = 0; col < grid.cols; col += 1) {
       const box = cellBox(board, col, row);
@@ -472,7 +487,6 @@ function drawBoard(ctx: CanvasRenderingContext2D, view: LootView, board: GridBox
       fill(ctx, INK, box.x + 1, box.y + 1, 1, TILE - 2);
       fill(ctx, LINE, box.x + 1, box.y + TILE - 2, TILE - 2, 1);
       fill(ctx, LINE, box.x + TILE - 2, box.y + 1, 1, TILE - 2);
-      if (ranks && phase === 'read') fill(ctx, 'rgba(124,196,120,0.32)', box.x + 2, box.y + 2, TILE - 4, TILE - 4);
       if (phase === 'head') fill(ctx, AMBER, box.x + 1, box.y + 1, TILE - 2, TILE - 2);
       const mark = computeTileHighlight(grid, col, row, hover ? hover.col : null, hover ? hover.row : null, held, board.id);
       if (mark !== 'none') fill(ctx, mark === 'valid' ? SICK : BLOOD, box.x + 2, box.y + 2, TILE - 4, TILE - 4);
@@ -489,9 +503,20 @@ function drawBoard(ctx: CanvasRenderingContext2D, view: LootView, board: GridBox
       drawHiddenItem(ctx, plateBox);
       continue;
     }
+    // Just picked up: it flies in from the world first (drawn after every board, over them), then pops into its cell.
+    const arriving = arrivalPhase(item.id);
+    if (arriving?.phase === 'fly') {
+      const drawIn = (box: Box) => drawItem(ctx, view.art, item, box, false, false);
+      flights.push(() => drawFlight(ctx, arriving.arrival, plateBox, arriving.t, drawIn) || drawIn(plateBox));
+      continue;
+    }
     drawItem(ctx, view.art, item, plateBox, state.selectedItemId === item.id, over && held === null);
+    if (arriving?.phase === 'pop') drawPop(ctx, plateBox, arriving.t);
   }
 }
+
+/** Items in flight this frame, drawn once every board is down so they pass over the window. */
+const flights: (() => void)[] = [];
 
 /** The search is under way: the container's grid is empty and being swept, and the drawing is still shut. */
 function sweepingNow(view: LootView): boolean {
@@ -502,29 +527,45 @@ function containerArtOf(view: LootView): ContainerArt | null {
   return view.containerArt ?? (view.art && view.state.containerKind ? view.art.containers[view.state.containerKind] : null);
 }
 
-/**
- * The container's picture, stretched so the box that holds both drawings covers the grid exactly. A cell then sits
- * over its own piece of the object, so where a valid cell is on the picture reads at a glance, and the blocked cells
- * fall on the parts that cannot hold anything. Each drawing is still placed by its anchor inside that box, so
- * emptying the container never shifts it. Smoothing stays off: every art pixel is a block, a little wider or taller.
- */
-function drawContainerArt(ctx: CanvasRenderingContext2D, view: LootView, board: Box): void {
+/** The container's picture stretched over the rect (the grid, or where the zoom has got to). */
+function drawContainerArt(ctx: CanvasRenderingContext2D, view: LootView, rect: Box, alpha?: number): void {
   const art = containerArtOf(view);
-  if (!art) return;
-  const box = stageBox(art);
-  const sprite = stageSprite(art, !sweepingNow(view));
-  if (!box || !sprite) return;
-  const at = stageOffset(box, sprite);
-  const x0 = board.x + Math.round((at.x / box.width) * board.w);
-  const y0 = board.y + Math.round((at.y / box.height) * board.h);
-  const x1 = board.x + Math.round(((at.x + sprite.w) / box.width) * board.w);
-  const y1 = board.y + Math.round(((at.y + sprite.h) / box.height) * board.h);
-  const smoothing = ctx.imageSmoothingEnabled;
-  ctx.imageSmoothingEnabled = false;
-  ctx.globalAlpha = 0.9;
-  ctx.drawImage(spriteCanvas(sprite), x0, y0, x1 - x0, y1 - y0);
-  ctx.globalAlpha = 1;
-  ctx.imageSmoothingEnabled = smoothing;
+  if (art) drawStageArt(ctx, art, !sweepingNow(view), rect, alpha);
+}
+
+/** Text with a pixel of ink under it, so it reads over the world with no plate behind it. */
+function floatingText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, color: string): void {
+  drawText(ctx, text, x + 1, y + 1, INK);
+  drawText(ctx, text, x, y, color);
+}
+
+/**
+ * The container in game: its own drawing zooms out of the world to the grid, and only once it lands do the grid and a
+ * floating label show. No card goes round it. The dev bench keeps its plate and title.
+ */
+function drawContainerDock(ctx: CanvasRenderingContext2D, view: LootView, dock: NonNullable<LootLayout['container']>): void {
+  const { state } = view;
+  const count = `${state.containerGrid.items.length} ITEMS`;
+  if (view.edit) {
+    plate(ctx, dock, 0.85);
+    drawTitle(ctx, upper(state.containerTitle), dock, count);
+  }
+  const zoom = view.edit ? null : zoomFrame();
+  const camera = arrivalCamera();
+  if (zoom && !zoom.landed) {
+    const flies = zoom.kind === 'zoom' && zoom.from !== null && camera !== null;
+    if (flies && zoom.from && camera) drawContainerArt(ctx, view, lerpRect(toSpace(zoom.from, camera, 'buffer'), dock.board, zoom.eased));
+    else drawContainerArt(ctx, view, dock.board, zoom.kind === 'fade' ? 0.9 * zoom.eased : 0);
+    return;
+  }
+  drawContainerArt(ctx, view, dock.board);
+  drawBoard(ctx, view, dock.board, true);
+  if (view.edit) return;
+  const board = dock.board;
+  const label = sweepingNow(view) ? 'SEARCHING' : count;
+  floatingText(ctx, upper(state.containerTitle), board.x, board.y - 8, AMBER);
+  floatingText(ctx, label, board.x + dock.w - textWidth(label), board.y - 8, DIM);
+  noteStageRect('buffer', board, !sweepingNow(view));
 }
 
 function gearMark(view: LootView, slot: GearSlotId): 'valid' | 'invalid' | 'none' {
@@ -575,11 +616,7 @@ export function drawLootUi(ctx: CanvasRenderingContext2D, view: LootView, given:
   ctx.imageSmoothingEnabled = false;
 
   if (layout.container) {
-    const dock = layout.container;
-    plate(ctx, dock, 0.85);
-    drawTitle(ctx, upper(state.containerTitle), dock, `${state.containerGrid.items.length} ITEMS`);
-    drawContainerArt(ctx, view, dock.board);
-    drawBoard(ctx, view, dock.board, true);
+    drawContainerDock(ctx, view, layout.container);
   }
 
   const dock = layout.survivor;
@@ -644,6 +681,7 @@ export function drawLootUi(ctx: CanvasRenderingContext2D, view: LootView, given:
     drawButton(ctx, button, button.label, button.id === 'close' ? BLOOD : BONE, hovered, button.id === 'rotate' && holding);
   }
 
+  for (const flight of flights.splice(0)) flight();
   const held = state.heldItem;
   if (held && view.pointer) drawItem(ctx, view.art, held.item, heldBox(held.item, view.pointer), true, false);
   ctx.imageSmoothingEnabled = smoothing;

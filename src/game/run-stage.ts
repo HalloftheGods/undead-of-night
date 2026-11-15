@@ -1,3 +1,5 @@
+import { difficultyDef } from '../../shared/difficulty.ts';
+import type { DifficultyId } from '../../shared/difficulty.ts';
 import { isBunkerSeed } from '../../shared/home-protocol.ts';
 import { levelDef } from '../../shared/levels.ts';
 import { nightEventFor } from '../../shared/night-events.ts';
@@ -8,7 +10,7 @@ import type { CampSize } from '../../shared/camp/camp-ring.ts';
 import { generateWorldMap } from '../../shared/world-map.ts';
 import type { WorldRenderer } from '../engine/world-renderer.ts';
 import type { ClientWorld } from './client-world.ts';
-import { brightnessLift } from './display-prefs.ts';
+import { liftFor } from './display-prefs.ts';
 import type { RunHud } from './run-hud.ts';
 import { noteStageCut } from './stage-cut.ts';
 
@@ -21,10 +23,25 @@ export class RunStage {
   private level: number | null = null;
   private drained = false;
   private powered = false;
+  /** What the run is played on, which sets how lit the town is. Null outside a run. */
+  private difficulty: DifficultyId | null = null;
 
   constructor(hud: RunHud, renderer: () => WorldRenderer | null) {
     this.hud = hud;
     this.renderer = renderer;
+  }
+
+  /** The run's difficulty from the welcome: its light and its Horde Mode blackout, applied to the town now showing. */
+  setDifficulty(difficulty: DifficultyId | null): void {
+    this.difficulty = difficulty;
+    this.applyLook();
+  }
+
+  /** Lights the town for the run's difficulty, or the Brightness setting outside a run. */
+  applyLook(): void {
+    const renderer = this.renderer();
+    renderer?.setBrightness(liftFor(this.difficulty));
+    renderer?.setEerie(this.difficulty !== null && difficultyDef(this.difficulty).eerie);
   }
 
   /** Builds a town, or the camp at its size, for all that draws it. Its level comes with the next snapshot. */
@@ -72,12 +89,12 @@ export class RunStage {
     const home = isBunkerSeed(snapshot.mapSeed);
     if (home) {
       this.renderer()?.setTheme('bunker');
-      this.renderer()?.setBrightness(brightnessLift());
+      this.applyLook();
       this.hud.clearNotices();
       return;
     }
     this.renderer()?.setTheme(levelDef(snapshot.level).theme, nightEventFor(snapshot.mapSeed, snapshot.level)?.id ?? null, this.drained, this.powered);
-    this.renderer()?.setBrightness(brightnessLift());
+    this.applyLook();
     this.hud.showLevel(snapshot.level, nowMs, snapshot.mapSeed);
   }
 }

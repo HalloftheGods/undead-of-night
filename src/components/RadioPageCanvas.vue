@@ -6,10 +6,11 @@
  * tape deck and the same tapes, as a deck panel (now playing, seek, transport, repeat, shuffle, favorite) over a
  * scrolling list of tapes. The player is the page's own (use-radio-player).
  */
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import type { PageItem, PageModel, PagePanel } from '../engine/page-ui.ts';
 import { formatTrackTime } from '../game/radio-player.ts';
 import type { RepeatMode } from '../game/radio-player.ts';
+import { groupTracksIntoAlbums } from '../game/radio-albums.ts';
 import { useCanvasPage } from './use-canvas-page.ts';
 import { useRadioPlayer } from './use-radio-player.ts';
 
@@ -21,55 +22,124 @@ const TRACK_PREFIX = 'track:';
 
 const isRunning = computed(() => radio.isPlaying.value && !radio.isPaused.value);
 const ratio = computed(() => (radio.duration.value > 0 ? Math.min(1, radio.currentTime.value / radio.duration.value) : 0));
-const clock = computed(() => `${formatTrackTime(radio.currentTime.value)} / ${formatTrackTime(radio.duration.value)}`);
 
 const deck = computed<PagePanel>(() => {
   const track = radio.currentTrack.value;
+  const trackInfo = track ? { name: track.label, where: track.where, find: track.find } : null;
   return {
     heading: 'Tape deck',
     items: [
-      { kind: 'text', text: track ? track.label : 'No tape', tone: 'accent' },
-      { kind: 'text', text: track ? track.where : '', tone: 'dim' },
-      { kind: 'slider', id: 'seek', label: 'Position', value: ratio.value, readout: clock.value },
       {
-        kind: 'choice',
-        id: 'transport',
-        label: 'Transport',
-        options: [{ id: 'prev', label: 'Prev' }, { id: 'play', label: isRunning.value ? 'Pause' : 'Play' }, { id: 'stop', label: 'Stop' }, { id: 'next', label: 'Next' }],
-        value: '',
+        kind: 'radio',
+        id: 'deck',
+        track: trackInfo,
+        isPlaying: radio.isPlaying.value,
+        isPaused: radio.isPaused.value,
+        currentTime: radio.currentTime.value,
+        duration: radio.duration.value,
+        position: ratio.value,
+        repeatMode: radio.repeatMode.value,
+        isShuffle: radio.isShuffle.value,
+        isFavorite: radio.isCurrentFavorite.value,
       },
-      { kind: 'choice', id: 'repeat', label: 'Repeat', options: REPEATS, value: radio.repeatMode.value },
-      { kind: 'switch', id: 'shuffle', label: 'Shuffle', on: radio.isShuffle.value, enabled: true },
-      { kind: 'switch', id: 'favorite', label: 'Favorite', on: radio.isCurrentFavorite.value, enabled: track !== null },
     ],
   };
 });
 
-const tapes = computed<PagePanel>(() => ({
-  heading: 'Tapes',
-  items: radio.tracks.map((entry): PageItem => {
-    const isCurrent = radio.currentTrack.value?.id === entry.id;
-    const marks = `${isCurrent ? '> ' : ''}${radio.favorites.value.has(entry.file) ? '* ' : ''}`;
-    return { kind: 'link', id: `${TRACK_PREFIX}${entry.id}`, label: `${marks}${entry.label}` };
-  }),
-}));
+const view = ref<'deck' | 'albums'>('deck');
+const selectedAlbumIndex = ref(0);
 
-const model = computed<PageModel>(() => ({
-  heading: 'Radio',
-  panels: [deck.value, tapes.value],
-  buttons: [{ id: 'back', label: 'Back', enabled: true, primary: false }],
-}));
+const albumGroups = computed(() => groupTracksIntoAlbums(radio.tracks, radio.currentTrack.value?.id));
 
-const TRANSPORT: Readonly<Record<string, () => void>> = {
-  prev: radio.onPrev,
-  play: () => (isRunning.value ? radio.onPause() : radio.onPlay()),
-  stop: radio.onStop,
-  next: radio.onNext,
-};
+const albumPanels = computed<readonly PagePanel[]>(() =>
+  albumGroups.value.map((group): PagePanel => ({
+    heading: `${group.album.volume}: ${group.album.title}`,
+    items: group.tracks.map((entry): PageItem => {
+      const isCurrent = radio.currentTrack.value?.id === entry.id;
+      const marks = `${isCurrent ? '> ' : ''}${radio.favorites.value.has(entry.file) ? '* ' : ''}`;
+      return {
+        kind: 'link',
+        id: `${TRACK_PREFIX}${entry.id}`,
+        label: `${marks}${entry.label}`,
+        icon: group.album.art,
+      };
+    }),
+  }))
+);
+
+const albumSliderPanel = computed<PagePanel>(() => {
+  const currentGroup = albumGroups.value[selectedAlbumIndex.value] ?? albumGroups.value[0];
+  const album = currentGroup.album;
+  return {
+    heading: 'Albums',
+    items: [
+      {
+        kind: 'album_slider',
+        id: 'slider',
+        volume: album.volume,
+        title: album.title,
+        subtitle: album.subtitle,
+        art: album.art,
+        albumIndex: selectedAlbumIndex.value,
+        totalAlbums: albumGroups.value.length,
+        isHorde: album.isHorde ?? false,
+        tracks: currentGroup.tracks.map((track) => ({
+          id: track.id,
+          name: track.label,
+          where: track.where,
+          file: track.file,
+          isPlaying: radio.currentTrack.value?.id === track.id,
+          isPaused: radio.isPaused.value,
+          isFavorite: radio.favorites.value.has(track.file),
+        })),
+      },
+    ],
+  };
+});
+
+const model = computed<PageModel>(() => {
+  if (view.value === 'albums') {
+    return {
+      heading: 'Albums',
+      panels: [albumSliderPanel.value],
+      buttons: [
+        { id: 'to_deck', label: 'Tape Deck', enabled: true, primary: false },
+        { id: 'back', label: 'Back', enabled: true, primary: false },
+      ],
+    };
+  }
+
+  return {
+    heading: 'Radio',
+    panels: [deck.value, ...albumPanels.value],
+    buttons: [
+      { id: 'to_albums', label: 'Albums', enabled: true, primary: true },
+      { id: 'back', label: 'Back', enabled: true, primary: false },
+    ],
+  };
+});
+
+function onStepSeek(delta: number): void {
+  const target = Math.max(0, Math.min(radio.duration.value, radio.currentTime.value + delta));
+  radio.onSeek(target);
+}
+
+function onPlayPauseToggle(): void {
+  if (isRunning.value) radio.onPause();
+  else radio.onPlay();
+}
 
 function press(id: string): void {
   if (id === 'back') {
     emit('close');
+    return;
+  }
+  if (id === 'to_albums') {
+    view.value = 'albums';
+    return;
+  }
+  if (id === 'to_deck') {
+    view.value = 'deck';
     return;
   }
   const entry = radio.tracks.find((each) => `${TRACK_PREFIX}${each.id}` === id);
@@ -82,18 +152,41 @@ function toggle(id: string): void {
 }
 
 function choose(id: string, option: string): void {
-  if (id === 'transport') TRANSPORT[option]?.();
-  if (id !== 'repeat') return;
-  // Repeat only steps off, all, one; stepping to the one asked for takes at most two presses.
-  let steps = 0;
-  while (radio.repeatMode.value !== (option as RepeatMode) && steps < REPEATS.length) {
-    radio.onToggleRepeat();
-    steps += 1;
+  if (id === 'deck') {
+    if (option === 'prev') radio.onPrev();
+    else if (option === 'rewind') onStepSeek(-5);
+    else if (option === 'play') onPlayPauseToggle();
+    else if (option === 'stop') radio.onStop();
+    else if (option === 'forward') onStepSeek(5);
+    else if (option === 'next') radio.onNext();
+    else if (option === 'shuffle') radio.onToggleShuffle();
+    else if (option === 'repeat') radio.onToggleRepeat();
+    else if (option === 'favorite') radio.onToggleCurrentFavorite();
+    return;
+  }
+  if (id === 'slider') {
+    if (option === 'prev') {
+      if (selectedAlbumIndex.value > 0) selectedAlbumIndex.value--;
+    } else if (option === 'next') {
+      if (selectedAlbumIndex.value < albumGroups.value.length - 1) selectedAlbumIndex.value++;
+    } else if (option.startsWith('dot:')) {
+      const idx = Number(option.slice(4));
+      if (!Number.isNaN(idx)) selectedAlbumIndex.value = idx;
+    } else if (option.startsWith('track:')) {
+      const trackId = option.slice(6);
+      const entry = radio.tracks.find((t) => t.id === trackId);
+      if (entry) radio.onSelectTrack(entry);
+    } else if (option.startsWith('fav:')) {
+      const file = option.slice(4);
+      radio.onToggleFavorite(file);
+    }
   }
 }
 
 function slide(id: string, value: number): void {
-  if (id === 'seek' && radio.duration.value > 0) radio.onSeek(value * radio.duration.value);
+  if (id === 'deck' && radio.duration.value > 0) {
+    radio.onSeek(value * radio.duration.value);
+  }
 }
 
 useCanvasPage(model, { press, toggle, choose, slide }, () => emit('close'));

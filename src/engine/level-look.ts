@@ -159,6 +159,21 @@ export function withPowerRestored(look: LevelLook): LevelLook {
   };
 }
 
+/**
+ * Horde Mode's blackout, laid over any town: the streets go nearly dark, a dim fog hangs over them, and only
+ * some of the lamps still work. The lamps are kept as posts, so the lit ones mark the streets.
+ */
+export function withEerie(look: LevelLook): LevelLook {
+  return {
+    ...look,
+    ambient: [10, 11, 20],
+    lampEvery: Math.max(look.lampEvery, 6),
+    lampStrength: Math.min(look.lampStrength, 0.7),
+    fog: 'tendril',
+    fogColor: '#242a32',
+  };
+}
+
 function mix(a: Rgb, b: Rgb, share: number): Rgb {
   const blend = (i: 0 | 1 | 2) => Math.round(a[i] * (1 - share) + b[i] * share);
   return [blend(0), blend(1), blend(2)];

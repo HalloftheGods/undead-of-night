@@ -94,8 +94,8 @@ export class MapBuilder {
   }
 
   /** Adds a prop that planned its own spacing, such as furniture and the fence. */
-  fixture(kind: PropKind, x: number, y: number): void {
-    this.props.push({ kind, x, y });
+  fixture(kind: PropKind, x: number, y: number, look?: string): void {
+    this.props.push(look === undefined ? { kind, x, y } : { kind, x, y, look });
   }
 
   /** Keeps later props out of an area without putting anything in it. */

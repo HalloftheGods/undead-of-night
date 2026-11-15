@@ -10,6 +10,7 @@ import { KIT_ART } from './kits.ts';
 import { PART_ART } from './parts.ts';
 import { JEWEL_LARGE, JEWEL_SMALL, TREASURE_LEGEND } from './treasure.ts';
 import { SURVIVAL_ITEM_ART, SURVIVAL_LEGEND } from './survival-art.ts';
+import { BOTTLE, FIREWORKS, FOUNTAIN, THROWABLE_LEGEND } from './throwable-art.ts';
 import type { Grid } from './shared.ts';
 import { CANDY_GRID, CROWBAR_GRID, CURTAIN_GRID, HAMMER_GRID, NAILS_GRID, PLANK_GRID } from './shared-grids.ts';
 
@@ -197,6 +198,9 @@ const ITEMS: Record<PickupType, ItemSpec> = {
   shotgun: { rows: SHOTGUN, glint: [10, 1] },
   knife: { rows: KNIFE, glint: [11, 1] },
   radio: { rows: RADIO, glint: [2, 3] },
+  bottle: { rows: BOTTLE, glint: [2, 3], legend: THROWABLE_LEGEND },
+  firework: { rows: FIREWORKS, glint: [5, 2], legend: THROWABLE_LEGEND },
+  fountain: { rows: FOUNTAIN, glint: [5, 6], legend: THROWABLE_LEGEND },
   canned_food: { rows: SURVIVAL_ITEM_ART.canned_food.rows, glint: SURVIVAL_ITEM_ART.canned_food.glint, legend: SURVIVAL_LEGEND },
   water_bottle: { rows: SURVIVAL_ITEM_ART.water_bottle.rows, glint: SURVIVAL_ITEM_ART.water_bottle.glint, legend: SURVIVAL_LEGEND },
   disinfectant: { rows: SURVIVAL_ITEM_ART.disinfectant.rows, glint: SURVIVAL_ITEM_ART.disinfectant.glint, legend: SURVIVAL_LEGEND },

@@ -233,11 +233,11 @@ describe('a commit', () => {
     expect(state.pickups.filter((item) => item.type === 'plank').length).toBe(2);
   });
 
-  it('cannot drop what has no pickup, or what is not held', () => {
+  it('cannot drop what is not held', () => {
     const { state, p } = bagged();
-    p.bottles = 1;
+    p.bottles = 0;
     applyBagCommit(state, p, { layout: [], drop: [{ type: 'bottle', count: 1 }, { type: 'crowbar', count: 1 }] });
-    expect(p.bottles).toBe(1);
+    expect(p.bottles).toBe(0);
     expect(state.pickups.length).toBe(0);
   });
 

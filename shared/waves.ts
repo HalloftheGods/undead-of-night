@@ -129,6 +129,8 @@ function spawnPoint(sim: SimState, anchors: readonly PlayerState[], radius: numb
 }
 
 function trickleSpawns(sim: SimState): void {
+  // A HUD test town holds its queued hordes back, so nothing is ever spawned there.
+  if (sim.hudTest) return;
   sim.spawnTimer -= TICK_DT;
   const anchors = standingPlayers(sim);
   while (sim.spawnTimer <= 0 && sim.spawnQueue.length > 0 && sim.zombies.length < ZOMBIE_CAP && anchors.length > 0) {
@@ -147,14 +149,32 @@ function trickleSpawns(sim: SimState): void {
   if (isTimerNegative) sim.spawnTimer = 0;
 }
 
+/** Seconds before a called horde that its warning sounds. Matches HORDE_WARNING_LEAD in src/audio/horde-warning.ts. */
+export const HORDE_CALL_LEAD = 10;
+
+/**
+ * A second piece taken from a candy bowl: the next horde comes at double size, stacking with any others and with the
+ * night's own. In a lull the countdown drops to the warning lead, so the drums sound and the horde comes early.
+ * Mid-horde it waits, and the lull after this horde is cut short the same way.
+ */
+export function armHordeSurge(sim: SimState): void {
+  const hasHordeLeft = sim.wave < levelDef(sim.level).hordes;
+  if (!hasHordeLeft) return;
+  sim.hordeSurges = (sim.hordeSurges ?? 0) + 1;
+  const isLull = sim.phase === 'intermission';
+  if (isLull) sim.intermissionLeft = Math.min(sim.intermissionLeft, HORDE_CALL_LEAD);
+}
+
 function startHorde(sim: SimState): void {
   sim.wave += 1;
   sim.phase = 'wave';
   sim.intermissionLeft = 0;
   sim.hordeLeft = HORDE_MAX_SEC;
+  const surge = 2 ** (sim.hordeSurges ?? 0);
+  sim.hordeSurges = 0;
   // Only what the cap has room for is called: anything more would be counted and never come.
   const room = Math.max(0, ZOMBIE_CAP - sim.zombies.length);
-  sim.spawnQueue = waveRoster(sim.wave, sim.rng, levelDef(sim.level), sim.difficulty, eventOf(sim)?.horde ?? 1).slice(0, room).reverse();
+  sim.spawnQueue = waveRoster(sim.wave, sim.rng, levelDef(sim.level), sim.difficulty, (eventOf(sim)?.horde ?? 1) * surge).slice(0, room).reverse();
   sim.spawnTimer = 0;
   returnDeadPlayers(sim);
   const boss = maybeSummonBoss(sim);
@@ -197,7 +217,8 @@ function endHorde(sim: SimState): void {
   restockLoot(sim);
   sim.phase = 'intermission';
   const lull = lullSeconds(INTERMISSION_SEC, sim.difficulty);
-  sim.intermissionLeft = lull;
+  const surged = (sim.hordeSurges ?? 0) > 0 && !levelSurvived;
+  sim.intermissionLeft = surged ? Math.min(lull, HORDE_CALL_LEAD) : lull;
   emit(sim, { type: 'wave_intermission', wave: sim.wave + 1, seconds: lull });
 }
 

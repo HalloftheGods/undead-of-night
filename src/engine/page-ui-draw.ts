@@ -6,6 +6,8 @@ import type { Box } from './setup-ui.ts';
 import type { PageWindow } from '../game/page-view.ts';
 import type { PixelSprite } from '../art/types.ts';
 import { spriteCanvas } from './sprite-cache.ts';
+import { drawRadio } from './radio-deck-draw.ts';
+import { drawAlbumSlider } from './album-slider-draw.ts';
 
 const INK = '#0b0c10';
 const RAISED = '#17181f';
@@ -79,6 +81,14 @@ function isLit(win: PageWindow, id: string): boolean {
 
 function drawControl(ctx: CanvasRenderingContext2D, win: PageWindow, control: PlacedControl): void {
   const { item, box } = control;
+  if (item.kind === 'radio') {
+    drawRadio(ctx, win, control);
+    return;
+  }
+  if (item.kind === 'album_slider') {
+    drawAlbumSlider(ctx, win, control);
+    return;
+  }
   const lit = isLit(win, control.id);
   const isRow = item.kind === 'switch' || item.kind === 'link' || item.kind === 'bind';
   const labelY = box.y + (isRow ? Math.floor((box.h - FONT_HEIGHT) / 2) : 0);

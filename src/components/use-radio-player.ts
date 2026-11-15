@@ -44,11 +44,17 @@ export function useRadioPlayer() {
 
   function pollAudioStatus(): void {
     if (!isOpen) return;
-    const status = game.audio.getPreviewStatus();
+    const status = game.audio.getTrackStatus();
     if (status) {
       currentTime.value = status.currentTime;
       if (status.duration > 0) duration.value = status.duration;
       isPaused.value = status.paused;
+      const liveIndex = tracks.findIndex((t) => t.file === status.file);
+      const isDifferentTrack = liveIndex >= 0 && liveIndex !== currentIndex.value;
+      if (isDifferentTrack) {
+        currentIndex.value = liveIndex;
+        isPlaying.value = true;
+      }
     }
     animFrame = requestAnimationFrame(pollAudioStatus);
   }
@@ -63,15 +69,10 @@ export function useRadioPlayer() {
 
     if (!isOpen) return;
 
-    const started = game.audio.previewTrack(entry.file, () => {
-      onTrackFinished(index);
-    });
-
-    if (started) {
-      isPlaying.value = true;
-      isPaused.value = false;
-      currentTime.value = 0;
-    }
+    game.audio.playTrack(entry.file);
+    isPlaying.value = true;
+    isPaused.value = false;
+    currentTime.value = 0;
   }
 
   function onTrackFinished(finishedIndex: number): void {
@@ -99,7 +100,7 @@ export function useRadioPlayer() {
 
   function onPlay(): void {
     if (isPaused.value) {
-      game.audio.resumePreview();
+      game.audio.resumeTrack();
       isPaused.value = false;
       return;
     }
@@ -107,12 +108,12 @@ export function useRadioPlayer() {
   }
 
   function onPause(): void {
-    game.audio.pausePreview();
+    game.audio.pauseTrack();
     isPaused.value = true;
   }
 
   function onStop(): void {
-    game.audio.stopPreview();
+    game.audio.stopTrack();
     isPlaying.value = false;
     isPaused.value = false;
     currentTime.value = 0;
@@ -135,7 +136,7 @@ export function useRadioPlayer() {
   }
 
   function onSeek(seconds: number): void {
-    game.audio.seekPreview(seconds);
+    game.audio.seekTrack(seconds);
     currentTime.value = seconds;
   }
 
@@ -165,6 +166,7 @@ export function useRadioPlayer() {
 
   function onToggleFavorite(file: string): void {
     favorites.value = toggleFavoriteTrack(file, favorites.value);
+    game.audio.refreshTitlePlaylist();
   }
 
   function onToggleCurrentFavorite(): void {
@@ -188,7 +190,18 @@ export function useRadioPlayer() {
   onMounted(async () => {
     await game.audio.unlock();
     if (isOpen) {
-      game.audio.enterPreview();
+      const status = game.audio.getTrackStatus();
+      if (status) {
+        const liveIndex = tracks.findIndex((t) => t.file === status.file);
+        const isFound = liveIndex >= 0;
+        if (isFound) {
+          currentIndex.value = liveIndex;
+          isPlaying.value = true;
+          isPaused.value = status.paused;
+          currentTime.value = status.currentTime;
+          if (status.duration > 0) duration.value = status.duration;
+        }
+      }
       pollAudioStatus();
     }
     window.addEventListener("keydown", onKey);
@@ -198,8 +211,6 @@ export function useRadioPlayer() {
     isOpen = false;
     if (animFrame !== null) cancelAnimationFrame(animFrame);
     window.removeEventListener("keydown", onKey);
-    game.audio.stopPreview();
-    game.audio.leavePreview();
   });
 
   return {

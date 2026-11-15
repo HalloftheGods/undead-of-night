@@ -14,6 +14,8 @@
   justify-content: center;
   pointer-events: none;
   background: transparent;
+  /* The game root hides the cursor while aiming; the panels inherit this, so they show the OS cursor. */
+  cursor: default;
   padding: max(calc(var(--u) * 1.5), env(safe-area-inset-top, 0px))
     max(calc(var(--u) * 2), env(safe-area-inset-right, 0px))
     max(calc(var(--u) * 1.5), env(safe-area-inset-bottom, 0px))
@@ -102,12 +104,47 @@
 }
 
 .container-dock {
-  background: rgba(11, 12, 16, 0.85);
-  box-shadow:
-    0 0 0 var(--ap) var(--ink-line),
-    0 calc(var(--ap) * 3) 0 0 rgba(0, 0, 0, 0.5);
-  padding: calc(var(--ap) * 2.5);
+  /* No card: the container's own drawing floats over the game, with its grid over it. */
+  background: none;
+  box-shadow: none;
+  padding: 0;
   width: fit-content;
+}
+
+/* The container's title floats over the world, so it carries an ink shadow instead of a plate. */
+.container-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(var(--ap) * 2);
+  padding: 0 0 var(--ap);
+  flex-shrink: 0;
+  text-shadow: var(--ap) var(--ap) 0 var(--ink);
+}
+
+/* Until the zoom lands only the art moves: the label and grid wait, and a flying copy stands in for the art. */
+.is-zoom-pending .container-label,
+.is-zoom-pending .container-grid,
+.is-zoom-flying .container-stage-bg-art {
+  visibility: hidden;
+  pointer-events: none;
+}
+.is-zoom-fade .container-stage-bg-art {
+  opacity: calc(0.9 * var(--zoom-fade, 1));
+}
+.is-zoom-landed .container-grid,
+.is-zoom-landed .container-label {
+  animation: zoom-land 120ms steps(3);
+}
+@keyframes zoom-land {
+  from { opacity: 0; }
+}
+.container-zoom-clone {
+  position: absolute;
+  image-rendering: pixelated;
+  pointer-events: none;
+  z-index: 60;
+  margin: 0;
 }
 
 .survivor-dock {
@@ -207,9 +244,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: calc(var(--ap) * 1.5);
-  background: rgba(11, 12, 16, 0.7);
-  box-shadow: inset 0 0 0 var(--ap) var(--ink-line);
   box-sizing: border-box;
   overflow-x: hidden;
   overflow-y: auto;
@@ -219,13 +253,13 @@
 
 .container-stage-bg-art {
   position: absolute;
-  inset: calc(var(--ap) * 1.5);
-  width: calc(100% - calc(var(--ap) * 3));
-  height: calc(100% - calc(var(--ap) * 3));
+  inset: 0;
+  width: 100%;
+  height: 100%;
   image-rendering: pixelated;
   pointer-events: none;
   z-index: 0;
-  opacity: 0.85;
+  opacity: 0.9;
   filter: drop-shadow(0 calc(var(--ap) * 2) 0 rgba(0, 0, 0, 0.7));
 }
 
@@ -449,15 +483,26 @@
     font-size: max(calc(var(--u) * 5), calc(var(--m) * 2.5));
   }
 }
+/*
+  A mouse in a narrow window or on a portrait screen: the game stays live round the column, so the empty overlay lets
+  clicks through to it as the wide layout does. The docks still take theirs, and a wheel over them still scrolls the
+  overlay, which is their scroll parent. A finger keeps the whole cover above.
+*/
+@media (orientation: portrait) and (hover: hover) and (pointer: fine), (max-width: 820px) and (hover: hover) and (pointer: fine) {
+  .dual-loot-overlay {
+    pointer-events: none;
+  }
+}
 
 /* A search under way: the head walks the open cells and leaves each one read, like the classic defrag pass. */
 /* Cells not yet reached are blank and opaque, so the drawing underneath stays hidden until the head passes. */
 .container-grid .grid-cell.is-sweep-wait {
   background: var(--ink-raised);
 }
+/* A read cell carries no colour: it is see-through, so the drawing or the void pattern underneath shows. */
 .container-grid .grid-cell.is-sweep-read {
-  background: rgba(124, 196, 120, 0.32);
-  box-shadow: inset 0 0 0 var(--ap) rgba(124, 196, 120, 0.6);
+  background: transparent;
+  box-shadow: none;
 }
 .container-grid .grid-cell.is-sweep-head {
   background: var(--amber);
@@ -476,4 +521,32 @@
   color: var(--amber);
   font-weight: 700;
   font-size: max(calc(var(--u) * 9), calc(var(--m) * 5));
+}
+
+/* An item picked up while the window is open (use-item-arrivals.ts): hidden while its copy hops in from the world,
+   then it lands with a flash, a squash and a ring of light that opens out and fades. */
+.grid-item.is-incoming { visibility: hidden; }
+.grid-item.is-flying { z-index: 50; box-shadow: 0 0 0 var(--ap) var(--amber), 0 0 14px rgba(255, 211, 107, 0.8); }
+.grid-item.is-arrived { position: relative; animation: item-arrive 520ms cubic-bezier(0.2, 0.9, 0.3, 1.2); overflow: visible; }
+.grid-item.is-arrived::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: 0 0 0 calc(var(--ap) * 2) #ffd36b;
+  animation: item-arrive-ring 520ms ease-out forwards;
+}
+@keyframes item-arrive {
+  0% { transform: scale(1.35); filter: brightness(3) saturate(0.4); background: rgba(255, 246, 216, 0.7); }
+  40% { transform: scale(0.9); filter: brightness(1.6); }
+  70% { transform: scale(1.06); }
+  100% { transform: scale(1); filter: none; }
+}
+@keyframes item-arrive-ring {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(1.6); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .grid-item.is-arrived, .grid-item.is-arrived::after { animation-duration: 1ms; }
+  .is-zoom-landed .container-grid, .is-zoom-landed .container-label { animation: none; }
 }

@@ -6,6 +6,9 @@ import { drawArrow, edgePointer } from './overlay-renderer.ts';
 import type { SceneView } from './scene.ts';
 import { bodyHeight, drawSprite } from './sprite-cache.ts';
 import type { VisualStore } from './visuals.ts';
+import { drawQuip } from './held-ui.ts';
+import { heldInfo } from '../game/held-cursor.ts';
+import { speechNow } from '../game/survivor-speech.ts';
 
 const BONE = '#faf2d4';
 const DEFAULT_BODY_HEIGHT = 20;
@@ -73,5 +76,17 @@ export class EmoteOverlay {
       const arrow = edgePointer(x, y, viewW, viewH, ARROW_INSET);
       if (arrow) drawArrow(ctx, arrow, BONE);
     }
+    this.drawSpeech(ctx, scene, left, top, viewW);
+  }
+
+  /** The local survivor's own line (game/survivor-speech.ts), on the same leader as a held item's. Not while one is in hand. */
+  private drawSpeech(ctx: CanvasRenderingContext2D, scene: SceneView, left: number, top: number, viewW: number): void {
+    const me = scene.players.find((each) => each.id === scene.localId);
+    const quiet = me === undefined || me.status !== 'alive' || heldInfo() !== null;
+    if (quiet) return;
+    const speech = speechNow(me.skin, performance.now());
+    if (!speech) return;
+    const mood = speech.kind === 'drop' ? 'full' : 'fine';
+    drawQuip(ctx, { line: speech.line, mood }, { x: Math.round(me.x) - left, y: Math.round(me.y) - top }, viewW);
   }
 }

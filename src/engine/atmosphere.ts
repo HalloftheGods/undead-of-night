@@ -1,7 +1,7 @@
 import type { LevelTheme } from '../../shared/levels.ts';
 import type { NightEventId } from '../../shared/night-events.ts';
 import { windTravel } from './ground-motion.ts';
-import { LEVEL_LOOKS, withEvent, withPowerRestored } from './level-look.ts';
+import { LEVEL_LOOKS, withEerie, withEvent, withPowerRestored } from './level-look.ts';
 import type { LevelLook, WeatherKind } from './level-look.ts';
 
 const WASH_PULSE_RATE = 2.2;
@@ -79,6 +79,8 @@ export function flakeY(spec: WeatherSpec, index: number, time: number, top: numb
 export class Atmosphere {
   look: LevelLook = LEVEL_LOOKS.night;
   private reducedMotion: boolean;
+  private theme: { theme: LevelTheme; event: NightEventId | null; powered: boolean } = { theme: 'night', event: null, powered: false };
+  private eerie = false;
 
   constructor(reducedMotion: boolean) {
     this.reducedMotion = reducedMotion;
@@ -90,10 +92,22 @@ export class Atmosphere {
   }
 
   setTheme(theme: LevelTheme, event: NightEventId | null = null, powered = false): void {
+    this.theme = { theme, event, powered };
+    this.refreshLook();
+  }
+
+  /** Horde Mode's blackout on or off, over whatever town is showing. */
+  setEerie(on: boolean): void {
+    this.eerie = on;
+    this.refreshLook();
+  }
+
+  private refreshLook(): void {
+    const { theme, event, powered } = this.theme;
     let look = withEvent(LEVEL_LOOKS[theme], event);
     const shouldRestorePower = powered && (theme === 'blackout' || event === 'power_cut');
     if (shouldRestorePower) look = withPowerRestored(look);
-    this.look = look;
+    this.look = this.eerie ? withEerie(look) : look;
   }
 
   /** The wash's alpha right now. */

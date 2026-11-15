@@ -95,4 +95,70 @@ describe('page kit layout', () => {
     expect(pageHitAt(placed, row.box.x + row.box.w - 4, row.box.y + 3)).toEqual({ kind: 'control', id: 'sneak', part: null, along: null });
     expect(pageFocusTargets(placed).map((target) => target.id)).toEqual(['control:sneak', 'button:back']);
   });
+
+  it('lays out a radio boombox control with 9 interactive parts and tuner scrub track', () => {
+    const radioModel: PageModel = {
+      heading: 'Radio',
+      panels: [
+        {
+          heading: 'Tape deck',
+          items: [
+            {
+              kind: 'radio',
+              id: 'deck',
+              track: { name: 'Lost Frequencies', where: 'Radio Tower', find: true },
+              isPlaying: true,
+              isPaused: false,
+              currentTime: 45,
+              duration: 180,
+              position: 0.25,
+              repeatMode: 'all',
+              isShuffle: true,
+              isFavorite: true,
+            },
+          ],
+        },
+      ],
+      buttons: [{ id: 'back', label: 'Back', enabled: true, primary: false }],
+    };
+
+    const placed = layoutPageUi(radioModel, W, H, 0);
+    const deck = placed.controls.find((c) => c.id === 'deck')!;
+    expect(deck).toBeDefined();
+    expect(deck.parts).toHaveLength(9);
+    expect(deck.track).toBeDefined();
+
+    const prevBtn = deck.parts[0];
+    expect(pageHitAt(placed, prevBtn.x + 2, prevBtn.y + 2)).toEqual({
+      kind: 'control',
+      id: 'deck',
+      part: 0,
+      along: null,
+    });
+
+    const playBtn = deck.parts[2];
+    expect(pageHitAt(placed, playBtn.x + 2, playBtn.y + 2)).toEqual({
+      kind: 'control',
+      id: 'deck',
+      part: 2,
+      along: null,
+    });
+
+    const favBtn = deck.parts[8];
+    expect(pageHitAt(placed, favBtn.x + 2, favBtn.y + 2)).toEqual({
+      kind: 'control',
+      id: 'deck',
+      part: 8,
+      along: null,
+    });
+
+    const tunerTrack = deck.track!;
+    const hitTuner = pageHitAt(placed, tunerTrack.x + Math.floor(tunerTrack.w * 0.5), tunerTrack.y + 2);
+    expect(hitTuner).toMatchObject({
+      kind: 'control',
+      id: 'deck',
+      part: null,
+    });
+    expect((hitTuner as { along: number }).along).toBeCloseTo(0.5, 1);
+  });
 });

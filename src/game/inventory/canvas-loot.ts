@@ -1,12 +1,13 @@
 import type { SfxName } from '../../audio/sfx-registry.ts';
 import type { ArtBook } from '../../art/types.ts';
 import { findItemAtTile, getItemFootprint, type InventoryGrid } from '../../../shared/grid-inventory.ts';
-import { heldAnchor, layoutLootUi, lootHitAt, TILE, type LootHit, type LootLayout } from '../../engine/loot-ui.ts';
+import { heldAnchor, itemPlateAt, layoutLootUi, lootHitAt, TILE, type LootHit, type LootLayout } from '../../engine/loot-ui.ts';
+import { noteMove, notePlaced } from './pickup-arrivals.ts';
 import { heldButtonAt, heldOnSurvivor, setHeld } from '../held-cursor.ts';
 import { setLootWindow, type LootWindow } from '../loot-view.ts';
 import { isLootPadInCharge, moveCursor, setLootPad, settleCursor, startCursor, type LootButton, type LootCursor, type LootDirection } from './loot-pad.ts';
 import { itemBlurb } from './item-blurb.ts';
-import { heldActions, isLoadable } from './held-actions.ts';
+import { heldActions, isLoadable, type HeldActionKind } from './held-actions.ts';
 import { useSoundOf } from './use-sound.ts';
 import { formatItemName } from './dual-loot-modal.ts';
 import {
@@ -60,7 +61,7 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
   }
 
   /** Buffer pixels under a client point. The canvas is as many pixels as the game draws, scaled up by CSS. */
-  function bufferPoint(event: MouseEvent): { x: number; y: number } {
+  function bufferPoint(event: Pick<MouseEvent, 'clientX' | 'clientY'>): { x: number; y: number } {
     const rect = canvas.getBoundingClientRect();
     return { x: ((event.clientX - rect.left) * canvas.width) / rect.width, y: ((event.clientY - rect.top) * canvas.height) / rect.height };
   }
@@ -82,6 +83,12 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
     return docks.some((d) => d !== null && point.x >= d.x && point.x < d.x + d.w && point.y >= d.y && point.y < d.y + d.h);
   }
 
+  /** The client point is on the window's panels, grids or docks: there a click is the window's, never a shot. */
+  function onUi(clientX: number, clientY: number): boolean {
+    const point = bufferPoint({ clientX, clientY });
+    return hitFor(point) !== null || overDock(point);
+  }
+
   function gridOf(id: GridIdentifier): InventoryGrid {
     return resolveGridById(state, id);
   }
@@ -94,7 +101,7 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
     }
     const { item } = held;
     // The loot window draws the item in hand at the size the grid shows it, so the hand drawer keeps to the words and buttons.
-    setHeld({ sprite: null, name: formatItemName(item.type), hint: itemBlurb(item.type), actions: heldActions(item) });
+    setHeld({ sprite: null, name: formatItemName(item.type), hint: itemBlurb(item.type), actions: heldActions(item), type: item.type, itemId: item.id });
   }
 
   function place(gridId: GridIdentifier, col: number, row: number): boolean {
@@ -103,6 +110,8 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
     const from = sourceName(held.source);
     const placed = placeHeldItemInGrid(state, gridId, col, row);
     if (placed) {
+      // Set down by hand: it only lands, it does not fly.
+      notePlaced(held.item);
       host.transfer({ itemId: state.selectedItemId ?? '', source: from, target: gridId });
       host.playSfx('ui_place');
     }
@@ -110,7 +119,13 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
   }
 
   function quickTransfer(gridId: GridIdentifier, itemId: string): void {
+    // A double click sends it across: it flies from the cell it is leaving.
+    const leaving = gridOf(gridId).items.find((item) => item.id === itemId);
+    const origin = leaving ? itemPlateAt(layout(), gridId, leaving) : null;
+    const moving = leaving ?? state.heldItem?.item ?? null;
     if (!quickTransferBetweenInventories(state, gridId, itemId)) return;
+    if (moving && origin) noteMove(moving, { buffer: origin });
+    else if (moving) notePlaced(moving);
     host.playSfx('ui_place');
     host.transfer({ itemId, source: gridId, target: gridId === 'container' ? 'backpack' : 'container' });
   }
@@ -194,31 +209,43 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
     syncHeld();
   }
 
-  /** A click on a hand button does what it says; one on the bare game drops the item, or uses it on the survivor. */
-  function heldClick(event: MouseEvent, point: { x: number; y: number }): boolean {
+  /** Uses or drops the item in hand, with its sound, if it allows that. True when something happened. */
+  function actOnHeld(kind: HeldActionKind | null): boolean {
     const held = state.heldItem;
-    if (!held) return false;
-    const actions = heldActions(held.item);
-    const canUse = actions.some((a) => a.kind === 'use');
-    const canDrop = actions.some((a) => a.kind === 'drop');
-    const onButton = heldButtonAt(event.clientX, event.clientY);
-    const bare = hitFor(point) === null && !overDock(point);
-    const kind = onButton ?? (bare ? (heldOnSurvivor(event.clientX, event.clientY) ? 'use' : 'drop') : null);
-    if (kind === 'use' && canUse) {
+    if (!held || kind === null) return false;
+    const allowed = heldActions(held.item).some((a) => a.kind === kind);
+    if (!allowed) return false;
+    if (kind === 'use') {
       host.playSfx(useSoundOf(held.item.type));
       useHeld();
-      return true;
-    }
-    if (kind === 'drop' && canDrop) {
+    } else {
       host.playSfx('ui_drop');
       dropHeld();
-      return true;
     }
-    return onButton !== null;
+    return true;
+  }
+
+  /** A click on a hand button does what it says; one on the bare game drops the item, or uses it on the survivor. */
+  function heldClick(event: MouseEvent, point: { x: number; y: number }): boolean {
+    if (!state.heldItem) return false;
+    const onButton = heldButtonAt(event.clientX, event.clientY);
+    const bare = hitFor(point) === null && !overDock(point);
+    const onGame: HeldActionKind = heldOnSurvivor(event.clientX, event.clientY) ? 'use' : 'drop';
+    const kind = onButton ?? (bare ? onGame : null);
+    return actOnHeld(kind) || onButton !== null;
+  }
+
+  /**
+   * The last press was the window's: on its UI, or with an item in hand. A shot pressed on the game and let go over
+   * a cell still clicks the canvas, so the click only counts when its press did too.
+   */
+  let pressOwned = false;
+  function onPress(event: MouseEvent): void {
+    pressOwned = event.target === canvas && (state.heldItem !== null || onUi(event.clientX, event.clientY));
   }
 
   function onClick(event: MouseEvent): void {
-    if (event.target !== canvas) return;
+    if (event.target !== canvas || !pressOwned) return;
     const point = bufferPoint(event);
     if (heldClick(event, point)) {
       syncHeld();
@@ -236,7 +263,7 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
   }
 
   function onDoubleClick(event: MouseEvent): void {
-    if (event.target !== canvas) return;
+    if (event.target !== canvas || !pressOwned) return;
     const hit = hitFor(bufferPoint(event));
     if (!hit || hit.kind !== 'cell') return;
     const held = state.heldItem;
@@ -252,8 +279,11 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
     if (event.target !== canvas) {
       window_.pointer = null;
       window_.hover = null;
+      canvas.style.cursor = '';
       return;
     }
+    // Over the game the crosshair is the cursor; over the window the OS cursor shows, as it does on the page modal.
+    canvas.style.cursor = onUi(event.clientX, event.clientY) ? 'default' : '';
     const point = bufferPoint(event);
     window_.pointer = point;
     window_.hover = hitFor(point);
@@ -288,7 +318,17 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
   /** A takes the item under the highlight across, or sets a held one down; X lifts it to move it; Y turns it. */
   function padPress(button: LootButton): boolean {
     if (button === 'b') return false;
+    // With the hand empty the triggers are the game's (fire and shove), so they leave the highlight unlit.
+    if ((button === 'rt' || button === 'lt') && !state.heldItem) return false;
     cursor = cursor ?? startCursor(gridOf);
+    if (button === 'rt' || button === 'lt') {
+      // RT feeds the item in hand to the survivor, LT drops it: the pad's USE and DROP buttons.
+      const acted = actOnHeld(button === 'rt' ? 'use' : 'drop');
+      if (acted) cursor = settleCursor(cursor, gridOf);
+      syncHeld();
+      showCursor();
+      return acted;
+    }
     if (button === 'y') {
       rotate();
       showCursor();
@@ -306,6 +346,7 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
   }
 
   window.addEventListener('mousemove', onMove);
+  window.addEventListener('mousedown', onPress, true);
   window.addEventListener('click', onClick);
   window.addEventListener('dblclick', onDoubleClick);
   setLootWindow(window_);
@@ -320,8 +361,11 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
     escape,
     rotate,
     settle,
+    ownsPoint: onUi,
     dispose() {
+      canvas.style.cursor = '';
       window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mousedown', onPress, true);
       window.removeEventListener('click', onClick);
       window.removeEventListener('dblclick', onDoubleClick);
       setLootWindow(null);

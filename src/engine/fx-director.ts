@@ -62,6 +62,9 @@ const SHOT_KICK: Record<WeaponId, number> = { pistol: 0.16, carbine: 0.12, shotg
 const PICKUP_LABEL: Record<PickupType, string> = {
   bandage: "BANDAGE",
   medkit: "MEDKIT",
+  bottle: "BOTTLE",
+  firework: "SPINNER",
+  fountain: "FOUNTAIN",
   pistol_ammo: "PISTOL AMMO",
   carbine_ammo: "CARBINE AMMO",
   shells: "SHELLS",

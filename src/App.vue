@@ -2,7 +2,12 @@
   <main class="game-root" :class="{ 'is-aiming': aiming, 'is-touch': ui.touch, 'is-looting': inventory.isOpen.value, 'is-canvas-loot': canvasLoot.active.value }">
     <canvas ref="canvasRef" class="game-canvas" />
 
-    <TitleScreen v-if="ui.screen === 'title'" v-show="!canvasEditing" :ui :splashing />
+    <!-- The dev HUD page (?dev=hud): the HUD alone over the live town. No title, menus or game-over screens. -->
+    <template v-if="hudTest">
+      <HudOverlay v-if="ui.hud && ui.art" :hud="ui.hud" :art="ui.art" :mode="ui.mode" :signal-weak="ui.signalWeak" :place="ui.place" :home="ui.home" :log="ui.log" />
+    </template>
+
+    <TitleScreen v-else-if="ui.screen === 'title'" v-show="!canvasEditing" :ui :splashing />
 
     <template v-else-if="ui.screen === 'game'">
       <DailyLobby v-if="ui.lobby && !ui.lobby.launched" :lobby="ui.lobby" />
@@ -49,7 +54,7 @@
       <LevelCard v-if="ui.levelCard" v-show="!overlayUp" :key="ui.levelCard.key" :card="ui.levelCard" />
       <WaveBanner v-if="ui.banner" v-show="!overlayUp" :key="ui.banner.key" :banner="ui.banner" />
       <KillCallout v-if="ui.callout" v-show="!overlayUp" :key="ui.callout.key" :callout="ui.callout" />
-      <LogPanel v-if="ui.logOpen && ui.hud" :log="ui.log" />
+      <LogPanel v-if="ui.logOpen && ui.hud && !canvasLogOn" :log="ui.log" />
       <WorkbenchScreen v-if="ui.hud?.bench && ui.art" :hud="ui.hud" :bench="ui.hud.bench" :art="ui.art" />
       <template v-if="ui.home">
         <LockerScreen v-if="ui.home.station === 'locker'" :home="ui.home" :art="ui.art" />
@@ -70,7 +75,10 @@
         <TownGuidePage v-else-if="pausedBook === 'guide'" @close="onClosePausedBook" />
         <RecordsPage v-else-if="pausedBook === 'records'" :ui @close="onClosePausedBook" />
         <ControlsPageCanvas v-else-if="pausedBook === 'controls'" @close="pausedBook = null" />
-        <PauseMenu v-else :ui :mode="ui.mode" @open-book="pausedBook = 'books'" @open-controls="pausedBook = 'controls'" />
+        <RadioPageCanvas v-else-if="pausedBook === 'radio' && canvasPauseOn" @close="pausedBook = null" />
+        <RadioPage v-else-if="pausedBook === 'radio'" :ui @close="pausedBook = null" />
+        <PauseMenu v-else-if="!canvasPauseOn" :ui :mode="ui.mode" @open-book="pausedBook = 'books'" @open-controls="pausedBook = 'controls'" @open-radio="pausedBook = 'radio'" />
+        <PauseCanvas v-else :ui :mode="ui.mode" @open-book="pausedBook = 'books'" @open-controls="pausedBook = 'controls'" @open-radio="pausedBook = 'radio'" />
       </template>
       <VanTransition :in-bunker="ui.home?.inBunker ?? null" :art="ui.art" />
       </template>
@@ -107,7 +115,7 @@ import GarageMap from './components/GarageMap.vue';
 import HudOverlay from './components/HudOverlay.vue';
 import RoomInvite from './components/RoomInvite.vue';
 import LevelCard from './components/LevelCard.vue';
-import { BooksPage, CandyMagazinePage, EndingFlow, HowToPlay, JukeboxScreen, prefetchLazyPages, RecordsPage, TownGuidePage } from './components/lazy-pages.ts';
+import { BooksPage, CandyMagazinePage, EndingFlow, HowToPlay, JukeboxScreen, prefetchLazyPages, RadioPage, RecordsPage, TownGuidePage } from './components/lazy-pages.ts';
 import type { TitlePage } from './game/title-menu.ts';
 import LogPanel from './components/log/LogPanel.vue';
 import LockerScreen from './components/LockerScreen.vue';
@@ -115,7 +123,9 @@ import MerchantScreen from './components/MerchantScreen.vue';
 import OverrunChest from './components/OverrunChest.vue';
 import OverrunClock from './components/OverrunClock.vue';
 import PauseMenu from './components/PauseMenu.vue';
+import PauseCanvas from './components/PauseCanvas.vue';
 import ControlsPageCanvas from './components/ControlsPageCanvas.vue';
+import RadioPageCanvas from './components/RadioPageCanvas.vue';
 import PrivacyPage from './components/PrivacyPage.vue';
 import StudioSplash from './components/StudioSplash.vue';
 import TitleScreen from './components/TitleScreen.vue';
@@ -135,6 +145,9 @@ import { paintedContainer } from './engine/car-looks.ts';
 import { CONTAINER_LABEL } from '../shared/containers.ts';
 import { isVerticalLook } from '../shared/container-flip.ts';
 import { GameController } from './game/game-controller.ts';
+import { hudTestOn } from './game/dev/hud-test.ts';
+import { canvasHud, canvasHudAllowed } from './game/canvas-hud-prefs.ts';
+import { canvasMenus } from './game/canvas-menu-prefs.ts';
 import { canvasEditing } from './game/dev/canvas-edit.ts';
 import { aimsCursor } from './game/home-screens.ts';
 import { useInventoryModal, type InventoryPanel } from './game/inventory-modal.ts';
@@ -144,7 +157,12 @@ import { shouldShowSplash } from './game/studio-splash.ts';
 
 const game = new GameController();
 const ui = game.ui;
-const splashing = ref(shouldShowSplash(window.location.search));
+/** The pause card follows In-game menus, and phones keep the page card. */
+const canvasPauseOn = computed(() => canvasMenus.value && !ui.value.touch);
+/** The in-game HUD draws the run log on the canvas, so the page log stays shut. */
+const canvasLogOn = computed(() => canvasHudAllowed(canvasHud.value, ui.value.touch));
+const hudTest = hudTestOn(window.location.search, import.meta.env.DEV, window.location.hostname);
+const splashing = ref(shouldShowSplash(window.location.search) && !hudTest);
 const canvasRef = useTemplateRef<HTMLCanvasElement>('canvasRef');
 const pausedBook = ref<TitlePage | null>(null);
 const vuePanel = useTemplateRef<InventoryPanel>('vuePanel');
@@ -174,11 +192,11 @@ function onInventoryClose(): void {
  * What it finds arrives with the search's end and rebuilds the window with the open drawing and the items in it.
  */
 watch(() => ui.value.searching, (now, was) => {
-  feedSearch(now?.progress ?? null);
+  feedSearch(now?.progress ?? null, now?.lootSlot);
   if (now && !was && !inventory.isOpen.value) {
     const prop = now.propIndex !== undefined ? game.currentMap?.props[now.propIndex] : undefined;
     const art = ui.value.art ? searchArtFor(ui.value.art, now.kind, prop, now.propIndex) : null;
-    const look = prop ? containerLook({ kind: now.kind, prop: prop.kind, propIndex: now.propIndex }) : undefined;
+    const look = prop ? containerLook({ kind: now.kind, prop: prop.kind, propIndex: now.propIndex, look: prop.look }) : undefined;
     inventory.showContainer(now.id, searchTitle(now.kind), [], now.kind, art, searchFlipped(prop), true, look);
   }
   const over = !now && was && inventory.searchingOpen.value;
@@ -186,11 +204,14 @@ watch(() => ui.value.searching, (now, was) => {
 });
 
 watch(() => ui.value.openedContainer, (loot) => {
+  // Search pressed again at the container already open here: the host's copy lacks the moves not yet sent, so keep the window.
+  const isReopenHere = loot !== null && loot !== undefined && inventory.isOpen.value && !inventory.searchingOpen.value && inventory.working.value?.containerId === loot.id;
+  if (isReopenHere) return;
   if (loot && loot.items.length > 0) {
     const title = loot.title ?? (loot.kind ? CONTAINER_LABEL[loot.kind] : 'Container');
     const activeMap = game.currentMap;
     const prop = loot.propIndex !== undefined && activeMap ? activeMap.props[loot.propIndex] : undefined;
-    const look = prop ? containerLook({ kind: loot.kind ?? 'car', prop: prop.kind, propIndex: loot.propIndex }) : undefined;
+    const look = prop ? containerLook({ kind: loot.kind ?? 'car', prop: prop.kind, propIndex: loot.propIndex, look: prop.look }) : undefined;
     const specificArt = prop && ui.value.art && look ? (paintedContainer(ui.value.art, prop) ?? ui.value.art.containers[look]) : null;
     // A car parked nose up is drawn standing on end, so its grid stands on end too.
     const flipped = isVerticalLook(prop?.kind);
@@ -222,7 +243,8 @@ const aiming = computed(() =>
     mapOpen: ui.value.mapOpen || ui.value.bagOpen,
     bench: Boolean(ui.value.hud?.bench),
     home: ui.value.home,
-    backpackOpen: ui.value.backpackOpen || inventory.isOpen.value,
+    // On desktop the game stays live under the inventory, so the crosshair stays the cursor; touch keeps it off.
+    backpackOpen: ui.value.backpackOpen || (inventory.isOpen.value && ui.value.touch),
     inLobby: Boolean(ui.value.lobby && !ui.value.lobby.launched),
   })
 );
@@ -235,9 +257,15 @@ provide(GAME_KEY, game);
 
 let stopAnalytics: (() => void) | null = null;
 
+/** The HUD test run starts once the art is in, since a run cannot start before it. */
+watch(() => ui.value.art, (art) => {
+  if (art && hudTest) game.startHudTest();
+});
+
 onMounted(() => {
   if (canvasRef.value) game.mount(canvasRef.value);
   if (import.meta.env.DEV) window.__outbreak = game;
+  if (hudTest && ui.value.art) game.startHudTest();
   stopAnalytics = startAnalytics(() => ui.value);
   prefetchLazyPages();
 });
@@ -281,8 +309,9 @@ onBeforeUnmount(() => {
   filter: none;
 }
 
+/* Lightened, not hidden: the game stays playable under the grid, so ammo and health must stay readable. */
 .is-looting :deep(.hud) {
-  opacity: 0.22;
+  opacity: 0.6;
 }
 
 .game-root :deep(.hud) {

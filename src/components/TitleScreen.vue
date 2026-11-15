@@ -1,5 +1,5 @@
 <template>
-  <section v-if="nav.page === null && !devSprites" class="px-screen px-title-scale title" :class="{ 'is-revealed': !splashing }">
+  <section v-if="nav.page === null" class="px-screen px-title-scale title" :class="{ 'is-revealed': !splashing }">
     <div class="title-hero">
       <SpriteImg v-if="ui.art" class="title-logo" :sprite="ui.art.ui.logoFrames[logoFrame]" />
       <h1 v-else class="px-heading">UNDEAD OF NIGHT: TAKE ONE</h1>
@@ -7,7 +7,7 @@
 
     <PressAnyKey v-if="asking" class="title-press" :touch="ui.touch" :splashing @wake="answer" />
     <div v-else class="title-columns" :class="{ 'title-arrive': arrived }">
-      <TitleMenu v-model="selected" v-model:section="section" :entries="TITLE_MENU" @open="openItem" />
+      <TitleMenu v-model="selected" v-model:section="section" :entries="TITLE_MENU" :show-dev="isDev" @open="openItem" />
       <InstallCartridge />
     </div>
 
@@ -15,9 +15,6 @@
       <div class="title-links">
         <MenuLink v-if="!privacyOpen" class="title-privacy" @press="openPrivacy()">Privacy</MenuLink>
         <MenuLink class="title-version" aria-label="What's new in this version" @press="nav = openPage(nav, 'changelog')">v{{ APP_VERSION }}</MenuLink>
-        <MenuLink v-if="isDev" class="title-dev" @press="nav = openPage(nav, 'dev_inventory')">Dev: Items</MenuLink>
-        <MenuLink v-if="isDev" class="title-dev" @press="devSprites = true">Dev: Sprites</MenuLink>
-        <MenuLink v-if="isDev" class="title-dev" @press="game.startTestDrive()">Dev: Test Drive</MenuLink>
       </div>
       <p class="title-credit">
         <img class="title-omega" :src="BRAND_MARK" alt="" />
@@ -51,8 +48,8 @@
   <RadioPage v-else-if="nav.page === 'radio'" :ui @close="close" />
   <ControlsPageCanvas v-else-if="nav.page === 'controls' && pagesOnCanvas.controls" @close="close" />
   <ControlsPage v-else-if="nav.page === 'controls'" @close="close" />
-  <ZombieSpritesPageCanvas v-else-if="devSprites && devOnCanvas" :art="ui.art" @close="devSprites = false" />
-  <ZombieSpritesPage v-else-if="devSprites" :art="ui.art" @close="devSprites = false" />
+  <ZombieSpritesPageCanvas v-else-if="nav.page === 'dev_sprites' && devOnCanvas" :art="ui.art" @close="close" />
+  <ZombieSpritesPage v-else-if="nav.page === 'dev_sprites'" :art="ui.art" @close="close" />
   <DevInventoryPageCanvas v-else-if="nav.page === 'dev_inventory' && devOnCanvas" :art="ui.art" @close="close" />
   <DevInventoryPage v-else-if="nav.page === 'dev_inventory'" :art="ui.art" @close="close" />
   <OptionsPageCanvas v-else-if="optionsKind !== null && pagesOnCanvas[optionsKind]" :ui :kind="optionsKind" @close="close" />
@@ -64,7 +61,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { canvasMenus, usesCanvasSetup } from '../game/canvas-menu-prefs.ts';
-import { isLocalHost } from '../game/analytics/analytics-config.ts';
 import { openPrivacy, privacyOpen } from '../game/analytics/index.ts';
 import type { UiState } from '../game/hud-state.ts';
 import { parseInvite, withoutJoinParam } from '../game/invite-link.ts';
@@ -72,7 +68,7 @@ import { setPendingRoomCode } from '../game/pending-room.ts';
 import { markPressAnswered, shouldAskForPress } from '../game/press-start.ts';
 import { onlineRoomsLive } from '../network/play-api.ts';
 import { BRAND_MARK, STUDIO_LINE } from '../game/studio-splash.ts';
-import { TITLE_MENU } from '../game/title-menu.ts';
+import { isLocalInstall, TITLE_MENU } from '../game/title-menu.ts';
 import type { MenuGroup, TitleMenuItem, TitlePage } from '../game/title-menu.ts';
 import { closeBook, closeLevelSetter, closePage, closePlay, INVITE_LANDING, openBook, openLevelSetter, openPage, pickLevel, TITLE_HOME } from '../game/title-nav.ts';
 import { saveSetupLevel } from '../game/setup-level-pref.ts';
@@ -105,40 +101,38 @@ const APP_VERSION = __APP_VERSION__;
 
 const { ui, splashing = false } = defineProps<{ ui: UiState; splashing?: boolean }>();
 
-const isDev = computed(() => {
-  if (!import.meta.env.DEV) return false;
-  if (typeof window === 'undefined') return false;
-  return isLocalHost(window.location.hostname);
-});
+const isDev = computed(() => isLocalInstall());
 
-function checkDevRouting(): boolean {
-  if (typeof window === 'undefined') return false;
-  if (!import.meta.env.DEV) return false;
-  const isLocal = isLocalHost(window.location.hostname);
-  if (!isLocal) return false;
+function checkDevRouting(): TitlePage | null {
+  if (typeof window === 'undefined') return null;
+  const isLocal = isLocalInstall(window.location.hostname);
+  if (!isLocal) return null;
 
   const searchParams = new URLSearchParams(window.location.search);
   const devParam = searchParams.get('dev');
   const pageParam = searchParams.get('page');
   const isDevInventoryParam = devParam === 'inventory' || pageParam === 'dev_inventory' || pageParam === 'inventory';
   const isHashDev = window.location.hash === '#dev-inventory';
-  return isDevInventoryParam || isHashDev;
+  if (isDevInventoryParam || isHashDev) return 'dev_inventory';
+
+  const isDevSpritesParam = devParam === 'sprites' || pageParam === 'dev_sprites' || pageParam === 'sprites';
+  if (isDevSpritesParam) return 'dev_sprites';
+
+  return null;
 }
 
 const game = useGame();
 // Missed weeks are charged here, between runs, and never on a kill.
 checkApUpkeep();
 const nav = ref(TITLE_HOME);
-/** Dev builds: the zombie sprite viewer is open. */
-const devSprites = ref(false);
 /** Read before the invite below rewrites the address, so an invite link never waits for a key. */
 const asking = ref(shouldAskForPress(window.location.search));
 /** The menu fades in after a press, not when coming back to the title. */
 const arrived = ref(false);
 
-const opensDevInventory = checkDevRouting();
-if (opensDevInventory) {
-  nav.value = openPage(nav.value, 'dev_inventory');
+const opensDev = checkDevRouting();
+if (opensDev) {
+  nav.value = openPage(nav.value, opensDev);
   asking.value = false;
   arrived.value = true;
 }
@@ -240,6 +234,16 @@ function openBookPage(page: TitlePage): void {
 /** Campaign and Arcade each carry a style: pressing one remembers it, then opens the one Play setup, which no longer asks. */
 function openItem(item: TitleMenuItem): void {
   if (item.style) game.chooseStyle(item.style);
+  const isTestDrive = item.page === 'test_drive';
+  if (isTestDrive) {
+    game.startTestDrive();
+    return;
+  }
+  const isHudTest = item.page === 'hud_test';
+  if (isHudTest) {
+    game.startHudTest();
+    return;
+  }
   nav.value = openPage(nav.value, item.page);
 }
 </script>

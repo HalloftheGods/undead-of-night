@@ -1,0 +1,34 @@
+/* Radio View Nav Switcher */
+.radio-view-nav {
+  display: flex;
+  justify-content: center;
+  gap: calc(var(--u) * 2);
+  margin-bottom: calc(var(--u) * 2);
+}
+
+.view-btn {
+  background: #141620;
+  color: var(--bone-dim);
+  border: 1px solid var(--ink-line);
+  box-shadow: inset 1px 1px 0 #282b3a;
+  padding: calc(var(--u) * 1.5) calc(var(--u) * 3);
+  font-family: inherit;
+  font-size: calc(var(--u) * 3.5);
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: color 0.1s, background-color 0.1s, border-color 0.1s;
+}
+
+.view-btn:hover {
+  color: var(--bone);
+  background: #202332;
+  border-color: #3d4156;
+}
+
+.view-btn.is-active {
+  color: var(--amber);
+  background: rgba(232, 163, 61, 0.15);
+  border-color: var(--amber);
+  box-shadow: inset 1px 1px 0 rgba(232, 163, 61, 0.4);
+}
