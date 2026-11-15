@@ -175,14 +175,17 @@ function roundsIn(type: PickupType, rule: LootRule, difficulty: DifficultyId): n
   return scaleRounds(rule.smallAmmo ? Math.ceil(rounds / 2) : rounds, difficulty);
 }
 
-function stock(sim: SimState, building: BuildingInstance, items: readonly PickupType[], rng: Rng = sim.rng): void {
+/** Lays the items out on free spots in the building, as many as there is room for, and says how many went down. */
+function stock(sim: SimState, building: BuildingInstance, items: readonly PickupType[], rng: Rng = sim.rng): number {
   const rule = LOOT_RULES[building.kind];
   // A second pass over a building, such as the ammo top-up, keeps off the spots the first one filled.
   const isTaken = (spot: Point): boolean => sim.pickups.some((item) => item.x === spot.x && item.y === spot.y);
   const spots = shuffle(rng, lootSpots(sim.map, building).filter((spot) => !isTaken(spot)));
-  items.slice(0, spots.length).forEach((type, index) => {
+  const placed = items.slice(0, spots.length);
+  placed.forEach((type, index) => {
     spawnPickup(sim, type, spots[index].x, spots[index].y, roundsIn(type, rule, sim.difficulty));
   });
+  return placed.length;
 }
 
 /**
@@ -203,8 +206,9 @@ function settleFloorAmmo(sim: SimState, share: number): number {
     const worth = damageOf({ type, rounds: roundsIn(type, rule, sim.difficulty) });
     const fits = isAmmoPickup(type) && total + worth <= share;
     if (!fits) continue;
-    stock(sim, building, [type]);
-    total += worth;
+    // A building with every spot taken has no room for the box, so it is not counted.
+    const laidDown = stock(sim, building, [type]) > 0;
+    if (laidDown) total += worth;
   }
   return total;
 }
