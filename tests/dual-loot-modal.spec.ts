@@ -490,4 +490,56 @@ describe('Dual-Grid Container Looting & Inventory Modal', () => {
       expect(panelSource).not.toContain('\u2014');
     });
   });
+
+  // The host keeps candy only in the candy bag, so a piece shown in the pack or pockets is a copy the host does not have.
+  describe('Candy belongs in the candy bag', () => {
+    const aCandy = (id: string) => ({ id, type: 'jawbreaker', x: 0, y: 0, rotated: false });
+    const fillCandyBag = (state: ReturnType<typeof createDualLootState>) => {
+      const { cols, rows } = state.candyBagGrid;
+      for (let i = 0; i < cols * rows; i += 1) placeItem(state.candyBagGrid, { ...aCandy(`full-${i}`), x: i % cols, y: Math.floor(i / cols) });
+    };
+
+    it.each(['backpack', 'pockets'] as const)('candy set down on the %s lands in the candy bag', (gridId) => {
+      const state = createDualLootState();
+      placeItem(state.containerGrid, aCandy('candy-1'));
+      pickUpItemFromGrid(state, 'container', 'candy-1');
+
+      expect(placeHeldItemInGrid(state, gridId, 0, 0)).toBe(true);
+      expect(state.heldItem).toBeNull();
+      expect(state.backpackGrid.items).toHaveLength(0);
+      expect(state.pocketsGrid.items).toHaveLength(0);
+      expect(state.candyBagGrid.items.map((item) => item.id)).toEqual(['candy-1']);
+      expect(state.selectedGridId).toBe('candyBag');
+    });
+
+    it('candy is refused by the pack when the candy bag is full, and stays in hand', () => {
+      const state = createDualLootState();
+      fillCandyBag(state);
+      placeItem(state.containerGrid, aCandy('candy-1'));
+      pickUpItemFromGrid(state, 'container', 'candy-1');
+
+      expect(placeHeldItemInGrid(state, 'backpack', 0, 0)).toBe(false);
+      expect(state.heldItem?.item.id).toBe('candy-1');
+      expect(state.backpackGrid.items).toHaveLength(0);
+    });
+
+    it('marks the pack valid for candy while the candy bag has room, and invalid once it is full', () => {
+      const state = createDualLootState();
+      const held = aCandy('candy-1');
+      expect(computeTileHighlight(state.backpackGrid, 0, 0, 0, 0, held, 'backpack')).toBe('valid');
+      fillCandyBag(state);
+      expect(computeTileHighlight(state.backpackGrid, 0, 0, 0, 0, held, 'backpack', state.candyBagGrid)).toBe('invalid');
+    });
+
+    it('a quick transfer never spills candy into the pack when the candy bag is full', () => {
+      const state = createDualLootState();
+      fillCandyBag(state);
+      placeItem(state.containerGrid, aCandy('candy-1'));
+
+      expect(quickTransferBetweenInventories(state, 'container', 'candy-1')).toBe(false);
+      expect(state.containerGrid.items.map((item) => item.id)).toEqual(['candy-1']);
+      expect(state.backpackGrid.items).toHaveLength(0);
+      expect(state.pocketsGrid.items).toHaveLength(0);
+    });
+  });
 });

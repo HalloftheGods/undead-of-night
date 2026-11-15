@@ -540,7 +540,7 @@ function hoverHighlightClass(gridId: GridIdentifier, col: number, row: number): 
   const isNotTargetGrid = !isTargetGrid;
   if (isNotTargetGrid) return '';
   const grid = resolveGridById(modalState, gridId);
-  const highlight = computeTileHighlight(grid, col, row, hoveredCol.value, hoveredRow.value, modalState.heldItem?.item ?? null, gridId);
+  const highlight = computeTileHighlight(grid, col, row, hoveredCol.value, hoveredRow.value, modalState.heldItem?.item ?? null, gridId, modalState.candyBagGrid);
   const isValid = highlight === 'valid';
   if (isValid) return 'is-valid-target';
   const isInvalid = highlight === 'invalid';

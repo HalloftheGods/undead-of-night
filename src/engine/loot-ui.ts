@@ -488,7 +488,7 @@ function drawBoard(ctx: CanvasRenderingContext2D, view: LootView, board: GridBox
       fill(ctx, LINE, box.x + 1, box.y + TILE - 2, TILE - 2, 1);
       fill(ctx, LINE, box.x + TILE - 2, box.y + 1, 1, TILE - 2);
       if (phase === 'head') fill(ctx, AMBER, box.x + 1, box.y + 1, TILE - 2, TILE - 2);
-      const mark = computeTileHighlight(grid, col, row, hover ? hover.col : null, hover ? hover.row : null, held, board.id);
+      const mark = computeTileHighlight(grid, col, row, hover ? hover.col : null, hover ? hover.row : null, held, board.id, state.candyBagGrid);
       if (mark !== 'none') fill(ctx, mark === 'valid' ? SICK : BLOOD, box.x + 2, box.y + 2, TILE - 4, TILE - 4);
     }
   }

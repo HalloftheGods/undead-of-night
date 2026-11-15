@@ -7,6 +7,7 @@ import {
   autoPackItem,
   canPlaceItem,
   createInventoryGrid,
+  findAvailableSlot,
   getItemFootprint,
   placeItem,
   removeItem,
@@ -18,6 +19,10 @@ import {
 export type GridIdentifier = 'container' | 'pockets' | 'backpack' | 'candyBag';
 export type GearSlotId = 'primary' | 'secondary' | 'sidearm' | 'armor';
 export type TileHighlightState = 'valid' | 'invalid' | 'none';
+
+/** Candy lives only in the candy bag: the host keeps it there and nowhere else, so the pack and pockets never show it. */
+const isCandyType = (type: string): boolean => isCandyId(type) || type === 'candy';
+const isSurvivorGrid = (gridId: GridIdentifier | undefined): boolean => gridId === 'backpack' || gridId === 'pockets';
 
 export interface GridItemSource {
   readonly kind: 'grid';
@@ -258,7 +263,9 @@ export function computeTileHighlight(
   hoveredCol: number | null,
   hoveredRow: number | null,
   heldItem: GridItem | null,
-  gridId?: GridIdentifier
+  gridId?: GridIdentifier,
+  /** Where candy set down on the pack or pockets goes; without it the bag is taken to have room. */
+  candyBagGrid?: InventoryGrid
 ): TileHighlightState {
   const hasNoHover = hoveredCol === null || hoveredRow === null;
   const hasNoHeldItem = heldItem === null;
@@ -278,9 +285,14 @@ export function computeTileHighlight(
   }
 
   const isCandyBag = gridId === 'candyBag';
-  const isCandyItem = isCandyId(heldItem.type) || heldItem.type === 'candy';
+  const isCandyItem = isCandyType(heldItem.type);
   if (isCandyBag && !isCandyItem) {
     return 'invalid';
+  }
+  // Candy over the pack or pockets is headed for the candy bag, so the mark says whether the bag has room.
+  if (isCandyItem && isSurvivorGrid(gridId)) {
+    const bagHasRoom = !candyBagGrid || findAvailableSlot(candyBagGrid, heldItem.type, true) !== null;
+    return bagHasRoom ? 'valid' : 'invalid';
   }
 
   const canFit = canPlaceItem(
@@ -369,9 +381,18 @@ export function placeHeldItemInGrid(
   }
 
   const isCandyBag = gridId === 'candyBag';
-  const isCandyItem = isCandyId(activeHeld.item.type) || activeHeld.item.type === 'candy';
+  const isCandyItem = isCandyType(activeHeld.item.type);
   if (isCandyBag && !isCandyItem) {
     return false;
+  }
+  // Candy set down on the pack or pockets goes into the candy bag, or stays in hand when the bag is full.
+  if (isCandyItem && isSurvivorGrid(gridId)) {
+    const candy: GridItem = { ...activeHeld.item };
+    if (!autoPackItem(state.candyBagGrid, candy)) return false;
+    state.heldItem = null;
+    state.selectedItemId = candy.id;
+    state.selectedGridId = 'candyBag';
+    return true;
   }
 
   const targetGrid = resolveGridById(state, gridId);
@@ -542,13 +563,11 @@ export function quickTransferHeldItem(state: DualLootState): boolean {
   const isContainerSource = fromGridId === 'container';
 
   if (isContainerSource) {
-    const isCandy = isCandyId(itemToPlace.type) || itemToPlace.type === 'candy';
-    if (isCandy) {
+    // Candy goes to the candy bag or nowhere: a full bag leaves it in hand rather than in the pack.
+    if (isCandyType(itemToPlace.type)) {
       const packedInCandyBag = autoPackItem(state.candyBagGrid, itemToPlace);
-      if (packedInCandyBag) {
-        state.heldItem = null;
-        return true;
-      }
+      if (packedInCandyBag) state.heldItem = null;
+      return packedInCandyBag;
     }
 
     const packedInBackpack = autoPackItem(state.backpackGrid, itemToPlace);
@@ -592,13 +611,11 @@ export function quickTransferBetweenInventories(
 
   const isContainerSource = fromGridId === 'container';
   if (isContainerSource) {
-    const isCandy = isCandyId(sourceItem.type) || sourceItem.type === 'candy';
-    if (isCandy) {
+    // Candy goes to the candy bag or stays where it is: a full bag never spills it into the pack.
+    if (isCandyType(sourceItem.type)) {
       const packedInCandyBag = autoPackItem(state.candyBagGrid, sourceItem);
-      if (packedInCandyBag) {
-        removeItem(sourceGrid, itemId);
-        return true;
-      }
+      if (packedInCandyBag) removeItem(sourceGrid, itemId);
+      return packedInCandyBag;
     }
 
     const packedInBackpack = autoPackItem(state.backpackGrid, sourceItem);
