@@ -17,6 +17,8 @@ import type { MoveGrids } from './item-move-grids.ts';
 import { useMedkit } from './player-health.ts';
 import type { WeaponId } from './protocol.ts';
 import { emit } from './sim-state.ts';
+import { tossLanding } from './toss.ts';
+import type { WorldPoint } from './toss.ts';
 import type { PlayerState, SimState } from './sim-state.ts';
 import { useSupply } from './supplies.ts';
 import { isSupplyType } from './supply-types.ts';
@@ -183,16 +185,26 @@ function useItem(sim: SimState, p: PlayerState, item: GridItem, from: MoveFrom):
  * Dropped from the survivor's own bag: it goes down at their feet, as a closed bag's drop did. The aimed throw to the
  * target point comes with aimed drops; the target is not read yet. Nothing goes down from a container's grid.
  */
-function dropItem(sim: SimState, p: PlayerState, item: GridItem, from: MoveFrom): MoveReason | null {
+/** Everyone sees it fly: from the survivor's feet to where it settles. */
+function announceToss(sim: SimState, p: PlayerState, itemType: string, spot: WorldPoint): void {
+  emit(sim, { type: 'item_tossed', playerId: p.id, itemType, fromX: p.x, fromY: p.y, toX: spot.x, toY: spot.y });
+}
+
+function dropItem(sim: SimState, p: PlayerState, item: GridItem, from: MoveFrom, aim: WorldPoint): MoveReason | null {
   if (from.kind !== 'cell' || from.grid === 'container') return 'bad';
+  // World (0, 0) is off the map: a window with no pointer to aim by (a pad) sends it to mean the feet.
+  const isUnaimed = aim.x === 0 && aim.y === 0;
+  const spot = isUnaimed ? { x: p.x, y: p.y } : tossLanding(sim.map, p, aim);
   if (from.grid === 'candy') {
     if (!isCandyId(item.type) || !p.candy.includes(item.type)) return 'gone';
-    leaveCandyOnGround(sim, p, item.type, 1);
+    leaveCandyOnGround(sim, p, item.type, 1, spot);
+    announceToss(sim, p, 'candy', spot);
     return null;
   }
   if (!isDroppableBagItem(item.type)) return 'bad';
   removeItem(p.inventory[from.grid], item.id);
-  leaveOnGround(sim, p, item.type, isAmmoBoxType(item.type) ? 1 : (item.count ?? 1));
+  leaveOnGround(sim, p, item.type, isAmmoBoxType(item.type) ? 1 : (item.count ?? 1), spot);
+  announceToss(sim, p, item.type, spot);
   syncAll(p);
   return null;
 }
@@ -201,7 +213,7 @@ function dropItem(sim: SimState, p: PlayerState, item: GridItem, from: MoveFrom)
 function moveEffects(sim: SimState, p: PlayerState, item: GridItem, move: ItemMove, grids: MoveGrids, view: ViewedContainer | null): MoveReason | null {
   const { from, to } = move;
   if (to.kind === 'use') return useItem(sim, p, item, from);
-  if (to.kind === 'ground') return dropItem(sim, p, item, from);
+  if (to.kind === 'ground') return dropItem(sim, p, item, from, to);
   if (to.kind === 'player') return 'bad';
   const fromContainer = from.kind === 'cell' && from.grid === 'container';
   const toContainer = to.kind === 'cell' && to.grid === 'container';
@@ -245,7 +257,7 @@ function tryMove(sim: SimState, p: PlayerState, move: ItemMove): MoveReason | nu
  * One item move from a survivor's window. A move at or below the last one applied is a repeat and is ignored ('bad',
  * no event). Otherwise the host checks it against its own bag and container, applies it, and answers `move_ok`, or
  * `move_no` with the reason and nothing changed. Container items move one at a time by id; the container is never
- * replaced wholesale. A ground drop goes down at the survivor's feet until aimed drops land; a teammate target is refused
+ * replaced wholesale. A ground drop is tossed toward the aimed point and lands where `tossLanding` says; a teammate target is refused
  * until care lands.
  */
 export function applyItemMove(sim: SimState, p: PlayerState, move: ItemMove): MoveReason | null {

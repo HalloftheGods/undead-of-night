@@ -300,6 +300,8 @@ export type GameEvent =
   | { readonly type: 'pickup'; readonly playerId: EntityId; readonly pickup: PickupType; readonly x: number; readonly y: number }
   /** Someone took the stairs: x, y is where they came out, `to` what the stairs led to. */
   | { readonly type: 'stairs_taken'; readonly playerId: EntityId; readonly x: number; readonly y: number; readonly to: string }
+  /** A survivor tossed an item along the ground: it flies from (fromX, fromY) and settles at (toX, toY). */
+  | { readonly type: 'item_tossed'; readonly playerId: EntityId; readonly itemType: string; readonly fromX: number; readonly fromY: number; readonly toX: number; readonly toY: number }
   | { readonly type: 'container_opened'; readonly playerId: EntityId; readonly container: number; readonly x: number; readonly y: number; readonly found: boolean; readonly noisy: boolean; readonly bottle?: boolean; readonly stash?: 'firework' | 'fountain' | 'candy'; readonly candy?: CandyId; readonly full?: true; readonly fireworks?: number; readonly clue?: true; readonly clueItem?: string; readonly items?: readonly GridItem[]; readonly reopen?: boolean; readonly title?: string; readonly kind?: ContainerKind }
   /** A thrown bottle broke at x,y, thrown from fromX,fromY. */
   | { readonly type: 'bottle_smash'; readonly playerId: EntityId; readonly x: number; readonly y: number; readonly fromX: number; readonly fromY: number }

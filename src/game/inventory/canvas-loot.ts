@@ -2,9 +2,10 @@ import type { SfxName } from '../../audio/sfx-registry.ts';
 import type { ArtBook } from '../../art/types.ts';
 import { findItemAtTile, getItemFootprint, type InventoryGrid } from '../../../shared/grid-inventory.ts';
 import { heldAnchor, itemPlateAt, layoutLootUi, lootHitAt, TILE, type LootHit, type LootLayout } from '../../engine/loot-ui.ts';
+import type { MoveTo } from '../../../shared/item-move.ts';
 import type { CellOrigin, MotionKind } from './move-motion.ts';
-import { cellFrom, findShown, GROUND_TARGET, placedAt, sourceOf, USE_TARGET, windowMove, type ProposedMove } from './loot-moves.ts';
-import { heldButtonAt, heldOnSurvivor, setHeld } from '../held-cursor.ts';
+import { cellFrom, findShown, GROUND_TARGET, groundTargetAt, placedAt, sourceOf, USE_TARGET, windowMove, type ProposedMove } from './loot-moves.ts';
+import { heldButtonAt, heldOnSurvivor, setHeld, setHeldBare } from '../held-cursor.ts';
 import { setLootWindow, type LootWindow } from '../loot-view.ts';
 import { isLootPadInCharge, moveCursor, setLootPad, settleCursor, startCursor, type LootButton, type LootCursor, type LootDirection } from './loot-pad.ts';
 import { itemBlurb } from './item-blurb.ts';
@@ -100,6 +101,7 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
     const { item } = held;
     // The loot window draws the item in hand at the size the grid shows it, so the hand drawer keeps to the words and buttons.
     setHeld({ sprite: null, name: formatItemName(item.type), hint: itemBlurb(item.type), actions: heldActions(item), type: item.type, itemId: item.id });
+    setHeldBare((clientX, clientY) => !onUi(clientX, clientY));
   }
 
   /** Hands the inventory what the hand just did. The hand drawer is told first, so the grids refill around the right item. */
@@ -191,12 +193,12 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
     if (move) host.move(move, 'land', null);
   }
 
-  function dropHeld(): void {
+  function dropHeld(to: MoveTo = GROUND_TARGET): void {
     const held = state.heldItem;
     if (!held) return;
     state.heldItem = null;
     syncHeld();
-    const move = windowMove(held.item, sourceOf(held.source), GROUND_TARGET);
+    const move = windowMove(held.item, sourceOf(held.source), to);
     if (move) host.move(move, 'land', null);
   }
 
@@ -227,7 +229,7 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
   }
 
   /** Uses or drops the item in hand, with its sound, if it allows that. True when something happened. */
-  function actOnHeld(kind: HeldActionKind | null): boolean {
+  function actOnHeld(kind: HeldActionKind | null, to: MoveTo = GROUND_TARGET): boolean {
     const held = state.heldItem;
     if (!held || kind === null) return false;
     const allowed = heldActions(held.item).some((a) => a.kind === kind);
@@ -237,7 +239,7 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
       useHeld();
     } else {
       host.playSfx('ui_drop');
-      dropHeld();
+      dropHeld(to);
     }
     return true;
   }
@@ -249,7 +251,7 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
     const bare = hitFor(point) === null && !overDock(point);
     const onGame: HeldActionKind = heldOnSurvivor(event.clientX, event.clientY) ? 'use' : 'drop';
     const kind = onButton ?? (bare ? onGame : null);
-    return actOnHeld(kind) || onButton !== null;
+    return actOnHeld(kind, groundTargetAt(event.clientX, event.clientY)) || onButton !== null;
   }
 
   /**

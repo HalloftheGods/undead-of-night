@@ -306,14 +306,14 @@ import LootItemArt from './LootItemArt.vue';
 import { useGame } from './use-game.ts';
 import { useItemArrivals } from './use-item-arrivals.ts';
 import { useContainerZoom } from './use-container-zoom.ts';
-import { cellFrom, findShown, GROUND_TARGET, moveGridOf, placedAt, sourceOf, USE_TARGET, windowMove } from '../game/inventory/loot-moves.ts';
+import { cellFrom, findShown, GROUND_TARGET, groundTargetAt, moveGridOf, placedAt, sourceOf, USE_TARGET, windowMove } from '../game/inventory/loot-moves.ts';
 import { cellKey, type CellOrigin, type MotionKind } from '../game/inventory/move-motion.ts';
 import type { MoveFrom, MoveTo } from '../../shared/item-move.ts';
 import { backpackDef } from '../../shared/backpack.ts';
 import { findItemAtTile, getItemFootprint, isCellBlocked, type GridItem } from '../../shared/grid-inventory.ts';
 import { cellPhase, itemHidden, searchSweep, shownSweep, stageView, sweepRanks } from '../game/inventory/search-overlay.ts';
 import type { CellPhase } from '../game/inventory/search-overlay.ts';
-import { heldButtonAt, heldOnSurvivor, setHeld } from '../game/held-cursor.ts';
+import { heldButtonAt, heldOnSurvivor, setHeld, setHeldBare } from '../game/held-cursor.ts';
 import { elementOwnsPoint } from '../game/inventory/inventory-hands.ts';
 import { anchorOf, isLootPadInCharge, moveCursor, setLootPad, settleCursor, startCursor } from '../game/inventory/loot-pad.ts';
 import type { LootButton, LootCursor, LootDirection } from '../game/inventory/loot-pad.ts';
@@ -693,11 +693,11 @@ function onUseHeld(): void {
   emitMove(item, from, 'land', null, USE_TARGET);
 }
 
-function onDropHeld(): void {
+function onDropHeld(to: MoveTo = GROUND_TARGET): void {
   const held = modalState.heldItem;
   if (!held) return;
   modalState.heldItem = null;
-  emitMove(held.item, sourceOf(held.source), 'land', null, GROUND_TARGET);
+  emitMove(held.item, sourceOf(held.source), 'land', null, to);
 }
 
 function onGhostClick(gridId: GridIdentifier): void {
@@ -823,6 +823,7 @@ watch(
       itemId: item.id,
     });
   },
+    setHeldBare((clientX, clientY) => document.elementFromPoint(clientX, clientY) instanceof HTMLCanvasElement);
   { immediate: true },
 );
 
@@ -836,11 +837,11 @@ function onHeldButtonClick(event: MouseEvent): void {
   const onButton = heldButtonAt(event.clientX, event.clientY);
   const onGame = event.target instanceof HTMLCanvasElement;
   const kind = onButton ?? (onGame ? (heldOnSurvivor(event.clientX, event.clientY) ? 'use' : 'drop') : null);
-  actOnHeld(kind, canUse, canDrop);
+  actOnHeld(kind, canUse, canDrop, groundTargetAt(event.clientX, event.clientY));
 }
 
 /** USE or DROP on the item in hand, with its sound, when the item allows it. True when something happened. */
-function actOnHeld(kind: 'use' | 'drop' | null, canUse: boolean, canDrop: boolean): boolean {
+function actOnHeld(kind: 'use' | 'drop' | null, canUse: boolean, canDrop: boolean, to: MoveTo = GROUND_TARGET): boolean {
   const held = modalState.heldItem;
   if (!held) return false;
   if (kind === 'use' && canUse) {

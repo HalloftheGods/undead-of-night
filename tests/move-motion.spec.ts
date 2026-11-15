@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { flightBox } from '../src/engine/loot-arrivals-draw.ts';
 import { activePuffs, cellKey, clearMotions, FLY_MS, motionOf, noteMotion, noteShake, POP_MS, PUFF_MS, setArrivalCamera, SHAKE_MS, shakeOf } from '../src/game/inventory/move-motion.ts';
 
-const still = { still: true, toBuffer: (point: { x: number; y: number }) => point, toClient: (point: { x: number; y: number }) => point };
+const still = { still: true, toBuffer: (point: { x: number; y: number }) => point, toClient: (point: { x: number; y: number }) => point, toWorld: (point: { x: number; y: number }) => point };
 
 describe('one motion source', () => {
   afterEach(() => {

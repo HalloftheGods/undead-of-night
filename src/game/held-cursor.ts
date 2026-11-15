@@ -28,10 +28,23 @@ export interface HeldButtonBox {
 let held: HeldInfo | null = null;
 let survivor: Omit<HeldButtonBox, 'kind'> | null = null;
 let buttons: readonly HeldButtonBox[] = [];
+let bareTest: ((clientX: number, clientY: number) => boolean) | null = null;
 
 export function setHeld(info: HeldInfo | null): void {
   held = info;
-  if (info === null) buttons = [];
+  if (info === null) {
+    buttons = [];
+    bareTest = null;
+  }
+}
+
+/** The open window says which client points are the bare game, not its own panels: there a let-go is tossed. Cleared with the hand. */
+export function setHeldBare(test: ((clientX: number, clientY: number) => boolean) | null): void {
+  bareTest = test;
+}
+
+export function heldBareAt(clientX: number, clientY: number): boolean {
+  return bareTest !== null && bareTest(clientX, clientY);
 }
 
 export function heldInfo(): HeldInfo | null {

@@ -26,36 +26,39 @@ export function take(p: PlayerState, type: BagItemType, count: number): number {
   return taken;
 }
 
-/** Puts what was taken on the ground at the player's feet. A box of nails goes down as whole finds. */
-export function leaveOnGround(sim: SimState, p: PlayerState, type: DroppableBagItem, count: number): void {
-  if (isAmmoBoxType(type)) return leaveAmmoOnGround(sim, p, type, count);
+/** Where a drop lands. */
+type GroundSpot = { readonly x: number; readonly y: number };
+
+/** Puts what was taken on the ground at the player's feet, or at `at` for a toss. A box of nails goes down as whole finds. */
+export function leaveOnGround(sim: SimState, p: PlayerState, type: DroppableBagItem, count: number, at: GroundSpot = p): void {
+  if (isAmmoBoxType(type)) return leaveAmmoOnGround(sim, p, type, count, at);
   const per = type === 'nails' ? FORTIFICATION_ITEMS.nails.unitsPerFind : 1;
   const pieces = Math.floor(count / per);
   const taken = take(p, type, pieces * per);
   for (let i = 0; i < taken / per; i += 1) {
-    spawnPickup(sim, type, p.x, p.y);
+    spawnPickup(sim, type, at.x, at.y);
     sim.pickups[sim.pickups.length - 1]!.leftBy = p.id;
   }
 }
 
 /** Each box goes down holding a full box of spare rounds, or what is left. The gun's loaded rounds stay in the gun. */
-function leaveAmmoOnGround(sim: SimState, p: PlayerState, type: AmmoBoxType, boxes: number): void {
+function leaveAmmoOnGround(sim: SimState, p: PlayerState, type: AmmoBoxType, boxes: number, at: GroundSpot): void {
   const weapon = ammoBoxWeapon(type);
   for (let i = 0; i < boxes; i += 1) {
     const rounds = Math.min(p.ammoBag[weapon], ammoBoxRounds(type));
     if (rounds <= 0) return;
     p.ammoBag[weapon] -= rounds;
-    spawnPickup(sim, type, p.x, p.y, rounds);
+    spawnPickup(sim, type, at.x, at.y, rounds);
     sim.pickups[sim.pickups.length - 1]!.leftBy = p.id;
   }
 }
 
-export function leaveCandyOnGround(sim: SimState, p: PlayerState, id: CandyId, count: number): void {
+export function leaveCandyOnGround(sim: SimState, p: PlayerState, id: CandyId, count: number, at: GroundSpot = p): void {
   for (let i = 0; i < count; i += 1) {
     const candyIndex = p.candy.indexOf(id);
     const hasCandy = candyIndex >= 0;
     if (hasCandy) p.candy.splice(candyIndex, 1);
-    spawnPickup(sim, 'candy', p.x, p.y, 0, null, id);
+    spawnPickup(sim, 'candy', at.x, at.y, 0, null, id);
     const lastPickup = sim.pickups[sim.pickups.length - 1];
     if (lastPickup) lastPickup.leftBy = p.id;
   }

@@ -5,6 +5,7 @@
 
 import type { GridItem } from '../../../shared/grid-inventory.ts';
 import type { ItemMove, MoveFrom, MoveGridId, MoveTo } from '../../../shared/item-move.ts';
+import { arrivalCamera } from './move-motion.ts';
 import { resolveGridById, type DualLootState, type GearSlotId, type GridIdentifier, type ItemSource } from './dual-loot-modal.ts';
 
 /** A move as a window proposes it: the ledger numbers it. */
@@ -67,5 +68,11 @@ export function windowMove(item: Pick<GridItem, 'id' | 'type'>, from: MoveFrom, 
 /** The survivor's own use of the item in hand. */
 export const USE_TARGET: MoveTo = { kind: 'use' };
 
-/** The item in hand let go over the world. Aimed drops set the point; until then the host drops it at the feet. */
+/** The item in hand let go over the world with no pointer to aim by (a pad): world (0, 0) is off the map, so the host drops it at the feet. */
 export const GROUND_TARGET: MoveTo = { kind: 'ground', x: 0, y: 0 };
+
+/** The item in hand let go over the game at a client point: tossed toward the world point under it. */
+export function groundTargetAt(clientX: number, clientY: number): MoveTo {
+  const world = arrivalCamera()?.toWorld({ x: clientX, y: clientY });
+  return world ? { kind: 'ground', x: world.x, y: world.y } : GROUND_TARGET;
+}

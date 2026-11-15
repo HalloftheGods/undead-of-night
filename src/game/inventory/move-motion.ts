@@ -38,6 +38,8 @@ export interface ArrivalCamera {
   readonly still: boolean;
   toBuffer(point: WorldPoint): WorldPoint;
   toClient(point: WorldPoint): WorldPoint;
+  /** A client pixel back to the world point under it: where an item let go over the game is aimed. */
+  toWorld(client: WorldPoint): WorldPoint;
 }
 
 export type MotionKind = 'fly' | 'land' | 'back' | 'puff' | 'toss';

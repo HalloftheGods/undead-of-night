@@ -8,6 +8,8 @@ import { drawOutline } from './sprite-cache.ts';
 import { survivorReaction } from '../game/inventory/survivor-quips.ts';
 import { setArrivalCamera } from '../game/inventory/move-motion.ts';
 import { backFlight, lerpRect, noteWorldFrame, toSpace, zoomFrame } from '../game/inventory/container-zoom.ts';
+import { drawTossPreview, TossArcs } from './toss-arc.ts';
+import { tossLanding } from '../../shared/toss.ts';
 import { drawStageArt } from './loot-container-art.ts';
 import { drawCanvasHud } from './canvas-hud.ts';
 import { drawDoorZone, zoneToShow } from './door-zones.ts';
@@ -15,7 +17,7 @@ import { mapDoors, wayToOpening } from '../../shared/doors.ts';
 import { buildingAt, circleHitsSolid } from '../../shared/world-map.ts';
 import { setKeepsakeBoxes } from '../game/keepsake-cursor.ts';
 import type { CanvasHudView } from '../game/canvas-hud-view.ts';
-import { setHeldButtons, setHeldSurvivor } from '../game/held-cursor.ts';
+import { heldBareAt, heldButtonAt, heldOnSurvivor, setHeldButtons, setHeldSurvivor } from '../game/held-cursor.ts';
 import { lootWindow } from '../game/loot-view.ts';
 import { drawLootUi, layoutLootUi } from './loot-ui.ts';
 import { pageWindow } from '../game/page-view.ts';
@@ -112,6 +114,7 @@ export class WorldRenderer {
   private canvasLeft = 0;
   private canvasTop = 0;
   private map: WorldMap | null = null;
+  private readonly tosses = new TossArcs();
   private ground: GroundLayer | null = null;
   private occlusion: OcclusionGrid | null = null;
   private time = 0;
@@ -288,6 +291,7 @@ export class WorldRenderer {
 
   handleEvent(event: GameEvent, ctx: Omit<FxContext, 'time'>): void {
     this.emotes.handle(event, this.time);
+    this.tosses.handle(event, performance.now());
     this.fx.handle(event, { ...ctx, time: this.time });
   }
 
@@ -493,6 +497,7 @@ export class WorldRenderer {
     this.drawDoorZones(ctx, scene, left, top, time);
     this.effects.draw(ctx, viewW, viewH);
     this.overlay.draw(ctx, scene, left, top, viewW, viewH, time, lightAt, isKilled);
+    this.tosses.draw(ctx, this.art, left, top, performance.now());
     this.emotes.draw(ctx, scene, left, top, viewW, viewH, time, (id) => this.overlay.headroomOf(id));
     this.fx.particles.keepTextsClear(this.overlay.sugarKeepOuts());
     this.fx.particles.drawTexts(ctx, left, top);
@@ -506,6 +511,7 @@ export class WorldRenderer {
       toBuffer: (point) => ({ x: point.x - left, y: point.y - top }),
       toClient: (point) => ({ x: this.toClientX(point.x - left), y: this.toClientY(point.y - top) }),
     });
+      toWorld: (client) => ({ x: this.toBufferX(client.x) + left, y: this.toBufferY(client.y) + top }),
     this.drawLoot(ctx, viewW, viewH, left, top);
     this.drawSetup(ctx, viewW, viewH);
     this.drawPage(ctx, viewW, viewH);
@@ -533,7 +539,7 @@ export class WorldRenderer {
     const back = backFlight(performance.now());
     const flies = back !== null && back.space === 'buffer' && back.art !== null;
     if (!flies || !back.art) return;
-    const camera = { still: false, toBuffer: (point: { x: number; y: number }) => ({ x: point.x - left, y: point.y - top }), toClient: (point: { x: number; y: number }) => point };
+    const camera = { still: false, toBuffer: (point: { x: number; y: number }) => ({ x: point.x - left, y: point.y - top }), toClient: (point: { x: number; y: number }) => point, toWorld: (point: { x: number; y: number }) => point };
     drawStageArt(ctx, back.art, back.searched, lerpRect(back.to, toSpace(back.from, camera, 'buffer'), back.eased), 0.9 * (1 - back.t * 0.3));
   }
 
@@ -610,6 +616,16 @@ export class WorldRenderer {
     if (quip && anchor) drawQuip(ctx, quip, anchor, viewW);
     setHeldButtons(
       rects.map((r) => ({
+  /** An item in hand over the bare game shows the dotted arc to where a let-go would land it. */
+  private drawTossPreview(ctx: CanvasRenderingContext2D, held: NonNullable<SceneView['held']>, me: PlayerEntity, left: number, top: number): void {
+    const clientX = this.toClientX(held.x);
+    const clientY = this.toClientY(held.y);
+    const isBare = heldBareAt(clientX, clientY) && !heldOnSurvivor(clientX, clientY) && heldButtonAt(clientX, clientY) === null;
+    if (!isBare || !this.map) return;
+    const spot = tossLanding(this.map, me, { x: held.x + left, y: held.y + top });
+    drawTossPreview(ctx, Math.round(me.x - left), Math.round(me.y - top), Math.round(spot.x - left), Math.round(spot.y - top));
+  }
+
         kind: r.kind,
         x: this.toClientX(r.x),
         y: this.toClientY(r.y),
@@ -619,3 +635,4 @@ export class WorldRenderer {
     );
   }
 }
+    if (me) this.drawTossPreview(ctx, scene.held, me, left, top);
