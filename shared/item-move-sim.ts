@@ -143,33 +143,40 @@ function deposit(p: PlayerState, item: GridItem, from: MoveFrom, view: ViewedCon
   return null;
 }
 
-/** Used on the survivor: food, water and bandages as the USE button would, candy eaten, a box loaded, a medkit used. */
-function useItem(sim: SimState, p: PlayerState, item: GridItem, from: MoveFrom): MoveReason | null {
-  if (from.kind !== 'cell' || from.grid === 'container') return 'bad';
-  const { type } = item;
-  if (from.grid === 'candy') {
-    if (!isCandyId(type) || !p.candy.includes(type)) return 'gone';
-    eatCandyDirect(sim, p, type);
-    return null;
-  }
-  // Loading a box: the gun it feeds starts its reload. The rounds leave the counter when it ends, and the box with them.
-  if (isAmmoBoxType(type)) {
-    if (ammoBoxWeapon(type) !== p.weapon) return 'not_needed';
-    p.reloadQueued = true;
-    return null;
-  }
-  const isMedkit = type === 'medkit';
+/** Candy from the candy bag, eaten. */
+function eatFromBag(sim: SimState, p: PlayerState, type: string): MoveReason | null {
+  if (!isCandyId(type) || !p.candy.includes(type)) return 'gone';
+  eatCandyDirect(sim, p, type);
+  return null;
+}
+
+/** A medkit or a supply from the bag, used as the USE button would. */
+function useFromBag(sim: SimState, p: PlayerState, item: GridItem, grid: 'pack' | 'pockets'): MoveReason | null {
+  const isMedkit = item.type === 'medkit';
   const needsCare = p.health < p.maxHealth || p.needs?.bleeding === true;
   if (isMedkit && (!needsCare || p.medkits <= 0)) return 'not_needed';
-  const isUsable = isMedkit || (isSupplyType(type) && useSupply(p, type));
-  if (!isUsable) return isSupplyType(type) ? 'not_needed' : 'bad';
-  removeItem(p.inventory[from.grid], item.id);
+  const isUsable = isMedkit || (isSupplyType(item.type) && useSupply(p, item.type));
+  if (!isUsable) return isSupplyType(item.type) ? 'not_needed' : 'bad';
+  removeItem(p.inventory[grid], item.id);
   if (isMedkit) {
     p.healQueued = true;
     useMedkit(sim, p);
   }
   syncAll(p);
   return null;
+}
+
+/** Used on the survivor: food, water and bandages as the USE button would, candy eaten, a box loaded, a medkit used. */
+function useItem(sim: SimState, p: PlayerState, item: GridItem, from: MoveFrom): MoveReason | null {
+  if (from.kind !== 'cell' || from.grid === 'container') return 'bad';
+  if (from.grid === 'candy') return eatFromBag(sim, p, item.type);
+  // Loading a box: the gun it feeds starts its reload. The rounds leave the counter when it ends, and the box with them.
+  if (isAmmoBoxType(item.type)) {
+    if (ammoBoxWeapon(item.type) !== p.weapon) return 'not_needed';
+    p.reloadQueued = true;
+    return null;
+  }
+  return useFromBag(sim, p, item, from.grid);
 }
 
 /**
