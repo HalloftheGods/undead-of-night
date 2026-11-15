@@ -47,6 +47,8 @@ const COOL = '#9ad0ff';
 const BARREL_FIRE = '#c24a1c';
 /** Dim sodium at each ladder; the tunnels' own emergency green lamps come with the sewer plan. */
 const SEWER_SODIUM = '#c8923c';
+/** Which way each street lamp's head reaches out over the road: right-hand lamps mirror it, the centre lamp has none. */
+const LAMP_HEAD_SIDE: Readonly<Record<'street_lamp' | 'street_lamp_r' | 'street_lamp_c', number>> = { street_lamp: 1, street_lamp_r: -1, street_lamp_c: 0 };
 
 function freeTilesReached(blocked: Uint8Array, cols: number, rows: number, start: number, stairs: ReadonlyMap<number, { readonly toIndex: number }>): Uint8Array {
   const seen = new Uint8Array(cols * rows);
@@ -206,7 +208,7 @@ function lightsFor(props: readonly PropInstance[], rng: Rng, sewerLamps: readonl
         if (isDeadLamp) continue; // Dead lamp: dark gaps keep the flashlight useful.
         const color = roll < 0.55 ? COOL : SODIUM;
         // The pool sits on the ground directly under the lit head, which reaches out to the mirrored side on right-hand lamps.
-        const headX = prop.kind === 'street_lamp_r' ? -LAMP_HEAD_REACH : prop.kind === 'street_lamp' ? LAMP_HEAD_REACH : 0;
+        const headX = LAMP_HEAD_SIDE[prop.kind] * LAMP_HEAD_REACH;
         lights.push({ x: prop.x + headX, y: prop.y + 2, radius: 104, color, flicker: roll > 0.85 });
       }
     }
