@@ -32,7 +32,7 @@ export const DIFFICULTIES: readonly DifficultyDef[] = [
   },
   {
     id: "stay_close",
-    label: "Be Quiet",
+    label: "\"Nice\" Zombies",
     blurb: "More ammo, slightly slower zombies, smaller hordes.",
     ammo: 1.5,
     zombieSpeed: 0.93,
@@ -52,7 +52,7 @@ export const DIFFICULTIES: readonly DifficultyDef[] = [
   },
   {
     id: "undead_tired",
-    label: "Let's Go!",
+    label: "\"Horde\" Mode",
     blurb: "Scarce ammo, fast hard-hitting zombies, big hordes.",
     ammo: 0.6,
     zombieSpeed: 1.12,

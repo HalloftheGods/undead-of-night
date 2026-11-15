@@ -24,6 +24,14 @@
   text-transform: uppercase;
 }
 
+/* In portrait the heading sits at the top of the screen and the cards hang below it. */
+@media (orientation: portrait) {
+  .picks-overlay {
+    justify-content: flex-start;
+    padding-top: calc(var(--u) * 14);
+  }
+}
+
 .picks-list {
   /* Every card is a portrait, as wide as fits: the screen's width shared by the options, and its height less the label and bars. */
   --per-row: var(--count);
