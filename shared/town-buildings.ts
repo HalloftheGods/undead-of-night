@@ -4,6 +4,7 @@ import { DOORSTEP_HOMES } from './candy.ts';
 import { BUILDING_DEFS, DOOR_WIDTH, PROP_DEFS, TILE_SIZE } from './protocol.ts';
 import type { BuildingInstance, BuildingKind, PropKind, TileKind } from './protocol.ts';
 import type { MapBuilder } from './map-builder.ts';
+import { interiorStream } from './map-streams.ts';
 import { createRng, pick, randInt } from './rng.ts';
 import { EDGE_TILES, MAP_TILES, WALK_TILES, rectBox } from './town-plan.ts';
 import type { Block, TownPlan, TownStyle } from './town-plan.ts';
@@ -177,6 +178,14 @@ function setOutBowl(b: MapBuilder, building: BuildingInstance): void {
   b.fixture('candy_bowl', door.x0 - BOWL_SIDE_GAP, door.y1 + PROP_DEFS.candy_bowl.h);
 }
 
+/** A town's building is furnished from a stream of its own, so its room never moves another's; a builder with no seed furnishes from its own stream. */
+function furnishOnOwnStream(b: MapBuilder, building: BuildingInstance): void {
+  const seed = b.interiorSeed;
+  const hasOwnStream = seed !== null;
+  if (hasOwnStream) b.withRng(interiorStream(seed, building.x, building.y, b.interiorSalts), () => furnish(b, building));
+  else furnish(b, building);
+}
+
 function raise(b: MapBuilder, kind: BuildingKind, col: number, bottom: number, walkDown: number, onStreet: boolean): void {
   const building = b.addBuilding(kind, col, bottom - heightOf(kind));
   const door = doorBox(building);
@@ -185,7 +194,7 @@ function raise(b: MapBuilder, kind: BuildingKind, col: number, bottom: number, w
   const apronDepth = DOOR_APRON_TILES * TILE_SIZE;
   b.reserve({ x0: door.x0 - DOOR_WIDTH / 2, y0: door.y1, x1: door.x1 + DOOR_WIDTH / 2, y1: door.y1 + apronDepth });
   backStep(b, building);
-  furnish(b, building);
+  furnishOnOwnStream(b, building);
   setOutBowl(b, building);
   if (onStreet) parkService(b, building, walkDown);
   const isGarage = kind === 'garage';

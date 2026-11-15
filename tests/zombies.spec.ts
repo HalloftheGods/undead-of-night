@@ -12,6 +12,7 @@ import {
   ZOMBIE_SLEEP_RANGE,
 } from '../shared/constants.ts';
 import { damageZombie } from '../shared/combat.ts';
+import { doorsOf } from '../shared/doors.ts';
 import { DOOR_WIDTH } from '../shared/protocol.ts';
 import type { ZombieType } from '../shared/protocol.ts';
 import { GameSimulation } from '../shared/simulation.ts';
@@ -185,6 +186,10 @@ describe('awareness', () => {
     const door = doorBox(findBuilding(sim, 'house'));
     p.x = (door.x0 + door.x1) / 2;
     p.y = door.y1 + 40;
+    // Each door rolls open or shut from the town's seed; this one is opened, as the scenario needs.
+    const front = doorsOf(state).find((each) => each.x >= door.x0 && each.x <= door.x1 && each.y >= door.y0 - 1 && each.y <= door.y1 + 1);
+    expect(front).toBeDefined();
+    front!.isOpen = true;
     const zombie = addRoamer(state, 'walker', p.x, door.y0 - 20);
     zombie.speed = 0;
     steps(sim, 10);

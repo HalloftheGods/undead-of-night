@@ -2,6 +2,11 @@
 
 All notable changes to the Undead of Night: Take One game are documented in this file.
 
+## [2026-11-15] - New town layouts
+
+### Changed
+- Every town is laid out afresh: the same roads and districts as before, with new buildings, rooms, verges and lights. Players on an older version can't join a newer room (protocol 9).
+
 ## [2026-11-15] - The candy bag holds a dozen, on the game screen
 
 ### Changed

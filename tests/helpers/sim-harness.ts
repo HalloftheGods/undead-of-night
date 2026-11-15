@@ -47,8 +47,8 @@ export function steps(sim: GameSimulation, ticks: number): void {
 }
 
 /** An empty town parked in a long lull: no roamers, no loot, no horde, so a test owns the scene. */
-export function quietSim(players: readonly string[] = ['a']): { sim: GameSimulation; state: SimState } {
-  const sim = new GameSimulation({ seed: SEED });
+export function quietSim(players: readonly string[] = ['a'], seed = SEED): { sim: GameSimulation; state: SimState } {
+  const sim = new GameSimulation({ seed });
   for (const id of players) sim.addPlayer(id, id);
   const state = stateOf(sim);
   state.intermissionLeft = 1e6;

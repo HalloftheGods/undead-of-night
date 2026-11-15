@@ -491,7 +491,7 @@ export interface RoomPacket {
  * 7: the people to rescue (snapshot `merchants` entries carry `rescue` in a town, join `rescued`, `radio`, receipt `rescued` and `radioLevels`).
  * 8: dropped bottles, fireworks and fountains lie in the world as pickups (`bottle`, `firework`, `fountain`); version 7 has no art for them.
  */
-export const PROTOCOL_VERSION = 8;
+export const PROTOCOL_VERSION = 9;
 
 /**
  * Sent just before a link is closed on purpose, because a data channel has no close code.

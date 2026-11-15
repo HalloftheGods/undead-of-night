@@ -122,7 +122,7 @@ describe('taking the stairs', () => {
     const took = stepUntil(sim, () => buildingAt(state.map, p.x, p.y) === storey, 60);
     expect(took).toBeGreaterThan(0);
     const events = eventsOf(sim.snapshot(), 'stairs_taken');
-    expect(events[0]?.to).toBe(storey.kind === 'upstairs' ? 'UPSTAIRS' : 'CELLAR');
+    expect(events[0]?.to).toBe(storey.kind === 'cellar' ? 'CELLAR' : 'UPSTAIRS');
 
     // Standing on the stairs you came out on does not carry you straight back.
     sim.setInput('a', input({ seq: 2 }));

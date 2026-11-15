@@ -7,6 +7,8 @@ import { biomeFor } from './biomes.ts';
 import { MapBuilder } from './map-builder.ts';
 import { createRng, randRange } from './rng.ts';
 import type { Rng } from './rng.ts';
+import { MAP_SALTS, mapStream } from './map-streams.ts';
+import type { MapSalts } from './map-streams.ts';
 import { hasDiscountStore, raiseBuildings } from './town-buildings.ts';
 import { raiseTownPieces } from './town-pieces.ts';
 import { EDGE_TILES, MAP_TILES, planTown, rectBox, WALK_TILES } from './town-plan.ts';
@@ -244,10 +246,19 @@ function withStoreys(town: WorldMap): WorldMap {
 /** Deterministic: the same seed and level yield the same map on the server and every client. The level picks the biome. Home is the camp at `campSize`, which a town ignores. */
 export function generateWorldMap(seed: number, level = 1, campSize: CampSize = 1): WorldMap {
   if (isBunkerSeed(seed)) return generateBunkerMap(campSize);
-  const rng = createRng(seed);
+  return buildTown(seed, level, MAP_SALTS);
+}
+
+/**
+ * The town on `seed`, each phase on its own stream (shared/map-streams.ts): the plan, then the buildings and streets,
+ * each building's interior, the verges and terrain, and last the lights. `salts` is MAP_SALTS outside of tests.
+ */
+export function buildTown(seed: number, level: number, salts: MapSalts): WorldMap {
   const size = MAP_TILES * TILE_SIZE;
-  const plan = planTown(rng);
-  const builder = new MapBuilder(MAP_TILES, MAP_TILES, rng, plan.spawn, biomeFor(level));
+  const plan = planTown(mapStream(seed, 'plan', salts));
+  const builder = new MapBuilder(MAP_TILES, MAP_TILES, mapStream(seed, 'buildings', salts), plan.spawn, biomeFor(level));
+  builder.interiorSeed = seed;
+  builder.interiorSalts = salts;
 
   builder.fill({ x0: 0, y0: 0, x1: size, y1: size }, builder.biome.ground);
   fillPark(builder, rectBox(plan.park));
@@ -257,13 +268,14 @@ export function generateWorldMap(seed: number, level = 1, campSize: CampSize = 1
   dressStreets(builder, plan.roads, roadMask);
   raiseTownPieces(builder, plan);
 
-  const verge = VERGE_TILES * TILE_SIZE;
-  fillVerge(builder, { x0: 0, y0: 0, x1: size, y1: verge });
-  fillVerge(builder, { x0: 0, y0: size - verge, x1: size, y1: size });
-  fillVerge(builder, { x0: 0, y0: verge, x1: verge, y1: size - verge });
-  fillVerge(builder, { x0: size - verge, y0: verge, x1: size, y1: size - verge });
-
-  spreadTerrain(builder);
+  builder.withRng(mapStream(seed, 'terrain', salts), () => {
+    const verge = VERGE_TILES * TILE_SIZE;
+    fillVerge(builder, { x0: 0, y0: 0, x1: size, y1: verge });
+    fillVerge(builder, { x0: 0, y0: size - verge, x1: size, y1: size });
+    fillVerge(builder, { x0: 0, y0: verge, x1: verge, y1: size - verge });
+    fillVerge(builder, { x0: size - verge, y0: verge, x1: size, y1: size - verge });
+    spreadTerrain(builder);
+  });
 
   const town: WorldMap = {
     seed,
@@ -281,7 +293,7 @@ export function generateWorldMap(seed: number, level = 1, campSize: CampSize = 1
   };
   const base = withSewers(withStoreys(town), plan.roads);
   const props = connectedProps(base).map(withStreetSign);
-  return { ...base, props, lights: lightsFor(props, rng, base.sewers?.lamps ?? []) };
+  return { ...base, props, lights: lightsFor(props, mapStream(seed, 'lights', salts), base.sewers?.lamps ?? []) };
 }
 
 export const tileKindAt = (map: WorldMap, col: number, row: number) => TILE_KINDS[map.tiles[row * map.cols + col]];

@@ -4,6 +4,8 @@ import { isPlant, needsDirt, TEMPERATE } from './biomes.ts';
 import type { Biome, SpeciesSlot } from './biomes.ts';
 import { pick, randInt, randRange } from './rng.ts';
 import type { Rng } from './rng.ts';
+import { MAP_SALTS } from './map-streams.ts';
+import type { MapSalts } from './map-streams.ts';
 import { buildingBox } from './world-query.ts';
 import type { Box } from './world-query.ts';
 
@@ -22,7 +24,12 @@ const FACADE_VARIANTS = 4;
 export class MapBuilder {
   readonly cols: number;
   readonly rows: number;
-  readonly rng: Rng;
+  /** The stream every draw takes from. The town generator hands it a new one per phase (shared/map-streams.ts). */
+  rng: Rng;
+  /** Set by the town generator: each building's interior is furnished from its own stream, keyed to this seed. */
+  interiorSeed: number | null = null;
+  /** The salts the interiors' streams take; MAP_SALTS outside of tests. */
+  interiorSalts: MapSalts = MAP_SALTS;
   readonly tiles: Uint8Array;
   readonly props: PropInstance[] = [];
   readonly buildings: BuildingInstance[] = [];
@@ -37,6 +44,17 @@ export class MapBuilder {
     this.rng = rng;
     this.spawn = spawn;
     this.tiles = new Uint8Array(cols * rows);
+  }
+
+  /** Runs `work` on another stream, then gives the builder its own stream back. */
+  withRng<T>(rng: Rng, work: () => T): T {
+    const own = this.rng;
+    this.rng = rng;
+    try {
+      return work();
+    } finally {
+      this.rng = own;
+    }
   }
 
   setTile(col: number, row: number, kind: TileKind): void {

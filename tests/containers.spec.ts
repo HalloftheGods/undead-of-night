@@ -54,8 +54,8 @@ function beside(state: SimState, p: PlayerState, wanted: (c: Container) => boole
   return container;
 }
 
-function setup(wanted: (c: Container) => boolean = () => true) {
-  const quiet = quietSim();
+function setup(wanted: (c: Container) => boolean = () => true, seed?: number) {
+  const quiet = quietSim(['a'], seed);
   const [p] = quiet.state.players;
   const container = beside(quiet.state, p, wanted);
   return { ...quiet, p, container };
@@ -495,7 +495,11 @@ describe('what is in them', () => {
   });
 
   it('searching an ambulance yields medical supplies', () => {
-    const { sim, state, p, container } = setup((c) => c.prop === 'ambulance_h');
+    // Not every town has a clinic, hospital or pharmacy with an ambulance out front: take the first that does.
+    const isAmbulance = (c: Container) => c.prop === 'ambulance_h';
+    const seed = Array.from({ length: 40 }, (_, i) => SEED + i).find((each) => townContainers(stateOf(new GameSimulation({ seed: each })).map).some(isAmbulance));
+    expect(seed).toBeDefined();
+    const { sim, state, p, container } = setup(isAmbulance, seed);
     state.containers[container.id].loot = null;
     p.medkits = 3;
     p.health = p.maxHealth;
