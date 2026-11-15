@@ -29,9 +29,12 @@ describe('overlay polish', () => {
     expect(controller).toContain('this.stopBrightnessWatch();');
   });
 
-  it('draws an empty candy bag where the cards would be', () => {
-    const bag = source('../src/components/CandyBag.vue');
-    expect(bag).toMatch(/<div v-else class="bag-empty/);
+  it('draws the candy bag on the game canvas, with an empty state and no DOM of its own', () => {
+    const bag = source('../src/components/CandyBagCanvas.vue');
+    expect(bag).toContain('<template><span hidden /></template>');
+    expect(bag).toContain('useCanvasPage(');
+    expect(bag).toContain("heading: 'Empty'");
+    expect(source('../src/App.vue')).toContain('<CandyBagCanvas v-if="ui.bagOpen');
   });
 
   it('clears the level card, banners and callouts off the screen while a pause, map or bag overlay is up', () => {

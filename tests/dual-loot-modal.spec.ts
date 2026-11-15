@@ -531,6 +531,25 @@ describe('Dual-Grid Container Looting & Inventory Modal', () => {
       expect(computeTileHighlight(state.backpackGrid, 0, 0, 0, 0, held, 'backpack', state.candyBagGrid)).toBe('invalid');
     });
 
+    it('fills the candy bag from its bottom row up, left to right', () => {
+      const state = createDualLootState();
+      const { cols, rows } = state.candyBagGrid;
+      for (let i = 0; i < cols + 1; i += 1) placeItem(state.containerGrid, { ...aCandy(`candy-${i}`), x: i, y: 0 });
+      for (let i = 0; i < cols + 1; i += 1) expect(quickTransferBetweenInventories(state, 'container', `candy-${i}`)).toBe(true);
+
+      const at = (id: string) => state.candyBagGrid.items.find((item) => item.id === id);
+      for (let i = 0; i < cols; i += 1) expect(at(`candy-${i}`)).toMatchObject({ x: i, y: rows - 1 });
+      expect(at(`candy-${cols}`)).toMatchObject({ x: 0, y: rows - 2 });
+    });
+
+    it('candy set down on the pack goes to the lowest free cell of the candy bag', () => {
+      const state = createDualLootState();
+      placeItem(state.containerGrid, aCandy('candy-1'));
+      pickUpItemFromGrid(state, 'container', 'candy-1');
+      placeHeldItemInGrid(state, 'backpack', 0, 0);
+      expect(state.candyBagGrid.items[0]).toMatchObject({ id: 'candy-1', x: 0, y: state.candyBagGrid.rows - 1 });
+    });
+
     it('a quick transfer never spills candy into the pack when the candy bag is full', () => {
       const state = createDualLootState();
       fillCandyBag(state);

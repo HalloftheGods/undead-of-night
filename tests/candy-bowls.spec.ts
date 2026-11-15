@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { candyIn, DOORSTEP_HOMES } from '../shared/candy.ts';
+import { candyIn, DOORSTEP_HOMES, MAX_CANDY_BAG } from '../shared/candy.ts';
 import { containerGridFor, containerInReach, SEARCH_SEC, townContainers } from '../shared/containers.ts';
 import type { Container } from '../shared/containers.ts';
 import { PLAYER_RADIUS, TICK_RATE } from '../shared/constants.ts';
@@ -114,9 +114,9 @@ describe('Halloween night candy bowls', () => {
     expect(state.hordeSurges).toBe(1);
   });
 
-  it('gives its candy however much is in the bag already: the bag has no bottom', () => {
+  it('keeps what a full candy bag has no room for in the bowl', () => {
     const { sim, state, p, bowl } = atAFullBowl();
-    p.candy = Array.from({ length: 40 }, () => 'ghost_gum' as const);
+    p.candy = Array.from({ length: MAX_CANDY_BAG - 1 }, () => 'ghost_gum' as const);
     searchFor(sim, bowl);
     expect(state.containers[bowl.id].opened).toBe(true);
     const items = state.containers[bowl.id].items!;
@@ -129,7 +129,9 @@ describe('Halloween night candy bowls', () => {
         taken: items,
       },
     });
-    expect(p.candy).toHaveLength(40 + items.length);
+    expect(items.length).toBeGreaterThan(1);
+    expect(p.candy).toHaveLength(MAX_CANDY_BAG);
+    expect(state.containers[bowl.id].items).toHaveLength(items.length - 1);
   });
 
   it('lights its front step like a jack-o\'-lantern', () => {

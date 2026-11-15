@@ -1,4 +1,4 @@
-// Halloween candy: short boosts found in town. Each lasts about a horde. The bag has no bottom, so a
+// Halloween candy: short boosts found in town. Each lasts about a horde. The bag holds a dozen, so a
 // night is as much trick-or-treating as shooting, and the survivor picks which candy to eat out of it.
 // Eating one that is already working adds its time to the boost: the boost lasts longer, never grows stronger.
 // Where it is hidden comes off the town's seed on a generator of its own, so every other roll stays put
@@ -350,10 +350,13 @@ export function candiesInBowl(seed: number, container: Container): CandyBowlLoot
   return { label: "TAKE ONE", count, candies };
 }
 
-/** Maximum candy pieces one survivor can carry in their bag. */
-export const MAX_CANDY_BAG = 100;
+/** The candy bag's grid in the loot window: one piece to a cell. */
+export const CANDY_GRID = { cols: 2, rows: 6 } as const;
 
-/** Into the bag, capped at MAX_CANDY_BAG (100 pieces). */
+/** Most candy one survivor carries: a piece for every cell of the candy bag's grid, so the bag shows all of it. */
+export const MAX_CANDY_BAG = CANDY_GRID.cols * CANDY_GRID.rows;
+
+/** Into the bag, capped at MAX_CANDY_BAG (12 pieces). */
 export function takeCandy(p: PlayerState, candy: CandyId | null): CandyId | null {
   const foundNone = candy === null;
   if (foundNone) return null;

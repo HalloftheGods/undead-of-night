@@ -90,7 +90,7 @@ export interface PlayerState extends Omit<PlayerEntity, 'mags' | 'gear' | 'bottl
   spinnerQueued: boolean;
   fountainQueued: boolean;
   throwCooldown: number;
-  /** Candy carried, oldest first, and candy working now (`shared/candy.ts`). The bag has no bottom. */
+  /** Candy carried, oldest first, and candy working now (`shared/candy.ts`). The bag holds MAX_CANDY_BAG. */
   candy: CandyId[];
   sugar: SugarState[];
   /** Full-Size Bars owed on the next zombie death, from a level up. Each is spent on a kill. */

@@ -2,6 +2,17 @@
 
 All notable changes to the Undead of Night: Take One game are documented in this file.
 
+## [2026-11-15] - The candy bag holds a dozen, on the game screen
+
+### Changed
+- The candy bag holds 12 pieces, one for each cell of its grid, so every piece you carry shows in the bag. A full bag leaves the rest in the bowl or the container.
+- Candy settles into the bag from the bottom row up.
+- The candy bag screen (X) is drawn on the game screen, like the other in-game menus. Click a candy, press its number, or pick it with the stick or D-pad and A, to eat it. Esc, X or B closes it.
+
+### Fixed
+- Candy set down on the backpack or pockets goes into the candy bag instead of vanishing from the pack after a moment. A full candy bag keeps it in your hand.
+- Taking candy with a double click no longer spills it into the backpack when the candy bag is full.
+
 ## [2026-11-14] - Containers zoom out of the world
 
 ### Changed

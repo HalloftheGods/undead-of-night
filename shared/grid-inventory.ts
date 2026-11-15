@@ -347,6 +347,21 @@ export function autoPackItem(grid: InventoryGrid, item: Omit<GridItem, 'x' | 'y'
   });
 }
 
+/** Packs an item into the lowest free cell: rows from the bottom up, each left to right, the way a bag settles. */
+export function autoPackFromBottom(grid: InventoryGrid, item: Omit<GridItem, 'x' | 'y'>): boolean {
+  const isInvalidItem = !item?.type;
+  if (isInvalidItem) return false;
+  for (let y = grid.rows - 1; y >= 0; y -= 1) {
+    for (let x = 0; x < grid.cols; x += 1) {
+      for (const rotated of [false, true]) {
+        const fits = canPlaceItem(grid, item.type, x, y, rotated);
+        if (fits) return placeItem(grid, { ...item, x, y, rotated });
+      }
+    }
+  }
+  return false;
+}
+
 export function randomPackItem(
   grid: InventoryGrid,
   item: Omit<GridItem, 'x' | 'y'>,

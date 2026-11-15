@@ -1,13 +1,13 @@
 import { bagHash, bagLayout, bagWanted, createBag, isAmmoBoxType, isBagItemType, isDroppableBagItem, layoutHash, retierBag, stampAmmoBoxes, syncBag } from '@shared/bag.ts';
 import type { BagCommit, BagDrop, BagItemType, BagWanted, PlayerBag } from '@shared/bag.ts';
 import type { BackpackTier } from '@shared/backpack.ts';
-import { autoPackItem, canPlaceItem, createInventoryGrid, findAvailableSlot, placeItem, removeItem } from '@shared/grid-inventory.ts';
+import { autoPackFromBottom, autoPackItem, canPlaceItem, createInventoryGrid, findAvailableSlot, placeItem, removeItem } from '@shared/grid-inventory.ts';
 import type { GridItem, InventoryGrid } from '@shared/grid-inventory.ts';
 import { containerGridDimensions } from '@shared/containers.ts';
 import { flipDimensions, flipItem } from '@shared/container-flip.ts';
 import type { ContainerKind } from '@shared/containers.ts';
 import type { WeaponId } from '@shared/protocol.ts';
-import { isCandyId, type CandyId } from '@shared/candy.ts';
+import { CANDY_GRID, isCandyId, type CandyId } from '@shared/candy.ts';
 import { isSupplyType, SUPPLY_TYPES } from '@shared/supply-types.ts';
 import type { Supplies } from '@shared/supply-types.ts';
 import type { ContainerArt } from '@art/containers.ts';
@@ -154,11 +154,11 @@ export class LocalBag {
         autoPackItem(container, { ...item });
       }
     }
-    const candyBag = createInventoryGrid(2, 6);
+    const candyBag = createInventoryGrid(CANDY_GRID.cols, CANDY_GRID.rows);
     let candyIdx = 0;
     for (const stack of hud.bag ?? []) {
       for (let c = 0; c < stack.count; c += 1) {
-        autoPackItem(candyBag, {
+        autoPackFromBottom(candyBag, {
           id: `candy-carried-${stack.id}-${candyIdx++}`,
           type: stack.id,
           rotated: false,
@@ -232,7 +232,7 @@ export class LocalBag {
       for (let missing = stack.count - carried(stack.id); missing > 0; missing -= 1) {
         this.candySerial += 1;
         const item: GridItem = { id: `candy-carried-${stack.id}-live-${this.candySerial}`, type: stack.id, x: 0, y: 0, rotated: false };
-        if (!autoPackItem(working.candyBag, item)) return added;
+        if (!autoPackFromBottom(working.candyBag, item)) return added;
         const placed = working.candyBag.items.find((each) => each.id === item.id);
         if (placed) added.push(placed);
       }

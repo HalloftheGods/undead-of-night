@@ -139,6 +139,25 @@ describe('LocalBag', () => {
     expect(p.sugar.some((s) => s.id === 'sour_skulls')).toBe(true);
   });
 
+  it('shows every carried candy in the candy bag, filled from the bottom row up', () => {
+    const { p, local, watch } = pair();
+    p.candy = ['jawbreaker', 'jawbreaker', 'ghost_gum'];
+    const working = local.open(watch());
+    const { cols, rows } = working.candyBag;
+    expect(working.candyBag.items).toHaveLength(3);
+    expect(working.candyBag.items.every((item) => item.y >= rows - 2)).toBe(true);
+    expect(working.candyBag.items.filter((item) => item.y === rows - 1)).toHaveLength(Math.min(3, cols));
+  });
+
+  it('a candy taken in while the bag is open lands in the lowest free cell', () => {
+    const { p, local, watch } = pair();
+    const working = local.open(watch());
+    p.candy = ['ghost_gum'];
+    const arrived = local.absorb(working, watch());
+    expect(arrived).toHaveLength(1);
+    expect(working.candyBag.items[0]).toMatchObject({ type: 'ghost_gum', x: 0, y: working.candyBag.rows - 1 });
+  });
+
   it('commits candy drop and leaves a candy pickup on the floor', () => {
     const { state, p, local, sent, watch } = pair();
     p.candy = ['fang_taffy'];

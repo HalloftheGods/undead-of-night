@@ -67,7 +67,7 @@
         <OverrunClock :overrun="ui.home.overrun" />
       </template>
       <TownMap v-if="ui.mapOpen" :mode="ui.mode" :in-bunker="ui.home?.inBunker === true" :teammates="ui.hud?.teammates ?? []" />
-      <CandyBag v-if="ui.bagOpen && ui.hud && ui.art" :hud="ui.hud" :art="ui.art" :mode="ui.mode" />
+      <CandyBagCanvas v-if="ui.bagOpen && ui.hud && ui.art" :hud="ui.hud" :art="ui.art" :mode="ui.mode" />
       <template v-if="ui.paused">
         <BooksPage v-if="pausedBook === 'books'" :art="ui.art" @open="onOpenPausedBook" @close="pausedBook = null" />
         <HowToPlay v-else-if="pausedBook === 'howto'" @close="onClosePausedBook" />
@@ -131,7 +131,7 @@ import StudioSplash from './components/StudioSplash.vue';
 import TitleScreen from './components/TitleScreen.vue';
 import TouchControls from './components/TouchControls.vue';
 import TownMap from './components/TownMap.vue';
-import CandyBag from './components/CandyBag.vue';
+import CandyBagCanvas from './components/CandyBagCanvas.vue';
 import DailyLobby from './components/DailyLobby.vue';
 import { GAME_KEY } from './components/use-game.ts';
 import VanTransition from './components/VanTransition.vue';

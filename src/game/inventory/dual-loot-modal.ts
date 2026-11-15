@@ -1,9 +1,10 @@
-import { CANDIES, isCandyId } from '@shared/candy.ts';
+import { CANDIES, CANDY_GRID, isCandyId } from '@shared/candy.ts';
 import { containerGridDimensions, type ContainerKind } from '@shared/containers.ts';
 import type { ContainerArt } from '@art/containers.ts';
 import type { ArtBook } from '@art/types.ts';
 import { backpackDef, type BackpackTier } from '@shared/backpack.ts';
 import {
+  autoPackFromBottom,
   autoPackItem,
   canPlaceItem,
   createInventoryGrid,
@@ -215,7 +216,7 @@ export function createDualLootState(options?: DualLootModalProps): DualLootState
   const containerGrid = options?.containerGrid ?? createInventoryGrid(cols, rows, blocked);
   const pocketsGrid = options?.pocketsGrid ?? createInventoryGrid(2, 2);
   const backpackGrid = options?.backpackGrid ?? createInventoryGrid(tierConfig.cols, tierConfig.rows);
-  const candyBagGrid = options?.candyBagGrid ?? createInventoryGrid(2, 6);
+  const candyBagGrid = options?.candyBagGrid ?? createInventoryGrid(CANDY_GRID.cols, CANDY_GRID.rows);
 
   return {
     containerGrid,
@@ -290,7 +291,8 @@ export function computeTileHighlight(
     return 'invalid';
   }
   // Candy over the pack or pockets is headed for the candy bag, so the mark says whether the bag has room.
-  if (isCandyItem && isSurvivorGrid(gridId)) {
+  const headsForCandyBag = isCandyItem && isSurvivorGrid(gridId);
+  if (headsForCandyBag) {
     const bagHasRoom = !candyBagGrid || findAvailableSlot(candyBagGrid, heldItem.type, true) !== null;
     return bagHasRoom ? 'valid' : 'invalid';
   }
@@ -386,9 +388,11 @@ export function placeHeldItemInGrid(
     return false;
   }
   // Candy set down on the pack or pockets goes into the candy bag, or stays in hand when the bag is full.
-  if (isCandyItem && isSurvivorGrid(gridId)) {
+  const headsForCandyBag = isCandyItem && isSurvivorGrid(gridId);
+  if (headsForCandyBag) {
     const candy: GridItem = { ...activeHeld.item };
-    if (!autoPackItem(state.candyBagGrid, candy)) return false;
+    const packed = autoPackFromBottom(state.candyBagGrid, candy);
+    if (!packed) return false;
     state.heldItem = null;
     state.selectedItemId = candy.id;
     state.selectedGridId = 'candyBag';
@@ -565,7 +569,7 @@ export function quickTransferHeldItem(state: DualLootState): boolean {
   if (isContainerSource) {
     // Candy goes to the candy bag or nowhere: a full bag leaves it in hand rather than in the pack.
     if (isCandyType(itemToPlace.type)) {
-      const packedInCandyBag = autoPackItem(state.candyBagGrid, itemToPlace);
+      const packedInCandyBag = autoPackFromBottom(state.candyBagGrid, itemToPlace);
       if (packedInCandyBag) state.heldItem = null;
       return packedInCandyBag;
     }
@@ -613,7 +617,7 @@ export function quickTransferBetweenInventories(
   if (isContainerSource) {
     // Candy goes to the candy bag or stays where it is: a full bag never spills it into the pack.
     if (isCandyType(sourceItem.type)) {
-      const packedInCandyBag = autoPackItem(state.candyBagGrid, sourceItem);
+      const packedInCandyBag = autoPackFromBottom(state.candyBagGrid, sourceItem);
       if (packedInCandyBag) removeItem(sourceGrid, itemId);
       return packedInCandyBag;
     }
