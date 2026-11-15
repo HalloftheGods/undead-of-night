@@ -9,9 +9,9 @@ import { createRng, randRange } from './rng.ts';
 import type { Rng } from './rng.ts';
 import { hasDiscountStore, raiseBuildings } from './town-buildings.ts';
 import { raiseTownPieces } from './town-pieces.ts';
-import { EDGE_TILES, MAP_TILES, planTown, rectBox } from './town-plan.ts';
+import { EDGE_TILES, MAP_TILES, planTown, rectBox, WALK_TILES } from './town-plan.ts';
 import { dressStreets, paintStreets } from './town-streets.ts';
-import { displayStreet, streetAt, streetLabels } from './street-names.ts';
+import { displayStreet, EAST_WEST_STREETS, NORTH_SOUTH_STREETS, streetAt, streetLabels } from './street-names.ts';
 import { fillPark, fillVerge, raiseFence } from './world-blocks.ts';
 import { furnish } from './building-interiors.ts';
 import { withSewers } from './sewers.ts';
@@ -144,14 +144,34 @@ const SIGNAL_RED = '#ff2a2a';
 const BUS_GLOWS: readonly (readonly [dx: number, radius: number, color: string])[] = [[0, 130, '#ffb04a'], [-40, 84, '#ff7ad0'], [40, 84, '#ff7ad0']];
 const BUS_GLOW_DOWN = -14;
 
-/** An intersection signal names the two streets that cross at its corner. */
+/**
+ * An intersection signal names the two streets that cross at its corner.
+ * Right-hand driving perspective:
+ * - Bottom-Right (SE corner): front-facing sign for northbound drivers.
+ * - Top-Left (NW corner): back plate of the sign for southbound drivers.
+ * - NE and SW corners: non-facing corners omit signs.
+ */
 function withStreetSign(prop: PropInstance): PropInstance {
   const isSignal = prop.kind === 'traffic_signal' || prop.kind === 'traffic_signal_r';
   if (!isSignal) return prop;
   const spot = streetAt(prop.x, prop.y);
   if (!spot?.junction) return prop;
-  // Always north-south first, then east-west: at a junction streetAt gives the east-west street as road, the north-south as cross.
-  return { ...prop, sign: [displayStreet(spot.cross), displayStreet(spot.road)] };
+
+  const col = Math.floor(prop.x / TILE_SIZE);
+  const row = Math.floor(prop.y / TILE_SIZE);
+  const down = NORTH_SOUTH_STREETS.find((street) => col >= street.from - WALK_TILES && col < street.to + WALK_TILES);
+  const across = EAST_WEST_STREETS.find((street) => row >= street.from - WALK_TILES && row < street.to + WALK_TILES);
+  if (!down || !across) return prop;
+
+  const isBottomRight = col >= down.to && row >= across.to;
+  if (isBottomRight) {
+    return { ...prop, sign: [displayStreet(spot.cross), displayStreet(spot.road)] };
+  }
+  const isTopLeft = col < down.from && row < across.from;
+  if (isTopLeft) {
+    return { ...prop, sign: [displayStreet(spot.cross), displayStreet(spot.road)], signBack: true };
+  }
+  return prop;
 }
 
 function lightsFor(props: readonly PropInstance[], rng: Rng, sewerLamps: readonly MapLight[]): MapLight[] {

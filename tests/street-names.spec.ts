@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { TILE_SIZE } from '../shared/protocol.ts';
 import { CENTER_STREET, EAST_WEST_STREETS, MAIN_STREET, NORTH_SOUTH_STREETS, columnName, rowName, streetAt } from '../shared/street-names.ts';
 import { GRID_CENTRE_COL, GRID_CENTRE_ROW, GRID_PITCH_COLS, GRID_PITCH_ROWS, MAP_TILES } from '../shared/town-plan.ts';
+import { generateWorldMap } from '../shared/world-map.ts';
 
 const at = (col: number, row: number) => streetAt((col + 0.5) * TILE_SIZE, (row + 0.5) * TILE_SIZE);
 
@@ -36,5 +37,31 @@ describe('street names', () => {
     expect(streetAt(100, (MAP_TILES + 5) * TILE_SIZE)).toBeNull();
     // A sewer under a crossing is not a street.
     expect(streetAt((GRID_CENTRE_COL + 0.5) * TILE_SIZE, (MAP_TILES + 40) * TILE_SIZE)).toBeNull();
+  });
+
+  it('simplifies intersection street signs to bottom-right front and top-left back plate', () => {
+    const map = generateWorldMap(1, 1);
+    const signals = map.props.filter((prop) => prop.kind === 'traffic_signal' || prop.kind === 'traffic_signal_r');
+    expect(signals.length).toBeGreaterThan(0);
+
+    const withSigns = signals.filter((prop) => prop.sign !== undefined);
+    expect(withSigns.length).toBeGreaterThan(0);
+
+    for (const prop of withSigns) {
+      const col = Math.floor(prop.x / TILE_SIZE);
+      const row = Math.floor(prop.y / TILE_SIZE);
+      const down = NORTH_SOUTH_STREETS.find((street) => col >= street.from - 2 && col < street.to + 2)!;
+      const across = EAST_WEST_STREETS.find((street) => row >= street.from - 2 && row < street.to + 2)!;
+      expect(down).toBeDefined();
+      expect(across).toBeDefined();
+
+      if (prop.signBack) {
+        expect(col).toBeLessThan(down.from);
+        expect(row).toBeLessThan(across.from);
+      } else {
+        expect(col).toBeGreaterThanOrEqual(down.to);
+        expect(row).toBeGreaterThanOrEqual(across.to);
+      }
+    }
   });
 });

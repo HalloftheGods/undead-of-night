@@ -66,6 +66,10 @@ import type { EntityVisual, VisualStore } from "./visuals.ts";
 const SIGN_GREEN = "#1f6b3a";
 const SIGN_WHITE = "#f4f4e8";
 const SIGN_INK = "#f4f4e8";
+const SIGN_BACK_METAL = "#484e68";
+const SIGN_BACK_PLATE = "#242840";
+const SIGN_BACK_BRACKET = "#1b1728";
+const SIGN_BACK_BOLT = "#7c8494";
 /** Bolted to the top of the pole on the side away from the arm, so it never hangs over the crossing. */
 const SIGN_TOP = 66;
 const SIGN_PAD = 3;
@@ -92,7 +96,13 @@ function fillRounded(ctx: CanvasRenderingContext2D, x: number, y: number, w: num
 /** A green street sign at an intersection signal, naming the two streets that cross there. */
 function drawStreetSign(
   ctx: CanvasRenderingContext2D,
-  prop: { readonly kind: string; readonly x: number; readonly y: number; readonly sign?: readonly [string, string] },
+  prop: {
+    readonly kind: string;
+    readonly x: number;
+    readonly y: number;
+    readonly sign?: readonly [string, string];
+    readonly signBack?: boolean;
+  },
   left: number,
   top: number
 ): void {
@@ -106,6 +116,21 @@ function drawStreetSign(
   const isMirrored = prop.kind === "traffic_signal_r";
   const x0 = isMirrored ? Math.round(prop.x) + SIGN_GAP : Math.round(prop.x) - SIGN_GAP - width;
   const y0 = Math.round(prop.y) - SIGN_TOP;
+
+  if (prop.signBack) {
+    ctx.fillStyle = SIGN_BACK_METAL;
+    fillRounded(ctx, x0 - left, y0 - top, width, height, SIGN_CORNER);
+    ctx.fillStyle = SIGN_BACK_PLATE;
+    fillRounded(ctx, x0 + 1 - left, y0 + 1 - top, width - 2, height - 2, Math.max(0, SIGN_CORNER - 1));
+    ctx.fillStyle = SIGN_BACK_BRACKET;
+    const midY = y0 + Math.round(height / 2) - 1;
+    ctx.fillRect(x0 + 2 - left, midY - top, width - 4, 2);
+    ctx.fillStyle = SIGN_BACK_BOLT;
+    ctx.fillRect(x0 + 4 - left, midY - top, 2, 2);
+    ctx.fillRect(x0 + width - 6 - left, midY - top, 2, 2);
+    return;
+  }
+
   // Green rim outside, a thin white line inside it, then the green face; all three with rounded corners.
   ctx.fillStyle = SIGN_GREEN;
   fillRounded(ctx, x0 - left, y0 - top, width, height, SIGN_CORNER);
