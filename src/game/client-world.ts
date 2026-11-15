@@ -16,7 +16,7 @@ import { isTownBlackout, powerSubstationNear } from '../../shared/power-substati
 import { openableStation } from '../../shared/stations.ts';
 import { groundSpeedScale } from '../../shared/town-rules.ts';
 import type { DoorView, EntityId, PlayerEntity, SnapshotPacket, Stance, WorldMap } from '../../shared/protocol.ts';
-import { containerInReachOf, vehicleChoiceAt } from '../../shared/vehicle-choice.ts';
+import { containerInReachOf, EXIT_MAX_SPEED, vehicleChoiceAt } from '../../shared/vehicle-choice.ts';
 import type { VehicleMotion } from '../../shared/vehicle-physics.ts';
 import type { VehicleView } from '../../shared/protocol.ts';
 import { restoreSolids } from '../../shared/world-query.ts';
@@ -210,6 +210,21 @@ export class ClientWorld {
   private vehicleBy(player: PlayerEntity | null): WorldEntities['vehicle'] {
     const idle = player === null || player.status !== 'alive' || player.search !== 0;
     if (idle) return undefined;
+    if (player.vehicle) {
+      const car = this.shownCars.find((c) => c.id === player.vehicle!.id);
+      const isDriving = player.vehicle.seat === 0;
+      const canExit = car !== undefined && Math.abs(car.speed) < EXIT_MAX_SPEED;
+      return {
+        kind: 'exit',
+        boot: false,
+        driving: isDriving,
+        speed: car?.speed ?? 0,
+        heading: car?.heading ?? 0,
+        facing: car?.facing ?? 'w',
+        body: car?.body ?? 'sedan',
+        canExit,
+      };
+    }
     const choice = vehicleChoiceAt(this.map, this.shownCars, player.x, player.y, player);
     if (!choice) return undefined;
     return { kind: choice.kind, boot: containerInReachOf(this.map, this.shownCars, player.x, player.y) !== null };

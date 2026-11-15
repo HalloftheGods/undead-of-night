@@ -8,7 +8,8 @@ import { dirFromAngle } from '../art/types.ts';
 import type { ArtBook } from '../art/types.ts';
 import { drawOutlinedText, FONT_HEIGHT } from './bitmap-font.ts';
 import { ammoPrompt } from './ammo-prompt.ts';
-import { vehiclePrompt } from './vehicle-prompt.ts';
+import { DrivingActionPrompt, drivingPrompts, vehiclePrompt } from './vehicle-prompt.ts';
+import { VEHICLE_BODIES } from '../../shared/vehicle-bodies.ts';
 import type { SceneView } from './scene.ts';
 import { climbPrompt } from '../../shared/take-manhole.ts';
 import { doorPrompt } from '../../shared/door-view.ts';
@@ -388,7 +389,9 @@ export class OverlayRenderer {
       const atPowerSubstation = isLocal && scene.powerSubstation !== undefined;
       const atDoor = isLocal && scene.door !== undefined;
       const atVehicle = isLocal && scene.vehicle !== undefined;
+      const isDriving = atVehicle && scene.vehicle!.driving === true;
       if (player.search > 0) drawBar(ctx, x - SEARCH_BAR_WIDTH / 2, y, SEARCH_BAR_WIDTH, player.search, BONE);
+      else if (isDriving) this.drawDrivingPrompts(ctx, scene, player, left, top);
       else if (atVehicle) drawOutlinedText(ctx, vehiclePrompt(scene.vehicle!, Boolean(scene.touch), scene.holdKey), x, y, AMBER);
       else if (prompted) {
         const isOpened = scene.openedContainers.includes(scene.searchable!.id);
@@ -420,6 +423,84 @@ export class OverlayRenderer {
       if (!call?.lit) continue;
       const lineTaken = player.search > 0 || atVehicle || prompted || atStation || atClimb || atRadioTower || atSewageDrain || atPowerSubstation || atDoor;
       drawOutlinedText(ctx, call.text, x, lineTaken ? y - FONT_HEIGHT - 3 : y, hitPalette().danger);
+    }
+  }
+
+  /**
+   * Commands around a driven car: gas at the nose, brake or reverse behind,
+   * turn left and turn right aligned to the car's flanks, and exit above brake when stopped or slow.
+   */
+  private drawDrivingPrompts(
+    ctx: CanvasRenderingContext2D,
+    scene: SceneView,
+    player: PlayerEntity,
+    left: number,
+    top: number,
+  ): void {
+    const hint = scene.vehicle;
+    if (!hint) return;
+    const touch = Boolean(scene.touch);
+    const speed = hint.speed ?? 0;
+    const heading = hint.heading ?? 0;
+    const body = hint.body ?? 'sedan';
+    const bodyDef = VEHICLE_BODIES[body];
+    const halfLength = (bodyDef?.length ?? 44) / 2;
+    const halfWidth = Math.max(bodyDef?.noseWidth ?? 20, bodyDef?.sideDepth ?? 18) / 2;
+
+    const forwardDist = halfLength + 14;
+    const rearDist = halfLength + 14;
+    const sideDist = halfWidth + 28;
+
+    const carScreenX = Math.round(player.x) - left;
+    const carScreenY = Math.round(player.y) - top;
+
+    const fx = Math.cos(heading);
+    const fy = Math.sin(heading);
+    const rx = -Math.sin(heading);
+    const ry = Math.cos(heading);
+    const lx = Math.sin(heading);
+    const ly = -Math.cos(heading);
+    const bx = -Math.cos(heading);
+    const by = -Math.sin(heading);
+
+    const prompts = drivingPrompts({
+      touch,
+      speed,
+      canExit: hint.canExit ?? false,
+      holdKey: scene.holdKey,
+      upKey: scene.moveUpKey,
+      downKey: scene.moveDownKey,
+      leftKey: scene.moveLeftKey,
+      rightKey: scene.moveRightKey,
+    });
+
+    this.drawStackedPrompt(ctx, prompts.gas, carScreenX + fx * forwardDist, carScreenY + fy * forwardDist);
+
+    const brakeX = carScreenX + bx * rearDist;
+    const brakeY = carScreenY + by * rearDist;
+    this.drawStackedPrompt(ctx, prompts.brakeOrReverse, brakeX, brakeY);
+
+    if (prompts.exit) {
+      const exitText = prompts.exit.key ? `${prompts.exit.key}: ${prompts.exit.label}` : prompts.exit.label;
+      drawOutlinedText(ctx, exitText, brakeX, brakeY - FONT_HEIGHT * 2 - 4, AMBER);
+    }
+
+    this.drawStackedPrompt(ctx, prompts.turnLeft, carScreenX + lx * sideDist, carScreenY + ly * sideDist);
+    this.drawStackedPrompt(ctx, prompts.turnRight, carScreenX + rx * sideDist, carScreenY + ry * sideDist);
+  }
+
+  /** Draws an action prompt with key stacked over label to prevent horizontal clashes. */
+  private drawStackedPrompt(
+    ctx: CanvasRenderingContext2D,
+    prompt: DrivingActionPrompt,
+    cx: number,
+    cy: number,
+  ): void {
+    if (prompt.key) {
+      drawOutlinedText(ctx, prompt.key, cx, cy - FONT_HEIGHT, AMBER);
+      drawOutlinedText(ctx, prompt.label, cx, cy + 2, AMBER);
+    } else {
+      drawOutlinedText(ctx, prompt.label, cx, cy - Math.round(FONT_HEIGHT / 2), AMBER);
     }
   }
 

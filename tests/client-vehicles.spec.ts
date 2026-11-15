@@ -13,7 +13,7 @@ import { EntityRenderer } from '../src/engine/entity-renderer.ts';
 import { EMPTY_SCENE } from '../src/engine/scene.ts';
 import { spriteCanvas } from '../src/engine/sprite-cache.ts';
 import { vehicleAnchor, vehicleSprite } from '../src/engine/vehicle-draw.ts';
-import { vehiclePrompt } from '../src/engine/vehicle-prompt.ts';
+import { drivingPrompts, vehiclePrompt } from '../src/engine/vehicle-prompt.ts';
 import { ClientWorld } from '../src/game/client-world.ts';
 import { blendVehicle } from '../src/game/client-vehicles.ts';
 import { fakeCanvas, installFakeBrowser } from './client-fake-dom.ts';
@@ -241,5 +241,62 @@ describe('the prompt over a car', () => {
     for (let i = 0; i < 3; i += 1) stepSim(sim, 0, null, true);
     world.push(stepSim(sim, 0, null), 2 * TICK_MS);
     expect(world.advance(3 * TICK_MS, 0, 0, 0, 0, TICK_DT)!.vehicle?.kind).toBe('exit');
+    expect(world.advance(3 * TICK_MS, 0, 0, 0, 0, TICK_DT)!.vehicle?.driving).toBe(true);
   });
 });
+
+describe('the driving prompts around a car', () => {
+  it('says Up/W: Gas for gas on keys and Gas on touch', () => {
+    const keysPrompts = drivingPrompts({ touch: false, speed: 0, canExit: true });
+    expect(keysPrompts.gas).toEqual({ key: 'UP/W', label: 'GAS' });
+
+    const touchPrompts = drivingPrompts({ touch: true, speed: 0, canExit: true });
+    expect(touchPrompts.gas).toEqual({ label: 'GAS' });
+  });
+
+  it('says Break when moving forward and Reverse when stationary or backing up', () => {
+    const movingForward = drivingPrompts({ touch: false, speed: 20, canExit: false });
+    expect(movingForward.brakeOrReverse).toEqual({ key: 'DOWN/S', label: 'BREAK' });
+
+    const stopped = drivingPrompts({ touch: false, speed: 0, canExit: true });
+    expect(stopped.brakeOrReverse).toEqual({ key: 'DOWN/S', label: 'REVERSE' });
+
+    const reversing = drivingPrompts({ touch: false, speed: -15, canExit: true });
+    expect(reversing.brakeOrReverse).toEqual({ key: 'DOWN/S', label: 'REVERSE' });
+  });
+
+  it('aligns turn left and turn right commands', () => {
+    const prompts = drivingPrompts({ touch: false, speed: 10, canExit: false });
+    expect(prompts.turnLeft).toEqual({ key: 'LEFT/A', label: 'TURN LEFT' });
+    expect(prompts.turnRight).toEqual({ key: 'RIGHT/D', label: 'TURN RIGHT' });
+
+    const touchPrompts = drivingPrompts({ touch: true, speed: 10, canExit: false });
+    expect(touchPrompts.turnLeft).toEqual({ label: 'TURN LEFT' });
+    expect(touchPrompts.turnRight).toEqual({ label: 'TURN RIGHT' });
+  });
+
+  it('includes exit only when canExit is true', () => {
+    const canExit = drivingPrompts({ touch: false, speed: 0, canExit: true });
+    expect(canExit.exit).toEqual({ key: 'E', label: 'EXIT' });
+
+    const cannotExit = drivingPrompts({ touch: false, speed: 50, canExit: false });
+    expect(cannotExit.exit).toBeUndefined();
+  });
+
+  it('respects custom key bindings', () => {
+    const custom = drivingPrompts({
+      touch: false,
+      speed: 0,
+      canExit: true,
+      upKey: 'W',
+      downKey: 'S',
+      leftKey: 'A',
+      rightKey: 'D',
+    });
+    expect(custom.gas).toEqual({ key: 'W', label: 'GAS' });
+    expect(custom.brakeOrReverse).toEqual({ key: 'S', label: 'REVERSE' });
+    expect(custom.turnLeft).toEqual({ key: 'A', label: 'TURN LEFT' });
+    expect(custom.turnRight).toEqual({ key: 'D', label: 'TURN RIGHT' });
+  });
+});
+

@@ -14,17 +14,51 @@ import type { WorldRenderer } from '../engine/world-renderer.ts';
 import type { ClientWorld } from './client-world.ts';
 import { questMarks } from './home/quest-marks.ts';
 import { closedStalls } from './home/shop.ts';
-import { keyGlyph } from './hud-keys.ts';
+import { controlDevice, keyGlyph } from './hud-keys.ts';
+import { canvasHud, canvasHudAllowed } from './canvas-hud-prefs.ts';
+import { canvasHudView } from './canvas-hud-view.ts';
+import type { CanvasHudView } from './canvas-hud-view.ts';
+
+import { formatKeyCode, loadKeyBindings } from './controls-prefs.ts';
 
 /** The label of a key on the device in charge, for prompts drawn on the canvas: the bound key, or the pad's button. */
 function labelFor(code: string, onPad: boolean): string {
   return keyGlyph(code, onPad ? 'pad' : 'keys') ?? code.slice(3);
+}
+
+/** Formats movement action keys for driving prompts, falling back to dual arrow/letter keys. */
+function moveLabelFor(action: 'moveUp' | 'moveDown' | 'moveLeft' | 'moveRight', defaultLabel: string, onPad: boolean): string {
+  if (onPad) {
+    if (action === 'moveUp') return 'RT';
+    if (action === 'moveDown') return 'LT';
+    return 'L-STICK';
+  }
+  const bindings = loadKeyBindings();
+  const keys = bindings[action];
+  if (!keys || keys.length === 0) return defaultLabel;
+  const hasW = keys.includes('KeyW');
+  const hasUp = keys.includes('ArrowUp');
+  if (hasW && hasUp) return 'UP/W';
+  const hasS = keys.includes('KeyS');
+  const hasDown = keys.includes('ArrowDown');
+  if (hasS && hasDown) return 'DOWN/S';
+  const hasA = keys.includes('KeyA');
+  const hasLeft = keys.includes('ArrowLeft');
+  if (hasA && hasLeft) return 'LEFT/A';
+  const hasD = keys.includes('KeyD');
+  const hasRight = keys.includes('ArrowRight');
+  if (hasD && hasRight) return 'RIGHT/D';
+  return formatKeyCode(keys[0]);
 }
 import { Heartbeat } from './heartbeat.ts';
 import { PlayerAnchor } from './player-anchor.ts';
 import type { Anchor } from './player-anchor.ts';
 import { tickRunAudio } from './run-audio.ts';
 import { heldInfo } from './held-cursor.ts';
+import { isLootPadInCharge } from './inventory/loot-pad.ts';
+import { inventoryChoosing } from './inventory/inventory-hands.ts';
+import { PAD } from './input/gamepad-input.ts';
+import { padFamily, padLabel } from './input/pad-glyphs.ts';
 import { deathFade, healthFraction } from './run-hud.ts';
 import type { RunHost } from './run-session.ts';
 import { touchMarks } from './touch-marks.ts';
@@ -89,8 +123,26 @@ export class RunFrame {
     this.heldUntilMs = Math.max(this.heldUntilMs, performance.now() + ms);
   }
 
+  /** The HUD as the canvas paints it, from the same state the page HUD reads, or null while the page HUD is on. */
+  private hudViewNow(): CanvasHudView | null {
+    const { ui, input } = this.host.parts;
+    const hud = ui.value.hud;
+    const isOnGameScreen = ui.value.screen === 'game';
+    const isCanvasHud = isOnGameScreen && hud !== null && canvasHudAllowed(canvasHud.value, ui.value.touch);
+    if (!isCanvasHud) return null;
+    const device = controlDevice(ui.value.touch, input.lastDevice);
+    return canvasHudView({
+      ui: ui.value,
+      hud,
+      device,
+      glyph: (code: string) => keyGlyph(code, device, input.gamepad.id),
+      padId: input.gamepad.id,
+    });
+  }
+
   draw(renderer: WorldRenderer, world: ClientWorld, ms: number, dt: number): void {
     const { state, ui, input, runHud } = this.host.parts;
+    renderer.setHudView(this.hudViewNow());
     const transport = state.transport;
     const { screen } = ui.value;
     const menuUp = this.host.menuUp();
@@ -149,6 +201,8 @@ export class RunFrame {
     // A stick aims by angle alone, so the mouse's last resting spot is no crosshair.
     const padAims = input.lastDevice === 'gamepad';
     const padSpot = padAims ? this.padSpot : null;
+    // The mouse over the open inventory's own panels is choosing, not aiming: the OS cursor shows there instead.
+    const choosing = !padAims && !touch && inventoryChoosing(input.pointerClientX, input.pointerClientY);
     // A finger picks a spot on the picture, so the picture must not lean toward it and move the spot.
     const scene: SceneView = {
       ...entities,
@@ -162,9 +216,13 @@ export class RunFrame {
       reloadKey: labelFor('KeyR', padAims),
       meleeKey: labelFor('KeyF', padAims),
       switchKey: padAims ? labelFor('KeyQ', true) : null,
+      moveUpKey: moveLabelFor('moveUp', 'UP/W', padAims),
+      moveDownKey: moveLabelFor('moveDown', 'DOWN/S', padAims),
+      moveLeftKey: moveLabelFor('moveLeft', 'LEFT/A', padAims),
+      moveRightKey: moveLabelFor('moveRight', 'RIGHT/D', padAims),
       pointerX: over || touch ? null : padAims ? padSpot?.x ?? null : pointerX,
       pointerY: over || touch ? null : padAims ? padSpot?.y ?? null : pointerY,
-      showCrosshair: this.host.playing() && !menuUp && !ui.value.mapOpen && !this.host.parts.bench.open && !isTransitioning,
+      showCrosshair: this.host.playing() && !menuUp && !ui.value.mapOpen && !this.host.parts.bench.open && !isTransitioning && !choosing,
       touch,
       held: this.heldView(renderer),
     };
@@ -226,7 +284,10 @@ export class RunFrame {
     const info = heldInfo();
     if (info === null) return null;
     const { input } = this.host.parts;
-    return { ...info, x: Math.round(renderer.toBufferX(input.pointerClientX)), y: Math.round(renderer.toBufferY(input.pointerClientY)) };
+    // On a pad, RT uses and LT drops the item in hand (inventory/canvas-loot.ts), so the buttons say so.
+    const family = isLootPadInCharge() ? padFamily(input.gamepad.id) : null;
+    const padKeys = family ? { use: padLabel(family, PAD.rt), drop: padLabel(family, PAD.lt) } : null;
+    return { ...info, padKeys, x: Math.round(renderer.toBufferX(input.pointerClientX)), y: Math.round(renderer.toBufferY(input.pointerClientY)) };
   }
 
   /**

@@ -50,10 +50,18 @@ export interface QuestMark {
   readonly ready: boolean;
 }
 
+import type { VehicleBody, VehicleFacing } from "../../shared/vehicle-bodies.ts";
+
 /** What the search key would do at a car: get in or get out, and whether a boot there could be searched too. */
 export interface VehicleHint {
   readonly kind: "enter" | "exit";
   readonly boot: boolean;
+  readonly driving?: boolean;
+  readonly speed?: number;
+  readonly heading?: number;
+  readonly facing?: VehicleFacing;
+  readonly body?: VehicleBody;
+  readonly canExit?: boolean;
 }
 
 /** Everything the renderer draws this frame. Plain values; nothing here is reactive. */
@@ -121,6 +129,10 @@ export interface SceneView {
   readonly meleeKey: string;
   /** A pad's weapon-switch label; null on keys, where a gun's slot number is named. */
   readonly switchKey: string | null;
+  readonly moveUpKey?: string;
+  readonly moveDownKey?: string;
+  readonly moveLeftKey?: string;
+  readonly moveRightKey?: string;
   readonly pointerY: number | null;
   readonly showCrosshair: boolean;
   /** The pad's closing ring on the locked zombie's head, in buffer pixels. Absent off a pad. */
