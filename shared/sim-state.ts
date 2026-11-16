@@ -1,4 +1,5 @@
 import type { PlayerBag } from './bag.ts';
+import type { CareState } from './care.ts';
 import type { CampSize } from './camp/camp-ring.ts';
 import type { SugarState } from './candy.ts';
 import type { BackpackTier } from './backpack.ts';
@@ -78,7 +79,7 @@ export interface PlayerHome extends Omit<HomeView, 'overrun' | 'chest' | 'salvag
 }
 
 /** Magazines live in `guns` and are read out for snapshots, so there is one copy of the count. */
-export interface PlayerState extends Omit<PlayerEntity, 'mags' | 'gear' | 'bottles' | 'fireworks' | 'fountains' | 'home' | 'candy' | 'sugar' | 'keepsakes' | 'keepsakeOffer' | 'vehicle' | 'bagLayout' | 'lastMoveId'> {
+export interface PlayerState extends Omit<PlayerEntity, 'mags' | 'gear' | 'bottles' | 'fireworks' | 'fountains' | 'home' | 'candy' | 'sugar' | 'keepsakes' | 'keepsakeOffer' | 'vehicle' | 'bagLayout' | 'lastMoveId' | 'care'> {
   bottles: number;
   /** Spinners and fountains to light, found in town and left there (`shared/throwables.ts`). */
   fireworks: number;
@@ -151,6 +152,8 @@ export interface PlayerState extends Omit<PlayerEntity, 'mags' | 'gear' | 'bottl
   searchHealth: number;
   /** The last item move the host applied for this connection (`shared/item-move-sim.ts`). Moves at or below it are ignored. */
   lastMoveId: number;
+  /** The care this survivor is giving, with the item in hand (`shared/care.ts`). Null when none. */
+  care: CareState | null;
   /** Sneaking, walking or sprinting, once a winded survivor's sprint is taken out. */
   stance: Stance;
   /** What the held keys ask for, before stamina has its say. */

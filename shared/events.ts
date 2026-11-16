@@ -32,5 +32,5 @@ export const GAME_EVENT_TYPES = [
   'door_closed', 'door_opened', 'plank_added', 'plank_removed', 'door_hit', 'door_broken',
   'overrun_warning', 'overrun_breach', 'overrun_end', 'fence_rattle', 'fence_fall', 'merchant_hurt', 'merchant_downed', 'emote',
   'vehicle_enter', 'vehicle_exit', 'vehicle_horn', 'vehicle_crash', 'vehicle_hit',
-  'move_ok', 'move_no', 'item_in', 'item_tossed',
+  'move_ok', 'move_no', 'item_in', 'item_tossed', 'care_start', 'care_reply', 'care_break', 'care_done',
 ] as const;

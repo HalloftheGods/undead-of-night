@@ -24,6 +24,7 @@ import type {
   SnapshotPacket,
   WorldMap
 } from "./protocol.ts";
+import { tickCare } from "./care.ts";
 import { checkGameOver, leaveTown, restartRun } from "./run-end.ts";
 import { createSimState } from "./sim-factory.ts";
 import type { SimulationOptions } from "./sim-factory.ts";
@@ -282,6 +283,7 @@ export class GameSimulation {
     }
     rebuildZombieGrid(sim);
     for (const p of sim.players) updatePlayer(sim, p);
+    tickCare(sim, TICK_DT * 1000);
     dropStaleViewers(sim);
     updateDoors(sim, TICK_DT);
     noteEntered(sim);

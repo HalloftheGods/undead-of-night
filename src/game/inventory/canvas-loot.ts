@@ -5,6 +5,7 @@ import { heldAnchor, itemPlateAt, layoutLootUi, lootHitAt, TILE, type LootHit, t
 import type { MoveTo } from '../../../shared/item-move.ts';
 import type { CellOrigin, MotionKind } from './move-motion.ts';
 import { cellFrom, findShown, GROUND_TARGET, groundTargetAt, placedAt, sourceOf, USE_TARGET, windowMove, type ProposedMove } from './loot-moves.ts';
+import { careTargetAt } from './care-hover.ts';
 import { heldButtonAt, heldOnSurvivor, setHeld, setHeldBare } from '../held-cursor.ts';
 import { setLootWindow, type LootWindow } from '../loot-view.ts';
 import { isLootPadInCharge, moveCursor, setLootPad, settleCursor, startCursor, type LootButton, type LootCursor, type LootDirection } from './loot-pad.ts';
@@ -249,9 +250,12 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
     if (!state.heldItem) return false;
     const onButton = heldButtonAt(event.clientX, event.clientY);
     const bare = hitFor(point) === null && !overDock(point);
+    const careTo = careTargetAt(event.clientX, event.clientY);
     const onGame: HeldActionKind = heldOnSurvivor(event.clientX, event.clientY) ? 'use' : 'drop';
     const kind = onButton ?? (bare ? onGame : null);
-    return actOnHeld(kind, groundTargetAt(event.clientX, event.clientY)) || onButton !== null;
+    // A teammate under the item, in reach and helped by it, is handed it instead of the item being dropped.
+    const to = careTo && kind === 'drop' ? careTo : groundTargetAt(event.clientX, event.clientY);
+    return actOnHeld(kind, to) || onButton !== null;
   }
 
   /**

@@ -306,6 +306,7 @@ import LootItemArt from './LootItemArt.vue';
 import { useGame } from './use-game.ts';
 import { useItemArrivals } from './use-item-arrivals.ts';
 import { useContainerZoom } from './use-container-zoom.ts';
+import { careTargetAt } from '../game/inventory/care-hover.ts';
 import { cellFrom, findShown, GROUND_TARGET, groundTargetAt, moveGridOf, placedAt, sourceOf, USE_TARGET, windowMove } from '../game/inventory/loot-moves.ts';
 import { cellKey, type CellOrigin, type MotionKind } from '../game/inventory/move-motion.ts';
 import type { MoveFrom, MoveTo } from '../../shared/item-move.ts';
@@ -837,7 +838,10 @@ function onHeldButtonClick(event: MouseEvent): void {
   const onButton = heldButtonAt(event.clientX, event.clientY);
   const onGame = event.target instanceof HTMLCanvasElement;
   const kind = onButton ?? (onGame ? (heldOnSurvivor(event.clientX, event.clientY) ? 'use' : 'drop') : null);
-  actOnHeld(kind, canUse, canDrop, groundTargetAt(event.clientX, event.clientY));
+  // A teammate under the item, in reach and helped by it, is handed it instead of the item being dropped.
+  const careTo = careTargetAt(event.clientX, event.clientY);
+  const to = careTo && kind === 'drop' ? careTo : groundTargetAt(event.clientX, event.clientY);
+  actOnHeld(kind, canUse, canDrop, to);
 }
 
 /** USE or DROP on the item in hand, with its sound, when the item allows it. True when something happened. */

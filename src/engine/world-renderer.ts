@@ -28,7 +28,9 @@ import { layoutSetupUi } from './setup-ui.ts';
 import { Atmosphere } from './atmosphere.ts';
 import { BuildingLayer, roomRect } from './building-layer.ts';
 import { Camera } from './camera.ts';
+import { CareOverlay } from './care-overlay.ts';
 import { EmoteOverlay } from './emote-overlay.ts';
+import { SpeechOverlay } from './speech-overlay.ts';
 import { EntityRenderer } from './entity-renderer.ts';
 import { FrameBudget } from './frame-budget.ts';
 import { FxDirector } from './fx-director.ts';
@@ -102,6 +104,8 @@ export class WorldRenderer {
   /** The run's HUD as the canvas draws it, or null while the page HUD is on. Set each frame by the run. */
   private hudView: CanvasHudView | null = null;
   private readonly emotes: EmoteOverlay;
+  private readonly speech: SpeechOverlay;
+  private readonly care: CareOverlay;
   private readonly buildings: BuildingLayer;
   private readonly lighting = new Lighting();
   private brightness = 0;
@@ -133,6 +137,8 @@ export class WorldRenderer {
     this.entities = new EntityRenderer(art, this.visuals, this.buildings, reducedMotion);
     this.overlay = new OverlayRenderer(art, this.visuals);
     this.emotes = new EmoteOverlay(art, this.visuals);
+    this.speech = new SpeechOverlay(this.visuals);
+    this.care = new CareOverlay(art, this.visuals);
     this.fx = new FxDirector(art, this.visuals, this.effects, {
       stamp: (sprite, x, y, alpha) => this.stamp(sprite, x, y, alpha),
       addCorpse: (id, type, x, y) => this.addCorpse(id, type, x, y),
@@ -263,6 +269,7 @@ export class WorldRenderer {
     this.visuals.clear();
     this.fx.clear();
     this.emotes.clear();
+    this.speech.clear();
     this.effects.reset();
   }
 
@@ -291,6 +298,7 @@ export class WorldRenderer {
 
   handleEvent(event: GameEvent, ctx: Omit<FxContext, 'time'>): void {
     this.emotes.handle(event, this.time);
+    this.speech.handle(event, this.time);
     this.tosses.handle(event, performance.now());
     this.fx.handle(event, { ...ctx, time: this.time });
   }
@@ -499,6 +507,8 @@ export class WorldRenderer {
     this.overlay.draw(ctx, scene, left, top, viewW, viewH, time, lightAt, isKilled);
     this.tosses.draw(ctx, this.art, left, top, performance.now());
     this.emotes.draw(ctx, scene, left, top, viewW, viewH, time, (id) => this.overlay.headroomOf(id));
+    this.care.draw(ctx, scene, left, top);
+    this.speech.draw(ctx, scene, left, top, viewW, viewH, time);
     this.fx.particles.keepTextsClear(this.overlay.sugarKeepOuts());
     this.fx.particles.drawTexts(ctx, left, top);
     if (scene.showCrosshair && !scene.held) this.overlay.drawCrosshair(ctx, scene, left, top, lightAt, isKilled);
@@ -599,6 +609,7 @@ export class WorldRenderer {
   }
 
   private drawHeld(ctx: CanvasRenderingContext2D, scene: SceneView, left: number, top: number, viewW: number, viewH: number): void {
+    this.care.drawOffer(ctx, scene, left, top, { x: (bufferX) => this.toClientX(bufferX), y: (bufferY) => this.toClientY(bufferY) });
     if (!scene.held) {
       setHeldButtons([]);
       setHeldSurvivor(null);

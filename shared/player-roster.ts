@@ -19,6 +19,7 @@ const FRESH_CONNECTION = {
   revive: 0,
   lastInputSeq: 0,
   lastMoveId: 0,
+  care: null,
   up: false,
   down: false,
   left: false,

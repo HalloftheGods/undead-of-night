@@ -10,6 +10,7 @@ import { containerGridFor, townContainers } from './containers.ts';
 import type { ContainerState } from './containers.ts';
 import { canPlaceItem, createInventoryGrid, placeItem, removeItem } from './grid-inventory.ts';
 import type { GridItem, InventoryGrid } from './grid-inventory.ts';
+import { startCare } from './care.ts';
 import { touchesContainer } from './item-move.ts';
 import type { GearSlotId, ItemMove, MoveFrom, MoveReason } from './item-move.ts';
 import { applyMoveToGrids, candyGridOf, candyMoveFor, copyGrid, moveSourceItem } from './item-move-grids.ts';
@@ -209,12 +210,19 @@ function dropItem(sim: SimState, p: PlayerState, item: GridItem, from: MoveFrom,
   return null;
 }
 
+/** Handed to a teammate: care starts, with the item in hand. */
+function careFor(sim: SimState, p: PlayerState, move: ItemMove): MoveReason | null {
+  if (move.to.kind !== 'player') return 'bad';
+  const receiver = sim.players.find((each) => each.id === (move.to as { id: string }).id);
+  return receiver ? startCare(sim, p, receiver, move) : 'gone';
+}
+
 /** What the move does to the survivor and the container once the grids say it fits. Changes nothing when it refuses. */
 function moveEffects(sim: SimState, p: PlayerState, item: GridItem, move: ItemMove, grids: MoveGrids, view: ViewedContainer | null): MoveReason | null {
   const { from, to } = move;
   if (to.kind === 'use') return useItem(sim, p, item, from);
   if (to.kind === 'ground') return dropItem(sim, p, item, from, to);
-  if (to.kind === 'player') return 'bad';
+  if (to.kind === 'player') return careFor(sim, p, move);
   const fromContainer = from.kind === 'cell' && from.grid === 'container';
   const toContainer = to.kind === 'cell' && to.grid === 'container';
   if (view && fromContainer && toContainer) {
@@ -257,8 +265,8 @@ function tryMove(sim: SimState, p: PlayerState, move: ItemMove): MoveReason | nu
  * One item move from a survivor's window. A move at or below the last one applied is a repeat and is ignored ('bad',
  * no event). Otherwise the host checks it against its own bag and container, applies it, and answers `move_ok`, or
  * `move_no` with the reason and nothing changed. Container items move one at a time by id; the container is never
- * replaced wholesale. A ground drop is tossed toward the aimed point and lands where `tossLanding` says; a teammate target is refused
- * until care lands.
+ * replaced wholesale. A ground drop is tossed toward the aimed point and lands where `tossLanding` says; a teammate target
+ * starts care (`shared/care.ts`), the item held until it lands or breaks.
  */
 export function applyItemMove(sim: SimState, p: PlayerState, move: ItemMove): MoveReason | null {
   if (move.id <= p.lastMoveId) return 'bad';

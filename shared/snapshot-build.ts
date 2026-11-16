@@ -1,4 +1,5 @@
 import { bagHash, bagRows } from './bag.ts';
+import { careProgress } from './care.ts';
 import { viewedContainers } from './container-viewers.ts';
 import { merchantView } from './bunker-merchants.ts';
 import { rescueeView } from './camp/rescuee.ts';
@@ -94,6 +95,12 @@ function magazines(p: PlayerState): Record<WeaponId, number> {
   return Object.fromEntries(entries) as Record<WeaponId, number>;
 }
 
+/** The care being given, left off when none. */
+function careField(p: PlayerState): Pick<PlayerEntity, 'care'> {
+  if (!p.care) return {};
+  return { care: { receiver: p.care.receiver, itemType: p.care.item.type, progress: round2(careProgress(p.care)) } };
+}
+
 /** Left off while the bar is full, which is nearly always. */
 function staminaField(p: PlayerState): Pick<PlayerEntity, 'stamina' | 'winded'> {
   const tired = p.stamina < 1;
@@ -110,6 +117,7 @@ export function playerSnapshot(p: PlayerState): PlayerEntity {
     y: round2(p.y),
     angle: round2(p.angle),
     moving: p.moving,
+    ...careField(p),
     status: p.status,
     health: round2(p.health),
     maxHealth: p.maxHealth,
