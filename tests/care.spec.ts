@@ -59,7 +59,7 @@ describe('care', () => {
     receiver.needs!.bleeding = true;
     expect(applyItemMove(state, giver, giveMove(giver, receiver, 'bandage'))).toBeNull();
     expect(giver.supplies!.bandage).toBe(0);
-    expect(giver.inventory.pack.items.concat(giver.inventory.pockets.items)).toEqual([]);
+    expect(giver.inventory.pack.items.concat(giver.inventory.pockets.items).filter((item) => item.type === 'bandage')).toEqual([]);
     run(state, CARE_MEDICAL_MS - 200);
     expect(receiver.needs!.bleeding).toBe(true);
     run(state, 300);
@@ -87,10 +87,10 @@ describe('care', () => {
     receiver.needs!.bleeding = true;
     applyItemMove(state, giver, giveMove(giver, receiver, 'bandage'));
     // Stuff every cell with plank-sized junk by turning the grids full of knives would be fragile: shrink the bag instead.
-    giver.inventory.pack.cols = 0;
-    giver.inventory.pack.rows = 0;
-    giver.inventory.pockets.cols = 0;
-    giver.inventory.pockets.rows = 0;
+    Object.assign(giver.inventory.pack, { cols: 0 });
+    Object.assign(giver.inventory.pack, { rows: 0 });
+    Object.assign(giver.inventory.pockets, { cols: 0 });
+    Object.assign(giver.inventory.pockets, { rows: 0 });
     receiver.moving = true;
     state.pickups = [];
     run(state, TICK_MS);

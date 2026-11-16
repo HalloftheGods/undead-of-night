@@ -2,6 +2,16 @@
 
 All notable changes to the Undead of Night: Take One game are documented in this file.
 
+## [2026-11-15] - Aimed drops, care for teammates, moodles
+
+### Added
+- Drag an item out of the inventory and it is tossed where you aim, up to 130 pixels away and stopping at a wall, with a preview of where it will land.
+- Drop food, water, a bandage or a medkit on a teammate beside you to treat them: you hold still for 1.5 seconds (2.5 for a bandage or medkit), and moving or being hit stops it. You both speak while it happens.
+- A teammate with an ailment shows the worst one over their head: bleeding, infection, thirst, hunger, then fatigue.
+
+### Changed
+- Every move in the inventory is sent to the host at once. A refused move, or one with no answer after 2 seconds, flies back to where it came from.
+
 ## [2026-11-15] - New town layouts
 
 ### Changed

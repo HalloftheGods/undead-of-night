@@ -52,6 +52,7 @@ describe('container zoom geometry', () => {
       still: false,
       toBuffer: (p: { x: number; y: number }) => ({ x: p.x - 10, y: p.y - 5 }),
       toClient: (p: { x: number; y: number }) => ({ x: (p.x - 10) * 3, y: (p.y - 5) * 3 }),
+      toWorld: (p: { x: number; y: number }) => ({ x: p.x / 3 + 10, y: p.y / 3 + 5 }),
     };
     expect(toSpace(WORLD, camera, 'buffer')).toEqual({ x: 90, y: 45, w: 20, h: 10 });
     expect(toSpace(WORLD, camera, 'client')).toEqual({ x: 270, y: 135, w: 60, h: 30 });

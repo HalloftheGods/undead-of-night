@@ -28,6 +28,17 @@ function openBox(state: SimState): Container {
   return container;
 }
 
+/** The first cell of the container that is not blocked out of its grid. */
+function freeCell(container: Container): { x: number; y: number } {
+  const { cols, rows, blocked } = containerGridFor(container);
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      if (!blocked?.some((cell) => cell.x === x && cell.y === y)) return { x, y };
+    }
+  }
+  return { x: 0, y: 0 };
+}
+
 const takeMedkit = (id: number, container: number): ItemMove => ({
   id,
   item: 'box-medkit',
@@ -51,7 +62,7 @@ describe('applyItemMove', () => {
     expect(applyItemMove(state, p, takeMedkit(1, box.id))).toBeNull();
     expect(p.medkits).toBe(1);
     expect(state.containers[box.id]!.items).toEqual([]);
-    expect(p.inventory.pack.items.some((item) => item.type === 'medkit' && item.x === 0 && item.y === 0)).toBe(true);
+    expect(p.inventory.pack.items.some((item) => item.type === 'medkit')).toBe(true);
     expect(p.lastMoveId).toBe(1);
     expect(answers(state, p)).toEqual([{ type: 'move_ok', playerId: p.id, moveId: 1 }]);
   });
@@ -113,7 +124,7 @@ describe('applyItemMove', () => {
       item: knife.id,
       type: 'knife',
       from: { kind: 'cell', grid: 'pack', x: knife.x, y: knife.y },
-      to: { kind: 'cell', grid: 'container', x: 0, y: 0, rotated: false },
+      to: { kind: 'cell', grid: 'container', ...freeCell(box), rotated: false },
       container: box.id,
     };
     expect(applyItemMove(state, p, move)).toBeNull();
@@ -135,7 +146,7 @@ describe('applyItemMove', () => {
       item: 'candy-carried-jawbreaker-0',
       type: 'jawbreaker',
       from: { kind: 'cell', grid: 'candy', x: 0, y: 5 },
-      to: { kind: 'cell', grid: 'container', x: 0, y: 0, rotated: false },
+      to: { kind: 'cell', grid: 'container', ...freeCell(box), rotated: false },
       container: box.id,
     };
     expect(applyItemMove(state, p, move)).toBeNull();

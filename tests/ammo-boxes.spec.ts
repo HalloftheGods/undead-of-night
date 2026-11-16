@@ -85,8 +85,8 @@ describe('ammo boxes', () => {
     expect(p.reloadQueued).toBe(false);
   });
 
-  it('give the held item a LOAD button and no drop', () => {
+  it('give the held item a LOAD button, then a drop', () => {
     const actions = heldActions({ id: 'x', type: 'pistol_ammo', x: 0, y: 0, rotated: false });
-    expect(actions).toEqual([{ kind: 'use', label: 'LOAD' }]);
+    expect(actions).toEqual([{ kind: 'use', label: 'LOAD' }, { kind: 'drop', label: 'DROP' }]);
   });
 });
