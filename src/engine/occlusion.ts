@@ -52,6 +52,8 @@ export class OcclusionGrid {
 
   /** 1 over every living zombie's body, redrawn each frame by `setBodies`: they move, so unlike the props they are not in `cells`. */
   private readonly bodies: Uint8Array;
+  /** The indices of the cells `bodies` marked last time, so they can be cleared without a full sweep. */
+  private readonly markedBodies: number[] = [];
 
   /** `frontOf` says how tall a building's front wall stands, so the glow on it stops where the roof begins. */
   constructor(map: WorldMap, frontOf?: (building: BuildingInstance) => number | undefined) {
@@ -103,17 +105,30 @@ export class OcclusionGrid {
 
   /** Redraws the zombies that stand in a beam's way. The dead and the dormant lie flat and stop nothing. */
   setBodies(zombies: readonly ZombieEntity[]): void {
-    this.bodies.fill(0);
+    // Only the cells marked last frame are cleared, so a frame costs its zombies, not the whole town's grid.
+    const marked = this.markedBodies;
+    for (let i = 0; i < marked.length; i += 1) this.bodies[marked[i]] = 0;
+    marked.length = 0;
     for (const zombie of zombies) {
       if (zombie.health <= 0 || zombie.dormant) continue;
       const r = ZOMBIES[zombie.type].radius;
-      this.fill(zombie.x - r, zombie.y - r, zombie.x + r, zombie.y + r, 1, this.bodies);
+      const c0 = Math.max(0, Math.floor((zombie.x - r) / CELL));
+      const c1 = Math.min(this.cols - 1, Math.floor((zombie.x + r) / CELL));
+      const r0 = Math.max(0, Math.floor((zombie.y - r) / CELL));
+      const r1 = Math.min(this.rows - 1, Math.floor((zombie.y + r) / CELL));
+      for (let row = r0; row <= r1; row += 1) {
+        for (let col = c0; col <= c1; col += 1) {
+          const index = row * this.cols + col;
+          this.bodies[index] = 1;
+          marked.push(index);
+        }
+      }
     }
   }
 
   /** Whether a zombie's body covers this point, once the ray has got clear of its own start. */
   private bodyAt(x: number, y: number, dist: number): boolean {
-    if (dist < BODY_CLEAR) return false;
+    if (dist < BODY_CLEAR || this.markedBodies.length === 0) return false;
     const col = Math.floor(x / CELL);
     const row = Math.floor(y / CELL);
     const inField = col >= 0 && row >= 0 && col < this.cols && row < this.rows;
