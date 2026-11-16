@@ -120,7 +120,8 @@ const model = computed<PageModel>(() => {
     const effectMeta = GUN_EFFECTS[option.effect];
     const sprite = art.ui.pickupIcons[effectMeta.kit];
     const isFitted = effectData.current?.effect === option.effect;
-    const statusText = isFitted ? 'ACTIVE' : option.fittable ? 'READY TO LOAD' : 'KIT REQUIRED';
+    const idleStatusText = option.fittable ? 'READY TO LOAD' : 'KIT REQUIRED';
+    const statusText = isFitted ? 'ACTIVE' : idleStatusText;
 
     return {
       kind: 'link',
@@ -149,7 +150,8 @@ const model = computed<PageModel>(() => {
     items: partItems,
   });
 
-  const closeButtonLabel = bench.walkUp ? 'CLOSE' : bench.youReady ? 'NOT READY YET' : 'READY';
+  const waitingLabel = bench.youReady ? 'NOT READY YET' : 'READY';
+  const closeButtonLabel = bench.walkUp ? 'CLOSE' : waitingLabel;
 
   return {
     heading: 'WORKBENCH',

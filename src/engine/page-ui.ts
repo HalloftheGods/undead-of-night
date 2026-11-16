@@ -314,7 +314,8 @@ function itemHeight(item: PageItem, innerW: number, paper: boolean): number {
   if (item.kind === 'cards') return CARD_H;
   if (item.kind === 'logo') return PAPER_LOGO_H + 6;
   if (item.kind === 'album_slider') return 18 + 144 + 6 + 8 + 6 + item.tracks.length * 18;
-  return item.kind === 'stat' ? (paper ? BODY_LINE : FONT_HEIGHT) : ROW_H;
+  if (item.kind !== 'stat') return ROW_H;
+  return paper ? BODY_LINE : FONT_HEIGHT;
 }
 
 function panelHeight(panel: PagePanel, innerW: number, headH: number, paper: boolean): number {

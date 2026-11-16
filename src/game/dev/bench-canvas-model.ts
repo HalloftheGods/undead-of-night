@@ -234,14 +234,13 @@ const donePanels = (view: BenchView): PagePanel[] => {
 };
 
 const buildingPanels = (view: BenchView): PagePanel[] => {
-  const body =
-    view.buildingStep === 'pick'
-      ? pickPanels(view)
-      : view.buildingStep === 'rooms'
-        ? roomsPanels(view)
-        : view.buildingStep === 'loot'
-          ? lootPanels(view)
-          : donePanels(view);
+  const stepPanels: Record<string, (v: BenchView) => PagePanel[]> = {
+    pick: pickPanels,
+    rooms: roomsPanels,
+    loot: lootPanels,
+  };
+  const buildStep = stepPanels[view.buildingStep] ?? donePanels;
+  const body = buildStep(view);
   return [stepPanel(view), ...body];
 };
 
@@ -281,8 +280,12 @@ const footerFor = (view: BenchView): PageButton[] => {
 /** The whole bench page for the view given. */
 export function buildBenchModel(view: BenchView, counts: { items: number; objects: number }): PageModel {
   const heading = `${VIEW_LABEL[view.tab]} DEV BENCH${view.status ? `  ${view.status}` : ''}`;
-  const body =
-    view.tab === 'items' ? itemsPanels(view) : view.tab === 'containers' ? objectsPanels(view) : buildingPanels(view);
+  const isItemsTab = view.tab === 'items';
+  const isContainersTab = view.tab === 'containers';
+  let body: PagePanel[];
+  if (isItemsTab) body = itemsPanels(view);
+  else if (isContainersTab) body = objectsPanels(view);
+  else body = buildingPanels(view);
   return {
     heading,
     panels: [tabPanel(view, counts), ...body],

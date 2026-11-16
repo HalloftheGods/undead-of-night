@@ -72,13 +72,11 @@ const model = computed<PageModel>(() => {
     const isSelectable = lvl.selectable;
     const sprite = art?.ui?.levelScenes?.[lvl.number - 1];
 
-    const stateBadge = isPicked
-      ? '[CURRENT PICK]'
-      : lvl.state === 'frontier'
-        ? '[NEW EXPEDITION]'
-        : lvl.state === 'replay'
-          ? '[CLEARED - REPLAY]'
-          : '[LOCKED]';
+    const stateBadges: Record<string, string> = {
+      frontier: '[NEW EXPEDITION]',
+      replay: '[CLEARED - REPLAY]',
+    };
+    const stateBadge = isPicked ? '[CURRENT PICK]' : (stateBadges[lvl.state] ?? '[LOCKED]');
 
     const subText = isSelectable
       ? `${lvlTheme.toUpperCase()}: ${lvlDef.hordes} HORDES [CLICK TO DEPLOY]`

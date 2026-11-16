@@ -129,11 +129,13 @@ function drawControl(ctx: CanvasRenderingContext2D, win: PageWindow, control: Pl
     if (item.icon) drawIcon(ctx, item.icon, { x: box.x + 2, y: box.y + 2, w: box.h - 4, h: box.h - 4 });
     const hasSub = item.sub !== undefined && item.sub !== '';
     const mainY = hasSub ? box.y + 3 : labelY;
-    const labelColor = disabled ? DIM : (lit ? BONE : AMBER);
+    const litLabelColor = lit ? BONE : AMBER;
+    const labelColor = disabled ? DIM : litLabelColor;
     drawText(ctx, item.label.toUpperCase(), textX, mainY, labelColor);
     if (item.value) {
       const val = item.value.toUpperCase();
-      const valColor = disabled ? DIM : (lit ? BONE : DIM);
+      const litValColor = lit ? BONE : DIM;
+      const valColor = disabled ? DIM : litValColor;
       drawText(ctx, val, box.x + box.w - 4 - textWidth(val), mainY, valColor);
     }
     if (hasSub) {

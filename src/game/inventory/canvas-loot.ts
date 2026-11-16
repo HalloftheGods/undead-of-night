@@ -152,7 +152,8 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
     // A double click sends it across: it flies from the cell it is leaving. The first click already lifted it, so that cell is where the hand got it.
     const leaving = gridOf(gridId).items.find((item) => item.id === itemId);
     const held = state.heldItem;
-    const plate = leaving ? itemPlateAt(layout(), gridId, leaving) : held ? heldPlate(held) : null;
+    const heldOnlyPlate = held ? heldPlate(held) : null;
+    const plate = leaving ? itemPlateAt(layout(), gridId, leaving) : heldOnlyPlate;
     const moving = leaving ?? held?.item ?? null;
     const heldFrom = held ? sourceOf(held.source) : null;
   const from = leaving ? cellFrom(gridId, leaving) : heldFrom;

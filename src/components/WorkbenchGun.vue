@@ -8,7 +8,7 @@
       :aria="`Fit ${row.label}, rank ${row.rank} of ${row.maxRank}, takes ${row.cost.map((part) => PART_LABELS[part]).join(' and ')}`"
       :pips="{ on: row.rank, of: row.maxRank }"
       :sub="row.blocked ?? row.costText"
-      :tone="row.blocked ? (row.rank >= row.maxRank ? 'done' : 'blocked') : 'cost'"
+      :tone="toneOf(row)"
       :disabled="!row.fittable"
       :fitted="row.rank > 0"
       :moves="row.moves"
@@ -61,6 +61,14 @@ const game = useGame();
 
 const rows = computed(() => benchRows(weapon, owned, gear));
 const tactileUpgrade = ref<GunUpgrade | null>(null);
+
+function toneOf(row: BenchRow): 'done' | 'blocked' | 'cost' {
+  const isBlocked = Boolean(row.blocked);
+  const isMaxed = row.rank >= row.maxRank;
+  if (!isBlocked) return 'cost';
+  if (isMaxed) return 'done';
+  return 'blocked';
+}
 
 function install(upgrade: GunUpgrade): void {
   const isTactile = isTactileUpgrade(upgrade);
