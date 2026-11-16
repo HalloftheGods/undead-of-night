@@ -39,7 +39,8 @@ let sweepPattern: SweepPattern = 'random';
 
 function carry(now: number): void {
   const current = searchSweep.value;
-  if (current === null) return;
+  const isSweepIdle = current === null;
+  if (isSweepIdle) return;
   searchSweep.value = Math.min(1, Math.max(current, target + rate * (now - stamp)));
   shownSweep.value = heldSweep(searchSweep.value, zoomLandedAt(now), now);
   frame = requestAnimationFrame(carry);
@@ -51,7 +52,8 @@ function carry(now: number): void {
  */
 export function feedSearch(progress: number | null, lootSlot = 0): void {
   lastSearchMs = performance.now();
-  if (progress === null) {
+  const isSearchOver = progress === null;
+  if (isSearchOver) {
     if (frame) cancelAnimationFrame(frame);
     frame = 0;
     searchSweep.value = null;
@@ -60,7 +62,8 @@ export function feedSearch(progress: number | null, lootSlot = 0): void {
   }
   sweepPattern = sweepPatternFor(lootSlot);
   const now = performance.now();
-  if (searchSweep.value === null) {
+  const isSweepNotStarted = searchSweep.value === null;
+  if (isSweepNotStarted) {
     target = 0;
     rate = 0;
     stamp = now;
@@ -69,7 +72,8 @@ export function feedSearch(progress: number | null, lootSlot = 0): void {
     frame = requestAnimationFrame(carry);
   }
   const dt = now - stamp;
-  if (dt > 0 && progress > target) rate = Math.min(0.002, (progress - target) / dt);
+  const isProgressAdvancing = dt > 0 && progress > target;
+  if (isProgressAdvancing) rate = Math.min(0.002, (progress - target) / dt);
   target = progress;
   stamp = now;
 }
@@ -88,10 +92,14 @@ export interface SweepRanks {
 export type SweepPattern = 'random' | 'rows' | 'columns' | 'diagonal' | 'spiral';
 
 export function sweepPatternFor(lootSlot: number): SweepPattern {
-  if (lootSlot >= 5) return 'spiral';
-  if (lootSlot === 4) return 'diagonal';
-  if (lootSlot === 3) return 'columns';
-  if (lootSlot === 2) return 'rows';
+  const isSpiralSlot = lootSlot >= 5;
+  const isDiagonalSlot = lootSlot === 4;
+  const isColumnsSlot = lootSlot === 3;
+  const isRowsSlot = lootSlot === 2;
+  if (isSpiralSlot) return 'spiral';
+  if (isDiagonalSlot) return 'diagonal';
+  if (isColumnsSlot) return 'columns';
+  if (isRowsSlot) return 'rows';
   return 'random';
 }
 
@@ -108,7 +116,8 @@ function patternCells(cols: number, rows: number, pattern: Exclude<SweepPattern,
     for (let band = 0; band <= cols + rows - 2; band++) {
       for (let row = 0; row < rows; row++) {
         const col = band - row;
-        if (col >= 0 && col < cols) out.push(at(col, row));
+        const isColumnInGrid = col >= 0 && col < cols;
+        if (isColumnInGrid) out.push(at(col, row));
       }
     }
   } else {
@@ -122,9 +131,11 @@ function patternCells(cols: number, rows: number, pattern: Exclude<SweepPattern,
       top++;
       for (let row = top; row <= bottom; row++) out.push(at(right, row));
       right--;
-      if (top <= bottom) for (let col = right; col >= left; col--) out.push(at(col, bottom));
+      const hasRowsLeft = top <= bottom;
+      if (hasRowsLeft) for (let col = right; col >= left; col--) out.push(at(col, bottom));
       bottom--;
-      if (left <= right) for (let row = bottom; row >= top; row--) out.push(at(left, row));
+      const hasColumnsLeft = left <= right;
+      if (hasColumnsLeft) for (let row = bottom; row >= top; row--) out.push(at(left, row));
       left++;
     }
   }
@@ -136,9 +147,11 @@ const ranked = new WeakMap<InventoryGrid, { pattern: SweepPattern; ranks: SweepR
 export function sweepRanks(grid: InventoryGrid): SweepRanks {
   const pattern = sweepPattern;
   const known = ranked.get(grid);
-  if (known && known.pattern === pattern) return known.ranks;
+  const isKnownForPattern = known !== undefined && known.pattern === pattern;
+  if (isKnownForPattern) return known.ranks;
   let cells: number[];
-  if (pattern === 'random') {
+  const isRandomPattern = pattern === 'random';
+  if (isRandomPattern) {
     cells = [];
     for (let row = 0; row < grid.rows; row++) {
       for (let col = 0; col < grid.cols; col++) {
@@ -166,10 +179,13 @@ export type CellPhase = 'waiting' | 'head' | 'read';
  * A defrag-style read: the head lands on the open cells in a random order, and every cell it has left is done. It reaches the last cell as the search ends, so the sweep takes exactly as long as the search does.
  */
 export function cellPhase(rank: number, open: number, progress: number): CellPhase {
-  if (open <= 0) return 'read';
-  if (progress >= 1) return 'read';
+  const hasNoCells = open <= 0;
+  if (hasNoCells) return 'read';
+  const isSearchDone = progress >= 1;
+  if (isSearchDone) return 'read';
   const head = Math.min(open - 1, Math.floor(Math.max(0, progress) * open));
-  if (rank < head) return 'read';
+  const isBehindHead = rank < head;
+  if (isBehindHead) return 'read';
   return rank === head ? 'head' : 'waiting';
 }
 
@@ -192,7 +208,8 @@ export function searchFlipped(prop: { readonly kind?: string } | undefined): boo
 export function stageView(art: ContainerArt, searched: boolean): { url: string; viewBox: string; x: number; y: number; w: number; h: number } | null {
   const box = stageBox(art);
   const sprite = stageSprite(art, searched);
-  if (!box || !sprite) return null;
+  const isStageMissing = !box || !sprite;
+  if (isStageMissing) return null;
   const at = stageOffset(box, sprite);
   return { url: spriteDataUrl(sprite), viewBox: `0 0 ${box.width} ${box.height}`, x: at.x, y: at.y, w: sprite.w, h: sprite.h };
 }
@@ -210,14 +227,16 @@ let revealFrame = 0;
 
 function runReveal(now: number): void {
   // The '?' reveal waits for the container to land, whichever order the search end and the reopen ran in.
-  if (zoomLandedAt(now) === Number.POSITIVE_INFINITY) {
+  const isZoomPending = zoomLandedAt(now) === Number.POSITIVE_INFINITY;
+  if (isZoomPending) {
     revealStart = now;
     revealProgress.value = 0;
     revealFrame = requestAnimationFrame(runReveal);
     return;
   }
   const done = (now - revealStart) / REVEAL_MS;
-  if (done >= 1) {
+  const isRevealDone = done >= 1;
+  if (isRevealDone) {
     revealProgress.value = null;
     revealFrame = 0;
     return;
@@ -229,7 +248,8 @@ function runReveal(now: number): void {
 /** Loot that arrives with the end of a search starts hidden. Loot from a reopened container is shown as it is. */
 export function startReveal(items: readonly { readonly id: string }[]): void {
   const fresh = performance.now() - lastSearchMs < REVEAL_WINDOW_MS;
-  if (!fresh || items.length === 0) return;
+  const hasNoFreshLoot = !fresh || items.length === 0;
+  if (hasNoFreshLoot) return;
   const order = items.map((item) => item.id);
   for (let i = order.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -245,7 +265,8 @@ export function startReveal(items: readonly { readonly id: string }[]): void {
 /** True while this item still shows as a "?". */
 export function itemHidden(id: string): boolean {
   const progress = revealProgress.value;
-  if (progress === null) return false;
+  const isNothingHiding = progress === null;
+  if (isNothingHiding) return false;
   const rank = revealRanks.get(id);
   return rank !== undefined && progress * revealRanks.size <= rank;
 }

@@ -406,11 +406,14 @@ function sweepPhase(col: number, row: number): CellPhase | null {
 /** Head and read cells light up. A void is never lit: it shows as a void when the head reaches it, and looks like any other cell before. */
 function sweepClass(col: number, row: number): string | null {
   const phase = sweepPhase(col, row);
-  if (phase === 'waiting') return null;
+  const isWaitingPhase = phase === 'waiting';
+  if (isWaitingPhase) return null;
   // A void is not lit: it just shows itself when its turn comes.
   if (isCellBlocked(modalState.containerGrid, col, row)) return null;
-  if (phase === 'head') return 'is-sweep-head';
-  return phase === 'read' ? 'is-sweep-read' : null;
+  const isHeadPhase = phase === 'head';
+  if (isHeadPhase) return 'is-sweep-head';
+  const isReadPhase = phase === 'read';
+  return isReadPhase ? 'is-sweep-read' : null;
 }
 
 function showsVoid(col: number, row: number): boolean {
@@ -592,7 +595,9 @@ function syncGearEmits(slotId: GearSlotId): void {
 function onRotateClick(): void {
   // A box of rounds has nothing to turn: R reloads with it.
   const held = modalState.heldItem;
-  if (held && isLoadable(held.item)) {
+  const isHoldingItem = held !== null;
+  const isHeldLoadable = isHoldingItem && isLoadable(held.item);
+  if (isHeldLoadable) {
     game.playSfx(useSoundOf(held.item.type));
     onUseHeld();
     return;
@@ -620,20 +625,23 @@ function onClose(): void {
 function emitMove(item: GridItem, from: MoveFrom, motion: MotionKind, origin: CellOrigin | null = null, to: MoveTo | null = placedAt(modalState, item.id)): void {
   const move = windowMove(item, from, to);
   // The hand is empty now: the cursor hears it first, so the grids refill with the item where it was set down.
-  if (modalState.heldItem === null) setHeld(null);
+  const isHandEmpty = modalState.heldItem === null;
+  if (isHandEmpty) setHeld(null);
   if (move) emit('move', move, motion, origin);
 }
 
 /** Where an item is drawn now, in client pixels, for a flight back or a puff. */
 function itemOrigin(itemId: string): CellOrigin | null {
-  if (!findShown(modalState, itemId)) return null;
+  const isItemShown = findShown(modalState, itemId) !== null;
+  if (!isItemShown) return null;
   const rect = backdrop.value?.querySelector<HTMLElement>(`[data-item-id="${CSS.escape(itemId)}"]`)?.getBoundingClientRect() ?? null;
   return rect ? { client: { x: rect.left, y: rect.top, w: rect.width, h: rect.height } } : null;
 }
 
 function onCellClick(gridId: GridIdentifier, col: number, row: number): boolean {
   const held = modalState.heldItem;
-  if (held === null) return false;
+  const isHandEmpty = held === null;
+  if (isHandEmpty) return false;
   const placed = placeHeldItemInGrid(modalState, gridId, col, row);
   if (placed) {
     // Set down by hand (a click or a drag): it only lands, it does not fly.
@@ -655,10 +663,12 @@ function triggerQuickTransfer(gridId: GridIdentifier, itemId: string): void {
   const cell = backdrop.value?.querySelector<HTMLElement>(`[data-item-id="${CSS.escape(itemId)}"]`)?.getBoundingClientRect() ?? null;
   const didTransfer = quickTransferBetweenInventories(modalState, gridId, itemId);
   if (didTransfer) {
-    if (modalState.heldItem === null) setHeld(null);
+    const isHandEmpty = modalState.heldItem === null;
+    if (isHandEmpty) setHeld(null);
     game.playSfx('ui_place');
     const origin = cell ? { client: { x: cell.left, y: cell.top, w: cell.width, h: cell.height } } : null;
-    if (moving && from) emitMove(moving, from, origin ? 'fly' : 'land', origin);
+    const canEmitMove = moving && from;
+    if (canEmitMove) emitMove(moving, from, origin ? 'fly' : 'land', origin);
   }
 }
 
@@ -730,7 +740,9 @@ function onGearSlotClick(slotId: GearSlotId): boolean {
     const placed = placeHeldItemInGear(modalState, slotId);
     if (placed) {
       syncGearEmits(slotId);
-      if (held.source.kind === 'gear') syncGearEmits(held.source.slotId);
+      const heldSource = held.source;
+      const isLiftedFromGear = heldSource.kind === 'gear';
+      if (isLiftedFromGear) syncGearEmits(heldSource.slotId);
       emitMove(held.item, sourceOf(held.source), 'land');
     }
     return placed;
@@ -746,7 +758,8 @@ function onGearSlotClick(slotId: GearSlotId): boolean {
 function onItemDragStart(event: DragEvent, gridId: GridIdentifier, item: GridItem): void {
   const isHolding = modalState.heldItem !== null;
   const isNotHolding = !isHolding;
-  if (isNotHolding && pickUpItemFromGrid(modalState, gridId, item.id)) game.playSfx('ui_pickup');
+  const didPickUp = isNotHolding && pickUpItemFromGrid(modalState, gridId, item.id);
+  if (didPickUp) game.playSfx('ui_pickup');
   const hasDataTransfer = event.dataTransfer !== null;
   if (hasDataTransfer) {
     event.dataTransfer!.setData('text/plain', item.id);
@@ -789,7 +802,9 @@ function handleGlobalKey(event: KeyboardEvent): void {
   }
   // R turns only an item in hand; with the hand empty it is left to the game as the reload key.
   const isRotateKey = event.key === 'r' || event.key === 'R';
-  if (isRotateKey && modalState.heldItem !== null) {
+  const isHoldingItem = modalState.heldItem !== null;
+  const shouldRotateHeld = isRotateKey && isHoldingItem;
+  if (shouldRotateHeld) {
     event.preventDefault();
     onRotateClick();
   }
@@ -840,10 +855,12 @@ function onHeldButtonClick(event: MouseEvent): void {
 function actOnHeld(kind: 'use' | 'drop' | null, canUse: boolean, canDrop: boolean, to: MoveTo = GROUND_TARGET): boolean {
   const held = modalState.heldItem;
   if (!held) return false;
-  if (kind === 'use' && canUse) {
+  const shouldUse = kind === 'use' && canUse;
+  const shouldDrop = kind === 'drop' && canDrop;
+  if (shouldUse) {
     game.playSfx(useSoundOf(held.item.type));
     onUseHeld();
-  } else if (kind === 'drop' && canDrop) {
+  } else if (shouldDrop) {
     game.playSfx('ui_drop');
     onDropHeld(to);
   } else return false;
@@ -863,7 +880,8 @@ const padItemId = computed(() => {
 /** The cursor's cell where no item covers it: an empty spot to set something down. */
 function isPadCell(gridId: GridIdentifier, col: number, row: number): boolean {
   const cursor = padCursor.value;
-  if (!cursor || cursor.gridId !== gridId) return false;
+  const isCursorOnGrid = cursor !== null && cursor.gridId === gridId;
+  if (!isCursorOnGrid) return false;
   const onItem = padItemId.value !== null;
   return !onItem && cursor.col === col && cursor.row === row;
 }
@@ -874,7 +892,8 @@ function padMove(direction: LootDirection): boolean {
   padCursor.value = next ?? cursor;
   // A lifted item rides the highlight, and shows green or red where it would land.
   const at = padCursor.value;
-  if (modalState.heldItem !== null) setHoverTile(at.gridId, at.col, at.row);
+  const isHoldingItem = modalState.heldItem !== null;
+  if (isHoldingItem) setHoverTile(at.gridId, at.col, at.row);
   return true;
 }
 
@@ -882,12 +901,15 @@ function padMove(direction: LootDirection): boolean {
 function padPress(button: LootButton): boolean {
   // With the hand empty the triggers are the game's (fire and shove), so they leave the highlight unlit.
   const isTrigger = button === 'rt' || button === 'lt';
-  if (isTrigger && modalState.heldItem === null) return false;
+  const isHandEmpty = modalState.heldItem === null;
+  const isTriggerWithEmptyHand = isTrigger && isHandEmpty;
+  if (isTriggerWithEmptyHand) return false;
   const cursor = padCursor.value ?? startCursor(padGridOf);
   padCursor.value = cursor;
   const grid = padGridOf(cursor.gridId);
   const item = findItemAtTile(grid, cursor.col, cursor.row);
-  if (button === 'y') {
+  const isRotateButton = button === 'y';
+  if (isRotateButton) {
     onRotateClick();
     return true;
   }
@@ -899,13 +921,15 @@ function padPress(button: LootButton): boolean {
     if (acted) padCursor.value = settleCursor(cursor, padGridOf);
     return acted;
   }
-  if (modalState.heldItem !== null) {
+  const isHoldingItem = modalState.heldItem !== null;
+  if (isHoldingItem) {
     onCellClick(cursor.gridId, cursor.col, cursor.row);
     padCursor.value = { gridId: cursor.gridId, ...anchorOf(grid, cursor.col, cursor.row) };
     return true;
   }
   if (!item) return true;
-  if (button === 'x') onItemClick(cursor.gridId, item);
+  const isLiftButton = button === 'x';
+  if (isLiftButton) onItemClick(cursor.gridId, item);
   else triggerQuickTransfer(cursor.gridId, item.id);
   padCursor.value = settleCursor(cursor, padGridOf);
   return true;
@@ -924,7 +948,8 @@ onMounted(() => {
 /** Esc from outside: put a held item back first, and close on the next press. */
 /** Puts a held item back where it came from, so the grids are whole when the bag is read on close. */
 function settle(): void {
-  if (modalState.heldItem !== null) returnHeldItemToSource(modalState);
+  const isHoldingItem = modalState.heldItem !== null;
+  if (isHoldingItem) returnHeldItemToSource(modalState);
   setHeld(null);
 }
 

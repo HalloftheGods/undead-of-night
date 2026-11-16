@@ -95,12 +95,14 @@ export function createCanvasSetup(canvas: HTMLCanvasElement, host: CanvasSetupHo
   }
 
   function spin(): void {
-    if (host.reducedMotion()) spinner.stop();
+    const prefersReducedMotion = host.reducedMotion();
+    if (prefersReducedMotion) spinner.stop();
     else spinner.start();
   }
 
   function preview(id: string | null, byPointer: boolean): void {
-    if (id === null) {
+    const isCleared = id === null;
+    if (isCleared) {
       win.previewed = null;
       spinner.stop();
       return;
@@ -127,11 +129,14 @@ export function createCanvasSetup(canvas: HTMLCanvasElement, host: CanvasSetupHo
     open = null;
     preview(null, false);
     show();
-    if (refocus && was !== null) win.focus = `card:${was}`;
+    const wasListOpen = was !== null;
+    const shouldRefocus = refocus && wasListOpen;
+    if (shouldRefocus) win.focus = `card:${was}`;
   }
 
   function endEditing(): void {
-    if (document.activeElement === input) input.blur();
+    const isTyping = document.activeElement === input;
+    if (isTyping) input.blur();
     win.editing = false;
   }
 
@@ -145,7 +150,10 @@ export function createCanvasSetup(canvas: HTMLCanvasElement, host: CanvasSetupHo
   function chooseOption(index: number): void {
     const pick = openPick();
     const option = pick?.options[index];
-    if (!pick || !option) return;
+    const isPickMissing = !pick;
+    const isOptionMissing = !option;
+    const shouldSkipChoice = isPickMissing || isOptionMissing;
+    if (shouldSkipChoice) return;
     host.playUi('click');
     host.choose(pick.key, option.id);
     closeList(true);
@@ -157,18 +165,21 @@ export function createCanvasSetup(canvas: HTMLCanvasElement, host: CanvasSetupHo
   }
 
   function activate(id: FocusId): void {
-    if (id === 'callsign') {
+    const isCallsign = id === 'callsign';
+    if (isCallsign) {
       beginEditing();
       return;
     }
     if (id.startsWith('card:')) {
       const key = id.slice('card:'.length);
-      if (key === 'level') {
+      const isLevelCard = key === 'level';
+      if (isLevelCard) {
         press('levels');
         return;
       }
       host.playUi('click');
-      if (open === key) closeList(true);
+      const isListOpen = open === key;
+      if (isListOpen) closeList(true);
       else openList(key as PickKey, true);
       return;
     }
@@ -178,7 +189,8 @@ export function createCanvasSetup(canvas: HTMLCanvasElement, host: CanvasSetupHo
   }
 
   function onClick(event: MouseEvent): void {
-    if (event.target !== canvas) return;
+    const isOutsideCanvas = event.target !== canvas;
+    if (isOutsideCanvas) return;
     const hit = setupHitAt(layout(), bufferPoint(event).x, bufferPoint(event).y);
     endEditing();
     win.focus = null;
@@ -195,18 +207,22 @@ export function createCanvasSetup(canvas: HTMLCanvasElement, host: CanvasSetupHo
   }
 
   function onMove(event: MouseEvent): void {
-    if (event.target !== canvas) {
+    const isOutsideCanvas = event.target !== canvas;
+    if (isOutsideCanvas) {
       win.hover = null;
       return;
     }
     const point = bufferPoint(event);
     const hit = setupHitAt(layout(), point.x, point.y);
-    if (sameHit(hit, win.hover)) return;
+    const isUnchanged = sameHit(hit, win.hover);
+    if (isUnchanged) return;
     win.hover = hit;
     const pickable = hit?.kind === 'card' || hit?.kind === 'button';
     if (pickable) host.playUi('hover');
-    if (hit?.kind === 'option') preview(openPick()?.options[hit.index]?.id ?? null, true);
-    else if (open !== null) preview(null, false);
+    const isOptionHit = hit?.kind === 'option';
+    const isListShown = open !== null;
+    if (isOptionHit) preview(openPick()?.options[hit.index]?.id ?? null, true);
+    else if (isListShown) preview(null, false);
   }
 
   function stepList(key: string): boolean {
@@ -222,7 +238,8 @@ export function createCanvasSetup(canvas: HTMLCanvasElement, host: CanvasSetupHo
   function moveFocus(key: string): void {
     const targets = focusTargets(layout());
     const from = win.focus ?? targets[0]?.id ?? null;
-    if (from === null) return;
+    const isNowhere = from === null;
+    if (isNowhere) return;
     const dir = ARROWS[key];
     // Left and Right walk the screen in reading order (portraits, then the callsign, then the buttons), so no
     // portrait is skipped when the nearest centre sideways happens to be the field. Up and Down stay spatial.
@@ -234,41 +251,54 @@ export function createCanvasSetup(canvas: HTMLCanvasElement, host: CanvasSetupHo
   }
 
   function listKey(event: KeyboardEvent): boolean {
-    if (event.code === 'Escape') {
+    const isEscape = event.code === 'Escape';
+    if (isEscape) {
       closeList(true);
       return true;
     }
-    if (event.code === 'Enter' || event.code === 'NumpadEnter' || event.code === 'Space') {
+    const isEnter = event.code === 'Enter';
+    const isNumpadEnter = event.code === 'NumpadEnter';
+    const isSpace = event.code === 'Space';
+    const shouldChooseOption = isEnter || isNumpadEnter || isSpace;
+    if (shouldChooseOption) {
       if (!event.repeat) chooseOption(optionFocus);
       return true;
     }
-    if (event.code === 'Tab') return true;
+    const isTab = event.code === 'Tab';
+    if (isTab) return true;
     return stepList(event.key);
   }
 
   function pageKey(event: KeyboardEvent): boolean {
-    if (event.code === 'Escape') {
+    const isEscape = event.code === 'Escape';
+    if (isEscape) {
       if (!event.repeat) press('back');
       return true;
     }
-    if (event.code === 'Tab') {
+    const isTab = event.code === 'Tab';
+    if (isTab) {
       win.focus = tabFrom(focusTargets(layout()), win.focus, event.shiftKey ? -1 : 1);
       return true;
     }
-    if (event.key in ARROWS) {
+    const isArrow = event.key in ARROWS;
+    if (isArrow) {
       moveFocus(event.key);
       return true;
     }
     const activating = event.code === 'Enter' || event.code === 'NumpadEnter' || event.code === 'Space';
-    if (activating && win.focus !== null) {
-      if (!event.repeat) activate(win.focus);
+    const focused = win.focus;
+    const hasFocus = focused !== null;
+    const shouldActivateFocus = activating && hasFocus;
+    if (shouldActivateFocus) {
+      if (!event.repeat) activate(focused);
       return true;
     }
     return false;
   }
 
   function typingKey(event: KeyboardEvent): boolean {
-    if (event.code === 'Escape') {
+    const isEscape = event.code === 'Escape';
+    if (isEscape) {
       endEditing();
       if (!event.repeat) press('back');
       return true;
@@ -279,7 +309,8 @@ export function createCanvasSetup(canvas: HTMLCanvasElement, host: CanvasSetupHo
       win.focus = 'callsign';
       return true;
     }
-    if (event.code === 'Tab') {
+    const isTab = event.code === 'Tab';
+    if (isTab) {
       endEditing();
       win.focus = tabFrom(focusTargets(layout()), 'callsign', event.shiftKey ? -1 : 1);
       return true;
@@ -288,13 +319,18 @@ export function createCanvasSetup(canvas: HTMLCanvasElement, host: CanvasSetupHo
   }
 
   function openKey(event: KeyboardEvent): boolean {
-    if (open !== null) return listKey(event);
+    const isListOpen = open !== null;
+    if (isListOpen) return listKey(event);
     return pageKey(event);
   }
 
   /** Capture phase, so the pause and confirm keys the game listens for never see what this screen takes. */
   function onKeyDown(event: KeyboardEvent): void {
-    if (event.ctrlKey || event.metaKey || event.altKey) return;
+    const isCtrlHeld = event.ctrlKey;
+    const isMetaHeld = event.metaKey;
+    const isAltHeld = event.altKey;
+    const shouldIgnoreKey = isCtrlHeld || isMetaHeld || isAltHeld;
+    if (shouldIgnoreKey) return;
     const typing = document.activeElement === input;
     const handled = typing ? typingKey(event) : openKey(event);
     if (!handled) return;
@@ -329,7 +365,10 @@ export function createCanvasSetup(canvas: HTMLCanvasElement, host: CanvasSetupHo
   return {
     update(model) {
       source = model;
-      if (open !== null && !model.picks.some((pick) => pick.key === open)) open = null;
+      const isListOpen = open !== null;
+      const isListGone = !model.picks.some((pick) => pick.key === open);
+      const shouldCloseList = isListOpen && isListGone;
+      if (shouldCloseList) open = null;
       show();
     },
     dispose() {

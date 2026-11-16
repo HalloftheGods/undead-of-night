@@ -6,32 +6,9 @@
 import { DOM_PAD_MENU } from './pad-focus.ts';
 import type { PadMenu } from './pad-focus.ts';
 
-/** Standard Gamepad button indexes (w3c.github.io/gamepad, "Remapping"). The bottom face button is 0 on every pad. */
-export const PAD = {
-  a: 0,
-  b: 1,
-  x: 2,
-  y: 3,
-  lb: 4,
-  rb: 5,
-  lt: 6,
-  rt: 7,
-  view: 8,
-  start: 9,
-  l3: 10,
-  r3: 11,
-  up: 12,
-  down: 13,
-  left: 14,
-  right: 15,
-  home: 16,
-} as const;
+import { PAD, PAD_FIRE, PAD_HORN, PAD_PREV_WEAPON } from './pad-codes.ts';
 
-/** Pseudo-keys for what only a pad does. The keyboard never sends them. */
-export const PAD_FIRE = 'PadFire';
-export const PAD_PREV_WEAPON = 'PadPrevWeapon';
-/** The pad's horn button, held as this pseudo-key so a rebound keyboard horn does not matter. */
-export const PAD_HORN = 'PadHorn';
+export { PAD, PAD_FIRE, PAD_HORN, PAD_PREV_WEAPON };
 const SNEAK_CODE = 'Space';
 
 import { loadKeyBindings, loadPadBindings } from '@game/controls-prefs.ts';
@@ -41,25 +18,30 @@ function inventoryCode(): string {
   return loadKeyBindings().inventory[0] ?? 'KeyI';
 }
 
+/** True when a pad button is assigned to the action. */
+function isBound(button: number | null): button is number {
+  return button !== null;
+}
+
 export function getActivePadBindings(): ReadonlyMap<number, string> {
   const binds = loadPadBindings();
   const map = new Map<number, string>();
-  if (binds.search !== null) map.set(binds.search, 'KeyE');
-  if (binds.horn !== null) map.set(binds.horn, PAD_HORN);
-  if (binds.heal !== null) map.set(binds.heal, 'KeyH');
-  if (binds.reload !== null) map.set(binds.reload, 'KeyR');
-  if (binds.bag !== null) map.set(binds.bag, 'KeyX');
-  if (binds.sneak !== null) map.set(binds.sneak, SNEAK_CODE);
-  if (binds.throw !== null) map.set(binds.throw, 'KeyG');
-  if (binds.melee !== null) map.set(binds.melee, 'KeyF');
-  if (binds.fire !== null) map.set(binds.fire, PAD_FIRE);
-  if (binds.map !== null) map.set(binds.map, 'KeyN');
-  if (binds.log !== null) map.set(binds.log, 'KeyL');
-  if (binds.inventory !== null) map.set(binds.inventory, inventoryCode());
-  if (binds.spinner !== null) map.set(binds.spinner, 'KeyT');
-  if (binds.fountain !== null) map.set(binds.fountain, 'KeyV');
-  if (binds.prevWeapon !== null) map.set(binds.prevWeapon, PAD_PREV_WEAPON);
-  if (binds.cycleWeapon !== null) map.set(binds.cycleWeapon, 'KeyQ');
+  if (isBound(binds.search)) map.set(binds.search, 'KeyE');
+  if (isBound(binds.horn)) map.set(binds.horn, PAD_HORN);
+  if (isBound(binds.heal)) map.set(binds.heal, 'KeyH');
+  if (isBound(binds.reload)) map.set(binds.reload, 'KeyR');
+  if (isBound(binds.bag)) map.set(binds.bag, 'KeyX');
+  if (isBound(binds.sneak)) map.set(binds.sneak, SNEAK_CODE);
+  if (isBound(binds.throw)) map.set(binds.throw, 'KeyG');
+  if (isBound(binds.melee)) map.set(binds.melee, 'KeyF');
+  if (isBound(binds.fire)) map.set(binds.fire, PAD_FIRE);
+  if (isBound(binds.map)) map.set(binds.map, 'KeyN');
+  if (isBound(binds.log)) map.set(binds.log, 'KeyL');
+  if (isBound(binds.inventory)) map.set(binds.inventory, inventoryCode());
+  if (isBound(binds.spinner)) map.set(binds.spinner, 'KeyT');
+  if (isBound(binds.fountain)) map.set(binds.fountain, 'KeyV');
+  if (isBound(binds.prevWeapon)) map.set(binds.prevWeapon, PAD_PREV_WEAPON);
+  if (isBound(binds.cycleWeapon)) map.set(binds.cycleWeapon, 'KeyQ');
   map.set(PAD.start, 'Escape');
   return map;
 }
@@ -159,7 +141,10 @@ export function radialDeadzone(x: number, y: number, deadzone = STICK_DEADZONE):
 /** The direction to walk: each axis -1, 0 or 1. */
 export function eightWay(stick: StickVector | null): StickVector {
   const reach = stick ? Math.hypot(stick.x, stick.y) : 0;
-  if (!stick || reach === 0) return { x: 0, y: 0 };
+  const isStickMissing = !stick;
+  const isStickCentred = reach === 0;
+  const shouldStandStill = isStickMissing || isStickCentred;
+  if (shouldStandStill) return { x: 0, y: 0 };
   const across = stick.x / reach;
   const down = stick.y / reach;
   return {
@@ -171,7 +156,8 @@ export function eightWay(stick: StickVector | null): StickVector {
 function navOf(stick: StickVector | null): NavDirection | null {
   const isNudge = !stick || Math.hypot(stick.x, stick.y) < NAV_PUSH;
   if (isNudge) return null;
-  if (Math.abs(stick.x) > Math.abs(stick.y)) return stick.x > 0 ? 'right' : 'left';
+  const isHorizontal = Math.abs(stick.x) > Math.abs(stick.y);
+  if (isHorizontal) return stick.x > 0 ? 'right' : 'left';
   return stick.y > 0 ? 'down' : 'up';
 }
 
@@ -264,14 +250,16 @@ export class GamepadInput {
   private brake = false;
 
   get dirX(): number {
-    if (!this.host.live()) return 0;
+    const isPaused = !this.host.live();
+    if (isPaused) return 0;
     if (!this.driving) return eightWay(this.move).x;
     const lean = this.move?.x ?? 0;
     return Math.abs(lean) > WHEEL_LEAN ? Math.sign(lean) : 0;
   }
 
   get dirY(): number {
-    if (!this.host.live()) return 0;
+    const isPaused = !this.host.live();
+    if (isPaused) return 0;
     if (this.driving) return Number(this.brake) - Number(this.gas);
     return eightWay(this.move).y;
   }
@@ -286,7 +274,8 @@ export class GamepadInput {
    * it resting, the flashlight goes where the player walks, and stays put when they stop.
    */
   look(current: number): number | null {
-    if (!this.host.inCharge()) return null;
+    const isOutOfCharge = !this.host.inCharge();
+    if (isOutOfCharge) return null;
     // TODO(aim-assist): out of scope for the first slice. Bend `aim` toward the nearest zombie in a narrow cone here.
     const steer = this.aim ?? this.move;
     return steer ? Math.atan2(steer.y, steer.x) : current;
@@ -304,7 +293,10 @@ export class GamepadInput {
     this.unsupportedId = pads.find((pad) => pad.mapping !== 'standard')?.id ?? null;
     this.forgetGone(standard);
     const pad = this.choose(standard);
-    for (const other of standard) if (other !== pad) this.lastDown.set(other.index, other.buttons.map(isDown));
+    for (const other of standard) {
+      const isOtherPad = other !== pad;
+      if (isOtherPad) this.lastDown.set(other.index, other.buttons.map(isDown));
+    }
     if (pad) this.read(pad);
     else this.letGo();
   }
@@ -323,7 +315,8 @@ export class GamepadInput {
     if (keepsIt) return current;
     const busy = pads.find(isBusy);
     if (!busy) return current;
-    if (busy.index !== this.activeIndex) this.takeOver(busy);
+    const isNewcomer = busy.index !== this.activeIndex;
+    if (isNewcomer) this.takeOver(busy);
     return busy;
   }
 
@@ -377,8 +370,11 @@ export class GamepadInput {
 
   private playPress(index: number): void {
     // The triggers are the pedals at the wheel, not the gun and the shove.
-    if (this.driving && (index === PAD.rt || index === PAD.lt)) return;
-    if (index === PAD.l3) {
+    const isTrigger = index === PAD.rt || index === PAD.lt;
+    const shouldLeaveToPedal = this.driving && isTrigger;
+    if (shouldLeaveToPedal) return;
+    const isRunToggle = index === PAD.l3;
+    if (isRunToggle) {
       this.running = !this.running;
       return;
     }
@@ -418,20 +414,24 @@ export class GamepadInput {
 
   /** Start: the screen's main button (Start Run, or the title row in hand), else the pause path. */
   private start(): void {
-    if (this.host.take?.('start')) return;
-    if (this.menu.start()) return;
+    const itemTookStart = this.host.take?.('start');
+    if (itemTookStart) return;
+    const menuTookStart = this.menu.start();
+    if (menuTookStart) return;
     this.host.press('Escape');
   }
 
   /** A: the focused control takes it; with none focused, the screen's own confirm. */
   private confirm(): void {
-    if (this.menu.activate()) return;
+    const menuTookConfirm = this.menu.activate();
+    if (menuTookConfirm) return;
     this.host.confirm();
   }
 
   /** B: the screen's Back or Close takes it; with none showing, the host's back (the pause path). */
   private back(): void {
-    if (this.menu.back()) return;
+    const menuTookBack = this.menu.back();
+    if (menuTookBack) return;
     this.host.back();
   }
 
@@ -447,7 +447,8 @@ export class GamepadInput {
    */
   private navStep(live: boolean, down: readonly boolean[], stickNavigates = true): void {
     const direction = this.navTarget(down, stickNavigates);
-    if (direction === null) {
+    const isNoDirection = direction === null;
+    if (isNoDirection) {
       this.navDirection = null;
       this.navNextAt = Infinity;
       return;
@@ -460,11 +461,13 @@ export class GamepadInput {
     const at = this.now();
     const isNewPush = direction !== this.navDirection;
     const isRepeat = !isNewPush && at >= this.navNextAt;
-    if (!isNewPush && !isRepeat) return;
+    const shouldSkipStep = !isNewPush && !isRepeat;
+    if (shouldSkipStep) return;
     this.navDirection = direction;
     this.navNextAt = at + (isNewPush ? NAV_REPEAT_DELAY_MS : NAV_REPEAT_MS);
     const moved = this.host.navigate(direction);
-    if (moved !== true) this.menu.navigate(direction);
+    const isUnmoved = moved !== true;
+    if (isUnmoved) this.menu.navigate(direction);
   }
 
   private heldCodes(down: readonly boolean[]): Set<string> {
@@ -473,7 +476,8 @@ export class GamepadInput {
     for (const [index, code] of bindings) {
       const counts = down[index] && !this.spent.has(index);
       const isPedal = this.driving && (index === PAD.rt || index === PAD.lt);
-      if (counts && !isPedal) held.add(code);
+      const shouldHold = counts && !isPedal;
+      if (shouldHold) held.add(code);
     }
     if (this.running) held.add('ShiftLeft');
     return held;
@@ -488,7 +492,8 @@ export class GamepadInput {
   private readonly onDisconnected = (event: GamepadEvent): void => {
     const { id, index, mapping } = event.gamepad;
     this.lastDown.delete(index);
-    if (index === this.activeIndex) this.letGo();
+    const isActivePad = index === this.activeIndex;
+    if (isActivePad) this.letGo();
     this.host.onConnection?.({ connected: false, id, standard: mapping === 'standard' });
   };
 }

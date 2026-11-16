@@ -368,13 +368,28 @@ function inside(box: Box, x: number, y: number): boolean {
 
 /** What is under a point, or null. */
 export function lootHitAt(layout: LootLayout, x: number, y: number): LootHit | null {
-  for (const button of layout.editor?.buttons ?? []) if (inside(button, x, y)) return { kind: 'edit', id: button.id };
-  for (const button of layout.buttons) if (inside(button, x, y)) return { kind: 'button', id: button.id };
-  for (const cell of layout.library?.cells ?? []) if (inside(cell, x, y)) return { kind: 'library', id: cell.id };
-  for (const slot of layout.gear) if (inside(slot, x, y)) return { kind: 'gear', slot: slot.id };
+  for (const button of layout.editor?.buttons ?? []) {
+    const isOverEditButton = inside(button, x, y);
+    if (isOverEditButton) return { kind: 'edit', id: button.id };
+  }
+  for (const button of layout.buttons) {
+    const isOverButton = inside(button, x, y);
+    if (isOverButton) return { kind: 'button', id: button.id };
+  }
+  for (const cell of layout.library?.cells ?? []) {
+    const isOverLibraryCell = inside(cell, x, y);
+    if (isOverLibraryCell) return { kind: 'library', id: cell.id };
+  }
+  for (const slot of layout.gear) {
+    const isOverGearSlot = inside(slot, x, y);
+    if (isOverGearSlot) return { kind: 'gear', slot: slot.id };
+  }
   const boards = [layout.container?.board, layout.pack, layout.pockets, layout.candy];
   for (const board of boards) {
-    if (!board || !inside(board, x, y)) continue;
+    const isBoardMissing = !board;
+    if (isBoardMissing) continue;
+    const isOutsideBoard = !inside(board, x, y);
+    if (isOutsideBoard) continue;
     return { kind: 'cell', gridId: board.id, col: Math.floor((x - board.x) / TILE), row: Math.floor((y - board.y) / TILE) };
   }
   return null;
@@ -426,7 +441,10 @@ function drawStretched(ctx: CanvasRenderingContext2D, art: ArtBook, item: GridIt
   const h = box.h - 2;
   const smoothing = ctx.imageSmoothingEnabled;
   ctx.imageSmoothingEnabled = false;
-  if (long && item.rotated) {
+  const hasLongArt = Boolean(long);
+  const isItemTurned = Boolean(item.rotated);
+  const shouldTurnLongArt = hasLongArt && isItemTurned;
+  if (shouldTurnLongArt) {
     ctx.save();
     ctx.translate(box.x + Math.floor(box.w / 2), box.y + Math.floor(box.h / 2));
     ctx.rotate(Math.PI / 2);
@@ -445,11 +463,14 @@ function drawItem(ctx: CanvasRenderingContext2D, art: ArtBook | null, item: Grid
   ctx.globalAlpha = 1;
   const idleRing = hovered ? BONE : DIM;
   ring(ctx, selected ? AMBER : idleRing, box);
-  if (art && drawStretched(ctx, art, item, box)) {
+  const hasArt = art !== null;
+  const didDrawArt = hasArt && drawStretched(ctx, art, item, box);
+  if (didDrawArt) {
     // drawn: the art fills its footprint
   } else drawOutlinedText(ctx, upper(formatItemName(item.type)).slice(0, 8), box.x + box.w / 2, box.y + box.h / 2 - 2, BONE);
   const badge = lootBadge(item.count, item.ammo);
-  if (badge !== '') drawOutlinedText(ctx, badge.toUpperCase(), box.x + box.w - textWidth(badge) / 2 - 2, box.y + box.h - FONT_HEIGHT - 2, BONE);
+  const hasBadge = badge !== '';
+  if (hasBadge) drawOutlinedText(ctx, badge.toUpperCase(), box.x + box.w - textWidth(badge) / 2 - 2, box.y + box.h - FONT_HEIGHT - 2, BONE);
 }
 
 /** An item the search has found but not yet shown: its plate with a "?" on it. */
@@ -473,7 +494,8 @@ function drawDisabledCell(ctx: CanvasRenderingContext2D, box: Box): void {
     for (let i = 0; i < TILE - 4; i += 1) {
       const onDiagonal = (i + j) % 4 === 0;
       const inDash = j % 6 < 4;
-      if (onDiagonal && inDash) ctx.fillRect(box.x + 2 + i, box.y + 2 + j, 1, 1);
+      const shouldFleck = onDiagonal && inDash;
+      if (shouldFleck) ctx.fillRect(box.x + 2 + i, box.y + 2 + j, 1, 1);
     }
   }
 }
@@ -501,7 +523,8 @@ function drawBoard(ctx: CanvasRenderingContext2D, view: LootView, board: GridBox
         const look = bareCellLook({ rank, open, sweep, hovered, holding: held !== null, blocked: blocked.has(`${col},${row}`) });
         if (look) drawBareCell(ctx, look, box.x, box.y, TILE);
         const bareMark = computeTileHighlight(grid, col, row, hover ? hover.col : null, hover ? hover.row : null, held, board.id, state.candyBagGrid);
-        if (bareMark !== 'none') fill(ctx, bareMark === 'valid' ? SICK : BLOOD, box.x + 2, box.y + 2, TILE - 4, TILE - 4);
+        const isBareCellMarked = bareMark !== 'none';
+        if (isBareCellMarked) fill(ctx, bareMark === 'valid' ? SICK : BLOOD, box.x + 2, box.y + 2, TILE - 4, TILE - 4);
         continue;
       }
       const phase = ranks ? cellPhase(ranks.rankOf(col, row), ranks.open, sweep) : 'read';
@@ -522,9 +545,11 @@ function drawBoard(ctx: CanvasRenderingContext2D, view: LootView, board: GridBox
       fill(ctx, INK, box.x + 1, box.y + 1, 1, TILE - 2);
       fill(ctx, LINE, box.x + 1, box.y + TILE - 2, TILE - 2, 1);
       fill(ctx, LINE, box.x + TILE - 2, box.y + 1, 1, TILE - 2);
-      if (phase === 'head') fill(ctx, AMBER, box.x + 1, box.y + 1, TILE - 2, TILE - 2);
+      const isSweepHead = phase === 'head';
+      if (isSweepHead) fill(ctx, AMBER, box.x + 1, box.y + 1, TILE - 2, TILE - 2);
       const mark = computeTileHighlight(grid, col, row, hover ? hover.col : null, hover ? hover.row : null, held, board.id, state.candyBagGrid);
-      if (mark !== 'none') fill(ctx, mark === 'valid' ? SICK : BLOOD, box.x + 2, box.y + 2, TILE - 4, TILE - 4);
+      const isCellMarked = mark !== 'none';
+      if (isCellMarked) fill(ctx, mark === 'valid' ? SICK : BLOOD, box.x + 2, box.y + 2, TILE - 4, TILE - 4);
     }
   }
   for (const item of grid.items) {
@@ -534,26 +559,31 @@ function drawBoard(ctx: CanvasRenderingContext2D, view: LootView, board: GridBox
     const isHeld = state.heldItem !== null && state.heldItem.item.id === item.id;
     if (isHeld) continue;
     const over = hover !== null && hover.col >= item.x && hover.col < item.x + dims.width && hover.row >= item.y && hover.row < item.y + dims.height;
-    if (board.id === 'container' && itemHidden(item.id)) {
+    const isContainerBoard = board.id === 'container';
+    const isItemConcealed = isContainerBoard && itemHidden(item.id);
+    if (isItemConcealed) {
       drawHiddenItem(ctx, plateBox);
       continue;
     }
     // Moving: it flies in from the world or the cell it left first (drawn after every board, over them), then pops.
     const arriving = motionOf(item.id);
-    if (arriving?.phase === 'fly') {
+    const isFlyingIn = arriving?.phase === 'fly';
+    if (isFlyingIn) {
       const drawIn = (box: Box) => drawItem(ctx, view.art, item, box, false, false);
       flights.push(() => drawFlight(ctx, arriving.motion, plateBox, arriving.t, drawIn) || drawIn(plateBox));
       continue;
     }
     drawItem(ctx, view.art, item, plateBox, state.selectedItemId === item.id, over && held === null);
-    if (arriving?.phase === 'pop') drawPop(ctx, plateBox, arriving.t);
+    const isPoppingIn = arriving?.phase === 'pop';
+    if (isPoppingIn) drawPop(ctx, plateBox, arriving.t);
   }
   // A cell a refused move was aimed at shakes red.
   const moveGrid = moveGridOf(board.id);
   for (let row = 0; row < grid.rows; row += 1) {
     for (let col = 0; col < grid.cols; col += 1) {
       const shake = shakeOf(cellKey(moveGrid, col, row));
-      if (shake !== null) drawShake(ctx, cellBox(board, col, row), shake);
+      const isShaking = shake !== null;
+      if (isShaking) drawShake(ctx, cellBox(board, col, row), shake);
     }
   }
 }
@@ -580,7 +610,8 @@ function drawContainerArt(ctx: CanvasRenderingContext2D, view: LootView, rect: B
 function drawLandedArt(ctx: CanvasRenderingContext2D, view: LootView, board: GridBox): void {
   const art = containerArtOf(view);
   if (!art) return;
-  if (!sweepingNow(view)) {
+  const isSweepOver = !sweepingNow(view);
+  if (isSweepOver) {
     drawStageArt(ctx, art, true, board, 0.92);
     return;
   }
@@ -611,9 +642,15 @@ function drawContainerDock(ctx: CanvasRenderingContext2D, view: LootView, dock: 
   }
   const zoom = view.edit ? null : zoomFrame();
   const camera = arrivalCamera();
-  if (zoom && !zoom.landed) {
-    const flies = zoom.kind === 'zoom' && zoom.from !== null && camera !== null;
-    if (flies && zoom.from && camera) drawContainerArt(ctx, view, lerpRect(toSpace(zoom.from, camera, 'buffer'), dock.board, zoom.eased), 0.92);
+  const hasZoom = zoom !== null;
+  const isZoomInFlight = hasZoom && !zoom.landed;
+  if (isZoomInFlight) {
+    const from = zoom.from;
+    const isZoomKind = zoom.kind === 'zoom';
+    const hasStartRect = from !== null;
+    const hasCamera = camera !== null;
+    const shouldFlyFromStart = isZoomKind && hasStartRect && hasCamera;
+    if (shouldFlyFromStart) drawContainerArt(ctx, view, lerpRect(toSpace(from, camera, 'buffer'), dock.board, zoom.eased), 0.92);
     else drawContainerArt(ctx, view, dock.board, zoom.kind === 'fade' ? 0.92 * zoom.eased : 0);
     return;
   }
@@ -634,7 +671,10 @@ function drawContainerDock(ctx: CanvasRenderingContext2D, view: LootView, dock: 
 function gearMark(view: LootView, slot: GearSlotId): 'valid' | 'invalid' | 'none' {
   const held = view.state.heldItem;
   const over = view.hover && view.hover.kind === 'gear' && view.hover.slot === slot;
-  if (!held || !over) return 'none';
+  const isHandEmpty = !held;
+  const isNotOverSlot = !over;
+  const shouldShowNoMark = isHandEmpty || isNotOverSlot;
+  if (shouldShowNoMark) return 'none';
   return isItemValidForGearSlot(held.item.type, slot) ? 'valid' : 'invalid';
 }
 
@@ -714,7 +754,8 @@ export function drawLootUi(ctx: CanvasRenderingContext2D, view: LootView, given:
       ctx.restore();
     }
     const badge = lootBadge(item.count, item.ammo);
-    if (badge !== '') drawOutlinedText(ctx, badge.toUpperCase(), slot.x + slot.w - textWidth(badge) / 2 - 3, slot.y + slot.h - FONT_HEIGHT - 2, BONE);
+    const hasBadge = badge !== '';
+    if (hasBadge) drawOutlinedText(ctx, badge.toUpperCase(), slot.x + slot.w - textWidth(badge) / 2 - 3, slot.y + slot.h - FONT_HEIGHT - 2, BONE);
   }
 
   for (const board of [layout.pack, layout.candy, layout.pockets]) {
@@ -751,6 +792,8 @@ export function drawLootUi(ctx: CanvasRenderingContext2D, view: LootView, given:
   drawPuffs(ctx);
   for (const flight of flights.splice(0)) flight();
   const held = state.heldItem;
-  if (held && view.pointer) drawItem(ctx, view.art, held.item, heldBox(held.item, view.pointer), true, false);
+  const pointer = view.pointer;
+  const isCarrying = held !== null && pointer !== null;
+  if (isCarrying) drawItem(ctx, view.art, held.item, heldBox(held.item, pointer), true, false);
   ctx.imageSmoothingEnabled = smoothing;
 }

@@ -71,10 +71,14 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
     const l = layout();
     const raw = lootHitAt(l, point.x, point.y);
     const held = state.heldItem;
-    if (!held || (raw && raw.kind !== 'cell')) return raw;
+    const isOverNonCell = raw !== null && raw.kind !== 'cell';
+    const isNothingHeld = !held;
+    const shouldKeepRaw = isNothingHeld || isOverNonCell;
+    if (shouldKeepRaw) return raw;
     const anchor = heldAnchor(held.item, point);
     const landing = lootHitAt(l, anchor.x, anchor.y);
-    return landing && landing.kind === 'cell' ? landing : raw;
+    const landsOnCell = landing !== null && landing.kind === 'cell';
+    return landsOnCell ? landing : raw;
   }
 
   function overDock(point: { x: number; y: number }): boolean {
@@ -130,7 +134,8 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
   /** The cell the item in hand was lifted from, in buffer pixels (it is out of its grid while held, so it is rebuilt from where it sat). */
   function heldPlate(held: NonNullable<typeof state.heldItem>): ReturnType<typeof itemPlateAt> {
     const { source } = held;
-    if (source.kind !== 'grid') return null;
+    const isLiftedFromGrid = source.kind === 'grid';
+    if (!isLiftedFromGrid) return null;
     return itemPlateAt(layout(), source.gridId, { ...held.item, x: source.x, y: source.y, rotated: held.originalRotated });
   }
 
@@ -138,7 +143,9 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
     const held = state.heldItem;
     if (!held) return false;
     // Lifted from another grid (the container, say): it hops over from the cell it left. Within one grid it only lands.
-    const crosses = held.source.kind === 'grid' && held.source.gridId !== gridId;
+    const heldSource = held.source;
+    const isFromGrid = heldSource.kind === 'grid';
+    const crosses = isFromGrid && heldSource.gridId !== gridId;
     const plate = crosses ? heldPlate(held) : null;
     const placed = placeHeldItemInGrid(state, gridId, col, row);
     if (placed) {
@@ -156,10 +163,12 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
     const plate = leaving ? itemPlateAt(layout(), gridId, leaving) : heldOnlyPlate;
     const moving = leaving ?? held?.item ?? null;
     const heldFrom = held ? sourceOf(held.source) : null;
-  const from = leaving ? cellFrom(gridId, leaving) : heldFrom;
-    if (!quickTransferBetweenInventories(state, gridId, itemId)) return;
+    const from = leaving ? cellFrom(gridId, leaving) : heldFrom;
+    const didTransfer = quickTransferBetweenInventories(state, gridId, itemId);
+    if (!didTransfer) return;
     host.playSfx('ui_place');
-    if (moving && from) sendMove(moving, from, plate ? 'fly' : 'land', plate ? { buffer: plate } : null);
+    const canSendMove = moving && from;
+    if (canSendMove) sendMove(moving, from, plate ? 'fly' : 'land', plate ? { buffer: plate } : null);
   }
 
   function onCell(hit: Extract<LootHit, { kind: 'cell' }>): void {
@@ -168,11 +177,17 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
     const under = findItemAtTile(grid, hit.col, hit.row);
     const now = Date.now();
     if (held) {
-      const origin = held.source.kind === 'grid' && held.source.gridId === hit.gridId ? held.source : null;
+      const heldSource = held.source;
+      const isFromThisGrid = heldSource.kind === 'grid' && heldSource.gridId === hit.gridId;
+      const origin = isFromThisGrid ? heldSource : null;
       const ghost = origin ? getItemFootprint(held.item.type, held.originalRotated) : null;
-      const onOwnSpot = origin !== null && ghost !== null && hit.col >= origin.x && hit.col < origin.x + ghost.width && hit.row >= origin.y && hit.row < origin.y + ghost.height;
-      const second = lastItemClick !== null && lastItemClick.id === held.item.id && now - lastItemClick.time < DOUBLE_CLICK_MS;
-      if (onOwnSpot && second) {
+      const isInsideOriginSpan = origin !== null && ghost !== null && hit.col >= origin.x && hit.col < origin.x + ghost.width && hit.row >= origin.y && hit.row < origin.y + ghost.height;
+      const onOwnSpot = isInsideOriginSpan;
+      const lastClick = lastItemClick;
+      const isSameItemClick = lastClick !== null && lastClick.id === held.item.id;
+      const second = isSameItemClick && now - lastClick.time < DOUBLE_CLICK_MS;
+      const isDoubleClickOnOwnSpot = onOwnSpot && second;
+      if (isDoubleClickOnOwnSpot) {
         quickTransfer(hit.gridId, held.item.id);
         lastItemClick = null;
         return;
@@ -187,16 +202,19 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
     }
     if (!under) return;
     lastItemClick = { id: under.id, time: now };
-    if (pickUpItemFromGrid(state, hit.gridId, under.id)) host.playSfx('ui_pickup');
+    const didPickUp = pickUpItemFromGrid(state, hit.gridId, under.id);
+    if (didPickUp) host.playSfx('ui_pickup');
   }
 
   function onGear(slot: Extract<LootHit, { kind: 'gear' }>['slot']): void {
     const held = state.heldItem;
     if (held) {
-      if (placeHeldItemInGear(state, slot)) sendMove(held.item, sourceOf(held.source), 'land');
+      const didPlaceInGear = placeHeldItemInGear(state, slot);
+      if (didPlaceInGear) sendMove(held.item, sourceOf(held.source), 'land');
       return;
     }
-    if (state.gear[slot] !== null) pickUpItemFromGear(state, slot);
+    const isSlotFilled = state.gear[slot] !== null;
+    if (isSlotFilled) pickUpItemFromGear(state, slot);
   }
 
   function useHeld(): void {
@@ -223,13 +241,15 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
 
   function rotate(): void {
     const held = state.heldItem;
-    if (held && isLoadable(held.item)) {
+    const isHeldLoadable = held && isLoadable(held.item);
+    if (isHeldLoadable) {
       host.playSfx(useSoundOf(held.item.type));
       useHeld();
       syncHeld();
       return;
     }
-    if (rotateActiveItem(state)) host.playSfx('ui_rotate');
+    const didRotate = rotateActiveItem(state);
+    if (didRotate) host.playSfx('ui_rotate');
     syncHeld();
   }
 
@@ -250,10 +270,12 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
   /** Uses or drops the item in hand, with its sound, if it allows that. True when something happened. */
   function actOnHeld(kind: HeldActionKind | null, to: MoveTo = GROUND_TARGET): boolean {
     const held = state.heldItem;
-    if (!held || kind === null) return false;
+    const hasNoAction = !held || kind === null;
+    if (hasNoAction) return false;
     const allowed = heldActions(held.item).some((a) => a.kind === kind);
     if (!allowed) return false;
-    if (kind === 'use') {
+    const isUse = kind === 'use';
+    if (isUse) {
       host.playSfx(useSoundOf(held.item.type));
       useHeld();
     } else {
@@ -272,8 +294,10 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
     const onGame: HeldActionKind = heldOnSurvivor(event.clientX, event.clientY) ? 'use' : 'drop';
     const kind = onButton ?? (bare ? onGame : null);
     // A teammate under the item, in reach and helped by it, is handed it instead of the item being dropped.
-    const to = careTo && kind === 'drop' ? careTo : groundTargetAt(event.clientX, event.clientY);
-    return actOnHeld(kind, to) || onButton !== null;
+    const isHandingToTeammate = careTo && kind === 'drop';
+    const to = isHandingToTeammate ? careTo : groundTargetAt(event.clientX, event.clientY);
+    const didAct = actOnHeld(kind, to);
+    return didAct || onButton !== null;
   }
 
   /**
@@ -282,19 +306,23 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
    */
   let pressOwned = false;
   function onPress(event: MouseEvent): void {
-    pressOwned = event.target === canvas && (state.heldItem !== null || onUi(event.clientX, event.clientY));
+    const isPressOnWindow = state.heldItem !== null || onUi(event.clientX, event.clientY);
+    pressOwned = event.target === canvas && isPressOnWindow;
   }
 
   function onClick(event: MouseEvent): void {
-    if (event.target !== canvas || !pressOwned) return;
+    const isClickNotOwned = event.target !== canvas || !pressOwned;
+    if (isClickNotOwned) return;
     const point = bufferPoint(event);
-    if (heldClick(event, point)) {
+    const wasHeldClick = heldClick(event, point);
+    if (wasHeldClick) {
       syncHeld();
       return;
     }
     const hit = hitFor(point);
     if (hit?.kind === 'button') {
-      if (hit.id === 'close') {
+      const isCloseButton = hit.id === 'close';
+      if (isCloseButton) {
         if (state.heldItem) returnHeldItemToSource(state);
         host.close();
       } else rotate();
@@ -304,20 +332,25 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
   }
 
   function onDoubleClick(event: MouseEvent): void {
-    if (event.target !== canvas || !pressOwned) return;
+    const isClickNotOwned = event.target !== canvas || !pressOwned;
+    if (isClickNotOwned) return;
     const hit = hitFor(bufferPoint(event));
-    if (!hit || hit.kind !== 'cell') return;
+    const isNotOverCell = !hit || hit.kind !== 'cell';
+    if (isNotOverCell) return;
     const held = state.heldItem;
     const itemId = held ? held.item.id : findItemAtTile(gridOf(hit.gridId), hit.col, hit.row)?.id;
     if (!itemId) return;
-    const gridId = held && held.source.kind === 'grid' ? held.source.gridId : hit.gridId;
+    const heldSource = held ? held.source : null;
+    const isHeldFromGrid = heldSource !== null && heldSource.kind === 'grid';
+    const gridId = isHeldFromGrid ? heldSource.gridId : hit.gridId;
     quickTransfer(gridId, itemId);
     lastItemClick = null;
     syncHeld();
   }
 
   function onMove(event: MouseEvent): void {
-    if (event.target !== canvas) {
+    const isOutsideCanvas = event.target !== canvas;
+    if (isOutsideCanvas) {
       window_.pointer = null;
       window_.hover = null;
       canvas.style.cursor = '';
@@ -341,7 +374,8 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
     const held = state.heldItem;
     const l = layout();
     const board = [l.container?.board, l.pack, l.pockets, l.candy].find((each) => each?.id === at.gridId);
-    if (!held || !board) return;
+    const hasNoHeldOrBoard = !held || !board;
+    if (hasNoHeldOrBoard) return;
     const dims = getItemFootprint(held.item.type, held.item.rotated);
     window_.pointer = {
       x: board.x + at.col * TILE + 1 + (dims.width * TILE - 2) / 2,
@@ -358,11 +392,14 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
 
   /** A takes the item under the highlight across, or sets a held one down; X lifts it to move it; Y turns it. */
   function padPress(button: LootButton): boolean {
-    if (button === 'b') return false;
+    const isBack = button === 'b';
+    if (isBack) return false;
+    const isTrigger = button === 'rt' || button === 'lt';
     // With the hand empty the triggers are the game's (fire and shove), so they leave the highlight unlit.
-    if ((button === 'rt' || button === 'lt') && !state.heldItem) return false;
+    const isTriggerWithEmptyHand = isTrigger && !state.heldItem;
+    if (isTriggerWithEmptyHand) return false;
     cursor = cursor ?? startCursor(gridOf);
-    if (button === 'rt' || button === 'lt') {
+    if (isTrigger) {
       // RT feeds the item in hand to the survivor, LT drops it: the pad's USE and DROP buttons.
       const acted = actOnHeld(button === 'rt' ? 'use' : 'drop');
       if (acted) cursor = settleCursor(cursor, gridOf);
@@ -370,15 +407,17 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
       showCursor();
       return acted;
     }
-    if (button === 'y') {
+    const isRotate = button === 'y';
+    if (isRotate) {
       rotate();
       showCursor();
       return true;
     }
     const at = cursor;
     const under = findItemAtTile(gridOf(at.gridId), at.col, at.row);
+    const isLiftPress = under && button === 'x';
     if (state.heldItem) onCell({ kind: 'cell', gridId: at.gridId, col: at.col, row: at.row });
-    else if (under && button === 'x') onCell({ kind: 'cell', gridId: at.gridId, col: at.col, row: at.row });
+    else if (isLiftPress) onCell({ kind: 'cell', gridId: at.gridId, col: at.col, row: at.row });
     else if (under) quickTransfer(at.gridId, under.id);
     if (!state.heldItem) cursor = settleCursor(at, gridOf);
     syncHeld();

@@ -68,7 +68,8 @@ export function createCanvasPage(canvas: HTMLCanvasElement, host: CanvasPageHost
   }
 
   function press(hit: PageHit, along: number | null): void {
-    if (hit.kind === 'button') {
+    const isButtonHit = hit.kind === 'button';
+    if (isButtonHit) {
       host.playUi('click');
       host.press(hit.id);
       return;
@@ -80,10 +81,12 @@ export function createCanvasPage(canvas: HTMLCanvasElement, host: CanvasPageHost
       sliding = hit.id;
       slideTo(hit.id, along);
     } else if (kind === 'radio') {
-      if (along !== null) {
+      const isDraggedAlongTrack = along !== null;
+      const isOnRadioPart = hit.part !== null;
+      if (isDraggedAlongTrack) {
         sliding = hit.id;
         slideTo(hit.id, along);
-      } else if (hit.part !== null) {
+      } else if (isOnRadioPart) {
         const option = RADIO_PARTS[hit.part];
         if (option) {
           host.playUi('click');
@@ -92,7 +95,8 @@ export function createCanvasPage(canvas: HTMLCanvasElement, host: CanvasPageHost
       }
     } else if (kind === 'album_slider' && hit.part !== null) {
       const item = control.item;
-      if (item.kind === 'album_slider') {
+      const isAlbumSlider = item.kind === 'album_slider';
+      if (isAlbumSlider) {
         const totalAlbums = item.totalAlbums;
         const tracksCount = item.tracks.length;
         if (hit.part === 0) {
@@ -124,42 +128,55 @@ export function createCanvasPage(canvas: HTMLCanvasElement, host: CanvasPageHost
       host.playUi('click');
       host.choose(hit.id, control.item.kind === 'choice' ? control.item.options[hit.part].id : '');
     } else if (kind === 'switch') {
-      if (control.item.kind === 'switch' && !control.item.enabled) return;
+      const isSwitchItem = control.item.kind === 'switch';
+      const isSwitchDisabled = isSwitchItem && !control.item.enabled;
+      if (isSwitchDisabled) return;
       host.playUi('click');
       host.toggle(hit.id);
     } else if (kind === 'link' || kind === 'bind') {
-      if (control.item.kind === 'link' && control.item.disabled) return;
+      const isLinkItem = control.item.kind === 'link';
+      const isLinkDisabled = isLinkItem && control.item.disabled;
+      if (isLinkDisabled) return;
       host.playUi('click');
       host.press(hit.id);
     }
   }
 
   function onMouseDown(event: MouseEvent): void {
-    if (event.target !== canvas || event.button !== 0 || away()) return;
+    const isOffCanvas = event.target !== canvas;
+    const isNotPrimaryButton = event.button !== 0;
+    const shouldIgnoreMouseDown = isOffCanvas || isNotPrimaryButton || away();
+    if (shouldIgnoreMouseDown) return;
     const at = point(event);
     const hit = pageHitAt(layout(), at.x, at.y);
     win.focus = null;
-    if (hit) press(hit, hit.kind === 'control' ? hit.along : null);
+    const isControlHit = hit?.kind === 'control';
+    if (hit) press(hit, isControlHit ? hit.along : null);
   }
 
   function onMove(event: MouseEvent): void {
-    if (away()) {
+    const isAway = away();
+    if (isAway) {
       win.hover = null;
       return;
     }
-    if (event.target !== canvas && sliding === null) {
+    const isOffCanvasAndNotSliding = event.target !== canvas && sliding === null;
+    if (isOffCanvasAndNotSliding) {
       win.hover = null;
       return;
     }
     const at = point(event);
     const current = layout();
-    if (sliding !== null) {
-      const track = current.controls.find((each) => each.id === sliding)?.track;
-      if (track) slideTo(sliding, (at.x - track.x) / (track.w - 1));
+    const slidingId = sliding;
+    const isSliding = slidingId !== null;
+    if (isSliding) {
+      const track = current.controls.find((each) => each.id === slidingId)?.track;
+      if (track) slideTo(slidingId, (at.x - track.x) / (track.w - 1));
       return;
     }
     const hit = pageHitAt(current, at.x, at.y);
-    if (JSON.stringify(hit) === JSON.stringify(win.hover)) return;
+    const isHoverUnchanged = JSON.stringify(hit) === JSON.stringify(win.hover);
+    if (isHoverUnchanged) return;
     win.hover = hit;
     const controlItem = hit?.kind === 'control' ? current.controls.find((c) => c.id === hit.id)?.item : null;
     const isDisabledLink = controlItem?.kind === 'link' && controlItem.disabled;
@@ -177,7 +194,8 @@ export function createCanvasPage(canvas: HTMLCanvasElement, host: CanvasPageHost
   }
 
   function onWheel(event: WheelEvent): void {
-    if (event.target !== canvas || away()) return;
+    const shouldIgnoreWheel = event.target !== canvas || away();
+    if (shouldIgnoreWheel) return;
     event.preventDefault();
     win.scroll = clampScroll(win.scroll + Math.sign(event.deltaY) * SCROLL_STEP);
   }
@@ -192,27 +210,33 @@ export function createCanvasPage(canvas: HTMLCanvasElement, host: CanvasPageHost
 
   function adjust(direction: 1 | -1): boolean {
     const focus = win.focus;
-    if (focus === null || !focus.startsWith('control:')) return false;
+    const isFocusOnControl = focus !== null && focus.startsWith('control:');
+    if (!isFocusOnControl) return false;
     const control = layout().controls.find((each) => `control:${each.id}` === focus);
     const item = control?.item;
-    if (item?.kind === 'slider') {
+    const isSliderItem = item?.kind === 'slider';
+    const isRadioItem = item?.kind === 'radio';
+    const isCardsItem = item?.kind === 'cards';
+    const isChoiceItem = item?.kind === 'choice';
+    if (isSliderItem) {
       slideTo(item.id, stepSlider(item.value, direction));
       return true;
     }
-    if (item?.kind === 'radio') {
+    if (isRadioItem) {
       slideTo(item.id, stepSlider(item.position, direction));
       return true;
     }
-    if (item?.kind === 'cards') {
+    if (isCardsItem) {
       const last = item.cards.length - 1;
       win.cardAt = Math.min(last, Math.max(0, (win.cardAt ?? 0) + direction));
       host.card?.(item.id, win.cardAt);
       return true;
     }
-    if (item?.kind === 'choice') {
+    if (isChoiceItem) {
       const at = item.options.findIndex((option) => option.id === item.value);
       const to = Math.min(item.options.length - 1, Math.max(0, at + direction));
-      if (to !== at) {
+      const isNewOption = to !== at;
+      if (isNewOption) {
         host.playUi('click');
         host.choose(item.id, item.options[to].id);
       }
@@ -223,7 +247,8 @@ export function createCanvasPage(canvas: HTMLCanvasElement, host: CanvasPageHost
 
   function activate(): void {
     const focus = win.focus;
-    if (focus === null) return;
+    const hasNoFocus = focus === null;
+    if (hasNoFocus) return;
     const id = focus.slice(focus.indexOf(':') + 1);
     if (focus.startsWith('button:')) {
       host.playUi('click');
@@ -250,7 +275,9 @@ export function createCanvasPage(canvas: HTMLCanvasElement, host: CanvasPageHost
 
   /** Capture phase, so the pause and confirm keys the game listens for never see what this page takes. */
   function onKeyDown(event: KeyboardEvent): void {
-    if (event.ctrlKey || event.metaKey || event.altKey || host.inert?.() || away()) return;
+    const hasModifierKey = event.ctrlKey || event.metaKey || event.altKey;
+    const shouldIgnoreKey = hasModifierKey || host.inert?.() || away();
+    if (shouldIgnoreKey) return;
     let handled = true;
     if (event.code === 'Escape') {
       if (!event.repeat) host.press('back');
@@ -277,7 +304,8 @@ export function createCanvasPage(canvas: HTMLCanvasElement, host: CanvasPageHost
   setPageWindow(win);
   setLootPad(
     keyBridgePad(() => {
-      if (away()) return false;
+      const isPageAway = away();
+      if (isPageAway) return false;
       const main = win.model.buttons.find((button) => button.primary && button.enabled);
       if (!main) return false;
       host.playUi('click');

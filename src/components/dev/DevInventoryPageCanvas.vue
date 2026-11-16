@@ -206,7 +206,10 @@ const lookEntries = computed<LibraryEntry[]>(() =>
 const lookView = computed<LookEditView | undefined>(() => {
   const entry = editorEntry.value;
   const looks = looksOfKind.value;
-  if (!entry || looks.length < 2) return undefined;
+  const isEntryMissing = !entry;
+  const isSingleLook = looks.length < 2;
+  const hasNoLookView = isEntryMissing || isSingleLook;
+  if (hasNoLookView) return undefined;
   return {
     index: looks.findIndex((e) => e.id === entry.id) + 1,
     count: looks.length,
@@ -246,8 +249,10 @@ async function saveObjects(): Promise<void> {
 
 /** The editor's Save writes what it changed: container sizes and item footprints. */
 async function saveAll(): Promise<void> {
-  if (objectsModified.value > 0) await saveObjects();
-  if (itemsModified.value > 0) await saveItems();
+  const hasObjectEdits = objectsModified.value > 0;
+  if (hasObjectEdits) await saveObjects();
+  const hasItemEdits = itemsModified.value > 0;
+  if (hasItemEdits) await saveItems();
 }
 
 function openContainerEditor(entry: DevContainerEntry): void {
@@ -255,7 +260,9 @@ function openContainerEditor(entry: DevContainerEntry): void {
   const grid = createInventoryGrid(size.cols, size.rows, size.blocked ?? []);
   SAMPLE_LOOT_ITEMS.forEach((type, index) => {
     const data = { id: `preview-${entry.kind}-${index}`, type, rotated: false };
-    if (!randomPackItem(grid, data, Math.random)) autoPackItem(grid, data);
+    const didRandomPack = randomPackItem(grid, data, Math.random);
+    const needsAutoPack = !didRandomPack;
+    if (needsAutoPack) autoPackItem(grid, data);
   });
   itemEditor.value = null;
   const rev = containerEditor.value?.entryId === entry.id ? containerEditor.value.rev + 1 : 0;
@@ -306,14 +313,20 @@ function stepContainer(direction: -1 | 1): void {
 function stepLook(direction: -1 | 1): void {
   const looks = looksOfKind.value;
   const at = looks.findIndex((e) => e.id === containerEditor.value?.entryId);
-  if (looks.length < 2 || at < 0) return;
+  const isSingleLook = looks.length < 2;
+  const isOpenLookMissing = at < 0;
+  const shouldNotStepLook = isSingleLook || isOpenLookMissing;
+  if (shouldNotStepLook) return;
   openContainerEditor(looks[(at + direction + looks.length) % looks.length]);
 }
 
 /** Gives the open look its own grid (a copy of the base to start from), or puts it back on the base grid. */
 function toggleOwnGrid(): void {
   const entry = editorEntry.value;
-  if (!entry || isBaseLook(entry)) return;
+  const isEntryMissing = !entry;
+  if (isEntryMissing) return;
+  const isBase = isBaseLook(entry);
+  if (isBase) return;
   setOwnGrid(entry, !hasOwnGrid(entry));
   flashStatus(hasOwnGrid(entry) ? 'OWN GRID' : 'BASE GRID');
   openContainerEditor(entry);
@@ -326,7 +339,10 @@ function stepItemContainer(direction: -1 | 1): void {
 
 /** A variant look's first edit gives it its own grid, so editing one look never changes the others. The base look edits the base. */
 function claimOwnGrid(entry: DevContainerEntry): void {
-  if (isBaseLook(entry) || hasOwnGrid(entry)) return;
+  const isBase = isBaseLook(entry);
+  const alreadyOwnsGrid = hasOwnGrid(entry);
+  const shouldSkipClaim = isBase || alreadyOwnsGrid;
+  if (shouldSkipClaim) return;
   setOwnGrid(entry, true);
   flashStatus('OWN GRID');
 }
@@ -334,7 +350,10 @@ function claimOwnGrid(entry: DevContainerEntry): void {
 function onEditorSize(size: { cols: number; rows: number }): void {
   const editor = containerEditor.value;
   const entry = editorEntry.value;
-  if (!editor || !entry) return;
+  const isEditorMissing = !editor;
+  const isEntryMissing = !entry;
+  const shouldSkipSize = isEditorMissing || isEntryMissing;
+  if (shouldSkipSize) return;
   const own = editor.flipped ? { cols: size.rows, rows: size.cols } : size;
   claimOwnGrid(entry);
   setEntrySize(entry, own.cols, own.rows);
@@ -343,7 +362,10 @@ function onEditorSize(size: { cols: number; rows: number }): void {
 function onEditorBlocked(cells: GridPoint[]): void {
   const editor = containerEditor.value;
   const entry = editorEntry.value;
-  if (!editor || !entry) return;
+  const isEditorMissing = !editor;
+  const isEntryMissing = !entry;
+  const shouldSkipBlocked = isEditorMissing || isEntryMissing;
+  if (shouldSkipBlocked) return;
   claimOwnGrid(entry);
   setEntryBlocked(entry, editor.flipped ? cells.map(flipPoint) : cells);
 }
@@ -354,13 +376,22 @@ function onEditorFootprint(change: { type: string; width: number; height: number
 
 /** The page's buttons and rows. Each id names what it changes, so this is the one place they are read. */
 function press(id: string): void {
-  if (id === 'back') return emit('close');
-  if (id === 'reset-items') return resetAllItems();
-  if (id === 'save-items') return void saveItems();
-  if (id === 'reset-objects') return resetAllContainers();
-  if (id === 'save-objects') return void saveObjects();
-  if (id === 'reset-building') return resetBuilding(building.value);
-  if (id.startsWith('item:') || id.startsWith('foot:')) {
+  const isBack = id === 'back';
+  if (isBack) return emit('close');
+  const isResetItems = id === 'reset-items';
+  if (isResetItems) return resetAllItems();
+  const isSaveItems = id === 'save-items';
+  if (isSaveItems) return void saveItems();
+  const isResetObjects = id === 'reset-objects';
+  if (isResetObjects) return resetAllContainers();
+  const isSaveObjects = id === 'save-objects';
+  if (isSaveObjects) return void saveObjects();
+  const isResetBuilding = id === 'reset-building';
+  if (isResetBuilding) return resetBuilding(building.value);
+  const isItemRow = id.startsWith('item:');
+  const isFootRow = id.startsWith('foot:');
+  const isItemOrFootRow = isItemRow || isFootRow;
+  if (isItemOrFootRow) {
     const entry = benchItems.find((candidate) => candidate.id === id.slice(id.indexOf(':') + 1));
     if (entry) openItemEditor(entry);
     return;
@@ -376,24 +407,31 @@ function press(id: string): void {
     roomPick.value = id.slice('spot:'.length);
     return;
   }
-  if (id.startsWith('box:') && roomPick.value) {
+  const isBoxRow = id.startsWith('box:');
+  const hasRoomPick = Boolean(roomPick.value);
+  const shouldPlaceBox = isBoxRow && hasRoomPick;
+  if (shouldPlaceBox) {
     buildingDrafts[building.value].rooms[roomPick.value as PropKind] = id.slice('box:'.length) as ContainerKind;
     roomPick.value = null;
     return;
   }
-  if (id === 'box-cancel') {
+  const isBoxCancel = id === 'box-cancel';
+  if (isBoxCancel) {
     roomPick.value = null;
     return;
   }
-  if (id === 'step-next') {
+  const isStepNext = id === 'step-next';
+  if (isStepNext) {
     buildingStep.value = nextStep(buildingStep.value);
     return;
   }
-  if (id === 'step-back') {
+  const isStepBack = id === 'step-back';
+  if (isStepBack) {
     buildingStep.value = prevStep(buildingStep.value);
     return;
   }
-  if (id === 'pick-another') {
+  const isPickAnother = id === 'pick-another';
+  if (isPickAnother) {
     buildingStep.value = 'pick';
     return;
   }
@@ -402,7 +440,8 @@ function press(id: string): void {
     delete buildingDrafts[building.value].pool[id.slice('drop:'.length)];
     return;
   }
-  if (id === 'add-item') {
+  const isAddItem = id === 'add-item';
+  if (isAddItem) {
     const draft = buildingDrafts[building.value];
     const next = PICKUP_TYPES.find((item) => !(item in draft.pool));
     if (next) draft.pool[next] = 1;
@@ -410,7 +449,8 @@ function press(id: string): void {
 }
 
 function choose(id: string, option: string): void {
-  if (id === 'view') {
+  const isViewChoice = id === 'view';
+  if (isViewChoice) {
     tab.value = option as BenchTab;
     return;
   }
@@ -418,7 +458,8 @@ function choose(id: string, option: string): void {
 
 function slide(id: string, value: number): void {
   const draft = buildingDrafts[building.value];
-  if (id === 'odds') {
+  const isOddsSlider = id === 'odds';
+  if (isOddsSlider) {
     draft.odds = Math.round(value * 100) / 100;
     return;
   }
