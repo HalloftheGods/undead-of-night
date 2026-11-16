@@ -62,12 +62,15 @@ const draft = ref<LockerDraft | null>(home.save ? { locker: home.save.locker, ha
 /** The draft last put on the player, or as it opened: anything since is unsent. */
 let sent: LockerDraft | null = draft.value;
 
+function draftOrBunkerGrid(): InventoryGrid {
+  if (draft.value) return loadoutToGrid(draft.value.locker);
+  return createBunkerLockerGrid();
+}
+
 const bunkerGrid = ref<InventoryGrid>(
   home.save?.lockerGrid
     ? { cols: home.save.lockerGrid.cols, rows: home.save.lockerGrid.rows, items: home.save.lockerGrid.items.map((item) => ({ ...item })) }
-    : draft.value
-      ? loadoutToGrid(draft.value.locker)
-      : createBunkerLockerGrid()
+    : draftOrBunkerGrid()
 );
 
 const handsBag = ref<{

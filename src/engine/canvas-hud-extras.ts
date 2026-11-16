@@ -73,7 +73,8 @@ export function drawBottomRight(ctx: CanvasRenderingContext2D, view: CanvasHudVi
   if (view.quests) {
     const lines: TextLine[] = [{ text: view.quests.summary, color: DIM }];
     for (const line of view.quests.lines) {
-      const color = line.atRisk ? BLOOD : line.ready ? GOOD : BONE;
+      const calmColor = line.ready ? GOOD : BONE;
+      const color = line.atRisk ? BLOOD : calmColor;
       lines.push({ text: `${line.title} ${line.value}`, color });
     }
     if (view.quests.warning) lines.push({ text: view.quests.warning, color: BLOOD });

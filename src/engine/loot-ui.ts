@@ -443,7 +443,8 @@ function drawItem(ctx: CanvasRenderingContext2D, art: ArtBook | null, item: Grid
   ctx.globalAlpha = hovered ? 0.2 : 0.1;
   fill(ctx, selected ? AMBER : BONE, box.x, box.y, box.w, box.h);
   ctx.globalAlpha = 1;
-  ring(ctx, selected ? AMBER : hovered ? BONE : DIM, box);
+  const idleRing = hovered ? BONE : DIM;
+  ring(ctx, selected ? AMBER : idleRing, box);
   if (art && drawStretched(ctx, art, item, box)) {
     // drawn: the art fills its footprint
   } else drawOutlinedText(ctx, upper(formatItemName(item.type)).slice(0, 8), box.x + box.w / 2, box.y + box.h / 2 - 2, BONE);
@@ -507,7 +508,11 @@ function drawBoard(ctx: CanvasRenderingContext2D, view: LootView, board: GridBox
       // A void is not lit: it looks like any other cell until the head reaches it, then shows as a void.
       const shut = blocked.has(`${col},${row}`) && phase !== 'waiting';
       const covered = ranks !== null && phase === 'waiting';
-      const light = hover && hover.col === col && hover.row === row && held === null ? LINE : translucent && !covered ? 'rgba(11,12,16,0.35)' : translucent ? 'transparent' : RAISED;
+      const isHoveredCell = hover && hover.col === col && hover.row === row && held === null;
+      const isDimmed = translucent && !covered;
+      const fallbackLight = translucent ? 'transparent' : RAISED;
+      const unhoveredLight = isDimmed ? 'rgba(11,12,16,0.35)' : fallbackLight;
+      const light = isHoveredCell ? LINE : unhoveredLight;
       if (shut) {
         if (view.edit) drawDisabledCell(ctx, box);
         continue;
@@ -637,7 +642,8 @@ function drawButton(ctx: CanvasRenderingContext2D, box: Box, label: string, colo
   fill(ctx, LINE, box.x, box.y + 1, box.w, box.h - 1);
   fill(ctx, active ? AMBER : RAISED, box.x, box.y, box.w, box.h - 1);
   ring(ctx, hovered ? AMBER : DIM, { x: box.x, y: box.y, w: box.w, h: box.h - 1 });
-  drawText(ctx, label, box.x + Math.round((box.w - textWidth(label)) / 2), box.y + 2, active ? INK : hovered ? AMBER : color);
+  const idleLabel = hovered ? AMBER : color;
+  drawText(ctx, label, box.x + Math.round((box.w - textWidth(label)) / 2), box.y + 2, active ? INK : idleLabel);
 }
 
 function drawLibrary(ctx: CanvasRenderingContext2D, view: LootView, library: NonNullable<LootLayout['library']>): void {
@@ -647,7 +653,8 @@ function drawLibrary(ctx: CanvasRenderingContext2D, view: LootView, library: Non
     const current = view.edit?.libraryCurrent === cell.id;
     const hovered = view.hover !== null && view.hover.kind === 'library' && view.hover.id === cell.id;
     fill(ctx, RAISED, cell.x, cell.y, cell.w, cell.h);
-    ring(ctx, current ? AMBER : hovered ? BONE : LINE, cell);
+    const idleRing = hovered ? BONE : LINE;
+    ring(ctx, current ? AMBER : idleRing, cell);
     const sprite = cell.art ? stageSprite(cell.art, true) : null;
     if (sprite) {
       const canvas = spriteCanvas(sprite);
@@ -685,7 +692,9 @@ export function drawLootUi(ctx: CanvasRenderingContext2D, view: LootView, given:
     const item = state.gear[slot.id];
     const mark = gearMark(view, slot.id);
     fill(ctx, RAISED, slot.x, slot.y, slot.w, slot.h);
-    ring(ctx, mark === 'valid' ? SICK : mark === 'invalid' ? BLOOD : item ? DIM : LINE, slot);
+    const unmarkedRing = item ? DIM : LINE;
+    const invalidRing = mark === 'invalid' ? BLOOD : unmarkedRing;
+    ring(ctx, mark === 'valid' ? SICK : invalidRing, slot);
     const tag = GEAR_TAG[slot.id];
     drawText(ctx, tag, slot.x + Math.round((slot.w - textWidth(tag)) / 2), slot.y + 3, DIM);
     const body = { x: slot.x, y: slot.y + 9, w: slot.w, h: slot.h - 9 };

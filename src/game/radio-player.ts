@@ -100,8 +100,9 @@ export function nextTrackOnEnd(
 
     const [next = null, ...rest] = pool;
     const canPlay = next !== null;
+    const wrapIndex = repeat === 'all' ? 0 : null;
     return {
-      nextIndex: canPlay ? next : (repeat === 'all' ? 0 : null),
+      nextIndex: canPlay ? next : wrapIndex,
       nextQueue: rest,
     };
   }

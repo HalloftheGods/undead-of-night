@@ -91,8 +91,10 @@ export function moveCursor(cursor: LootCursor, direction: LootDirection, gridOf:
   const across = step.col !== 0;
   const fraction = across ? (cursor.row + 0.5) / grid.rows : (cursor.col + 0.5) / grid.cols;
   const entry = (size: number) => Math.min(size - 1, Math.floor(fraction * size));
-  const landCol = across ? (step.col > 0 ? 0 : to.cols - 1) : entry(to.cols);
-  const landRow = across ? entry(to.rows) : step.row > 0 ? 0 : to.rows - 1;
+  const acrossCol = step.col > 0 ? 0 : to.cols - 1;
+  const downRow = step.row > 0 ? 0 : to.rows - 1;
+  const landCol = across ? acrossCol : entry(to.cols);
+  const landRow = across ? entry(to.rows) : downRow;
   return { gridId: next, ...anchorOf(to, landCol, landRow) };
 }
 

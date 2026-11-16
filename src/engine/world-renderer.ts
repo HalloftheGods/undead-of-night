@@ -325,7 +325,8 @@ export class WorldRenderer {
         // Every signal's red alternates on and off together; reduced motion keeps it lit.
         const isBlinkedOff = light.blink && !this.reducedMotion && Math.floor(this.time * SIGNAL_BLINK_RATE) % 2 !== 0;
         const blink = isBlinkedOff ? SIGNAL_OFF : 1;
-        const wobble = light.burns ? fireFlicker(this.time, i) : light.flicker ? flicker(this.time, i) : 1;
+        const lampWobble = light.flicker ? flicker(this.time, i) : 1;
+        const wobble = light.burns ? fireFlicker(this.time, i) : lampWobble;
         const strength = wobble * LAMP_STRENGTH * look.lampStrength * blink;
         // A signal keeps its own red on every level; only the ordinary lamps take the level's colour.
         const color = light.blink ? light.color : look.lampColor ?? light.color;
