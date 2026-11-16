@@ -58,8 +58,14 @@ function frontPanels(leaf: Extract<ChangeLeaf, { kind: 'front' }>): PagePanel[] 
   ];
 }
 
+function leafPanels(leaf: ChangeLeaf): PagePanel[] {
+  if (leaf.kind === 'front') return frontPanels(leaf);
+  if (leaf.kind === 'stories') return leaf.notes.map(notePanel);
+  return [];
+}
+
 const pages = computed<readonly PagePanel[][]>(() =>
-  leaves.value.map((leaf) => (leaf.kind === 'front' ? frontPanels(leaf) : leaf.kind === 'stories' ? leaf.notes.map(notePanel) : [])),
+  leaves.value.map(leafPanels),
 );
 
 const model = computed<PageModel>(() => {

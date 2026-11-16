@@ -72,13 +72,17 @@ export function drawAlbumSlider(
   if (prevBox) {
     const canPrev = item.albumIndex > 0;
     frame(ctx, prevBox, isPrevHovered && canPrev ? AMBER : LINE, RAISED);
-    centred(ctx, '◀', prevBox, canPrev ? (isPrevHovered ? AMBER : BONE) : DIM);
+    const prevHoverColor = isPrevHovered ? AMBER : BONE;
+    const prevArrowColor = canPrev ? prevHoverColor : DIM;
+    centred(ctx, '◀', prevBox, prevArrowColor);
   }
 
   if (nextBox) {
     const canNext = item.albumIndex < item.totalAlbums - 1;
     frame(ctx, nextBox, isNextHovered && canNext ? AMBER : LINE, RAISED);
-    centred(ctx, '▶', nextBox, canNext ? (isNextHovered ? AMBER : BONE) : DIM);
+    const nextHoverColor = isNextHovered ? AMBER : BONE;
+    const nextArrowColor = canNext ? nextHoverColor : DIM;
+    centred(ctx, '▶', nextBox, nextArrowColor);
   }
 
   // 4. Album Indicator Dots (parts[2 .. 2+totalAlbums-1])
@@ -87,7 +91,10 @@ export function drawAlbumSlider(
     if (!dotBox) continue;
     const isActive = i === item.albumIndex;
     const isHovered = win.hover?.kind === 'control' && win.hover.id === control.id && win.hover.part === 2 + i;
-    frame(ctx, dotBox, isActive ? AMBER : isHovered ? BONE : LINE, isActive ? AMBER : RAISED);
+    const dotIdleColor = isHovered ? BONE : LINE;
+    const dotBorder = isActive ? AMBER : dotIdleColor;
+    const dotFill = isActive ? AMBER : RAISED;
+    frame(ctx, dotBox, dotBorder, dotFill);
   }
 
   // 5. Cassette Track Rows & Favorite Buttons
@@ -106,7 +113,10 @@ export function drawAlbumSlider(
     const isFavHovered = win.hover?.kind === 'control' && win.hover.id === control.id && win.hover.part === favPartIdx;
 
     // Track cassette row
-    frame(ctx, trackBox, track.isPlaying ? AMBER : isTrackHovered ? BONE : LINE, track.isPlaying ? '#222018' : RAISED);
+    const trackIdleColor = isTrackHovered ? BONE : LINE;
+    const trackBorder = track.isPlaying ? AMBER : trackIdleColor;
+    const trackFill = track.isPlaying ? '#222018' : RAISED;
+    frame(ctx, trackBox, trackBorder, trackFill);
 
     // Track index / side
     const sideLabel = `A${n + 1}`;
@@ -131,7 +141,7 @@ export function drawAlbumSlider(
 
     // Track title and origin
     const textStartX = trackBox.x + 32;
-    const titleColor = track.isPlaying ? AMBER : isTrackHovered ? BONE : BONE;
+    const titleColor = track.isPlaying ? AMBER : BONE;
     drawText(ctx, track.name.toUpperCase(), textStartX, trackBox.y + 4, titleColor);
 
     // Favorite heart button

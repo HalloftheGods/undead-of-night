@@ -61,9 +61,8 @@ export function drivingPrompts(options: DrivingPromptOptions): DrivingPrompts {
   const turnRight: DrivingActionPrompt = touch
     ? { label: 'TURN RIGHT' }
     : { key: rightKey, label: 'TURN RIGHT' };
-  const exit: DrivingActionPrompt | undefined = canExit
-    ? (touch ? { label: 'EXIT' } : { key: holdKey, label: 'EXIT' })
-    : undefined;
+  const exitPrompt: DrivingActionPrompt = touch ? { label: 'EXIT' } : { key: holdKey, label: 'EXIT' };
+  const exit: DrivingActionPrompt | undefined = canExit ? exitPrompt : undefined;
 
   return { gas, brakeOrReverse, turnLeft, turnRight, exit };
 }

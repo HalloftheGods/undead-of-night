@@ -93,7 +93,7 @@ export function pickLock(from: Point, zombies: readonly LockCandidate[], current
     if (zombie.id === held?.id || zombie.health <= 0 || distance(from, zombie) > reach || !canReach(zombie)) continue;
     const dx = zombie.x - origin.x;
     const dy = zombie.y - origin.y;
-    const along = direction === 'right' ? dx : direction === 'left' ? -dx : direction === 'down' ? dy : -dy;
+    const along = alongAxis(direction, dx, dy);
     const across = direction === 'left' || direction === 'right' ? Math.abs(dy) : Math.abs(dx);
     if (along < 1) continue;
     const score = along + LATERAL_WEIGHT * across;
@@ -110,7 +110,7 @@ export function pickLock(from: Point, zombies: readonly LockCandidate[], current
     if (zombie.id === held?.id || zombie.health <= 0 || distance(from, zombie) > reach || !canReach(zombie)) continue;
     const dx = zombie.x - origin.x;
     const dy = zombie.y - origin.y;
-    const along = direction === 'right' ? dx : direction === 'left' ? -dx : direction === 'down' ? dy : -dy;
+    const along = alongAxis(direction, dx, dy);
     const across = direction === 'left' || direction === 'right' ? Math.abs(dy) : Math.abs(dx);
     const score = -along - LATERAL_WEIGHT * across;
     if (score > farScore) {
@@ -119,4 +119,15 @@ export function pickLock(from: Point, zombies: readonly LockCandidate[], current
     }
   }
   return far ?? best;
+}
+
+/** Signed distance along the pressed direction: positive when the zombie lies that way. */
+function alongAxis(direction: NavDirection, dx: number, dy: number): number {
+  const isRight = direction === 'right';
+  const isLeft = direction === 'left';
+  const isDown = direction === 'down';
+  if (isRight) return dx;
+  if (isLeft) return -dx;
+  if (isDown) return dy;
+  return -dy;
 }

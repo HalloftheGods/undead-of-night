@@ -93,7 +93,8 @@ export function buildPlacesGroup(townView?: TownMapView | null): KeyGroup {
   const entries: KeyEntry[] = PLACE_GROUPS.map((group) => {
     const st = statusByGroup?.get(group);
     const hasBuildings = st !== undefined && st.total > 0;
-    const checkIcon = hasBuildings ? (st.isCleared ? TICK_ICON : UNCHECKED_BOX_ICON) : undefined;
+    const clearedIcon = st?.isCleared ? TICK_ICON : UNCHECKED_BOX_ICON;
+    const checkIcon = hasBuildings ? clearedIcon : undefined;
     const tally = hasBuildings ? `${st.cleared} of ${st.total}` : undefined;
 
     return {

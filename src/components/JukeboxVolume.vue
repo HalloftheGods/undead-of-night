@@ -7,7 +7,7 @@
       :aria-label="muted ? 'Unmute' : 'Mute'"
       @click="emit('toggleMute')"
     >
-      <span class="jukebox-vol-icon" aria-hidden="true">{{ muted ? '🔇' : (volume === 0 ? '🔈' : '🔊') }}</span>
+      <span class="jukebox-vol-icon" aria-hidden="true">{{ volumeIcon }}</span>
     </button>
     <input
       type="range"
@@ -24,14 +24,18 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 /**
  * Interactive volume control widget for the Jukebox screen: speaker mute button,
  * smooth range slider, and percentage level readout.
  */
-defineProps<{
+const props = defineProps<{
   volume: number;
   muted: boolean;
 }>();
+
+const unmutedIcon = computed(() => (props.volume === 0 ? '🔈' : '🔊'));
+const volumeIcon = computed(() => (props.muted ? '🔇' : unmutedIcon.value));
 
 const emit = defineEmits<{
   toggleMute: [];
