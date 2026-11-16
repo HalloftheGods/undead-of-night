@@ -1,23 +1,23 @@
-import { effectOf, rankOf, slotsUsed } from '../../shared/gun-upgrades.ts';
-import { GUN_EFFECTS } from '../../shared/round-effect-data.ts';
-import { formatKeyCode, loadKeyBindings } from './controls-prefs.ts';
-import { driveReadout, formatSpeed } from './drive-readout.ts';
-import type { ControlDevice } from './hud-keys.ts';
-import { weaponSlotLabel } from './hud-keys.ts';
-import { ammoWarning, hordeStatus, reloadPrompt, switchKey } from './hud-state.ts';
-import type { AmmoState, HudState, KeepsakeCard, UiState } from './hud-state.ts';
-import { levelGoal, levelLine, levelSidequest } from './level-hud.ts';
-import { materialChips } from './material-chips.ts';
-import type { MaterialChip } from './material-chips.ts';
-import { carriedLines } from './home-screens.ts';
-import { questTracker } from './home/quest-view.ts';
-import type { TrackerLine } from './home/quest-view.ts';
-import { hintText } from './first-run-hints.ts';
-import { gunOnTop } from './canvas-hud-prefs.ts';
-import type { BarSlot } from './weapon-bar.ts';
-import { weaponBar } from './weapon-bar.ts';
+import { effectOf, rankOf, slotsUsed } from "../../shared/gun-upgrades.ts";
+import { GUN_EFFECTS } from "../../shared/round-effect-data.ts";
+import { formatKeyCode, loadKeyBindings } from "./controls-prefs.ts";
+import { driveReadout, formatSpeed } from "./drive-readout.ts";
+import type { ControlDevice } from "./hud-keys.ts";
+import { weaponSlotLabel } from "./hud-keys.ts";
+import { ammoWarning, hordeStatus, reloadPrompt, switchKey } from "./hud-state.ts";
+import type { AmmoState, HudState, KeepsakeCard, UiState } from "./hud-state.ts";
+import { levelGoal, levelLine, levelSidequest } from "./level-hud.ts";
+import { materialChips } from "./material-chips.ts";
+import type { MaterialChip } from "./material-chips.ts";
+import { carriedLines } from "./home-screens.ts";
+import { questTracker } from "./home/quest-view.ts";
+import type { TrackerLine } from "./home/quest-view.ts";
+import { hintText } from "./first-run-hints.ts";
+import { gunOnTop } from "./canvas-hud-prefs.ts";
+import type { BarSlot } from "./weapon-bar.ts";
+import { weaponBar } from "./weapon-bar.ts";
 
-export type PadArrow = 'up' | 'down' | 'left' | 'right';
+export type PadArrow = "up" | "down" | "left" | "right";
 
 /** A hotkey as the HUD prints it: a key's letter, or on a pad "D" with the arrow of its D-pad direction. */
 export interface Hotkey {
@@ -25,7 +25,7 @@ export interface Hotkey {
   readonly arrow: PadArrow | null;
 }
 
-export type ItemIcon = 'medkit' | 'bottle' | 'fireworks' | 'fountain' | 'candy' | 'knife';
+export type ItemIcon = "medkit" | "bottle" | "fireworks" | "fountain" | "candy" | "knife";
 
 export interface ItemRow {
   readonly icon: ItemIcon;
@@ -53,7 +53,7 @@ export interface TeammateRow {
 }
 
 export interface KeepsakeRow {
-  readonly id: KeepsakeCard['id'];
+  readonly id: KeepsakeCard["id"];
   readonly code: string;
   readonly keyLabel: string | null;
   readonly name: string;
@@ -110,8 +110,8 @@ export interface DriveRow {
 /** Everything the canvas HUD paints, worked out from the same state the page HUD reads. */
 export interface CanvasHudView {
   readonly hud: HudState;
-  readonly place: UiState['place'];
-  readonly mode: UiState['mode'];
+  readonly place: UiState["place"];
+  readonly mode: UiState["mode"];
   readonly signalWeak: boolean;
   readonly items: readonly ItemRow[];
   readonly sugar: readonly { readonly name: string; readonly left: string }[];
@@ -131,7 +131,11 @@ export interface CanvasHudView {
   readonly runLog: readonly RunLogRow[];
   /** The key that opens the full log, printed under the feed, or null where there is none. */
   readonly logKey: Hotkey | null;
-  readonly quests: { readonly summary: string; readonly lines: readonly QuestRow[]; readonly warning: string | null } | null;
+  readonly quests: {
+    readonly summary: string;
+    readonly lines: readonly QuestRow[];
+    readonly warning: string | null;
+  } | null;
   readonly treasure: { readonly worth: string; readonly counts: readonly string[] } | null;
   readonly drive: DriveRow | null;
   readonly hint: string;
@@ -161,17 +165,17 @@ export interface CanvasHudContext {
 }
 
 const DPAD_ARROWS: Readonly<Record<string, PadArrow>> = {
-  'D-pad Up': 'up',
-  'D-pad Down': 'down',
-  'D-pad Left': 'left',
-  'D-pad Right': 'right',
+  "D-pad Up": "up",
+  "D-pad Down": "down",
+  "D-pad Left": "left",
+  "D-pad Right": "right"
 };
 
 /** A pad's D-pad reads as "D" and an arrow; any other label is printed as it is. */
 export function hotkeyFor(label: string | null): Hotkey | null {
   if (label === null) return null;
   const arrow = DPAD_ARROWS[label];
-  if (arrow) return { text: 'D', arrow };
+  if (arrow) return { text: "D", arrow };
   return { text: label, arrow: null };
 }
 
@@ -195,12 +199,12 @@ function feedAlphaNow(latestKey: number | null): number {
   return Math.max(0, 1 - (elapsed - FEED_HOLD_MS) / FEED_FADE_MS);
 }
 const ITEM_KEYS: readonly { readonly icon: ItemIcon; readonly code: string }[] = [
-  { icon: 'medkit', code: 'KeyH' },
-  { icon: 'bottle', code: 'KeyG' },
-  { icon: 'fireworks', code: 'KeyT' },
-  { icon: 'fountain', code: 'KeyV' },
-  { icon: 'candy', code: 'KeyX' },
-  { icon: 'knife', code: 'KeyF' },
+  { icon: "medkit", code: "KeyH" },
+  { icon: "bottle", code: "KeyG" },
+  { icon: "fireworks", code: "KeyT" },
+  { icon: "fountain", code: "KeyV" },
+  { icon: "candy", code: "KeyX" },
+  { icon: "knife", code: "KeyF" }
 ];
 
 function itemRows(ctx: CanvasHudContext): ItemRow[] {
@@ -211,24 +215,26 @@ function itemRows(ctx: CanvasHudContext): ItemRow[] {
     fireworks: hud.fireworks,
     fountain: hud.fountains,
     candy: hud.candyCount,
-    knife: hud.knife ? 1 : 0,
+    knife: hud.knife ? 1 : 0
   };
-  return ITEM_KEYS.filter((item) => item.icon === 'medkit' || counts[item.icon] > 0).map((item) => ({
-    icon: item.icon,
-    text: item.icon === 'knife' ? '' : String(counts[item.icon]),
-    dim: item.icon === 'medkit' && hud.medkits === 0,
-    hotkey: hotkeyFor(ctx.glyph(item.code)),
-  }));
+  return ITEM_KEYS.filter((item) => item.icon === "medkit" || counts[item.icon] > 0).map(
+    (item) => ({
+      icon: item.icon,
+      text: item.icon === "knife" ? "" : String(counts[item.icon]),
+      dim: item.icon === "medkit" && hud.medkits === 0,
+      hotkey: hotkeyFor(ctx.glyph(item.code))
+    })
+  );
 }
 
-function pipsOf(hud: HudState, weapon: BarSlot['weapon']): GunFitPips {
+function pipsOf(hud: HudState, weapon: BarSlot["weapon"]): GunFitPips {
   const fit = hud.gear?.fits[weapon];
-  const suppressed = rankOf(fit, 'suppressor') > 0;
+  const suppressed = rankOf(fit, "suppressor") > 0;
   return {
-    plain: slotsUsed(fit) - rankOf(fit, 'suppressor'),
+    plain: slotsUsed(fit) - rankOf(fit, "suppressor"),
     suppressed,
     quirk: Boolean(fit?.quirk),
-    effect: effectOf(fit),
+    effect: effectOf(fit)
   };
 }
 
@@ -236,13 +242,13 @@ function keepsakeRows(ctx: CanvasHudContext): KeepsakeRow[] {
   const offer = ctx.hud.keepsakeOffer ?? [];
   const codes = loadKeyBindings().keepsake;
   return offer.map((card, index) => {
-    const code = codes[index] ?? '';
+    const code = codes[index] ?? "";
     return {
       id: card.id,
       code,
-      keyLabel: ctx.device === 'keys' && code ? formatKeyCode(code) : null,
+      keyLabel: ctx.device === "keys" && code ? formatKeyCode(code) : null,
       name: card.name,
-      blurb: card.blurb,
+      blurb: card.blurb
     };
   });
 }
@@ -252,9 +258,9 @@ function questRows(lines: readonly TrackerLine[]): QuestRow[] {
     title: line.title,
     filled: line.bar.filled,
     slots: line.bar.slots,
-    value: line.ready ? 'Ready' : line.bar.value,
+    value: line.ready ? "Ready" : line.bar.value,
     ready: line.ready,
-    atRisk: line.atRisk,
+    atRisk: line.atRisk
   }));
 }
 
@@ -265,13 +271,17 @@ function driveRow(ui: UiState): DriveRow | null {
     speed: formatSpeed(readout.speed, ui.speedUnit),
     heading: `${readout.heading}° (${readout.facing.toUpperCase()})`,
     body: readout.body,
-    crash: readout.crash == null ? 'none' : `${Math.round(readout.crash * 100)}%`,
+    crash: readout.crash == null ? "none" : `${Math.round(readout.crash * 100)}%`
   };
 }
 
 export function canvasHudView(ctx: CanvasHudContext): CanvasHudView {
   const { ui, hud, device, glyph } = ctx;
-  const slots = weaponBar(hud).map((slot) => ({ ...slot, keyHint: weaponSlotLabel(slot.key, device), pips: pipsOf(hud, slot.weapon) }));
+  const slots = weaponBar(hud).map((slot) => ({
+    ...slot,
+    keyHint: weaponSlotLabel(slot.key, device),
+    pips: pipsOf(hud, slot.weapon)
+  }));
   const ammo = ammoWarning(hud);
   const swapKey = switchKey(hud);
   const needsReload = reloadPrompt(hud);
@@ -291,38 +301,54 @@ export function canvasHudView(ctx: CanvasHudContext): CanvasHudView {
     moodles: (hud.moodles ?? []).map((moodle) => ({
       id: moodle.id,
       label: moodle.label,
-      percentText: moodle.id === 'bleeding' ? null : `${Math.round(moodle.value)}%`,
+      percentText: moodle.id === "bleeding" ? null : `${Math.round(moodle.value)}%`,
       remedy: moodle.remedy,
       severity: moodle.severity,
-      hotkey: moodle.key ? hotkeyFor(glyph(moodle.key)) : null,
+      hotkey: moodle.key ? hotkeyFor(glyph(moodle.key)) : null
     })),
     teammates: hud.teammates.map((mate) => ({
       name: mate.name,
       character: mate.character,
       color: mate.color,
-      alive: mate.status === 'alive',
+      alive: mate.status === "alive",
       status: mate.status,
-      fraction: mate.maxHealth > 0 ? Math.max(0, Math.min(1, mate.health / mate.maxHealth)) : 0,
+      fraction: mate.maxHealth > 0 ? Math.max(0, Math.min(1, mate.health / mate.maxHealth)) : 0
     })),
-    boss: hud.boss ? { name: hud.boss.name, fraction: Math.max(0, Math.min(1, hud.boss.share)) } : null,
+    boss: hud.boss
+      ? { name: hud.boss.name, fraction: Math.max(0, Math.min(1, hud.boss.share)) }
+      : null,
     keepsakes: hud.keepsakeOffer ? keepsakeRows(ctx) : [],
     feedAlpha: feedAlphaNow(ui.log.at(-1)?.key ?? null),
     logOpen: ui.logOpen,
     gunOnTop: gunOnTop.value,
-    runLog: ui.log.slice(-RUN_LOG_LINES).map((entry) => ({ key: entry.key, at: entry.at, text: entry.text, detail: entry.detail, count: entry.count, tone: entry.tone })),
-    logKey: hotkeyFor(glyph('KeyL')),
+    runLog: ui.log
+      .slice(-RUN_LOG_LINES)
+      .map((entry) => ({
+        key: entry.key,
+        at: entry.at,
+        text: entry.text,
+        detail: entry.detail,
+        count: entry.count,
+        tone: entry.tone
+      })),
+    logKey: hotkeyFor(glyph("KeyL")),
     feed: feedLog.map((entry, index) => ({
       key: entry.key,
       at: entry.at,
       text: entry.text,
       count: entry.count,
       age: feedLog.length - 1 - index,
-      tone: entry.tone,
+      tone: entry.tone
     })),
-    quests: quests === null ? null : { summary: quests.summary, lines: questRows(quests.lines), warning: quests.warning },
+    quests:
+      quests === null
+        ? null
+        : { summary: quests.summary, lines: questRows(quests.lines), warning: quests.warning },
     treasure: isTrip ? carriedLines(home.carried) : null,
     drive: driveRow(ui),
-    hint: hintLine ? hintText(hintLine.id, { hordes: hintLine.hordes }, { device, padId: ctx.padId }) : '',
+    hint: hintLine
+      ? hintText(hintLine.id, { hordes: hintLine.hordes }, { device, padId: ctx.padId })
+      : "",
     bite: ui.bite ?? null,
     slots,
     ammo,
@@ -334,11 +360,16 @@ export function canvasHudView(ctx: CanvasHudContext): CanvasHudView {
       const held = effectOf(hud.gear?.fits[hud.weapon]);
       return held === null ? null : GUN_EFFECTS[held].label;
     })(),
-    swapPrompt: swapKey === null ? null : device === 'pad' ? hotkeyFor(glyph('KeyQ')) : { text: String(swapKey), arrow: null },
-    reloadPromptKey: needsReload ? hotkeyFor(glyph('KeyR')) : null,
-    empty: ammo === 'empty',
+    swapPrompt:
+      swapKey === null
+        ? null
+        : device === "pad"
+          ? hotkeyFor(glyph("KeyQ"))
+          : { text: String(swapKey), arrow: null },
+    reloadPromptKey: needsReload ? hotkeyFor(glyph("KeyR")) : null,
+    empty: ammo === "empty",
     reloadNeeded: needsReload,
-    shoveKey: glyph('KeyF'),
-    shoveLabel: hud.knife ? 'Shove & Stab' : 'Shove',
+    shoveKey: glyph("KeyF"),
+    shoveLabel: hud.knife ? "Shove or Stab" : "Shove"
   };
 }
