@@ -8,8 +8,6 @@
  */
 import { computed, ref } from 'vue';
 import type { PageItem, PageModel, PagePanel } from '../engine/page-ui.ts';
-import { formatTrackTime } from '../game/radio-player.ts';
-import type { RepeatMode } from '../game/radio-player.ts';
 import { groupTracksIntoAlbums } from '../game/radio-albums.ts';
 import { useCanvasPage } from './use-canvas-page.ts';
 import { useRadioPlayer } from './use-radio-player.ts';
@@ -17,7 +15,6 @@ import { useRadioPlayer } from './use-radio-player.ts';
 const emit = defineEmits<{ close: [] }>();
 const radio = useRadioPlayer();
 
-const REPEATS = [{ id: 'off', label: 'Off' }, { id: 'all', label: 'All' }, { id: 'one', label: 'One' }];
 const TRACK_PREFIX = 'track:';
 
 const isRunning = computed(() => radio.isPlaying.value && !radio.isPaused.value);

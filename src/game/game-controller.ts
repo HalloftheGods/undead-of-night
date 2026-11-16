@@ -46,7 +46,6 @@ import { promoSceneOn } from "./dev/promo-scene.ts";
 import {
   applyPalette,
   brightness,
-  brightnessLift,
   loadDisplayPrefs,
   saveDisplayPrefs,
   UI_SCALES,

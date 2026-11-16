@@ -1,4 +1,4 @@
-import { drawText, FONT_HEIGHT, textWidth } from './bitmap-font.ts';
+import { drawText, textWidth } from './bitmap-font.ts';
 import type { Box } from './setup-ui.ts';
 import type { PlacedControl, RadioItem } from './page-ui.ts';
 import type { PageWindow } from '../game/page-view.ts';

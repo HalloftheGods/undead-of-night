@@ -174,7 +174,6 @@ export function layoutLootUi(state: DualLootState, viewW: number, viewH: number,
 
   // 2. Pockets to the left of the guns
   const pocketsW = pockets.cols * TILE;
-  const pocketsH = pockets.rows * TILE;
   const pocketsX = gearX - 8 - pocketsW;
   const pocketsY = gearY + 8;
   const pocketsBox = gridBox('pockets', pockets, 'POCKETS', pocketsX, pocketsY);

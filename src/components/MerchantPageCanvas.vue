@@ -48,7 +48,7 @@ const model = computed<PageModel>(() => {
     };
   }
 
-  const { merchant, view } = current;
+  const { view } = current;
   const isStalled = view.stall.kind !== 'closed' && view.stall.kind !== 'unmet';
   const hasNotice = Boolean(view.notice);
   const panels: PagePanel[] = [];

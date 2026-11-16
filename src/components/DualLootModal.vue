@@ -431,19 +431,6 @@ const currentOrientationLabel = computed(() => {
   return 'HORIZ';
 });
 
-const totalPlayerItemsCount = computed(() => {
-  let count = modalState.pocketsGrid.items.length + modalState.candyBagGrid.items.length + modalState.backpackGrid.items.length;
-  const hasPrimary = modalState.gear.primary !== null;
-  if (hasPrimary) count += 1;
-  const hasSecondary = modalState.gear.secondary !== null;
-  if (hasSecondary) count += 1;
-  const hasSidearm = modalState.gear.sidearm !== null;
-  if (hasSidearm) count += 1;
-  const hasArmor = modalState.gear.armor !== null;
-  if (hasArmor) count += 1;
-  return count;
-});
-
 const containerCells = computed(() => buildGridCells(modalState.containerGrid.cols, modalState.containerGrid.rows));
 
 const pocketsSection = computed(() => ({

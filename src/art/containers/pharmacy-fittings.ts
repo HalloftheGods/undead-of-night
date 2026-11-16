@@ -95,7 +95,7 @@ function pharmacyShelfClosed(): PixelSprite {
 
 function pharmacyShelfOpened(): PixelSprite {
   const p = pharmacyFrame();
-  const { c, left, right, front, top } = p;
+  const { c, left, right, front } = p;
   pharmacyBoard(p, front + 5);
   pharmacyBoard(p, front + 11);
   // The lower board has come away at one end and tipped the stock.

@@ -6,7 +6,7 @@
 // so nothing crosses it but by the stairs. The sewers lie below the last band.
 
 import type { Point } from './flow-field.ts';
-import { BUILDING_DEFS, TILE_SIZE } from './protocol.ts';
+import { TILE_SIZE } from './protocol.ts';
 import type { BuildingInstance, BuildingKind, WorldMap } from './protocol.ts';
 import { createRng } from './rng.ts';
 

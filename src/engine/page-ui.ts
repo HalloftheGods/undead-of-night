@@ -213,7 +213,6 @@ export const PAPER_HEAD_SCALE = 3;
 /** A headline's row: the tallest it can be, at PAPER_HEAD_SCALE, with room for its rule. */
 export const PAPER_HEAD_H = HEAD_SIZE + 10;
 /** Pixel letters are 23 squares wide for NOISE, and the glyph gap is one square. */
-const NAME_WIDTH_SQUARES = 23;
 
 /** The sheet inside a view: as tall as the view allows at the newspaper's proportions, centred. */
 export function paperSheet(viewW: number, viewH: number): Box {
@@ -229,7 +228,6 @@ export function paperSheet(viewW: number, viewH: number): Box {
 /** The masthead's squares: NOISE 23 wide, NIGHT 22, and the small "IN" (8) and "THE" (13) stacked between them. */
 const NOISE_SQUARES = 23;
 const NIGHT_SQUARES = 22;
-const IN_SQUARES = 8;
 const THE_SQUARES = 13;
 /** The gap either side of the small words, in big squares. */
 const NAME_GAP_SQUARES = 3;
