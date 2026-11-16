@@ -4,7 +4,7 @@ import { TILE_SIZE } from '../../shared/protocol.ts';
 import type { EntityId, GameEvent, PlayerEntity, WorldMap, ZombieType } from '../../shared/protocol.ts';
 import type { ArtBook, PixelSprite } from '../art/types.ts';
 import { drawHeldUi, drawQuip, QUIP_COLOR } from './held-ui.ts';
-import { drawOutline } from './sprite-cache.ts';
+import { bodyHeight, drawOutline } from './sprite-cache.ts';
 import { survivorReaction } from '../game/inventory/survivor-quips.ts';
 import { setArrivalCamera } from '../game/inventory/move-motion.ts';
 import { backFlight, lerpRect, noteWorldFrame, toSpace, zoomFrame } from '../game/inventory/container-zoom.ts';
@@ -31,6 +31,7 @@ import { Camera } from './camera.ts';
 import { CareOverlay } from './care-overlay.ts';
 import { EmoteOverlay } from './emote-overlay.ts';
 import { SpeechOverlay } from './speech-overlay.ts';
+import { drawTeammateMoodles } from './teammate-moodles.ts';
 import { EntityRenderer } from './entity-renderer.ts';
 import { FrameBudget } from './frame-budget.ts';
 import { FxDirector } from './fx-director.ts';
@@ -54,6 +55,8 @@ import type { Viewport } from './viewport.ts';
 import { VisualStore } from './visuals.ts';
 import { beaconPool } from './car-looks.ts';
 
+/** Body height used when a survivor has no sprite yet (matches the emote overlay's default). */
+const TEAMMATE_BODY_HEIGHT = 20;
 const FLASHLIGHT_REACH = 215;
 const TEAM_FLASHLIGHT_REACH = 170;
 const AURA_COLOR = '#b8a488';
@@ -364,6 +367,12 @@ export class WorldRenderer {
     lighting.finish();
   }
 
+  /** Feet to head for a survivor's sprite, the same measure the speech and emote overlays use. */
+  private teammateBodyHeight(id: EntityId): number {
+    const sprite = this.visuals.get(id).sprite;
+    return sprite ? bodyHeight(sprite) : TEAMMATE_BODY_HEIGHT;
+  }
+
   /** True when the viewer is down in the sewers. */
   private isUnderground(focusY: number): boolean {
     const top = this.map?.sewers?.top;
@@ -508,6 +517,14 @@ export class WorldRenderer {
     this.tosses.draw(ctx, this.art, left, top, performance.now());
     this.emotes.draw(ctx, scene, left, top, viewW, viewH, time, (id) => this.overlay.headroomOf(id));
     this.care.draw(ctx, scene, left, top);
+    drawTeammateMoodles(ctx, this.art, scene, {
+      left,
+      top,
+      viewW,
+      viewH,
+      heightOf: (id) => this.teammateBodyHeight(id),
+      headroomOf: (id) => this.overlay.headroomOf(id)
+    });
     this.speech.draw(ctx, scene, left, top, viewW, viewH, time);
     this.fx.particles.keepTextsClear(this.overlay.sugarKeepOuts());
     this.fx.particles.drawTexts(ctx, left, top);
