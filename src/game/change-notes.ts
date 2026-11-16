@@ -23,6 +23,177 @@ export interface ChangeNote {
 
 export const CHANGE_NOTES: readonly ChangeNote[] = [
   {
+    id: "toss-where-you-aim",
+    date: "2026-11-15",
+    kind: "new",
+    title: "Toss it where you aim",
+    deck: "Drag an item out of the inventory and it flies to wherever you aim.",
+    points: [
+      "It lands up to 130 pixels away and stops at the first wall, with a preview of where it will fall.",
+      "Each move is sent to the host at once. A refused move, or one with no answer after two seconds, flies back to where it came from."
+    ]
+  },
+  {
+    id: "patch-up-a-teammate",
+    date: "2026-11-15",
+    kind: "new",
+    title: "Patch up a teammate",
+    deck: "Drop food, water, a bandage or a medkit on a teammate beside you to treat them.",
+    points: [
+      "Hold still for 1.5 seconds, or 2.5 for a bandage or medkit. Moving or being hit stops the job.",
+      "You both speak while it happens, and a teammate with an ailment shows the worst one over their head."
+    ]
+  },
+  {
+    id: "candy-bag-dozen",
+    date: "2026-11-15",
+    kind: "better",
+    title: "A dozen pieces of candy",
+    deck: "The candy bag holds twelve pieces, one for each cell, and is drawn on the game screen.",
+    points: [
+      "Candy settles into the bag from the bottom row up, and a full bag leaves the rest in the bowl or container.",
+      "Press X to open it. Click a candy, press its number, or use the stick or D-pad and A to eat."
+    ]
+  },
+  {
+    id: "candy-finds-its-bag",
+    date: "2026-11-15",
+    kind: "fixed",
+    title: "Candy finds its bag",
+    deck: "Candy set down on the pack or pockets no longer vanishes after a moment.",
+    points: [
+      "It goes into the candy bag instead. A full bag keeps it in your hand.",
+      "A double-click take no longer spills candy into the backpack when the bag is full."
+    ]
+  },
+  {
+    id: "floor-ammo-count",
+    date: "2026-11-15",
+    kind: "fixed",
+    title: "Counting the ammo on the floor",
+    deck: "Ammo boxes that were never laid down no longer get counted.",
+    points: [
+      "Only the floor ammo boxes you actually set down count toward what the room holds."
+    ]
+  },
+  {
+    id: "containers-zoom-out",
+    date: "2026-11-14",
+    kind: "better",
+    title: "Containers zoom out of the world",
+    deck: "Searching a container lifts it up from where it stands, with its grid over it.",
+    points: [
+      "The container you are searching is outlined in the world, and it flies back to its spot when you close it.",
+      "With reduced motion on, it opens without the zoom."
+    ]
+  },
+  {
+    id: "shoot-with-bag-open",
+    date: "2026-11-14",
+    kind: "better",
+    title: "Keep shooting with the bag open",
+    deck: "With the inventory open you can still aim, shoot, shove, reload and switch guns.",
+    points: [
+      "A click on the inventory itself, or any click while an item is in your hand, goes to the inventory instead.",
+      "R reloads unless you are holding an item, which it turns. On a controller the sticks walk and aim, and RT and LT fire and shove."
+    ]
+  },
+  {
+    id: "drop-anything",
+    date: "2026-11-14",
+    kind: "new",
+    title: "Drop anything, and the survivor has a word about it",
+    deck: "Bottles, fireworks and boxes of rounds can be dropped like everything else.",
+    points: [
+      "Each lies in the world with its own picture, and a dropped box keeps its rounds.",
+      "Your survivor says something in their own voice when they pick up or drop an item. The run log's Loot tab lists every drop and pickup."
+    ]
+  },
+  {
+    id: "pickups-fly-into-bag",
+    date: "2026-11-14",
+    kind: "better",
+    title: "Pickups fly into the bag",
+    deck: "Anything you grab with the inventory open shows up in it straight away.",
+    points: [
+      "A pickup flies from where it lay into its spot in the bag, then lands with a flash of light. Reduced motion skips the flight and keeps the flash."
+    ]
+  },
+  {
+    id: "survivors-weigh-in",
+    date: "2026-11-14",
+    kind: "new",
+    title: "Survivors weigh in",
+    deck: "Hold an item over your survivor and they say what they think of it.",
+    points: [
+      "Night broods, Bear wants food, Kat is a cat, Rex roars, and Rich puts it on his tab.",
+      "The rim is green if they need it, white if they would take it, amber if they would waste it and grey if they cannot use it."
+    ]
+  },
+  {
+    id: "undead-of-night-take-one",
+    date: "2026-11-14",
+    kind: "better",
+    title: "Undead of Night: Take One",
+    deck: "The game has a new subtitle, like the sign on a candy bowl.",
+    points: [
+      "Take One replaces Last Round on the title logo, the page title, share cards, the credits and the magazine line."
+    ]
+  },
+  {
+    id: "controller-lock-on",
+    date: "2026-11-13",
+    kind: "new",
+    title: "Lock on, close the ring",
+    deck: "On a controller the right stick locks onto a zombie, and a ring closes on its head.",
+    points: [
+      "Fire as the ring closes for a headshot, or earlier for a chest shot. Single-pellet guns only.",
+      "A headshot streak now multiplies the bonus on the killing headshot, up to three times."
+    ]
+  },
+  {
+    id: "outdoor-camp",
+    date: "2026-11-13",
+    kind: "better",
+    title: "Home is an outdoor camp the horde breaks into",
+    deck: "The bunker is now a camp in the woods, inside a scrap fence under a clear night sky.",
+    points: [
+      "The market, workshop and quarters are three big tents you walk into. Their walls stop shots and sight; the fence does not.",
+      "The camp grows with each town you reach. At the last warning the fence sections that will give rattle, and then the horde comes through the gaps."
+    ]
+  },
+  {
+    id: "ten-towns-new-names",
+    date: "2026-11-13",
+    kind: "better",
+    title: "Ten towns, ten new names",
+    deck: "Every town has a new name, from One Lake City to Tenver.",
+    points: [
+      "The towns run One Lake City, Twoport, Three Suns, Fourkatello, Phivenix, Sixinnati, Sevannah, Eightlanta, Nine Vegas and Tenver."
+    ]
+  },
+  {
+    id: "ammo-boxes-in-bag",
+    date: "2026-11-13",
+    kind: "new",
+    title: "Spare rounds come in boxes",
+    deck: "Spare ammo shows in the bag as boxes, one per magazine's worth.",
+    points: [
+      "Pistol boxes hold 12, carbine 30 and shotgun 6, with the last box holding the rest.",
+      "A held box has a LOAD button, and an ammo pickup is refused when the bag has no free slot for another box."
+    ]
+  },
+  {
+    id: "use-it-now",
+    date: "2026-11-13",
+    kind: "better",
+    title: "Use it now, hear it now",
+    deck: "Using or dropping an item from the grid takes effect at once.",
+    points: [
+      "The item leaves the grid straight away, and each supply plays its own sound: candy crunches, drinks glug, a medkit heals."
+    ]
+  },
+  {
     id: "cars-turn-like-cars",
     date: "2026-11-12",
     kind: "better",
