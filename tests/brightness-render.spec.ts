@@ -6,8 +6,8 @@ describe('brightness reaches the renderer', () => {
   const stage = readFileSync(new URL('../src/game/run-stage.ts', import.meta.url), 'utf8');
   const renderer = readFileSync(new URL('../src/engine/world-renderer.ts', import.meta.url), 'utf8');
 
-  it('hands the saved lift to the renderer for every town and the bunker', () => {
-    expect(stage.match(/setBrightness\(brightnessLift\(\)\)/g)?.length).toBe(2);
+  it('hands the lift for the run (or the saved setting outside a run) to the renderer', () => {
+    expect(stage).toContain('renderer?.setBrightness(liftFor(this.difficulty));');
   });
 
   it('leaves the ambient untouched at zero lift and lifts toward white above it', () => {

@@ -131,5 +131,6 @@ export function parseClientPacket(raw: string): ClientPacket | null {
     const enabled = typeof value.enabled === 'boolean' ? value.enabled : undefined;
     return { type: 'lobby_toggle_timer', ...(enabled !== undefined ? { enabled } : {}) };
   }
+  if (value.type === 'debrief_continue') return { type: 'debrief_continue' };
   return value.type === 'restart' ? { type: 'restart' } : null;
 }

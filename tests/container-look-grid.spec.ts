@@ -21,8 +21,8 @@ describe('container look grids', () => {
   it('a look with its own grid opens in it; any other look uses its kind', () => {
     looks.drawer_v2 = { cols: 3, rows: 2 };
     expect(containerGridDimensions('drawer', 'drawer_v2')).toEqual({ cols: 3, rows: 2 });
-    expect(containerGridDimensions('drawer', 'drawer_v1')).toBe(CONTAINER_GRID_SIZE.drawer);
-    expect(containerGridDimensions('drawer')).toBe(CONTAINER_GRID_SIZE.drawer);
+    expect(containerGridDimensions('drawer', 'drawer_plain')).toEqual(CONTAINER_GRID_SIZE.drawer);
+    expect(containerGridDimensions('drawer')).toEqual(CONTAINER_GRID_SIZE.drawer);
   });
 
   it('a town piece resolves its grid by the look it is drawn with', () => {

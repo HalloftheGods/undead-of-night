@@ -103,6 +103,10 @@ export class RemoteSession implements RoomSession {
     this.send({ type: 'lobby_start' });
   }
 
+  sendDebriefContinue(): void {
+    this.send({ type: 'debrief_continue' });
+  }
+
   sendLobbyToggleTimer(enabled?: boolean): void {
     this.send({ type: 'lobby_toggle_timer', ...(enabled !== undefined ? { enabled } : {}) });
   }

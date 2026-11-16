@@ -66,7 +66,7 @@ export const STUDIO_FOUNDED = 2006;
 
 /** The dated line games carry on the title screen: one studio line, founding year to build year. */
 export function studioLine(buildYear: number): string {
-  return `© ${STUDIO_FOUNDED}–${buildYear} Hall of the Gods`;
+  return `© ${STUDIO_FOUNDED}–${buildYear} Hall of the Gods, Inc.`;
 }
 
 export const STUDIO_LINE = studioLine(__BUILD_YEAR__);

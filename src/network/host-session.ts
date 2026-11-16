@@ -174,6 +174,10 @@ export class HostSession implements RoomSession {
     this.inner?.sendLobbyToggleTimer();
   }
 
+  sendDebriefContinue(): void {
+    this.inner?.sendDebriefContinue();
+  }
+
   requestRestart(): void {
     this.inner?.requestRestart();
   }

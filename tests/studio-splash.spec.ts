@@ -7,8 +7,8 @@ describe('the studio splash', () => {
     expect(splashTimings(true)).toEqual({ fadeIn: 0, hold: 1000, fadeOut: 0 });
   });
 
-  it('sequences Hall of the Gods, For The XP, and Majora D. cards in order', () => {
-    expect(SPLASH_CARDS.map(card => card.id)).toEqual(['hall-of-the-gods', 'for-the-xp', 'majora-d']);
+  it('sequences Hall of the Gods, Majora D., Chem X and For The XP cards in order', () => {
+    expect(SPLASH_CARDS.map(card => card.id)).toEqual(['hall-of-the-gods', 'majora-d', 'chem-x', 'for-the-xp']);
   });
 
   it('sets matching purple background for Majora D', () => {

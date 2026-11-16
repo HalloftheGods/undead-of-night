@@ -592,4 +592,6 @@ export type ClientPacket =
   | { readonly type: 'boon'; readonly count: number }
   | { readonly type: 'lobby_ready'; readonly ready?: boolean }
   | { readonly type: 'lobby_start' }
-  | { readonly type: 'lobby_toggle_timer'; readonly enabled?: boolean };
+  | { readonly type: 'lobby_toggle_timer'; readonly enabled?: boolean }
+  /** The player has read the level debrief and moves the van on. */
+  | { readonly type: 'debrief_continue' };

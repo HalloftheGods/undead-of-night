@@ -83,7 +83,7 @@ describe('level wording', () => {
   });
 
   it('words a title card from the level table', () => {
-    expect(levelTitle(4)).toEqual({ heading: `Town 4 of ${FINAL_LEVEL}: Abyssal Depths`, title: 'Fourkatello', goal: 'Survive 3 hordes, then reach the van', rule: 'Floodwater: Wading outdoors slows you down. Buildings are dry.' });
+    expect(levelTitle(4)).toEqual({ heading: `Town 4 of ${FINAL_LEVEL}: Abyssal Depths`, title: 'Fourkatello', goal: 'Survive 3 hordes, then reach the van', rule: 'Floodwater: Wading outdoors slows you down. Sewers are flooded until drained.', sidequest: 'Sidequest: Find the sewage drain to drain the city and unlock the sewers' });
     expect(levelTitle(FINAL_LEVEL).heading).toBe('The last town: Final Stand');
   });
 

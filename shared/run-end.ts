@@ -1,5 +1,6 @@
 import { TICK_DT } from './constants.ts';
 import { enterTown, moveToNextTown, placeAtEntry } from './level-change.ts';
+import { isBunkerMap } from './home-protocol.ts';
 import { FINAL_LEVEL, FIRST_LEVEL, townName } from './levels.ts';
 import { giveReturnKit, giveStartingLoadout } from './player-health.ts';
 import type { EntityId, GameOverStats, LevelDebriefStats, PlayerDebriefStats, RunOutcome } from './protocol.ts';
@@ -101,6 +102,11 @@ export function finishDebrief(sim: SimState): void {
 
 /** The one way out of `exitBoarded`. In a home room the van runs between the bunker and a town, so no run ends here. */
 export function leaveTown(sim: SimState): void {
+  // Boarding the van in the bunker starts a trip: there is no town to summarise, so no debrief.
+  if (isBunkerMap(sim.map)) {
+    vanLeaves(sim);
+    return;
+  }
   const lastTown = sim.level >= FINAL_LEVEL;
   if (lastTown && !sim.homeRun) {
     endRun(sim, 'victory');

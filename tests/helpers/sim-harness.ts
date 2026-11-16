@@ -118,6 +118,8 @@ export function boardVan(sim: GameSimulation, state: SimState): void {
     p.y = exit.y;
   }
   steps(sim, VAN_WAIT_TICKS);
+  // A town's exit shows the level debrief first; the player dismisses it at once here.
+  sim.continueDebrief();
 }
 
 export function eventsOf<T extends GameEvent['type']>(snapshot: SnapshotPacket, type: T): Extract<GameEvent, { type: T }>[] {

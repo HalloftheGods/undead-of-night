@@ -99,6 +99,7 @@ describe('the exit', () => {
     expect(state.level).toBe(1);
     expect(sim.snapshot().exit?.progress).toBeGreaterThan(0.9);
     sim.step();
+    sim.continueDebrief();
     expect(state.level).toBe(2);
     expect(VAN_WAIT_TICKS / TICK_RATE).toBe(2);
   });
@@ -227,6 +228,7 @@ describe('moving to the next town', () => {
     sim.snapshot();
     state.events.push({ type: 'player_hurt', playerId: 'a', x: 1, y: 1, damage: 1 });
     sim.step();
+    sim.continueDebrief();
     expect(sim.snapshot().events.map((event) => event.type)).toEqual(['level_complete', 'level_start', 'wave_intermission']);
   });
 
@@ -259,6 +261,7 @@ describe('moving to the next town', () => {
     p.reloadLeft = 1;
     p.reload = 0.5;
     sim.step();
+    sim.continueDebrief();
     expect(state.level).toBe(2);
     expect(p.reloadLeft).toBe(0);
     expect(p.reload).toBe(0);

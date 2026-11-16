@@ -126,6 +126,8 @@ export function installFakeBrowser(): FakeBrowser {
     documentElement: { style: { setProperty() {}, removeProperty() {} }, dataset: {} },
     ...makeTarget(new Map()),
   });
+  // The canvas HUD reads CSS tokens through getComputedStyle (canvas-hud-parts.ts cssColor); no tokens exist here.
+  vi.stubGlobal('getComputedStyle', () => ({ getPropertyValue: () => '' }));
   vi.stubGlobal('window', {
     innerWidth: 1920,
     innerHeight: 1080,

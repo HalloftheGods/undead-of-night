@@ -369,6 +369,6 @@ export function canvasHudView(ctx: CanvasHudContext): CanvasHudView {
     empty: ammo === "empty",
     reloadNeeded: needsReload,
     shoveKey: glyph("KeyF"),
-    shoveLabel: hud.knife ? "Shove or Stab" : "Shove"
+    shoveLabel: hud.knife ? "Shove & Stab" : "Shove"
   };
 }

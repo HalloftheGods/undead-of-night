@@ -33,6 +33,12 @@ function nearlyAway(state: SimState): void {
   }
 }
 
+/** A town's exit shows the level debrief, and the room waits until a player reads on. */
+async function readDebrief(client: TestClient): Promise<void> {
+  await client.until(() => client.lastSnapshot?.debrief);
+  client.send({ type: 'debrief_continue' });
+}
+
 const onLevel = (client: TestClient, level: number): SnapshotPacket | undefined => {
   const frame = client.lastSnapshot;
   return frame?.level === level ? frame : undefined;
@@ -67,6 +73,7 @@ describe('co-op over a run of levels', () => {
     await second.join('Bea');
     await first.until(() => first.lastSnapshot?.players.length === 2);
     nearlyAway(state);
+    await readDebrief(first);
 
     const seen = await first.until(() => onLevel(first, 2));
     const alsoSeen = await second.until(() => onLevel(second, 2));
@@ -105,6 +112,7 @@ describe('co-op over a run of levels', () => {
     await first.join('Ann');
     await first.until(() => first.lastSnapshot);
     nearlyAway(state);
+    await readDebrief(first);
     await first.until(() => onLevel(first, 2));
 
     const late = connect();
@@ -131,6 +139,7 @@ describe('co-op over a run of levels', () => {
     leaver.socket.terminate();
     await stayer.until(() => stayer.lastSnapshot?.players.length === 1);
     nearlyAway(state);
+    await readDebrief(stayer);
     await stayer.until(() => onLevel(stayer, 2));
 
     const back = connect();
@@ -151,6 +160,7 @@ describe('co-op over a run of levels', () => {
     await client.until(() => client.lastSnapshot);
     for (let level = 2; level <= FINAL_LEVEL; level++) {
       nearlyAway(state);
+      await readDebrief(client);
       await client.until(() => onLevel(client, level));
     }
     nearlyAway(state);
@@ -173,6 +183,7 @@ describe('co-op over a run of levels', () => {
     await first.join('Ann');
     await first.until(() => first.lastSnapshot);
     nearlyAway(state);
+    await readDebrief(first);
     await first.until(() => onLevel(first, 2));
 
     first.socket.terminate();

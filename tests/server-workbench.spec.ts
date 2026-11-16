@@ -15,6 +15,12 @@ import { TestClient } from './helpers/ws-client.ts';
 const SEED = 21;
 
 /** Everyone on their feet is at the van, a moment from leaving. */
+/** The van's exit shows the level debrief first; the room waits until a player reads on. */
+async function readDebrief(client: TestClient): Promise<void> {
+  await client.until(() => client.lastSnapshot?.debrief);
+  client.send({ type: 'debrief_continue' });
+}
+
 function nearlyAway(state: SimState): void {
   state.zombies = [];
   state.populationTarget = 0;
@@ -55,6 +61,7 @@ describe('the workbench over a socket', () => {
     const { state, ann, id } = await room();
     state.players[0].parts.barrel = 1;
     nearlyAway(state);
+    await readDebrief(ann);
     const held = await ann.until(() => ann.lastSnapshot?.bench && ann.lastSnapshot);
     expect(held.bench?.secondsLeft).toBeGreaterThan(0);
     expect(isSnapshotPacket(held)).toBe(true);
@@ -80,6 +87,7 @@ describe('the workbench over a socket', () => {
     p.guns.carbine = { ammo: 30 };
     p.owned = ['pistol', 'carbine'];
     nearlyAway(state);
+    await readDebrief(ann);
     await ann.until(() => ann.lastSnapshot?.bench);
 
     ann.send({ type: 'bench', action: { kind: 'fit_effect', weapon: 'pistol', effect: 'incendiary' } });
@@ -100,6 +108,7 @@ describe('the workbench over a socket', () => {
   it('ignores a bench packet that makes no sense', async () => {
     const { state, ann } = await room();
     nearlyAway(state);
+    await readDebrief(ann);
     await ann.until(() => ann.lastSnapshot?.bench);
     ann.send({ type: 'bench', action: { kind: 'ready', ready: 'soon' } });
     ann.send({ type: 'bench', action: 'ready' });
