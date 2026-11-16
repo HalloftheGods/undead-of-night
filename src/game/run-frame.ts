@@ -206,6 +206,9 @@ export class RunFrame {
     const choosing = !padAims && !touch && inventoryChoosing(input.pointerClientX, input.pointerClientY);
     const isPromo = this.host.promoScene?.() ?? (ui.value.promoScene === true);
     // A finger picks a spot on the picture, so the picture must not lean toward it and move the spot.
+    const hidesPointer = over || touch;
+    const aimedX = padAims ? padSpot?.x ?? null : pointerX;
+    const aimedY = padAims ? padSpot?.y ?? null : pointerY;
     const scene: SceneView = {
       ...entities,
       promoScene: isPromo,
@@ -223,8 +226,8 @@ export class RunFrame {
       moveDownKey: moveLabelFor('moveDown', 'DOWN/S', padAims),
       moveLeftKey: moveLabelFor('moveLeft', 'LEFT/A', padAims),
       moveRightKey: moveLabelFor('moveRight', 'RIGHT/D', padAims),
-      pointerX: over || touch ? null : padAims ? padSpot?.x ?? null : pointerX,
-      pointerY: over || touch ? null : padAims ? padSpot?.y ?? null : pointerY,
+      pointerX: hidesPointer ? null : aimedX,
+      pointerY: hidesPointer ? null : aimedY,
       showCrosshair: !isPromo && this.host.playing() && !menuUp && !ui.value.mapOpen && !this.host.parts.bench.open && !isTransitioning && !choosing,
       touch,
       held: this.heldView(renderer),
@@ -321,7 +324,8 @@ export class RunFrame {
     // Moving changes the fight: walking quickens the ring, and running slows it and sends the crosshair round wildly.
     const moving = input.dirX !== 0 || input.dirY !== 0;
     const running = moving && input.stance === 'sprint';
-    const pace = running ? RUN_RING_SPEED : moving ? WALK_RING_SPEED : 1;
+    const movingPace = moving ? WALK_RING_SPEED : 1;
+    const pace = running ? RUN_RING_SPEED : movingPace;
     const swing = running ? RUN_ORBIT_SPEED : 1;
     this.ringClock += step * crowdSpeed(crowd) * pace;
     this.orbit += step * crowdSpeed(crowd) * pace * swing * ORBIT_TURNS_PER_SEC * Math.PI * 2;

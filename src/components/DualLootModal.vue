@@ -827,7 +827,9 @@ function onHeldButtonClick(event: MouseEvent): void {
   const canDrop = actions.some((a) => a.kind === 'drop');
   const onButton = heldButtonAt(event.clientX, event.clientY);
   const onGame = event.target instanceof HTMLCanvasElement;
-  const kind = onButton ?? (onGame ? (heldOnSurvivor(event.clientX, event.clientY) ? 'use' : 'drop') : null);
+  const onSurvivor = onGame && heldOnSurvivor(event.clientX, event.clientY);
+  const gameKind = onSurvivor ? 'use' : 'drop';
+  const kind = onButton ?? (onGame ? gameKind : null);
   // A teammate under the item, in reach and helped by it, is handed it instead of the item being dropped.
   const careTo = careTargetAt(event.clientX, event.clientY);
   const to = careTo && kind === 'drop' ? careTo : groundTargetAt(event.clientX, event.clientY);

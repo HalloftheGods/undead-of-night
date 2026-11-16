@@ -79,7 +79,9 @@ export function paintSky(target: PixelCanvas, phase: number): void {
   paintMoon(target, phase);
   const [bx, by] = BAT_AT;
   const isGliding = phase >= GLIDE_AT;
-  const beat = isGliding ? BAT_GLIDE : Math.floor(phase * 8) % 2 === 1 ? BAT_UP : BAT_DOWN;
+  const flapped = Math.floor(phase * 8) % 2 === 1;
+  const flap = flapped ? BAT_UP : BAT_DOWN;
+  const beat = isGliding ? BAT_GLIDE : flap;
   const sway = Math.round(Math.sin(2 * Math.PI * phase) * 5);
   const dip = Math.round(Math.sin(4 * Math.PI * phase) * 2);
   target.grid(bx + sway, by + dip, beat, { '#': ink[0] });

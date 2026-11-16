@@ -26,9 +26,10 @@ function facts(): PauseFacts {
   const level = ui.hud?.level ?? null;
   const inBunker = ui.home?.inBunker === true;
   const canHost = mode === 'solo' && !game.isDaily && onlineRoomsLive();
+  const levelName = level !== null ? `${level} ${townName(level)}` : '';
   return {
     heading: mode === 'solo' ? 'Paused' : 'Menu',
-    where: inBunker ? 'The bunker' : level !== null ? `${level} ${townName(level)}` : '',
+    where: inBunker ? 'The bunker' : levelName,
     coopNote: mode === 'coop' ? 'Co-op does not pause. The horde is still coming.' : null,
     roomCode: ui.onlineRoom ?? null,
     canHost: canHost && !ui.onlineRoom,

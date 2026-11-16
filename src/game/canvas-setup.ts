@@ -227,7 +227,9 @@ export function createCanvasSetup(canvas: HTMLCanvasElement, host: CanvasSetupHo
     // Left and Right walk the screen in reading order (portraits, then the callsign, then the buttons), so no
     // portrait is skipped when the nearest centre sideways happens to be the field. Up and Down stay spatial.
     const sideways = dir === 'left' || dir === 'right';
-    const to = win.focus === null ? from : sideways ? tabFrom(targets, from, dir === 'right' ? 1 : -1) : dir ? neighbour(targets, from, dir) : null;
+    const spatial = dir ? neighbour(targets, from, dir) : null;
+    const moved = sideways ? tabFrom(targets, from, dir === 'right' ? 1 : -1) : spatial;
+    const to = win.focus === null ? from : moved;
     if (to) win.focus = to;
   }
 
@@ -285,11 +287,16 @@ export function createCanvasSetup(canvas: HTMLCanvasElement, host: CanvasSetupHo
     return false;
   }
 
+  function openKey(event: KeyboardEvent): boolean {
+    if (open !== null) return listKey(event);
+    return pageKey(event);
+  }
+
   /** Capture phase, so the pause and confirm keys the game listens for never see what this screen takes. */
   function onKeyDown(event: KeyboardEvent): void {
     if (event.ctrlKey || event.metaKey || event.altKey) return;
     const typing = document.activeElement === input;
-    const handled = typing ? typingKey(event) : open !== null ? listKey(event) : pageKey(event);
+    const handled = typing ? typingKey(event) : openKey(event);
     if (!handled) return;
     event.preventDefault();
     event.stopPropagation();

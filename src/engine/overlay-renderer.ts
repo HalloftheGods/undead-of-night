@@ -395,7 +395,9 @@ export class OverlayRenderer {
       else if (atVehicle) drawOutlinedText(ctx, vehiclePrompt(scene.vehicle!, Boolean(scene.touch), scene.holdKey), x, y, AMBER);
       else if (prompted) {
         const isOpened = scene.openedContainers.includes(scene.searchable!.id);
-        const action = isOpened ? (scene.touch ? 'OPEN' : 'PRESS ' + scene.holdKey) : (scene.touch ? 'SEARCH' : 'HOLD ' + scene.holdKey);
+        const openAction = scene.touch ? 'OPEN' : 'PRESS ' + scene.holdKey;
+        const searchAction = scene.touch ? 'SEARCH' : 'HOLD ' + scene.holdKey;
+        const action = isOpened ? openAction : searchAction;
         drawOutlinedText(ctx, `${action}: ${CONTAINER_LABEL[scene.searchable!.kind]}`, x, y, AMBER);
       }
       else if (atStation) drawOutlinedText(ctx, stationPrompt(scene.station, Boolean(scene.touch), this.payFrom(scene), scene.station === 'jukebox' && player.home?.radio !== true, scene.holdKey), x, y, AMBER);

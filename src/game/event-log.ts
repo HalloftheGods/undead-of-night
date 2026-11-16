@@ -56,11 +56,17 @@ export function calloutLine(words: CalloutWords): LogLine {
   return { text: words.text, tone: words.tone, kind: words.tone === 'stamp' ? 'night' : 'fight' };
 }
 
+function saidTone(card: Omit<LevelCard, 'key'>, said: string): LogLine['tone'] {
+  if (card.boss === said) return 'danger';
+  if (card.streak === said) return 'stamp';
+  return 'plain';
+}
+
 /** The title card's news, a line each: the town, then its weather, night event and boss. */
 export function levelLines(card: Omit<LevelCard, 'key'>): readonly LogLine[] {
   const town: LogLine = { text: card.title.toUpperCase(), detail: `${card.heading.toUpperCase()}. ${card.goal.toUpperCase()}`, tone: 'quiet', kind: 'night' };
   const extras = [card.rule, card.event, card.boss, card.streak].filter((said): said is string => Boolean(said));
-  return [town, ...extras.map((said): LogLine => ({ text: said.toUpperCase(), tone: card.boss === said ? 'danger' : card.streak === said ? 'stamp' : 'plain', kind: 'night' }))];
+  return [town, ...extras.map((said): LogLine => ({ text: said.toUpperCase(), tone: saidTone(card, said), kind: 'night' }))];
 }
 
 /** What a log needs to word a player's event: who is who. */
