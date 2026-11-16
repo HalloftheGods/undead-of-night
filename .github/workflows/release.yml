@@ -1,0 +1,39 @@
+name: Release
+
+# Cuts the release tag vYY.MM.DD (date only) at the tip of main. The build number
+# (YY.M.D-MINS) stays on the auto-bump tags; this tag is the release.
+# Pages deploys from main on its own (pages.yml), so this only tags and publishes notes.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 9 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  cut:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Tag the day's release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v$(date -u +'%y.%m.%d')"
+          if git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null; then
+            echo "${TAG} already cut; nothing to do."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "${TAG}" -m "Release ${TAG}" HEAD
+          git push origin "${TAG}"
+          gh release create "${TAG}" --target main --title "${TAG}" --generate-notes
