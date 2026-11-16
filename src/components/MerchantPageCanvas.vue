@@ -120,7 +120,11 @@ const model = computed<PageModel>(() => {
         const rewardText = panel.rewards.map((r) => r.label).join(' + ');
         const barTexts = panel.bars.map((b) => (b.label ? `${b.label}: ${b.value}` : b.value)).join(', ');
         const sub = `${panel.brief} (${barTexts})`;
-        const actionLabel = panel.action === 'turn_in' ? 'CLAIM REWARD' : panel.action === 'accept' ? 'ACCEPT CONTRACT' : 'IN PROGRESS';
+        const isTurnIn = panel.action === 'turn_in';
+        const isAccept = panel.action === 'accept';
+        let actionLabel = 'IN PROGRESS';
+        if (isTurnIn) actionLabel = 'CLAIM REWARD';
+        else if (isAccept) actionLabel = 'ACCEPT CONTRACT';
         workItems.push({
           kind: 'link',
           id: `quest:${panel.id}`,

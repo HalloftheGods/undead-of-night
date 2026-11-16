@@ -360,12 +360,11 @@ export function canvasHudView(ctx: CanvasHudContext): CanvasHudView {
       const held = effectOf(hud.gear?.fits[hud.weapon]);
       return held === null ? null : GUN_EFFECTS[held].label;
     })(),
-    swapPrompt:
-      swapKey === null
-        ? null
-        : device === "pad"
-          ? hotkeyFor(glyph("KeyQ"))
-          : { text: String(swapKey), arrow: null },
+    swapPrompt: (() => {
+      if (swapKey === null) return null;
+      if (device === "pad") return hotkeyFor(glyph("KeyQ"));
+      return { text: String(swapKey), arrow: null };
+    })(),
     reloadPromptKey: needsReload ? hotkeyFor(glyph("KeyR")) : null,
     empty: ammo === "empty",
     reloadNeeded: needsReload,

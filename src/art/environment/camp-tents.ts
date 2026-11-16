@@ -147,7 +147,9 @@ export function buildCampWorkshop(): PixelSprite {
   // Corrugated metal roofing: vertical alternating ribs.
   for (let x = eaveL; x <= eaveR; x++) {
     const isLit = (x - eaveL) % 3 === 0;
-    const tone = isLit ? metal[2] : (x - eaveL) % 3 === 1 ? metal[1] : metal[0];
+    const isMid = (x - eaveL) % 3 === 1;
+    const shadeTone = isMid ? metal[1] : metal[0];
+    const tone = isLit ? metal[2] : shadeTone;
     c.rect(x, ROOF_TOP, 1, wallTop - ROOF_TOP, tone);
   }
 

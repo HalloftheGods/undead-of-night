@@ -111,11 +111,11 @@ const model = computed<PageModel>(() => {
         const sprite = art?.ui?.candies?.[item.id];
         const isAffordable = balance.value >= item.buyPrice && carriedCount.value < MAX_CANDY_BAG;
         const carriedSuffix = item.count > 0 ? ` [BAG: ${item.count}]` : '';
-        const subNote = carriedCount.value >= MAX_CANDY_BAG
-          ? 'BAG CAPACITY REACHED'
-          : balance.value < item.buyPrice
-            ? 'INSUFFICIENT CANDY'
-            : `${item.stat}: ${item.blurb} [CLICK TO BUY]`;
+        const isBagFull = carriedCount.value >= MAX_CANDY_BAG;
+        const cannotPay = balance.value < item.buyPrice;
+        let subNote = `${item.stat}: ${item.blurb} [CLICK TO BUY]`;
+        if (isBagFull) subNote = 'BAG CAPACITY REACHED';
+        else if (cannotPay) subNote = 'INSUFFICIENT CANDY';
 
         return {
           kind: 'link',

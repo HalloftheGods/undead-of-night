@@ -172,7 +172,9 @@ function drawGunBlock(ctx: CanvasRenderingContext2D, view: CanvasHudView, art: A
     meter(ctx, boxX + GUN_BOX_PAD, top + box.h - GUN_BOX_PAD - METER_H, box.w - GUN_BOX_PAD * 2, view.hud.reload, AMBER);
   } else {
     const rounds = `${view.hud.ammo}/${view.hud.reserve}`;
-    const roundsColor = view.ammo === 'empty' ? BLOOD : view.ammo === 'low' ? AMBER : BONE;
+    const isLow = view.ammo === 'low';
+    const lowColor = isLow ? AMBER : BONE;
+    const roundsColor = view.ammo === 'empty' ? BLOOD : lowColor;
     drawText(ctx, rounds, Math.round(cx - textWidth(rounds) / 2), top + box.h - FONT_HEIGHT - 1, roundsColor);
   }
   const pipY = top + box.h + PIP_GAP;

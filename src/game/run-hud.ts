@@ -332,6 +332,9 @@ export class RunHud {
       this.map && free
         ? containerInReach(this.map, local.x, local.y, (id) => scene.openedContainers.includes(id))
         : null;
+    const isBowl = reach !== null && reach.kind === "bowl";
+    let near: "bowl" | "container" | null = null;
+    if (reach !== null) near = isBowl ? "bowl" : "container";
     const facts: HintFacts = {
       level: hud.level,
       phase: hud.phase,
@@ -340,7 +343,7 @@ export class RunHud {
       hordes: hud.level === BUNKER_LEVEL ? 0 : levelDef(hud.level).hordes,
       exitOpen: hud.exitOpen,
       free,
-      near: reach === null ? null : reach.kind === "bowl" ? "bowl" : "container"
+      near
     };
     const next = this.hints.step(facts, ms, (ui.hint ?? null) !== null);
     if (next === null) return;

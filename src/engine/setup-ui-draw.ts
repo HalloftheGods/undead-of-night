@@ -71,8 +71,11 @@ export function drawName(ctx: CanvasRenderingContext2D, art: Box, name: string, 
 
 /** The pop-art RUSTY / OP / LVL n stamp on a survivor, top right of the picture. */
 function drawBadge(ctx: CanvasRenderingContext2D, art: Box, option: PickOption): void {
-  const stamp = option.isRusty ? 'RUSTY' : option.isMaxed ? 'OP' : 'LVL';
-  const number = !option.isRusty && !option.isMaxed ? String(option.level ?? '') : '';
+  const isLeveled = !option.isRusty && !option.isMaxed;
+  let stamp = 'LVL';
+  if (option.isRusty) stamp = 'RUSTY';
+  else if (option.isMaxed) stamp = 'OP';
+  const number = isLeveled ? String(option.level ?? '') : '';
   const w = textWidth(stamp) + (number ? textWidth(number) + 2 : 0) + 4;
   const box = { x: art.x + art.w - w - 2, y: art.y + 2, w, h: FONT_HEIGHT + 4 };
   ctx.fillStyle = INK;
@@ -194,7 +197,8 @@ function drawBars(ctx: CanvasRenderingContext2D, area: Box, bars: PickOption['ba
     drawText(ctx, bar.label.toUpperCase(), area.x + 2, y, bar.strong ? AMBER : DIM);
     for (let slot = 0; slot < STAT_SLOTS; slot += 1) {
       const on = slot < bar.filled;
-      ctx.fillStyle = on ? (bar.strong ? AMBER : SICK) : LINE;
+      const onColor = bar.strong ? AMBER : SICK;
+      ctx.fillStyle = on ? onColor : LINE;
       ctx.fillRect(area.x + area.w - 2 - cellsW + slot * (CELL + CELL_GAP), y + 1, CELL, CELL);
     }
   });
@@ -230,9 +234,13 @@ function drawList(ctx: CanvasRenderingContext2D, win: SetupWindow, layout: Setup
 function drawButton(ctx: CanvasRenderingContext2D, win: SetupWindow, button: ButtonBox): void {
   const hovered = win.hover?.kind === 'button' && win.hover.id === button.id && button.enabled;
   const lit = hovered || isFocused(win, `button:${button.id}`);
-  const fill = button.primary ? (button.enabled ? AMBER : LINE) : RAISED;
-  const ink = button.primary ? INK : button.enabled ? BONE : DIM;
-  frame(ctx, button, lit ? BONE : button.primary ? AMBER : LINE, lit && !button.primary ? '#22232c' : fill);
+  const primaryFill = button.enabled ? AMBER : LINE;
+  const fill = button.primary ? primaryFill : RAISED;
+  const secondaryInk = button.enabled ? BONE : DIM;
+  const ink = button.primary ? INK : secondaryInk;
+  const idleBorder = button.primary ? AMBER : LINE;
+  const border = lit ? BONE : idleBorder;
+  frame(ctx, button, border, lit && !button.primary ? '#22232c' : fill);
   const label = button.label.toUpperCase();
   drawText(ctx, label, button.x + Math.floor((button.w - textWidth(label)) / 2), button.y + Math.floor((button.h - FONT_HEIGHT) / 2), ink);
 }
