@@ -141,9 +141,7 @@ function mountCanvasLoot(): void {
     },
     {
       close,
-      transfer: onGridTransfer,
-      use: () => undefined,
-      drop: () => undefined,
+      move: () => onGridTransfer(),
       playSfx: (name) => game.playSfx(name),
     }
   );

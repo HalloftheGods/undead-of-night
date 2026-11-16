@@ -4,7 +4,7 @@ import { TILE_SIZE } from '../../shared/protocol.ts';
 import type { EntityId, GameEvent, PlayerEntity, WorldMap, ZombieType } from '../../shared/protocol.ts';
 import type { ArtBook, PixelSprite } from '../art/types.ts';
 import { drawHeldUi, drawQuip, QUIP_COLOR } from './held-ui.ts';
-import { bodyHeight, drawOutline } from './sprite-cache.ts';
+import { bodyHeight, drawOutline, drawSprite } from './sprite-cache.ts';
 import { survivorReaction } from '../game/inventory/survivor-quips.ts';
 import { setArrivalCamera } from '../game/inventory/move-motion.ts';
 import { backFlight, lerpRect, noteWorldFrame, toSpace, zoomFrame } from '../game/inventory/container-zoom.ts';
