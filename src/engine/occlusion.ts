@@ -25,6 +25,8 @@ const MIN_CLIMB = 0.3;
 const LIGHT_PASSES: ReadonlySet<PropKind> = new Set<PropKind>([
   // Movement-only fences: a look and a light pass through them.
   ...MOVEMENT_ONLY_PROPS,
+  // Flat on the street and walk-through: a beam runs straight over it and it casts no shadow.
+  'manhole',
   // Knee-high or smaller: a beam at hip height runs over them.
   'hydrant',
   'sandbags',
