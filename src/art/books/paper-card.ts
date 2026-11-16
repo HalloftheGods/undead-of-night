@@ -24,7 +24,8 @@ const PAPER_LEGEND: Legend = {
   V: rot[2],
 };
 
-const GLYPHS: Readonly<Record<string, readonly string[]>> = {
+/** The nameplate's pixel letters, shared with the canvas broadsheet so its masthead is the same type. */
+export const GLYPHS: Readonly<Record<string, readonly string[]>> = {
   N: ['X..X', 'XX.X', 'X.XX', 'X..X', 'X..X'],
   O: ['.XX.', 'X..X', 'X..X', 'X..X', '.XX.'],
   I: ['XXX', '.X.', '.X.', '.X.', 'XXX'],

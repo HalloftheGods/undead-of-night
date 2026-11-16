@@ -41,6 +41,7 @@
   <TownGuidePage v-else-if="nav.page === 'guide'" @close="close" />
   <RecordsPageCanvas v-else-if="nav.page === 'records' && pagesOnCanvas.records" :ui @close="close" />
   <RecordsPage v-else-if="nav.page === 'records'" :ui @close="close" />
+  <ChangelogPageCanvas v-else-if="nav.page === 'changelog' && pagesOnCanvas.changelog" :art="ui.art" @close="close" />
   <ChangelogPage v-else-if="nav.page === 'changelog'" :art="ui.art" :version="APP_VERSION" @close="close" />
   <SoundTestPageCanvas v-else-if="nav.page === 'sound' && pagesOnCanvas.sound" :ui @close="close" />
   <SoundTestPage v-else-if="nav.page === 'sound'" :ui @close="close" />
@@ -86,6 +87,7 @@ import ZombieSpritesPage from './dev/ZombieSpritesPage.vue';
 import ZombieSpritesPageCanvas from './dev/ZombieSpritesPageCanvas.vue';
 import RadioPageCanvas from './RadioPageCanvas.vue';
 import RecordsPageCanvas from './RecordsPageCanvas.vue';
+import ChangelogPageCanvas from './ChangelogPageCanvas.vue';
 import PressAnyKey from './PressAnyKey.vue';
 import SpriteImg from './SpriteImg.vue';
 import TitleMenu from './TitleMenu.vue';
@@ -161,7 +163,7 @@ const setupHome = ref<'canvas' | 'page' | 'multi'>('page');
 /** Nightly Run follows the same switch, decided the same way each time it opens. */
 const dailyOnCanvas = ref(false);
 /** The page-kit pages follow it too: whether each is on the canvas, decided as its page opens. */
-const pagesOnCanvas = ref({ records: false, controls: false, radio: false, sound: false, gameplay: false, display: false, audio: false });
+const pagesOnCanvas = ref({ records: false, controls: false, radio: false, sound: false, changelog: false, gameplay: false, display: false, audio: false });
 const OPTIONS_PAGES = ['gameplay', 'display', 'audio'] as const;
 const optionsKind = computed(() => OPTIONS_PAGES.find((each) => each === nav.value.page) ?? null);
 /** The dev bench is drawn on the canvas when the in-game menus are on; the Vue bench stays for when they are off. */
@@ -180,7 +182,7 @@ watch(
   (page) => {
     if (page === 'play') setupHome.value = opensOnCanvas() ? 'canvas' : 'page';
     if (page === 'daily') dailyOnCanvas.value = opensOnCanvas();
-    const isKitPage = page === 'records' || page === 'controls' || page === 'radio' || page === 'sound' || OPTIONS_PAGES.some((each) => each === page);
+    const isKitPage = page === 'records' || page === 'controls' || page === 'radio' || page === 'sound' || page === 'changelog' || OPTIONS_PAGES.some((each) => each === page);
     if (isKitPage) pagesOnCanvas.value = { ...pagesOnCanvas.value, [page as string]: opensOnCanvas() };
   },
   { flush: 'sync', immediate: true }

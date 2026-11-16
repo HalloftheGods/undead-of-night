@@ -23,9 +23,9 @@ export const OLDEST_NOTES: readonly ChangeNote[] = [
     title: "Keepsakes",
     deck: "Pick one of three, and keep it all run.",
     points: [
-      "Reaching towns 3, 5, 7 and 9, you are offered three keepsakes. Pick one with a click, a tap, or J, K, L.",
+      "Reaching towns 3, 5, 7 and 9, you are offered three keepsakes. Choose one and it is yours.",
       "A Rabbit’s Foot for luckier searches, Worn Sneakers for longer sprints, Dog Tags for faster revives, and more.",
-      "Each survivor gets their own offer in co-op."
+      "Each survivor gets their own offer in a team."
     ]
   },
   {
@@ -35,9 +35,9 @@ export const OLDEST_NOTES: readonly ChangeNote[] = [
     title: "Halloween candy",
     deck: "Twelve short boosts hidden around town.",
     points: [
-      "Search houses and apartments for candy. Carry two, and press X to eat one.",
+      "Search houses and apartments for candy. Carry two, and eat one when you need it.",
       "Sour Skulls reload twice as fast, Ghost Gum makes sprinting silent, Jawbreaker halves the damage you take.",
-      "Each lasts 75 seconds. Find a Full-Size Bar and you get a bit of everything."
+      "Each lasts a minute and a quarter. Find a Full-Size Bar and you get a bit of everything."
     ]
   },
   {
@@ -48,7 +48,7 @@ export const OLDEST_NOTES: readonly ChangeNote[] = [
     deck: "No more gaps that look like a way through.",
     points: [
       "Furniture now stands flush against a building’s side walls.",
-      "The narrow gaps that used to trap players are gone, and real aisles open where there is room."
+      "The narrow gaps that used to trap survivors are gone, and real aisles open where there is room."
     ]
   },
   {
@@ -68,7 +68,7 @@ export const OLDEST_NOTES: readonly ChangeNote[] = [
     date: "2026-11-07",
     kind: "new",
     title: "Boss nights",
-    deck: "Levels 3, 6 and 9 end with something big.",
+    deck: "The third, sixth and ninth towns end with something big.",
     points: [
       "The Howler screams for runners. Mother gives birth to walkers. The Butcher charges anyone who gets close.",
       "The last horde does not end until the boss falls. A health bar shows how close you are.",
@@ -85,7 +85,7 @@ export const OLDEST_NOTES: readonly ChangeNote[] = [
       "Fog: zombies only spot you up close, and the town turns grey.",
       "Blood moon: hordes twice the size, but every kill is worth double.",
       "Power cut: the lamps go dark, zombies see less and hear more.",
-      "The level card tells you what tonight brings."
+      "The town card tells you what tonight brings."
     ]
   },
   {
@@ -108,7 +108,7 @@ export const OLDEST_NOTES: readonly ChangeNote[] = [
     points: [
       "Each kill soon after your last is worth more, up to double from the fifth in a row.",
       "The floating score shows the bonus, like +18 x1.5.",
-      "Copy result puts your Nightly Run score, kills and streak on your clipboard, ready to paste anywhere."
+      "Copy your result and your Nightly Run score, kills and streak are ready to paste anywhere."
     ]
   },
   {
@@ -120,7 +120,7 @@ export const OLDEST_NOTES: readonly ChangeNote[] = [
     points: [
       "Personal bests for Campaign and Arcade, a ledger of your top five runs, and your Nightly Run streak.",
       "The last seven nights, each stamped Counted, Missed or Tonight.",
-      "Turn pages with Prev and Next, the arrow keys, or a swipe."
+      "Turn the pages forward and back, or give them a swipe."
     ]
   },
   {
@@ -130,9 +130,9 @@ export const OLDEST_NOTES: readonly ChangeNote[] = [
     title: "Nightly Run",
     deck: "One town a day, the same for everyone.",
     points: [
-      "A new item on the title menu. Every player gets the same town, rule and difficulty each day.",
+      "A new item on the board. Every player gets the same town, rule and difficulty each day.",
       "Your first run of the day counts. The rest are practice.",
-      "Keep a streak going, and see the countdown to the next town."
+      "Keep a streak going, and see how long until the next town."
     ]
   },
   {
@@ -142,7 +142,7 @@ export const OLDEST_NOTES: readonly ChangeNote[] = [
     title: "Supply drops",
     deck: "Watch for the red flare.",
     points: [
-      "Once a town, after the first horde, a flare goes up and a crate lands on it ten seconds later.",
+      "Once a town, after the first horde, a flare goes up and a crate lands on it moments later.",
       "Inside: ammo, a medkit, a round kit and a prize.",
       "The flare is loud and the landing is louder, so you won’t be the only one coming."
     ]
@@ -154,8 +154,8 @@ export const OLDEST_NOTES: readonly ChangeNote[] = [
     title: "Molotovs and flares",
     deck: "Something to throw.",
     points: [
-      "Find fuel in garages, warehouses and diners. Press T to throw a molotov: a pool of fire for five seconds.",
-      "Find flares at the police station, in garages and in cars. Press V to throw one and pull zombies away.",
+      "Find fuel in garages, warehouses and diners. Throw a molotov for a pool of fire that burns a few moments.",
+      "Find flares at the police station, in garages and in cars. Throw one to pull zombies away.",
       "Carry two of each. Don’t stand in your own fire."
     ]
   },
@@ -178,7 +178,7 @@ export const OLDEST_NOTES: readonly ChangeNote[] = [
     title: "The Overrun",
     deck: "The bunker is no longer safe.",
     points: [
-      "From level 2 in Campaign, a clock runs while you are in the bunker. When it runs out, the blast door bursts.",
+      "From the second town in Campaign, a clock runs while you are in the bunker. When it runs out, the blast door bursts.",
       "Kill the horde that comes in to earn a reward chest, or run for the van and leave the merchants to it.",
       "How to Play has a new chapter on it."
     ]
@@ -187,12 +187,12 @@ export const OLDEST_NOTES: readonly ChangeNote[] = [
     id: "online-rooms",
     date: "2026-11-07",
     kind: "new",
-    title: "Online co-op rooms",
+    title: "Team games from anywhere",
     deck: "Play with a friend from anywhere.",
     points: [
-      "Host a room right in your browser and send a friend the room code or invite link.",
-      "No server to set up on your side.",
-      "Rooms open to everyone once the online service is switched on."
+      "Start a game of your own and send a friend the code or invite link.",
+      "Nothing to set up on your side.",
+      "Open to everyone once the online service is switched on."
     ]
   },
   {
@@ -202,8 +202,8 @@ export const OLDEST_NOTES: readonly ChangeNote[] = [
     title: "A clearer setup",
     deck: "Style, Mode, Difficulty, Survivor, in that order.",
     points: [
-      "A numbered stepper shows where you are. Tap a finished step to go back to it.",
-      "Every step is the same size, so the Back and Next buttons stay put."
+      "Numbered steps show where you are. Pick a finished step to go back to it.",
+      "Every step is the same size, so the buttons stay put."
     ]
   }
 ];

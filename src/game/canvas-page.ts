@@ -22,6 +22,8 @@ export interface CanvasPageHost {
   /** A switch row flipped. */
   toggle: (id: string) => void;
   choose: (id: string, option: string) => void;
+  /** A card in a row of cards was pointed at or stepped to, so the page can show what it is on. */
+  card?: (id: string, index: number) => void;
   slide: (id: string, value: number) => void;
   /** True while something stands over the page (the Privacy sheet) and the keys are its. */
   inert?: () => boolean;
@@ -112,6 +114,12 @@ export function createCanvasPage(canvas: HTMLCanvasElement, host: CanvasPageHost
           host.choose(hit.id, `fav:${item.tracks[favIndex].file}`);
         }
       }
+    } else if (kind === 'cards' && hit.part !== null) {
+      const card = control.item.kind === 'cards' ? control.item.cards[hit.part] : undefined;
+      if (!card) return;
+      win.cardAt = hit.part;
+      host.playUi('click');
+      host.choose(hit.id, card.id);
     } else if (kind === 'choice' && hit.part !== null) {
       host.playUi('click');
       host.choose(hit.id, control.item.kind === 'choice' ? control.item.options[hit.part].id : '');
@@ -155,7 +163,12 @@ export function createCanvasPage(canvas: HTMLCanvasElement, host: CanvasPageHost
     win.hover = hit;
     const controlItem = hit?.kind === 'control' ? current.controls.find((c) => c.id === hit.id)?.item : null;
     const isDisabledLink = controlItem?.kind === 'link' && controlItem.disabled;
-    const soundsOff = hit === null || (hit.kind === 'control' && (hit.part !== null || isDisabledLink));
+    const isCard = controlItem?.kind === 'cards' && hit?.kind === 'control' && hit.part !== null;
+    if (isCard) {
+      win.cardAt = hit.part ?? 0;
+      host.card?.(hit.id, hit.part ?? 0);
+    }
+    const soundsOff = hit === null || (hit.kind === 'control' && ((hit.part !== null && !isCard) || isDisabledLink));
     if (!soundsOff) host.playUi('hover');
   }
 
@@ -190,6 +203,12 @@ export function createCanvasPage(canvas: HTMLCanvasElement, host: CanvasPageHost
       slideTo(item.id, stepSlider(item.position, direction));
       return true;
     }
+    if (item?.kind === 'cards') {
+      const last = item.cards.length - 1;
+      win.cardAt = Math.min(last, Math.max(0, (win.cardAt ?? 0) + direction));
+      host.card?.(item.id, win.cardAt);
+      return true;
+    }
     if (item?.kind === 'choice') {
       const at = item.options.findIndex((option) => option.id === item.value);
       const to = Math.min(item.options.length - 1, Math.max(0, at + direction));
@@ -218,6 +237,11 @@ export function createCanvasPage(canvas: HTMLCanvasElement, host: CanvasPageHost
     } else if (item?.kind === 'radio') {
       host.playUi('click');
       host.choose(id, 'play');
+    } else if (item?.kind === 'cards') {
+      const card = item.cards[win.cardAt ?? 0];
+      if (!card) return;
+      host.playUi('click');
+      host.choose(id, card.id);
     } else if (item?.kind === 'link' || item?.kind === 'bind') {
       host.playUi('click');
       host.press(id);

@@ -17,7 +17,7 @@ export type LeafColor = 'tomato' | 'teal' | 'violet' | 'mustard' | 'pink' | 'sky
 const COLORS: readonly LeafColor[] = ['tomato', 'teal', 'violet', 'mustard', 'pink', 'sky', 'lime'];
 
 /** How many stories share a page after an issue's front page. */
-export const STORIES_PER_LEAF = 2;
+export const STORIES_PER_LEAF = 1;
 
 /** How many headlines the front page teases under its lead. */
 export const INSIDE_HEADLINES = 5;
