@@ -301,6 +301,20 @@ describe('the soundtrack', () => {
     expect(music.getCurrentTrack()?.paused).toBe(false);
   });
 
+  it('hands a finished Radio track to the Radio, and only the scene plays on when it releases', () => {
+    music.setScene('menu');
+    const ended: string[] = [];
+    music.onRadioTrackEnd((file) => ended.push(file));
+    music.playTrack('music/radio-pick.mp3');
+    made[made.length - 1].fire('ended');
+    expect(ended).toEqual(['music/radio-pick.mp3']);
+    music.onRadioTrackEnd(null);
+    music.playTrack('music/radio-pick.mp3');
+    music.releaseTrack();
+    vi.runAllTimers();
+    expect(playing()).toEqual(['music/silent-ruins-variation.mp3']);
+  });
+
   it('resets manual track override to the new level soundtrack when level changes', () => {
     music.setLevel(1);
     music.setScene('intermission');

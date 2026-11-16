@@ -47,6 +47,8 @@ export class Soundtrack {
   private manualTrack = false;
   /** Set while the Sound Test is playing one track on its own. */
   private auditionEnd: (() => void) | null = null;
+  /** Told when the Radio's chosen track plays out, so the Radio's repeat and shuffle pick what comes next. */
+  private radioTrackEnd: ((file: string) => void) | null = null;
   /** True while that hold is a Radio's find rather than the Sound Test. */
   private holdingFound = false;
   private readonly listening = new AbortController();
@@ -163,6 +165,18 @@ export class Soundtrack {
     this.auditionEnd = null;
     this.fadeOut(this.current);
     this.current = null;
+    this.playlist = null;
+    this.retune();
+  }
+
+  /** Registers the Radio's end-of-track handler, or clears it with null. */
+  onRadioTrackEnd(handler: ((file: string) => void) | null): void {
+    this.radioTrackEnd = handler;
+  }
+
+  /** Gives the live soundtrack back to the scene's playlist, as when the Radio runs out of tracks. */
+  releaseTrack(): void {
+    this.manualTrack = false;
     this.playlist = null;
     this.retune();
   }
@@ -325,6 +339,11 @@ export class Soundtrack {
       return;
     }
     track.element.currentTime = 0;
+    const radioPicksNext = this.manualTrack && this.radioTrackEnd;
+    if (radioPicksNext) {
+      this.radioTrackEnd?.(track.file);
+      return;
+    }
     this.manualTrack = false;
     this.playNext();
   }

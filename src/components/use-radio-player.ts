@@ -75,8 +75,10 @@ export function useRadioPlayer() {
     currentTime.value = 0;
   }
 
-  function onTrackFinished(finishedIndex: number): void {
-    const isStillOnTrack = currentIndex.value === finishedIndex;
+  /** The loaded track played out: repeat and shuffle pick the next one, or the scene's music takes over when none is left. */
+  function onTrackEnded(file: string): void {
+    const finishedIndex = tracks.findIndex((t) => t.file === file);
+    const isStillOnTrack = finishedIndex >= 0 && currentIndex.value === finishedIndex;
     if (!isStillOnTrack || !isOpen) return;
 
     const result = nextTrackOnEnd(
@@ -95,6 +97,7 @@ export function useRadioPlayer() {
       isPlaying.value = false;
       isPaused.value = false;
       currentTime.value = 0;
+      game.audio.releaseTrack();
     }
   }
 
@@ -188,6 +191,7 @@ export function useRadioPlayer() {
   }
 
   onMounted(async () => {
+    game.audio.onRadioTrackEnd(onTrackEnded);
     await game.audio.unlock();
     if (isOpen) {
       const status = game.audio.getTrackStatus();
@@ -209,6 +213,7 @@ export function useRadioPlayer() {
 
   onBeforeUnmount(() => {
     isOpen = false;
+    game.audio.onRadioTrackEnd(null);
     if (animFrame !== null) cancelAnimationFrame(animFrame);
     window.removeEventListener("keydown", onKey);
   });

@@ -239,6 +239,15 @@ export class AudioEngine {
     this.soundtrack?.stopTrack();
   }
 
+  /** The Radio's end-of-track handler, or null to clear it. */
+  onRadioTrackEnd(handler: ((file: string) => void) | null): void {
+    this.soundtrack?.onRadioTrackEnd(handler);
+  }
+
+  releaseTrack(): void {
+    this.soundtrack?.releaseTrack();
+  }
+
   seekTrack(seconds: number): void {
     this.soundtrack?.seekTrack(seconds);
   }
