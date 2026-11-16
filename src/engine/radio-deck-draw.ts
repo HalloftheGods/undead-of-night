@@ -129,6 +129,47 @@ function drawRightSpeaker(ctx: CanvasRenderingContext2D, grilleBox: Box): void {
   ctx.fill();
 }
 
+/** Returns the value for the first true flag, otherwise the fallback. */
+function pickFirst<T>(
+  firstFlag: boolean,
+  firstValue: T,
+  secondFlag: boolean,
+  secondValue: T,
+  fallback: T,
+): T {
+  if (firstFlag) return firstValue;
+  if (secondFlag) return secondValue;
+  return fallback;
+}
+
+function repeatLabel(repeatMode: string): string {
+  if (repeatMode === 'one') return 'RP1';
+  if (repeatMode === 'all') return 'RPA';
+  return 'RPT';
+}
+
+function radioSubtitle(item: RadioItem): string {
+  const track = item.track;
+  if (!track) return 'RADIO';
+  if (track.find) return 'RADIO FIND';
+  return track.where.toUpperCase();
+}
+
+function transportGlyphColor(flags: {
+  isPlayingPlayBtn: boolean;
+  isHovered: boolean;
+  isStoppedStopBtn: boolean;
+  isPlayBtn: boolean;
+  isStopBtn: boolean;
+}): string {
+  if (flags.isPlayingPlayBtn) return AMBER;
+  if (flags.isHovered) return BONE;
+  if (flags.isStoppedStopBtn) return DIM;
+  if (flags.isPlayBtn) return SICK;
+  if (flags.isStopBtn) return BLOOD;
+  return BONE;
+}
+
 function drawSideButtons(
   ctx: CanvasRenderingContext2D,
   sideParts: readonly Box[],
@@ -147,11 +188,11 @@ function drawSideButtons(
     beveledBox(
       ctx,
       shufBox,
-      hovered ? BONE : active ? AMBER : '#3b3e4e',
-      hovered ? AMBER : active ? '#2a2b36' : INK,
-      active ? '#252835' : hovered ? '#222430' : RAISED,
+      pickFirst(hovered, BONE, active, AMBER, '#3b3e4e'),
+      pickFirst(hovered, AMBER, active, '#2a2b36', INK),
+      pickFirst(active, '#252835', hovered, '#222430', RAISED),
     );
-    drawText(ctx, 'SHF', shufBox.x + 2, shufBox.y + 2, active ? AMBER : hovered ? BONE : DIM);
+    drawText(ctx, 'SHF', shufBox.x + 2, shufBox.y + 2, pickFirst(active, AMBER, hovered, BONE, DIM));
     // LED pip
     ctx.fillStyle = active ? SICK : '#1e2418';
     ctx.fillRect(shufBox.x + shufBox.w - 4, shufBox.y + 3, 2, 4);
@@ -165,12 +206,12 @@ function drawSideButtons(
     beveledBox(
       ctx,
       rptBox,
-      hovered ? BONE : active ? AMBER : '#3b3e4e',
-      hovered ? AMBER : active ? '#2a2b36' : INK,
-      active ? '#252835' : hovered ? '#222430' : RAISED,
+      pickFirst(hovered, BONE, active, AMBER, '#3b3e4e'),
+      pickFirst(hovered, AMBER, active, '#2a2b36', INK),
+      pickFirst(active, '#252835', hovered, '#222430', RAISED),
     );
-    const label = item.repeatMode === 'one' ? 'RP1' : item.repeatMode === 'all' ? 'RPA' : 'RPT';
-    drawText(ctx, label, rptBox.x + 2, rptBox.y + 2, active ? AMBER : hovered ? BONE : DIM);
+    const label = repeatLabel(item.repeatMode);
+    drawText(ctx, label, rptBox.x + 2, rptBox.y + 2, pickFirst(active, AMBER, hovered, BONE, DIM));
     ctx.fillStyle = active ? AMBER : '#2b2318';
     ctx.fillRect(rptBox.x + rptBox.w - 4, rptBox.y + 3, 2, 4);
   }
@@ -183,11 +224,11 @@ function drawSideButtons(
     beveledBox(
       ctx,
       favBox,
-      hovered ? BONE : active ? BLOOD : '#3b3e4e',
-      hovered ? BLOOD : active ? '#2a1a1a' : INK,
-      active ? '#2b1a1c' : hovered ? '#241a1c' : RAISED,
+      pickFirst(hovered, BONE, active, BLOOD, '#3b3e4e'),
+      pickFirst(hovered, BLOOD, active, '#2a1a1a', INK),
+      pickFirst(active, '#2b1a1c', hovered, '#241a1c', RAISED),
     );
-    drawText(ctx, 'FAV', favBox.x + 2, favBox.y + 2, active ? BLOOD : hovered ? BONE : DIM);
+    drawText(ctx, 'FAV', favBox.x + 2, favBox.y + 2, pickFirst(active, BLOOD, hovered, BONE, DIM));
     ctx.fillStyle = active ? BLOOD : '#2b1414';
     ctx.fillRect(favBox.x + favBox.w - 4, favBox.y + 3, 2, 4);
   }
@@ -248,7 +289,7 @@ function drawCassetteBay(ctx: CanvasRenderingContext2D, bayBox: Box, item: Radio
   const title = item.track ? item.track.name.toUpperCase() : 'NO CASSETTE LOADED';
   drawText(ctx, title, lcdBox.x + 3, lcdBox.y + 2, '#ffb830');
 
-  const sub = item.track ? (item.track.find ? 'RADIO FIND' : item.track.where.toUpperCase()) : 'RADIO';
+  const sub = radioSubtitle(item);
   const subW = textWidth(sub);
   if (lcdBox.w - subW > textWidth(title) + 12) {
     drawText(ctx, sub, lcdBox.x + lcdBox.w - subW - 3, lcdBox.y + 2, '#9c7324');
@@ -407,25 +448,21 @@ function drawTransportButtons(
     const isStopBtn = index === 3;
     const isStoppedStopBtn = isStopBtn && !item.isPlaying;
 
-    const topEdge = isHovered ? BONE : isPlayingPlayBtn ? AMBER : '#3d4052';
-    const botEdge = isHovered ? AMBER : isPlayingPlayBtn ? '#1b1d26' : INK;
-    const fill = isPlayingPlayBtn ? '#1e212c' : isHovered ? '#252835' : RAISED;
+    const topEdge = pickFirst(isHovered, BONE, isPlayingPlayBtn, AMBER, '#3d4052');
+    const botEdge = pickFirst(isHovered, AMBER, isPlayingPlayBtn, '#1b1d26', INK);
+    const fill = pickFirst(isPlayingPlayBtn, '#1e212c', isHovered, '#252835', RAISED);
 
     beveledBox(ctx, btn, topEdge, botEdge, fill);
 
     const cx = btn.x + Math.floor(btn.w / 2);
     const cy = btn.y + Math.floor(btn.h / 2);
-    const glyphColor = isPlayingPlayBtn
-      ? AMBER
-      : isHovered
-        ? BONE
-        : isStoppedStopBtn
-          ? DIM
-          : isPlayBtn
-            ? SICK
-            : isStopBtn
-              ? BLOOD
-              : BONE;
+    const glyphColor = transportGlyphColor({
+      isPlayingPlayBtn,
+      isHovered,
+      isStoppedStopBtn,
+      isPlayBtn,
+      isStopBtn,
+    });
 
     drawGlyph(ctx, index, cx, cy, glyphColor);
   });
