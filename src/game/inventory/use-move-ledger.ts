@@ -208,7 +208,13 @@ export function useMoveLedger(send: (move: ItemMove) => void, sendView: (id: num
   }
 
   const stopAnswers = onMoveAnswer((answer) => settle(ledger.answer(answer.moveId, answer.ok)));
-  const expireTimer = setInterval(() => settle(ledger.expire()), EXPIRE_CHECK_MS);
+  const expireTimer = setInterval(() => {
+    settle(ledger.expire());
+    // A window opened at the start of a search asked to view a container the host had not finished searching, so the
+    // host turned it down. Until a snapshot carries the contents, ask again, so the items move on the first opening.
+    const waiting = opened?.containerId ?? null;
+    if (waiting !== null && viewedItems(waiting) === null) sendView(waiting, true);
+  }, EXPIRE_CHECK_MS);
   onScopeDispose(() => {
     stopAnswers();
     clearInterval(expireTimer);

@@ -119,23 +119,32 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
     return plate ? { buffer: plate } : null;
   }
 
+  /** The cell the item in hand was lifted from, in buffer pixels (it is out of its grid while held, so it is rebuilt from where it sat). */
+  function heldPlate(held: NonNullable<typeof state.heldItem>): ReturnType<typeof itemPlateAt> {
+    const { source } = held;
+    if (source.kind !== 'grid') return null;
+    return itemPlateAt(layout(), source.gridId, { ...held.item, x: source.x, y: source.y, rotated: held.originalRotated });
+  }
+
   function place(gridId: GridIdentifier, col: number, row: number): boolean {
     const held = state.heldItem;
     if (!held) return false;
+    // Lifted from another grid (the container, say): it hops over from the cell it left. Within one grid it only lands.
+    const crosses = held.source.kind === 'grid' && held.source.gridId !== gridId;
+    const plate = crosses ? heldPlate(held) : null;
     const placed = placeHeldItemInGrid(state, gridId, col, row);
     if (placed) {
-      // Set down by hand: it only lands, it does not fly.
-      sendMove(held.item, sourceOf(held.source), 'land');
+      sendMove(held.item, sourceOf(held.source), plate ? 'fly' : 'land', plate ? { buffer: plate } : null);
       host.playSfx('ui_place');
     }
     return placed;
   }
 
   function quickTransfer(gridId: GridIdentifier, itemId: string): void {
-    // A double click sends it across: it flies from the cell it is leaving.
+    // A double click sends it across: it flies from the cell it is leaving. The first click already lifted it, so that cell is where the hand got it.
     const leaving = gridOf(gridId).items.find((item) => item.id === itemId);
-    const plate = leaving ? itemPlateAt(layout(), gridId, leaving) : null;
     const held = state.heldItem;
+    const plate = leaving ? itemPlateAt(layout(), gridId, leaving) : held ? heldPlate(held) : null;
     const moving = leaving ?? held?.item ?? null;
     const heldFrom = held ? sourceOf(held.source) : null;
   const from = leaving ? cellFrom(gridId, leaving) : heldFrom;
