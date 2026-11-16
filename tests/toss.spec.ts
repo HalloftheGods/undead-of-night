@@ -35,20 +35,48 @@ describe('tossLanding', () => {
 });
 
 describe('a ground move', () => {
-  it('tosses the item to the clamped spot, tags the dropper and says so to everyone', () => {
+  it('tosses an item to the clamped spot, tags the dropper and says so to everyone', () => {
     const { sim, state, p, way } = open();
-    p.bottles = 1;
     steps(sim, 1);
-    const item = [...p.inventory.pack.items, ...p.inventory.pockets.items].find((i) => i.type === 'bottle')!;
+    const item = [...p.inventory.pack.items, ...p.inventory.pockets.items].find((i) => i.type !== 'bottle')!;
     const grid = p.inventory.pack.items.includes(item) ? 'pack' : 'pockets';
     const aim = { x: p.x + way.dx * 300, y: p.y + way.dy * 300 };
     const fromX = p.x;
     const fromY = p.y;
     const reason = applyItemMove(state, p, { id: p.lastMoveId + 1, item: item.id, type: item.type, from: { kind: 'cell', grid, x: item.x, y: item.y }, to: { kind: 'ground', x: aim.x, y: aim.y } });
     expect(reason).toBeNull();
-    const left = state.pickups.find((i) => i.type === 'bottle')!;
+    const left = state.pickups.find((i) => i.type === item.type)!;
     expect(Math.hypot(left.x - fromX, left.y - fromY)).toBeCloseTo(TOSS_RANGE, 3);
     expect(left.leftBy).toBe(p.id);
     expect(state.events.some((e) => e.type === 'item_tossed' && e.playerId === p.id && e.fromX === fromX && e.toX === left.x && e.toY === left.y)).toBe(true);
+  });
+
+  it('throwing a bottle far away breaks it, making noise and emitting bottle_smash without a ground pickup', () => {
+    const { sim, state, p, way } = open();
+    p.bottles = 1;
+    steps(sim, 1);
+    const item = [...p.inventory.pack.items, ...p.inventory.pockets.items].find((i) => i.type === 'bottle')!;
+    const grid = p.inventory.pack.items.includes(item) ? 'pack' : 'pockets';
+    const aim = { x: p.x + way.dx * 300, y: p.y + way.dy * 300 };
+    const reason = applyItemMove(state, p, { id: p.lastMoveId + 1, item: item.id, type: item.type, from: { kind: 'cell', grid, x: item.x, y: item.y }, to: { kind: 'ground', x: aim.x, y: aim.y } });
+    expect(reason).toBeNull();
+    expect(state.pickups.find((i) => i.type === 'bottle')).toBeUndefined();
+    expect(state.events.some((e) => e.type === 'bottle_smash' && e.playerId === p.id)).toBe(true);
+    expect(state.events.some((e) => e.type === 'item_tossed' && e.playerId === p.id)).toBe(true);
+  });
+
+  it('dropping a bottle at feet keeps it intact as a ground pickup', () => {
+    const { sim, state, p } = open();
+    p.bottles = 1;
+    steps(sim, 1);
+    const item = [...p.inventory.pack.items, ...p.inventory.pockets.items].find((i) => i.type === 'bottle')!;
+    const grid = p.inventory.pack.items.includes(item) ? 'pack' : 'pockets';
+    const reason = applyItemMove(state, p, { id: p.lastMoveId + 1, item: item.id, type: item.type, from: { kind: 'cell', grid, x: item.x, y: item.y }, to: { kind: 'ground', x: 0, y: 0 } });
+    expect(reason).toBeNull();
+    const left = state.pickups.find((i) => i.type === 'bottle')!;
+    expect(left).toBeDefined();
+    expect(left.x).toBe(p.x);
+    expect(left.y).toBe(p.y);
+    expect(state.events.some((e) => e.type === 'bottle_smash')).toBe(false);
   });
 });

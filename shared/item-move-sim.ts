@@ -11,7 +11,9 @@ import type { ContainerState } from './containers.ts';
 import { canPlaceItem, createInventoryGrid, placeItem, removeItem } from './grid-inventory.ts';
 import type { GridItem, InventoryGrid } from './grid-inventory.ts';
 import { startCare } from './care.ts';
-import { touchesContainer } from './item-move.ts';
+import { CARE_REACH, touchesContainer } from './item-move.ts';
+import { BOTTLE_NOISE_RADIUS } from './bottles.ts';
+import { makeNoise } from './zombie-senses.ts';
 import type { GearSlotId, ItemMove, MoveFrom, MoveReason } from './item-move.ts';
 import { applyMoveToGrids, candyGridOf, candyMoveFor, copyGrid, moveSourceItem } from './item-move-grids.ts';
 import type { MoveGrids } from './item-move-grids.ts';
@@ -204,8 +206,16 @@ function dropItem(sim: SimState, p: PlayerState, item: GridItem, from: MoveFrom,
   }
   if (!isDroppableBagItem(item.type)) return 'bad';
   removeItem(p.inventory[from.grid], item.id);
-  leaveOnGround(sim, p, item.type, isAmmoBoxType(item.type) ? 1 : (item.count ?? 1), spot);
-  announceToss(sim, p, item.type, spot);
+  const isFar = !isUnaimed && Math.hypot(spot.x - p.x, spot.y - p.y) > CARE_REACH;
+  const isBreakingBottle = item.type === 'bottle' && isFar;
+  if (isBreakingBottle) {
+    announceToss(sim, p, item.type, spot);
+    makeNoise(sim, spot.x, spot.y, BOTTLE_NOISE_RADIUS);
+    emit(sim, { type: 'bottle_smash', playerId: p.id, x: spot.x, y: spot.y, fromX: p.x, fromY: p.y });
+  } else {
+    leaveOnGround(sim, p, item.type, isAmmoBoxType(item.type) ? 1 : (item.count ?? 1), spot);
+    announceToss(sim, p, item.type, spot);
+  }
   syncAll(p);
   return null;
 }

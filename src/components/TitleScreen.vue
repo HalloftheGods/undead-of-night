@@ -244,6 +244,11 @@ function openItem(item: TitleMenuItem): void {
     game.startHudTest();
     return;
   }
+  const isPromoScene = item.page === 'promo_scene';
+  if (isPromoScene) {
+    game.startPromoScene();
+    return;
+  }
   nav.value = openPage(nav.value, item.page);
 }
 </script>

@@ -156,69 +156,86 @@ function gridBox(id: GridIdentifier, grid: InventoryGrid, title: string, x: numb
   return { id, grid, title, x, y, w: grid.cols * TILE, h: grid.rows * TILE };
 }
 
-/** Where everything goes for a view of this size: the container on the left, the survivor's gap in the middle, the bag on the right. */
+/** Where everything goes for a view of this size: candy on left, guns and pockets top center, container direct center, bag on right. */
 export function layoutLootUi(state: DualLootState, viewW: number, viewH: number, edit: LootEditView | null = null): LootLayout {
   const pack = state.backpackGrid;
-  const candyW = state.candyBagGrid.cols * TILE;
-  const gridsW = pack.cols * TILE + 4 + candyW;
-  const gearW = GEAR_SLOT_COUNT * GEAR_W + (GEAR_SLOT_COUNT - 1) * GAP;
-  const tierLabel = tierName(state);
-  const headW = textWidth('SURVIVOR INVENTORY') + 6 + textWidth(tierLabel);
-  const innerW = Math.max(gearW, gridsW, headW);
-  const sw = innerW + PAD * 2;
-  const packH = pack.rows * TILE + 8;
-  const pocketsH = state.pocketsGrid.rows * TILE + 8;
-  const gridsH = Math.max(packH + GAP + pocketsH, state.candyBagGrid.rows * TILE + 8);
-  const sh = HEAD + GAP + gridsH + GAP + BUTTON_H + PAD * 2;
-  const sx = viewW - EDGE - sw;
-  // With the editor's toolbar up, the docks centre in the space under it and above the help line.
+  const candy = state.candyBagGrid;
+  const pockets = state.pocketsGrid;
+
   const top = edit ? editorTop(edit) : 0;
   const room = viewH - top - (edit ? EDITOR_BOTTOM : 0);
   const margin = edit ? 2 : EDGE;
-  // The gear row hangs along the bottom centre of the whole canvas; the survivor dock stays above it.
-  const gearY = viewH - (edit ? EDITOR_BOTTOM : 0) - EDGE - GEAR_H;
-  const sy = Math.max(top + margin, Math.min(top + Math.round((room - sh) / 2), gearY - GAP - sh));
 
-  const gx = sx + PAD;
-  const gridsY = sy + PAD + HEAD + GAP;
-  const packBox = gridBox('backpack', pack, `PACK ${pack.cols}X${pack.rows}`, gx, gridsY + 8);
-  const pocketsBox = gridBox('pockets', state.pocketsGrid, 'POCKETS', gx, gridsY + packH + GAP + 8);
-  const candyBox = gridBox('candyBag', state.candyBagGrid, 'CANDY', gx + innerW - candyW, gridsY + 8);
-
+  // 1. Guns (gear slots) top center
+  const gearW = GEAR_SLOT_COUNT * GEAR_W + (GEAR_SLOT_COUNT - 1) * GAP;
   const gearX = Math.round((viewW - gearW) / 2);
+  const gearY = top + (edit ? 4 : EDGE);
   const gear = GEAR_SLOT_DEFS.map((def, i) => ({ id: def.id, x: gearX + i * (GEAR_W + GAP), y: gearY, w: GEAR_W, h: GEAR_H }));
 
-  const buttonY = sy + sh - PAD - BUTTON_H;
-  const rotateW = textWidth('[R] ROTATE'.replace(/[[\]]/g, '')) + 8;
+  // 2. Pockets to the left of the guns
+  const pocketsW = pockets.cols * TILE;
+  const pocketsH = pockets.rows * TILE;
+  const pocketsX = gearX - 8 - pocketsW;
+  const pocketsY = gearY + 8;
+  const pocketsBox = gridBox('pockets', pockets, 'POCKETS', pocketsX, pocketsY);
+
+  // 3. Candy bag to the left center (3x4)
+  const candyW = candy.cols * TILE;
+  const candyH = candy.rows * TILE;
+  const candyX = EDGE;
+  const candyY = top + Math.max(margin, Math.round((room - (candyH + 8)) / 2)) + 8;
+  const candyBox = gridBox('candyBag', candy, 'CANDY', candyX, candyY);
+
+  // 4. The bag (backpack) to the right center, with R ROTATE and ESC CLOSE buttons directly below
+  const packW = pack.cols * TILE;
+  const packH = pack.rows * TILE;
+  const rotateW = textWidth('R ROTATE') + 8;
   const closeW = textWidth('ESC CLOSE') + 8;
+  const buttonsW = rotateW + GAP + closeW;
+  const rightW = Math.max(packW, buttonsW);
+  const rightX = viewW - EDGE - rightW;
+  const packX = rightX + Math.round((rightW - packW) / 2);
+  const packTotalH = packH + 8 + GAP + BUTTON_H;
+  const packY = top + Math.max(margin, Math.round((room - packTotalH) / 2)) + 8;
+  const tierLabel = tierName(state);
+  const packTitle = tierLabel ? `PACK ${pack.cols}X${pack.rows} ${tierLabel}` : `PACK ${pack.cols}X${pack.rows}`;
+  const packBox = gridBox('backpack', pack, packTitle, packX, packY);
+
+  const buttonY = packY + packH + GAP + 2;
   const buttons = [
-    { id: 'rotate' as const, label: 'R ROTATE', x: gx, y: buttonY, w: rotateW, h: BUTTON_H },
-    { id: 'close' as const, label: 'ESC CLOSE', x: gx + rotateW + GAP, y: buttonY, w: closeW, h: BUTTON_H },
+    { id: 'rotate' as const, label: 'R ROTATE', x: rightX, y: buttonY, w: rotateW, h: BUTTON_H },
+    { id: 'close' as const, label: 'ESC CLOSE', x: rightX + rotateW + GAP, y: buttonY, w: closeW, h: BUTTON_H },
   ];
 
+  // 5. Container searching / open direct center center of screen, bounded so it never bleeds under gear, candy, or pack
   const hasContainer = state.containerGrid.items.length > 0 || Boolean(state.containerKind);
   let container: LootLayout['container'] = null;
   if (hasContainer) {
     const grid = state.containerGrid;
     const boardW = grid.cols * TILE;
     const boardH = grid.rows * TILE;
-    const headW = textWidth(upper(state.containerTitle)) + 6 + textWidth(`${grid.items.length} ITEMS`);
-    const w = Math.max(90, boardW + PAD * 2, headW + PAD * 2);
-    const h = HEAD + GAP + boardH + PAD * 2;
-    const x = EDGE;
-    const y = top + Math.max(margin, Math.round((room - h) / 2));
-    const board = gridBox('container', grid, upper(state.containerTitle), x + Math.round((w - boardW) / 2), y + PAD + HEAD + GAP);
-    // In game the container floats with no card: only its label row and its board catch the pointer.
     const labelW = textWidth(upper(state.containerTitle)) + 6 + Math.max(textWidth('SEARCHING'), textWidth(`${grid.items.length} ITEMS`));
-    container = edit ? { x, y, w, h, board } : { x: board.x, y: board.y - HEAD, w: Math.max(boardW, labelW), h: boardH + HEAD, board };
+    const w = Math.max(boardW, labelW);
+    const h = boardH + HEAD;
+    const leftBound = candyX + candyW + GAP * 2;
+    const rightBound = packX - GAP * 2;
+    const topBound = gearY + GEAR_H + GAP * 2;
+    const bottomBound = viewH - EDGE;
+    const centerSpanX = rightBound - leftBound;
+    const centerSpanY = bottomBound - topBound;
+    const x = leftBound > 0 && centerSpanX > w ? leftBound + Math.round((centerSpanX - w) / 2) : Math.round((viewW - w) / 2);
+    const y = topBound > 0 && centerSpanY > h ? topBound + Math.round((centerSpanY - h) / 2) : Math.max(topBound, top + Math.round((room - h) / 2));
+    const boardX = leftBound > 0 && centerSpanX > boardW ? leftBound + Math.round((centerSpanX - boardW) / 2) : Math.round((viewW - boardW) / 2);
+    const boardY = y + HEAD;
+    const board = gridBox('container', grid, upper(state.containerTitle), boardX, boardY);
+    container = edit ? { x: boardX - PAD, y: y - PAD, w: boardW + PAD * 2, h: h + PAD * 2, board } : { x, y, w, h, board };
   }
 
-  const survivor: Box = { x: sx, y: sy, w: sw, h: sh };
   if (edit?.benchOnly) {
     const library = edit.library ? layoutLibrary(edit.library, viewW, viewH, top, EDITOR_BOTTOM, edit.libraryCurrent) : null;
     return { container, survivor: null, pack: null, pockets: null, candy: null, gear: [], buttons: [], editor: layoutEditor(edit, viewW), library };
   }
-  return { container, survivor, pack: packBox, pockets: pocketsBox, candy: candyBox, gear, buttons, editor: edit ? layoutEditor(edit, viewW) : null, library: null };
+  return { container, survivor: null, pack: packBox, pockets: pocketsBox, candy: candyBox, gear, buttons, editor: edit ? layoutEditor(edit, viewW) : null, library: null };
 }
 
 const GEAR_SLOT_COUNT = GEAR_SLOT_DEFS.length;
@@ -479,7 +496,8 @@ function drawBoard(ctx: CanvasRenderingContext2D, view: LootView, board: GridBox
       if (bare) {
         const hovered = hover !== null && hover.col === col && hover.row === row;
         const rank = ranks ? ranks.rankOf(col, row) : null;
-        const look = bareCellLook({ rank, open: ranks?.open ?? 0, sweep, hovered, holding: held !== null, blocked: blocked.has(`${col},${row}`) });
+        const open = ranks ? ranks.open : 0;
+        const look = bareCellLook({ rank, open, sweep, hovered, holding: held !== null, blocked: blocked.has(`${col},${row}`) });
         if (look) drawBareCell(ctx, look, box.x, box.y, TILE);
         const bareMark = computeTileHighlight(grid, col, row, hover ? hover.col : null, hover ? hover.row : null, held, board.id, state.candyBagGrid);
         if (bareMark !== 'none') fill(ctx, bareMark === 'valid' ? SICK : BLOOD, box.x + 2, box.y + 2, TILE - 4, TILE - 4);
@@ -488,11 +506,10 @@ function drawBoard(ctx: CanvasRenderingContext2D, view: LootView, board: GridBox
       const phase = ranks ? cellPhase(ranks.rankOf(col, row), ranks.open, sweep) : 'read';
       // A void is not lit: it looks like any other cell until the head reaches it, then shows as a void.
       const shut = blocked.has(`${col},${row}`) && phase !== 'waiting';
-      // A cell the search has not reached yet is blank: it covers the drawing underneath until its turn comes.
       const covered = ranks !== null && phase === 'waiting';
-      const light = hover && hover.col === col && hover.row === row && held === null ? LINE : translucent && !covered ? 'rgba(11,12,16,0.35)' : RAISED;
+      const light = hover && hover.col === col && hover.row === row && held === null ? LINE : translucent && !covered ? 'rgba(11,12,16,0.35)' : translucent ? 'transparent' : RAISED;
       if (shut) {
-        drawDisabledCell(ctx, box);
+        if (view.edit) drawDisabledCell(ctx, box);
         continue;
       }
       fill(ctx, light, box.x + 1, box.y + 1, TILE - 2, TILE - 2);
@@ -549,7 +566,7 @@ function containerArtOf(view: LootView): ContainerArt | null {
 }
 
 /** The container's picture stretched over the rect (the grid, or where the zoom has got to). */
-function drawContainerArt(ctx: CanvasRenderingContext2D, view: LootView, rect: Box, alpha?: number): void {
+function drawContainerArt(ctx: CanvasRenderingContext2D, view: LootView, rect: Box, alpha = 0.92): void {
   const art = containerArtOf(view);
   if (art) drawStageArt(ctx, art, !sweepingNow(view), rect, alpha);
 }
@@ -559,12 +576,12 @@ function drawLandedArt(ctx: CanvasRenderingContext2D, view: LootView, board: Gri
   const art = containerArtOf(view);
   if (!art) return;
   if (!sweepingNow(view)) {
-    drawStageArt(ctx, art, true, board);
+    drawStageArt(ctx, art, true, board, 0.92);
     return;
   }
   const ranks = sweepRanks(board.grid);
   const sweep = shownSweep.value ?? 0;
-  drawSweptStageArt(ctx, art, board, board.grid.cols, board.grid.rows, (col, row) => cellPhase(ranks.rankOf(col, row), ranks.open, sweep) === 'read');
+  drawSweptStageArt(ctx, art, board, board.grid.cols, board.grid.rows, (col, row) => cellPhase(ranks.rankOf(col, row), ranks.open, sweep) === 'read', 0.92);
 }
 
 /** How long the container's labels take to fade in once its drawing lands. */
@@ -591,8 +608,8 @@ function drawContainerDock(ctx: CanvasRenderingContext2D, view: LootView, dock: 
   const camera = arrivalCamera();
   if (zoom && !zoom.landed) {
     const flies = zoom.kind === 'zoom' && zoom.from !== null && camera !== null;
-    if (flies && zoom.from && camera) drawContainerArt(ctx, view, lerpRect(toSpace(zoom.from, camera, 'buffer'), dock.board, zoom.eased));
-    else drawContainerArt(ctx, view, dock.board, zoom.kind === 'fade' ? 0.9 * zoom.eased : 0);
+    if (flies && zoom.from && camera) drawContainerArt(ctx, view, lerpRect(toSpace(zoom.from, camera, 'buffer'), dock.board, zoom.eased), 0.92);
+    else drawContainerArt(ctx, view, dock.board, zoom.kind === 'fade' ? 0.92 * zoom.eased : 0);
     return;
   }
   drawLandedArt(ctx, view, dock.board);
@@ -603,8 +620,8 @@ function drawContainerDock(ctx: CanvasRenderingContext2D, view: LootView, dock: 
   // The labels fade in as the drawing settles, instead of popping on with the landing.
   const before = ctx.globalAlpha;
   ctx.globalAlpha = Math.min(1, Math.max(0, (performance.now() - zoomLandedAt()) / LABEL_FADE_MS));
-  floatingText(ctx, upper(state.containerTitle), board.x, board.y - 8, AMBER);
-  floatingText(ctx, label, board.x + dock.w - textWidth(label), board.y - 8, DIM);
+  floatingText(ctx, upper(state.containerTitle), dock.x, board.y - 8, AMBER);
+  floatingText(ctx, label, dock.x + dock.w - textWidth(label), board.y - 8, DIM);
   ctx.globalAlpha = before;
   noteStageRect('buffer', board, !sweepingNow(view));
 }
@@ -656,10 +673,6 @@ export function drawLootUi(ctx: CanvasRenderingContext2D, view: LootView, given:
   const smoothing = ctx.imageSmoothingEnabled;
   ctx.imageSmoothingEnabled = false;
 
-  if (layout.container) {
-    drawContainerDock(ctx, view, layout.container);
-  }
-
   const dock = layout.survivor;
   if (dock) {
     plate(ctx, dock, 0.9);
@@ -699,6 +712,10 @@ export function drawLootUi(ctx: CanvasRenderingContext2D, view: LootView, given:
     if (!board) continue;
     drawText(ctx, board.title, board.x, board.y - 8, DIM);
     drawBoard(ctx, view, board, false);
+  }
+
+  if (layout.container) {
+    drawContainerDock(ctx, view, layout.container);
   }
 
   if (layout.editor) {

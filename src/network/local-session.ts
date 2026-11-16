@@ -12,6 +12,7 @@ import type {
 } from "../../shared/protocol.ts";
 import { GameSimulation } from "../../shared/simulation.ts";
 import { overrunOn } from "../game/home-mode.ts";
+import { setupPromoScene, updatePromoSceneSquad } from "../game/dev/promo-scene.ts";
 import type { BenchAction } from "../../shared/workbench.ts";
 import { TickClock } from "./tick-clock.ts";
 import type { ConnectOptions, GameTransport } from "./transport.ts";
@@ -59,6 +60,10 @@ export class LocalSession implements GameTransport {
 
   sendHome(action: HomeAction): void {
     this.sim?.homeCommand(LOCAL_PLAYER_ID, action);
+  }
+
+  sendDebriefContinue(): void {
+    this.sim?.continueDebrief();
   }
 
   sendEmote(emote: EmoteId): void {
@@ -141,6 +146,8 @@ export class LocalSession implements GameTransport {
     // Campaign brings its own gear from the locker, so the streak kit is for town runs.
     const getsStreakKit = !this.playsHome && streakNight !== undefined;
     if (getsStreakKit) sim.giveStreakKit(LOCAL_PLAYER_ID, streakNight);
+    const isPromo = this.options.promoScene === true;
+    if (isPromo) setupPromoScene(sim);
     this.sim = sim;
     this.paused = false;
     this.onWelcome({
@@ -160,6 +167,8 @@ export class LocalSession implements GameTransport {
   private tick(): void {
     const sim = this.sim;
     if (!sim) return;
+    const isPromo = this.options.promoScene === true;
+    if (isPromo) updatePromoSceneSquad(sim);
     sim.step();
     this.onSnapshot(sim.snapshot());
   }

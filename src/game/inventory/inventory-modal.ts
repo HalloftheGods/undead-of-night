@@ -8,10 +8,11 @@ import { aimsCursor } from "@game/home-screens.ts";
 import type { UiState } from "@game/hud-state.ts";
 import type { InputManager } from "@game/input-manager.ts";
 import { loadAutoCloseEmptyLoot } from "@game/loot-prefs.ts";
-import { type CellOrigin, type MotionKind } from "./move-motion.ts";
+import { FLY_MS, type CellOrigin, type MotionKind } from "./move-motion.ts";
 import { useMoveLedger, type ProposedMove } from "./use-move-ledger.ts";
 import { beginContainerZoom, endContainerZoom } from "./container-zoom.ts";
 import { inventoryHolding, setInventoryHands } from "./inventory-hands.ts";
+import { setHeld } from "../held-cursor.ts";
 
 /** The grid inventory opens on I or B. Tab is the map's; neither letter is in `DEFAULT_KEY_BINDINGS`. */
 export const INVENTORY_CODES: readonly string[] = ["KeyI", "KeyB"];
@@ -123,11 +124,21 @@ export function useInventoryModal(
     tookHands = true;
   }
 
+  let autoCloseTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function cancelAutoClose(): void {
+    if (autoCloseTimer !== null) {
+      clearTimeout(autoCloseTimer);
+      autoCloseTimer = null;
+    }
+  }
+
   /**
    * A window opening over one already open (a search that ends under the Nearby window) first puts back what is
    * held. Every move was sent as it was made, so nothing is lost when the grids are rebuilt.
    */
   function settleOpen(): void {
+    cancelAutoClose();
     if (!isOpen.value) return;
     panel.value?.settle();
   }
@@ -168,14 +179,22 @@ export function useInventoryModal(
     return true;
   }
 
-  /** A searched container left empty shuts itself, if the player asked for that. */
+  /** A searched container left empty shuts itself, if the player asked for that, once the last item has flown out. */
   function checkEmpty(): void {
     const active = working.value;
     const isFurniture = active && active.containerId !== null && active.containerId !== undefined;
-    if (isFurniture) {
-      if (active.container.items.length === 0 && loadAutoCloseEmptyLoot()) {
-        hide();
-      }
+    if (!isFurniture) return;
+
+    if (active.container.items.length === 0 && loadAutoCloseEmptyLoot()) {
+      cancelAutoClose();
+      autoCloseTimer = setTimeout(() => {
+        autoCloseTimer = null;
+        if (isOpen.value && working.value?.container.items.length === 0) {
+          hide();
+        }
+      }, FLY_MS);
+    } else if (active.container.items.length > 0) {
+      cancelAutoClose();
     }
   }
 
@@ -186,10 +205,12 @@ export function useInventoryModal(
   }
 
   function hide(): void {
+    cancelAutoClose();
     if (!isOpen.value) return;
     const gave = tookHands;
     tookHands = false;
     setInventoryHands(null);
+    setHeld(null);
     searchingOpen.value = false;
     panel.value?.settle();
     isOpen.value = false;
@@ -250,9 +271,11 @@ export function useInventoryModal(
   /** Capture, so the press lands before the game's own listener on the same window. */
   onMounted(() => window.addEventListener("keydown", onKey, true));
   onBeforeUnmount(() => {
+    cancelAutoClose();
     window.removeEventListener("keydown", onKey, true);
     clearInterval(awayTimer);
     setInventoryHands(null);
+    setHeld(null);
     if (isOpen.value && tookHands) input.setEnabled(true);
   });
 

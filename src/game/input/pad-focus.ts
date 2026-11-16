@@ -261,7 +261,7 @@ export function pressBack(doc: Document | undefined = globalThis.document): bool
 
 /**
  * Start: a `data-pad-start` control, else the screen's primary button (Start Run, Play), else the title menu's
- * highlighted row, so Start on Play (1-5 Player) opens that list. Null-safe: a screen with none leaves Start to pause.
+ * highlighted row, so Start on Play (1-5 Players) opens that list. Null-safe: a screen with none leaves Start to pause.
  */
 export function pressStart(doc: Document | undefined = globalThis.document): boolean {
   if (!hasDom(doc)) return false;

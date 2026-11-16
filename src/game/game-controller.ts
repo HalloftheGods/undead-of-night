@@ -38,9 +38,11 @@ import { browserStore, DEFAULT_PREFS, loadLeaderboard, loadPrefs, savePrefs } fr
 import { motion } from "./motion.ts";
 import { loadStyle, saveStyle } from "./style-pref.ts";
 import { loadBests } from "./trip-record.ts";
+import type { TownMapView } from "./map/town-map.ts";
 import { isTouchDevice } from "./touch-input.ts";
 import { fitWindow, watchDpr } from "./view-fit.ts";
 import { speak } from "./survivor-speech.ts";
+import { promoSceneOn } from "./dev/promo-scene.ts";
 import {
   applyPalette,
   brightness,
@@ -173,7 +175,8 @@ export class GameController {
       parts: host,
       menuUp: () => this.isMenuUp(),
       playing: () => this.isPlaying(),
-      overrunOn: overrunOn(globalThis.location?.search ?? "", import.meta.env.DEV)
+      overrunOn: overrunOn(globalThis.location?.search ?? "", import.meta.env.DEV),
+      promoScene: () => this.isPromoScene()
     });
   }
 
@@ -239,6 +242,14 @@ export class GameController {
 
   attachTownCanvas(canvas: HTMLCanvasElement | null): void {
     this.runHud.attachTownCanvas(canvas);
+  }
+
+  get townView(): TownMapView | null {
+    return this.runHud.townView;
+  }
+
+  continueDebrief(): void {
+    this.session.continueDebrief();
   }
 
   private loadArt(): void {
@@ -316,6 +327,10 @@ export class GameController {
 
   private isMenuUp(): boolean {
     return this.ui.value.paused || this.ui.value.bagOpen;
+  }
+
+  isPromoScene(): boolean {
+    return this.ui.value.promoScene === true || promoSceneOn(globalThis.location?.search ?? "", import.meta.env.DEV, globalThis.location?.hostname ?? "");
   }
 
   // --- Commands from the menus ---------------------------------------------
@@ -419,6 +434,11 @@ export class GameController {
   /** Dev HUD page: a random survivor in a town with no zombies, where nobody can die. */
   startHudTest(): void {
     this.session.startHudTest();
+  }
+
+  /** Dev promo scene: 5 survivors in their new sprites and zombie horde in a live town. */
+  startPromoScene(): void {
+    this.session.startPromoScene();
   }
 
   /** Arcade from `chosen` (guarded by what is unlocked) or, with none, the furthest level reached. Does nothing if there is no later level to start at. */

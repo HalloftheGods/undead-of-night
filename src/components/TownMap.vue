@@ -7,7 +7,10 @@
         <h3 class="town-group-title">{{ group.title }}</h3>
         <ul class="town-legend">
           <li v-for="entry in group.entries" :key="entry.label" :class="entry.tone && `town-${entry.tone}`">
-            <span class="town-icon"><MapKeyIcon :icon="entry.icon" /></span>{{ entry.label }}
+            <span v-if="entry.checkIcon" class="town-check"><MapKeyIcon :icon="entry.checkIcon" /></span>
+            <span class="town-icon"><MapKeyIcon :icon="entry.icon" /></span>
+            <span class="town-label">{{ entry.label }}</span>
+            <span v-if="entry.tally" class="town-tally">{{ entry.tally }}</span>
           </li>
         </ul>
       </section>
@@ -40,7 +43,7 @@ const KEY_WIDTH = 280;
 const { inBunker, teammates = [] } = defineProps<{ mode: TransportKind; inBunker: boolean; teammates?: readonly TeammateHud[] }>();
 
 const game = useGame();
-const key = computed(() => mapKey(inBunker));
+const key = computed(() => mapKey(inBunker, game.townView));
 const canvasRef = useTemplateRef<HTMLCanvasElement>('canvasRef');
 const mapPixels = ref(1);
 const fit = ref(Math.min(window.innerWidth - KEY_WIDTH, window.innerHeight) - SCREEN_MARGIN);
@@ -136,6 +139,21 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   width: calc(var(--u) * 20);
+}
+
+.town-check {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--u) * 8);
+}
+
+.town-tally {
+  margin-left: auto;
+  color: var(--bone-dim);
+  font-size: calc(var(--u) * 4);
+  opacity: 0.8;
 }
 
 .town-title {

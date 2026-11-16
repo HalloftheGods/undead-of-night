@@ -31,6 +31,8 @@ export interface ConnectOptions {
   readonly testDrive?: boolean;
   /** Solo only: the HUD test town, with no zombies and nobody who can die. Set by the dev HUD page. */
   readonly hudTest?: boolean;
+  /** Solo dev only: promo scene featuring all 5 survivors in their new sprites and active zombie horde. */
+  readonly promoScene?: boolean;
 }
 
 /** The one seam between the game client and a simulation, in-browser or over ws. */
@@ -51,6 +53,7 @@ export interface GameTransport {
   /** A container's window opened or closed, so the host keeps its contents live in snapshots. */
   sendView(id: number, open: boolean): void;
   sendHome(action: HomeAction): void;
+  sendDebriefContinue?(): void;
   sendLobbyReady?(ready?: boolean): void;
   sendLobbyStart?(): void;
   sendLobbyToggleTimer?(): void;

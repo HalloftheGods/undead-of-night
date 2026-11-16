@@ -141,6 +141,7 @@ export interface SceneView {
   readonly held?: HeldView | null;
   /** Set while fingers are playing, when the crosshair follows them and the pointer steers nothing. */
   readonly touch?: TouchMarks | null;
+  readonly promoScene?: boolean;
   readonly phase: GamePhase;
   readonly hostiles: number;
 }

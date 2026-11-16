@@ -141,7 +141,7 @@ describe('Container search to loot grid integration', () => {
       item: knifeItem.id,
       type: 'knife',
       from: { kind: 'cell', grid: 'pack', x: knifeItem.x, y: knifeItem.y },
-      to: { kind: 'cell', grid: 'container', x: 0, y: 0, rotated: false },
+      to: { kind: 'cell', grid: 'container', x: 2, y: 0, rotated: false },
       container: container.id,
     });
     expect(reason).toBeNull();
@@ -168,7 +168,7 @@ describe('Container search to loot grid integration', () => {
       item: 'candy-carried-jawbreaker-0',
       type: 'jawbreaker',
       from: { kind: 'cell', grid: 'candy', x: 0, y: 5 },
-      to: { kind: 'cell', grid: 'container', x: 0, y: 0, rotated: false },
+      to: { kind: 'cell', grid: 'container', x: 2, y: 0, rotated: false },
       container: container.id,
     });
     expect(reason).toBeNull();

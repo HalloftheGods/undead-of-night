@@ -26,7 +26,8 @@ export type TitlePage =
   | "dev_inventory"
   | "dev_sprites"
   | "test_drive"
-  | "hud_test";
+  | "hud_test"
+  | "promo_scene";
 
 /** The menu's top-level groups. */
 export type MenuGroup = "play" | "books" | "settings" | "radio" | "dev";
@@ -59,7 +60,7 @@ export function menuLine(item: TitleMenuItem, unlock?: SoundUnlock): string {
 
 /** Every link, section by section. */
 export const TITLE_MENU: readonly TitleMenuItem[] = [
-  // Play (1-5 Player) (Nightly Run on top, then Campaign and Arcade)
+  // Play (1-5 Players) (Nightly Run on top, then Campaign and Arcade)
   {
     group: "play",
     page: "daily",
@@ -169,7 +170,7 @@ export interface MenuSection {
 export const MENU_SECTIONS: readonly MenuSection[] = [
   {
     group: "play",
-    label: "Play (1-5 Player)",
+    label: "Play (1-5 Players)",
     line: "Nightly Run, Campaign and Arcade."
   },
   {
@@ -218,8 +219,14 @@ export const DEV_MENU_ITEMS: readonly TitleMenuItem[] = [
   {
     group: "dev",
     page: "hud_test",
-    label: "HUD",
-    line: "Heads-up display preview over a live town."
+    label: "Loot Test",
+    line: "Loot a zombie-free town. Test inventory animations, etc."
+  },
+  {
+    group: "dev",
+    page: "promo_scene",
+    label: "Screenshot Scene",
+    line: "Full 5-survivor squad and zombie horde in a live town."
   }
 ];
 

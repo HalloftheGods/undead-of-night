@@ -635,6 +635,9 @@ export class OverlayRenderer {
     lightAt: (x: number, y: number) => number,
     isKilled: (id: EntityId) => boolean,
   ): void {
+    const isPromo = scene.promoScene === true;
+    if (isPromo) return;
+
     for (const zombie of scene.zombies) {
       if (isKilled(zombie.id)) continue;
       const onScreen = zombie.x > left && zombie.x < left + viewW && zombie.y > top && zombie.y < top + viewH;

@@ -79,7 +79,15 @@ export function createCanvasLoot(canvas: HTMLCanvasElement, art: ArtBook | null,
 
   function overDock(point: { x: number; y: number }): boolean {
     const l = layout();
-    const docks = [l.container, l.survivor];
+    const docks = [
+      l.container,
+      l.survivor,
+      l.pack ? { x: l.pack.x - 2, y: l.pack.y - 10, w: l.pack.w + 4, h: l.pack.h + 12 } : null,
+      l.pockets ? { x: l.pockets.x - 2, y: l.pockets.y - 10, w: l.pockets.w + 4, h: l.pockets.h + 12 } : null,
+      l.candy ? { x: l.candy.x - 2, y: l.candy.y - 10, w: l.candy.w + 4, h: l.candy.h + 12 } : null,
+      ...l.gear,
+      ...l.buttons,
+    ];
     return docks.some((d) => d !== null && point.x >= d.x && point.x < d.x + d.w && point.y >= d.y && point.y < d.y + d.h);
   }
 

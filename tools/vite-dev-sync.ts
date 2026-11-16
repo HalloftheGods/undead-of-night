@@ -139,6 +139,20 @@ export function devInventorySync(projectRoot: string): Plugin {
     apply: 'serve',
     configureServer(server) {
       server.middlewares.use(async (req: IncomingMessage, res: ServerResponse, next: () => void) => {
+        const isScreenshotEndpoint = req.method === 'POST' && req.url === '/api/dev-save-screenshot';
+        if (isScreenshotEndpoint) {
+          const chunks: Buffer[] = [];
+          req.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+          req.on('end', () => {
+            const buf = Buffer.concat(chunks);
+            const targetPath = path.resolve(projectRoot, 'public/og-image.png');
+            writeFileSync(targetPath, buf);
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ success: true, path: targetPath, bytes: buf.length }));
+          });
+          return;
+        }
+
         const isPost = req.method === 'POST';
         const isApiRoute = req.url === '/api/dev/inventory-sync';
         const isTargetEndpoint = isPost && isApiRoute;

@@ -3,7 +3,8 @@ import { rollFind } from './container-loot.ts';
 import { containerGridFor, SEARCH_SEC, townContainers } from './containers.ts';
 import type { Container, ContainerLoot } from './containers.ts';
 import { autoPackItem, createInventoryGrid, randomPackItem } from './grid-inventory.ts';
-import type { BuildingInstance, PickupType, WorldMap } from './protocol.ts';
+import type { BuildingInstance, EntityId, PickupType, WorldMap } from './protocol.ts';
+import { buildingTotalClearXp, mapRootBuildingContainers, rootBuildingIdOf, splitBuildingClearXp } from './building-clear-reward.ts';
 import { TICK_DT } from './constants.ts';
 import { isBunkerMap } from './home-protocol.ts';
 import { isSalvagePickup } from './salvage-data.ts';
@@ -225,6 +226,7 @@ function finishSearch(sim: SimState, p: PlayerState, id: number): void {
   const state = sim.containers[id];
   const { treasure, ordinary } = findIn(sim, p, id);
   state.opened = true;
+  state.openedBy = p.id;
   state.loot = null;
   const { clatterChance, noise } = characterOf(p.skin);
   const noisy = sim.rng() < CLATTER_CHANCE * clatterChance;
@@ -300,8 +302,48 @@ function finishSearch(sim: SimState, p: PlayerState, id: number): void {
     ...(bowlLoot ? { title: bowlLoot.label } : {}),
     ...(clue ? { clue: true as const, ...(clueItem ? { clueItem } : {}) } : {})
   });
+  checkBuildingClear(sim, container);
   stopSearch(p);
   p.searchSpent = true;
+}
+
+function checkBuildingClear(sim: SimState, container: Container): void {
+  const buildingId = container.building;
+  const inBuilding = buildingId !== undefined;
+  if (!inBuilding) return;
+
+  const allContainers = townContainers(sim.map);
+  const buildingMap = mapRootBuildingContainers(sim.map, allContainers);
+  const building = sim.map.buildings.find((b) => b.id === buildingId);
+  const rootId = building ? rootBuildingIdOf(building) : buildingId;
+
+  const alreadyCleared = sim.clearedBuildings.has(rootId);
+  if (alreadyCleared) return;
+
+  const houseContainers = buildingMap.get(rootId);
+  const hasContainers = houseContainers !== undefined && houseContainers.length > 0;
+  if (!hasContainers) return;
+
+  const allOpened = houseContainers.every((c) => sim.containers[c.id]?.opened === true);
+  if (!allOpened) return;
+
+  sim.clearedBuildings.add(rootId);
+  const totalXp = buildingTotalClearXp(houseContainers);
+  const searchers: EntityId[] = houseContainers
+    .map((c) => sim.containers[c.id]?.openedBy)
+    .filter((id): id is EntityId => id !== undefined);
+
+  const shares = splitBuildingClearXp(totalXp, searchers);
+  const rootBuilding = sim.map.buildings.find((b) => b.id === rootId);
+  const buildingKind = rootBuilding ? rootBuilding.kind : container.buildingKind === 'outdoors' ? 'house' : container.buildingKind;
+
+  emit(sim, {
+    type: 'building_cleared',
+    buildingId: rootId,
+    buildingKind,
+    points: totalXp,
+    shares,
+  });
 }
 
 /** Ends a search the player or a teammate has put a stop to. */

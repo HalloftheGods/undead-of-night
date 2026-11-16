@@ -62,6 +62,8 @@ function emptyWorld(sim: SimState, level: number): void {
   sim.pickups = [];
   sim.entered = new Set();
   sim.clues = new Map();
+  sim.clearedBuildings = new Set();
+  sim.debrief = null;
   sim.events = [];
   clearVehicles(sim);
   sim.flow.invalidate();

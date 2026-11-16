@@ -1,8 +1,8 @@
 import { TICK_DT } from './constants.ts';
 import { enterTown, moveToNextTown, placeAtEntry } from './level-change.ts';
-import { FINAL_LEVEL, FIRST_LEVEL } from './levels.ts';
+import { FINAL_LEVEL, FIRST_LEVEL, townName } from './levels.ts';
 import { giveReturnKit, giveStartingLoadout } from './player-health.ts';
-import type { GameOverStats, RunOutcome } from './protocol.ts';
+import type { EntityId, GameOverStats, LevelDebriefStats, PlayerDebriefStats, RunOutcome } from './protocol.ts';
 import { resetSurvivalNeeds } from './survival-needs.ts';
 import type { SimState } from './sim-state.ts';
 import { overrunFalls } from './overrun-fight.ts';
@@ -12,16 +12,101 @@ import { round2 } from './snapshot-build.ts';
 import { resetHomeRoom, vanLeaves, wipeToBunker } from './trip.ts';
 import { hordesSurvivedHere } from './waves.ts';
 import { openBench } from './workbench.ts';
+import { townContainers } from './containers.ts';
+import { townBuildings } from './storeys.ts';
+import { buildingTotalClearXp, mapRootBuildingContainers, splitBuildingClearXp } from './building-clear-reward.ts';
+
+export function assembleDebrief(sim: SimState): LevelDebriefStats {
+  const allContainers = townContainers(sim.map);
+  const searchedCount = sim.containers.filter((c) => c.opened).length;
+  const totalContainers = allContainers.length;
+
+  const surfaceBuildings = townBuildings(sim.map);
+  const buildingsCleared = sim.clearedBuildings.size;
+  const totalBuildings = surfaceBuildings.length;
+
+  let totalClearXp = 0;
+  const containerMap = mapRootBuildingContainers(sim.map, allContainers);
+  for (const rootId of sim.clearedBuildings) {
+    const list = containerMap.get(rootId);
+    if (list) totalClearXp += buildingTotalClearXp(list);
+  }
+
+  const durationSec = Math.round((sim.tick - sim.runStartTick) * TICK_DT * 10) / 10;
+  const townNameStr = townName(sim.level);
+
+  let totalKills = 0;
+  const playerStats: PlayerDebriefStats[] = [];
+
+  for (const p of sim.players) {
+    totalKills += p.kills;
+    let mySearches = 0;
+    for (const c of sim.containers) {
+      if (c.opened && c.openedBy === p.id) {
+        mySearches += 1;
+      }
+    }
+
+    let myClearXp = 0;
+    for (const rootId of sim.clearedBuildings) {
+      const list = containerMap.get(rootId) ?? [];
+      const bXp = buildingTotalClearXp(list);
+      const searchers = list
+        .map((c) => sim.containers[c.id]?.openedBy)
+        .filter((id): id is EntityId => id !== undefined);
+      const shares = splitBuildingClearXp(bXp, searchers);
+      const myShare = shares.find((s) => s.playerId === p.id);
+      if (myShare) myClearXp += myShare.points;
+    }
+
+    playerStats.push({
+      id: p.id,
+      name: p.name,
+      skin: p.skin,
+      kills: p.kills,
+      headshots: 0,
+      containersSearched: mySearches,
+      clearXpEarned: myClearXp,
+    });
+  }
+
+  const debrief: LevelDebriefStats = {
+    level: sim.level,
+    townName: townNameStr,
+    durationSec,
+    kills: totalKills,
+    headshots: 0,
+    containersSearched: searchedCount,
+    totalContainers,
+    buildingsCleared,
+    totalBuildings,
+    totalClearXp,
+    players: playerStats,
+  };
+
+  sim.debrief = debrief;
+  return debrief;
+}
+
+export function finishDebrief(sim: SimState): void {
+  sim.debrief = null;
+  if (sim.homeRun) {
+    vanLeaves(sim);
+  } else {
+    const lastTown = sim.level >= FINAL_LEVEL;
+    if (lastTown) endRun(sim, 'victory');
+    else if (!openBench(sim)) moveToNextTown(sim);
+  }
+}
 
 /** The one way out of `exitBoarded`. In a home room the van runs between the bunker and a town, so no run ends here. */
 export function leaveTown(sim: SimState): void {
-  if (sim.homeRun) {
-    vanLeaves(sim);
+  const lastTown = sim.level >= FINAL_LEVEL;
+  if (lastTown && !sim.homeRun) {
+    endRun(sim, 'victory');
     return;
   }
-  const lastTown = sim.level >= FINAL_LEVEL;
-  if (lastTown) endRun(sim, 'victory');
-  else if (!openBench(sim)) moveToNextTown(sim);
+  assembleDebrief(sim);
 }
 
 /** In a home room a body on its feet inside its grace period is a refresh that may come back, so it still counts. A downed one has no one to lift it. */

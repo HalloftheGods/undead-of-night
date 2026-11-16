@@ -20,6 +20,7 @@ import type { BenchAction, BenchView } from './workbench.ts';
 import type { GridItem } from './grid-inventory.ts';
 import type { ContainerKind } from './containers.ts';
 import type { VehicleBody, VehicleFacing } from './vehicle-bodies.ts';
+import type { BuildingKind } from './map-protocol.ts';
 
 export { GAME_EVENT_TYPES, GAME_PHASES, PICKUP_TYPES };
 export type { BackpackTier, FortificationInventory, FortificationItemType, GridItem, SurvivalNeeds };
@@ -257,6 +258,30 @@ export interface GameOverStats {
   readonly players: readonly PlayerRunStats[];
 }
 
+export interface PlayerDebriefStats {
+  readonly id: EntityId;
+  readonly name: string;
+  readonly skin: number;
+  readonly kills: number;
+  readonly headshots: number;
+  readonly containersSearched: number;
+  readonly clearXpEarned: number;
+}
+
+export interface LevelDebriefStats {
+  readonly level: number;
+  readonly townName: string;
+  readonly durationSec: number;
+  readonly kills: number;
+  readonly headshots: number;
+  readonly containersSearched: number;
+  readonly totalContainers: number;
+  readonly buildingsCleared: number;
+  readonly totalBuildings: number;
+  readonly totalClearXp: number;
+  readonly players: readonly PlayerDebriefStats[];
+}
+
 /** The van out of town, there once the level's last horde is survived. Draw it as a `van_h` prop at x,y. */
 export interface ExitEntity {
   readonly x: number;
@@ -277,6 +302,13 @@ export type GameEvent =
   | { readonly type: 'move_no'; readonly playerId: EntityId; readonly moveId: number; readonly reason: MoveReason }
   /** A world pickup went into the bag: where it was picked up (x, y) and the cell it was packed into. */
   | { readonly type: 'item_in'; readonly playerId: EntityId; readonly itemId: string; readonly itemType: string; readonly x: number; readonly y: number; readonly grid: BagGridId; readonly cellX: number; readonly cellY: number }
+  /** A survivor tossed an item along the ground: it flies from (fromX, fromY) and settles at (toX, toY). */
+  /** One survivor started handing a teammate an item; `line` is what the giver says. */
+  | { readonly type: 'care_start'; readonly giver: EntityId; readonly receiver: EntityId; readonly itemType: string; readonly line: string }
+  | { readonly type: 'care_reply'; readonly receiver: EntityId; readonly line: string }
+  | { readonly type: 'care_break'; readonly giver: EntityId }
+  | { readonly type: 'care_done'; readonly giver: EntityId; readonly receiver: EntityId; readonly itemType: string; readonly line: string }
+  | { readonly type: 'item_tossed'; readonly playerId: EntityId; readonly itemType: string; readonly fromX: number; readonly fromY: number; readonly toX: number; readonly toY: number }
   | { readonly type: 'zombie_alert'; readonly zombieId: EntityId; readonly zombieType: ZombieType; readonly x: number; readonly y: number }
   /** A roamer put its nose on someone's snow trail and started following it. */
   | { readonly type: 'zombie_track'; readonly zombieId: EntityId; readonly zombieType: ZombieType; readonly x: number; readonly y: number }
@@ -302,14 +334,8 @@ export type GameEvent =
   | { readonly type: 'pickup'; readonly playerId: EntityId; readonly pickup: PickupType; readonly x: number; readonly y: number }
   /** Someone took the stairs: x, y is where they came out, `to` what the stairs led to. */
   | { readonly type: 'stairs_taken'; readonly playerId: EntityId; readonly x: number; readonly y: number; readonly to: string }
-  /** One survivor started handing a teammate an item; `line` is what the giver says. */
-  | { readonly type: 'care_start'; readonly giver: EntityId; readonly receiver: EntityId; readonly itemType: string; readonly line: string }
-  | { readonly type: 'care_reply'; readonly receiver: EntityId; readonly line: string }
-  | { readonly type: 'care_break'; readonly giver: EntityId }
-  | { readonly type: 'care_done'; readonly giver: EntityId; readonly receiver: EntityId; readonly itemType: string; readonly line: string }
-  /** A survivor tossed an item along the ground: it flies from (fromX, fromY) and settles at (toX, toY). */
-  | { readonly type: 'item_tossed'; readonly playerId: EntityId; readonly itemType: string; readonly fromX: number; readonly fromY: number; readonly toX: number; readonly toY: number }
   | { readonly type: 'container_opened'; readonly playerId: EntityId; readonly container: number; readonly x: number; readonly y: number; readonly found: boolean; readonly noisy: boolean; readonly bottle?: boolean; readonly stash?: 'firework' | 'fountain' | 'candy'; readonly candy?: CandyId; readonly full?: true; readonly fireworks?: number; readonly clue?: true; readonly clueItem?: string; readonly items?: readonly GridItem[]; readonly reopen?: boolean; readonly title?: string; readonly kind?: ContainerKind }
+  | { readonly type: 'building_cleared'; readonly buildingId: string; readonly buildingKind: BuildingKind; readonly points: number; readonly shares: readonly { readonly playerId: EntityId; readonly points: number; readonly containers: number }[] }
   /** A thrown bottle broke at x,y, thrown from fromX,fromY. */
   | { readonly type: 'bottle_smash'; readonly playerId: EntityId; readonly x: number; readonly y: number; readonly fromX: number; readonly fromY: number }
   /** A firework landed at x,y as a ground spinner, throwing sparks `radius` round it for `sec`. */
@@ -445,6 +471,8 @@ export interface SnapshotPacket {
   /** Events since the previous snapshot, in order. */
   readonly events: readonly GameEvent[];
   readonly gameOver: GameOverStats | null;
+  /** End of level debrief stats shown on the debrief canvas before continuing to next town. */
+  readonly debrief?: LevelDebriefStats | null;
   /** Whether the town's floodwater has been drained via the sewage drain. Left off when false. */
   readonly drained?: boolean;
   /** Whether the town's power grid has been restored via the power substation. Left off when false. */

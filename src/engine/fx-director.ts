@@ -209,7 +209,12 @@ export class FxDirector {
     car_alarm: (event) =>
       this.particles.addText("CAR ALARM", event.x, event.y - NOTE_HEIGHT, SCORE_COLOR),
     radio_tower_alarm: (event) => {
-      this.particles.addText("HORDE CALLED EARLY!", event.x, event.y - NOTE_HEIGHT, hitPalette().danger);
+      this.particles.addText(
+        "HORDE CALLED EARLY!",
+        event.x,
+        event.y - NOTE_HEIGHT,
+        hitPalette().danger
+      );
       this.effects.addShake(4);
     },
     zombie_status: (event) => this.onZombieStatus(event),
@@ -412,7 +417,7 @@ export class FxDirector {
   /** Green glass across the ground where a thrown bottle broke. */
   private onBottleSmash(x: number, y: number): void {
     this.burstDots(x, y, 0, BOTTLE_GLASS, 14, 70, false, Math.PI);
-    this.particles.addText("SMASH", x, y - NOTE_HEIGHT, SCORE_COLOR);
+    this.particles.addText("SMAAAASH!!!", x, y - NOTE_HEIGHT, SCORE_COLOR);
   }
 
   /** A firework lands and catches: a pop of colored sparks, then it spins on the ground. */
@@ -494,8 +499,8 @@ export class FxDirector {
   /** Radiant golden spark burst, pulse glow, and subtle screen flash on leveling up. */
   triggerLevelUp(x: number, y: number): void {
     this.burstDots(x, y, 0, SPARK, 28, 140, true, Math.PI);
-    this.burstDots(x, y, -Math.PI / 2, ['#ffe066', '#ffffff', '#ffd700'], 16, 160, true, Math.PI);
-    this.pulses.push({ x, y, radius: 90, color: '#ffe066', life: 0.45, maxLife: 0.45 });
+    this.burstDots(x, y, -Math.PI / 2, ["#ffe066", "#ffffff", "#ffd700"], 16, 160, true, Math.PI);
+    this.pulses.push({ x, y, radius: 90, color: "#ffe066", life: 0.45, maxLife: 0.45 });
     this.effects.addFlash(0.25);
   }
 }

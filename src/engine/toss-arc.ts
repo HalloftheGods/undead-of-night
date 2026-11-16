@@ -1,7 +1,7 @@
 import type { GameEvent } from '../../shared/protocol.ts';
 import type { ArtBook } from '../art/types.ts';
 import { lootSprite } from '../game/inventory/loot-item-art.ts';
-import { drawSprite } from './sprite-cache.ts';
+import { drawSprite, spriteCanvas } from './sprite-cache.ts';
 
 /** How long a toss takes, from the hand to the last settle. */
 export const TOSS_MS = 500;
@@ -44,6 +44,15 @@ export class TossArcs {
     this.tosses.push({ type: event.itemType, fromX: event.fromX, fromY: event.fromY, toX: event.toX, toY: event.toY, at: now });
   }
 
+  isFlying(type: string, x: number, y: number, now: number): boolean {
+    this.tosses = this.tosses.filter((toss) => now - toss.at < TOSS_MS);
+    return this.tosses.some((toss) => {
+      const isSameType = toss.type === type || (toss.type === 'candy' && type.startsWith('candy'));
+      const isNearTarget = Math.hypot(toss.toX - x, toss.toY - y) < 8;
+      return isSameType && isNearTarget;
+    });
+  }
+
   draw(ctx: CanvasRenderingContext2D, art: ArtBook, left: number, top: number, now: number): void {
     this.tosses = this.tosses.filter((toss) => now - toss.at < TOSS_MS);
     for (const toss of this.tosses) {
@@ -55,8 +64,22 @@ export class TossArcs {
       ctx.fillRect(Math.round(x - 3), Math.round(y), 6, 2);
       const sprite = lootSprite(art, toss.type === 'candy' ? 'candy' : toss.type);
       const lift = arcHeight(t);
-      if (sprite) drawSprite(ctx, sprite, Math.round(x), Math.round(y - lift));
-      else ctx.fillRect(Math.round(x - 2), Math.round(y - lift - 2), 4, 4);
+      const isFarBottle = toss.type === 'bottle' && Math.hypot(toss.toX - toss.fromX, toss.toY - toss.fromY) > 40;
+      const shouldSpin = Boolean(sprite) && isFarBottle;
+      if (shouldSpin && sprite) {
+        const angle = t * Math.PI * 4;
+        const cx = Math.round(x);
+        const cy = Math.round(y - lift);
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(angle);
+        ctx.drawImage(spriteCanvas(sprite), -sprite.ax, -sprite.ay);
+        ctx.restore();
+      } else if (sprite) {
+        drawSprite(ctx, sprite, Math.round(x), Math.round(y - lift));
+      } else {
+        ctx.fillRect(Math.round(x - 2), Math.round(y - lift - 2), 4, 4);
+      }
     }
   }
 }

@@ -6,7 +6,7 @@ import { BUILDING_DEFS, PROP_DEFS, TILE_SIZE } from '@shared/protocol.ts';
 import type { LeftoverView } from '@shared/leftovers.ts';
 import type { BuildingInstance, DropView, EntityId, ExitEntity, PlayerEntity, TileKind, WorldMap, ZombieEntity } from '@shared/protocol.ts';
 import { drawOutlinedText, FONT_HEIGHT, textWidth } from '@engine/bitmap-font.ts';
-import { paintBuilding } from './map-buildings.ts';
+import { BUILDING_LOOK, paintBuilding, PLACE_GROUPS, type PlaceGroup } from './map-buildings.ts';
 import { paintCamp, paintCampGaps } from './camp-map.ts';
 import { drawCursor } from './map-cursor.ts';
 import { drawZombieBlips, MapFog } from './map-fog.ts';
@@ -160,6 +160,13 @@ const UNDERGROUND_LABEL = 'UNDERGROUND - SEWERS';
 /** A cursor that holds still, with its full label: what a paint with no clock gets. */
 const STEADY_CLOCK: CursorClock = { nowMs: 0, openedMs: 0, reducedMotion: true };
 
+export interface PlaceGroupStatus {
+  readonly group: PlaceGroup;
+  readonly total: number;
+  readonly cleared: number;
+  readonly isCleared: boolean;
+}
+
 /** The town as a player would sketch it: streets, buildings by use, names, and where they have been. */
 export class TownMapView {
   readonly width: number;
@@ -189,13 +196,16 @@ export class TownMapView {
     this.base = document.createElement('canvas');
     this.base.width = this.width;
     this.base.height = this.height;
+    const buildingById = new Map(map.buildings.map((b) => [b.id, b]));
     for (const container of townContainers(map)) {
       if (!container.building) continue;
-      const list = this.buildingContainers.get(container.building);
+      const b = buildingById.get(container.building);
+      const rootId = b?.of ?? container.building;
+      const list = this.buildingContainers.get(rootId);
       if (list) {
         list.push(container.id);
       } else {
-        this.buildingContainers.set(container.building, [container.id]);
+        this.buildingContainers.set(rootId, [container.id]);
       }
     }
     this.paintBase();
@@ -323,6 +333,8 @@ export class TownMapView {
   /** The player has been inside. Reset by making a new view for a new run. */
   markVisited(id: string): void {
     this.visited.add(id);
+    const building = this.building(id);
+    if (building?.of) this.visited.add(building.of);
   }
 
   clearVisited(): void {
@@ -356,6 +368,39 @@ export class TownMapView {
     const hasContainers = containers !== undefined && containers.length > 0;
     if (!hasContainers) return false;
     return containers.every((containerId) => this.opened.has(containerId));
+  }
+
+  placeStatuses(): readonly PlaceGroupStatus[] {
+    const counts = new Map<PlaceGroup, { total: number; cleared: number }>();
+    for (const group of PLACE_GROUPS) {
+      counts.set(group, { total: 0, cleared: 0 });
+    }
+
+    for (const building of this.map.buildings) {
+      if (building.of) continue;
+      const look = BUILDING_LOOK[building.kind];
+      if (!look) continue;
+      const containers = this.buildingContainers.get(building.id);
+      const hasContainers = containers !== undefined && containers.length > 0;
+      if (!hasContainers) continue;
+
+      const tally = counts.get(look.group);
+      if (!tally) continue;
+      tally.total++;
+      if (this.isCleared(building.id)) {
+        tally.cleared++;
+      }
+    }
+
+    return PLACE_GROUPS.map((group) => {
+      const tally = counts.get(group)!;
+      return {
+        group,
+        total: tally.total,
+        cleared: tally.cleared,
+        isCleared: tally.total > 0 && tally.cleared >= tally.total,
+      };
+    });
   }
 
   building(id: string): BuildingInstance | null {
@@ -472,7 +517,7 @@ export class TownMapView {
     }
     for (const id of this.visited) {
       const building = this.building(id);
-      if (!building) continue;
+      if (!building || building.of) continue;
       if (this.isCleared(id)) this.drawCross(ctx, building);
       this.drawTick(ctx, building);
     }

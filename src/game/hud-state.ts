@@ -26,6 +26,7 @@ import type {
   EntityId,
   GameOverStats,
   GamePhase,
+  LevelDebriefStats,
   LobbyStatePacket,
   PlayerEntity,
   PlayerStatus,
@@ -248,6 +249,8 @@ export interface UiState {
   /** The style of the run under way, and null off a run. In co-op it is the room's, which can differ from `style`. */
   readonly runStyle: GameStyle | null;
   readonly result: RunResult | null;
+  /** Level debrief stats shown on pure canvas between town levels. Null outside debrief. */
+  readonly debrief?: LevelDebriefStats | null;
   readonly restarting: boolean;
   readonly lostReason: string;
   readonly signalWeak: boolean;
@@ -281,6 +284,7 @@ export interface UiState {
     readonly items: readonly GridItem[];
     readonly propIndex?: number;
   } | null;
+  readonly promoScene?: boolean;
 }
 
 export function buildHud(

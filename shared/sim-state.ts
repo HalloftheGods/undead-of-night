@@ -18,6 +18,7 @@ import type {
   GameEvent,
   GameOverStats,
   GamePhase,
+  LevelDebriefStats,
   PickupEntity,
   PlayerEntity,
   Stance,
@@ -405,10 +406,14 @@ export interface SimState {
   entered: Set<string>;
   /** Buildings revealed by a map cache clue, mapped to the item type found. */
   clues: Map<string, string>;
+  /** Buildings where 100% of containers have been searched. */
+  clearedBuildings: Set<string>;
   /** At the same index as the town's container list. */
   containers: ContainerState[];
   events: GameEvent[];
   gameOver: GameOverStats | null;
+  /** End of level debrief stats compiled when the van leaves. Null during active town play. */
+  debrief: LevelDebriefStats | null;
   nextEntity: number;
   readonly workbench: WorkbenchMode;
   /** Set while the run is held at the workbench. */

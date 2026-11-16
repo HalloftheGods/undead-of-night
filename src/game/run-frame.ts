@@ -56,7 +56,7 @@ import type { Anchor } from './player-anchor.ts';
 import { tickRunAudio } from './run-audio.ts';
 import { heldInfo } from './held-cursor.ts';
 import { isLootPadInCharge } from './inventory/loot-pad.ts';
-import { inventoryChoosing } from './inventory/inventory-hands.ts';
+import { inventoryChoosing, inventoryUp } from './inventory/inventory-hands.ts';
 import { PAD } from './input/gamepad-input.ts';
 import { padFamily, padLabel } from './input/pad-glyphs.ts';
 import { deathFade, healthFraction } from './run-hud.ts';
@@ -74,6 +74,7 @@ export interface RunFrameHost {
   readonly playing: () => boolean;
   /** Read once, as the solo session reads it: the blast door is drawn only with the overrun on. */
   readonly overrunOn: boolean;
+  readonly promoScene?: () => boolean;
 }
 
 /** One frame of a run: aim, predict, send input, draw, and the HUD after. Keeps the last picture for a held or frozen frame. */
@@ -203,9 +204,11 @@ export class RunFrame {
     const padSpot = padAims ? this.padSpot : null;
     // The mouse over the open inventory's own panels is choosing, not aiming: the OS cursor shows there instead.
     const choosing = !padAims && !touch && inventoryChoosing(input.pointerClientX, input.pointerClientY);
+    const isPromo = this.host.promoScene?.() ?? (ui.value.promoScene === true);
     // A finger picks a spot on the picture, so the picture must not lean toward it and move the spot.
     const scene: SceneView = {
       ...entities,
+      promoScene: isPromo,
       ghost: over ? null : this.ghost(world, ms),
       atHome: isBunkerMap(world.worldMap),
       closedStalls: this.closedStalls(),
@@ -222,7 +225,7 @@ export class RunFrame {
       moveRightKey: moveLabelFor('moveRight', 'RIGHT/D', padAims),
       pointerX: over || touch ? null : padAims ? padSpot?.x ?? null : pointerX,
       pointerY: over || touch ? null : padAims ? padSpot?.y ?? null : pointerY,
-      showCrosshair: this.host.playing() && !menuUp && !ui.value.mapOpen && !this.host.parts.bench.open && !isTransitioning && !choosing,
+      showCrosshair: !isPromo && this.host.playing() && !menuUp && !ui.value.mapOpen && !this.host.parts.bench.open && !isTransitioning && !choosing,
       touch,
       held: this.heldView(renderer),
     };
@@ -281,6 +284,7 @@ export class RunFrame {
   /** The flashlight follows a stick, a touch look or the pointer, measured from the survivor's chest. */
   /** The item in hand, with the pointer, while the inventory is open. Null when nothing is held. */
   private heldView(renderer: WorldRenderer): SceneView['held'] {
+    if (!inventoryUp()) return null;
     const info = heldInfo();
     if (info === null) return null;
     const { input } = this.host.parts;

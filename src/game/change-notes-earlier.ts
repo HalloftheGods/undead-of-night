@@ -266,7 +266,7 @@ export const EARLIER_NOTES: readonly ChangeNote[] = [
     title: "Left behind",
     deck: "The map marks every building you walked out of with supplies still lying inside.",
     points: [
-      "A small mark per kind sits at the building's foot: a red cross for medical, yellow rounds for ammo, a grey gun, a violet diamond for parts and finds.",
+      "A small mark per kind sits at the building's foot: a red cross for medical, yellow rounds for ammo, a grey gun, a violet diamond for Other Loot.",
       "Floors upstairs and in the cellar count toward their house. The mark goes once it is empty.",
       "In co-op the whole team shares the marks, wherever each of you is."
     ]

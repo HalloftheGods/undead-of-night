@@ -439,3 +439,52 @@ describe('occlusion', () => {
     expect(grid.cast(100, 500, 0, 200)).toBe(200);
   });
 });
+
+describe('occlusion: trees, lamps, barrels and zombies', () => {
+  // A tree's trunk is 12 wide and 8 deep, so its box is [194,192,206,200] here.
+  const map = {
+    width: 800,
+    height: 800,
+    cols: 50,
+    rows: 50,
+    buildings: [],
+    props: [
+      { kind: 'tree' as const, x: 200, y: 200 },
+      { kind: 'hydrant' as const, x: 400, y: 200 },
+    ],
+  } as unknown as WorldMap;
+  const grid = new OcclusionGrid(map);
+  const walker = (x: number, y: number, health = 60) => ({ id: 1, type: 'walker', x, y, angle: 0, health, maxHealth: 60, attacking: false });
+
+  it('stops a beam that runs into a tree trunk', () => {
+    const dist = grid.cast(100, 196, 0, 300);
+    expect(dist).toBeGreaterThan(90);
+    expect(dist).toBeLessThan(130);
+    expect(grid.cast(100, 50, 0, 300)).toBe(300);
+  });
+
+  it('lets a beam through a low prop like a hydrant', () => {
+    expect(grid.cast(300, 196, 0, 300)).toBe(300);
+  });
+
+  // Clear of the tree, whose box sits at y 192 to 200.
+  it('stops a beam at a zombie standing in its way', () => {
+    grid.setBodies([walker(200, 150) as never]);
+    const dist = grid.cast(100, 150, 0, 300);
+    expect(dist).toBeGreaterThan(85);
+    expect(dist).toBeLessThan(120);
+    grid.setBodies([]);
+  });
+
+  it('lets a beam through a zombie that is dead or dormant', () => {
+    grid.setBodies([walker(200, 150, 0) as never, { ...walker(200, 150), dormant: true } as never]);
+    expect(grid.cast(100, 150, 0, 300)).toBe(300);
+    grid.setBodies([]);
+  });
+
+  it('does not let a zombie standing on the beam start black out the whole beam', () => {
+    grid.setBodies([walker(100, 150) as never]);
+    expect(grid.cast(100, 150, 0, 300)).toBe(300);
+    grid.setBodies([]);
+  });
+});

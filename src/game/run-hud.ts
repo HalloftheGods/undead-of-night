@@ -180,6 +180,9 @@ export class RunHud {
   /** What the home screens need that no snapshot carries. */
   private readonly homeFacts: () => HomeFacts;
   private town: TownMapView | null = null;
+  get townView(): TownMapView | null {
+    return this.town;
+  }
   private townCanvas: HTMLCanvasElement | null = null;
   private lastHudMs = 0;
   /** When the open map first painted, so its cursor's long label knows how old it is. */

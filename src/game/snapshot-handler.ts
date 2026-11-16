@@ -25,6 +25,7 @@ import { loadBests } from "./trip-record.ts";
 import { CANDIES } from "../../shared/candy.ts";
 import type { StatKey } from "../../shared/character-stats.ts";
 import { crashShake } from "../engine/vehicle-draw.ts";
+import { TOSS_MS } from "../engine/toss-arc.ts";
 import {
   addExperience,
   allocateEarnedAp,
@@ -58,6 +59,7 @@ export class SnapshotHandler {
     reload: 0,
     speed: 0
   };
+  private smashTimers = new Set<ReturnType<typeof setTimeout>>();
 
   constructor(
     private readonly host: RunHost,
@@ -72,6 +74,8 @@ export class SnapshotHandler {
     // Off the stats, not the last frame: a run that ends between ticks may never have a frame of its own.
     const runRestarted = state.runResult !== null && snapshot.gameOver === null;
     if (runRestarted) {
+      for (const timer of this.smashTimers) clearTimeout(timer);
+      this.smashTimers.clear();
       world.restart();
       renderer?.reset();
       stage.rewind();
@@ -116,6 +120,10 @@ export class SnapshotHandler {
     if (onATrip) home.observe(snapshot, world.localId, now);
     const justEnded = snapshot.gameOver !== null && state.runResult === null;
     if (justEnded) this.enterGameOver(snapshot.gameOver!, world.localId, now);
+    const debrief = snapshot.debrief ?? null;
+    if (this.host.ui.value.debrief !== debrief) {
+      this.host.publish({ debrief });
+    }
   }
 
   /** The kills in this snapshot that deserve a beat: a held frame, a flash, a word over the action. */
@@ -195,6 +203,22 @@ export class SnapshotHandler {
     after: PlayerEntity | null
   ): void {
     const { audio, renderer, runHud } = this.host;
+    const isFarThrow = event.type === "bottle_smash" && Math.hypot(event.x - event.fromX, event.y - event.fromY) > 40;
+    const isFarBottleSmash = event.type === "bottle_smash" && isFarThrow;
+    if (isFarBottleSmash) {
+      const handleDelayedSmash = () => {
+        this.smashTimers.delete(timer);
+        audio.handleEvent(event, world.localId);
+        renderer?.handleEvent(event, {
+          localId: world.localId,
+          localX: world.predictor.x,
+          localY: world.predictor.y
+        });
+      };
+      const timer = setTimeout(handleDelayedSmash, TOSS_MS);
+      this.smashTimers.add(timer);
+      return;
+    }
     audio.handleEvent(event, world.localId);
     const note = event.type === "pickup" ? pickupNote(event.pickup, before, after) : undefined;
     renderer?.handleEvent(event, {
@@ -207,6 +231,7 @@ export class SnapshotHandler {
     if (isLocalCrash) renderer?.effects.addShake(crashShake(event.strength));
     const isLocalContainer = event.type === "container_opened" && event.playerId === world.localId;
     if (isLocalContainer) this.actionScores.search += 8;
+    if (event.type === "container_opened") this.host.runHud.townView?.markOpened(event.container);
     const isLocalPlank = event.type === "plank_added";
     if (isLocalPlank) this.actionScores.strength += 6;
     const isLocalMelee = event.type === "melee" && event.playerId === world.localId;
@@ -216,19 +241,34 @@ export class SnapshotHandler {
     const isLocalHeadshotAction = event.type === "headshot" && event.playerId === world.localId;
     if (isLocalHeadshotAction) this.actionScores.stealth += 3;
 
+    const myClearShare =
+      event.type === "building_cleared"
+        ? event.shares.find((s) => s.playerId === world.localId && s.points > 0)
+        : undefined;
+    if (myClearShare) this.actionScores.search += myClearShare.points;
+
     const isLocalZombieKill =
       event.type === "zombie_die" && event.killerId === world.localId && event.points > 0;
     const isLocalHeadshot =
       event.type === "headshot" && event.playerId === world.localId && event.points > 0;
+    const earnedPoints =
+      isLocalZombieKill || isLocalHeadshot ? event.points : (myClearShare?.points ?? 0);
     const banksXp = !this.host.state.testDrive;
-    const isLocalScoreGain = banksXp && (isLocalZombieKill || isLocalHeadshot);
+    const isLocalScoreGain = banksXp && earnedPoints > 0;
     if (isLocalScoreGain) {
       // XP belongs to the survivor being played, so each one levels on their own.
       const playerSkin = after?.skin ?? before?.skin ?? 0;
       const currentProg = loadProgression(playerSkin);
-      const gain = addExperience(currentProg, event.points);
+      const gain = addExperience(currentProg, earnedPoints);
 
       renderer?.flashXp(xpBarFraction(gain.state), gain.newLevel);
+
+      if (myClearShare) {
+        const playerX = after ? after.x : world.predictor.x;
+        const playerY = after ? after.y : world.predictor.y;
+        renderer?.addFloatingText(`+${myClearShare.points} XP`, playerX, playerY - 14, "#ffe066", 1.8);
+        runHud.callout({ text: `HOUSE CLEARED: +${myClearShare.points} XP`, tone: "chain", holdMs: 2000 }, now);
+      }
 
       if (gain.didLevelUp) {
         const winningStat =

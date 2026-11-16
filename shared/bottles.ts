@@ -49,6 +49,7 @@ export function updateThrow(sim: SimState, p: PlayerState): void {
   p.throwCooldown = BOTTLE_COOLDOWN_SEC;
   const spot = landingSpot(sim, p);
   makeNoise(sim, spot.x, spot.y, BOTTLE_NOISE_RADIUS);
+  emit(sim, { type: 'item_tossed', playerId: p.id, itemType: 'bottle', fromX: p.x, fromY: p.y, toX: spot.x, toY: spot.y });
   emit(sim, { type: 'bottle_smash', playerId: p.id, x: spot.x, y: spot.y, fromX: p.x, fromY: p.y });
 }
 

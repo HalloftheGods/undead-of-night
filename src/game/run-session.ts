@@ -97,6 +97,7 @@ export interface RunHost {
 interface DevRunOptions {
   readonly testDrive?: boolean;
   readonly hudTest?: boolean;
+  readonly promoScene?: boolean;
   readonly character?: number;
 }
 
@@ -159,11 +160,16 @@ export class RunSession {
     this.beginDevRun({ testDrive: true, hudTest: true, character: randomSurvivor() });
   }
 
+  /** Dev promo scene: a 5-survivor squad and zombie horde for in-game screenshots. */
+  startPromoScene(): void {
+    this.beginDevRun({ promoScene: true, character: 0 });
+  }
+
   private beginDevRun(fixed: DevRunOptions): void {
     if (!this.canStart()) return;
     this.host.audio.unlock();
     this.host.audio.playUi("start");
-    this.host.publish({ mode: "solo", error: null });
+    this.host.publish({ mode: "solo", error: null, promoScene: fixed.promoScene === true });
     this.host.state.daily = null;
     this.host.state.ghost = null;
     this.beginSession(new LocalSession(), "arcade", undefined, fixed);
@@ -206,6 +212,10 @@ export class RunSession {
 
   lobbyToggleTimer(): void {
     this.host.state.transport?.sendLobbyToggleTimer?.();
+  }
+
+  continueDebrief(): void {
+    this.host.state.transport?.sendDebriefContinue?.();
   }
 
   /** Arcade from `chosen` (guarded by what is unlocked) or, with none, the furthest level reached. Does nothing if there is no later level to start at. */
@@ -520,6 +530,7 @@ export class RunSession {
       };
     }
     this.followStyle(style);
+    this.host.publish({ promoScene: fixed.promoScene === true });
     // No callsign (blank or refused) goes out as '': every screen then labels the player by survivor name.
     const roomDecides = transport.kind === "coop";
     // Co-op rooms start everyone equal, and Campaign brings its gear from the locker: the streak kit is for solo town runs.
@@ -534,7 +545,8 @@ export class RunSession {
       streakNight,
       ...(fixed.seed === undefined ? {} : { seed: fixed.seed }),
       ...(fixed.testDrive ? { testDrive: true } : {}),
-      ...(fixed.hudTest ? { hudTest: true } : {})
+      ...(fixed.hudTest ? { hudTest: true } : {}),
+      ...(fixed.promoScene ? { promoScene: true } : {})
     };
     const shouldConnect = roomDecides || !playsFromHome(style);
     if (shouldConnect) transport.connect({ ...options, startLevel });

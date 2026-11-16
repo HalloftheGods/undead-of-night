@@ -7,7 +7,8 @@ import { PLAYER_RADIUS, ZOMBIES as ZOMBIE_STATS } from '../shared/constants.ts';
 import { TILE_SIZE } from '../shared/protocol.ts';
 import type { BuildingKind, PropKind, TileKind, WeaponId, ZombieType } from '../shared/protocol.ts';
 import type { ArtBook, PixelSprite } from '../src/art/types.ts';
-import { NIGHT_AMBIENT } from '../src/engine/lighting.ts';
+/** Moonlight. Copied from NIGHT_AMBIENT in src/engine/lighting.ts. */
+const NIGHT_AMBIENT = [24, 28, 52] as const;
 import { drawSprite, Sheet } from './sheet.ts';
 
 /** The engine's shadow: rgba(4, 5, 10, 0.6), see SHADOW_ALPHA in src/engine/entity-renderer.ts. */
@@ -17,7 +18,7 @@ const SHADOW_RGB = [4, 5, 10] as const;
 const HAZE = 0.11;
 /** The viewer's own glow: #b8a488 at 0.62, radius 38 (copied values, not imported). */
 const AURA = { radius: 38, r: (0xb8 / 255) * 0.62, g: (0xa4 / 255) * 0.62, b: (0x88 / 255) * 0.62 };
-const VIEWER = { x: 218, y: 186 };
+const VIEWER = { x: 236, y: 195 };
 
 const WIDTH = 480;
 const HEIGHT = 270;
@@ -44,24 +45,28 @@ function tileAt(col: number, row: number): TileKind {
 
 /** Kind, facade, then the centre of the footprint's south edge. */
 const BUILDINGS: readonly (readonly [BuildingKind, number, number, number])[] = [
-  ['pharmacy', 0, 76, 112], ['house', 1, 232, 112], ['gun_shop', 0, 392, 100],
+  ['police', 0, 112, 112], ['gun_shop', 0, 310, 112],
 ];
 
 const PROPS: readonly (readonly [PropKind, number, number])[] = [
-  ['street_lamp', 160, 124], ['hydrant', 196, 126], ['dumpster', 306, 122], ['crate_stack', 334, 124],
-  ['tree', 40, 250], ['bush', 90, 246], ['tree', 450, 255], ['street_lamp', 300, 244],
-  ['car_sedan_h', 76, 166], ['car_wreck_h', 150, 196], ['van_h', 390, 176], ['car_sedan_v', 300, 190],
-  ['barrier', 250, 228], ['sandbags', 180, 256], ['fire_barrel', 236, 148], ['rubble', 350, 216],
+  ['police_h', 170, 168], ['street_lamp', 224, 124], ['barrier', 120, 206],
+  ['dumpster', 256, 122], ['crate_stack', 374, 124], ['street_lamp', 340, 244],
+  ['car_sedan_h', 76, 172], ['van_h', 420, 176], ['sandbags', 190, 224], ['rubble', 280, 216],
 ];
 
 const SURVIVORS: readonly (readonly [number, WeaponId, number, number, number])[] = [
-  [0, 'pistol', 2, 218, 186], [1, 'carbine', 0, 248, 200], [2, 'shotgun', 1, 200, 214], [3, 'pistol', 4, 262, 170],
-  [4, 'pistol', 0, 282, 212],
+  [0, 'carbine', 0, 210, 186],
+  [1, 'carbine', 0, 234, 172],
+  [2, 'shotgun', 1, 230, 202],
+  [3, 'pistol', 7, 186, 170],
+  [4, 'pistol', 1, 184, 204],
 ];
 
 const ZOMBIES: readonly (readonly [ZombieType, number, number, number])[] = [
-  ['walker', 4, 330, 206], ['walker', 3, 346, 164], ['runner', 4, 306, 150], ['bloater', 3, 372, 214],
-  ['brute', 4, 366, 150], ['walker', 2, 216, 140], ['runner', 2, 176, 158], ['walker', 0, 120, 222],
+  ['runner', 4, 290, 150], ['runner', 4, 305, 216], ['walker', 4, 298, 182],
+  ['walker', 3, 320, 166], ['walker', 4, 335, 196], ['bloater', 3, 355, 178],
+  ['brute', 4, 365, 210], ['walker', 4, 375, 158], ['runner', 4, 390, 188],
+  ['walker', 5, 410, 170], ['bloater', 4, 430, 204],
 ];
 
 interface Actor {
@@ -125,9 +130,10 @@ interface Pool {
 }
 
 const POOLS: readonly Pool[] = [
-  { x: 160, y: 118, radius: 90, r: 1, g: 0.86, b: 0.62 },
-  { x: 300, y: 238, radius: 80, r: 1, g: 0.86, b: 0.62 },
-  { x: 236, y: 140, radius: 60, r: 1, g: 0.6, b: 0.3 },
+  { x: 224, y: 118, radius: 95, r: 0.65, g: 0.85, b: 1 },
+  { x: 112, y: 118, radius: 85, r: 1, g: 0.3, b: 0.3 },
+  { x: 310, y: 118, radius: 90, r: 1, g: 0.86, b: 0.6 },
+  { x: 340, y: 238, radius: 80, r: 0.8, g: 0.85, b: 1 },
 ];
 
 /** How much of a light reaches a point, in three hard steps like a banded pixel-art light. */
@@ -140,9 +146,9 @@ function band(t: number): number {
 }
 
 function flashlight(x: number, y: number): number {
-  const dx = x - 218;
-  const dy = y - 186;
-  return Math.abs(Math.atan2(dy, dx)) < 0.5 ? band(Math.hypot(dx, dy) / 170) : 0;
+  const dx = x - 190;
+  const dy = y - 196;
+  return Math.abs(Math.atan2(dy, dx)) < 0.52 ? band(Math.hypot(dx, dy) / 195) : 0;
 }
 
 /** Multiplies the scene by dark blue, then lifts it back inside lamp pools and the flashlight cone. */
@@ -167,6 +173,12 @@ function nightPass(sheet: Sheet): void {
       r = Math.max(r, aura * AURA.r);
       g = Math.max(g, aura * AURA.g);
       b = Math.max(b, aura * AURA.b);
+      for (const [,, , sx, sy] of SURVIVORS) {
+        const survivorAura = band(Math.hypot(x - sx, y - sy) / 24);
+        r = Math.max(r, survivorAura * 0.85);
+        g = Math.max(g, survivorAura * 0.8);
+        b = Math.max(b, survivorAura * 0.7);
+      }
       const at = (y * sheet.w + x) * 4;
       sheet.data[at] = sheet.data[at] * r + 255 * r * HAZE;
       sheet.data[at + 1] = sheet.data[at + 1] * g + 255 * g * HAZE;

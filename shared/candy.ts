@@ -351,7 +351,7 @@ export function candiesInBowl(seed: number, container: Container): CandyBowlLoot
 }
 
 /** The candy bag's grid in the loot window: one piece to a cell. */
-export const CANDY_GRID = { cols: 2, rows: 6 } as const;
+export const CANDY_GRID = { cols: 3, rows: 4 } as const;
 
 /** Most candy one survivor carries: a piece for every cell of the candy bag's grid, so the bag shows all of it. */
 export const MAX_CANDY_BAG = CANDY_GRID.cols * CANDY_GRID.rows;

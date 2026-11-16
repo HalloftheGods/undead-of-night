@@ -2,9 +2,14 @@
   <main class="game-root" :class="{ 'is-aiming': aiming, 'is-touch': ui.touch, 'is-looting': inventory.isOpen.value, 'is-canvas-loot': canvasLoot.active.value }">
     <canvas ref="canvasRef" class="game-canvas" />
 
+    <aside v-if="promoScene" class="promo-controls">
+      <button class="promo-btn" type="button" @click="captureCanvasScreenshot">📸 Screenshot (F2 / O)</button>
+      <button class="promo-btn" type="button" @click="devHudHidden = !devHudHidden">{{ devHudHidden ? 'Show HUD (U)' : 'Hide HUD (U)' }}</button>
+    </aside>
+
     <!-- The dev HUD page (?dev=hud): the HUD alone over the live town. No title, menus or game-over screens. -->
     <template v-if="hudTest">
-      <HudOverlay v-if="ui.hud && ui.art" :hud="ui.hud" :art="ui.art" :mode="ui.mode" :signal-weak="ui.signalWeak" :place="ui.place" :home="ui.home" :log="ui.log" />
+      <HudOverlay v-if="!devHudHidden && ui.hud && ui.art" :hud="ui.hud" :art="ui.art" :mode="ui.mode" :signal-weak="ui.signalWeak" :place="ui.place" :home="ui.home" :log="ui.log" />
     </template>
 
     <TitleScreen v-else-if="ui.screen === 'title'" v-show="!canvasEditing" :ui :splashing />
@@ -13,9 +18,9 @@
       <DailyLobby v-if="ui.lobby && !ui.lobby.launched" :lobby="ui.lobby" />
       <template v-else>
         <template v-if="ui.hud && ui.art">
-          <HudOverlay :hud="ui.hud" :art="ui.art" :mode="ui.mode" :signal-weak="ui.signalWeak" :place="ui.place" :home="ui.home" :log="ui.log" />
-        <DownedOverlay v-if="ui.hud.status !== 'alive'" :hud="ui.hud" :mode="ui.mode" />
-        <TouchControls v-if="ui.touch && !ui.bagOpen && !ui.paused && !inventory.isOpen.value" :seated="ui.hud?.seated === true" />
+          <HudOverlay v-if="!devHudHidden" :hud="ui.hud" :art="ui.art" :mode="ui.mode" :signal-weak="ui.signalWeak" :place="ui.place" :home="ui.home" :log="ui.log" />
+        <DownedOverlay v-if="ui.hud.status !== 'alive' && !promoScene" :hud="ui.hud" :mode="ui.mode" />
+        <TouchControls v-if="ui.touch && !ui.bagOpen && !ui.paused && !inventory.isOpen.value && !promoScene" :seated="ui.hud?.seated === true" />
         <!-- The backpack ring: the Backpack button on a phone, a middle-click on a desktop. -->
         <BackpackWheel
           v-if="ui.backpackOpen"
@@ -46,12 +51,12 @@
           @move="inventory.onMove"
         />
         <EmoteWheel :art="ui.art" :enabled="emotesOn" />
-        <RoomInvite v-if="ui.onlineRoom && !ui.paused && ui.hud.teammates.length === 0" :room="ui.onlineRoom" :is-public="ui.onlinePublic" />
+        <RoomInvite v-if="ui.onlineRoom && !ui.paused && ui.hud.teammates.length === 0 && !promoScene" :room="ui.onlineRoom" :is-public="ui.onlinePublic" />
       </template>
       <!-- Banners step aside for any overlay (v-show, so a card does not replay when the overlay closes). -->
-      <LevelCard v-if="ui.levelCard" v-show="!overlayUp" :key="ui.levelCard.key" :card="ui.levelCard" />
-      <WaveBanner v-if="ui.banner" v-show="!overlayUp" :key="ui.banner.key" :banner="ui.banner" />
-      <KillCallout v-if="ui.callout" v-show="!overlayUp" :key="ui.callout.key" :callout="ui.callout" />
+      <LevelCard v-if="ui.levelCard && !promoScene" v-show="!overlayUp" :key="ui.levelCard.key" :card="ui.levelCard" />
+      <WaveBanner v-if="ui.banner && !promoScene" v-show="!overlayUp" :key="ui.banner.key" :banner="ui.banner" />
+      <KillCallout v-if="ui.callout && !promoScene" v-show="!overlayUp" :key="ui.callout.key" :callout="ui.callout" />
       <LogPanel v-if="ui.logOpen && ui.hud && !canvasLogOn" :log="ui.log" />
       <WorkbenchPageCanvas v-if="ui.hud?.bench && ui.art && canvasMenusOn" :hud="ui.hud" :bench="ui.hud.bench" :art="ui.art" />
       <WorkbenchScreen v-else-if="ui.hud?.bench && ui.art" :hud="ui.hud" :bench="ui.hud.bench" :art="ui.art" />
@@ -91,6 +96,7 @@
         <PauseMenu v-else-if="!canvasPauseOn" :ui :mode="ui.mode" @open-book="pausedBook = 'books'" @open-controls="pausedBook = 'controls'" @open-radio="pausedBook = 'radio'" />
         <PauseCanvas v-else :ui :mode="ui.mode" @open-book="pausedBook = 'books'" @open-controls="pausedBook = 'controls'" @open-radio="pausedBook = 'radio'" />
       </template>
+      <LevelDebriefCanvas v-if="ui.debrief" :debrief="ui.debrief" />
       <VanTransition :in-bunker="ui.home?.inBunker ?? null" :art="ui.art" />
       </template>
     </template>
@@ -142,6 +148,7 @@ import StudioSplash from './components/StudioSplash.vue';
 import TitleScreen from './components/TitleScreen.vue';
 import TouchControls from './components/TouchControls.vue';
 import TownMap from './components/TownMap.vue';
+import LevelDebriefCanvas from './components/LevelDebriefCanvas.vue';
 import CandyBagCanvas from './components/CandyBagCanvas.vue';
 import DailyLobby from './components/DailyLobby.vue';
 import { GAME_KEY } from './components/use-game.ts';
@@ -162,6 +169,7 @@ import { CONTAINER_LABEL } from '../shared/containers.ts';
 import { isVerticalLook } from '../shared/container-flip.ts';
 import { GameController } from './game/game-controller.ts';
 import { hudTestOn } from './game/dev/hud-test.ts';
+import { promoSceneOn } from './game/dev/promo-scene.ts';
 import { canvasHud, canvasHudAllowed } from './game/canvas-hud-prefs.ts';
 import { canvasMenus } from './game/canvas-menu-prefs.ts';
 import { canvasEditing } from './game/dev/canvas-edit.ts';
@@ -179,7 +187,13 @@ const canvasPauseOn = canvasMenusOn;
 /** The in-game HUD draws the run log on the canvas, so the page log stays shut. */
 const canvasLogOn = computed(() => canvasHudAllowed(canvasHud.value, ui.value.touch));
 const hudTest = hudTestOn(window.location.search, import.meta.env.DEV, window.location.hostname);
-const splashing = ref(shouldShowSplash(window.location.search) && !hudTest);
+const promoSceneFromUrl = promoSceneOn(window.location.search, import.meta.env.DEV, window.location.hostname);
+const promoScene = computed(() => promoSceneFromUrl || ui.value.promoScene === true);
+const devHudHidden = ref(promoSceneFromUrl || ui.value.promoScene === true);
+watch(promoScene, (active) => {
+  if (active) devHudHidden.value = true;
+});
+const splashing = ref(shouldShowSplash(window.location.search) && !hudTest && !promoSceneFromUrl);
 const canvasRef = useTemplateRef<HTMLCanvasElement>('canvasRef');
 const pausedBook = ref<TitlePage | null>(null);
 const vuePanel = useTemplateRef<InventoryPanel>('vuePanel');
@@ -275,20 +289,83 @@ provide(GAME_KEY, game);
 
 let stopAnalytics: (() => void) | null = null;
 
-/** The HUD test run starts once the art is in, since a run cannot start before it. */
+function captureCanvasScreenshot(): void {
+  const canvas = canvasRef.value;
+  if (!canvas) return;
+  const targetW = 1200;
+  const targetH = 630;
+  const outCanvas = document.createElement('canvas');
+  outCanvas.width = targetW;
+  outCanvas.height = targetH;
+  const ctx = outCanvas.getContext('2d');
+  if (ctx) {
+    ctx.imageSmoothingEnabled = false;
+    const canvasAspect = canvas.width / canvas.height;
+    const targetAspect = targetW / targetH;
+    let sW = canvas.width;
+    let sH = canvas.height;
+    let sX = 0;
+    let sY = 0;
+    if (canvasAspect > targetAspect) {
+      sW = canvas.height * targetAspect;
+      sX = (canvas.width - sW) / 2;
+    } else {
+      sH = canvas.width / targetAspect;
+      sY = (canvas.height - sH) / 2;
+    }
+    ctx.drawImage(canvas, sX, sY, sW, sH, 0, 0, targetW, targetH);
+  }
+  const exportCanvas = ctx ? outCanvas : canvas;
+  exportCanvas.toBlob((blob) => {
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'undead-of-night-screenshot.png';
+    link.click();
+    URL.revokeObjectURL(url);
+    if (import.meta.env.DEV) {
+      void fetch('/api/dev-save-screenshot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/octet-stream' },
+        body: blob,
+      });
+    }
+  }, 'image/png');
+}
+
+function onDevKeyDown(event: KeyboardEvent): void {
+  const isCapture = event.code === 'F2' || event.code === 'F12' || event.code === 'PrintScreen' || event.code === 'KeyO';
+  if (isCapture && (promoScene.value || import.meta.env.DEV)) {
+    event.preventDefault();
+    captureCanvasScreenshot();
+    return;
+  }
+  const isToggleHud = (event.code === 'KeyU' || event.code === 'F10' || event.code === 'Backquote') && (promoScene.value || hudTest);
+  if (isToggleHud) {
+    event.preventDefault();
+    devHudHidden.value = !devHudHidden.value;
+  }
+}
+
+/** The HUD test or promo scene run starts once the art is in, since a run cannot start before it. */
 watch(() => ui.value.art, (art) => {
   if (art && hudTest) game.startHudTest();
+  else if (art && promoScene.value) game.startPromoScene();
 });
 
 onMounted(() => {
   if (canvasRef.value) game.mount(canvasRef.value);
   if (import.meta.env.DEV) window.__outbreak = game;
   if (hudTest && ui.value.art) game.startHudTest();
+  else if (promoScene.value && ui.value.art) game.startPromoScene();
+  window.addEventListener('keydown', onDevKeyDown);
   stopAnalytics = startAnalytics(() => ui.value);
   prefetchLazyPages();
 });
 
 onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onDevKeyDown);
   stopAnalytics?.();
   game.dispose();
 });
@@ -341,5 +418,35 @@ onBeforeUnmount(() => {
   .game-root :deep(.hud) {
     transition: none;
   }
+}
+
+.promo-controls {
+  position: absolute;
+  top: calc(var(--u) * 3);
+  right: calc(var(--u) * 3);
+  display: flex;
+  gap: calc(var(--u) * 2);
+  z-index: 1000;
+  pointer-events: auto;
+}
+
+.promo-btn {
+  background: rgba(14, 17, 24, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #f0f2f8;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: calc(var(--u) * 1.5) calc(var(--u) * 3);
+  border-radius: 4px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.promo-btn:hover {
+  background: rgba(30, 36, 48, 0.95);
+  border-color: rgba(255, 255, 255, 0.5);
 }
 </style>

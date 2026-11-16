@@ -9,8 +9,136 @@
     :style="{ '--pack-cols': backpackSection.grid.cols, '--pack-rows': backpackSection.grid.rows, '--container-rows': modalState.containerGrid.rows }"
   >
     <div class="dual-loot-overlay">
-      <!-- Left Dock: Container (Enlarged Prop with Overlaid Grid) -->
-      <div class="left-column">
+      <!-- Top Center: Pockets to the left of Guns -->
+      <div class="loot-top-panel">
+        <div class="sub-inventory-section section-pockets">
+          <h4 class="sub-section-title">{{ pocketsSection.label }}</h4>
+          <div
+            class="grid-board"
+            :style="{
+              '--cols': pocketsSection.grid.cols,
+              '--rows': pocketsSection.grid.rows,
+            }"
+          >
+            <div
+              v-for="cell in pocketsSection.cells"
+              :key="`pockets-${cell.col}-${cell.row}`"
+              class="grid-cell"
+              :class="getCellHighlightClass('pockets', cell.col, cell.row)"
+              :style="getCellCustomProperties(cell.col, cell.row)"
+              @pointerenter="setHoverTile('pockets', cell.col, cell.row)"
+              @pointerleave="clearHoverTile('pockets', cell.col, cell.row)"
+              @click="onCellClick('pockets', cell.col, cell.row)"
+              @dragover.prevent="setHoverTile('pockets', cell.col, cell.row)"
+              @drop.prevent="onDropCell('pockets', cell.col, cell.row)"
+            />
+            <div
+              v-for="item in pocketsSection.grid.items"
+              :key="item.id"
+              class="grid-item"
+              :class="[{ 'is-selected': modalState.selectedItemId === item.id, 'is-pad': padItemId === item.id }, arrivalClass(item.id)]"
+              :data-item-id="item.id"
+              :style="getItemCustomProperties(item)"
+              draggable="true"
+              @click.stop="onItemClick('pockets', item)"
+              @dblclick.stop="onItemDblClick('pockets', item)"
+              @dragstart="onItemDragStart($event, 'pockets', item)"
+              @dragend="onItemDragEnd"
+            >
+              <LootItemArt :art :type="item.type" :name="getItemName(item.type)" :scale="getItemArtScale(item)" :count="item.count" :ammo="item.ammo" :lying="lyingOf(item)" />
+            </div>
+
+            <div
+              v-if="isGhostInGrid('pockets')"
+              class="grid-item is-ghost"
+              :style="ghostCustomProperties"
+              @click.stop="onGhostClick('pockets')"
+              @dblclick.stop="onGhostDblClick('pockets')"
+            >
+              <LootItemArt :art :type="modalState.heldItem!.item.type" :name="getItemName(modalState.heldItem!.item.type)" :scale="getGhostArtScale()" :count="modalState.heldItem!.item.count" :ammo="modalState.heldItem!.item.ammo" :lying="lyingOf(modalState.heldItem!.item)" />
+            </div>
+          </div>
+        </div>
+
+        <div class="gear-slots-row">
+          <div
+            v-for="slot in gearSlotDefs"
+            :key="slot.id"
+            class="gear-slot"
+            :class="{
+              'is-valid-target': getGearSlotHighlight(slot.id) === 'valid',
+              'is-invalid-target': getGearSlotHighlight(slot.id) === 'invalid',
+              'is-occupied': modalState.gear[slot.id] !== null,
+            }"
+            @click="onGearSlotClick(slot.id)"
+            @dragover.prevent="setHoverGear(slot.id)"
+            @drop.prevent="onDropGear(slot.id)"
+          >
+            <span class="gear-slot-tag">{{ slot.label }}</span>
+            <div v-if="modalState.gear[slot.id]" class="gear-item-card">
+              <LootItemArt :art :type="modalState.gear[slot.id]!.type" :name="getItemName(modalState.gear[slot.id]!.type)" :scale="2" :ammo="modalState.gear[slot.id]!.ammo" />
+            </div>
+            <div v-else class="gear-empty-slot">
+              <span>{{ slot.emptyLabel }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Left Center: Candy Bag -->
+      <div class="loot-left-panel">
+        <div class="sub-inventory-section section-candy-bag">
+          <h4 class="sub-section-title">{{ candyBagSection.label }}</h4>
+          <div
+            class="grid-board candy-grid"
+            :style="{
+              '--cols': candyBagSection.grid.cols,
+              '--rows': candyBagSection.grid.rows,
+            }"
+          >
+            <div
+              v-for="cell in candyBagSection.cells"
+              :key="`candyBag-${cell.col}-${cell.row}`"
+              class="grid-cell"
+              :class="getCellHighlightClass('candyBag', cell.col, cell.row)"
+              :style="getCellCustomProperties(cell.col, cell.row)"
+              @pointerenter="setHoverTile('candyBag', cell.col, cell.row)"
+              @pointerleave="clearHoverTile('candyBag', cell.col, cell.row)"
+              @click="onCellClick('candyBag', cell.col, cell.row)"
+              @dragover.prevent="setHoverTile('candyBag', cell.col, cell.row)"
+              @drop.prevent="onDropCell('candyBag', cell.col, cell.row)"
+            />
+            <div
+              v-for="item in candyBagSection.grid.items"
+              :key="item.id"
+              class="grid-item"
+              :class="[{ 'is-selected': modalState.selectedItemId === item.id, 'is-pad': padItemId === item.id }, arrivalClass(item.id)]"
+              :data-item-id="item.id"
+              :style="getItemCustomProperties(item)"
+              draggable="true"
+              @click.stop="onItemClick('candyBag', item)"
+              @dblclick.stop="onItemDblClick('candyBag', item)"
+              @dragstart="onItemDragStart($event, 'candyBag', item)"
+              @dragend="onItemDragEnd"
+            >
+              <LootItemArt :art :type="item.type" :name="getItemName(item.type)" :scale="getItemArtScale(item)" :count="item.count" :ammo="item.ammo" :lying="lyingOf(item)" />
+            </div>
+
+            <div
+              v-if="isGhostInGrid('candyBag')"
+              class="grid-item is-ghost"
+              :style="ghostCustomProperties"
+              @click.stop="onGhostClick('candyBag')"
+              @dblclick.stop="onGhostDblClick('candyBag')"
+            >
+              <LootItemArt :art :type="modalState.heldItem!.item.type" :name="getItemName(modalState.heldItem!.item.type)" :scale="getGhostArtScale()" :count="modalState.heldItem!.item.count" :ammo="modalState.heldItem!.item.ammo" :lying="lyingOf(modalState.heldItem!.item)" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center: Searching / Opened Container with grid animation -->
+      <div class="loot-center-panel">
         <section v-if="hasContainer" class="loot-dock container-dock container-panel" :class="zoomClass" :style="zoomStyle">
           <!-- No card: the container floats over the game under a small label. -->
           <header class="container-label">
@@ -92,16 +220,12 @@
         </section>
       </div>
 
-      <!-- Middle: the survivor stands in the open view. What is held, with its buttons, is drawn on the game canvas (engine/held-ui.ts). -->
-      <div class="center-stage-spacer" />
-
-      <!-- Right Dock: Survivor Inventory -->
-      <section class="loot-dock survivor-dock player-panel">
-        <header class="dock-header survivor-header">
+      <!-- Right Center: Backpack & Buttons -->
+      <div class="loot-right-panel player-panel">
+        <header class="dock-header pack-header">
           <div class="dock-title-group">
-            <h2 class="dock-title">SURVIVOR INVENTORY</h2>
+            <h3 class="dock-title">{{ backpackSection.label }}</h3>
             <span class="backpack-tier-badge">{{ currentTierLabel }}</span>
-            <span class="dock-capacity">{{ totalPlayerItemsCount }} ITEMS</span>
           </div>
 
           <div class="header-actions">
@@ -114,188 +238,54 @@
           </div>
         </header>
 
-        <div class="gear-slots-row">
+        <div class="sub-inventory-section section-backpack">
           <div
-            v-for="slot in gearSlotDefs"
-            :key="slot.id"
-            class="gear-slot"
-            :class="{
-              'is-valid-target': getGearSlotHighlight(slot.id) === 'valid',
-              'is-invalid-target': getGearSlotHighlight(slot.id) === 'invalid',
-              'is-occupied': modalState.gear[slot.id] !== null,
+            class="grid-board"
+            :style="{
+              '--cols': backpackSection.grid.cols,
+              '--rows': backpackSection.grid.rows,
             }"
-            @click="onGearSlotClick(slot.id)"
-            @dragover.prevent="setHoverGear(slot.id)"
-            @drop.prevent="onDropGear(slot.id)"
           >
-            <span class="gear-slot-tag">{{ slot.label }}</span>
-            <div v-if="modalState.gear[slot.id]" class="gear-item-card">
-              <LootItemArt :art :type="modalState.gear[slot.id]!.type" :name="getItemName(modalState.gear[slot.id]!.type)" :scale="2" :ammo="modalState.gear[slot.id]!.ammo" />
-            </div>
-            <div v-else class="gear-empty-slot">
-              <span>{{ slot.emptyLabel }}</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="player-grids-column">
-          <div class="player-subgrids-row">
-            <!-- Pockets -->
-            <div class="sub-inventory-section section-pockets">
-              <h4 class="sub-section-title">{{ pocketsSection.label }}</h4>
-              <div
-                class="grid-board"
-                :style="{
-                  '--cols': pocketsSection.grid.cols,
-                  '--rows': pocketsSection.grid.rows,
-                }"
-              >
-                <div
-                  v-for="cell in pocketsSection.cells"
-                  :key="`pockets-${cell.col}-${cell.row}`"
-                  class="grid-cell"
-                  :class="getCellHighlightClass('pockets', cell.col, cell.row)"
-                  :style="getCellCustomProperties(cell.col, cell.row)"
-                  @pointerenter="setHoverTile('pockets', cell.col, cell.row)"
-                  @pointerleave="clearHoverTile('pockets', cell.col, cell.row)"
-                  @click="onCellClick('pockets', cell.col, cell.row)"
-                  @dragover.prevent="setHoverTile('pockets', cell.col, cell.row)"
-                  @drop.prevent="onDropCell('pockets', cell.col, cell.row)"
-                />
-                <div
-                  v-for="item in pocketsSection.grid.items"
-                  :key="item.id"
-                  class="grid-item"
-                  :class="[{ 'is-selected': modalState.selectedItemId === item.id, 'is-pad': padItemId === item.id }, arrivalClass(item.id)]"
-                :data-item-id="item.id"
-                  :style="getItemCustomProperties(item)"
-                  draggable="true"
-                  @click.stop="onItemClick('pockets', item)"
-                  @dblclick.stop="onItemDblClick('pockets', item)"
-                  @dragstart="onItemDragStart($event, 'pockets', item)"
-                  @dragend="onItemDragEnd"
-                >
-                  <LootItemArt :art :type="item.type" :name="getItemName(item.type)" :scale="getItemArtScale(item)" :count="item.count" :ammo="item.ammo" :lying="lyingOf(item)" />
-                </div>
-
-                <div
-                  v-if="isGhostInGrid('pockets')"
-                  class="grid-item is-ghost"
-                  :style="ghostCustomProperties"
-                  @click.stop="onGhostClick('pockets')"
-                  @dblclick.stop="onGhostDblClick('pockets')"
-                >
-                  <LootItemArt :art :type="modalState.heldItem!.item.type" :name="getItemName(modalState.heldItem!.item.type)" :scale="getGhostArtScale()" :count="modalState.heldItem!.item.count" :ammo="modalState.heldItem!.item.ammo" :lying="lyingOf(modalState.heldItem!.item)" />
-                </div>
-              </div>
-            </div>
-
-            <!-- Candy Bag -->
-            <div class="sub-inventory-section section-candy-bag">
-              <h4 class="sub-section-title">{{ candyBagSection.label }}</h4>
-              <div
-                class="grid-board candy-grid"
-                :style="{
-                  '--cols': candyBagSection.grid.cols,
-                  '--rows': candyBagSection.grid.rows,
-                }"
-              >
-                <div
-                  v-for="cell in candyBagSection.cells"
-                  :key="`candyBag-${cell.col}-${cell.row}`"
-                  class="grid-cell"
-                  :class="getCellHighlightClass('candyBag', cell.col, cell.row)"
-                  :style="getCellCustomProperties(cell.col, cell.row)"
-                  @pointerenter="setHoverTile('candyBag', cell.col, cell.row)"
-                  @pointerleave="clearHoverTile('candyBag', cell.col, cell.row)"
-                  @click="onCellClick('candyBag', cell.col, cell.row)"
-                  @dragover.prevent="setHoverTile('candyBag', cell.col, cell.row)"
-                  @drop.prevent="onDropCell('candyBag', cell.col, cell.row)"
-                />
-                <div
-                  v-for="item in candyBagSection.grid.items"
-                  :key="item.id"
-                  class="grid-item"
-                  :class="[{ 'is-selected': modalState.selectedItemId === item.id, 'is-pad': padItemId === item.id }, arrivalClass(item.id)]"
-                :data-item-id="item.id"
-                  :style="getItemCustomProperties(item)"
-                  draggable="true"
-                  @click.stop="onItemClick('candyBag', item)"
-                  @dblclick.stop="onItemDblClick('candyBag', item)"
-                  @dragstart="onItemDragStart($event, 'candyBag', item)"
-                  @dragend="onItemDragEnd"
-                >
-                  <LootItemArt :art :type="item.type" :name="getItemName(item.type)" :scale="getItemArtScale(item)" :count="item.count" :ammo="item.ammo" :lying="lyingOf(item)" />
-                </div>
-
-                <div
-                  v-if="isGhostInGrid('candyBag')"
-                  class="grid-item is-ghost"
-                  :style="ghostCustomProperties"
-                  @click.stop="onGhostClick('candyBag')"
-                  @dblclick.stop="onGhostDblClick('candyBag')"
-                >
-                  <LootItemArt :art :type="modalState.heldItem!.item.type" :name="getItemName(modalState.heldItem!.item.type)" :scale="getGhostArtScale()" :count="modalState.heldItem!.item.count" :ammo="modalState.heldItem!.item.ammo" :lying="lyingOf(modalState.heldItem!.item)" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Backpack -->
-          <div class="sub-inventory-section section-backpack">
-            <h4 class="sub-section-title">{{ backpackSection.label }}</h4>
             <div
-              class="grid-board"
-              :style="{
-                '--cols': backpackSection.grid.cols,
-                '--rows': backpackSection.grid.rows,
-              }"
+              v-for="cell in backpackSection.cells"
+              :key="`backpack-${cell.col}-${cell.row}`"
+              class="grid-cell"
+              :class="getCellHighlightClass('backpack', cell.col, cell.row)"
+              :style="getCellCustomProperties(cell.col, cell.row)"
+              @pointerenter="setHoverTile('backpack', cell.col, cell.row)"
+              @pointerleave="clearHoverTile('backpack', cell.col, cell.row)"
+              @click="onCellClick('backpack', cell.col, cell.row)"
+              @dragover.prevent="setHoverTile('backpack', cell.col, cell.row)"
+              @drop.prevent="onDropCell('backpack', cell.col, cell.row)"
+            />
+            <div
+              v-for="item in backpackSection.grid.items"
+              :key="item.id"
+              class="grid-item"
+              :class="[{ 'is-selected': modalState.selectedItemId === item.id, 'is-pad': padItemId === item.id }, arrivalClass(item.id)]"
+              :data-item-id="item.id"
+              :style="getItemCustomProperties(item)"
+              draggable="true"
+              @click.stop="onItemClick('backpack', item)"
+              @dblclick.stop="onItemDblClick('backpack', item)"
+              @dragstart="onItemDragStart($event, 'backpack', item)"
+              @dragend="onItemDragEnd"
             >
-              <div
-                v-for="cell in backpackSection.cells"
-                :key="`backpack-${cell.col}-${cell.row}`"
-                class="grid-cell"
-                :class="getCellHighlightClass('backpack', cell.col, cell.row)"
-                :style="getCellCustomProperties(cell.col, cell.row)"
-                @pointerenter="setHoverTile('backpack', cell.col, cell.row)"
-                @pointerleave="clearHoverTile('backpack', cell.col, cell.row)"
-                @click="onCellClick('backpack', cell.col, cell.row)"
-                @dragover.prevent="setHoverTile('backpack', cell.col, cell.row)"
-                @drop.prevent="onDropCell('backpack', cell.col, cell.row)"
-              />
-              <div
-                v-for="item in backpackSection.grid.items"
-                :key="item.id"
-                class="grid-item"
-                :class="[{ 'is-selected': modalState.selectedItemId === item.id, 'is-pad': padItemId === item.id }, arrivalClass(item.id)]"
-                :data-item-id="item.id"
-                :style="getItemCustomProperties(item)"
-                draggable="true"
-                @click.stop="onItemClick('backpack', item)"
-                @dblclick.stop="onItemDblClick('backpack', item)"
-                @dragstart="onItemDragStart($event, 'backpack', item)"
-                @dragend="onItemDragEnd"
-              >
-                <LootItemArt :art :type="item.type" :name="getItemName(item.type)" :scale="getItemArtScale(item)" :count="item.count" :ammo="item.ammo" :lying="lyingOf(item)" />
-              </div>
+              <LootItemArt :art :type="item.type" :name="getItemName(item.type)" :scale="getItemArtScale(item)" :count="item.count" :ammo="item.ammo" :lying="lyingOf(item)" />
+            </div>
 
-              <div
-                v-if="isGhostInGrid('backpack')"
-                class="grid-item is-ghost"
-                :style="ghostCustomProperties"
-                @click.stop="onGhostClick('backpack')"
-                @dblclick.stop="onGhostDblClick('backpack')"
-              >
-                <LootItemArt :art :type="modalState.heldItem!.item.type" :name="getItemName(modalState.heldItem!.item.type)" :scale="getGhostArtScale()" :count="modalState.heldItem!.item.count" :ammo="modalState.heldItem!.item.ammo" :lying="lyingOf(modalState.heldItem!.item)" />
-              </div>
+            <div
+              v-if="isGhostInGrid('backpack')"
+              class="grid-item is-ghost"
+              :style="ghostCustomProperties"
+              @click.stop="onGhostClick('backpack')"
+              @dblclick.stop="onGhostDblClick('backpack')"
+            >
+              <LootItemArt :art :type="modalState.heldItem!.item.type" :name="getItemName(modalState.heldItem!.item.type)" :scale="getGhostArtScale()" :count="modalState.heldItem!.item.count" :ammo="modalState.heldItem!.item.ammo" :lying="lyingOf(modalState.heldItem!.item)" />
             </div>
           </div>
         </div>
-
-        <footer class="dock-footer">
-          <span class="footer-tip">[R] Rotate | Drag to Move | Double-Click to Transfer | [ESC] Close</span>
-        </footer>
-      </section>
+      </div>
     </div>
   </div>
 </template>
@@ -416,8 +406,7 @@ function sweepPhase(col: number, row: number): CellPhase | null {
 /** Head and read cells light up. A void is never lit: it shows as a void when the head reaches it, and looks like any other cell before. */
 function sweepClass(col: number, row: number): string | null {
   const phase = sweepPhase(col, row);
-  // A cell the search has not reached is blank, covering the drawing underneath.
-  if (phase === 'waiting') return 'is-sweep-wait';
+  if (phase === 'waiting') return null;
   // A void is not lit: it just shows itself when its turn comes.
   if (isCellBlocked(modalState.containerGrid, col, row)) return null;
   if (phase === 'head') return 'is-sweep-head';
@@ -666,6 +655,7 @@ function triggerQuickTransfer(gridId: GridIdentifier, itemId: string): void {
   const cell = backdrop.value?.querySelector<HTMLElement>(`[data-item-id="${CSS.escape(itemId)}"]`)?.getBoundingClientRect() ?? null;
   const didTransfer = quickTransferBetweenInventories(modalState, gridId, itemId);
   if (didTransfer) {
+    if (modalState.heldItem === null) setHeld(null);
     game.playSfx('ui_place');
     const origin = cell ? { client: { x: cell.left, y: cell.top, w: cell.width, h: cell.height } } : null;
     if (moving && from) emitMove(moving, from, origin ? 'fly' : 'land', origin);
@@ -823,9 +813,9 @@ watch(
       type: item.type,
       itemId: item.id,
     });
-  },
     setHeldBare((clientX, clientY) => document.elementFromPoint(clientX, clientY) instanceof HTMLCanvasElement);
-  { immediate: true },
+  },
+  { immediate: true, flush: 'sync' },
 );
 
 /** A click on a button does what it says. A click on the game itself drops the item, or uses it if it lands on the survivor. */
@@ -853,7 +843,7 @@ function actOnHeld(kind: 'use' | 'drop' | null, canUse: boolean, canDrop: boolea
     onUseHeld();
   } else if (kind === 'drop' && canDrop) {
     game.playSfx('ui_drop');
-    onDropHeld();
+    onDropHeld(to);
   } else return false;
   return true;
 }
@@ -933,6 +923,7 @@ onMounted(() => {
 /** Puts a held item back where it came from, so the grids are whole when the bag is read on close. */
 function settle(): void {
   if (modalState.heldItem !== null) returnHeldItemToSource(modalState);
+  setHeld(null);
 }
 
 /** The page element under the point is this window's own: its panels, not the see-through gaps over the game. */
@@ -943,6 +934,7 @@ function ownsPoint(clientX: number, clientY: number): boolean {
 defineExpose({ escape: onEscape, rotate: onRotateClick, settle, ownsPoint, itemOrigin });
 
 onUnmounted(() => {
+  setHeld(null);
   setLootPad(null);
   const isWindowDefined = typeof window !== 'undefined';
   if (isWindowDefined) {

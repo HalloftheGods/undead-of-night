@@ -560,5 +560,23 @@ describe('Dual-Grid Container Looting & Inventory Modal', () => {
       expect(state.backpackGrid.items).toHaveLength(0);
       expect(state.pocketsGrid.items).toHaveLength(0);
     });
+
+    it('quick transferring a held item sets heldItem to null and packs into destination', () => {
+      const state = createDualLootState();
+      placeItem(state.containerGrid, { id: 'knife-1', type: 'knife', x: 0, y: 0, rotated: false });
+      pickUpItemFromGrid(state, 'container', 'knife-1');
+      expect(state.heldItem?.item.id).toBe('knife-1');
+
+      const transferred = quickTransferBetweenInventories(state, 'container', 'knife-1');
+      expect(transferred).toBe(true);
+      expect(state.heldItem).toBeNull();
+      expect(state.backpackGrid.items.some((item) => item.id === 'knife-1')).toBe(true);
+    });
+
+    it('settle and unmount in DualLootModal.vue reset cursor held state to null', () => {
+      const source = readFileSync(new URL('../src/components/DualLootModal.vue', import.meta.url), 'utf8');
+      expect(source).toContain('setHeld(null)');
+      expect(source).toContain("flush: 'sync'");
+    });
   });
 });

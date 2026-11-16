@@ -50,6 +50,17 @@ const CRATE: readonly string[] = [
 const TICK_LEGEND: SpriteLegend = { K: MAP_INK, T: TICK_COLOR };
 const TICK: readonly string[] = ['....KK', '...KTK', 'KK.KTK', 'KTKTK.', 'KTTTK.', '.KTK..', '..K...'];
 
+const BOX_LEGEND: SpriteLegend = { K: MAP_INK, B: '#7c8494' };
+const UNCHECKED_BOX: readonly string[] = [
+  'KKKKKK',
+  'KBBBBK',
+  'KB..BK',
+  'KB..BK',
+  'KB..BK',
+  'KBBBBK',
+  'KKKKKK',
+];
+
 const CROSS_LEGEND: SpriteLegend = { K: MAP_INK, X: CROSS_COLOR };
 const CROSS: readonly string[] = ['XK...KX', 'KXK.KXK', '.KXKXK.', '..KXK..', '.KXKXK.', 'KXK.KXK', 'XK...KX'];
 
@@ -108,6 +119,7 @@ export const VAN_ICON: MapIcon = rowsIcon(VAN, VAN_LEGEND);
 export const FIREWORKS_BUS_ICON: MapIcon = rowsIcon(FIREWORKS_BUS, BUS_LEGEND);
 export const DROP_ICON: MapIcon = rowsIcon(CHUTE, DROP_LEGEND);
 export const TICK_ICON: MapIcon = rowsIcon(TICK, TICK_LEGEND);
+export const UNCHECKED_BOX_ICON: MapIcon = rowsIcon(UNCHECKED_BOX, BOX_LEGEND);
 export const CROSS_ICON: MapIcon = rowsIcon(CROSS, CROSS_LEGEND);
 export const CURSOR_ICON: MapIcon = rowsIcon(CURSOR, CURSOR_LEGEND);
 

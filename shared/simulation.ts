@@ -25,7 +25,7 @@ import type {
   WorldMap
 } from "./protocol.ts";
 import { tickCare } from "./care.ts";
-import { checkGameOver, leaveTown, restartRun } from "./run-end.ts";
+import { checkGameOver, finishDebrief, leaveTown, restartRun } from "./run-end.ts";
 import { createSimState } from "./sim-factory.ts";
 import type { SimulationOptions } from "./sim-factory.ts";
 import type { PlayerState, SimState } from "./sim-state.ts";
@@ -76,6 +76,11 @@ export class GameSimulation {
   /** The town being played, which changes with the level. */
   get map(): WorldMap {
     return this.sim.map;
+  }
+
+  /** The internal simulation state, exposed for dev benches and scenes. */
+  get state(): SimState {
+    return this.sim;
   }
 
   get playerCount(): number {
@@ -269,10 +274,14 @@ export class GameSimulation {
     if (player) homeCommand(this.sim, player, action);
   }
 
+  continueDebrief(): void {
+    if (this.sim.debrief) finishDebrief(this.sim);
+  }
+
   /** Advances one tick of TICK_DT. Does nothing with an empty room or after game over. */
   step(): void {
     const sim = this.sim;
-    const frozen = sim.phase === "gameover" || sim.players.length === 0;
+    const frozen = sim.phase === "gameover" || sim.players.length === 0 || sim.debrief !== null;
     if (frozen) return;
 
     sim.tick += 1;

@@ -35,7 +35,7 @@ describe("title scale", () => {
 });
 
 describe("title menu", () => {
-  it("lists every link in its section order: Play (1-5 Player), then News Stand, Radio and Settings", () => {
+  it("lists every link in its section order: Play (1-5 Players), then News Stand, Radio and Settings", () => {
     expect(TITLE_MENU.map((item) => item.label)).toEqual([
       "Nightly Run",
       "Campaign",
@@ -54,10 +54,10 @@ describe("title menu", () => {
     ]);
   });
 
-  it("shows the parents on the title, Play (1-5 Player) on top and pointed at", () => {
+  it("shows the parents on the title, Play (1-5 Players) on top and pointed at", () => {
     const rows = menuRows(null);
     expect(rows.map((row) => row.label)).toEqual([
-      "Play (1-5 Player)",
+      "Play (1-5 Players)",
       "???",
       "News Stand",
       "Settings"
@@ -72,7 +72,7 @@ describe("title menu", () => {
     ]);
   });
 
-  it("lists a parent's links with Back last, and opens Play (1-5 Player) at Nightly Run", () => {
+  it("lists a parent's links with Back last, and opens Play (1-5 Players) at Nightly Run", () => {
     const play = menuRows("play");
     expect(play.map((row) => row.label)).toEqual(["Nightly Run", "Campaign", "Arcade", "Back"]);
     expect(play[openingRow(play)].label).toBe("Nightly Run");
@@ -262,7 +262,7 @@ describe("developer mode", () => {
 
     const normalRows = menuRows(null, TITLE_MENU, undefined, false, false);
     expect(normalRows.map((row) => row.label)).toEqual([
-      "Play (1-5 Player)",
+      "Play (1-5 Players)",
       "???",
       "News Stand",
       "Settings"
@@ -270,7 +270,7 @@ describe("developer mode", () => {
 
     const devRows = menuRows(null, TITLE_MENU, undefined, false, true);
     expect(devRows.map((row) => row.label)).toEqual([
-      "Play (1-5 Player)",
+      "Play (1-5 Players)",
       "???",
       "News Stand",
       "Settings",
@@ -278,9 +278,9 @@ describe("developer mode", () => {
     ]);
   });
 
-  it("lists Items, Sprites, Test Drive, HUD and Back inside Developer Mode", () => {
+  it("lists Items, Sprites, Test Drive, Loot Test, Screenshot Scene and Back inside Developer Mode", () => {
     const rows = menuRows("dev");
-    expect(rows.map((row) => row.label)).toEqual(["Items", "Sprites", "Test Drive", "HUD", "Back"]);
+    expect(rows.map((row) => row.label)).toEqual(["Items", "Sprites", "Test Drive", "Loot Test", "Screenshot Scene", "Back"]);
     expect(rows.at(-1)?.kind).toBe("back");
   });
 

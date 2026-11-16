@@ -72,7 +72,7 @@ export const ITEM_FOOTPRINTS: Record<string, GridFootprint> = {
   monster_mash: { width: 1, height: 1 },
   nails: { width: 1, height: 1 },
   piercing_kit: { width: 2, height: 1 },
-  pistol: { width: 2, height: 2 },
+  pistol: { width: 2, height: 1 },
   pistol_ammo: { width: 1, height: 1 },
   plank: { width: 1, height: 4 },
   popping_eyeballs: { width: 1, height: 1 },

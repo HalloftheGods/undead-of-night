@@ -416,12 +416,13 @@ export class WorldRenderer {
   }
 
   /** Whoever is in a closed building stays out of the frame, bars and tracers included. */
-  private withoutHidden(scene: SceneView): SceneView {
+  private withoutHidden(scene: SceneView, now: number): SceneView {
     const inOpen = ({ x, y }: { x: number; y: number }) => !this.buildings.isHidden(x, y);
+    const notTossing = (pickup: SceneView['pickups'][number]) => !this.tosses.isFlying(pickup.type, pickup.x, pickup.y, now);
     return {
       ...scene,
       zombies: scene.zombies.filter(inOpen),
-      pickups: scene.pickups.filter(inOpen),
+      pickups: scene.pickups.filter((pickup) => inOpen(pickup) && notTossing(pickup)),
       bullets: scene.bullets.filter(inOpen),
     };
   }
@@ -447,7 +448,8 @@ export class WorldRenderer {
     this.buildings.update(viewer?.indoors ?? null, dt);
     this.buildings.doors.set(fullScene.doors ?? NO_DOORS);
     this.occlusion?.setDoors(fullScene.doors ?? NO_DOORS);
-    const scene = this.withoutHidden(fullScene);
+    this.occlusion?.setBodies(fullScene.zombies);
+    const scene = this.withoutHidden(fullScene, started);
     // The view keeps to the layer the focus is on: the town, a band of floors or the sewers, so a floor is framed as its house is.
     const layer = this.map ? layerBounds(this.map, scene.focusY) : null;
     if (layer && this.map) this.camera.setWorld(this.map.width, layer.y1 - layer.y0, layer.y0);
@@ -528,8 +530,9 @@ export class WorldRenderer {
     this.speech.draw(ctx, scene, left, top, viewW, viewH, time);
     this.fx.particles.keepTextsClear(this.overlay.sugarKeepOuts());
     this.fx.particles.drawTexts(ctx, left, top);
-    if (scene.showCrosshair && !scene.held) this.overlay.drawCrosshair(ctx, scene, left, top, lightAt, isKilled);
-    this.drawCanvasHud(ctx, viewW, viewH);
+    if (scene.showCrosshair && !scene.held && !scene.promoScene) this.overlay.drawCrosshair(ctx, scene, left, top, lightAt, isKilled);
+    if (!scene.promoScene) this.drawCanvasHud(ctx, viewW, viewH);
+    else this.drawPromoOverlay(ctx, viewW, viewH);
     // The world has drawn its props: a container window that just opened learns whether it can zoom from one.
     noteWorldFrame(performance.now(), this.reducedMotion);
     // An item picked up with the inventory open flies from where it lay: the loot windows need this frame's camera.
@@ -537,8 +540,8 @@ export class WorldRenderer {
       still: this.reducedMotion,
       toBuffer: (point) => ({ x: point.x - left, y: point.y - top }),
       toClient: (point) => ({ x: this.toClientX(point.x - left), y: this.toClientY(point.y - top) }),
-    });
       toWorld: (client) => ({ x: this.toBufferX(client.x) + left, y: this.toBufferY(client.y) + top }),
+    });
     this.drawLoot(ctx, viewW, viewH, left, top);
     this.drawSetup(ctx, viewW, viewH);
     this.drawPage(ctx, viewW, viewH);
@@ -611,6 +614,23 @@ export class WorldRenderer {
     );
   }
 
+  private drawPromoOverlay(ctx: CanvasRenderingContext2D, viewW: number, viewH: number): void {
+    const fadeH = Math.min(110, Math.round(viewH * 0.45));
+    const gradient = ctx.createLinearGradient(0, 0, 0, fadeH);
+    gradient.addColorStop(0, 'rgba(7, 8, 12, 0.78)');
+    gradient.addColorStop(0.65, 'rgba(7, 8, 12, 0.35)');
+    gradient.addColorStop(1, 'rgba(7, 8, 12, 0)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, viewW, fadeH);
+
+    const logo = this.art.ui.logo;
+    if (logo) {
+      const x = Math.round(viewW / 2);
+      const y = 6 + Math.round(logo.h / 2);
+      drawSprite(ctx, logo, x, y);
+    }
+  }
+
   /**
    * With the item in hand over the survivor (or a pad in hand, whose RT feeds them), the survivor is ringed in the
    * colour of how keen they are, and says so. Returns their line, or null when they are not being offered it.
@@ -623,6 +643,16 @@ export class WorldRenderer {
     const sprite = this.visuals.get(me.id).sprite;
     if (sprite) drawOutline(ctx, sprite, anchor.x, anchor.y, QUIP_COLOR[reaction.mood]);
     return reaction;
+  }
+
+  /** An item in hand over the bare game shows the dotted arc to where a let-go would land it. */
+  private drawTossPreview(ctx: CanvasRenderingContext2D, held: NonNullable<SceneView['held']>, me: PlayerEntity, left: number, top: number): void {
+    const clientX = this.toClientX(held.x);
+    const clientY = this.toClientY(held.y);
+    const isBare = heldBareAt(clientX, clientY) && !heldOnSurvivor(clientX, clientY) && heldButtonAt(clientX, clientY) === null;
+    if (!isBare || !this.map) return;
+    const spot = tossLanding(this.map, me, { x: held.x + left, y: held.y + top });
+    drawTossPreview(ctx, Math.round(me.x - left), Math.round(me.y - top), Math.round(spot.x - left), Math.round(spot.y - top));
   }
 
   private drawHeld(ctx: CanvasRenderingContext2D, scene: SceneView, left: number, top: number, viewW: number, viewH: number): void {
@@ -639,21 +669,12 @@ export class WorldRenderer {
       const y0 = this.toClientY(anchor.y - 30);
       setHeldSurvivor({ x: x0, y: y0, w: this.toClientX(anchor.x + 14) - x0, h: this.toClientY(anchor.y + 6) - y0 });
     } else setHeldSurvivor(null);
+    if (me) this.drawTossPreview(ctx, scene.held, me, left, top);
     const quip = me && anchor ? this.highlightSurvivor(ctx, scene.held, me, anchor) : null;
     const rects = drawHeldUi(ctx, scene.held, anchor, viewW, viewH);
     if (quip && anchor) drawQuip(ctx, quip, anchor, viewW);
     setHeldButtons(
       rects.map((r) => ({
-  /** An item in hand over the bare game shows the dotted arc to where a let-go would land it. */
-  private drawTossPreview(ctx: CanvasRenderingContext2D, held: NonNullable<SceneView['held']>, me: PlayerEntity, left: number, top: number): void {
-    const clientX = this.toClientX(held.x);
-    const clientY = this.toClientY(held.y);
-    const isBare = heldBareAt(clientX, clientY) && !heldOnSurvivor(clientX, clientY) && heldButtonAt(clientX, clientY) === null;
-    if (!isBare || !this.map) return;
-    const spot = tossLanding(this.map, me, { x: held.x + left, y: held.y + top });
-    drawTossPreview(ctx, Math.round(me.x - left), Math.round(me.y - top), Math.round(spot.x - left), Math.round(spot.y - top));
-  }
-
         kind: r.kind,
         x: this.toClientX(r.x),
         y: this.toClientY(r.y),
@@ -663,4 +684,3 @@ export class WorldRenderer {
     );
   }
 }
-    if (me) this.drawTossPreview(ctx, scene.held, me, left, top);

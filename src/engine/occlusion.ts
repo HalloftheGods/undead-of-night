@@ -1,7 +1,8 @@
-import { isSewerBuilding } from '../../shared/map-protocol.ts';
+import { MOVEMENT_ONLY_PROPS, PROP_KINDS, isSewerBuilding } from '../../shared/map-protocol.ts';
 import { BUILDING_DEFS, DOOR_WIDTH, NORTH_WALL_DEPTH, PROP_DEFS, TILE_KINDS, TILE_SIZE, WALL_THICKNESS } from '../../shared/protocol.ts';
-import type { BuildingInstance, PropKind, WorldMap } from '../../shared/protocol.ts';
+import type { BuildingInstance, PropKind, WorldMap, ZombieEntity } from '../../shared/protocol.ts';
 import type { PlacedDoor } from '../../shared/door-view.ts';
+import { ZOMBIES } from '../../shared/constants.ts';
 import { wallBoxes } from '../../shared/world-map.ts';
 import { RISE } from '../art/environment/shell.ts';
 
@@ -13,30 +14,29 @@ const WALL = 2;
 const ROOM = 3;
 /** The roof where it rises past the footprint's north edge: solid to light from outdoors, which cannot reach a roof that high. */
 const ROOF = 4;
+/** A zombie's body is only a light-stopper past this distance from the beam's start, so one at arm's length does not black out the whole beam. */
+const BODY_CLEAR = 8;
 /** How far south of a hit to look for open air, which says the ray met the building's south face and not its side. */
 const FACE_PROBE = 3;
 /** The shallowest climb a facade glow is stretched for, so a grazing ray does not run the length of the front. */
 const MIN_CLIMB = 0.3;
 
-/** Anything shorter than a flashlight beam at hip height does not stop it. */
-const BLOCKS_LIGHT: ReadonlySet<PropKind> = new Set<PropKind>([
-  'car_sedan_h',
-  'car_sedan_v',
-  'car_wreck_h',
-  'van_h',
-  'car_hatch_h',
-  'car_hatch_v',
-  'pickup_h',
-  'police_h',
-  'police_v',
-  'ambulance_h',
-  'fireworks_bus',
-  'dumpster',
-  'crate_stack',
-  'shelf',
-  'locker',
-  'fridge',
+/** Solid props a flashlight beam at hip height cannot pass: they stop bodies and, like fences, let light through only where they are not solid. */
+const LIGHT_PASSES: ReadonlySet<PropKind> = new Set<PropKind>([
+  // Movement-only fences: a look and a light pass through them.
+  ...MOVEMENT_ONLY_PROPS,
+  // Knee-high or smaller: a beam at hip height runs over them.
+  'hydrant',
+  'sandbags',
+  'barrier',
+  'lantern',
+  'candy_bowl',
+  // A fire is the light itself, not something that blocks it.
+  'campfire',
 ]);
+
+/** Every solid prop stops a beam, trees, lamp posts and barrels included, except those `LIGHT_PASSES` names. */
+const BLOCKS_LIGHT: ReadonlySet<PropKind> = new Set<PropKind>(PROP_KINDS.filter((kind) => PROP_DEFS[kind].h > 0 && !LIGHT_PASSES.has(kind)));
 
 /** Coarse solid grid, so casting light rays costs array reads rather than prop tests. */
 export class OcclusionGrid {
@@ -50,6 +50,9 @@ export class OcclusionGrid {
   private readonly shut: Uint8Array;
   private shutDoors: readonly PlacedDoor[] | null = null;
 
+  /** 1 over every living zombie's body, redrawn each frame by `setBodies`: they move, so unlike the props they are not in `cells`. */
+  private readonly bodies: Uint8Array;
+
   /** `frontOf` says how tall a building's front wall stands, so the glow on it stops where the roof begins. */
   constructor(map: WorldMap, frontOf?: (building: BuildingInstance) => number | undefined) {
     this.cols = Math.ceil(map.width / CELL);
@@ -57,6 +60,7 @@ export class OcclusionGrid {
     this.cells = new Uint8Array(this.cols * this.rows);
     this.fronts = new Uint8Array(this.cols * this.rows);
     this.shut = new Uint8Array(this.cols * this.rows);
+    this.bodies = new Uint8Array(this.cols * this.rows);
     // The sewers' own walls are the brick and rock tiles below, not a roof over the whole maze.
     const shells = map.buildings.filter((building) => !isSewerBuilding(building));
     // Roofs first, so one building's overhang never paints over the room of its neighbour.
@@ -95,6 +99,25 @@ export class OcclusionGrid {
       // The cell value is the door's depth, so the beam that stops at it still lights the leaf it meets.
       this.fill(door.x - DOOR_WIDTH / 2, y0, door.x + DOOR_WIDTH / 2, y1, y1 - y0, this.shut);
     }
+  }
+
+  /** Redraws the zombies that stand in a beam's way. The dead and the dormant lie flat and stop nothing. */
+  setBodies(zombies: readonly ZombieEntity[]): void {
+    this.bodies.fill(0);
+    for (const zombie of zombies) {
+      if (zombie.health <= 0 || zombie.dormant) continue;
+      const r = ZOMBIES[zombie.type].radius;
+      this.fill(zombie.x - r, zombie.y - r, zombie.x + r, zombie.y + r, 1, this.bodies);
+    }
+  }
+
+  /** Whether a zombie's body covers this point, once the ray has got clear of its own start. */
+  private bodyAt(x: number, y: number, dist: number): boolean {
+    if (dist < BODY_CLEAR) return false;
+    const col = Math.floor(x / CELL);
+    const row = Math.floor(y / CELL);
+    const inField = col >= 0 && row >= 0 && col < this.cols && row < this.rows;
+    return inField && this.bodies[row * this.cols + col] === 1;
   }
 
   /** The depth of the shut door over this point, or 0 where there is none. */
@@ -176,7 +199,8 @@ export class OcclusionGrid {
     let py = y;
     for (let dist = 0; dist < maxDist; dist += CELL) {
       const cell = this.cellAt(px, py);
-      const hitsProp = cell === PROP;
+      // A zombie's body stops the beam as a prop does, so it lights its own face and casts a shadow behind it.
+      const hitsProp = cell === PROP || this.bodyAt(px, py, dist);
       const hitsRoof = cell === ROOF && !fromRoom && !underRoof;
       const doorDepth = this.shutDepth(px, py);
       const hitsDoor = doorDepth > 0;
@@ -194,7 +218,7 @@ export class OcclusionGrid {
         let fy = y + sinAngle * fineDist;
         while (fineDist < dist) {
           const fineCell = this.cellAt(fx, fy);
-          const fineHit = hitsProp ? fineCell === PROP : fineCell === WALL || (fineCell === ROOM && !fromRoom) || (fineCell === ROOF && hitsRoof) || this.shutDepth(fx, fy) > 0;
+          const fineHit = hitsProp ? fineCell === PROP || this.bodyAt(fx, fy, fineDist) :fineCell === WALL || (fineCell === ROOM && !fromRoom) || (fineCell === ROOF && hitsRoof) || this.shutDepth(fx, fy) > 0;
           if (fineHit) break;
           fineDist += 1;
           fx += cosAngle;
