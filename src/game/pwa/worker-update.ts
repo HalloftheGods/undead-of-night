@@ -52,26 +52,44 @@ export interface UpdateEnv {
 
 export function createWorkerUpdates(env: UpdateEnv) {
   let titleShowing = false;
+  // True only while the boot check runs on the first splash card: no run can be in progress there.
+  let booting = false;
   let waiting: WorkerLike | null = null;
   let applying = false;
+  // Whether the swap was asked for during the boot check, before any run could have started.
+  let askedAtBoot = false;
+  let registered: Promise<RegistrationLike | null> = Promise.resolve(null);
+  let registration: RegistrationLike | null = null;
+  let settleBootCheck: (() => void) | null = null;
   const undo: Array<() => void> = [];
+  // A swap is safe whenever nothing the player is doing would be lost: the title, or the first splash card.
+  const isSafeToSwap = (): boolean => titleShowing || booting;
   function applyIfReady(): void {
     const worker = waiting;
-    const canApply = titleShowing && !applying;
+    const canApply = isSafeToSwap() && !applying;
     const cannotUpdate = worker === null || !canApply;
     if (cannotUpdate) return;
     applying = true;
+    askedAtBoot = booting;
     env.container.controller?.postMessage(RELEASE_MUSIC_MESSAGE);
     worker.postMessage(SKIP_WAITING_MESSAGE);
   }
 
+  function settleCheck(): void {
+    const settle = settleBootCheck;
+    settleBootCheck = null;
+    settle?.();
+  }
+
   function onStateChange(installing: WorkerLike): void {
     const installed = installing.state === 'installed';
+    if (!installed) return;
     const replacing = env.container.controller !== null;
-    const update = installed && replacing;
-    if (!update) return;
-    waiting = installing;
-    applyIfReady();
+    if (replacing) {
+      waiting = installing;
+      applyIfReady();
+    }
+    settleCheck();
   }
 
   function watch(registration: RegistrationLike): void {
@@ -94,20 +112,53 @@ export function createWorkerUpdates(env: UpdateEnv) {
     // Asking is what counts, not whether a worker controlled the page at launch, so an update on a first visit still lands.
     const swapped = applying;
     // The player may have started a run in the instant between asking and swapping.
-    const safeToReload = swapped && titleShowing;
+    const safeToReload = swapped && (isSafeToSwap() || askedAtBoot);
     if (safeToReload) env.reload();
   };
   env.container.addEventListener('controllerchange', onControllerChange);
   undo.push(() => env.container.removeEventListener('controllerchange', onControllerChange));
 
-  async function start(): Promise<RegistrationLike | null> {
+  function start(): Promise<RegistrationLike | null> {
+    registered = register();
+    return registered;
+  }
+
+  async function register(): Promise<RegistrationLike | null> {
     try {
-      const registration = await env.container.register(env.workerUrl);
+      registration = await env.container.register(env.workerUrl);
       watch(registration);
       return registration;
     } catch {
       return null;
     }
+  }
+
+  /** Asks the worker for a newer build and waits for it to install, so a build found now can swap before the next card. */
+  async function runBootCheck(): Promise<void> {
+    await registered;
+    const current = registration;
+    if (!current) return;
+    applyIfReady();
+    await new Promise<void>((resolve) => {
+      settleBootCheck = resolve;
+      current.update().then(
+        () => {
+          const nothingInstalling = current.installing === null;
+          if (nothingInstalling) settleCheck();
+        },
+        () => settleCheck(),
+      );
+    });
+  }
+
+  /** Resolves once the boot check is done, or when `maxMs` runs out, whichever comes first. Nothing is swapped past the cap. */
+  function checkBeforeBoot(maxMs: number): Promise<void> {
+    booting = true;
+    applyIfReady();
+    const cap = new Promise<void>((resolve) => setTimeout(resolve, maxMs));
+    return Promise.race([cap, runBootCheck()]).finally(() => {
+      booting = false;
+    });
   }
 
   /** Called as the title screen shows and hides. Showing it is the moment a waiting version may take over. */
@@ -120,7 +171,7 @@ export function createWorkerUpdates(env: UpdateEnv) {
     for (const stop of undo) stop();
   }
 
-  return { start, setTitleShowing, dispose };
+  return { start, setTitleShowing, checkBeforeBoot, dispose };
 }
 
 export type WorkerUpdates = ReturnType<typeof createWorkerUpdates>;
@@ -136,10 +187,15 @@ export function createUpdateHost() {
     return updates.start();
   }
 
+  /** Called as the first splash card shows. Resolves at once when no worker is registered (dev, or no service worker). */
+  function checkBeforeBoot(maxMs: number): Promise<void> {
+    return updates ? updates.checkBeforeBoot(maxMs) : Promise.resolve();
+  }
+
   function setTitleShowing(showing: boolean): void {
     titleShowing = showing;
     updates?.setTitleShowing(showing);
   }
 
-  return { begin, setTitleShowing };
+  return { begin, setTitleShowing, checkBeforeBoot };
 }

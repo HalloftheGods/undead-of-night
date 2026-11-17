@@ -23,8 +23,12 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { motion } from '../game/motion.ts';
+import { checkForUpdateBeforeBoot } from '../game/pwa/index.ts';
 import { SPLASH_CARDS, splashTimings } from '../game/studio-splash.ts';
 import { useGame } from './use-game.ts';
+
+/** The longest the first card waits for a newer build. Past this the splashes run on, and the title still takes an update. */
+const BOOT_UPDATE_CAP_MS = 2000;
 
 const emit = defineEmits<{ done: [] }>();
 const game = useGame();
@@ -37,6 +41,10 @@ const phase = ref<'in' | 'hold' | 'out'>('in');
 const currentIndex = ref(0);
 const timers = new Set<ReturnType<typeof setTimeout>>();
 let skipping = false;
+// Set while the first card waits for the boot update check; a newer build found in that time reloads the page here.
+let bootCheck: Promise<void> = Promise.resolve();
+let waitingForBootCheck = false;
+let unmounted = false;
 
 const currentCard = computed(() => SPLASH_CARDS[currentIndex.value] ?? SPLASH_CARDS[0]);
 
@@ -73,10 +81,30 @@ function advanceOrFinish(): void {
   const isLast = currentIndex.value >= SPLASH_CARDS.length - 1;
   if (isLast) {
     emit('done');
-  } else {
-    currentIndex.value += 1;
-    startCard();
+    return;
   }
+  const isFirstCard = currentIndex.value === 0;
+  if (isFirstCard) {
+    waitForBootCheck();
+    return;
+  }
+  nextCard();
+}
+
+function nextCard(): void {
+  currentIndex.value += 1;
+  startCard();
+}
+
+/** The first card holds, black, until the update check is done: the second card never shows on a build that is about to be replaced. */
+function waitForBootCheck(): void {
+  if (waitingForBootCheck) return;
+  waitingForBootCheck = true;
+  phase.value = 'out';
+  void bootCheck.then(() => {
+    waitingForBootCheck = false;
+    if (!unmounted) nextCard();
+  });
 }
 
 function fadeOut(): void {
@@ -103,10 +131,12 @@ onMounted(() => {
 
   window.addEventListener('keydown', skip, { capture: true });
   window.addEventListener('pointerdown', skip, { capture: true });
+  bootCheck = checkForUpdateBeforeBoot(BOOT_UPDATE_CAP_MS);
   startCard();
 });
 
 onBeforeUnmount(() => {
+  unmounted = true;
   clearTimers();
   window.removeEventListener('keydown', skip, { capture: true });
   window.removeEventListener('pointerdown', skip, { capture: true });

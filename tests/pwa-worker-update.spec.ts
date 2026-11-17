@@ -112,6 +112,30 @@ describe('worker updates', () => {
     expect(reloads).toEqual([1]);
   });
 
+  it('a version found by the boot check swaps and reloads, even after the check has closed', async () => {
+    const { container, updates, reloads } = setup(true);
+    await updates.start();
+    const found: FakeWorker[] = [];
+    container.registration.update = async () => {
+      found.push(installNewVersion(container));
+    };
+    await updates.checkBeforeBoot(1000);
+    expect(found[0].sent).toEqual([SKIP_WAITING_MESSAGE]);
+    container.emit('controllerchange');
+    expect(reloads).toEqual([1]);
+  });
+
+  it('the boot check gives up at its cap, and a version found later waits for the title', async () => {
+    const { container, updates, reloads } = setup(true);
+    await updates.start();
+    container.registration.update = () => new Promise<void>(() => undefined);
+    await updates.checkBeforeBoot(5);
+    const worker = installNewVersion(container);
+    expect(worker.sent).toEqual([]);
+    container.emit('controllerchange');
+    expect(reloads).toEqual([]);
+  });
+
   it('applies at once when the title is already showing as the version lands', async () => {
     const { container, updates } = setup(true);
     await updates.start();

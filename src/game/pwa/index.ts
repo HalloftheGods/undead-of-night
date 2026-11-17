@@ -19,6 +19,11 @@ export function startServiceWorker(): void {
   });
 }
 
+/** The first splash card calls this before the second one. A newer build found in that moment reloads before anyone sees it. */
+export function checkForUpdateBeforeBoot(maxMs: number): Promise<void> {
+  return updateHost.checkBeforeBoot(maxMs);
+}
+
 /** The title screen calls this as it mounts and unmounts. */
 export function setTitleShowing(showing: boolean): void {
   updateHost.setTitleShowing(showing);
